@@ -3,6 +3,12 @@
   "kind": "human-advisory-request",
   "messageId": 45967,
   "traceId": "trace-app-review",
-  "text": "Review app status and suggest how to make them work harder. Can try codex to get second thoughts.",
-  "authority": "review-and-propose"
+  "text": "I am looking at the Gym backlog-health task. Does its wait make sense? Review the app status and suggest what you would do. You may use Codex for a second opinion, but do not make changes yet.",
+  "authority": "review-and-propose",
+  "focusedTask": {
+    "appId": "gym",
+    "taskId": "evaluation/backlog-health",
+    "status": "waiting",
+    "progress": "The latest valid run is still being checked before evaluation volume can increase."
+  }
 }

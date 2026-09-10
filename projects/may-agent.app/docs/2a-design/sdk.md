@@ -1,8 +1,8 @@
 # May-Agent SDK
 
 **Design status:** Accepted.
-**Implementation status:** Every current App uses `task(input)` and Task
-reconciliation, and the request-disposition surface has been removed. The
+**Implementation status:** Durable App work uses Task reconciliation; bounded
+conversational inputs may run directly through declared `requests` policy. The
 shared bounded Task collection is exposed as `read.tasks.list/get`. Public App
 and Task intent use `agent` to select a managed agent. The Host accepts the old
 `owner` spelling only at compatibility boundaries for retained state.
@@ -11,15 +11,20 @@ and Task intent use `agent` to select a managed agent. The Host accepts the old
 describes meaning, inputs, results, facts, and desired work; it does not expose
 Host storage or execution mechanics.
 
-```text
-App definition -> input-to-task policy + task reconciliation
-workflow       -> one bounded task step using scoped capabilities
-Runtime        -> task lifecycle, execution, reads, retries, and recovery
-Host           -> ingress, persistence, scheduling, capacity, and delivery
-```
+See [App Contract](agent-app.md) for declaration and mapping,
+[Task Resource Engine](task-resource-engine.md) for result admission, and the
+[SDK Quickstart](../2b-manual/sdk-quickstart.md) for checked source.
 
-See [App Contract](agent-app.md) and
-[Task Resource Engine](task-resource-engine.md).
+## Executable type references
+
+| Contract | Source |
+| --- | --- |
+| App definition, input, attachments and policy | [app.ts](../../../may-agent/packages/sdk/src/app.ts) |
+| Task intent, result, changes, Conditions and dependencies | [task.ts](../../../may-agent/packages/sdk/src/task.ts) |
+| Attempts, executors, workflow context and public read views | [workflow.ts](../../../may-agent/packages/sdk/src/workflow.ts) |
+| Result validation and normalization | [task-contract.ts](../../../may-agent/packages/sdk/src/task-contract.ts) |
+
+The types are defined in source; sketches below show usage, not duplicate schemas.
 
 ## Stable root surface
 
@@ -82,43 +87,20 @@ declaration has no `inbox` or `resyncIntervalMs` tuning surface.
 
 ### Task resolution
 
-`task(input)` is pure policy. It receives one validated App input and returns
-the stable existing task reference or desired `TaskIntent` that owns the work.
-The Runtime persists the link before waking the task. The App never handles the
-Host request record, adapter state, claim, lease, channel, or retry metadata.
+`task(request)` receives `{ id, source, input }` after input validation and
+returns an `AppTaskAttachment`: an existing Task reference or a desired intent
+wrapped with `kind: "desired"`. `tasks.resolve(event)` instead receives a
+selected fact and returns `TaskIntent | null`. Both are pure mappings.
+[App Contract](agent-app.md#addressed-work) owns this distinction.
 
-The resolver must not call an agent, inspect mutable context, or guess semantic
-references. Exact structured task references may wake their task directly.
-
-A conversational App may declare `requests: { mode: "agent" }`. The
-Host supplies the bounded Conversation, Topic candidates, exact focused Task,
-canonical snapshots for Tasks represented by recent command/tool views,
-and installed App contracts to one structured agent decision. It answers,
-returns one typed durable App request or exact Task feedback, or requests a
-narrow human-authorized cancellation of an exact supplied Task without
-creating tracking work. Runtime records the accepted responsible Task on the
-Topic and applies control through its Task API; the App receives no persistence
-capability. Request policy handles the bounded frontend input; other declared
-inputs and events may resolve to the App's ordinary Tasks.
-
-If the App also receives addressed events or API requests outside a channel
-adapter, it may declare one default Conversation, for example
-`requests: { mode: "agent", conversationId: "may:primary" }`. The Host places
-those requests and their accepted responses in that same Conversation using the
-origin event identity. The non-human input is not presented as a human Turn.
-For May, Runtime filters Task events against exact Topic links before invoking
-its normal supervision Task. One bounded reconciliation may append a
-Conversation result, send feedback to the same Task, or do nothing. The
-supervision Task never becomes a parent or dependency owner for linked work.
-The Task read capability can read one exact Task in another App when the wake
-names its App and Task ID; list remains scoped to the current App. A bounded
-recovery read selects only unfinished Topic-linked Tasks that stayed quiet for
-the review interval, so a missed wake is recoverable without a fleet-wide read,
-per-Task watcher, or model polling loop.
-
-For Task-owning Apps, this rule has no fast-path exception. A simple input resolves to a task whose
-first bounded attempt can converge immediately. A hard input resolves to a task
-that may require later attempts, Conditions, child tasks, or agent judgment.
+A conversational App declares `requests: { mode: "agent", inputKinds: [...] }`
+for the input kinds handled in a bounded turn. It may finish authorized work
+using supplied tools or admit durable intent. An optional `conversationId`
+sets the Conversation for non-channel requests; those inputs are not presented
+as human Turns. Other kinds use normal Task mapping.
+[Message Lifecycle](message-lifecycle.md) owns May's direct-work and supervision
+policy. Source compatibility for retained requests does not create a second
+work lifecycle.
 
 ### Fact Event policy
 
@@ -145,31 +127,11 @@ them to App input. Neither can run App work directly.
 
 ## Workflow contract
 
-App-owned workflows receive one typed input and scoped capabilities:
-
-```ts
-type WorkflowContext<TInput> = {
-  input: TInput;
-  reconciliation: TaskReconciliationContext<TInput>;
-  read: AppRead;
-  agents: {
-    call(agent: string, task: string): Promise<ExecutionResult>;
-  };
-  workflows: {
-    run(name: string, input: unknown): Promise<ExecutionResult>;
-  };
-  events: {
-    emit(event: AppEvent): Promise<void>;
-  };
-  metrics: {
-    record(id: string, value: number, note?: string): Promise<void>;
-  };
-  workspace?: { root: string; output: string };
-  log: Logger;
-  done<T>(summary: string, output?: T): ExecutionResult<T>;
-  blocked(reason: string, evidence?: unknown): ExecutionResult;
-};
-```
+`WorkflowContext` supplies typed input, scoped reads, bounded agent/workflow
+calls, facts, metrics, optional workspace, logging and terminal result helpers.
+`reconciliation` is present for Task-owned runs; standalone bounded workflows
+may omit it. The [source type](../../../may-agent/packages/sdk/src/workflow.ts)
+defines the full fields and return types.
 
 The workflow input is App-owned. The Host carries it across the execution
 boundary without parsing prompts or reconstructing it from global task state.
@@ -221,17 +183,8 @@ collection shape: bounded summary pages from `list` plus explicit detail from
 `get`. Large desired input and exact Conditions cross the boundary only for the
 named Task. The runtime binds both reads to the current App:
 
-```ts
-type AppRead = {
-  appResult(itemId: string): Promise<AppResult | null>;
-  tasks: {
-    list(options?: TaskListOptions): Promise<TaskPage>;
-    get(taskId: string): Promise<TaskDetail | null>;
-  };
-  execution(executionId: string): Promise<ExecutionView | null>;
-  metric(metricId: string): Promise<MetricView | null>;
-};
-```
+[`AppRead`](../../../may-agent/packages/sdk/src/workflow.ts) defines these
+capabilities, including bounded Task list/get and exact execution/metric reads.
 
 The current shared `TaskView` contains `id`, `status`, `generation`, `outcome`,
 and bounded summary, response, and evidence fields. SDK, HTTP, socket, and the
@@ -258,18 +211,8 @@ exists only to typecheck that host integration against the paired Runtime.
 
 ## One execution result
 
-Agent calls and nested workflows return the same bounded terminal shape:
-
-```ts
-type ExecutionResult<T = unknown> = {
-  id: string;
-  kind: "agent" | "workflow";
-  status: "done" | "blocked" | "error" | "interrupted";
-  summary: string;
-  output?: T;
-  evidence?: unknown;
-};
-```
+Agent calls and nested workflows return the same bounded
+[`ExecutionResult`](../../../may-agent/packages/sdk/src/workflow.ts).
 
 `done` and `blocked` end the current bounded workflow run. They do not mutate or
 complete a task by themselves. The Runtime validates the result against the
@@ -280,26 +223,7 @@ a workflow open or resuming it as a hidden controller.
 
 ## Task contracts
 
-`TaskIntent` declares desired work:
-
-```ts
-type TaskIntent = {
-  id: string;
-  parentId: string;
-  outcome: string;
-  acceptance: string[];
-  mode: "achieve" | "maintain";
-  agent?: string; // selected agent for bounded attempts
-  owner?: string; // deprecated input alias; normalized at the Host boundary
-  workflow?: string;
-  executor?: string;
-  input?: Record<string, unknown>;
-  outputs?: string[];
-  dependsOn?: string[];
-  priority?: "P0" | "P1" | "P2" | "P3";
-  category?: string;
-};
-```
+[`TaskIntent`](../../../may-agent/packages/sdk/src/task.ts) declares desired work.
 
 The App owns this Task. `agent` selects a managed agent for the attempt,
 inheriting from the parent Task and then the App default; it is not a second
@@ -311,31 +235,9 @@ uses the App's default agent; `codex` and `claude` are built-in native CLI
 adapters. A Task cannot set both `workflow` and `executor`. An unknown name
 becomes visible attention instead of silently falling back.
 
-All executor adapters translate one small contract:
-
-```ts
-type TaskAttempt = {
-  appId: string;
-  attemptId: string;
-  signal: AbortSignal;
-  resourceVersion: number;
-  role: { agent: string; instructions: string };
-  task: TaskDetail;
-  cwd: string;
-  declaredOutputPaths: string[];
-  children: {
-    live: TaskReconciliationChild[];
-    completed: TaskReconciliationChild[];
-  };
-  waits: { open: Array<Record<string, unknown>>; note: string };
-  events: TaskReconciliationEvents;
-  resultSchema: Record<string, unknown>;
-  publish(localKey: string, event: AppEvent): Promise<{ eventId: number }>;
-  onEvent(listener: (event: AppEvent, accept: () => void) => void): () => void;
-};
-
-type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult>;
-```
+All executor adapters implement `TaskExecutor(attempt) -> Promise<TaskReconcileResult>`.
+The complete [`TaskAttempt`](../../../may-agent/packages/sdk/src/workflow.ts)
+contains the same bounded context for each adapter.
 
 Runtime creates this object once per fenced attempt. Identity and desired Task
 state, the resolved role, current children and accepted waits, ordered Event
@@ -385,16 +287,9 @@ tokens, or free-form failure reasons.
 stores it with the accepted task result and Infra projects it to those requests;
 an App never names console, Telegram, web, or delivery receipts in the result.
 
-A cross-App dependency is valid only with `state: "waiting"`:
-
-```ts
-type TaskAppDependency = {
-  id: string; // stable within this task generation
-  appId: string;
-  taskId?: string; // continue one exact existing Task
-  input: AppInput;
-};
-```
+A [`TaskAppDependency`](../../../may-agent/packages/sdk/src/task.ts) names a
+stable dependency ID, target App, optional exact Task and typed input. It is
+valid only with `state: "waiting"`.
 
 Runtime derives the initial child request ID from the parent App, task
 generation, dependency ID, target App, optional target Task, and input. It admits the request
@@ -423,7 +318,8 @@ attempts.
 
 ## Fact Events and metrics
 
-`ctx.events.emit` publishes facts only. It cannot attach a task or directly
+`ctx.events.emit` publishes facts only. In a Task-owned run, supply a stable
+`localKey` so retries deduplicate the same intended fact. It cannot attach a task or directly
 schedule another workflow. If a published fact is actionable, the destination
 App must translate it to input, or the fact must identify an exact task or
 Condition to wake.
@@ -487,8 +383,8 @@ composition remains Host-private.
 
 - The root package is the only authoring entry point.
 - App definitions are pure to import and validate.
-- Every actionable App input resolves to or wakes exactly one task.
-- Task reconciliation is the only App work loop.
+- Every durable App outcome resolves to or wakes its responsible Task.
+- Task reconciliation is the only durable App work loop.
 - Workflow input is typed and never reconstructed from prompt text.
 - Every capability is bounded to one semantic responsibility.
 - Reads are exact typed projections; writes are expressed as typed results or

@@ -41,34 +41,24 @@ ownership boundary.
 ## App-to-App escalation
 
 When a task discovers that another App owns the next action, its reconciliation
-result requests one typed Runtime-managed dependency:
+result requests one typed Runtime-managed dependency. The checked
+[`dependencyResult`](../examples/app.ts) names `release-governance`, a stable
+dependency ID, and the destination's illustrative `approval-request` input.
+Use the actual installed App's input schema. A workflow returns that result as:
 
 ```ts
-return ctx.done("Waiting for release governance", {
-  state: "waiting",
-  dependencies: [
-    {
-      id: "release-governance-v4",
-      appId: "release-governance",
-      input: {
-        kind: "approval-request",
-        data: {
-          requestedAction: "Approve, adjust, or reject the rollout.",
-          reason: "Production policy requires an independent decision.",
-          evidence: ["verification/report.json"],
-          severity: "P1",
-          correlationKey: "sample:production-rollout:v4",
-        },
-      },
-    },
-  ],
-});
+return ctx.done(dependencyResult.summary, dependencyResult);
 ```
 
-The Runtime resolves the destination task and records the parent dependency and
-caller correlation before waking it. The destination task produces one
-correlated result. The parent wakes, reviews the result, and decides how it
-changes the original obligation.
+The Task result itself must contain `summary` and `evidence`; the outer workflow
+summary does not populate its output. `bun run check:may-design` validates the
+linked result through production Task result admission.
+
+The Runtime durably admits the destination request, then retains its exact
+dependency on the source Task. Request coordination attaches the destination
+Task asynchronously. Its accepted result wakes the parent, which reviews it
+and decides how it changes the original obligation. If admission succeeds but
+the source attempt is interrupted, recovery reuses the correlated request.
 
 Creating the child is progress, not resolution. The parent cannot complete
 merely because another App accepted the request.
@@ -137,7 +127,8 @@ These states remain separate:
 
 | State                  | Meaning                                             |
 | ---------------------- | --------------------------------------------------- |
-| Child admitted         | Destination task durably owns the requested outcome |
+| Child request admitted | Destination request is durable; Task attachment may still be pending |
+| Destination attached   | Exact destination Task owns the requested outcome |
 | Adapter observation    | Optional evidence about a presentation attempt       |
 | Child result           | Destination task returned an accepted result        |
 | Source resumed         | Original task observed and applied that result      |
@@ -149,10 +140,21 @@ and Task links.
 
 ## Deduplication and expiry
 
-The child admission key combines the source obligation, destination App,
-request kind, and stable semantic correlation key. Redelivery cannot create a
-second child for the same source dependency. A genuinely revised decision uses
-new source generation or explicitly changed semantic identity.
+For a new dependency, the Host derives request identity from the source App,
+Task and generation, dependency `id`, destination App/optional Task, and full
+input. `input.data.correlationKey` is ordinary domain data, not a special Host
+deduplication field.
+
+Across attempts, retain the dependency ID, destination and input for unchanged
+work. When continuing an existing open request, reuse its durable request ID
+or the exact linked dependency; the Runtime checks that destination identity
+still agrees. It can also match an unchanged open request by destination and
+input, but rejects ambiguous matches or an unexplained replacement. Changing
+incidental input text is not a safe way to retry the same obligation.
+
+A revised source generation or changed input does not justify abandoning an
+open request. Preserve or explicitly resolve existing dependencies before
+declaring distinct work. See [Task dependencies](task-resource-engine.md#parents-and-dependencies).
 
 Age alone never resolves an escalation. A deadline may wake the source owner,
 which may keep waiting, choose a safe fallback, revise the ask, cancel the
@@ -195,10 +197,12 @@ legacy pairs or source-session resume ownership.
 - The escalation crosses a real ownership boundary.
 - The destination is an App address, not an owner string fallback.
 - The child request states one exact action/decision and compact evidence.
-- Parent/child linkage is durable before the child is woken.
+- A source wait names a durably admitted destination request; interrupted
+  linkage can recover that same request.
 - Admission, destination result, source resume, and source completion remain
   distinct; adapter presentation remains outside Task state.
 - The source owner applies the child result before claiming completion.
 - Local workflow blocking never escalates automatically.
-- Deduplication preserves one child per source dependency and semantic key.
+- Repeating an unchanged dependency reuses its request; ambiguous replacement
+  is rejected.
 - No event pair, trace, or mutable session becomes escalation authority.

@@ -1,369 +1,202 @@
-# Task runtime organization
+# Core review: simple, robust, replaceable
 
-**Design status:** Incremental direction accepted; later stages remain provisional.
-**Implementation status:** Stage 1 implemented in Host commit `d565a5be` on
-`refactor/task-context`; local CI and hosted Quality/Container checks passed.
-Ready for review, not merged or deployed. Runtime ownership, execution, and
-lifecycle are unchanged.
-**Implementation PR:** [May Host #95](https://github.com/hao1939/may-agent/pull/95).
-**Date:** 2026-09-09.
-**Source baseline:** May Host `b94b4ccf3fc6fd7adf95571b50300b5f7b2daad5`.
+**Status:** Active review plan. Core separation, shared settlement, durable retry
+limits and atomic request attachment are implemented at the
+[documented source baseline](../README.md). The latest
+[implementation review](../archive/reviews/core-implementation-alignment-20260910.md)
+found two input-handling failures and confirmed the remaining human-control gaps.
+The sequence below is proposed for review; runtime changes are not implemented.
+This is not a deployment record.
 
-The recommendation is to reorganize the existing Task engine in small,
-behavior-preserving changes. Extract context construction and attempt execution
-from the central runtime, make its in-memory resource ownership explicit, and
-clarify admission and recovery boundaries. Preserve the existing lifecycle
-rules and transactional writes. Group files into a Task directory after those
-boundaries are established.
+## Current focus: simple and robust core
 
-This proposal concerns internal Host implementation. The governing contracts
-remain [System Boundary](../2a-design/system-boundary.md),
-[Task Resource Engine](../2a-design/task-resource-engine.md),
-[Runtime](../2a-design/runtime.md), and [Events](../2a-design/events.md).
-The broader [convergence tracker](design-implementation-convergence.md) and
-[authority proposal](authority-boundary-simplification.md) own their existing
-behavioral work; this proposal does not reopen those decisions.
+> Removal should degrade capability, while preserving the remaining system's correctness.
 
-**The first implementation change extracts shared App discovery and Task context.**
-It is a concrete, comparatively low-risk way to test the proposed separation
-before changing runtime ownership or moving transaction code.
+The [Architecture](../2a-design/architecture.md#core-responsibilities) owns the
+four core responsibilities, dependency rules, code map and absence behavior.
+The [System Model](../2a-design/system-model.md) explains the whole flow.
+These are ordinary modules using existing contracts, not a new service framework.
 
-The shared App catalog belongs outside the Task engine: both conversation
-requests and Task attempts use it to discover available App input contracts.
-The Task context module owns child, accepted-wait, and attempt-event projections.
-Neither needs the runtime's registries or full options object.
+Judge a change by its contribution to May's goal and its total cost. Prefer
+safe, affordable redo over elaborate recovery. Start from a reproduced failure
+or a demonstrated maintenance cost; stop when the required outcome is met.
+The [decision guide](../1-principles/core-principles.md#review-rule) supplies the
+tradeoff rules.
 
-## Problem demonstrated by the current source
+## Design against implementation
 
-At the recorded baseline there were 15 production `src/app/app-task-*.ts` files,
-excluding tests and test support, totaling 13,305 lines. Two accounted for
-9,282 lines, or about 70%:
+The four core responsibilities already have working boundaries. Retain them.
 
-| Module | Size | Responsibilities currently combined |
-| --- | ---: | --- |
-| [app-task-runtime.ts](../../../may-agent/src/app/app-task-runtime.ts) | 4,984 lines | Definition installation, event admission, prompt/context construction, executor integration, dependencies, workspaces, acceptance, recovery, and reads |
-| [app-task-reconciler.ts](../../../may-agent/src/app/app-task-reconciler.ts) | 4,298 lines | Intent observation, claims, event batches, lifecycle transitions, Conditions, Task actions, session recovery evidence, cancellation, and mutation construction |
-
-Size identifies where to look; it is not itself the defect. The practical
-problems are that a reviewer must cross unrelated responsibilities to trace one
-attempt, recovery is spread across misleadingly named files, and in-memory
-runtime ownership is hidden in several module-level maps keyed by `EventBus`.
-
-The existing smaller controller, queue, resource store, Condition tracker, and
-workspace modules already provide useful boundaries. They should be retained.
-The proposal should reduce the number of responsibilities a contributor must
-understand for an ordinary change, rather than merely shorten files.
-
-## Scope and preserved behavior
-
-The scope is source organization, dependency direction, and ownership of
-existing in-memory resources. It introduces no new public SDK, database schema,
-Task lifecycle, service registry, worker protocol, or scheduling system.
-
-Each stage preserves these observable contracts:
-
-| Contract | Behavior to retain |
-| --- | --- |
-| Durable identity | `(appId, taskId)` owns the outcome; attempts and sessions remain execution evidence |
-| Admission | Persist intent or a trigger before waking execution; preserve exact targets and admission idempotency |
-| Authority | Preserve generation, resource-version, current-attempt, and action checks and their transaction boundaries |
-| Incoming evidence | Keep unaccepted events durable; preserve live incorporation and the rules for retaining progress versus accepting completion |
-| Completion | Retire finished `achieve` resources into receipts; retain `maintain` resources for later wakes |
-| Waiting | Preserve exact Conditions, child waits, dependency identities, and review deadlines; elapsed time does not satisfy a Condition |
-| Capacity | Keep App limits, shared Host capacity, wake coalescing, priority, and event-loop yielding |
-| Recovery and cancellation | Recover the same Task; reject obsolete results; persist cancellation before stopping the exact attempt |
-| Reload and pause | Keep stable controllers and captured definition generations; paused Apps still admit work |
-| Execution and acceptance | Preserve agent/workflow/executor selection, timeouts, leases, capabilities, verifiers, and acceptance methods |
-
-Prompt text, event shapes, SQL predicates, and retry timing are behavior too.
-Do not revise them as incidental cleanup during an extraction. A discovered
-behavioral defect should receive its own change and regression evidence.
-
-The affected entrypoints include the daemon, persistent admission worker,
-one-attempt worker, startup recovery worker, and explicit in-process test/tool
-entrypoints. Direct conversational execution remains outside this Task-engine
-reorganization; shared execution behavior must continue to work.
-
-## Proposed responsibility boundaries
-
-There remains one Host and one Task engine. The following are private modules,
-not independently discovered services.
-
-| Boundary | Owns | Dependency rule |
+| Core responsibility | Source assessment | Useful next change |
 | --- | --- | --- |
-| Runtime composition | Installed App bindings, controller/scheduler lifetime, reload publication, cleanup | Explicitly constructs and connects the other modules |
-| Admission | Existing Task attachments, resolved intent, exact event/Condition wakes | Uses lifecycle operations and returns affected Task IDs; never executes an attempt |
-| Shared App catalog | Compact installed App descriptions and input contracts for conversation and Task execution | Consumes supplied registry entries; never imports Task runtime or loads Apps |
-| Task context | Child/wait projections and attempt-event batches | Pure formatters consume explicit observations; the wait reader receives the existing store and database directly and reads only linked facts |
-| Attempt execution | TaskAttempt capabilities, executor selection, lease renewal, workspace and session integration | Invokes existing executors and returns their proposed result/evidence |
-| Reconciliation | Claim, invoke execution, establish acceptance, admit completion/wait/attention, return follow-up IDs | Owns the ordering of one attempt; uses the existing transition functions |
-| Lifecycle and storage | Valid transitions, action batches, receipts, cancellation, transactional persistence | No dependency on runtime installation, controller maps, or prompt formatting |
-| Recovery | Interpret existing recovery evidence and apply existing repair operations | Reuses lifecycle transitions; does not create a parallel execution path |
-| Dispatch and recovery scheduling | Queue IDs, acquire capacity, detect indexed due/recovery candidates | Schedule work without deciding App meaning or acceptance |
+| App registration and input admission | Validated registration and atomic Task attachment exist | Preserve conventional discovery and the current admission boundary |
+| Events | Existing routes, durable admissions and change hints connect components | Reuse them for exact turn control and correlated failure evidence |
+| State and storage | SQLite fences, transactions and request readiness are implemented | Persist only the missing turn disposition and accepted-ask state |
+| Work runtime | Task controller, shared settlement, durable retries and parent-owned repair are present; conversational handling has weaker containment | Fix input renewal/retries and durable turn control; finish the existing finite-Task stop review |
 
-The main call path becomes easy to locate:
+The largest gaps are at the Conversation boundary. Internal `AppRequest` input
+rows are not the accepted human Request defined by the design. Completing an
+input, fulfilling an ask and completing a Task remain separate facts.
 
-```text
-admission -> lifecycle/store -> exact Task IDs -> controller
-controller -> existing worker process -> reconcile one Task
-reconcile -> claim -> context/execution -> validate -> lifecycle/store
-reconcile -> follow-up Task IDs -> controller
-recovery scheduler -> indexed candidates -> controller
-startup recovery -> repair operations -> existing follow-up path
-```
+## Proposed implementation order
 
-Storage operations remain behind `AppTaskResourceStore`. A `TaskTree` remains a
-read/mutation snapshot and projection input, never another durable authority.
-Do not add a generic repository interface or convert the engine into a new
-event-sourced implementation as part of this work.
+### 1. Contain input ownership failures
 
-## Possible layout, not a file checklist
+**Value:** One failed renewal must not terminate unrelated work. The production
+renewal callback currently lets a SQLite exception reach the fatal process
+handler and ignores a false renewal result.
 
-Consider a single `src/app/tasks/` directory after the useful extractions.
-Names below describe responsibility; small helpers can stay together where
-their dependencies and callers are the same. Do not create every listed file
-to satisfy this sketch. A separate file must make a real responsibility or
-dependency easier to follow.
+Catch renewal errors locally and handle lost or uncertain ownership explicitly.
+Stop/fence the exact execution, reject late Host replies/admissions, and clean up even when
+reporting or the next database write also fails. Reuse existing ownership and
+execution controls; make the input resolver expose the cancellation binding it
+currently lacks. Capacity remains occupied until execution actually stops.
+Failure evidence should identify App, input, claim and execution using existing
+events/reads, with a local diagnostic fallback when storage is unavailable.
 
-```text
-src/app/tasks/
-  runtime.ts                 composition, installed bindings, reload, close
-  capability.ts              existing Host-facing API
-  definitions.ts             descriptor preparation and definition capture
-  admission.ts               attach intent and admit exact wakes
-  reconcile.ts               one attempt: claim through accepted transition
-  execution.ts               executor integration and TaskAttempt lifetime
-  context.ts                 bounded Task context projections and scoped wait reads
-  dependencies.ts            typed cross-App dependency admission
-  lifecycle.ts               existing reconciler transitions and fences
-  state.ts                   Host-private persisted record types
-  resource-store.ts          SQLite resources, indexes, atomic commits
-  snapshots.ts               scoped reads and mutation/cache wrapper
-  projections.ts             readiness and structural read projections
-  controller.ts              dispatch and App concurrency
-  queue.ts                   coalescing and priority
-  conditions.ts              exact Condition matching and updates
-  events.ts                  attempt-scoped publication and live input
-  recovery.ts                repair coordination and recovery evidence
-  recovery-scheduler.ts      nearest-due timer and indexed safety query
-  workspace.ts               workspace preparation and finalization
-  workspace-residue.ts       existing canonical workspace protection
-  output-paths.ts            declared output path rules
-```
+**Accept when:** Injected renewal error or lost claim leaves the Host and another
+Conversation usable; stale replies/admissions are rejected; reporting failure
+does not skip cleanup. Recheck authority after database recovery. This does not
+promise to undo external effects or keep accepting writes during a DB outage.
 
-Keep `app-dependency-catalog.ts` in the shared App area, outside `tasks/`.
-Keep shared `host-capacity.ts`, public SDK types, database schema, and generic
-agent/workflow execution in their current owning areas. Keep process launchers
-at the Host boundary initially: `task-attempt-process.ts` and
-`task-admission-process.ts` call explicit Task entrypoints and retain their wire
-protocol. No new package or export-everything barrel is needed.
+### 2. Finish failed conversational handling truthfully
 
-Two existing names need particular care:
+**Value:** Repeated model execution costs money and holds up the Conversation.
+The current failed resolver returned to pending after all 12 probe attempts,
+including six after reopening SQLite; Task retry limits do not cover this path.
 
-- `app-task-store.ts` may separate snapshots from projections if their callers
-  justify it; the resource store remains the actual persistence implementation.
-- `app-task-runtime-state.ts` primarily handles project paths and project
-  state. Keep it with project hosting rather than presenting it as Task
-  lifecycle state.
+**Proposed default:** After unsuccessful or invalid completed conversational
+execution, retain a failed handling outcome and a truthful response, release
+the Conversation, and wait for a new human turn or explicit retry. The accepted
+ask remains unresolved. Cheap coordination failures before execution can retain
+their safe retry behavior. A small durable automatic execution allowance is an
+alternative only if its demonstrated value warrants the extra policy/state.
 
-## Concrete source moves
+Apply this first to direct conversational handling. Do not turn Task callers or
+retained child waits into successful results on error. Keep existing row status
+meaning compatible and make failure distinguishable from fulfillment. Reuse
+input result/claim storage; add only the outcome information needed by readers.
 
-| Current source | Proposed destination and treatment |
-| --- | --- |
-| Schema-summary helpers and `appDependencyCatalog` | Shared `app-dependency-catalog.ts`; conversation and Task execution import it directly; remove the runtime-options catalog wrapper |
-| `projectAppTaskReconciliationEvents`, `projectAppTaskChildPromptContext` | Task context module; preserve bounds, ordering, literals, and output shapes |
-| `projectAppTaskWaitPromptContext` | Separate the explicit scoped wait reader from the pure formatter; preserve request, original target, and resolved Task identities |
-| `runtimeTaskAttempt`, `runTaskExecutorAttempt`, `executeTaskAgent`, `executeTaskCapability`, `runRegisteredTaskExecutor` | Execution module; preserve workflow-specific integration while reusing the existing executor implementation |
-| `beginCanonicalAgentResidueGuard` and cleanup helpers | Workspace-residue module; preserve restoration and finalization ordering |
-| `admitTaskAppDependencies` and related Condition merging | Dependency module; preserve request/Condition identity, freshness checks, and repair behavior |
-| `admitResolvedAppTaskEvent`, attachment and targeted wake helpers | Admission module; supply descriptors and wake callbacks explicitly |
-| `installAppTaskRuntimes`, controller bindings and descriptor maps | Explicit runtime instance; retain staged publication, rollback, and captured definitions |
-| `reconcileTask` | Reconciliation module; extract coherent steps without moving the acceptance/write boundary |
-| `recoverInterruptedAppTasks`, persisted result recovery and session evidence helpers | Recovery module; share acceptance/transition operations with normal reconciliation |
-| `claimObservedAppTask`, `completeAppTask`, `deferAppTask`, mutation-scope helpers | Keep together initially in the lifecycle module; split further only around a demonstrated responsibility boundary |
+**Accept when:** Persistent resolver failure stops spending after the chosen
+allowance, remains stopped after reopen, exposes the reason, and permits the
+next message. Failure to publish a response or a lost change hint must not rerun the model.
+This default is a decision for review, not a change to the accepted contract yet.
 
-Deployment-receipt guidance is a separate ownership question. During mechanical
-extraction, keep it behind a named internal helper and preserve its text and
-receipt contract. A later focused decision may move semantic guidance to the
-Host Operations App while retaining mechanical receipt reads in the Host.
-That move requires inspecting the existing App capability and paired recovery
-tests; it is not assumed by this proposal.
+### 3. Make Stop this turn durable, then add steering
 
-## Make runtime ownership explicit
+Use the exact input/claim execution binding from step 1. Persist Stop before
+aborting the executor; late callbacks cannot reply or admit follow-up work.
+Recovery must not restart that turn. Independent Tasks continue. Adapters send
+the observed target through existing event control; delayed commands cannot
+affect a newer turn. Start with one end-to-end Stop path before adding surfaces.
 
-Replace the distributed descriptor/controller/scheduler `WeakMap`s in
-`app-task-runtime.ts` with one private runtime instance created by the existing
-composition root. The existing capability object can expose that instance's
-operations; it should not become an additional runtime layer.
+Steering can save the correction, interrupt and start the next bounded
+execution from current evidence. Seamless resumption is optional. Verify Stop
+racing with completion, restart, duplicate control, and a delayed old command.
+The [Human controls](../2a-design/human-control-surfaces.md#current-turn-control)
+page owns the full contract, including Request withdrawal and external effects.
 
-The instance owns App bindings, the existing controllers and recovery
-schedulers, subscriptions, and its close operation. Dependencies are passed
-directly through narrow typed arguments. Leaf helpers do not look up a runtime
-through an EventBus, a global path, or a generic `getService()` function.
+### 4. Close the loop on accepted Requests
 
-Construct that instance once and pass it through startup and the existing
-capability. Today startup installs Task runtimes before creating the capability;
-independently constructing an instance in each place would duplicate ownership.
-Do not replace the maps with a giant mutable dependencies bag passed to helpers.
+Reuse Conversation storage and the existing May supervision Task. The minimum
+record needs accepted-ask identity, current scope/revision, Conversation
+references, exact linked Tasks when applicable, and open/closed with the closure
+message/reason. This is a data requirement, not a selected table or new lifecycle.
+The App recognizes/refines asks and judges closure; the Host checks versions
+and persists closure consistently with its explanation.
 
-Daemon instances enable dispatch; workers use the existing manual mode and
-exact App scope. Reload replaces immutable descriptor bindings while retaining
-controllers. An in-flight attempt keeps its captured descriptor and agent
-definitions. Preserve the existing drain behavior.
+Add bounded reads of open asks to existing context and supervision recovery.
+A Request does not run or retry execution itself. Test discussion-only closure,
+handoff remaining open, results after restart, withdrawal, and a delayed closure
+rejected after scope changes. Keep stopped turns stopped even while their ask is
+open. [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps)
+owns these requirements.
 
-This stage is a lifecycle change, not a mechanical file move. Current close
-deliberately retains the process-scoped session listener. Decide explicitly
-whether that listener becomes instance-owned or stays with the process; do not
-silently change its lifetime during extraction. Prove close/reinstall on the
-same bus, independent-instance isolation, in-flight draining, and failed reload.
-Independent event-emitter multiplexing remains outside this change unless its
-lifetime must change too.
+## Code homes and boundaries
 
-Update private imports and callers together. Do not add compatibility wrappers
-for old filenames or signatures. Durable identity, accepted state, and recovery
-behavior need preservation; private source locations do not.
-
-## Implementation stages
-
-Use isolated Host branches based on then-current main. Each stage is a small
-review unit or short series of PRs; it must leave the repository working.
-The measured baseline is a review reference, not a future merge base.
-
-| Stage | Concrete deliverable | Review and verification focus |
+| Change | Start in existing code | Boundary to preserve |
 | --- | --- | --- |
-| 1. Extract context | Add shared `app-dependency-catalog.ts` and Task-specific `app-task-context.ts`; update callers directly and move focused tests | Same context content, order, bounds, schema summaries, event identity, and exact waits; no lifecycle write changes |
-| 2. Extract execution helpers | Move attempt capability/lifetime code, executor integration, and workspace protection out of the runtime; extract dependency handling separately if needed | Same leases, cancellation, workflow behavior, dependency identities, and retained workspace outcomes |
-| 3. Expose runtime ownership | Create the private runtime instance; migrate daemon, admission, manual attempt, recovery, read, and cleanup callers | Same reload publication/rollback, pause, startup gates, stable controllers, and complete resource cleanup |
-| 4. Separate coordination and repair | Extract admission, reconciliation orchestration, recovery evidence/coordination, and projections; leave transaction-critical lifecycle functions together | Same stale-result rejection, Condition replay, terminal-result recovery, and atomic Task actions |
-| 5. Group and document | Group established modules and tests only where navigation improves; update references and current design | Mechanical import changes, process/binary resolution, test discovery, no duplicate implementation path |
+| Input failure and exact execution control | `app-inbox-host.ts`, `app-request-agent.ts`, manager/session cancellation adapter | Input Host owns handling; executor adapter owns its live execution handle |
+| Durable turn outcomes and fenced controls | `app-inbox-store.ts`, `core/state/requests.ts` where a combined operation is justified; schema in `lib/db/` | One transaction owner; no executor or App policy inside a transaction |
+| Public Stop and failure visibility | Existing event routes/composition, control protocol and one human adapter | Events address exact work; local state changes remain typed calls |
+| Accepted ask recognition and closure | Host `conversations/store.ts` and existing request protocol; `projects/may.app/app.ts` and May guidance | Host stores/fences; App judges meaning; supervision reuses the existing Task |
 
-Stage 1 is the recommended first review. Stages 2–5 establish the intended
-direction; their exact PR boundaries should follow the dependencies revealed by
-that extraction. Do not require a file-size target or split a coherent
-transaction to reach an arbitrary line count.
+Extract a coherent function only when it removes duplicated decisions. Large
+runtime files warrant attention, but moving them wholesale or creating empty
+destination modules supplies no demonstrated benefit.
 
-### Stage 1 implementation boundary
+## Other work and deliberate deferrals
 
-- `appDependencyCatalog(entries, sourceAppId)` projects the supplied App
-  registry entries. It does not import the runtime, discover files, or execute
-  definitions. Conversation and Task execution share this helper.
-- Event and child formatters receive only the relevant attempt batch or child
-  observations. Their existing ordering, truncation, and text stay unchanged.
-- `readAppTaskWaitPromptContext(resourceStore, db, taskId)` reads the exact
-  Task's linked open Conditions and correlated requests using supplied handles.
-  It does not resolve a global database path or receive runtime options.
-- `projectAppTaskWaitPromptContext(waits)` formats those observations without
-  I/O or mutation. An absent request does not erase an accepted wait, and a
-  resolved Task ID never becomes the request's original target.
-- Keep existing storage-backed integration checks; move pure catalog and child
-  projection tests beside their implementations. Add coverage for missing event
-  identities, mixed wait states, and distinct original/resolved targets.
+- Parent-owned repair now has merged proof in #110. Review the existing
+  [finite-Task stop candidate](task-controller-pattern.md#candidate-stop-without-claiming-success)
+  separately; it does not implement conversational Stop or Request closure.
+- [Atomic attachment](storage-state-service.md#first-slice-implementation-evidence)
+  is already implemented. Extract another state operation only for a demonstrated
+  consistency or maintenance problem.
+- Recovery-query work grows with eligible backlog even with a fixed return limit.
+  The latest synthetic measurement is about 24 ms at 20,000 eligible Tasks.
+  Measure representative load and control responsiveness before optimizing.
 
-Review this slice before starting another. It is a useful stopping point even
-if later ownership and directory changes are deferred.
+A bounded result count does not prove bounded query cost. Likewise, moving
+files does not prove simpler behavior, and a passing synthetic fixture does
+not prove arbitrary external effects are safe to repeat.
 
-## Validation and completion
+## Review a change
 
-Stage 1 validation on Node 24.20.0 and Bun 1.3.14: `bun run ci` passed with
-**2,451 passed, 3 expected installed-agent checks skipped, 0 failed** after
-integrating the test cleanup and App admission refactor through Host
-`8a34854f`. A final fetch and comparison against `origin/main` showed no missing
-main-branch commits and only the intended nine-file context refactor. This
-includes type, SDK, App-boundary, and lint checks plus portable unit,
-integration, process, and browser tests. It is not a live deployment claim.
-Hosted Quality and Container checks also passed on `d565a5be`, including the
-built-image smoke test.
+Follow one exact Task or input across admission, execution, result acceptance,
+and a failure or restart. Verify only the boundaries the change affects:
 
-The source comparison found 116 original function bodies unchanged across the
-runtime and extracted modules. The three changed bodies are the two execution
-context call sites and the wait formatter; the old runtime-options catalog
-wrapper was removed. Wait guidance is unchanged. The runtime file decreased
-from 4,984 to 4,671 lines; that is a navigation result, not a performance claim.
+- Accepted work and evidence survive; a stale attempt cannot overwrite current state.
+- Work and retries are bounded; waits release capacity; cleanup still runs if reporting fails.
+- Normal and recovered results use the same acceptance rules.
+- Missing optional capabilities leave unrelated work and canonical reads correct.
+- The owner receives enough evidence to act; inability to finish is visible and never success.
 
-### Recorded pre-refactor baseline
+Then compare the removed decisions and ongoing cost with the complexity added.
+Keep App judgment with the App. Events carry meaningful inputs, changes and
+wakes; local reads, executor calls and atomic transitions remain typed calls.
 
-The source review ran 353 tests across 14 files on the recorded baseline using
-Bun 1.3.14: **353 passed, 0 failed**, in 13.82 seconds. This is a source-test
-baseline, not evidence that any proposed restructuring is implemented or that
-a live deployment was validated.
+## Deferred choices
 
-Reproduce the focused baseline from the Host repository:
+Error-hook/metric placement and App consolidation remain in the
+[archived discussion](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
+Existing failure containment is required; an additional core metric service is
+not. Capacity events and a separate API server require a demonstrated consumer
+or consistency problem; they are options in the storage proposal, not prerequisites.
 
-```sh
-bun test --timeout 30000 --parallel=2 \
-  src/app/app-task-runtime.test.ts \
-  src/app/app-task-reconciler.test.ts \
-  src/app/app-task-resource-store.test.ts \
-  src/app/app-task-controller.test.ts \
-  src/app/app-task-queue.test.ts \
-  src/app/app-task-recovery.test.ts \
-  src/app/app-task-condition-review.test.ts \
-  src/app/app-task-parent-semantics.test.ts \
-  src/app/app-task-emitter.test.ts \
-  src/app/task-cancellation-fence.test.ts \
-  src/app/task-attempt-process.test.ts \
-  src/app/task-worker-integration.test.ts \
-  src/app/host-capacity.test.ts \
-packages/sdk/src/task-contract.test.ts
-```
+## Completed work and evidence
 
-For the extracted implementation, also include
-`src/app/app-dependency-catalog.test.ts`, `src/app/app-task-context.test.ts`, and
-`src/app/app-task-runtime-policy.test.ts`. Pure tests now live with their
-responsibility after the context extraction and the main-branch test cleanup;
-new cases cover the explicit context boundary.
+The latest [design/source comparison and portable probes](../archive/reviews/core-implementation-alignment-20260910.md)
+record 111 passing focused tests, two reproduced input failures, and scope limits.
+The [dated core snapshot](../archive/implementation/core-separation-review-20260910.md)
+preserves the separation steps, source findings and PR-specific validation.
+The [controller review snapshot](../archive/implementation/controller-review-20260910.md)
+preserves settlement/retry candidates and their proof. Current behavior belongs
+in the owning design pages; do not restart completed extraction steps from
+these historical records.
 
-Use focused existing tests while developing each stage, adding a regression
-only when a changed boundary lacks behavioral coverage. For extraction, move
-tests with their responsibility instead of duplicating them around wrappers.
-For runtime ownership, exercise two independent runtime instances and closing
-one while the other continues, if existing tests do not cover that contract.
+### First stop slice: the current finite Task only
 
-Run the required Host CI checks before each implementation PR is considered
-ready, including the process and container checks required by
-[CONTRIBUTING.md](../../../may-agent/CONTRIBUTING.md). After file moves, verify
-worker entrypoint resolution and the compiled binary as well as TypeScript
-imports. Source checks use committed fixtures and temporary state.
+The active specification moved to the
+[controller proposal](task-controller-pattern.md#candidate-stop-without-claiming-success).
+This link remains for earlier reviews; the stop candidate is not part of the
+merged source baseline.
 
-Review these failure-sensitive cases explicitly:
+## Earlier review links
 
-- repeated wakes and new input during an attempt;
-- a late result after revision, replacement, or cancellation;
-- acceptance plus Task actions committing as one transition;
-- a Condition fact arriving before its wait is persisted;
-- terminal session output recovered after parent/worker loss;
-- reload during an active attempt, including failed candidate publication;
-- paused admission followed by resume;
-- completed receipts, maintain-Task wakes, and retained workspace lineage.
+The Host source guide still links these entrypoints. Their current owners are:
 
-The refactor is complete when a reviewer can follow admission, one attempt,
-result admission, and recovery through named modules; the main runtime owns
-composition and lifecycle of resources; helpers no longer reach back into
-runtime registries; and the focused and required CI checks pass. Public
-contracts, serialized state, worker protocol, and observable Task behavior must
-remain compatible. Compare process-test timing and dispatch behavior with the
-baseline and investigate regressions rather than claiming a performance gain
-from smaller files.
+<a id="step-2-separate-app-source-discovery-from-core-registration"></a>
 
-Each implementation stage should be revertible through its source commit
-without a data migration. If implementation reveals a required schema or
-semantic change, separate it from this proposal. Publish the final organization
-in current design and archive this proposal after completion.
+- App discovery and registration: [Architecture](../2a-design/architecture.md#code-organization);
+  [original Step 2](../archive/implementation/core-separation-review-20260910.md#step-2-separate-app-source-discovery-from-core-registration).
 
-## Decisions for review
+<a id="step-3-finish-the-taskexecutor-boundary"></a>
 
-The recommended choices are:
+- Task/executor boundary: [Task engine](../2a-design/task-resource-engine.md#one-attempt-interface);
+  [original Step 3](../archive/implementation/core-separation-review-20260910.md#step-3-finish-the-taskexecutor-boundary).
 
-1. Adopt incremental extraction, beginning with shared App discovery and Task context.
-2. Keep lifecycle transaction rules together during the initial refactor.
-3. Replace hidden runtime registries with explicit private instance ownership.
-4. Group files after responsibility boundaries and callers are established.
-5. Review deployment-specific policy ownership separately from mechanical moves.
+<a id="shared-timing-intentional-events"></a>
 
-Alternatives considered were a directory-only move, splitting both large files
-immediately, and leaving all state ownership implicit. A directory move improves
-navigation but preserves the current coupling. A simultaneous split makes
-transaction and recovery changes harder to distinguish from mechanical edits.
-Keeping implicit ownership avoids a migration but leaves lifetime and cleanup
-hard to inspect. The staged approach gives each boundary its own behavioral
-evidence and permits stopping after a useful completed stage.
+- Shared timing: [Scheduling and Observation](../2a-design/cron.md#shared-timing-separate-responsibilities);
+  [original review](../archive/implementation/core-separation-review-20260910.md#shared-timing-intentional-events).

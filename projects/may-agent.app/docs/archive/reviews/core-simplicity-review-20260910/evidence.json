@@ -1,0 +1,474 @@
+{
+  "sourceRevision": "d9e7597e93608c45bed4fe649ff1b0fb1d040743",
+  "reviewDate": "2026-09-10",
+  "controllerProbes": [
+    {
+      "mode": "normal",
+      "exitCode": 0,
+      "stderr": "",
+      "observation": {
+        "mode": "normal",
+        "starts": [
+          "bad",
+          "good",
+          "bad"
+        ],
+        "reports": [
+          "bad:true:Error: probe execution failure"
+        ],
+        "failures": [],
+        "controller": {
+          "pending": [],
+          "running": [],
+          "dirty": []
+        },
+        "capacity": {
+          "running": 0,
+          "waiting": 0
+        }
+      }
+    },
+    {
+      "mode": "reporter-throws-observed",
+      "exitCode": 0,
+      "stderr": "",
+      "observation": {
+        "mode": "reporter-throws-observed",
+        "starts": [
+          "bad",
+          "good"
+        ],
+        "reports": [
+          "bad:true:Error: probe execution failure"
+        ],
+        "failures": [
+          "unhandledRejection:Error: probe diagnostic persistence failure"
+        ],
+        "controller": {
+          "pending": [],
+          "running": [],
+          "dirty": []
+        },
+        "capacity": {
+          "running": 0,
+          "waiting": 0
+        }
+      }
+    },
+    {
+      "mode": "reporter-throws-default",
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "25 |     }\n26 |     return Promise.resolve();\n27 |   },\n28 |   onError(taskId: string, error: unknown, willRetry: boolean) {\n29 |     reports.push(`${taskId}:${willRetry}:${String(error)}`);\n30 |     if (mode.startsWith(\"reporter-throws\")) throw new Error(\"probe diagnostic persistence failure\");\n                                                           ^\nerror: probe diagnostic persistence failure\n      at onError (<review-root>/evidence/controller-failure-probe.ts:30:55)\n      at <anonymous> (<review-root>/host/src/app/app-task-controller.ts:216:22)\n\nBun v1.3.14 (Linux x64)\n"
+    },
+    {
+      "mode": "sync-throw",
+      "exitCode": 0,
+      "stderr": "",
+      "observation": {
+        "mode": "sync-throw",
+        "starts": [
+          "bad"
+        ],
+        "reports": [],
+        "failures": [
+          "uncaughtException:Error: probe synchronous execution failure"
+        ],
+        "controller": {
+          "pending": [
+            "good"
+          ],
+          "running": [
+            "bad"
+          ],
+          "dirty": []
+        },
+        "capacity": {
+          "running": 1,
+          "waiting": 0
+        }
+      }
+    }
+  ],
+  "recoveryQueryProbes": [
+    {
+      "backlog": 256,
+      "limit": 256,
+      "returned": 256,
+      "elapsedMs": [
+        2.112365000000011,
+        1.2627299999999906,
+        1.1393170000000055,
+        1.013936000000001,
+        1.1507579999999962
+      ],
+      "plan": [
+        {
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "CO-ROUTINE (subquery-8)"
+        },
+        {
+          "id": 4,
+          "parent": 2,
+          "notused": 0,
+          "detail": "MERGE (UNION)"
+        },
+        {
+          "id": 6,
+          "parent": 4,
+          "notused": 0,
+          "detail": "LEFT"
+        },
+        {
+          "id": 8,
+          "parent": 6,
+          "notused": 0,
+          "detail": "MERGE (UNION)"
+        },
+        {
+          "id": 10,
+          "parent": 8,
+          "notused": 0,
+          "detail": "LEFT"
+        },
+        {
+          "id": 14,
+          "parent": 10,
+          "notused": 61,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_ready (app_id=? AND ready=?)"
+        },
+        {
+          "id": 23,
+          "parent": 10,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 1"
+        },
+        {
+          "id": 27,
+          "parent": 23,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 47,
+          "parent": 10,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 62,
+          "parent": 8,
+          "notused": 0,
+          "detail": "RIGHT"
+        },
+        {
+          "id": 66,
+          "parent": 62,
+          "notused": 61,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_changed (app_id=? AND changed=?)"
+        },
+        {
+          "id": 75,
+          "parent": 62,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 3"
+        },
+        {
+          "id": 79,
+          "parent": 75,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 99,
+          "parent": 62,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 147,
+          "parent": 4,
+          "notused": 0,
+          "detail": "RIGHT"
+        },
+        {
+          "id": 149,
+          "parent": 147,
+          "notused": 0,
+          "detail": "MERGE (UNION)"
+        },
+        {
+          "id": 151,
+          "parent": 149,
+          "notused": 0,
+          "detail": "LEFT"
+        },
+        {
+          "id": 155,
+          "parent": 151,
+          "notused": 50,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_due (app_id=? AND next_check_at<?)"
+        },
+        {
+          "id": 167,
+          "parent": 151,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 5"
+        },
+        {
+          "id": 171,
+          "parent": 167,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 191,
+          "parent": 151,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 206,
+          "parent": 149,
+          "notused": 0,
+          "detail": "RIGHT"
+        },
+        {
+          "id": 210,
+          "parent": 206,
+          "notused": 50,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_expired (app_id=? AND lease_until<?)"
+        },
+        {
+          "id": 222,
+          "parent": 206,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 7"
+        },
+        {
+          "id": 226,
+          "parent": 222,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 246,
+          "parent": 206,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 328,
+          "parent": 0,
+          "notused": 60,
+          "detail": "SCAN (subquery-8)"
+        },
+        {
+          "id": 351,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ],
+      "medianMs": 1.1507579999999962
+    },
+    {
+      "backlog": 20000,
+      "limit": 256,
+      "returned": 256,
+      "elapsedMs": [
+        21.379570000000058,
+        21.23533899999984,
+        21.223615999999765,
+        21.392323999999917,
+        20.931589999999687
+      ],
+      "plan": [
+        {
+          "id": 2,
+          "parent": 0,
+          "notused": 0,
+          "detail": "CO-ROUTINE (subquery-8)"
+        },
+        {
+          "id": 4,
+          "parent": 2,
+          "notused": 0,
+          "detail": "MERGE (UNION)"
+        },
+        {
+          "id": 6,
+          "parent": 4,
+          "notused": 0,
+          "detail": "LEFT"
+        },
+        {
+          "id": 8,
+          "parent": 6,
+          "notused": 0,
+          "detail": "MERGE (UNION)"
+        },
+        {
+          "id": 10,
+          "parent": 8,
+          "notused": 0,
+          "detail": "LEFT"
+        },
+        {
+          "id": 14,
+          "parent": 10,
+          "notused": 61,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_ready (app_id=? AND ready=?)"
+        },
+        {
+          "id": 23,
+          "parent": 10,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 1"
+        },
+        {
+          "id": 27,
+          "parent": 23,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 47,
+          "parent": 10,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 62,
+          "parent": 8,
+          "notused": 0,
+          "detail": "RIGHT"
+        },
+        {
+          "id": 66,
+          "parent": 62,
+          "notused": 61,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_changed (app_id=? AND changed=?)"
+        },
+        {
+          "id": 75,
+          "parent": 62,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 3"
+        },
+        {
+          "id": 79,
+          "parent": 75,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 99,
+          "parent": 62,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 147,
+          "parent": 4,
+          "notused": 0,
+          "detail": "RIGHT"
+        },
+        {
+          "id": 149,
+          "parent": 147,
+          "notused": 0,
+          "detail": "MERGE (UNION)"
+        },
+        {
+          "id": 151,
+          "parent": 149,
+          "notused": 0,
+          "detail": "LEFT"
+        },
+        {
+          "id": 155,
+          "parent": 151,
+          "notused": 50,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_due (app_id=? AND next_check_at<?)"
+        },
+        {
+          "id": 167,
+          "parent": 151,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 5"
+        },
+        {
+          "id": 171,
+          "parent": 167,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 191,
+          "parent": 151,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 206,
+          "parent": 149,
+          "notused": 0,
+          "detail": "RIGHT"
+        },
+        {
+          "id": 210,
+          "parent": 206,
+          "notused": 50,
+          "detail": "SEARCH app_tasks USING INDEX idx_app_tasks_expired (app_id=? AND lease_until<?)"
+        },
+        {
+          "id": 222,
+          "parent": 206,
+          "notused": 0,
+          "detail": "CORRELATED SCALAR SUBQUERY 7"
+        },
+        {
+          "id": 226,
+          "parent": 222,
+          "notused": 39,
+          "detail": "SEARCH cancelled USING COVERING INDEX sqlite_autoindex_app_task_cancellations_1 (app_id=? AND task_id=?)"
+        },
+        {
+          "id": 246,
+          "parent": 206,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "id": 328,
+          "parent": 0,
+          "notused": 60,
+          "detail": "SCAN (subquery-8)"
+        },
+        {
+          "id": 351,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ],
+      "medianMs": 21.23533899999984
+    }
+  ],
+  "tests": {
+    "coreModules": {
+      "passed": 96,
+      "failed": 0,
+      "files": 8
+    },
+    "taskRuntime": {
+      "passed": 76,
+      "failed": 0,
+      "files": 1
+    }
+  },
+  "scope": "Isolated source review and synthetic probes; no production workload, runtime patch, deployment or full CI"
+}

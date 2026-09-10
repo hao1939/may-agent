@@ -1,93 +1,76 @@
 # May System Documentation
 
-This directory is the single design and operating-documentation home for the
-May system, including the Host in `projects/may-agent`. Runtime code
-repositories do not keep parallel design folders. When code changes a
-contract, update the corresponding document here in the same change.
+This is the single design and operating-documentation home for May, including
+its Host in `projects/may-agent`. Start with [May's goal](1-principles/design-philosophy.md#mays-goal)
+for the intended outcome and [System Model](2a-design/system-model.md) for how
+the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
+specific contract.
 
-The system is easiest to understand as one loop:
+**Source baseline:** Current implementation descriptions refer to Host `main`
+at `6dcb0fa3` (through PR #110, reviewed September 10, 2026). PR #110 adds
+parent-owner tests and source guidance; production behavior is unchanged from #109.
+Candidate-branch behavior and its validation stay in the linked proposals until
+merged. This baseline identifies source behavior, not the deployed release.
 
-```text
-event -> Task owned by an App -> one bounded attempt -> result or another wake
-```
+Conversation is the default for discussion and joint work. A **Request** is an
+accepted ask May must close the loop on. An independent **Task** can run in the
+background; an **Attempt** is one bounded execution of that Task.
 
-An App owns each durable outcome. The Host stores events and Tasks, runs
-bounded attempts, and recovers unfinished work. An attempt may use an agent or
-workflow, but neither becomes another work owner.
+Read the [System Model](2a-design/system-model.md) for a complete example, then
+[Architecture](2a-design/architecture.md) for the four core responsibilities and
+code layout. [Message Lifecycle](2a-design/message-lifecycle.md) owns Request
+recognition, acknowledgment, tracking and closure.
 
-For May, the ordinary model is simply: a human talks to **May** (`app:may`),
-which answers directly or links the Conversation Topic to typed work in the
-responsible App. The bounded frontend request ends after May answers or
-durably admits typed input or feedback to the responsible Task. Meaningful
-events from Tasks linked to the Topic wake May's one normal supervision Task
-for a bounded reconciliation, which may steer the same Task or return a useful
-update to Conversation. That Task owns the recurring supervision goal but is
-not a proxy parent for delegated work. Execution
-diagnostics may name the bounded executor, for example `agent:may`; that
-executor owns no Task. The **Host Operations App** (`app:may-agent`) owns Tasks
-that change the Host. There is no separate architectural component called
-“May agent.”
+## Current focus
 
-## Documentation tiers
+Keep the core simple and robust. The [core review plan](proposals/task-runtime-organization.md)
+prioritizes reproduced input-handling failures and remaining interaction work;
+the [gap index](proposals/design-implementation-convergence.md)
+links its owners. Request tracking and current-turn Stop/Steer are accepted
+design with implementation gaps. Controller stop behavior is a source candidate.
+Completed separation and recovery reviews live in the [archive](archive/README.md).
+Error/metric placement and App consolidation remain
+[paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
 
-Higher tiers govern lower tiers. When documents conflict, update the lower
-tier.
+## Choose a reading path
 
-| Folder          | Purpose                                                                 |
-| --------------- | ----------------------------------------------------------------------- |
-| `1-principles/` | Stable requirements, goals, and conventions.                            |
-| `2a-design/`    | Current architecture and subsystem contracts.                           |
-| `2b-manual/`    | How-to guidance derived from design and implementation.                 |
-| `proposals/`    | Active proposals/trackers only; absent when there are none.             |
-| `archive/`      | Historical decisions, reviews, implementation records, and V2 material. |
+| I want to… | Start here | Then read as needed |
+| --- | --- | --- |
+| Understand what May is for and what counts as progress | [Goal definition](1-principles/design-philosophy.md#define-the-goal-first) | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff) |
+| Choose work or review a design or PR | [Decision and review guide](1-principles/core-principles.md#review-rule) | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff), then the owning contract in [INDEX](INDEX.md) |
+| Build an App or improve its behavior | [SDK Quickstart](2b-manual/sdk-quickstart.md) | [App Contract](2a-design/agent-app.md), [Task authoring](2b-manual/handler-authoring.md), [Workflow authoring](2b-manual/workflow-authoring.md), [Adoption checklist](2b-manual/agent-app-adoption-playbook.md) |
+| Use or operate May | [User Guide](2b-manual/user-guide.md) | [Operations and Recovery](2b-manual/app-operations-recovery.md), [Metric Alerts](2b-manual/metric-alerts.md), [Event Audit](2b-manual/event-runtime-audit.md) |
+| Change the Host | [Architecture](2a-design/architecture.md) | [Host/App Boundary](2a-design/system-boundary.md), then the owning subsystem in [INDEX](INDEX.md) |
 
-Each current design records separate `Design status` and `Implementation
-status` fields. Stable design documents define implemented contracts and
-explicit current gaps, not dated incident narration. A proposal moves to the
-archive after its accepted rules enter current design, or after a rejection
-record names the selected alternative.
+## Where information belongs
 
-## Start here
+| Folder | Purpose |
+| --- | --- |
+| `1-principles/` | Stable requirements and decision rules |
+| `2a-design/` | Current contracts, with explicit implementation gaps |
+| `2b-manual/` | Practical guidance derived from those contracts |
+| `examples/` | Checked App, result and control-client examples used by the manuals |
+| `proposals/` | Pending decisions and verified open implementation work |
+| `archive/` | Superseded decisions, versioned migrations and dated evidence |
 
-Read [system-model.md](2a-design/system-model.md) first for the compact whole
-system model. Use [INDEX.md](INDEX.md) for complete topical navigation.
+The project goal anchors the principles; principles guide design, and design
+governs manuals. When implementation conflicts
+with an accepted requirement, record the gap explicitly. Do not silently change
+the requirement or describe the implementation as compliant. Design acceptance,
+source implementation, and deployment verification are separate facts.
 
-### I want to build an autonomous App
+Contracts can be simplified when their guarantees cost more than their real
+value. Revise the owning contract and affected implementation together, making
+the accepted limitations clear. Use the
+[tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
+when a fix becomes complex; an existing contract is not a reason to keep adding
+machinery without reconsidering the need.
 
-1. [agent-app.md](2a-design/agent-app.md) — package, ownership, and host attachments
-2. [projects.md](2a-design/projects.md) — durable goal and project posture
-3. [task-resource-engine.md](2a-design/task-resource-engine.md) — the one durable work loop
-4. [workflows.md](2a-design/workflows.md) — reusable processes owned by agents
-5. [sdk.md](2a-design/sdk.md) — stable TypeScript capability surface
-6. [workflow-authoring.md](2b-manual/workflow-authoring.md) — implementation guide
-7. [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) — adoption checklist
+Keep `Design status` and `Implementation status` concise. Each rule has one
+owning document, listed in INDEX; other pages link to it. Put completed migration
+and PR history in the [archive](archive/README.md). Update the owning contract
+with a source change and keep copyable examples checked against that SDK.
 
-### I want to build or fix agent behavior
-
-1. [work-model.md](1-principles/work-model.md) — projects, signals, and ownership
-2. [agents.md](2a-design/agents.md) — independent execution and cooperation
-3. [skills.md](2a-design/skills.md) — reusable judgment guidance
-4. [workflows.md](2a-design/workflows.md) — learned repeatable process
-5. [workflow-authoring.md](2b-manual/workflow-authoring.md) — authoring guide
-6. [sdk.md](2a-design/sdk.md) — supplied capabilities
-
-### I want to operate the running system
-
-1. [user-guide.md](2b-manual/user-guide.md) — CLI, Docker, socket, and chat commands
-2. [metrics.md](2a-design/metrics.md) — live metrics and alerts
-3. [event-runtime-audit.md](2b-manual/event-runtime-audit.md) — Event admission audit
-4. [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) — guard signal audit
-5. [metric-alerts.md](2b-manual/metric-alerts.md) — alert handling
-6. [runtime.md](2a-design/runtime.md) — runtime internals
-
-### I want to change infrastructure
-
-1. [architecture.md](2a-design/architecture.md) — detailed system architecture
-2. [system-boundary.md](2a-design/system-boundary.md) — infrastructure boundary
-3. [events.md](2a-design/events.md) — event contract
-4. [sessions.md](2a-design/sessions.md) — durable execution lifecycle
-5. [cron.md](2a-design/cron.md) — time-based event production
-6. [storage.md](2a-design/storage.md) — source and projection authority
-
-Historical migration rationale lives under [archive/](archive/README.md), not
-in the current reading path.
+From the workspace root, `bun run check:may-design` checks document integrity,
+the linked examples, and the canonical App boundary. It is a source check,
+not deployment proof.

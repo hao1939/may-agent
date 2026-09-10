@@ -9,36 +9,26 @@ implemented across the SDK, agent tool, control socket, and HTTP. The Host
 Operations App passes its complete local source check; remaining Host and App
 simplification gaps stay in the convergence tracker.
 
-An App is one durable address with one accountable responsibility. Keep the
-mental model to one work object and three responsibilities:
+An App is one durable address with one accountable responsibility. It declares
+inputs, Task mapping, execution selection and acceptance. Agents, workflows and
+native executors perform bounded work; they never own the Task.
 
-```text
-Task    = the durable desired and observed App work
-Event   = durable new information that may create or wake that work
-Infra   = ingress, persistence, scheduling, capacity, and delivery
-Runtime = task lifecycle, execution, scoped capabilities, and recovery
-App     = resolve inputs to tasks and reconcile those tasks
-```
-
-Agents, workflows, and CLI adapters are replaceable ways an App may perform a
-bounded attempt. They never own the Task. An agent is only a named reasoning
-profile: instructions, tools, and model behavior for that attempt. It has no
-inbox, Task namespace, scheduler, retry loop, or completion authority. Events
-and caller requests are supporting records managed by Infra or Runtime.
-“Fact” is only the meaning of an Event that reports an observation.
-
-See [Projects](projects.md) for durable project posture,
-[Task Resource Engine](task-resource-engine.md) for task reconciliation, and
-[Workflows](workflows.md) for reusable process ownership. The migration and
-deletion sequence is recorded in
-[Canonical App Migration](../archive/implementation/canonical-agent-app-migration.md).
+See [System Model](system-model.md) for the whole model,
+[Task Resource Engine](task-resource-engine.md) for reconciliation, and
+[SDK Quickstart](../2b-manual/sdk-quickstart.md) for the checked example.
 
 ## Choosing the stored record
+
+This document's Host request APIs track addressed input handling and caller
+results. The conversational **Request** is the accepted ask whose loop May must
+close; it can span multiple inputs. See
+[Message Lifecycle](message-lifecycle.md#current-implementation-and-gaps) for
+that distinction and the remaining implementation work.
 
 Use this plain rule:
 
 ```text
-someone expects one answer            -> Host request linked to an App task
+someone expects one answer            -> Host request; link a Task for durable work
 an App must make an outcome true       -> task
 something happened but creates no work -> fact
 ```
@@ -79,7 +69,7 @@ transition. Events that arrive during the attempt remain pending and cause a
 later attempt. Queue coalescing may reduce execution pressure, but it never
 replaces or consumes these durable event links.
 
-The only App work loop is:
+The durable App work loop is:
 
 ```text
 typed input -> TaskIntent -> task <--- durable event
@@ -99,7 +89,8 @@ typed input -> TaskIntent -> task <--- durable event
   before work can continue.
 - Queue coalescing happens only after the latest desired intent and trigger are
   persisted.
-- A simple request follows the same loop and converges in its first attempt.
+- A simple durable Task can converge in its first attempt. Bounded
+  conversational input can finish directly under `requests` policy instead.
 
 ## Package layout
 
@@ -113,7 +104,7 @@ projects/<id>.app/
       AGENTS.md
       workflows/
   observers/             # optional bounded external-state adapters
-  tasks/seed.json        # optional boot-only desired task state
+  tasks/seed.json        # structural root for a new Task-based App; optional initial work
   scripts/               # explicit offline maintenance, not runtime imports
   .state/                # host-managed runtime state
 ```
@@ -125,7 +116,9 @@ experience and tool surface they use.
 ## Canonical declaration
 
 Every App exports one `defineApp(...)` declaration from the stable
-`@may-agent/sdk` root:
+`@may-agent/sdk` root. The following is a declaration sketch with omitted local
+helpers, not a complete example; use the [quickstart](../2b-manual/sdk-quickstart.md)
+for checked source:
 
 ```ts
 export default defineApp({
@@ -136,6 +129,7 @@ export default defineApp({
 
   // Pure mapping from admitted domain input to existing or desired task state.
   task: resolveTask,
+  tasks: {}, // ordinary Task policy; optional fact resolver and validation belong here
 
   subscriptions: [
     {
@@ -192,23 +186,31 @@ through declared event routes.
 
 ## Addressed work
 
-Every App automatically has Host-owned request correlation and task execution.
-An admitted request carries a stable identity, source, and typed input. The
-Host calls the App's pure task resolver, persists the existing or desired task
-attachment, and schedules only that task. Host-private rows, claims, leases,
-channel metadata, and persistence handles never enter App code.
+The Host records a stable request identity, source and validated input. For
+Task-based input it calls `task(request)` with `{ id, source, input }`. The
+callback returns `{ kind: "existing", taskId }` or `{ kind: "desired", intent }`.
+The domain payload is `request.input`; a request mapping cannot return `null`.
 
-Addressed ingress uses a required `app.input.requested` event. Acceptance means
-the Host created or found exactly one durable request and linked it to the
-event and its task. The request waits for that task's accepted result; it never
-invokes the selected agent independently of the Task. The result may include an
-optional caller-facing `response`; its `summary` remains concise operational
-state for task views and recovery. Apps put no channel delivery state into
-either field.
+`tasks.resolve(event)` is a separate pure callback for declared fact
+subscriptions. It returns `TaskIntent | null`. It can decide a fact creates no
+work; it does not replace addressed-input validation. Neither callback performs
+I/O, invokes an agent, or mutates state. See the
+[source types](../../../may-agent/packages/sdk/src/app.ts).
 
-There is no App disposition lifecycle. Immediate completion means the Task
-converged in one attempt. Agent calls, workflows, and cross-App dependencies
-are capabilities used by an attempt; their records never replace the Task.
+Addressed ingress uses `app.input.requested`. Admission persists the event and
+caller correlation before returning; request-to-Task coordination runs
+asynchronously. The request then links to the responsible Task and completes
+from its accepted result. See [Events](events.md) for exact admission guarantees.
+
+An App may declare `requests: { mode: "agent", inputKinds: [...] }` for bounded
+conversational input. That turn can finish authorized work directly or admit
+durable intent. Other input kinds use normal Task mapping. May's policy is owned
+by [Message Lifecycle](message-lifecycle.md). This is not a second durable work
+loop.
+
+Task results may include a caller-facing `response`; `summary` describes
+operational state. Neither field contains channel delivery state. A Task can
+converge in one attempt, while longer work preserves the same identity.
 
 A Task may request one typed outcome from another App:
 
@@ -380,40 +382,25 @@ describe domain outcomes. A metric breach is a fact that may wake a task or,
 when a new outcome is genuinely required, declare or revise a task through the
 App input path. It is never an alternate work authority.
 
-## Contract migration progress
+## Input handling and compatibility
 
-The code moves to this model in one direction while preserving restartable
-work:
+Task-based input uses the shared Task controller and accepted-result path.
+Bounded conversational turns use the frontend described in
+[Message Lifecycle](message-lifecycle.md). Both reuse bounded execution; neither
+creates a parallel authority for the same work.
 
-1. **Done:** add the pure `task(input)` contract and a Runtime admission method
-   that atomically links each caller request to its task before any App attempt.
-2. **Done:** route actions, input schedules, subscriptions, and human messages through
-   that method; keep exact task and Condition wakes direct.
-3. **Done for current Apps:** run agent/workflow judgment only from the task controller. Make request
-   storage observe accepted task results for completion and delivery.
-4. **Done:** replace `complete`, `task`, `delegate`, `analyze`, and May
-   `continue` dispositions with first-attempt convergence, typed task changes,
-   and bounded Runtime dependency capabilities.
-5. **Done:** port every current App manifest to the one Task contract.
-   The request owner worker, separate execution concurrency, delivery gate, and
-   compatibility SDK types are removed.
-6. **Done:** expose bounded Task list/get reads through the shared scoped SDK,
-   agent tool, control socket, and HTTP adapters. Admission, restart,
-   concurrency, dependency, and Conversation projection behavior have focused
-   regression proof.
-
-At every step there remains one authoritative task and at most one App
-execution path for newly migrated input. Compatibility may translate old
-declarations at load time, but it must not run both paths for the same input.
-Remaining Runtime and App cleanup is tracked in
-[design-implementation-convergence.md](../proposals/design-implementation-convergence.md).
+The [migration notes](../archive/implementation/app-contract-migration-20260910.md)
+are historical. Preserve retained callers and unfinished child obligations when
+removing compatibility; new declarations use the current SDK.
 
 ## Integrity invariants
 
 1. One App has one `defineApp` declaration, one registry identity, and one
    default agent selection.
-2. Every addressed request has one authoritative Host record, one linked task,
-   and one correlated terminal result.
+2. Every addressed input has one authoritative Host handling record and a
+   correlated handling result. Task-based input links its responsible Task;
+   a conversational answer need not create one. Handling completion alone
+   does not close an outstanding conversational Request.
 3. Every App-owned outcome has one authoritative task identity.
 4. Events, metrics, logs, and projections never become work authorities.
 5. Every actionable fact has exactly one canonical route unless two distinct

@@ -1,12 +1,11 @@
 # May Console
 
 **Design status:** Accepted.
-**Implementation status:** Commands, shared Conversation reads, focused App,
-one Task watch, and readable Task cards are implemented. Equivalent terminal
-content can still appear once as May speech and again as a watched Task summary;
-canonical semantic-revision suppression remains open. Current May follow-up
-admission can briefly watch the supervision Task before the responsible Task;
-the direct path described below remains open.
+**Implementation status:** Shared commands, Conversation reads, focused App,
+one Task watch and Task cards are implemented. Direct responsible-Task admission
+sets the watch, and an exact correlated Conversation result suppresses its
+equivalent supporting terminal card. Shared semantics belong to
+[Human Control Surfaces](human-control-surfaces.md).
 
 May Console is a small terminal adapter for the running daemon. It owns
 readline, rendering, reconnect, completion, one local Task watch, and typed

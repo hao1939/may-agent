@@ -58,6 +58,23 @@ promptly. Do not inspect another worktree, rerun its tests, or manufacture new
 readiness evidence first; supplied evidence is input for the accountable App to
 verify, not a reason for May to perform the App's work.
 
+### Supplied dependency observations
+
+When the current request supplies a dependency observation and declares it
+complete authority, treat that exact observation as the whole dependency result
+for this attempt. Decide from its stated kind, identity, status, summary,
+evidence, response, and result, or preserve the same responsible App and exact
+Task boundary if more work remains. Do not call `tasks.get`, inspect generated
+Task views, traverse to a parent or child, inspect the dependency's worktree, or
+rerun its checks. A deeper Task may look more specific, but substituting it
+breaks the caller's evidence and accountability boundary.
+
+This restriction is request-scoped. It does not block supported diagnostics in
+a different request that supplied no authoritative dependency observation.
+Before using Task or source-inspection tools during dependency review, first
+ask: “Did this request supply a complete dependency observation?” If yes, stop
+inspection and make the disposition from that observation alone.
+
 When a Task is decision-only or forbids changes or contact, return the complete
 bounded plan without a dependency. The human response must match what actually
 happened; never claim that work was routed when the result contains no admitted

@@ -15,8 +15,8 @@ model from the directory name alone; classify by markers.
 - A standalone portable project without an Agent App sibling must be listed
   explicitly in this index; it remains useful through its own CLI/library
   boundary.
-- `_archive/` is the **physical archive** for old material moved out of the
-  top-level project list.
+- `/app/archives/` is the **physical archive** for old material moved out of
+  the top-level project list.
 - Folders with no project markers are **ambiguous/stale** until adopted or
   removed.
 
@@ -31,26 +31,24 @@ The top level is intentionally small:
 - active project apps
 - domain workspaces required by those apps
 - explicitly listed standalone projects
-- `_archive/`
+- temporary active worktree containers, only while their work is in progress
 
-Legacy `project.md` workspaces should live under `_archive/` unless explicitly
-restored for migration or review.
+Legacy `project.md` workspaces should live under `/app/archives/` unless
+explicitly restored for migration or review.
 
 ## Current Active Project Apps
 
-- `aks-rp-e2e.app/` - May-agent app that drives the AKS RP E2E domain project.
+- `evaluation.app/` - independent session and Agent App evaluation.
 - `gym.app/` - optional autonomous operator for Gym schedules, incident intake,
   regression execution, and review proposals.
 - `may-agent.app/` - May-agent app that drives the May-agent platform/runtime
   domain project and owns May-agent design/principle docs.
+- `may.app/` - May's human conversation and routing App.
 - `scout-knowledge-lib.app/` - May-agent app that drives Scout's knowledge
   library project.
 
 ## Domain Workspaces
 
-- `aks-rp-e2e/` - portable AKS RP feature knowledge, specs, replays, runner,
-  evidence, model, suites, and reports. This is a separate git repo and should
-  run without May-agent.
 - `may-agent/` - May-agent platform/runtime code workspace. This is a separate
   git repo and should remain usable without the project app.
 - `scout-knowledge-lib/` - portable Scout knowledge library workspace with
@@ -62,14 +60,24 @@ restored for migration or review.
   benchmarks, scorers, reports, and human review records. It remains runnable
   without `gym.app`; the sibling app automates operation without becoming a
   dependency of the project.
+- `herdr-supervisor/` - standalone Herdr supervisor project and Git repository.
+
+## Temporary Worktree Containers
+
+- `may-agent-worktrees/` currently holds the active standalone May-agent
+  authority-boundary worktree. Move it under `/app/worktrees/` when that work
+  finishes; it is not a project.
+- `platform/` is a runtime compatibility path containing the current UI link,
+  not a project.
 
 ## Legacy Project Workspaces
 
 These folders were old `project.md`-based project workspaces. They are not v3
-apps and were archived under:
+apps and were moved out of the active project list. Historical layout material
+is under:
 
 ```text
-_archive/top-level-cleanup-2026-06-13/
+/app/archives/legacy-project-layout-20260819/
 ```
 
 Their current state should be read from front matter before use.
@@ -122,17 +130,14 @@ Done or closed milestone/archive folders archived in this batch:
 
 ## Physical Archive
 
-- `_archive/` - older project material already moved out of the top-level
-  working set. Keep it read-only unless intentionally restoring historical
-  context.
-- `_archive/top-level-cleanup-2026-06-13/` - legacy project workspaces moved
-  out of the top-level project list during the app/domain cleanup.
+- `/app/archives/` contains verified recovery bundles and historical material.
+  Keep it read-only unless intentionally restoring context.
 
 ## Suggested Cleanup Path
 
 1. Keep active v3 apps and domain workspaces at top level.
 2. Keep `may-agent.app/` as the platform project app and `may-agent/` as the
    platform/runtime domain workspace.
-3. Keep legacy folders in `_archive/` unless intentionally restoring one for
-   migration or review.
+3. Keep legacy folders in `/app/archives/` unless intentionally restoring one
+   for migration or review.
 4. Keep ambiguous local scratch out of the top-level project list.

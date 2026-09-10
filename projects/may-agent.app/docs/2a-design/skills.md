@@ -20,8 +20,8 @@ Skills are context resources, not work records:
 - a skill supplies situational instructions for one turn.
 
 Skill loading must not create a parallel request lifecycle or its own success
-state machine. The enclosing human intent, project event, workflow, and session
-remain the work and closure identities.
+state machine. The enclosing request correlates a bounded turn; an App Task owns durable
+work. Workflow and session records remain execution evidence.
 
 ## Skill And Workflow Boundary
 
@@ -309,7 +309,8 @@ stronger execution is justified:
 | Cross-owner decision or action                       | Escalation                                                                 |
 
 Do not encode project state, task ownership, retries, approvals, or completion
-inside a skill. Those remain in Apps, workflows, events, and sessions.
+inside a skill. Durable work and acceptance remain with the App Task; the Host supplies
+scheduling and recovery.
 
 Promote a skill into a workflow only when repeated evidence shows that
 sequencing should be consistent, terminal conditions can be explicit, and

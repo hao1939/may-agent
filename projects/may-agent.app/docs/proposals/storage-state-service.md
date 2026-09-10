@@ -2,16 +2,16 @@
 
 **Design status:** Request-to-Task slice approved for implementation; broader
 extraction remains conditional on its evidence.
-**Implementation status:** Host candidate `54b9eecf` (`refactor/request-task-state`)
-implements the request-to-Task slice using the existing SQLite stores, fenced
+**Implementation status:** The request-to-Task slice merged as Host `569e4da0`
+in PR #108 using the existing SQLite stores, fenced
 transitions and request leases. The broader storage layout, combined
 capacity/claim ownership and a separate API server remain unimplemented choices.
 Source checks and temporary-state experiments below are not deployment proof.
 **Date:** 2026-09-10.
-**Source baseline:** Host `350552a4ba9a4278fe30897430619667bb7bb7f3` (PR #105).
-The original inventory is source inspection, not deployment proof. Candidate
-concurrency and restart evidence is recorded below. Separate settlement/retry
-candidates are tracked in the [controller proposal](task-controller-pattern.md).
+**Source baseline:** Current review uses Host `569e4da0` (PR #108). The original
+inventory and candidate evidence below refer to `350552a4` and `54b9eecf`, not
+the final merged validation. Settlement/retry slices also merged and are
+tracked in the [controller proposal](task-controller-pattern.md).
 
 ## Goal and recommendation
 
@@ -91,7 +91,7 @@ Do not add a universal outbox merely for replaceable observation notifications.
 
 ## Existing uses that justify the boundary
 
-This inventory comes from Host `350552a4`; it identifies current mechanisms and
+This historical inventory comes from Host `350552a4`; it identifies mechanisms and
 possible consolidation, not newly reproduced defects. Operation names below
 are illustrative Host-internal names, not proposed SDK or event schemas.
 
@@ -118,10 +118,14 @@ pattern rather than replacing it with a generic command engine.
 
 ## First comparison: attach a request to its work
 
-The current `app-inbox-host.ts` attachment path creates/finds the Task, records
-the request wait, links its Topic and then checks whether the Task completed
-before the wait existed. Child-request delegation has a similar final check.
-Those checks handle real ordering concerns; their presence alone is not a bug.
+At the original `350552a4` baseline, the `app-inbox-host.ts` attachment path
+created/found the Task, recorded the request wait, linked its Topic and then
+checked whether the Task completed before the wait existed. Child-request
+delegation had a similar final check.
+Those checks handled real ordering concerns; their presence alone was not a bug.
+The combined operation below has since merged in #108; see
+[implementation evidence](#first-slice-implementation-evidence). This comparison
+explains the extraction, not remaining work.
 
 Compare that caller sequence with one bounded operation:
 
@@ -328,56 +332,26 @@ App merger.
 
 ## First-slice implementation evidence
 
-The candidate implements the selected slice, not the entire target layout:
+Atomic request attachment merged in PR #108. `core/state/requests.ts` commits
+Task input, request wait/claim release and Topic correlation together; execution
+wakes happen after commit. Task settlement persists linked request readiness.
+The old caller-side write sequence and completion-before-link callback are removed.
+No new work lifecycle, timer or public event is introduced.
 
-- `core/state/requests.ts` owns Task-input admission and atomic request attachment.
-  App mapping and runtime descriptor lookup stay outside it; execution wake-up
-  and session interruption happen after commit.
-- The Task store joins an outer transaction through SQLite savepoints. A failed
-  Topic link rolls back Task admission and the request wait as well. Cached Task
-  snapshots are invalidated while an outer transaction is still uncommitted.
-- Task settlement, attention and cancellation persist linked request readiness
-  through the existing fenced store commit. Pending input prevents old completion
-  or attention state from being used as the new request's ready result.
-- Event hints schedule already-ready requests too. The cross-App round-trip test
-  caught the former assumption that only a newly changed readiness row needed
-  scheduling; retaining it would delay the request until the next ready scan.
-- The request schema is extracted, unchanged, to `lib/db/app-inbox-schema.ts`
-  and shared by Host and standalone Task storage. There are no new schema fields,
-  operation receipts, queues, timers, daemons or public events.
+The [implementation review](../archive/implementation/storage-attachment-review-20260910.md#first-slice-implementation-evidence)
+records competing connections, rollback and process-kill tests, plus a bounded
+state-only timing comparison. Those tests establish the transition boundary;
+they do not justify extracting every SQL operation or claim production latency.
 
-The caller no longer separately writes the wait, writes its Topic link, or runs
-an asynchronous completion-before-link callback. Storage adds explicit request
-claim/input checks and a small shared transaction helper; this is not merely a
-forwarding facade. Child-request delegation and policy-driven dependency recovery
-retain their existing behavior.
+## Retry-exhaustion follow-up
 
-Regression coverage uses production operations with file-backed SQLite, separate
-connections and child processes. It covers competing bindings, stale claims,
-repetition and changed input, deliberate replacement, both completion orderings,
-pending newer work, App-scoped wakes, wake-write rollback, Conversation claim
-release, and actual `SIGKILL` before/after commit. No EventBus is present in the
-cross-process settlement test.
-
-At Host `54b9eecf`, `bun run ci` passed: 2,514 tests passed, 3 existing
-installation-dependent skips, and no failures. The 16 new state-operation cases
-are included in that count. The affected installed-App golden-trace fixture also
-passed separately. `bun run check:may-design` passed with no errors and six
-pre-existing workspace-layout warnings. Hosted checks and live deployment are
-separate from these local results.
-
-A local state-only comparison against Host `350552a4` used fresh WAL databases,
-300 attachments per version and the final 250 timing samples. It excluded App
-mapping, controller execution and notifications on both sides. The old sequence
-measured 5.92 ms median / 8.71 ms p95; the candidate measured 4.48 ms / 6.36 ms.
-Candidate settlement made 1,001 exact linked requests ready in 7.28 ms without
-an event hint; the baseline left them waiting for its notification/recovery path.
-These single-machine samples show no observed transaction penalty for this trial,
-not a production speed guarantee or a bound for arbitrarily large fan-out.
-
-Broader storage extraction, capacity coordination and a separate API server still
-need a demonstrated problem and a fresh value/cost decision. No live installation
-was changed by this candidate.
+PR #109 made attachment and settlement share the same readiness predicate for
+retry-exhausted attention. Linked callers become ready for an owner decision
+without authorizing another execution; eligible new input still waits for fresh
+work. Its [recorded proof](../archive/implementation/storage-attachment-review-20260910.md#retry-exhaustion-follow-up)
+includes separate-process settlement without EventBus and rollback/reopen cases.
+Broader owner follow-through remains in the
+[controller proposal](task-controller-pattern.md#existing-parent-owner-proof).
 
 ## Sources and related contracts
 

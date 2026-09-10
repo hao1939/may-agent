@@ -181,7 +181,11 @@ Stable lessons from prior incidents:
 
 ## Ownership
 
-Default owner resolution:
+Diagnostic attribution may use the following fallback order. It identifies
+who should review evidence; it does not dispatch work or create a Task.
+Actionable follow-up still requires an explicit App route or exact Condition.
+
+Attribution order:
 
 1. explicit event owner,
 2. project owner,

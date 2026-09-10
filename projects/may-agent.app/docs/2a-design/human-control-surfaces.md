@@ -11,6 +11,10 @@ Human-action projection follows exact dependency leaves and preserves legacy
 `Hao` approval visibility while canonical `human:<role>` ownership is adopted.
 Durable May admission exposes the responsible Task directly; the supervision
 Task remains separately visible for diagnostics.
+Current-turn Stop/Steer below is accepted design with remaining implementation
+work; existing session controls do not yet provide that full contract.
+Explicit conversational Request tracking and closure also remain an
+[implementation gap](message-lifecycle.md#current-implementation-and-gaps).
 
 **Aligned with:** [system-model.md](system-model.md),
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
@@ -22,6 +26,10 @@ Console and Telegram are adapters over the same May Conversation and the same
 Tasks. They own presentation, provider coordinates, and local watch state.
 They do not own work.
 
+Conversation remains the place for active discussion, including long design
+reviews and joint problem-solving. Only a specific independent outcome becomes
+background work; see [Message Lifecycle](message-lifecycle.md#mental-model).
+
 ```text
 Console ──┐
           ├─> Conversation may:primary ─> May App (`may`)
@@ -32,16 +40,19 @@ Telegram ─┘                                │
 The ordinary human objects are:
 
 - an App, which owns a responsibility;
+- a Request, which is an accepted ask May must close the loop on in Conversation;
 - a Task, which is durable work reconciled by an App;
 - a Topic, which links related turns to exact Tasks; and
 - a Conversation message, which is how a human talks with May.
 
-A Host request correlates one caller with its eventual result. A session is a
-replaceable execution attempt. Neither is the ordinary human control target.
+A Host input-handling request correlates one input with its handling result.
+It may finish while a conversational Request remains unresolved. Host row IDs
+and replaceable execution sessions remain diagnostic details.
 May does not create a wrapper Task for a Conversation or human request. The
 Conversation, Topic-to-Task link, actual responsible Task, and event log
-preserve each promise. One ordinary visible May maintain Task owns recurring
-supervision across those links without parenting, waiting on, or copying the
+preserve the evidence used for Request tracking. One ordinary visible May
+maintain Task owns recurring supervision across those links without parenting,
+waiting on, or copying the
 responsible Tasks. May may own other ordinary goal Tasks when no other App is
 responsible.
 The Host Operations App (`may-agent`) owns platform Tasks. An agent run named
@@ -107,8 +118,9 @@ validation read or serializing Host event handling. Failed validation restores
 the prior selection, and a stale validation response cannot overwrite a newer
 selection.
 
-Host request history is diagnostic data, not a second work interface.
-`/session`, `/sessions`, and `/steer` are not ordinary human commands.
+Host input-handling history is diagnostic data, not a second work interface.
+`/session`, `/sessions`, and `/steer` are not current ordinary human commands.
+The turn-control contract below does not introduce those session commands.
 
 ## Stable Task identity
 
@@ -135,6 +147,14 @@ Conversation shows both sides of a durable promise without confusing them:
 - an agent-authored message says what May understood or decided; and
 - a tool-authored Task activity says what Runtime actually admitted, with an
   exact `taskRefs`/`followTask` identity.
+
+The accepted [Request contract](message-lifecycle.md#requests-acceptance-and-closure)
+adds continuity across these messages: what May accepted, what remains, and
+the final outcome or explicit reason for closure. Humans can refer to that ask
+in ordinary conversation without managing internal request IDs. Start with
+clear acknowledgments, progress and closure messages; no separate Request
+dashboard or new slash-command family is required. A Task card's `done` state
+alone does not show that May has answered the original ask.
 
 The admission activity causes Console to follow the Task immediately. Later
 Task wakes make the adapter re-read canonical Task state; they do not append a
@@ -316,6 +336,58 @@ surface, so it may show the current snapshot once.
 
 Watch does not poll and owns no timer, workflow, session, or model turn.
 
+## Current-turn control
+
+**Implementation gap:** Ordinary human messages are currently admitted in order
+and wait for the active Conversation claim. Low-level `session.steer.requested`
+and `session.cancel.requested` controls exist, but do not establish durable
+current-turn steering or stopping. The
+[request-agent resolver](../../../may-agent/src/app/app-request-agent.ts)
+treats an unsuccessful session as an error; the
+[request handler](../../../may-agent/src/app/app-inbox-host.ts) releases errors for retry.
+Stopping that session alone therefore cannot promise that the turn stays
+stopped. The controls below are requirements, not shipped commands or buttons.
+
+Human adapters expose distinct meanings:
+
+| Action | Effect |
+| --- | --- |
+| Stop this turn | Stop the exact active conversational turn, leaving admitted background Tasks running. |
+| Steer this turn | Apply a correction to the exact active conversational turn. |
+| Steer or cancel Task X | Send feedback to, or cancel, that exact durable Task. |
+| Stop watching | End local notifications; work continues. |
+
+An adapter targets the observed Conversation and turn identity. Stop and
+explicit steering travel through events to Host control without waiting for
+the model or the ordinary turn queue. A delayed control for an older turn must
+never silently target a newer execution. Natural-language Task feedback still
+goes through May's interpretation; Task controls do not target a guessed session.
+
+Stop first records the decision durably against the turn's Host handling record,
+then signals its execution to abort. That stopped handling cannot be retried by
+recovery, and late callbacks cannot append a successful reply or admit new
+background Tasks on its behalf. Already admitted Tasks remain addressable and
+continue unless separately cancelled. Stopping does not undo earlier messages
+or completed effects, or guarantee that an external operation aborts instantly.
+Later human input can start a new turn in the same discussion.
+The conversational Request remains unresolved unless the human also withdraws
+the ask. Its presence must not automatically restart the stopped turn. Cancelling
+the ask and cancelling a linked Task are explicit, related decisions; closing
+a conversational Request alone cannot stop background execution.
+
+Steering preserves the correction in Conversation and acknowledges whether it
+was applied to current work or retained for the next turn. Use executor steering
+when supported; otherwise interrupt and continue from the corrected input and
+current evidence. Do not require seamless execution recovery or blindly repeat
+side effects. If the target turn has already finished, retain the unconsumed
+correction for the next turn rather than silently losing it. Receiving a
+correction is not evidence that its requested change has been completed.
+
+Keep these mechanics on the existing event system, turn/request state, and
+execution controls. Adapters provide presentation and exact targets; the Host enforces
+identity and stop state; Apps/LLMs interpret corrections. No per-turn Task,
+separate control service, or new work lifecycle is required.
+
 ## Cancellation
 
 `/cancel` changes the named or watched Task, not its current session. The Host:
@@ -370,3 +442,9 @@ May, fresh-input wake from waits, wake coalescing, automatic
 terminal exit, durable Task cancellation, stale-attempt fencing, cross-surface
 Conversation context, exact human-Condition membership, bounded `/todo`
 reconstruction, and independence from adapter delivery.
+
+Before claiming current-turn control is implemented, also verify that controls
+bypass a busy turn, stopped requests stay stopped after restart, late results
+and admissions are rejected, already admitted Tasks survive a turn Stop, stale
+controls cannot affect a newer turn, and steering survives completion races
+without losing or applying the same correction twice.

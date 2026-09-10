@@ -74,24 +74,13 @@ must show the session as disconnected; the UI must not repair it heuristically.
 
 ## Human-Rooted Trace Contract
 
-Ordinary free-form input has one semantic root. The adapter publishes
-`conversation.message.created` for `Conversation may:primary` and attaches
-trusted human/channel provenance. That event admits one bounded May frontend
-request. Durable follow-through, if needed, moves directly to the responsible
-Task and remains linked through the Topic:
-
-```text
-conversation.message.created (target.appId=may, author.kind=human)
-  -> bounded May frontend request
-    -> bounded agent session
-      -> direct App result, or typed App request/exact Task feedback
-        -> frontend request complete
-          -> responsible App Task linked to the Topic
-            -> meaningful Task event/result
-              -> bounded reconciliation of May's supervision Task
-                -> exact Task feedback or conversation.updated
-                  -> independent adapter read/render
-```
+Ordinary human input has one semantic root,
+`conversation.message.created`, addressed to May with trusted human provenance.
+It admits one bounded request. The request can finish directly or admit a
+responsible Task linked through a Topic. Later Task attempts may have their own
+traces; exact resource links preserve their relationship to the human turn.
+[Message Lifecycle](message-lifecycle.md) owns the interaction policy, and
+[Events](events.md) owns admission.
 
 Historical `human.input.received -> app.input.requested` and direct
 `app.input.requested` human roots remain valid compatibility evidence, but new

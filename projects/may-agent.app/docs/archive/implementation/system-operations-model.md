@@ -1,5 +1,8 @@
 # System Operations Convergence
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Completed.
 **Design authority:** [Work model](../../1-principles/work-model.md),
 [Metrics](../../2a-design/metrics.md), [Events](../../2a-design/events.md), and

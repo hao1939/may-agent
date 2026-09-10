@@ -2,12 +2,12 @@
 
 **Design status:** Accepted.
 **Implementation status:** The Host/App boundary is implemented for current
-Apps. Installed Task runtimes require resource authority; retained JSON support
-is limited to offline import and test compatibility. The retired inbox delivery
-table is retained only as historical schema evidence. Incident-shaped public
+Apps. Task runtimes and test fixtures use resource authority; the legacy JSON
+store and completed offline cutover path have been removed. The retired inbox
+delivery table is retained only as historical schema evidence. Incident-shaped public
 inputs remain a convergence gap rather than an alternate accepted boundary.
 
-There is one architectural split:
+The responsibility split is:
 
 ```text
 Host = persist, schedule, run, recover, expose results
@@ -36,9 +36,14 @@ queues, retries, recovery, or presentation transport.
 
 ## Plain names
 
-Only Host and App are architectural concepts. These record names are useful:
+Host and App identify responsibility. Core and replaceable capabilities identify
+which dependencies may be absent without breaking the remaining system. Both
+core mechanics and optional adapters can live in Host code. See
+[System Model](system-model.md) and the
+[Architecture](architecture.md#core-responsibilities) for that separate axis.
+These record names are useful:
 
-- **request** — caller correlation for one promised result;
+- **Request** — an accepted ask whose outcome must be returned to the caller;
 - **task** — the App-owned outcome, whether it needs one attempt or several;
 - **fact** — something observed or reported; and
 - **attempt** — one bounded agent or workflow run.
@@ -48,15 +53,17 @@ trace, and projection are code or storage details. They do not own work.
 
 ## Host
 
-The Host has five jobs:
+The [four core responsibilities](architecture.md#core-responsibilities) are
+App registration and input admission, Events, State and storage, and Work runtime.
+Together they persist accepted work, coordinate bounded attempts, recover and
+expose truthful results. Interfaces and other concrete capabilities attach to
+those contracts.
 
-| Job      | What it does                                                          |
-| -------- | --------------------------------------------------------------------- |
-| Persist  | Store requests, Tasks, facts, attempts, results, and adapter evidence |
-| Schedule | Wake declared work at the right time and limit concurrency            |
-| Run      | Execute one bounded agent or workflow attempt                         |
-| Recover  | Continue the same unfinished request or task after failure or restart |
-| Expose   | Return the accepted result to its caller and shared resource views    |
+Failure containment stays with admission and execution. The Host preserves
+evidence, releases resources and applies known bounded responses. Apps or LLMs
+judge uncertain diagnosis, repair and scope. Metric-service placement remains
+[deferred](../archive/reviews/error-handling-and-conversation-discussion-20260910.md);
+existing measurements cannot become acceptance authority.
 
 The Host also validates and loads complete App definitions. Reload either
 publishes a complete replacement or keeps the previous definition active.
@@ -86,6 +93,12 @@ scheduler, queue, retry worker, or recovery worker of its own.
 
 ## Request and task
 
+May owns recognizing and closing conversational Requests; the Host stores the
+related state and validates effects. The current Host request row is narrower:
+it correlates an input with handling and may finish before the conversational
+ask is fulfilled. [Message Lifecycle](message-lifecycle.md#current-implementation-and-gaps)
+owns that implementation distinction. Request tracking adds no execution owner.
+
 When a caller asks an App for durable work, the Host records a request and
 links it to the Task that owns the outcome:
 
@@ -93,13 +106,9 @@ links it to the Task that owns the outcome:
 request -> Task owned by the App -> accepted result
 ```
 
-A conversational frontend request may instead answer directly or publish typed
-durable intent or feedback. Runtime binds durable intent to the actual Task
-owned by the responsible App and records that exact Task on the Topic. May then
-reconciles one normal maintain Task on meaningful events from Topic-linked
-Tasks and may steer the same Task or update the Conversation. This supervision
-Task owns follow-through but never parents, waits on, or copies the responsible
-Tasks.
+A conversational frontend may finish authorized work directly or admit durable
+intent/feedback. [Message Lifecycle](message-lifecycle.md) owns May's policy and
+Topic-linked supervision; it does not add another Task lifecycle.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:
@@ -109,9 +118,10 @@ Task -> check current state -> run one bounded attempt
      -> done, wait for an exact fact, require attention, or try again
 ```
 
-The request remains the caller identity and the task remains the App work
-identity. Sessions and workflow runs are attempt evidence and may be replaced
-after a restart.
+The Host request retains caller correlation and the Task owns execution.
+Conversational closure follows the accepted ask and its communicated outcome,
+which can require more than a Task result alone. Sessions and workflow runs are
+attempt evidence and may be replaced after a restart.
 
 ## Facts and time
 
@@ -155,6 +165,12 @@ unfinished stored request or task
 Recovery cannot invent a new task, owner, strategy, or completion claim.
 Apps with paused task reconciliation continue to store new work but do not
 start task attempts.
+
+Continuing the same obligation may mean rerunning an attempt from its input.
+Precise session or step resumption is not required by this boundary. Prefer
+safe redo when its cost is acceptable; retain additional progress only when
+it earns its complexity. See the
+[redo-versus-resume rule](../1-principles/core-principles.md#prefer-redo-when-it-is-simpler-and-affordable).
 
 ## Public boundary
 

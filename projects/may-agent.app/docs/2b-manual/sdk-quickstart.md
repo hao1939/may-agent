@@ -1,216 +1,158 @@
-# SDK Quick Reference
+# App SDK Quickstart
 
-`@may-agent/sdk` is the stable authoring boundary for Apps, bounded task
-workflows, task policy, guards, and tests. It is not a runtime service object.
-There is no `ctx.sdk`, database handle, queue, scheduler, service locator, or
-legacy entry point.
+Create a small Task-based App, submit one review, and read its progress. This
+walkthrough assumes a working Host installation and a configured model. Run the
+commands from the workspace root. The [App/results](../examples/app.ts) and
+[control client](../examples/client.ts) are checked by `bun run check:may-design`.
 
-See [SDK](../2a-design/sdk.md) and
-[App Contract](../2a-design/agent-app.md) for the governing contracts.
+## 1. Create the App
 
-## Choose The Right Primitive
-
-| Need                                      | Use                                                          |
-| ----------------------------------------- | ------------------------------------------------------------ |
-| Address one App and require a result      | typed App input; Runtime links its request to one task       |
-| Expose repeated typed ingress             | `defineApp({ actions: ... })` with `toInput`                 |
-| React to a changed fact                   | App `subscription` -> typed input -> task resolver           |
-| Declare/revise deterministic desired work | `task(input)` -> `TaskIntent`                                |
-| Wake one existing task                    | exact event target or matching task Condition                |
-| Run one bounded agent step                | `ctx.agents.call(...)`                                       |
-| Run one bounded reusable workflow         | `ctx.workflows.run(...)`                                     |
-| Publish a fact                            | `ctx.events.emit(...)`                                       |
-| Record a domain metric sample             | `ctx.metrics.record(...)`                                    |
-| Read an exact runtime projection          | `ctx.read.appResult/execution/metric(...)` or resource `get` |
-| Inspect current App tasks                 | bounded `ctx.read.tasks.list/get` resource capability        |
-| Wait durably                              | task dependency or Condition, never an open workflow         |
-
-## Define One App
-
-Every App exports one `defineApp(...)` declaration from `app.ts`:
-
-```ts
-import { Type, defineApp } from "@may-agent/sdk";
-
-const inputSchema = Type.Object({
-  kind: Type.Literal("review"),
-  data: Type.Object({ subject: Type.String() }),
-});
-
-export default defineApp({
-  id: "sample",
-  version: 1,
-  agent: "sample-agent",
-  inputSchema,
-  task(input) {
-    return {
-      id: `review/${input.data.subject}`,
-      parentId: "root",
-      outcome: `Review ${input.data.subject}`,
-      acceptance: ["A supported answer is recorded"],
-      mode: "achieve",
-      input,
-    };
-  },
-});
+```sh
+mkdir -p projects/sample.app/agents/sample-agent projects/sample.app/tasks
+cp projects/may-agent.app/docs/examples/app.ts projects/sample.app/app.ts
+cp projects/may-agent.app/docs/examples/seed.json projects/sample.app/tasks/seed.json
 ```
 
-Importing an App definition is pure. It cannot start sessions, attach timers,
-write state, or publish facts. The host validates and attaches the complete App
-registry generation.
+The seed establishes the structural `root` referenced by the Task; an empty
+store does not invent that parent. The extra result exports in `app.ts` are
+examples for later customization and have no startup effects.
 
-## Input Resolves To A Task
+Create `projects/sample.app/agents/sample-agent/agent.json`, replacing
+`YOUR_CONFIGURED_MODEL` with a model key already working in your installation:
 
-Every actionable App input resolves to one stable existing task or desired
-`TaskIntent`:
-
-```ts
+```json
 {
-  id: "review/v4",
-  parentId: "root",
-  outcome: "Review change v4",
-  acceptance: ["A verdict and evidence are recorded"],
-  mode: "achieve",
+  "name": "sample-agent",
+  "description": "Reviews supplied material and records supported findings",
+  "domain": "sample reviews",
+  "model": "YOUR_CONFIGURED_MODEL",
+  "tools": ["coding", "finish"],
+  "heartbeat": false
 }
 ```
 
-There is no direct-completion or delegation disposition beside this path. A
-simple answer converges in its first bounded reconciliation attempt. A
-cross-App outcome becomes a typed Runtime-managed task dependency. The Host
-request remains only the caller's correlation and result record.
+Create `projects/sample.app/agents/sample-agent/AGENTS.md`:
 
-## Workflow Context
+```markdown
+# Sample reviewer
 
-```ts
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
-
-export const name = "review-change";
-
-export async function execute(
-  ctx: WorkflowContext<{ changeId: string }>,
-): Promise<ExecutionResult> {
-  const prior = await ctx.read.metric(`review.${ctx.input.changeId}`);
-  const review = await ctx.agents.call(
-    "reviewer",
-    `Review ${ctx.input.changeId}; prior metric: ${prior?.value ?? "none"}`,
-  );
-
-  if (review.status !== "done") {
-    return ctx.blocked("Reviewer did not complete", { review });
-  }
-
-  await ctx.metrics.record(`review.${ctx.input.changeId}`, 1, "reviewed");
-  await ctx.events.emit({
-    type: "sample.change.reviewed",
-    data: { changeId: ctx.input.changeId, executionId: review.id },
-  });
-  return ctx.done("Change reviewed", { executionId: review.id });
-}
+Review the subject in the Task input. Inspect the relevant material and cite
+specific evidence for each finding. Do not change the reviewed material.
+Return the structured Task result requested by the Host. If required material
+is unavailable, report the missing evidence rather than claiming completion.
 ```
 
-Available capabilities are intentionally narrow:
+[Agent Convention](agent-convention.md) explains the available tools and prompt
+files. The selected model and readable review material are installation inputs;
+the documentation check does not verify them.
 
-- `ctx.input`
-- required `ctx.reconciliation` for App-owned work
-- exact `ctx.read` projections
-- `ctx.agents.call(...)`
-- `ctx.workflows.run(...)`
-- `ctx.events.emit(...)`
-- `ctx.metrics.record(...)`
-- optional `ctx.workspace`
-- `ctx.log`
-- `ctx.done(...)` and `ctx.blocked(...)`
+The example declares:
 
-## Task-Bound Workflows
+- a `review` input with a nonempty `data.subject`;
+- `tasks: {}` to enable ordinary Task policy with default execution;
+- a pure `task(request)` mapping that returns a desired Task attachment; and
+- a concrete outcome and acceptance criterion for the selected agent.
 
-When `ctx.reconciliation` exists, it contains the exact task generation,
-desired input, ordered unobserved events, selected agent, and bounded
-live/completed child views. It does not expose a global Task hierarchy or
-mutation handles.
+Importing the definition has no effects. The Host validates and activates a
+complete registry generation before admitting work.
 
-A task workflow returns an `ExecutionResult` whose output is admitted as a
-typed reconciliation result. Return task changes through the compatibility
-`actions` field plus Conditions in that output; do not write task files or emit
-parallel task-completion events.
+## 2. Check and activate
 
-```ts
-return ctx.done("Waiting for rollout approval", {
-  state: "waiting",
-  summary: "Approval is still required",
-  evidence: ["change:v4"],
-  actions: [],
-  conditions: [approvalCondition],
-});
+Run your App's checks before activation. The workspace's `bun run check:may-design`
+checks these source examples: SDK/control types, seeded Task admission and replay,
+and Condition/dependency result admission. It does not run the reviewer model.
+
+Commit the new App and agent definitions in the installation's definition source
+checkout, then use Console's `/reload` through the normal App activation
+procedure. Reload rejects uncommitted executable definitions. Wait for its
+completion result; a reload receipt alone is not successful activation. See
+[Operations and Recovery](app-operations-recovery.md#failed-app-reload).
+
+At the [documented source baseline](../README.md), a daemon runs Tasks without
+`--cron`; that flag enables optional schedules. Check your installed Host
+revision: this startup separation merged in PR #96 and does not change an older
+running binary. Validation is recorded in the
+[core proposal](../archive/implementation/core-separation-review-20260910.md#step-1-implementation).
+
+## 3. Submit and read the review
+
+Use your installation's actual control socket. The conventional path is
+`.state/instances/<instance>/<agent>.sock`; the client has no default endpoint.
+
+```sh
+sample_socket=/absolute/path/to/may.sock
+bun projects/may-agent.app/docs/examples/client.ts submit "$sample_socket"
 ```
 
-Use `needs-agent` only for exceptional judgment by the same App's selected agent. When
-another App owns the next decision, use the Runtime's typed cross-App dependency
-capability. Human attention is a linked `may` task dependency or an exact human
-Condition owned by the source task.
+The client publishes `app.input.requested` for `sample`, with input
+`{ kind: "review", data: { subject: "the release notes" } }` and a stable
+idempotency key. Repeating this command requests the same review. For a new
+subject or a distinct review, change both input and key in the client.
 
-## Facts Are Not Requests
+Save the returned `eventId` and read it, replacing `123` below:
 
-`ctx.events.emit(...)` publishes a fact. It does not directly launch an agent,
-address an owner, attach a task, or guarantee a reply. An actionable destination
-must declare an App subscription that produces input, an exact task target, or
-a matching Condition.
-
-Typed App actions translate validated parameters directly to App input. They do
-not emit an actionable event as an admission shortcut.
-
-## Reads And Writes
-
-Use bounded reads only:
-
-```ts
-await ctx.read.appResult(itemId);
-await ctx.read.tasks.get(taskId);
-await ctx.read.tasks.list({ status: ["attention"] });
-await ctx.read.execution(executionId);
-await ctx.read.metric(metricId);
+```sh
+bun projects/may-agent.app/docs/examples/client.ts event "$sample_socket" 123
 ```
 
-A task-bound workflow already receives its task and bounded direct-child views
-in `ctx.reconciliation`; it should not list tasks merely to rediscover that
-context. Agents, tools, observers, and workflows that genuinely need a
-project overview use the shared bounded task list, scoped to the current App.
+The receipt reports `recorded` or `accepted`. An accepted App-input event has a
+durable request; its Task may not yet exist. The event view's request link gives
+the Host request ID. In this sample, the mapping below makes the Task ID
+`review/<request-id>`. Read that exact Task once coordination attaches it:
 
-There is no raw SQL, `sdk.query`, `sdk.commands`, `getDb()`, global list/query,
-or task-store escape hatch. A recurring legitimate need becomes the narrowest
-typed projection or capability with scope and restart tests. Explicit offline
-repair belongs in a maintenance CLI.
-
-## Test A Workflow
-
-```ts
-import { expect, test } from "bun:test";
-import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { execute } from "./review-change";
-
-test("reviews one change", async () => {
-  const ctx = createTestAppWorkflowContext({
-    input: { changeId: "v4" },
-  });
-
-  const result = await execute(ctx);
-  expect(result.status).toBe("done");
-});
+```sh
+bun projects/may-agent.app/docs/examples/client.ts task "$sample_socket" 'review/REQUEST_ID'
 ```
 
-Inject exact fake reads, agent/workflow results, emitted facts, and metric
-records through the test context. Testing an App workflow does not require the
-daemon or a database.
+A `null` Task read can mean attachment is still pending; reread the event for
+the request's state. Once attached, inspect the Task's status, summary and
+evidence. `pending`/`running` mean work remains, `waiting` names a dependency,
+`attention` needs correction or judgment, and `done` is the finite Task's
+accepted completion. Later reads use the same IDs. Neither publication nor an
+agent process exit proves the review succeeded.
 
-## Integrity Checklist
+## 4. Understand the two mappings
 
-- Import authoring contracts from `@may-agent/sdk`; testing helpers come from
-  `@may-agent/sdk/testing`.
-- Keep App definitions pure and use one `app.ts` entry point.
-- Keep workflows bounded; durable waits belong to task dependencies or
-  Conditions.
-- Use typed Runtime-managed dependencies for cross-App outcomes and events for
-  facts.
-- Keep task reconciliation as the only App work loop.
-- Return structured results; never mutate inbox/task/runtime storage directly.
-- Do not add a legacy SDK entry point, service locator, generic runtime context,
-  or implementation export.
+| Callback | Receives | Returns |
+| --- | --- | --- |
+| `task(request)` | `AppTaskInput`: Host `id`, trusted `source`, and validated domain `input` | `{ kind: "existing", taskId }` or `{ kind: "desired", intent }` |
+| `tasks.resolve(event)` | A fact matching a declared Task subscription | `TaskIntent` or `null` when no desired work follows |
+
+Read domain fields from `request.input`. The SDK callback uses a generic input
+type; the example narrows it to the schema the Host already validated.
+`task` cannot return `null`. Use an observation route, or the fact resolver's
+`null`, for facts that create no work.
+
+The example uses the Host request ID for Task identity, so repeating the same
+admitted input resolves to the same Task. When your domain has a stable outcome
+key, use it to attach related inputs to the same unfinished work. Never use
+list position or a session ID as Task identity.
+
+## 5. Extend the bounded attempt
+
+With no workflow or named executor, the selected agent performs the Task.
+Add a workflow only when there is a repeatable procedure worth preserving.
+[Workflow Authoring](workflow-authoring.md) explains the module convention and
+[Task Reconciler Authoring](handler-authoring.md) explains accepted results.
+
+Task-bound workflows receive `ctx.reconciliation` with exact identity, current
+input, unaccepted events and bounded child views. Return Task changes in the
+result; do not open Task storage or implement a recovery loop.
+
+The App example also exports `waitingResult` and `dependencyResult`. The first
+names pipeline run 123, its expected state, accountable `app:pipeline`, and a
+five-minute recovery review. The second requests an outcome from another App.
+Both include the Task result's own `summary` and `evidence`.
+
+Use these results after replacing their example identities with your actual
+producer and App contracts. A review deadline is recovery insurance; time passing does
+not prove that a pipeline completed. See the
+[Condition contract](../2a-design/task-resource-engine.md#conditions) and
+[cross-App dependencies](../2a-design/escalation.md#app-to-app-escalation).
+
+Use `createTestAppWorkflowContext` from `@may-agent/sdk/testing` for bounded
+workflow checks with explicit fake reads and execution results. Cover repeated
+input identity, accepted results, waits and dependencies as you add them.
+
+See [App Contract](../2a-design/agent-app.md), [SDK](../2a-design/sdk.md), and
+[Adoption Checklist](agent-app-adoption-playbook.md) for further detail.

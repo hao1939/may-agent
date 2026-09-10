@@ -11,7 +11,8 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "check:may-design": "bun scripts/check-may-design-integrity.ts && bun scripts/check-canonical-agent-app.ts",
+    "check:may-design": "bun scripts/check-may-design-integrity.ts && bun scripts/check-may-design-examples.ts && bun scripts/check-canonical-agent-app.ts",
+    "check:event-graph": "bun projects/may-agent/scripts/event-graph-check.ts",
     "check:canonical-apps": "bun scripts/check-canonical-agent-app.ts",
     "check:canonical-apps:final-runtime": "bun scripts/check-canonical-agent-app.ts --final-runtime",
     "gym": "bun --cwd=projects/gym run scenario:run",

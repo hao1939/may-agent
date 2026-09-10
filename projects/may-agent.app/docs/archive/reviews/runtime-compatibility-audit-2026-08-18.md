@@ -1,5 +1,8 @@
 # Runtime compatibility audit — 2026-08-18
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 This audit checks the old-looking ingress and delivery paths that remain beside
 the accepted Conversation and App inbox model. It is an inventory, not a new
 design. The rule is to remove a path only after its live responsibility has a

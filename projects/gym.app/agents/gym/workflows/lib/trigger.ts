@@ -20,7 +20,9 @@ export function triggerDetails(
   const trigger = extractTrigger(source);
   const input = reconciliationInput(source);
   if (!trigger) return input;
-  const merged: Record<string, unknown> = {};
+  const merged: Record<string, unknown> = {
+    ...(trigger.type === "app.task.requested" ? (input ?? {}) : {}),
+  };
   for (const key of ["data", "payload", "params"]) {
     const value = trigger[key];
     if (value && typeof value === "object" && !Array.isArray(value)) {

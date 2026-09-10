@@ -743,26 +743,6 @@ function writePacket(appDir: string, packet: LibraryHealthPacket): string {
   return path;
 }
 
-export function acceptedSourceOutputsMetricDefinition(appDir: string) {
-  return {
-    id: ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
-    name: "Latest accepted Scout source outputs (aggregate)",
-    owner: "scout",
-    project: projectId,
-    type: "gauge",
-    target: 1,
-    threshold: 1,
-    unit: "count",
-    priority: "P2",
-    alertOp: "<",
-    source: "source_command",
-    sourceCommand: `bun ${appDir}/scripts/accepted-source-outputs.ts`,
-    measureInterval: 21_600_000,
-    status: "active",
-    description: `Aggregate distinct durable output:<path> evidence represented by each source's latest converged Scout task resource in ${DEFAULT_SCOUT_TASK_STATE_PATH}. The source-command note preserves zero-inclusive per-source output counts and distinguishes accepted output, converged without output, non-convergence, and unavailable task state; the scalar alerts only when every output disappears. Evidence-backed latest no-change resources without durable output are excluded; no rolling-window, successive-run, per-source health, or content quality is claimed.`,
-  } as const;
-}
-
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   if (!ctx.workspace)
     return ctx.blocked("Library health requires a canonical App workspace");
@@ -808,7 +788,23 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     description:
       "Retired because canonical completed Scout attempts do not retain structured durable-output evidence for successive runs; latest task resources cannot prove rolling-window coverage.",
   });
-  ctx.metrics.define(acceptedSourceOutputsMetricDefinition(appDir));
+  ctx.metrics.define({
+    id: ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
+    name: "Latest accepted Scout source outputs per source",
+    owner: "scout",
+    project: projectId,
+    type: "gauge",
+    target: 1,
+    threshold: 0,
+    unit: "count",
+    priority: "P2",
+    alertOp: "<",
+    source: "source_command",
+    sourceCommand: `bun ${appDir}/scripts/accepted-source-outputs.ts`,
+    measureInterval: 21_600_000,
+    status: "active",
+    description: `Distinct durable output:<path> evidence represented by each source's latest converged Scout task resource in ${DEFAULT_SCOUT_TASK_STATE_PATH}. Evidence-backed latest no-change resources without durable output are excluded; no rolling-window or successive-run coverage is claimed.`,
+  });
   const preambleCoverage = knowledgePreambleCoverage(projectDir);
   await ctx.metrics.record(
     KNOWLEDGE_PREAMBLE_COVERAGE_METRIC_ID,

@@ -4,6 +4,13 @@ This directory contains the ordinary App that owns operation of the May Host.
 Its human name is **Host Operations App**. Its stable technical App ID remains
 `may-agent` so retained Task identities do not change.
 
+Its contribution to [May's overall goal](docs/1-principles/design-philosophy.md#mays-goal)
+is to keep the Host dependable and affordable to operate and change, so May
+and domain Apps can deliver useful results with less human supervision.
+Judge runtime work by that contribution and its total cost. Use the
+[decision and review guide](docs/1-principles/core-principles.md#review-rule)
+for proposals, implementation choices, and reviews.
+
 ## Boundary
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a

@@ -1,6 +1,99 @@
 # How to Use may-agent
 
-## Starting an Instance
+## Human Requests
+
+A Request is an accepted ask that May must close the loop on. The conversation
+pattern is to understand your intention, recognize or refine the ask, explain
+what May will do, and return the outcome. Clear authorized asks need an
+acknowledgment, not another approval. A correction can refine the same Request.
+
+```text
+You: Compare these implementations.
+May: I'll run the benchmarks, then explain the tradeoffs.
+     -> independent benchmark Task admitted; this turn finishes
+     -> the comparison Request remains open
+
+You: Include memory use too.
+     -> refine the same Request and its work
+
+Later: May returns the comparison and explanation.
+       -> close the Request, or state what remains unresolved
+```
+
+**Current implementation:** Human messages are recorded durably and queued for
+May to handle. The Host calls that handling record a request; it can finish
+after an answer or Task admission. Cross-turn Request tracking and explicit
+closure are [accepted design with remaining work](../2a-design/message-lifecycle.md#current-implementation-and-gaps),
+not a shipped separate Request interface.
+
+May may group related Turns under a Topic. A Topic remembers what you are
+discussing and links the responsible Tasks; it has no status or execution
+loop. Discussion and joint problem-solving stay in Conversation for as many
+turns as useful. A long discussion is not a reason to move it into a Task.
+An independent background assignment has an exact Task owned by the App that
+can do it; its findings can support your ongoing discussion.
+
+The [background authorization policy](../2a-design/message-lifecycle.md#authorization-for-background-work)
+allows already-authorized work to run in the background without another
+approval just for that execution choice. Discussing an idea does not authorize
+implementing it. New scope or authority outside existing instructions needs
+your decision in the same Conversation. A progress update, blocker, or “Task
+started” acknowledgment does not by itself resolve an outstanding ask.
+
+May may answer directly or send typed input to the responsible App. The target
+App then owns its own Task. For example, Runtime deployment work belongs to the
+Host Operations App (`appId: may-agent`), not to May and not to the bounded
+agent run named `may`.
+
+### May Console controls
+
+| Command               | Action                                                    |
+| --------------------- | --------------------------------------------------------- |
+| `/apps [app]`         | List Apps or select the current App                       |
+| `/topics`             | List Topics and their linked Task count                    |
+| `/topics more`        | Continue to the next older Topic page                      |
+| `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
+| `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps or recent terminal Tasks |
+| `/tasks more`         | Continue the exact prior Task list when another page exists |
+| `/todo [all]`         | Show open human actions on selected or reachable Tasks      |
+| `/todo more`          | Continue the exact prior human-action page                  |
+| `/task <ref>`         | Read one exact Task                                       |
+| `/watch [ref]`        | Watch or show one Task                                    |
+| `/unwatch`            | Leave the watch without changing the Task                 |
+| `/cancel [ref]`       | Cancel the named or currently watched Task                |
+| `/reload`, `/restart` | Reload definitions or restart the Runtime                 |
+| `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
+
+`/tasks` shows each Task's plain state, concrete goal, and whether it needs you.
+Use `/task <ref>` for the goal, current progress or wait, expected result, exact
+human action (or `Nothing needed right now`), and last update time. Technical
+IDs and sessions are shown only as secondary details.
+
+`/cancel` cancels a Task; `/unwatch` only ends its watch. Explicit Stop/Steer for
+the current conversational turn is an
+[accepted design with an implementation gap](../2a-design/human-control-surfaces.md#current-turn-control),
+not an available shared Console/Telegram command. Ordinary text sent during a
+running turn is currently admitted but waits for the next Conversation claim.
+
+Bare text always goes through May with the selected App as context. While
+watching, Console also attaches the exact Task identity as context. May decides
+whether the human is asking about it, changing it, or starting another topic;
+Console never steers an execution session directly.
+
+Use `/topic <ref>` when you want later turns to continue one subject. The
+prompt shows the short Topic reference, and `/topic` gives a compact catch-up
+with its related Turns and Tasks. Use `/topic clear` to leave it. Following a
+Topic changes context only; use `/task` or `/watch` for live work state.
+
+Use `/todo` for decisions needed by the selected App, `/todo all` for the
+cross-App view, and `/todo more` when another page exists. The prompt count and
+best-effort off-watch notifications update from Task events without polling.
+`/watch <ref>` opens one action for live progress and natural feedback;
+satisfying its Condition removes it from `/todo` without a delivery
+acknowledgement.
+
+## Starting and development modes
+
 
 ```bash
 # Run these commands from the Runtime repository.
@@ -62,78 +155,9 @@ forwarder is not attached — avoiding duplicate prints.
 
 For one-off commands, prefer direct `bun src/app/may.ts ...` invocation.
 
-## Human Requests
+## Agent configuration and standalone execution
 
-Console, Web, Telegram, and control-socket text all add one durable human Turn
-to May's Conversation and admit one recoverable May request. The request
-remembers which Turn needs an answer; it is not executable work and does not
-become a per-Turn Task. May answers directly or publishes one typed follow-up
-to an exact responsible Task. May may also own an ordinary goal Task when it is
-the accountable App.
-
-```
-may> implement a retry mechanism for failed API calls
-      ↓
-  one May request -> direct answer, or responsible Task admission
-                  -> Topic links exact Task; May's supervision Task reviews events
-
-may> now add tests for it
-      ↓
-  a new May request with bounded Conversation and Topic context
-```
-
-May may group related Turns under a Topic. A Topic remembers what you are
-discussing and links the responsible Tasks; it has no status or execution
-loop. Long-running work is always represented by an exact Task owned by the App
-that can do it.
-
-May may answer directly or send typed input to the responsible App. The target
-App then owns its own Task. For example, Runtime deployment work belongs to the
-Host Operations App (`appId: may-agent`), not to May and not to the bounded
-agent run named `may`.
-
-### May Console controls
-
-| Command               | Action                                                    |
-| --------------------- | --------------------------------------------------------- |
-| `/apps [app]`         | List Apps or select the current App                       |
-| `/topics`             | List Topics and their linked Task count                    |
-| `/topics more`        | Continue to the next older Topic page                      |
-| `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
-| `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps or recent terminal Tasks |
-| `/tasks more`         | Continue the exact prior Task list when another page exists |
-| `/todo [all]`         | Show open human actions on selected or reachable Tasks      |
-| `/todo more`          | Continue the exact prior human-action page                  |
-| `/task <ref>`         | Read one exact Task                                       |
-| `/watch [ref]`        | Watch or show one Task                                    |
-| `/unwatch`            | Leave the watch without changing the Task                 |
-| `/cancel [ref]`       | Cancel the named or currently watched Task                |
-| `/reload`, `/restart` | Reload definitions or restart the Runtime                 |
-| `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
-
-`/tasks` shows each Task's plain state, concrete goal, and whether it needs you.
-Use `/task <ref>` for the goal, current progress or wait, expected result, exact
-human action (or `Nothing needed right now`), and last update time. Technical
-IDs and sessions are shown only as secondary details.
-
-Bare text always goes through May with the selected App as context. While
-watching, Console also attaches the exact Task identity as context. May decides
-whether the human is asking about it, changing it, or starting another topic;
-Console never steers an execution session directly.
-
-Use `/topic <ref>` when you want later turns to continue one subject. The
-prompt shows the short Topic reference, and `/topic` gives a compact catch-up
-with its related Turns and Tasks. Use `/topic clear` to leave it. Following a
-Topic changes context only; use `/task` or `/watch` for live work state.
-
-Use `/todo` for decisions needed by the selected App, `/todo all` for the
-cross-App view, and `/todo more` when another page exists. The prompt count and
-best-effort off-watch notifications update from Task events without polling.
-`/watch <ref>` opens one action for live progress and natural feedback;
-satisfying its Condition removes it from `/todo` without a delivery
-acknowledgement.
-
-## Agents
+These are executor/maintenance controls, not a separate durable App work path.
 
 ### Configured agents
 
@@ -339,9 +363,10 @@ See [cron.md](../2a-design/cron.md) for details.
       output/                 # Task deliverables
   event-bodies/               # Content-addressed large event payloads
   cli-tasks/                  # Native coding-worker requests and results
-  may.db                      # Query/projection store
+  may.db                      # Authoritative work/admission state plus read projections
 ```
 
+See [Storage](../2a-design/storage.md) for the authoritative record table.
 The `evaluations` SQLite table is the query projection for session summaries.
 Historical `.state/evaluations/` files are not the current authority.
 

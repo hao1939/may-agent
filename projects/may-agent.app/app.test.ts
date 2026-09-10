@@ -3,12 +3,13 @@ import { existsSync } from "node:fs";
 import type { AppEvent, AppInput } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import app, {
+  GROUPED_GOAL_ACCEPTANCE,
   OWNER_HEARTBEAT_INTERVAL_MS,
   OWNER_REVIEW_DELIVERY_ACCEPTANCE,
   OWNER_REVIEW_TASK_ID,
   PLATFORM_REVIEW_INTERVAL_MS,
-  resolveMayAgentTask,
-  taskForMayAgentInput,
+  resolveHostOperationsTask,
+  taskForHostOperationsInput,
   taskInputForEvent,
   validateHostOperationsCondition,
 } from "./app.ts";
@@ -38,9 +39,9 @@ describe("Host Operations App", () => {
       tasks: { maxConcurrent: 2 },
     });
     expect(app).not.toHaveProperty("inbox");
-    expect(app.task).toBe(taskForMayAgentInput);
+    expect(app.task).toBe(taskForHostOperationsInput);
     expect(app.route).toBeUndefined();
-    expect(app.tasks?.resolve).toBe(resolveMayAgentTask);
+    expect(app.tasks?.resolve).toBe(resolveHostOperationsTask);
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "project-comment",
       "project-owner-request",
@@ -189,7 +190,7 @@ describe("Host Operations App", () => {
 
 describe("may-agent task routing", () => {
   it("routes App-owned platform facts to the runnable canonical owner", () => {
-    const intent = resolveMayAgentTask(
+    const intent = resolveHostOperationsTask(
       event("project.tick", { reason: "scheduled" }),
     );
     expect(intent).toMatchObject({
@@ -199,18 +200,24 @@ describe("may-agent task routing", () => {
       input: { scope: "may-agent-platform" },
     });
     expect(intent).not.toHaveProperty("workflow");
-    expect(resolveMayAgentTask(event("project.ops_health.tick"))).toBeNull();
-    expect(resolveMayAgentTask(event("project.ops_digest.tick"))).toBeNull();
+    expect(
+      resolveHostOperationsTask(event("project.ops_health.tick")),
+    ).toBeNull();
+    expect(
+      resolveHostOperationsTask(event("project.ops_digest.tick")),
+    ).toBeNull();
   });
 
   it("keeps mechanical session recovery and one-time state migration in Runtime", () => {
     expect(
-      resolveMayAgentTask(
+      resolveHostOperationsTask(
         event("session.recovery.requested", { sessionId: "s_failed/17" }),
       ),
     ).toBeNull();
     expect(
-      resolveMayAgentTask(event("may-agent.resource-migration.requested")),
+      resolveHostOperationsTask(
+        event("may-agent.resource-migration.requested"),
+      ),
     ).toBeNull();
   });
 
@@ -268,7 +275,7 @@ describe("may-agent task routing", () => {
         metric: { alertId: 4657, current: 5 },
       },
     });
-    expect(resolveMayAgentTask(sourceFailure)).toMatchObject({
+    expect(resolveHostOperationsTask(sourceFailure)).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
       agent: "tech-lead",
@@ -276,29 +283,93 @@ describe("may-agent task routing", () => {
     });
   });
 
-  it("maps an addressed owner review to request-specific achieve work with delivery dedupe proof", () => {
-    const attachment = taskForMayAgentInput(
-      admittedInput({
+  it("attaches repeated item-level owner-review inputs to one retained platform goal", () => {
+    const inputs: AppInput[] = [
+      { kind: "owner-review", data: { reason: "timer", finding: "f-1" } },
+      { kind: "owner-review", data: { reason: "event", check: "c-1" } },
+      { kind: "owner-review", data: { reason: "refill", proposal: "p-1" } },
+      {
         kind: "owner-review",
-        data: {
-          reason: "manual",
-          outcome: "Resolve this addressed review.",
-          acceptance: ["Return terminal proof."],
-        },
+        data: { reason: "owner-review", sessionAudit: "s-1" },
+      },
+      {
+        kind: "owner-review",
+        data: { reason: "reconciliation", workItem: "w-1" },
+      },
+    ];
+
+    const attachments = inputs.map((input, index) =>
+      taskForHostOperationsInput({
+        ...admittedInput(input),
+        id: `request-${index + 1}`,
       }),
     );
 
-    expect(attachment).toMatchObject({
-      kind: "desired",
-      intent: {
-        id: "app-request/request-1",
-        mode: "achieve",
-        outcome: "Resolve this addressed review.",
+    expect(attachments.map(({ intent }) => intent.id)).toEqual(
+      Array(inputs.length).fill(OWNER_REVIEW_TASK_ID),
+    );
+    for (const attachment of attachments) {
+      expect(attachment).toMatchObject({
+        kind: "desired",
+        intent: {
+          id: OWNER_REVIEW_TASK_ID,
+          mode: "maintain",
+          input: { scope: "may-agent-platform" },
+        },
+      });
+      expect(attachment.intent.acceptance).toEqual([
+        "The owner performs one useful platform step or records an evidence-backed no-op, with task-resource changes proposed as typed actions.",
+        ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
+        ...GROUPED_GOAL_ACCEPTANCE,
+      ]);
+    }
+  });
+
+  it("permits a separate Task only for an explicit independent goal and reuses its key", () => {
+    const independent: AppInput = {
+      kind: "owner-review",
+      data: {
+        independentGoal: true,
+        goalKey: "deploy-runtime-candidate-abc",
+        outcome: "Deploy one independently approved runtime candidate.",
+        acceptance: ["Return the correlated activation receipt."],
+        externalWait: "approval:candidate-abc",
+      },
+    };
+    const first = taskForHostOperationsInput({
+      ...admittedInput(independent),
+      id: "request-independent-1",
+    });
+    const replay = taskForHostOperationsInput({
+      ...admittedInput(independent),
+      id: "request-independent-2",
+    });
+    const other = taskForHostOperationsInput({
+      ...admittedInput({
+        ...independent,
+        data: { ...independent.data, goalKey: "deploy-runtime-candidate-def" },
+      }),
+      id: "request-independent-3",
+    });
+
+    expect(first.intent.id).toStartWith("goal/deploy-runtime-candidate-abc-");
+    expect(first.intent.id).toBe(replay.intent.id);
+    expect(first.intent.id).not.toBe(other.intent.id);
+    expect(first.intent).toMatchObject({
+      mode: "achieve",
+      outcome: "Deploy one independently approved runtime candidate.",
+      input: {
+        kind: "owner-review",
+        data: {
+          goalKey: "deploy-runtime-candidate-abc",
+          externalWait: "approval:candidate-abc",
+        },
       },
     });
-    expect(attachment.intent.acceptance).toEqual([
-      "Return terminal proof.",
+    expect(first.intent.acceptance).toEqual([
+      "Return the correlated activation receipt.",
       ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
+      ...GROUPED_GOAL_ACCEPTANCE,
     ]);
   });
 
@@ -324,7 +395,7 @@ describe("may-agent task routing", () => {
     for (const [index, input] of inputs.entries()) {
       expect(Check(app.inputSchema, input)).toBeTrue();
       expect(
-        taskForMayAgentInput({
+        taskForHostOperationsInput({
           ...admittedInput(input),
           id: `aks-request-${index + 1}`,
         }),
@@ -379,7 +450,7 @@ describe("may-agent task routing", () => {
       expect(Check(app.inputSchema, input)).toBeFalse();
     }
     expect(() =>
-      taskForMayAgentInput({
+      taskForHostOperationsInput({
         id: "wrong-source",
         source: { kind: "system", id: "test" },
         input: {
@@ -404,7 +475,7 @@ describe("may-agent task routing", () => {
       "Unsupported Host Operations input kind: protected-agent-config-repair",
     );
     expect(() =>
-      taskForMayAgentInput(
+      taskForHostOperationsInput(
         admittedInput({ kind: "request", data: { outcome: "generic" } }),
       ),
     ).toThrow("Unsupported Host Operations input kind: request");

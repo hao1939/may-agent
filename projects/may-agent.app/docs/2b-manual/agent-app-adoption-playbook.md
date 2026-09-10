@@ -1,171 +1,51 @@
-# App quickstart
+# App Adoption Checklist
 
-Use an App when one responsibility must make sure addressed work is
-eventually handled. An App is a domain capability, not another daemon.
+Use an App for a durable responsibility with typed inputs and acceptance rules.
+Begin with the [SDK Quickstart](sdk-quickstart.md) and its checked example;
+this checklist adds the decisions needed for your own domain.
 
-The routing rule is deliberately small:
+## Define responsibility and identity
 
-```text
-actionable App input           -> TaskIntent
-exact task target or Condition -> exact task wake
-otherwise                      -> observation
-```
+- Choose one App address and describe the outcome it owns.
+- Declare a specific input schema and an available default agent.
+- Enable Task policy with `tasks` and map durable input through `task(request)`.
+- For a new App, seed the structural root referenced by its Task intents, as
+  shown in the quickstart. A parent must exist before Task admission.
+- Return an existing or desired attachment. Use a stable domain key when several
+  inputs concern the same outcome; use the admitted request ID for distinct work.
+- State an observable outcome and acceptance proof. A generic input kind alone
+  is not a safe identity for all work of that kind.
 
-An App has one declaration, `app.ts`, and uses one public SDK entry point,
-`@may-agent/sdk`. Do not create `inbox.ts`, an App-local event router, a second
-queue, or direct task-state writes.
+A Task may converge in one attempt or continue through exact waits. May can
+also finish self-contained authorized work in a bounded conversational turn;
+see [Message Lifecycle](../2a-design/message-lifecycle.md).
 
-## 1. Create the package
+## Add only the capabilities needed
 
-```text
-projects/example.app/
-  app.ts
-  project.json
-  agents/
-    example-agent/
-      agent.json
-      AGENTS.md
-      workflows/
-        inspect-source.ts
-  tasks/seed.json                 # optional structural seed
-  .state/                         # runtime-owned, never authored
-```
+| Need | Declaration or convention |
+| --- | --- |
+| Translate selected facts to input | `subscriptions` and pure `toInput` |
+| Resolve desired work directly from a fact | `tasks.subscriptions` and pure `tasks.resolve` |
+| Retain observation without work | `observations`, or a resolver returning `null` |
+| Admit input or publish a fact on a cadence | `schedules` |
+| Collect external facts | Bounded `observers` |
+| Expose a typed command | `actions` with schema and pure `toInput` |
+| Preserve a repeatable process | `agents/<agent>/workflows/<name>.ts` |
+| Wait for another App | Typed dependency in the Task result |
 
-The configured default agent must match an App-local or globally registered
-agent. Reusable workflows live below the agent whose bounded context they use.
+Pure declarations and mappings do not perform domain effects. Execution occurs
+in a bounded turn or Task attempt. Use the
+[canonical package layout](../2a-design/agent-app.md#package-layout), rather
+than adding an App daemon, queue, workflow registry, or state writer.
 
-## 2. Declare the smallest App
+## Verify the actual routes
 
-```ts
-import { Type, defineApp } from "@may-agent/sdk";
+Run the package's declared checks; script names vary between Apps. Cover the
+routes the App uses, including repeated input, Task attachment, result admission,
+exact waits, dependencies, and failed definitions. Use portable fixtures rather
+than a live installation for these checks.
 
-export default defineApp({
-  id: "example",
-  version: 1,
-  agent: "example-agent",
-  description: "Maintain the example domain.",
-  inputSchema: Type.Object({
-    kind: Type.String(),
-    data: Type.Unknown(),
-  }),
-  task(input) {
-    return {
-      id: `input/${input.kind}`,
-      parentId: "project",
-      outcome: `Handle ${input.kind}`,
-      acceptance: ["The requested outcome is evidenced."],
-      mode: "achieve",
-      input,
-    };
-  },
-  workspace: { kind: "local", localPath: "../example" },
-});
-```
-
-This agent-handled App is valid. Requests are caller correlation records; only
-the linked task invokes its selected agent.
-
-## 3. Refine task identity and intent
-
-`task` is pure policy for validated App input. It selects the stable task the
-App owns; agent judgment happens only during a bounded reconciliation attempt.
-
-```ts
-task(input) {
-  return {
-    id: `input/${input.kind}`,
-    parentId: "project",
-    outcome: `Handle ${input.kind}`,
-    acceptance: ["The requested outcome is evidenced."],
-    mode: "achieve",
-    input,
-  };
-}
-```
-
-The resolver never executes work. Simple work still follows this path and can
-converge during the task's first attempt.
-
-## 4. Map repeated input to a standing task
-
-```ts
-task(input) {
-  const revision = String(input.data.revision ?? "");
-  if (!revision) return null;
-  return {
-    id: "inspect-source",
-    parentId: "project",
-    outcome: "Inspect the current source and retain useful evidence.",
-    acceptance: ["Current source evidence justifies the disposition."],
-    mode: "maintain",
-    workflow: "inspect-source",
-    input,
-  };
-},
-```
-
-The resolver is deterministic and cheap. It may identify desired work; it may
-not inspect external state, invoke an agent, or mutate storage. Returning
-`null` means the validated input is explicitly non-actionable.
-
-Exact task targets and matching Conditions wake only that task. A single fact
-must not both resolve a new task and wake an existing one in the same App.
-
-## 5. Add ingress without creating another authority
-
-- `subscriptions` translate selected facts into App inputs.
-- `observations` classify reviewed facts that intentionally create no work.
-- `schedules` admit an App input or publish a fact.
-- `observers` read scoped state and publish facts.
-- `actions` validate user parameters and translate them to App input.
-
-All five enter the same canonical host. They do not invoke App code directly.
-
-```ts
-actions: {
-  inspect: {
-    description: "Inspect the current source",
-    inputSchema: Type.Object({ scope: Type.String() }),
-    toInput: ({ scope }) => ({ kind: "inspect", data: { scope } }),
-  },
-},
-```
-
-## 6. Write a bounded workflow
-
-```ts
-import type { WorkflowContext, ExecutionResult } from "@may-agent/sdk";
-
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
-  const result = await ctx.agents.call(
-    "example-agent",
-    "Inspect the declared source revision and summarize the evidence.",
-  );
-  if (result.status !== "done") return ctx.blocked(result.summary);
-  return ctx.done("Source inspection completed.", {
-    state: "converged",
-    summary: result.summary,
-    evidence: [`agent-execution:${result.id}`],
-    actions: [],
-  });
-}
-```
-
-Use scoped `ctx.read`, `ctx.workspace`, agent/workflow calls, events, and
-metrics. Return task changes through the compatibility `actions` field and
-exact Conditions; never open task storage or implement retries in App code.
-
-## 7. Verify
-
-Run the App package's normal gates and the runtime contract suites:
-
-```bash
-bun run syntax
-bun run typecheck
-bun run test
-bun run bundle:verify
-```
-
-Before rollout, prove direct completion, agent handling, dependencies, Task
-attachment, restart recovery, registry reload, result correlation, and any
-adapter-specific presentation required by the App's actual routes.
+Before rollout, verify the paired Host/SDK release and use the documented
+[activation and recovery procedure](app-operations-recovery.md). Prove restart
+identity and adapter presentation where the App depends on them. A passing
+unit test or definition import alone does not prove deployment behavior.

@@ -2,11 +2,108 @@
 
 **Design status:** Accepted.
 
-These principles explain why the current design looks the way it does. Start
-with [system-model.md](../2a-design/system-model.md) for the concrete mental
-model.
+These are the technical decision rules derived from our
+[Design Philosophy](design-philosophy.md). Use them to judge a change; use
+[System Model](../2a-design/system-model.md) for the current mental model and
+the linked subsystem documents for exact contracts. An accepted direction is
+not a claim that every implementation boundary is already separated.
 
-## 1. Apps own meaning; the Host owns mechanics
+For any design choice, first make the
+[project goal](design-philosophy.md#define-the-goal-first) clear, then ask the
+[fundamental question](design-philosophy.md#how-to-decide-a-tradeoff):
+**What value does this provide, what does it cost, and is it worth that cost?**
+Assess the [benefits and costs of each choice](design-philosophy.md#value-and-cost);
+the same mechanism can produce both. Question expensive guarantees and
+compare with a simpler alternative. The principles below guide mechanism
+selection; they do not each demand the most elaborate possible implementation.
+
+## Simple first
+
+First ask whether the proposed feature can be removed while still satisfying
+the outcome. Otherwise use the smallest sufficient mechanism. Reuse an
+existing capability or ordinary module before adding a framework, protocol,
+configuration layer, or work lifecycle. Simplicity includes the decisions,
+handoffs, and recovery paths needed to operate the system, not only code size.
+
+Sufficient includes [robustness for the actual need](design-philosophy.md#robust-enough-for-the-goal).
+Remove fragile dependencies and unnecessary state first. Add protection where
+the avoided disruption justifies its implementation, operating cost, and new
+failure paths. Extra compute or storage may keep the design simple and robust.
+
+Compare implementation and maintenance complexity with expected execution,
+failure, and redo costs. Accept extra computation or latency when that is
+cheaper overall than machinery to avoid it. Match the
+[time horizon and risk](design-philosophy.md#match-the-horizon-and-risk) to the
+choice: recurring costs matter more for a frequently used foundation; a trial
+should earn its next investment through useful results or learning. Reassess
+when a trial becomes regular use. Favor quick experiments when mistakes are
+affordable; increase evidence and protection as the cost of being wrong rises.
+
+Test the uncertain part with a small experiment. Add structure when evidence
+shows what failure it prevents; known correctness requirements can justify it
+immediately. When a fix grows through repeated special cases, reconsider the
+feature or guarantee causing it. A simpler contract with acceptable limitations
+may be better than a more elaborate implementation of the old one. Change the
+owning contract and affected consumers together; do not claim a guarantee that
+the system no longer provides. See [When a fix keeps growing](design-philosophy.md#when-a-fix-keeps-growing).
+See [Evidence First](evidence-first.md) and [Mechanism Selection](code-vs-data.md).
+
+## Stable core, replaceable capabilities
+
+Keep stable guarantees in a small core: App registration and input admission,
+Events, State and storage, and Work runtime. Shared timing and failure
+containment support those responsibilities. Grow capability through Apps,
+executors, producers, interfaces, and specialized
+reports that use those contracts. Adding an implementation should normally
+change its module and composition wiring, not core lifecycle or state rules.
+
+Removal should degrade capability while preserving the remaining system's
+correctness and accepted obligations. Without a required executor, affected
+work remains visible and cannot claim completion. Removing an interface must
+not stop unrelated Tasks. Removal may require draining work first.
+
+External means outside this stable responsibility boundary; an adapter may
+live in the same Host, process, and repository. A needed capability can have a
+replaceable implementation. Shared code is not automatically core, and stable
+does not mean frozen. The [architecture](../2a-design/architecture.md)
+owns these boundaries and the behavior required when a capability is absent.
+
+### Contain failures; keep default capabilities simple
+
+Execution boundaries preserve failure evidence, clean up resources, apply bounded
+known-safe responses and expose truthful outcomes. Code executes predictable
+rules; the App or LLM judges uncertain causes, scope and whether more work is
+worthwhile. An honest stop can be the right decision.
+
+Useful default error handling and metrics remain product goals. Being provided
+by default does not by itself put a capability in core. The expanded core-metrics
+draft, simple `onError` event alternative, and App placement discussion are
+[archived for later review](../archive/reviews/error-handling-and-conversation-discussion-20260910.md). They do not
+require a new framework, mandatory collector, or App merger now.
+
+Keep current work focused on simple, robust execution: one authority for work
+and results, bounded attempts, explicit waits and cancellation, and safe restart
+behavior. Prefer affordable safe redo when preserving progress adds more cost.
+Measurement or investigation failure must not roll back accepted work or mask
+the original failure. Existing [metric contracts](../2a-design/metrics.md) remain
+in force while their default placement is reconsidered.
+
+## Solidify the common 20%; teach the remaining 80%
+
+This Herdr Supervisor heuristic guides what belongs in code; the percentages
+are not a feature quota or a correctness target. Build a small, reliable
+foundation for observation, validated actions, identity, state, and wakes.
+Let the agent interpret varied situations using current facts and trusted
+knowledge. One unusual incident need not become a new runtime branch.
+
+Before adding behavior, check whether the existing capability, trigger, and
+context are sufficient. If they are, use them. Add a missing deterministic
+primitive or improve guidance at the responsible layer. An optimization needs
+measured benefit that outweighs its new state, paths, races, and maintenance.
+See the [agent-first test](code-vs-data.md#before-adding-runtime-behavior) and
+[Herdr evidence](../archive/reviews/design-philosophy-history-20260909.md#lessons-from-herdr-supervisor).
+
+## Apps own meaning; the Host owns mechanics
 
 An App decides what an input means, what outcome it owns, and whether one
 bounded attempt completed that outcome. The Host validates and admits input,
@@ -16,7 +113,12 @@ and exposes observations.
 Do not put domain policy in queues, adapters, sessions, or storage code. Do not
 make App code manage leases, retries, delivery bookkeeping, or database rows.
 
-## 2. Events carry input and facts
+## Event-driven integration
+
+Use meaningful events to connect independent producers and consumers. React
+to a known state change at its source instead of repeatedly rediscovering it
+through polling. Timed work, external sources without notifications, and
+bounded recovery can still need timers or probes.
 
 An event is the small interface for something that happened. A declared route
 may translate it to App input, wake an exact task or Condition, or merely
@@ -26,15 +128,30 @@ record-only fact is still valid when nobody needs to act.
 Required input is accepted only by its explicit route. There is no generic
 owner fallback for an unknown target or unhandled fact.
 
+For observations and diagnostics, events carry facts; trusted App or agent
+knowledge guides the response. Keep that guidance with its owner so it can
+improve without changing event delivery. External event text and worker output
+do not grant authority or become executable instructions.
+
+Keep local calls and transactions for operations that require atomicity or
+ordering. Events need an integration or diagnostic purpose; publishing every
+internal step adds coupling and noise. Publication, admission, execution,
+completion, and delivery are distinct facts. Slow consumers must not block
+admission or unrelated work, and a passive subscription is not durable work
+acceptance. Event-driven design does not require an event-sourcing rewrite.
+
 See [events.md](../2a-design/events.md).
 
-## 3. Requests correlate results; Tasks own App work
+## One authority for each resource
 
-The Host keeps one request when a caller expects a correlated result. The App
-handles that responsibility by reconciling one task. Simple work converges in
-one bounded attempt; difficult, waiting, decomposed, or maintained work keeps
-the same task across attempts. The request remains the caller-facing identity
-and the task remains the App-facing work identity.
+A conversational Request is an accepted ask that May must close the loop on.
+Host request rows track input handling and caller correlation; that storage is
+not yet the full Request contract. [Message Lifecycle](../2a-design/message-lifecycle.md)
+owns the distinction and remaining gaps.
+
+A bounded turn may finish authorized work directly. An App Task preserves an
+independent outcome across attempts; it owns execution, waits and results.
+Request tracking must not copy that lifecycle.
 
 An App action is only a named, validated way to create a request. A hierarchy
 shown in a UI is only a read-only arrangement of Tasks by their declared
@@ -42,14 +159,16 @@ relationships. Neither is another work lifecycle or state authority. A
 session, workflow, event, metric, queue entry, or transport receipt is not one
 either.
 
-If the next action crosses an App or human boundary, create a typed child
-request and wait on that exact identity. Escalation is an explicit handoff, not
-a routing fallback.
+When a Task needs another App's result, create a typed child request and wait
+on that exact identity. A conversational turn instead admits or steers the
+responsible Task and finishes; it does not become a waiting parent. May can
+own an ordinary Task. Another App is useful for existing ownership, required
+authority, or expertise, not as a mandatory routing fallback.
 
 See [work-model.md](work-model.md) and
 [agent-app.md](../2a-design/agent-app.md).
 
-## 4. Context is discovered, not dumped
+## Context is discovered, not dumped
 
 Prompts contain enough identity, request state, and pointers to begin. Agents
 discover project history, skills, knowledge, metrics, and design details when
@@ -59,14 +178,14 @@ evidence, not an ever-growing default prompt.
 See [sessions.md](../2a-design/sessions.md) and
 [skills.md](../2a-design/skills.md).
 
-## 5. Match the mechanism to the responsibility
+## Match the mechanism to the responsibility
 
 First decide what is owned:
 
 ```text
-caller expects a correlated result -> Host request linked to an App task
-App must make an outcome true       -> task
-changed or observed state only      -> fact
+accepted human ask                -> Request with an eventual outcome
+independent ongoing App outcome    -> Task, linked to the Request when present
+changed or observed state only     -> fact
 ```
 
 Then decide how one bounded attempt runs:
@@ -78,25 +197,53 @@ Then decide how one bounded attempt runs:
 | Stable ordering, branching, limits, or verification | Workflow                            |
 | Mechanical detection                                | Observer, guard, or metric          |
 
-Every actionable App input becomes or wakes a task. Asynchrony, importance, or
-frequency do not require a workflow or another work mechanism.
+Prefer a reusable skill over another agent when guidance is all that is
+missing. Delegate when domain context, independent judgment, isolation, or
+parallel execution justifies it. Encode predictable mechanics in tools and
+workflows; keep contextual decisions with the responsible agent or App.
+
+An ongoing App commitment becomes or wakes a Task. A bounded conversational
+turn may finish authorized work directly. Neither tool use nor frequency alone
+requires a workflow or a new work mechanism.
 
 An App becomes more powerful by adding domain policy, acceptance checks,
 learned workflows, and bounded capabilities available during reconciliation.
 Those extensions must not add App-owned storage, workers, schedulers, retries,
 recovery, or delivery paths.
 
-## 6. Evidence before complexity
+## Separate triggering, execution, and recovery
 
-Use the smallest mechanism that can test the hypothesis. Add structure only
-when evidence identifies a repeated failure that the structure prevents.
-Known safety-critical protocols may justify structure immediately; otherwise
-prefer a bounded direct attempt before inventing a framework.
+Schedules and observers supply input or facts. The Task runtime preserves the
+obligation and decides when an attempt is eligible; the executor performs one
+bounded attempt. Disabling optional schedule registrations must not disable
+already admitted work or the timing needed for recovery.
 
-See [evidence-first.md](evidence-first.md),
-[code-vs-data.md](code-vs-data.md), and [evolution.md](evolution.md).
+Store accepted work before execution. Preserve its identity across waits,
+cancellation, and restart; reject stale attempt results. Recovery restores the
+same obligation; it need not resume the interrupted execution at the same step.
+Keep hot-path work and recovery reads bounded to the affected resources. A
+durable wait should release execution capacity rather than keep a session alive
+solely to wait.
 
-## 7. Metrics are observations, not decisions
+### Prefer redo when it is simpler and affordable
+
+Restart a retry-safe attempt from its input or a coarse boundary when the redo
+cost is acceptable. Preserve intermediate progress only when avoiding repeated
+work justifies checkpointing, restoration, and their maintenance. Consider how
+often interruption happens, the time and provider cost of redoing work, and the
+complexity and failure modes of resumption. Precise resume is an optimization,
+not a universal core requirement.
+
+Retain the state needed for correctness: accepted input, Task identity, accepted
+results, and evidence needed to handle committed effects safely. A retry may
+recompute a report or repeat a read. If an external action may already have
+happened, check its result or use its existing idempotency contract before
+repeating it. Cheap computation does not make duplicate effects acceptable.
+
+See [Task Engine](../2a-design/task-resource-engine.md),
+[Runtime](../2a-design/runtime.md), and [Scheduling](../2a-design/cron.md).
+
+## Metrics are observations, not decisions
 
 Metrics expose health, progress, and blind spots. A breach is evidence for the
 owning App to interpret, not automatic proof of failure or permission to
@@ -105,7 +252,7 @@ retire metrics whose meaning is weak.
 
 See [metrics.md](../2a-design/metrics.md).
 
-## 8. Human interfaces share the Conversation
+## Interfaces present shared state
 
 Console and Telegram append to and render the same Conversation resource.
 May's persisted result completes semantic work and becomes conversation
@@ -114,14 +261,21 @@ tracks transport attempts; adapter delivery never gates or rewrites the work.
 
 See [human-control-surfaces.md](../2a-design/human-control-surfaces.md).
 
-## 9. Prefer explicit declarations with useful conventions
+## Convention over configuration
 
-Conventions reduce repetition and make ownership easy to find. Executable
-behavior still has an explicit, typed, validated declaration: one `app.ts`, one
-`defineApp`, and one atomic App generation. Do not add a second loader,
+Conventions determine locations and defaults; explicit declarations determine
+ownership and behavior. Executable behavior has one typed, validated
+declaration: one `app.ts`, one `defineApp`, and one atomic App generation.
+Do not add a second loader,
 service locator, or implicit route merely to avoid a small declaration.
 
-## 10. Debug from evidence
+Use ordinary imports and narrow typed dependencies. Composition chooses and
+connects concrete adapters; core code depends on their contracts. Keep App
+policy local and expose only needed capabilities through the SDK. A new folder
+or interface proves little until replacement or absence preserves the contract.
+See [Architecture](../2a-design/architecture.md) for the current code map.
+
+## Fix the layer that failed
 
 When behavior is wrong, inspect the complete causal path:
 
@@ -134,13 +288,58 @@ Fix the layer that violated its contract. Prompt problems are common, but so
 are stale state, incorrect scheduling, resource pressure, and adapter faults.
 Do not assume either the model or infrastructure is guilty before checking.
 
+For a mechanical invariant, use code, schemas, or transactions. For missing
+knowledge, context may suffice; for a repeatedly missed sequence, a workflow
+may help. Behavioral detectors need evidence of usefulness and false positives
+before they block work. Do not add broad restrictions or more prompt rules to
+hide a failure in another layer. See [Mechanism Selection](code-vs-data.md).
+
 ## Review rule
 
-A change fits these principles when the answer to each question is clear:
+Use the philosophy when a decision can change the work, its scope, or its cost.
+Existing features and contracts face the same comparison as new ones.
 
-- Which App owns the meaning and terminal result?
-- Is this a request, desired-state task, or fact?
-- What is one bounded attempt, and why is its mechanism necessary?
-- Which state is authoritative?
-- Which Host mechanic preserves and advances it?
-- What evidence proves completion or explains lack of progress?
+| When | How to use it |
+| --- | --- |
+| Choosing work or a design | Identify the unmet goal and compare the proposed work with a simpler alternative or leaving it out |
+| A fix keeps growing | Reconsider the feature or guarantee driving the complexity before adding another mechanism |
+| Reviewing a proposal or PR | Test the claimed benefit, lifetime, costs, and failure assumptions against evidence and alternatives |
+| An experiment gains regular use, or actual results differ | Reassess cumulative cost and robustness; harden, simplify, or retire what the evidence warrants |
+
+For a meaningful tradeoff, answer the relevant questions:
+
+1. **Goal:** What outcome is sufficient, and what evidence would show it?
+2. **Alternative:** Could deletion, reuse, a narrower contract, or an existing
+   agent capability meet that need more simply?
+3. **Value and cost:** What do we gain and give up over likely lifetime and
+   usage, including maintenance, execution, and human attention?
+4. **Risk:** What if we are wrong, who or what is affected, and how costly is
+   reversal? What protection or experiment is proportionate?
+5. **Decision:** What is the smallest worthwhile next step, how will we verify
+   it, and what evidence would make us finish, change course, or invest further?
+
+Then consult the technical principles relevant to the affected boundary:
+ownership and authoritative state, capability removal, events versus calls,
+redo versus retained progress, or conventions. A recommendation should explain
+the concrete consequence and a feasible alternative. Naming a principle alone
+does not establish that a design is wrong; evidence can justify a different
+choice.
+
+Record material reasoning once in the existing proposal, task context, or PR.
+The Host PR template's **Purpose**, **Change and design**, and **Verification**
+sections already provide places for it. A useful decision note can be brief:
+
+> To achieve [outcome], choose [A] over [B] because [benefit] justifies [cost]
+> at [expected usage/lifetime]. Accept [limitation or risk]. Verify [evidence];
+> revisit if [assumption changes].
+
+For an agent task or review, supply the project goal, relevant evidence, and a
+link to this guide. Read deeper where the decision needs it. Routine obvious
+edits need no separate write-up, and this guide creates no new approval gate,
+scorecard, or automated enforcement of preferences.
+
+After implementation, check whether the promised improvement occurred using
+existing tests or operating evidence. If it did not, revise the choice and
+remove machinery that no longer earns its cost. The philosophy is useful when
+it improves decisions and outcomes; its own documentation and process cost
+must earn their place too.

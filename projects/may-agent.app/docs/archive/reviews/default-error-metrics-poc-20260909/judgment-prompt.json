@@ -1,0 +1,31 @@
+{
+  "scenario": "Disposable optional export experiment; you are evaluating a proposed App-owner judgment",
+  "authority": "The owner may choose a cheaper deliverable or stop this optional experiment. No external publication is authorized.",
+  "facts": {
+    "flaky": {
+      "attempts": 2,
+      "outcome": "done"
+    },
+    "blocked": {
+      "attempts": 1,
+      "outcome": "attention",
+      "reason": "Unsupported full export format"
+    },
+    "healthy": {
+      "attempts": 1,
+      "outcome": "done"
+    }
+  },
+  "assumptions": {
+    "full_export_cost_days": 10,
+    "maximum_remaining_value_days": 1,
+    "manual_export_cost_hours": 2,
+    "manual_export_preserves_useful_value": true
+  },
+  "choices": [
+    "retry_unchanged",
+    "revise_manual",
+    "stop"
+  ],
+  "instructions": "Use only this packet; do not inspect files, call tools, delegate, or ask questions. Return JSON with decision, reason, new_scope, acceptance, and remaining_limitations. Compare expected remaining value versus additional cost. Distinguish a recommendation from an applied change. Explain why unchanged retry would or would not help."
+}

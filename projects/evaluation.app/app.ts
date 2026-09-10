@@ -316,7 +316,6 @@ const evaluationFeedbackSchema = Type.Object(
 );
 
 export const watchedProjectTargets = [
-  { targetProject: "aks-rp-e2e.app" },
   { targetProject: "may-agent.app" },
   { targetProject: "scout-knowledge-lib.app" },
   { targetProject: "gym.app" },

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   Type,
   defineApp,
@@ -27,6 +28,10 @@ export const OWNER_REVIEW_TASK_ID = "runtime/platform-owner-review";
 export const OWNER_REVIEW_DELIVERY_ACCEPTANCE = [
   "Before sending any direct owner signal for recurring or previously attempted work, inspect the canonical delivery and remediation receipts and reuse the existing owner lineage when it already covers the obligation.",
   "The terminal result discloses every direct owner signal created during the review and explicitly records zero when none were created.",
+] as const;
+export const GROUPED_GOAL_ACCEPTANCE = [
+  "Repeated timer, event, refill, owner-review, and reconciliation inputs attach to this retained goal; findings, checks, proposals, sessions, and work items remain request evidence or structured Task state rather than becoming Tasks merely because they are separate items.",
+  "Create a separate Task only for an explicit independent goal key whose outcome, authority boundary, or external wait is genuinely independent; reuse that key for repeated inputs for the same goal.",
 ] as const;
 export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
@@ -69,49 +74,6 @@ export const platformInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  Type.Object(
-    {
-      kind: Type.Literal("contain-external-and-replayed-workspace-writer"),
-      data: Type.Object(
-        {
-          project: Type.Literal("aks-rp-e2e"),
-          sourceTaskId: Type.Literal(
-            "ops/contain-event5648100-mv-speed-live-post-guard-producer-20260819",
-          ),
-          sourceEventId: Type.Literal(5648100),
-          incidentPath: Type.Literal(
-            "/app/worktrees/aks-master-validation-speed",
-          ),
-          staleGitAdminPath: Type.Literal(
-            "/app/.git/worktrees/aks-master-validation-speed",
-          ),
-          externalRootPid: Type.Integer({ minimum: 1 }),
-          observedLiveDescendant: Type.Object(
-            {
-              pid: Type.Integer({ minimum: 1 }),
-              ppid: Type.Integer({ minimum: 1 }),
-              startedAt: nonEmptyString,
-              command: nonEmptyString,
-            },
-            { additionalProperties: false },
-          ),
-          writeSignature: Type.Literal(
-            ".tmp-default-fleet-overlay-*/staging.json",
-          ),
-          sourceConstructor: Type.Literal(
-            "runner/check-default-fleet-overlay.test.ts",
-          ),
-          replayedSessions: stringList,
-          workflowRuns: stringList,
-          workflow: Type.Literal("domain-task-execution"),
-          requiredOutcome: nonEmptyString,
-          evidenceArtifacts: stringList,
-        },
-        { additionalProperties: false },
-      ),
-    },
-    { additionalProperties: false },
-  ),
 ]);
 
 const deferredMetrics = new Set([
@@ -137,6 +99,23 @@ function stringValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function safeTaskIdPart(value: string): string {
+  return (
+    value
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "goal"
+  );
+}
+
+function independentGoalTaskId(goalKey: string): string {
+  const digest = createHash("sha256")
+    .update(goalKey)
+    .digest("hex")
+    .slice(0, 16);
+  return `goal/${safeTaskIdPart(goalKey)}-${digest}`;
+}
+
 function eventData(
   event: AppEvent<Record<string, unknown>>,
 ): Record<string, unknown> {
@@ -160,7 +139,44 @@ function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
 
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   switch (input.kind) {
-    case "owner-review":
+    case "owner-review": {
+      const data = record(input.data);
+      const goalKey = stringValue(data.goalKey);
+      const hasIndependentBoundary =
+        data.independentGoal === true &&
+        Boolean(
+          stringValue(data.outcome) ||
+          stringValue(data.authorityBoundary) ||
+          stringValue(data.externalWait),
+        );
+      if (goalKey && hasIndependentBoundary) {
+        const requestedAcceptance = Array.isArray(data.acceptance)
+          ? data.acceptance.filter(
+              (item): item is string =>
+                typeof item === "string" && item.trim().length > 0,
+            )
+          : [];
+        return {
+          id: independentGoalTaskId(goalKey),
+          parentId: "platform-system-review-feedback-loop",
+          outcome:
+            stringValue(data.outcome) ||
+            `Complete the independent Host Operations goal ${goalKey}.`,
+          acceptance: [
+            ...(requestedAcceptance.length > 0
+              ? requestedAcceptance
+              : [
+                  "Return a terminal, evidence-backed platform disposition through the supported control plane.",
+                ]),
+            ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
+            ...GROUPED_GOAL_ACCEPTANCE,
+          ],
+          mode: "achieve",
+          agent: hostOperationsAgent,
+          input: { kind: input.kind, data: { ...data, goalKey } },
+          priority: "P1",
+        };
+      }
       return {
         id: OWNER_REVIEW_TASK_ID,
         parentId: "platform-system-review-feedback-loop",
@@ -168,25 +184,13 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Keep platform state reviewed by its accountable owner and organize the smallest useful follow-up from current evidence.",
         acceptance: [
           "The owner performs one useful platform step or records an evidence-backed no-op, with task-resource changes proposed as typed actions.",
+          ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
+          ...GROUPED_GOAL_ACCEPTANCE,
         ],
         mode: "maintain",
         agent: hostOperationsAgent,
         input: { scope: "may-agent-platform" },
         priority: "P1",
-      };
-    case "contain-external-and-replayed-workspace-writer": {
-      const data = record(input.data);
-      return {
-        id: "",
-        parentId: "platform-system-review-feedback-loop",
-        outcome: stringValue(data.requiredOutcome),
-        acceptance: [
-          "Return exact process/session/workflow lineage, supported containment operations, fail-closed replay repair proof, and at least 180 seconds of quiescence without changing the incident path or Git metadata.",
-        ],
-        mode: "achieve",
-        agent: hostOperationsAgent,
-        input: { kind: input.kind, data },
-        priority: "P0",
       };
     }
     case "runtime-deployment.adjudicate-current-host-state":
@@ -255,14 +259,6 @@ export function resolveHostOperationsTask(
 export function taskForHostOperationsInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
-  if (
-    admitted.input.kind === "contain-external-and-replayed-workspace-writer" &&
-    (admitted.source.kind !== "app" || admitted.source.id !== "aks-rp-e2e")
-  ) {
-    throw new Error(
-      "contain-external-and-replayed-workspace-writer is accepted only from App aks-rp-e2e",
-    );
-  }
   const resolved = taskIntentForInput(admitted.input);
   if (!resolved) {
     throw new Error(
@@ -270,45 +266,16 @@ export function taskForHostOperationsInput(
     );
   }
   const requestTaskId = `app-request/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`;
-  const intent =
-    admitted.input.kind === "owner-review"
-      ? {
+  return {
+    kind: "desired",
+    intent: resolved.id
+      ? resolved
+      : {
           ...resolved,
           id: requestTaskId,
-          outcome:
-            stringValue(record(admitted.input.data).outcome) ||
-            "Review and resolve the addressed Host Operations request.",
-          acceptance: [
-            ...(Array.isArray(record(admitted.input.data).acceptance)
-              ? (record(admitted.input.data).acceptance as unknown[]).filter(
-                  (item): item is string =>
-                    typeof item === "string" && item.trim().length > 0,
-                )
-              : [
-                  "Return a terminal, evidence-backed platform disposition through the supported control plane.",
-                ]),
-            ...OWNER_REVIEW_DELIVERY_ACCEPTANCE,
-          ],
-          mode: "achieve" as const,
-          input: {
-            kind: admitted.input.kind,
-            data: record(admitted.input.data),
-          },
-        }
-      : resolved.id
-        ? resolved
-        : {
-            ...resolved,
-            id: requestTaskId,
-          };
-  return { kind: "desired", intent };
+        },
+  };
 }
-
-/** @deprecated Use `resolveHostOperationsTask`. */
-export const resolveMayAgentTask = resolveHostOperationsTask;
-
-/** @deprecated Use `taskForHostOperationsInput`. */
-export const taskForMayAgentInput = taskForHostOperationsInput;
 
 function scheduledEvent(
   type: string,

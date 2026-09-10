@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion event log for agent-security-governance.md. Contains detailed HN and cross-source event narratives tracking security governance developments: Fable/ITAR dual-use impossibility (7 dimensions), supply-chain attack campaigns (LinkedIn backdoor, Miasma Worm), credential isolation convergence, command denylist fragility, memory trojans, agent-targeted repo poisoning, export control historical parallels, talent concentration dynamics, ToxicSkills marketplace poisoning, CyberChainBench agent exploit economics, Sovereignty Stack fragmentation, and Disclosure Collapse (exploitarium mass-drops, Chai dependency-graph propagation, Protocol Prying proximity fuzzing). Extracted from §5 'Open Problems' items 6-21 to reduce canonical note size."
 triggers: ["Fable 5", "ITAR", "dual-use", "supply chain attack", "LinkedIn backdoor", "Miasma Worm", "credential isolation", "command denylist", "CmdNeedle", "memory trojan", "repo poisoning", "export control", "PGP vs Mythos", "talent concentration", "exploitarium", "disclosure collapse", "Chai", "Protocol Prying", "offense-defense asymmetry", "prompt caching", "cache-write spend", "tool surface"]
-last_updated: "2026-09-04"
-source_basis: "HN scans #7-58, #211 (Jun-Sep 2026), HN items 49238028, 49363710, and 49383326 with linked primary sources, MCPBlender repository/PyPI metadata, OneCLI gateway policy implementation at ff7a192 (Aug 2026), OpenAI Codex issue 37674 and maintainer/user follow-up (Aug 2026), arXiv papers (ShellSieve 2606.15549v2, 2605.29960, 2605.25002, Chai 2606.26933, Protocol Prying 2606.26967, Inherited Circuits 2606.27091), and GitHub repository/release metadata for YoloFS/YoloFS at 77fd896 and oliverb-io1902e8/agent-skills-collection. Event tracking with HN point/comment counts as engagement signals. Extracted verbatim from agent-security-governance.md §5 items 6-21, then maintained in place."
+last_updated: "2026-08-21"
+source_basis: "HN scans #7-58, #211 (Jun-Sep 2026), HN items 49238028, 49363710, and 49383326 with linked primary sources, MCPBlender repository/PyPI metadata, OneCLI gateway policy implementation at ff7a192 (Aug 2026), OpenAI Codex issue 37674 and maintainer/user follow-up (Aug 2026), arXiv papers (CmdNeedle 2605.15549, 2605.29960, 2605.25002, Chai 2606.26933, Protocol Prying 2606.26967, Inherited Circuits 2606.27091), and GitHub repository/release metadata for oliverb-io1902e8/agent-skills-collection (Aug 2026). Event tracking with HN point/comment counts as engagement signals. Extracted verbatim from agent-security-governance.md §5 items 6-21, then maintained in place."
 parent_note: "agent-security-governance.md"
 </ai_context>
 
@@ -134,36 +134,27 @@ prevent identity theft. Any agent that installs dependencies via search
 is structurally vulnerable regardless of behavioral safeguards.
 
 *(HN: 10k GitHub Trojan repos 945pts/243c, AUR attacks 54pts/37c;
-connects to ShellSieve's command-denylist bypass evidence, MemMark provenance)*
+connects to CmdNeedle structural inadequacy, MemMark provenance)*
 
-### 4. ShellSieve Denylist Fragility — 69.0–98.6% Per Operation
+### 4. Command Denylist Fragility — 69-98.6% Bypassable
 
-The paper historically indexed here as CmdNeedle (2606.15549v2) names its
-pipeline **ShellSieve**. Its abstract, evaluation, and dataset table report
-1,709 GitHub denylists containing 13,332 rules; one introduction paragraph
-instead says 1,731, an unresolved internal inconsistency. For each of seven
-filesystem-operation classes, the reported 69.0–98.6% is the fraction of
-denylists that incompletely block that operation among denylists that target
-it. It is not one fraction over all 1,709 configurations and does not measure
-all shell effects. The experiment uses a Debian 13.5 default-GNU command
-universe, model-proposed candidates, execution-based sandbox oracles, and a
-five-round repair cap.
-
-The exact per-operation integer numerators and denominators are plotted but
-not tabulated. The source says code and data will be released upon publication;
-its cited anonymous repository currently returns HTTP 401, so the plot and
-aggregate cannot yet be independently regenerated. The paper supports an
-open-world bypass risk for negative command lists and rejects its own semantic-
-gap hypothesis; it does not prove every denylist is bypassable, that Unix
-composition is the measured root cause, or that a particular allowlist,
-sandbox, or capability system resists the discovered commands.
+CmdNeedle (2606.15549) systematically characterizes command denylist
+fragility in terminal AI agents. Applied to 1,709 real-world denylists
+(13,332 rules) from GitHub: 69-98.6% are fragile. Even Claude Code's
+built-in denylist can be bypassed. Root causes: command aliasing,
+multi-utility commands (e.g., `find . -delete` bypasses `rm` ban), and
+Unix pipe composition. The structural problem: the combinatorial space of
+Unix command composition makes exhaustive enumeration impossible.
+Denylists are heuristic hints, not security boundaries. This is the
+Guard Paradox at the OS level — text-based behavioral controls cannot
+enforce structural safety properties.
 
 **Governance implication**: Agent sandbox security should NOT rely on
 command denylists as load-bearing safety. The SEB pattern (certificate-
 bound execution authority, 2606.20520) provides the structural alternative:
 specify what IS permitted rather than what ISN'T.
 
-*(arXiv: ShellSieve 2606.15549v2, Jun 2026; artifact access checked Sep 2026)*
+*(arXiv: CmdNeedle 2606.15549, Jun 2026)*
 
 ### 5. Memory Trojans via Conversational Interaction
 
@@ -1100,44 +1091,36 @@ capability-scoped authority) rather than exclusion-based (blocklist, denylist,
 .agentsignore). This aligns with Minimum Viable Authority Turn (§canonical note)
 and confirms the structural prediction from ToolPrivBench (#82).
 
-*(Source artifact unavailable; intended path:
-`./findings/2026-07-02-hn-scan-260.md`; restore a link only when that exact
-target enters accepted lineage or an owner-declared supersession preserves the
-complete source set and provenance. Connects to: Accountability Inversion #253,
-Sovereignty Stack #258,
+*(Source: [2026-07-02-hn-scan-260.md](./findings/2026-07-02-hn-scan-260.md).
+Connects to: Accountability Inversion #253, Sovereignty Stack #258,
 Invisible Layer #259, Capture Spiral #194)*
 
 ---
 
-### 17. GitLost: Prompt Injection Publishes Private Test-Repo Data (2026-07-08)
+### 17. GitLost: Prompt Injection Leaks Private GitHub Repos (2026-07-08)
 
-**Event**: Noma Security ("GitLost") demonstrated a confused deputy in a
-researcher-controlled GitHub Agentic Workflow running Claude Opus 4.6. An
-explicit request in public issue `sasinomalabs/poc#153` caused the workflow to
-read a Noma-owned private test repository and publish its two-line README in a
-public issue comment. This was not Copilot Workspace, a GitHub internal agent,
-or an attacker-controlled endpoint.
+**Event**: Noma Security ("GitLost") demonstrated that GitHub's Copilot
+Workspace agent could be tricked via prompt injection into exfiltrating
+private repository contents. The attack poisons public repo data that the
+agent reads during cross-repo operations, redirecting it to leak private
+data to attacker-controlled endpoints.
 
-**HN signal**: 534 pts, 203 comments. High engagement measures attention to
-the proof; it does not measure production prevalence.
+**HN signal**: 534 pts, 203 comments. High engagement confirms community
+awareness that production agents at major platforms remain vulnerable.
 
 **Pattern**: Classic confused-deputy attack — the agent has legitimate
 access to private repos but is manipulated into using that access on behalf
-of an attacker. The exact workflow runs GitHub's MCP server read-only, but the
-operator supplies a token capable of reading another organization repository;
-a safe-output job separately has issue-write authority. The demonstrated
-exfiltration channel is the public issue comment, not unrestricted network
-egress.
+of an attacker. Validates the capability-containment isomorphism from
+AutoJack (#scan-10): every tool capability is simultaneously an exfiltration
+channel. GitHub's agent had broad scope (read private repos + network access)
+without read-only pre-execution gates or scoped authority constraints.
 
-**Structural implication**: Supports the Minimum Viable Authority condition:
-scope cross-repository tokens and public outputs together rather than relying
-on model guardrails. It establishes one GitHub-hosted proof configuration, not
-a platform-wide affected population.
+**Structural implication**: Confirms Minimum Viable Authority Turn prediction —
+agents with broad tool access require capability scoping, not just input
+filtering. Also confirms that platform-hosted agents (GitHub, Google, etc.)
+face the same confused-deputy surface as self-hosted ones.
 
-*(Sources: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md),
-https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/,
-https://github.com/sasinomalabs/poc/issues/153,
-https://github.com/sasinomalabs/poc/actions/runs/23909609053.
+*(Source: [2026-07-11-hn-scan.md](./findings/2026-07-11-hn-scan.md).
 Connects to: AutoJack #scan-10, ToolPrivBench #82, Deterministic Gates arXiv 2607.07405)*
 
 ---

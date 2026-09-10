@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
+  Type,
   taskOwnerResultSchema,
   type ExecutionResult,
   type TaskReconcileResult,
@@ -10,6 +11,22 @@ import {
 type OwnerResult = Omit<TaskReconcileResult, "state"> & {
   state: "converged" | "waiting";
 };
+
+const directOwnerSignalDisclosureSchema = Type.Object(
+  {
+    directOwnerSignalCount: Type.Integer({ minimum: 0 }),
+    directOwnerSignals: Type.Array(Type.String({ minLength: 1 })),
+  },
+  { additionalProperties: true },
+);
+
+export const platformOwnerResultSchema = Type.Object(
+  {
+    ...taskOwnerResultSchema.properties,
+    result: directOwnerSignalDisclosureSchema,
+  },
+  { additionalProperties: false },
+);
 
 type OwnerAuthFailure = {
   provider: string;
@@ -261,6 +278,8 @@ export function buildOwnerPrompt(input: {
     "- Use converged after the current bounded actions are declared, and waiting only for a named external fact with an exact Condition that an observer can emit.",
     "- Every waiting Condition subject must be typed (for example event:5011463, session:s_123, pull-request:77); bare numeric ids or free-text subjects are rejected by the task-handler contract.",
     "- An evidence-backed no-op is valid; return an empty actions array and explain why existing work already covers the signal.",
+    "- In result.directOwnerSignals, list every direct owner signal created through a message or agent-dispatch tool call during this attempt; each entry must identify the recipient, purpose, and receipt or execution id.",
+    "- Set result.directOwnerSignalCount to that list's exact length. When no direct owner signal was created, explicitly return result.directOwnerSignalCount=0 and result.directOwnerSignals=[].",
     "",
     "Loss-prevention discipline for this owner review:",
     "- As soon as you confirm the primary trigger evidence and your first gap/no-op hypothesis, immediately call checkpoint() with that proof and the likely next step.",
@@ -286,17 +305,32 @@ function classifyOwnerAuthFailure(error: string): OwnerAuthFailure | null {
 }
 
 export function normalizeOwnerResult(ownerResult: OwnerResult): OwnerResult {
-  const createsRequiredChild = ownerResult.actions?.some(
+  const machineResult = record(ownerResult.result);
+  const directOwnerSignals = Array.isArray(machineResult.directOwnerSignals)
+    ? machineResult.directOwnerSignals.filter(
+        (signal): signal is string =>
+          typeof signal === "string" && signal.trim().length > 0,
+      )
+    : [];
+  const disclosedResult: OwnerResult = {
+    ...ownerResult,
+    result: {
+      ...machineResult,
+      directOwnerSignalCount: directOwnerSignals.length,
+      directOwnerSignals,
+    },
+  };
+  const createsRequiredChild = disclosedResult.actions?.some(
     (action) => action.kind === "create-task",
   );
-  if (ownerResult.state !== "converged" || !createsRequiredChild) {
-    return ownerResult;
+  if (disclosedResult.state !== "converged" || !createsRequiredChild) {
+    return disclosedResult;
   }
   return {
-    ...ownerResult,
+    ...disclosedResult,
     state: "waiting",
     evidence: [
-      ...ownerResult.evidence,
+      ...disclosedResult.evidence,
       "owner-result-normalized: create-task actions require waiting until delegated work converges",
     ],
   };
@@ -313,6 +347,10 @@ function authFailureOwnerResult(input: {
   return {
     state: "waiting",
     summary: `Platform owner review could not complete because the ${ownerAgent} execution hit a ${providerLabel} authentication failure; refresh the credential and rerun the owner review.`,
+    result: {
+      directOwnerSignalCount: 0,
+      directOwnerSignals: [],
+    },
     evidence: [
       `owner-execution:${input.executionId ?? "unknown"}`,
       `provider-auth:${input.detail}`,
@@ -390,7 +428,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   });
   const result = await ctx.agents.call(ownerAgent, prompt, {
     timeoutMs: 1_800_000,
-    schema: taskOwnerResultSchema,
+    schema: platformOwnerResultSchema,
   });
 
   if (result.status !== "done") {

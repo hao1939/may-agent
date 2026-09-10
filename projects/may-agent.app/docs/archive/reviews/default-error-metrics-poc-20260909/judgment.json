@@ -1,0 +1,15 @@
+{
+  "decision": "revise_manual",
+  "reason": "Recommendation only; no change has been applied. Full export costs 10 days against at most 1 day of remaining value. Manual export costs 2 hours and preserves useful value. Its expected benefit must exceed that cost; the packet provides a value ceiling, not an expected value. Otherwise, stop. Unchanged retry would not resolve an unsupported format; the flaky and healthy tasks already succeeded.",
+  "new_scope": "Produce one internal manual export within a 2-hour budget. No external publication.",
+  "acceptance": [
+    "Expected remaining value exceeds the 2-hour additional cost.",
+    "Manual export preserves the useful value.",
+    "Stop if the budget or value condition cannot be met."
+  ],
+  "remaining_limitations": [
+    "Full export format remains unsupported.",
+    "Expected remaining value is unspecified.",
+    "Manual export has not been performed or verified."
+  ]
+}

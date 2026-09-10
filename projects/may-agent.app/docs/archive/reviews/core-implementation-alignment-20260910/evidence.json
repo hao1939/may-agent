@@ -1,0 +1,94 @@
+{
+  "hostRevision": "6dcb0fa3ea28b20133ae7e5e3f265b124e010fc4",
+  "workspaceRevision": "9d70928053ac6dde6d7bf31f223d1cdd34718fe2",
+  "date": "2026-09-10",
+  "focusedTests": {
+    "passed": 111,
+    "failed": 0,
+    "assertions": 428,
+    "coreFiles": 8,
+    "corePassed": 105,
+    "runtimePassed": 6,
+    "runtimeFilteredOut": 105,
+    "fullCiRun": false
+  },
+  "inputProbes": [
+    {
+      "mode": "retry",
+      "exitCode": 0,
+      "outputs": [
+        {
+          "mode": "retry",
+          "reopen": 0,
+          "calls": 6,
+          "status": "pending"
+        },
+        {
+          "mode": "retry",
+          "reopen": 1,
+          "calls": 12,
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "mode": "renewal-control",
+      "exitCode": 0,
+      "outputs": [
+        {
+          "mode": "renewal-control",
+          "reopen": 0,
+          "calls": 1,
+          "status": "done",
+          "result": {
+            "summary": "Probe completed",
+            "response": "Probe completed"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "renewal-daemon",
+      "exitCode": 1,
+      "outputs": [],
+      "diagnostic": "[fatal] Uncaught exception: synthetic renewal write failure"
+    }
+  ],
+  "recoveryQuery": [
+    {
+      "backlog": 256,
+      "limit": 256,
+      "returned": 256,
+      "elapsedMs": [
+        1.3643,
+        1.0621009999999984,
+        1.7689999999999912,
+        1.2485999999999962,
+        0.9989999999999952
+      ],
+      "medianMs": 1.2485999999999962,
+      "usesTemporaryBTree": true
+    },
+    {
+      "backlog": 20000,
+      "limit": 256,
+      "returned": 256,
+      "elapsedMs": [
+        24.141204000000016,
+        24.167104999999992,
+        24.015804000000117,
+        23.243805000000066,
+        23.258404000000155
+      ],
+      "medianMs": 24.015804000000117,
+      "usesTemporaryBTree": true
+    }
+  ],
+  "limits": [
+    "Synthetic resolvers; no live model/provider calls",
+    "Renewal failure injected with SQLite trigger and production process handlers; not a full daemon boot",
+    "Retry probe reopens SQLite and reconstructs Host in one process with an advanced synthetic clock",
+    "Query samples use a synthetic in-memory database, not representative deployment load",
+    "No Host implementation or live-state changes"
+  ]
+}

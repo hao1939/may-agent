@@ -3,6 +3,30 @@
 **Design status:** Accepted.
 
 Start from the cause of the problem, not the mechanism you happen to know.
+When several mechanisms fit, compare them using the
+[fundamental tradeoff rules](design-philosophy.md#how-to-decide-a-tradeoff).
+
+## Before adding runtime behavior
+
+First ask whether the feature or guarantee is needed at all. If a fix keeps
+growing, revisit that question before adding another mechanism; see
+[When a fix keeps growing](design-philosophy.md#when-a-fix-keeps-growing).
+Then apply the Herdr Supervisor agent-first test:
+
+1. Can the agent handle the case with existing observation and action tools?
+2. Will an existing event or bounded check reliably wake it?
+3. Does it receive enough current evidence, goal context, and durable guidance?
+
+If all three hold, use the existing path. Improve the guidance if needed.
+If one is missing, fix that specific capability, trigger, or context gap.
+Add further automation only when measured reliability or cost gains justify
+its implementation and maintenance. An explicit guide can remain guidance;
+it need not become a workflow or code branch.
+
+Keep deterministic correctness checks in code. Use the decision guide below
+when evidence shows the existing foundation is insufficient. This applies the
+[20/80 principle](core-principles.md#solidify-the-common-20-teach-the-remaining-80)
+without imposing a numerical budget or another review gate.
 
 ## Decision guide
 

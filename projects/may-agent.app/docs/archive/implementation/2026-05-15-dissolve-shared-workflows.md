@@ -1,5 +1,8 @@
 # Plan: Dissolve `shared/workflows/`
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Date:** 2026-05-15 (review applied 2026-05-17; all phases complete 2026-05-17)
 **Status:** ✅ Complete — shared/workflows/ dissolved
 **Owner:** platform

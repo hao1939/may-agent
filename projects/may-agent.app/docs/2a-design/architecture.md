@@ -1,191 +1,173 @@
 # Architecture
 
 **Design status:** Accepted.
-**Implementation status:** The canonical path is active for every installed
-App. Request storage correlates Task results; it does not execute App policy.
-Installed descriptors require resource authority and normal routing, recovery,
-and reads have no JSON fallback. Generic store/reconciler code still retains
-JSON compatibility for the guarded offline importer and focused fixtures.
+**Implementation status:** The four responsibilities below are implemented at
+the [source baseline](../README.md), with partial extraction into `core/`.
+Task activation and startup recovery are independent of optional schedules.
+[Open work](../proposals/task-runtime-organization.md) is tracked separately;
+this page does not identify the deployed release.
 
-Read [system-model.md](system-model.md) first. The architecture follows one
-split:
+Read [System Model](system-model.md) for the product vocabulary and a complete
+example. This page owns component boundaries, dependencies and code placement.
 
-```text
-Infra   = ingress, persistence, scheduling, capacity, and delivery
-Runtime = task lifecycle, execution, scoped capabilities, and recovery
-App     = resolve inputs to tasks and reconcile those tasks
-```
+## Core responsibilities
 
-## Composition
+| Component | Purpose and owned state | Input and output |
+| --- | --- | --- |
+| App registration and input admission | Keep one validated App generation and its declared routes; validate addressed input and apply the App's pure mapping | Definitions and typed input become published routes and an accepted handling/Task identity, or a rejection |
+| Events | Record meaningful input and changes; route admitted events and expose observations | Publication becomes a durable receipt, exact routed work, and passive notifications |
+| State and storage | Keep authoritative records and enforce consistent, version-checked changes | Typed reads and atomic operations return canonical state and committed dispositions |
+| Work runtime | Coordinate input handling and bounded execution; maintain Task attempts, waits, cancellation and recovery | Admitted work or an identity wake leads to a claimed attempt, accepted progress/result, wait or visible failure |
 
-`app-runtime.ts` is the composition root. It constructs one Host, loads one
-generation of Apps, and wires the Host parts directly.
+The boundaries cooperate: admission uses event and state transactions; runtime
+uses the stored identities and registered execution contracts. Storage enforces
+atomicity, while Apps define meaning and acceptance. No component gets a second
+copy of authoritative work state.
 
-```text
-app-runtime.ts
-  -> App registry
-  -> request correlation and delivery store
-  -> fact store and declared routes
-  -> scheduler and observers
-  -> task controller
-  -> bounded agent/workflow execution
-  -> delivery adapters
-```
+Shared timing is core machinery used by runtime waits/recovery and optional
+producers. Default failure handling belongs at admission and execution
+boundaries: retain evidence, fence stale work, release resources, contain failure,
+and expose what needs a decision. Neither needs a new service. Apps and LLMs
+judge uncertain diagnosis, repair and scope changes. Existing metrics observe
+these facts; reporting cannot veto accepted state or decide Task completion.
 
-These are modules inside one Host, not independently discovered services. They
-do not have separate lifecycles or exchange live objects through a service
-locator.
-
-The module names describe code organization only. `runtime`, `inbox`,
-`controller`, and `reconciler` are not extra architectural layers. The useful
-question is always simpler: is this mechanical Host code, or meaning owned by
-an App?
-
-The same rule governs decisions: code collects bounded trustworthy context and
-executes a schema-validated decision; the LLM decides meaning. Code may handle
-an explicit deterministic case, but it must not become a second intent
-classifier, keyword router, or conversation state machine.
-
-## App shape
+## How they work together
 
 ```text
-projects/<id>.app/
-  app.ts
-  project.json                 optional durable goal and posture
-  tasks/seed.json              optional initial desired state
-  agents/<agent>/
-    agent.json
-    AGENTS.md
-    workflows/<name>.ts
-  .state/                      managed by the Host
+Replaceable interfaces / producers
+                 |
+                 v
+       Events + App admission <---- validated App definitions
+                 |
+        persist accepted identity
+                 v
+          State and storage <----> Work runtime
+                 ^                    |
+                 |              bounded attempt
+                 |                    v
+                 |              selected executor
+                 |                    |
+                 +---- validate proposed result
+                 |
+          committed change -> Events -> exact wakes / observers / interfaces
 ```
 
-`app.ts` is the only App manifest. There is no parallel inbox manifest,
-ProjectApp manifest, App-specific daemon, or App-specific scheduler.
+This is a flow of responsibility, not a service deployment or an instruction
+to wrap every arrow in an event. Events carry meaningful inputs and changes;
+local reads, executor invocation and atomic transitions use typed calls.
+Event persistence is the Events boundary's use of storage, not another database.
 
-## One App work path
+A schedule only produces due input or facts. The work runtime decides when an
+eligible Task attempt runs. The executor performs that bounded attempt. A Task
+can run from admitted input, a relevant event or recovery with schedules disabled.
+
+## Composition and lifecycle
+
+`src/app/app-runtime.ts` constructs the Host and wires ordinary modules:
 
 ```text
-input
-  -> Host validates ingress and stores caller correlation when needed
-  -> Runtime resolves, creates, revises, or wakes one task
-  -> App reconciles that task in one bounded attempt
-  -> Runtime validates and persists task state
-  -> Host schedules another wake or delivers the accepted result
+open stores and event admission
+  -> load and validate one App/agent generation; publish routes
+  -> open ingress and reads; activate selected adapters with owned cleanup
+  -> start input handling and isolated Task recovery
+  -> start Task controllers after the initial recovery pass settles
 ```
 
-The request remains the caller's correlation and result identity. The Task
-is the App's work identity. A session or trace can explain an attempt but
-cannot replace either record.
+[Runtime](runtime.md#startup) owns the exact startup sequence and readiness gates.
+Composition selects executor adapters and supplies narrow functions to the
+runtime. Each expensive Task attempt runs in an isolated worker; the worker
+rereads and claims current state, executes, and admits its fenced result.
+Worker Events are persisted once and relayed by identity to the parent.
+Conversational turns reuse bounded execution without creating a Task.
 
-## Task path
+One `HostCapacity` limit governs execution with App limits and an interactive
+reserve. Reads and admission need no execution slot. Conversation ordering
+belongs to input handling; Task ordering belongs to its controller.
+
+Reload publishes one validated definition generation. A rejected reload retains
+the previous generation; running attempts keep their captured definitions.
+Activation and Host deployment are separate operations. See
+[Runtime](runtime.md) and [Operations and Recovery](../2b-manual/app-operations-recovery.md).
+
+## Behavior when a capability is absent
+
+Start with deliberate absence at startup and the supported reload behavior.
+Arbitrary live unloading is not required. Timers, subscriptions and in-flight
+resources must have an owner and cleanup path.
+
+| Missing capability | Permitted degradation | What stays correct |
+| --- | --- | --- |
+| Interface | That access channel is unavailable | Other channels, Tasks and accepted results remain independent of delivery |
+| Report or dashboard | Its extra presentation/analysis is unavailable | Canonical reads and execution remain available |
+| Metric collection | Measurement is stale or unknown | Failure evidence remains; missing data is not healthy; settlement is unaffected |
+| Optional schedules | No new timed input from those registrations | Submitted/event-woken Tasks and required recovery/review timing still run |
+| Observer | Its external facts are not discovered | Waits stay unsatisfied until actual evidence arrives; unrelated work proceeds |
+| Selected executor | Affected work cannot execute | Exact Task/evidence remain in visible attention; no false completion, silent substitution or retry storm |
+| App | New work for its responsibility is unavailable | Reject newly addressed input; preserve existing obligations and identities |
+
+App removal is currently rejected while unfinished Tasks exist. Drain those
+obligations before removal; this contract does not authorize discarding them.
+A fact may validly have no subscriber. Promised work requires a successful
+admission route. Missing optional capability does not make a corrupt required
+configuration or unavailable authoritative store an acceptable silent skip.
+
+## Code organization
+
+Paths are relative to `projects/may-agent`. Folder ownership is visible, but
+transaction-critical modules retain their current homes where extraction has
+not yet earned its cost:
 
 ```text
-desired task (`TaskIntent` in code)
-  -> Host stores desired state and trigger
-  -> Host queues one attempt within App and Host limits
-  -> an isolated worker claims current state and runs the selected handler
-  -> App says done, waiting, needs-agent, or requests a typed change
-  -> Host validates, stores, and applies the result
+src/app/
+  core/
+    apps/                 validated registry and generations
+    events/               publication, admission and observation
+    state/requests.ts     atomic request-to-Task attachment (first extraction)
+    tasks/                controller and executor/recovery contracts
+    scheduling/timer.ts   shared timing mechanics
+    reads/                canonical Task/request/result reads
+  adapters/
+    discovery/            conventional App source loading
+    executors/            agent, workflow and native backends
+    producers/            App schedule production
+    workspaces/           worktree backends
+    maintenance/          named, bounded Host maintenance
+    reporting/            optional projections
+  composition/            select and wire the above; own activation/cleanup
+  app-runtime.ts          main composition, reload and shutdown
+  app-task-*.ts           remaining Task runtime, transitions and stores
+  app-inbox-*.ts          input handling, admission and stores
+  app-observer-runtime.ts observer registration and execution
+  conversations/         shared Conversation state
+  transport/, http/      existing interface adapter homes
+src/lib/db/              shared schema and transaction primitives
+
+packages/sdk/            public App/Task/executor contracts
+packages/control/        client protocol
+packages/terminal/       Console client
+packages/webui/          browser client
+projects/<id>.app/       App-owned policy, agents and workflows (workspace)
 ```
 
-Attempt-handler selection is direct:
+The [storage proposal](../proposals/storage-state-service.md#code-organization)
+considers further meaningful operations in `core/state/`. It does not claim all
+Task stores have moved there or require a separate API server.
 
-```text
-agent = task agent, else nearest parent agent, else App default agent
-workflow present = run that agent's named workflow
-executor present = run that named Host adapter
-neither present = run that agent once
-```
+| Caller | Dependency rule |
+| --- | --- |
+| Core | Depends on core modules, foundational libraries and contract types; concrete implementations are supplied by composition |
+| Adapter | Uses existing public contracts and narrowly supplied capabilities; does not own private Task stores or queues |
+| Composition | Imports both sides and wires them; contains no domain decisions or duplicate transition logic |
+| App | Imports the SDK and its own domain modules; never Host-private implementation |
 
-The public SDK calls this field `agent`. Retained Task rows and private Host
-state still call it `owner`; that is migration vocabulary for execution
-selection, not durable ownership. The App always owns the Task.
+Put an extension beside its existing capability family, use its typed contract,
+and attach it through composition or an App declaration. Keep activation and
+cleanup there; importing a module must not start timers or processes. App-owned
+observers, schedules and policies stay in the App. Existing interface packages
+need no move just to acquire an `adapters/` label.
 
-Missing workflows or unavailable executors become visible attention. The Host
-does not silently choose another executor or agent. Codex and Claude are the
-built-in native CLI adapters; a Host extension registers another name against
-the same `TaskExecutor` function contract.
-
-## Events and schedules
-
-Fact Events are stored observations. They become work only through an App's
-declared input translator, exact task target, or matching Task Condition.
-
-Schedules either admit an App input or publish a fact. Observers read external
-state and publish facts. Neither starts an agent directly.
-
-Host maintenance may inspect and repair Host state. If it discovers domain
-work, it publishes a fact addressed to an App. It cannot launch an App workflow
-or mutate App task state.
-
-## Execution
-
-All Task executors enter and leave through one bounded Task-attempt contract.
-Managed agents and workflows use the agent runtime; Codex, Claude, and any
-registered replacement use thin adapters. No path creates another Task
-lifecycle.
-
-Each expensive Task attempt runs in an isolated worker process. The parent
-controller schedules only the exact persisted Task identity; the worker claims
-that Task, builds context, executes, and persists its fenced result. Events
-produced by the attempt are appended once by the worker and relayed to the
-parent for local listeners and routes without a second append. A worker exit
-therefore loses neither the Task nor its durable Events, and CPU-heavy work
-cannot block interface commands or message admission.
-
-Startup Task repair runs through the same process boundary. The parent waits
-asynchronously, then refreshes its ready set from the bounded canonical index;
-it does not scan or repair the Task store on the interface event loop.
-
-One `HostCapacity` object limits task attempts. Each App may declare a smaller
-local limit. Request correlation and delivery do not run a second App worker.
-
-Capacity applies after durable admission. A Task attempt or May decision may
-wait for execution capacity, but event publication, resource reads, and
-interface commands do not acquire that capacity. Conversation ordering is a
-message-handler concern; Task ordering is a Task-handler concern. Neither is an
-EventHub queue.
-
-## Startup and reload
-
-```text
-open storage
-  -> load and validate Apps
-  -> prepare all routes
-  -> publish one complete generation
-  -> recover retained request correlations and tasks
-  -> open external ingress
-```
-
-A failed reload leaves the previous generation active. Shutdown stops new
-dispatch and preserves unfinished work.
-
-Deployment readiness includes a bounded control-socket read, not only process
-and HTTP liveness, so an event-loop-starved Host is unhealthy and rolls back.
-
-App source changes are activated deliberately: `/reload` validates and
-publishes one new generation atomically, while a deployment restart performs
-the same startup publication. The Host does not poll and hash every App,
-watcher, agent configuration, or workflow. This keeps idle hosting cheap and
-makes the active generation explicit. Workflow source is loaded when that
-workflow is invoked.
-
-## Code map
-
-| Responsibility                   | Code                                                                         |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| Host composition                 | `src/app/app-runtime.ts`, `daemon*.ts`                                       |
-| App contract                     | `packages/sdk/src/app.ts`, `task.ts`                                         |
-| App loading                      | `src/app/app-registry.ts`, `src/app/loader/`                                 |
-| Request correlation and delivery | `src/app/app-inbox-host.ts`, `app-inbox-runtime.ts`                          |
-| Tasks                            | `src/app/app-task-runtime.ts`, `app-task-controller.ts`, `app-task-store.ts` |
-| Events                           | `src/app/event-bus.ts`                                                       |
-| Execution                        | `src/app/task-attempt-process.ts`, `src/lib/agent-execution.ts`, `manager.ts`, workflow runner files |
-| Delivery and interfaces          | `src/app/transport/`, `src/app/http/`, `packages/webui/`                     |
-
-## Dependency rule
-
-Host modules may depend on smaller Host utilities. Apps depend only on the
-public SDK. The SDK does not expose the event bus, database, manager, queues,
-leases, scheduler, recovery APIs, or global paths.
+Move a module and its tests when that move clarifies a verified dependency
+boundary. Avoid empty directories, forwarding wrappers, a service locator or
+a universal plugin base. Use [Host/App Boundary](system-boundary.md) for detailed
+ownership rules and the [core review plan](../proposals/task-runtime-organization.md)
+for the remaining work.

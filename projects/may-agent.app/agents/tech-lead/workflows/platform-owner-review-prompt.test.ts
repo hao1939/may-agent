@@ -43,4 +43,7 @@ test("platform owner prompt hardens bounded evidence and typed waiting Condition
   expect(prompt).toContain(
     "before any speculative edit, broad repo search, or secondary investigation",
   );
+  expect(prompt).toContain("result.directOwnerSignalCount=0");
+  expect(prompt).toContain("result.directOwnerSignals=[]");
+  expect(prompt).toContain("recipient, purpose, and receipt or execution id");
 });

@@ -24,7 +24,7 @@ projects/<id>.app/agents/<name>/workflows/<workflow>.ts
 agents/<name>/workflows/<workflow>.ts  # standalone/system agent only
 ```
 
-Use a flat `.ts` module exporting `name`, optional `description`, and
+Use a flat `.ts` module exporting `name`, a nonempty `description`, and
 `execute(ctx)`:
 
 ```ts
@@ -233,10 +233,10 @@ Call pure deterministic functions normally. Keep retries bounded inside the
 current run and verify after every effect:
 
 ```ts
-for (let attempt = 1; attempt <= 2; attempt += 1) {
+for (let iteration = 1; iteration <= 2; iteration += 1) {
   const result = await ctx.agents.call(
     "dev",
-    attempt === 1 ? initialPrompt : repairPrompt,
+    iteration === 1 ? initialPrompt : repairPrompt,
   );
   const verification = await verifyResult(result);
   if (verification.ok) {
@@ -244,11 +244,25 @@ for (let attempt = 1; attempt <= 2; attempt += 1) {
   }
 }
 
-return ctx.blocked("Verification failed after two bounded attempts");
+return ctx.blocked("Verification failed after two repair iterations");
 ```
 
-Do not encode durable retry/backoff in a workflow. Task reconciliation owns
-repeated convergence across runs.
+These iterations share one Task attempt and its deadline. Feed the failed check's
+evidence into the repair, and stop when scope, prerequisites or remaining budget
+no longer permit useful work. See the
+[two-loop boundary](../2a-design/workflows.md#repair-within-an-attempt).
+The Host's optional final verifier runs after the workflow returns and does not
+automatically feed rejection back into `execute()`. Reuse check helpers inside
+the workflow where local repair is useful. Task reconciliation owns durable
+retry/backoff and continuation across runs.
+
+A restart can rerun the whole workflow, including after an agent handoff; it
+does not resume the lost TypeScript continuation. Before repeating an external
+write, read the provider using the operation identity retained in Task input or
+use the provider's existing idempotency key. Do not generate a new operation key
+from the replacement attempt or session. If the effect cannot be confirmed,
+return the exact uncertainty as a blocker rather than blindly repeating it.
+Keep required verification valid for both workflow and agent-produced results.
 
 ## Cross-App And Human Escalation
 

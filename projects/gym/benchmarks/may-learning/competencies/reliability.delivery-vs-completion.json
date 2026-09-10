@@ -7,11 +7,11 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/events.md",
-      "section": "Delivery Acceptance"
+      "section": "Admission state"
     },
     {
       "path": "../may-agent.app/docs/2a-design/events.md",
-      "section": "Delivery acceptance"
+      "section": "Admission state"
     }
   ],
   "prerequisites": ["system.owner-and-route"],

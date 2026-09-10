@@ -480,26 +480,22 @@ See: [findings/2026-07-06-hn-arxiv-github-scan-411.md](./findings/2026-07-06-hn-
 
 ## MCP TAG-Block Concealment — Protocol-Level Encoding Gap (Scan #453)
 
-In the paper's reference harness, Unicode TAG block (U+E0000–U+E007F)
-payloads survive in serialized prompt/JSON-RPC bytes. Across eight techniques,
-all eight survive serialization, four evade its lexical sanitizer, one is
-hidden by its simplified renderer, and none forces protocol re-approval. No
-model or deployed client is run. The 32/32 cross-library cells share one
-payload catalogue and process family, so they test tool-management behavior,
-not 32 independent implementations or downstream model interpretation.
+Unicode TAG block (U+E0000–U+E007F) payloads invisible to human approval view
+survive byte-for-byte into model tokenizer. 8/8 techniques deliver payload into
+model context; 0/8 trigger MCP re-approval (even under TOCTOU rug-pull); 4/8
+evade string-matching sanitizer. Consistent across 3 independent server
+implementations (32/32 cross-library outcome cells agree).
 
 **Attack class**: Protocol-level encoding gap.
-**Implication**: The tested renderer and lexical sanitizer do not guarantee
-that their displayed/filtered text matches the serialized bytes. This motivates
-byte-faithful approval tests at protocol boundaries; the paper does not measure
-deployed-client prevalence or downstream model behavior.
+**Implication**: Approval-surface defenses (rendering-dependent review, string-matching
+sanitization) are structurally insufficient when the approval view and model
+input diverge at the encoding layer. Extends the Appearance Collapse thesis —
+visual trust fails at the protocol encoding level, not just the application level.
 
 **Connection to defense architecture**: CXI (§2.44 in
-[verified-enforcement](./agent-security-verified-enforcement.md)) is a candidate
-execution-boundary defense because it gates mediated calls against an action
-manifest rather than trusting the approval rendering. The paper does not test
-TAG payloads against CXI, and CXI's policy and mediation completeness remain
-unproven, so immunity is not established.
+[verified-enforcement](./agent-security-verified-enforcement.md)) is explicitly
+immune to this attack class because it binds at the execution surface, not the
+approval surface.
 
 *(arXiv [2607.05744](https://arxiv.org/abs/2607.05744), Jul 2026. Scan #453)*
 

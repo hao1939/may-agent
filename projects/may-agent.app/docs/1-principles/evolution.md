@@ -198,17 +198,10 @@ the mechanism remains an implementation choice.
 Escalate only when the next required action crosses an ownership boundary and
 cannot be resolved locally.
 
-```ts
-// Workflow: local terminal blocker; caller/runtime decides routing.
-return ctx.blocked("Approval is required", { evidence });
-
-// Handler/agent SDK: explicit external ownership handoff.
-sdk.escalate("Production decision required", {
-  owner: "human:operator",
-  requestedAction: "Approve, adjust, or reject the rollout.",
-  evidence,
-});
-```
+Use `ctx.blocked` to end a bounded workflow with blocker evidence. For a real
+ownership boundary, the owning Task returns an exact human Condition or a
+`TaskAppDependency`; see [Escalation](../2a-design/escalation.md). There is no
+public `sdk.escalate` method.
 
 Ordinary local retries, weak evidence, and unclear thinking are not external
 escalations. Preserve the blocker, requested action, evidence, source context,

@@ -1,10 +1,12 @@
 # Scheduling And Observation
 
 **Design status:** Accepted.
-**Implementation status:** Canonical App input/event schedules, observers, and
-host-maintenance jobs use the shared scheduler. Host metric snapshots are
-currently declared by both an App schedule and a Cron job; convergence to one
-authority remains open.
+**Implementation status:** At the [source baseline](../README.md), daemon Task
+activation and startup recovery are independent of `--cron`. Shared timing
+serves core duties and optional registrations. App schedules publish input or
+facts; named Host maintenance has no standalone workflow execution path.
+Host Operations declares metric snapshots in the tech-lead Cron job; Runtime
+samples App-defined sources on that event and applies each source's cadence.
 
 ## Purpose
 
@@ -20,22 +22,25 @@ due slot -> publish required App-input event
 
 Canonical App schedules never directly launch an agent or workflow. Model
 execution begins only after an admitted App request or persisted task
-reconciliation requires it. A host-private job runs only its explicitly
-configured standalone/system adapter; it is not an alternative App route.
+reconciliation requires it. A Host maintenance job invokes only its explicitly configured deterministic
+handler; it is not an alternative App execution route.
 
 The scheduler implementation retains the historical internal name `Cron`, and
 the long-running CLI flag remains `--cron`. Those names do not expose cron
 handlers as the canonical App authoring model.
 
-## One scheduler
+## Shared timing, separate responsibilities
 
-One process-wide scheduler owns:
+Share timer registration, replacement, cancellation, and cleanup. This does not
+require one physical timer, a scheduler registry, or a universal job protocol.
+Producers retain interval/slot meaning and successful-publication semantics;
+observers recollect external facts; private maintenance owns its own cadence;
+Task recovery rereads indexed authoritative deadlines. Timing mechanics dispatch
+bounded callbacks and do not own outcomes or acceptance.
 
-- interval calculation, jitter, and restart-safe next-fire state;
-- timer registration and replacement during atomic App reload;
-- bounded dispatch and lifecycle metrics;
-- event-schedule publication; and
-- observer cadence.
+Shared timing lives in `src/app/core/scheduling/timer.ts`. Its callers retain
+slot semantics and domain ownership. The [implementation record](../archive/implementation/core-separation-review-20260910.md#step-4-implementation-shared-timing)
+preserves the separation proof.
 
 App loading prepares a prospective complete schedule set. The registry and
 scheduler publish it atomically only after every App definition validates. A
@@ -45,6 +50,13 @@ duplicate timers or subscriptions.
 Only the long-running host starts the scheduler. Direct, Gym, test discovery,
 read-only CLI, and Web UI processes may load App definitions but cannot fire
 their schedules or claim autonomous work.
+
+The owning daemon runs Task controllers and required recovery with optional
+schedule publication disabled. Declared event
+routes and observers remain active, admitted work is retained, and explicitly
+disabled handlers stay disabled. Startup and definition reload use the same
+activation choice. Inbox schedules, observers and recovery retain their own
+registrations while reusing shared timer lifecycle mechanics.
 
 ## App schedules
 
@@ -220,19 +232,42 @@ On restart:
 - event schedules resume without replay;
 - observers run from current external state rather than reconstructing a fact
   backlog; and
-- existing App inbox/task state recovers independently of the scheduler.
+- durable App request/Task state is sufficient for recovery without replaying
+  schedule slots. Daemon startup activates Task recovery/controllers whether or
+  not optional schedules are enabled.
 
 An observer or event-schedule failure may be retried mechanically within a
 bounded host policy. Persistent ambiguity becomes Runtime attention; it cannot
 silently start an agent.
 
-## Cron compatibility boundary
+A publication failure is not a successful scheduled slot. Keep the last accepted
+slot unchanged and publish only the latest due slot on the next ordinary scan;
+do not accumulate a replay queue. One failed publication must not prevent other
+due schedules from being attempted or escape the timer callback and terminate
+the Host. If persistence itself is unavailable, report to the process error log
+instead of recursively publishing a failure through that same unavailable path.
+Observers likewise contain failure-report publication errors and recollect
+current provider facts on their next normal observation. This failure boundary
+does not claim to eliminate database contention or accept an unpersisted fact.
 
-Historical `cron.json`, named handlers, workflow-backed handlers, and
-auto-heartbeats remain only for genuinely standalone agent or explicit
-host-internal system duties. App schedules, observers, and task resync are
-hosted directly by the canonical App runtime; cron handlers cannot own App
-requests or task wakes.
+## Host maintenance boundary
+
+The Host retains `cron.json` only for named deterministic handlers.
+Workflow-backed jobs and automatic heartbeat discovery are removed: model work
+uses App schedules and Tasks. App schedules, observers, and task recovery are
+hosted directly by the canonical App runtime; maintenance handlers cannot own
+App requests or Task acceptance. When upgrading an older installation, reject
+or convert obsolete declarations explicitly; do not silently drop configured work.
+
+Composition prepares these duties independently of agent tool presets and
+activates them after publication. The narrowed `cron` tool lists/statuses and
+updates existing enabled/interval declarations; it does not create jobs or
+author prompts. Passive maintenance buffers are bounded, best-effort observations,
+never a durable-work acknowledgement. Single-flight ownership remains until a
+timed-out callback actually settles. Failure diagnostics remain visible.
+
+The message tool records `message.created` for declared routes. Priority does
+not launch a heartbeat, and a recorded fact does not prove work acceptance.
 
 Each App migration classifies every legacy entry as:
 
@@ -261,7 +296,7 @@ normal App/task/observation classification; it is not a second scheduler.
 
 ## Integrity checklist
 
-- One shared scheduler owns timer mechanics for all canonical Apps.
+- Owners share timer mechanics without sharing work authority or requiring one physical timer.
 - Every App schedule has exactly one input or event destination.
 - Input schedules create correlated requests and tasks; event schedules create
   facts and no callerless requests.

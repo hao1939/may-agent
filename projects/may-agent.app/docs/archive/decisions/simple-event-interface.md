@@ -1,5 +1,8 @@
 # Simple Event Interface
 
+> Historical record. Use the [current contract index](../../INDEX.md) for present behavior; dated claims below describe their original review.
+
+
 **Status:** Accepted; current contract lives in Tier-2 design.  
 **Scope:** One event boundary for Web, CLI, console, integrations, Host code,
 and App-produced output

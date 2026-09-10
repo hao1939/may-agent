@@ -1,0 +1,121 @@
+diff --git a/src/app/app-task-runtime.ts b/src/app/app-task-runtime.ts
+index d1ba942b..199b641b 100644
+--- a/src/app/app-task-runtime.ts
++++ b/src/app/app-task-runtime.ts
+@@ -418,6 +418,9 @@ export function consumePersistedTerminalAgentResult(input: {
+   if (raw === undefined) return null;
+   const claim = terminalAgentSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
+   if (!claim) return null;
++  // A lost workflow continuation must rerun its verifier before acceptance.
++  // Requeue through normal execution rather than reconstructing that pipeline here.
++  if (claim.intent.workflow) return null;
+   const defaultParentId = input.config.resourceStore.rootTaskId();
+   if (!defaultParentId) return null;
+   try {
+@@ -440,6 +443,7 @@ export function consumePersistedTerminalAgentResult(input: {
+       const applied = completeAppTask(input.config, claim, {
+         summary: result.summary,
+         response: result.response,
++        result: result.result,
+         evidence: result.evidence,
+         actions: result.actions,
+         acceptanceBasis: { method: "agent-judgment", evidence: result.evidence },
+diff --git a/src/app/core-review.probe.test.ts b/src/app/core-review.probe.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/app/core-review.probe.test.ts
+@@ -0,0 +1,94 @@
++import { afterEach, expect, test } from "bun:test";
++import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { Type, defineApp } from "@may-agent/sdk";
++import { appTaskTestContext } from "./app-task-test-support.js";
++import { claimObservedAppTask, completeAppTask, markAppTaskAttention, observeAppTaskIntent, recordAppTaskAttemptSession } from "./app-task-reconciler.js";
++import { consumePersistedTerminalAgentResult } from "./app-task-runtime.js";
++
++const cleanup: Array<() => void> = [];
++afterEach(() => { for (const release of cleanup.splice(0).reverse()) release(); });
++
++function fixture() {
++  const appDir = mkdtempSync(join(tmpdir(), "may-core-probe-"));
++  cleanup.push(() => rmSync(appDir, { recursive: true, force: true }));
++  const config = appTaskTestContext({ appDir, agent: "sample-owner", maxConcurrent: 1,
++    databasePath: ":memory:", tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } } });
++  cleanup.push(() => config.resourceStore.close());
++  const app = defineApp({ id: "sample", version: 1, agent: "sample-owner",
++    inputSchema: Type.Object({}, { additionalProperties: true }),
++    workspace: { kind: "local", localPath: "." },
++    tasks: { subscriptions: ["sample.work"], resolve: () => null } });
++  const descriptor = { id: "sample", appDir, projectDir: appDir, agent: "sample-owner",
++    app, reconciliationPaused: false, resourceStore: config.resourceStore };
++  return { appDir, config, descriptor };
++}
++
++function start(f: ReturnType<typeof fixture>, id: string, workflow?: string) {
++  observeAppTaskIntent(f.config, { appAgent: "sample-owner", intent: {
++    id, parentId: "root", outcome: "Produce a structured decision", acceptance: ["Decision is preserved"],
++    mode: "achieve", agent: "sample-owner", ...(workflow ? { workflow } : {}) } });
++  const claim = claimObservedAppTask(f.config, {
++    taskId: id, appAgent: "sample-owner", handler: "agent", reason: "probe", isAgentRunnable: () => true });
++  if (claim.kind !== "claimed") throw new Error(`Expected claim, got ${claim.kind}`);
++  return claim;
++}
++
++test("terminal-session recovery preserves the same structured result as normal completion", () => {
++  const f = fixture();
++  const payload = { verdict: "approved", sourceRevision: "fixture-revision" };
++  const normal = start(f, "normal");
++  completeAppTask(f.config, normal, { summary: "Decision ready", evidence: ["fixture:decision"], result: payload });
++  expect(f.config.resourceStore.readReceipt("normal")?.result).toEqual(payload);
++
++  const recovered = start(f, "recovered");
++  const sessionId = "terminal-session";
++  recordAppTaskAttemptSession(f.config, recovered, sessionId);
++  const raw = { state: "converged", summary: "Decision ready", evidence: ["fixture:decision"], result: payload, actions: [] };
++  const persistDir = join(f.appDir, "state");
++  mkdirSync(join(persistDir, "sessions", sessionId), { recursive: true });
++  writeFileSync(join(persistDir, "sessions", sessionId, "result.json"),
++    JSON.stringify({ status: "done", finishParams: { status: "success", result: raw } }));
++  // Both revisions consume the same artifact; the candidate moves its read to the adapter.
++  const input = { persistDir, result: raw, config: f.config, descriptor: f.descriptor,
++    taskId: "recovered", sessionId };
++  expect(consumePersistedTerminalAgentResult(input)).toMatchObject({ state: "converged" });
++  expect(f.config.resourceStore.readReceipt("recovered")?.result).toEqual(payload);
++});
++
++test("a first Task with no seeded parent is rejected by the current contract", () => {
++  const f = fixture();
++  expect(() => observeAppTaskIntent(f.config, { appAgent: "sample-owner", intent: {
++    id: "standalone", parentId: "missing-parent", outcome: "Finish one item", acceptance: ["Done"], mode: "achieve" } }))
++    .toThrow("parent does not exist in the live graph");
++});
++
++test("terminal recovery cannot accept a workflow handoff without its required verifier", () => {
++  const f = fixture();
++  const taskId = "handoff";
++  observeAppTaskIntent(f.config, { appAgent: "sample-owner", intent: {
++    id: taskId, parentId: "root", outcome: "Finish verified work", acceptance: ["Workflow verifier accepts"],
++    mode: "achieve", agent: "sample-owner", workflow: "must-verify" } });
++  const workflow = claimObservedAppTask(f.config, {
++    taskId, appAgent: "sample-owner", handler: "auto", reason: "probe", isAgentRunnable: () => true });
++  if (workflow.kind !== "claimed") throw new Error(`Expected workflow claim: ${workflow.kind}`);
++  expect(workflow.handler).toBe("workflow:must-verify");
++  // This is the persisted transition used when a workflow returns needs-agent.
++  markAppTaskAttention(f.config, workflow, { summary: "Need agent judgment", reason: "needs-agent", evidence: [] });
++  const agent = claimObservedAppTask(f.config, {
++    taskId, appAgent: "sample-owner", handler: "auto", reason: "probe", isAgentRunnable: () => true });
++  if (agent.kind !== "claimed") throw new Error(`Expected agent claim: ${agent.kind}`);
++  expect(agent.handler).toBe("agent:sample-owner");
++  expect(agent.handoff?.reason).toBe("needs-agent");
++  const sessionId = "handoff-session";
++  recordAppTaskAttemptSession(f.config, agent, sessionId);
++  const raw = { state: "converged", summary: "Agent proposes done", evidence: ["fixture:agent-claim"], actions: [] };
++  const persistDir = join(f.appDir, "state");
++  mkdirSync(join(persistDir, "sessions", sessionId), { recursive: true });
++  writeFileSync(join(persistDir, "sessions", sessionId, "result.json"),
++    JSON.stringify({ status: "done", finishParams: { status: "success", result: raw } }));
++  const input = { persistDir, result: raw, config: f.config, descriptor: f.descriptor, taskId, sessionId };
++  consumePersistedTerminalAgentResult(input);
++  expect(f.config.resourceStore.readReceipt(taskId)).toBeNull();
++});

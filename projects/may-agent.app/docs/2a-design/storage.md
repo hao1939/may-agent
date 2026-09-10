@@ -1,14 +1,21 @@
 # Runtime Storage
 
 **Design status:** Accepted.
-**Implementation status:** Implemented with file-backed artifacts and bounded
-SQLite projections.
+**Implementation status:** SQLite holds canonical work and admission state;
+files hold full execution artifacts. Bounded read projections coexist with
+those authorities.
 
 ## Decision
 
-SQLite is the runtime's bounded metadata, index, and coordination store. It is
-not the archive for prompts, transcripts, workflow inputs/results, large event
-bodies, or evaluation evidence.
+SQLite is authoritative for Tasks, attempts, accepted results, Conditions,
+requests, admission records, Events and Conversation relationships. It also
+holds indexes and read projections. The database cannot be discarded and
+rebuilt from transcripts. Backup and recovery must preserve both the database
+and its referenced artifacts.
+
+Files hold full prompts, transcripts, workflow inputs/results, large event
+bodies and evaluation evidence. Keeping these payloads out of bounded resource
+rows does not make the resource rows disposable.
 
 Files are authoritative for full execution artifacts:
 
@@ -34,43 +41,59 @@ Moving completed sessions creates no retention value. It does not reclaim
 space, and it introduces broken references, rename failure windows, collision
 handling, and unnecessary resume logic.
 
-SQLite keeps only what a query, join, scheduler, or coordinator needs without
-opening an artifact: identity, lifecycle status, ownership, timestamps,
+SQLite resource rows retain the bounded state needed for correctness. Artifact
+projections retain what a query needs without opening a file: identity, lifecycle status, ownership, timestamps,
 lineage, counters, short previews, common correlation fields, and artifact
 reference/hash/size metadata.
 
-## Why
-
-The old layout stored the same large task in session files, `sessions`,
-`workflow_runs`, `session.start`, and `session.end`. The database consequently
-contained gigabytes of live payload. Deleting rows followed by `VACUUM` could
-not solve that: `VACUUM` rewrote the remaining live gigabytes and blocked May's
-event loop.
-
-The invariant is therefore about writes, not cleanup:
-
-> Keep every new SQLite write bounded. Retention limits row count; it must not
-> compensate for unbounded row size.
-
 ## Record Ownership
 
-| Record | Authoritative content | SQLite projection |
+| Record | Authority and storage | Rebuildability |
 | --- | --- | --- |
-| Session | `meta.json`, `session.jsonl`, `result.json` | lifecycle, lineage, counters, task preview/reference |
-| Workflow run | `workflow-runs/<id>/run.json` | lifecycle, lineage, source revision, task preview/reference |
-| Event | inline bounded body or content-addressed body file | routing, delivery, causality, common correlation fields, bounded body projection |
-| Session digest | session/evaluation artifact trail | classification, short summaries, task reference |
-| Evaluation | `session.eval.jsonl` and referenced evidence | verdict, scores, timestamps, short issue summary |
-| Metric | SQLite | current value/config and bounded snapshots; metrics are coordination data |
+| Tasks, attempts, accepted results/receipts, Conditions and links | Canonical SQLite Task resource rows and fenced transactions | Not reconstructible from session artifacts; preserve the database |
+| Host input handling and cross-App request correlation | SQLite request rows, exact Task/dependency links and accepted results | Not disposable; preserve identity and accepted state |
+| Pending admission and ordered Task input | SQLite admission journal and Task-event links | Required to recover unaccepted input; an in-memory queue is only a hint |
+| Event and causal links | SQLite identity, envelope and trace; large bodies in content-addressed files | Requires retained rows and referenced bodies; transcripts are not substitutes |
+| Conversation messages, Topics and Task links | Durable message evidence and canonical SQLite Topic/correlation records | Read views derive from retained evidence; exact links are authoritative |
+| Session | `meta.json`, `session.jsonl`, `result.json` | Bounded SQL lifecycle/index rows derive from retained artifacts |
+| Workflow run | `workflow-runs/<id>/run.json` | Bounded SQL run projection derives from retained artifacts |
+| Session digest/evaluation | Evaluation facts, `session.eval.jsonl` and referenced evidence | Summary queries are projections; rebuilding requires retained evidence |
+| Metrics and alerts | SQLite definitions, samples and alert state | Definitions may be reloaded; historical samples cannot be recreated by remeasurement |
+| Task lists, human-action views, event graphs and dashboards | Read projections of the authorities above | Disposable views; never restore Task state from presentation |
 
-Small event bodies may remain inline because they are themselves bounded
-coordination data. Bodies over the inline limit are written atomically to the
-content-addressed store before the event row is committed. Their SQL `data`
-contains a bounded compatibility projection plus the artifact reference.
+The current request rows track input handling. The accepted
+[conversational Request contract](message-lifecycle.md#requests-acceptance-and-closure)
+needs durable ask, scope, reference and closure state across turns; its exact
+mapping into storage remains unimplemented. Preserve one authority with bounded
+reads and a consistent closure/message write. Do not reinterpret existing row
+completion as fulfillment or copy Task progress into Request storage.
+
+Small Event bodies remain inline. Large bodies are written to the
+content-addressed store before their event row commits; SQL retains a bounded
+projection and the artifact reference.
+
+Keep resource writes bounded. Retention limits row count and cannot compensate
+for unbounded payloads. Historical storage incidents belong in review evidence,
+not in the definition of authority.
 
 ## Write And Recovery Contract
 
-Artifact-backed writes follow this order:
+Canonical Task transitions use a version- and attempt-fenced SQLite transaction
+that commits accepted state and its related records atomically. Requests and
+admission records have their own durable coordination boundaries; see
+[Events](events.md) and [Task Resource Engine](task-resource-engine.md).
+
+Claimed request attachment commits Task input, request wait/claim release and
+Topic correlation together. Settlement persists linked request readiness in
+the same transaction; an event notification only accelerates discovery.
+Retained input is not necessarily runnable work: retry-exhausted attention
+must ready linked requests for review without permitting another execution.
+Ordinary attention with new eligible input must wait for a fresh result.
+Request attachment and the retry-exhaustion readiness correction are merged
+at the [source baseline](../README.md). The [storage proposal](../proposals/storage-state-service.md)
+records their proof and considers further extraction.
+
+For artifact-backed records, the file and its SQL projection use this order:
 
 ```text
 serialize -> write temporary file -> atomic rename -> write SQL projection

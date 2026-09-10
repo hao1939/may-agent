@@ -170,7 +170,17 @@ function runVerification(command: string, cwd: string): VerifyResult {
 
 // ── Main workflow ──────────────────────────────────────────────────────
 
-async function emitStep(ctx: WorkflowContext, step: string): Promise<void> {
+export async function emitStep(
+  ctx: WorkflowContext,
+  step: string,
+): Promise<void> {
+  if (ctx.reconciliation) {
+    // Task-owned event publication is reserved for durable domain facts with a
+    // stable semantic identity. These markers are attempt-local progress only;
+    // the Host already records workflow and agent-step lifecycle events.
+    ctx.log.info(`verified-coder step: ${step}`);
+    return;
+  }
   await ctx.events.emit({ type: "step_start", data: { step } });
 }
 
