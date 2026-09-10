@@ -8,7 +8,12 @@ import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "..
 import { createRuntimeAppRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { AppTaskResourceStore } from "../../app-task-resource-store.js";
-import { observeAppTaskIntent, appTaskContext } from "../../app-task-reconciler.js";
+import {
+  observeAppTaskIntent,
+  appTaskContext,
+  claimObservedAppTask,
+  completeAppTask,
+} from "../../app-task-reconciler.js";
 
 describe("App read projections", () => {
   let db: SqliteDb;
@@ -184,6 +189,78 @@ describe("App read projections", () => {
     await expect(failedReporting.tasks.outcomes()).rejects.toThrow("report failed");
     await expect(failedReporting.tasks.get("second")).resolves.toMatchObject({ status: "pending" });
     expect((await failedReporting.tasks.list()).items).toHaveLength(2);
+  });
+
+  it("reads a new maintained cycle as pending without changing accepted state or task identity", async () => {
+    const config = resourceConfig();
+    const intent = {
+      id: "review/standing",
+      parentId: "review",
+      outcome: "Keep source findings current",
+      acceptance: ["Current source evidence reviewed"],
+      mode: "maintain" as const,
+      agent: "evaluation",
+    };
+    observeAppTaskIntent(config, { appAgent: "evaluation", intent });
+    const claim = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appAgent: "evaluation",
+      handler: "agent:evaluation",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(completeAppTask(config, claim, { summary: "Previous cycle checked" }).status).toBe("applied");
+    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
+    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "done", mode: "maintain" });
+
+    observeAppTaskIntent(config, {
+      appAgent: "evaluation",
+      intent,
+      trigger: { type: "source.changed", data: { revision: "next" } },
+    });
+    const stored = config.resourceStore.readTask(intent.id);
+    expect(stored).toMatchObject({ metadata: { generation: 1 }, status: { phase: "converged" } });
+    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({
+      id: intent.id,
+      status: "pending",
+      generation: 1,
+      summary: "Previous cycle checked",
+    });
+    await expect(read.tasks.list({ status: ["pending"], limit: 1 })).resolves.toMatchObject({
+      items: [{ id: intent.id, status: "pending", generation: 1 }],
+    });
+    await expect(read.tasks.list({ status: ["done"] })).resolves.toEqual({ items: [] });
+    expect(config.resourceStore.readTask(intent.id)).toEqual(stored);
+    expect(config.resourceStore.readTrigger(intent.id)).not.toBeNull();
+
+    const next = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appAgent: "evaluation",
+      handler: "agent:evaluation",
+    });
+    if (next.kind !== "claimed") throw new Error("expected next claim");
+    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "running", generation: 1 });
+    expect(completeAppTask(config, next, { summary: "New cycle checked" }).status).toBe("applied");
+    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "done", summary: "New cycle checked" });
+    await expect(read.tasks.list({ status: ["pending"] })).resolves.toEqual({ items: [] });
+
+    // Scheduler hints need not rewrite the accepted resource (or its revision).
+    // Reads must agree with status-filtered discovery for either hint.
+    const accepted = config.resourceStore.readTask(intent.id);
+    for (const hints of [
+      { ready: false, changed: true },
+      { ready: true, changed: false },
+      { ready: true, changed: true },
+      { ready: false, changed: false },
+    ]) {
+      config.resourceStore.setRecoveryState(intent.id, hints);
+      const status = hints.ready || hints.changed ? "pending" : "done";
+      await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status });
+      await expect(read.tasks.list({ status: [status], limit: 1 })).resolves.toMatchObject({
+        items: [{ id: intent.id, status }],
+      });
+      await expect(read.tasks.list({ status: [status === "done" ? "pending" : "done"] })).resolves.toEqual({ items: [] });
+      expect(config.resourceStore.readTask(intent.id)).toEqual(accepted);
+    }
   });
 
   it("reads only the outcome containing an exact Task", async () => {

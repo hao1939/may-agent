@@ -162,6 +162,7 @@ function insertTask(
     updatedAt: number;
     mode?: "achieve" | "maintain";
     ready?: boolean;
+    changed?: boolean;
     acceptance?: string[];
     category?: string;
     generation?: number;
@@ -189,10 +190,10 @@ function insertTask(
     `INSERT INTO app_tasks(
        app_id, task_id, generation, resource_version, observed_generation, phase, lane,
        changed, ready, updated_at, resource_json
-     ) VALUES (?, ?, ?, 3, ?, ?, 'normal', 0, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, 3, ?, ?, 'normal', ?, ?, ?, ?)`,
   ).run(
     input.appId, input.taskId, generation, generation, input.phase,
-    input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource),
+    input.changed ? 1 : 0, input.ready ? 1 : 0, input.updatedAt, JSON.stringify(resource),
   );
 }
 
@@ -250,6 +251,70 @@ test("shows a converged maintain Task as live and up to date", () => {
     expect.objectContaining({ taskId: "conversation/follow-up", status: "up-to-date", terminal: false }),
   ]);
   expect(service.listApps("may")).toEqual([expect.objectContaining({ id: "may", activeTasks: 1 })]);
+});
+
+test("shows a converged Task with pending work as queued in detail, lists, and status filters", () => {
+  const db = database();
+  const service = new HumanTaskService(db, registry("research"));
+  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1, mode: "maintain" });
+  for (const [taskId, ready, changed] of [
+    ["scheduled", true, true],
+    ["not-ready", false, true],
+    ["ready", true, false],
+  ] as const) {
+    insertTask(db, {
+      appId: "research", taskId, phase: "converged", updatedAt: 2, mode: "maintain", ready, changed,
+    });
+    expect(service.getTask({ appId: "research", taskId })).toMatchObject({
+      status: "pending",
+      statusDetail: ready
+        ? "Accepted and ready to start; no attempt is running."
+        : "Accepted and waiting to become runnable.",
+      terminal: false,
+    });
+  }
+
+  expect(service.listTasks({ status: ["pending"] }).items.map((task) => task.taskId).sort())
+    .toEqual(["not-ready", "ready", "scheduled"]);
+  expect(service.listTasks({ status: ["up-to-date"] }).items.map((task) => task.taskId)).toEqual(["quiet"]);
+  expect(service.listTasks().items.filter((task) => task.status === "pending")).toHaveLength(3);
+  expect(db.prepare("SELECT DISTINCT phase FROM app_tasks").all()).toEqual([{ phase: "converged" }]);
+
+  insertReceipt(db, "research", "scheduled", 3);
+  expect(service.getTask({ appId: "research", taskId: "scheduled" }))
+    .toMatchObject({ status: "done", terminal: true });
+  expect(service.listTasks({ status: ["pending"] }).items).toHaveLength(2);
+});
+
+test("status-filtered human reads retain the stored-phase index", () => {
+  const db = database();
+  insertTask(db, { appId: "research", taskId: "queued", phase: "converged", updatedAt: 2, changed: true });
+  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1 });
+  const plans: string[] = [];
+  const observed: SqliteDb = {
+    ...db,
+    prepare(sql) {
+      const statement = db.prepare(sql);
+      if (!sql.includes("AS payload, 0 AS terminal")) return statement;
+      return new Proxy(statement, {
+        get(target, key) {
+          if (key === "all") return (...values: Parameters<typeof statement.all>) => {
+            plans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
+            return target.all(...values);
+          };
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+    },
+  };
+  const service = new HumanTaskService(observed, registry("research"));
+  for (const status of ["pending", "running", "up-to-date"] as const) {
+    service.listTasks({ status: [status], limit: 1 });
+    expect(plans.at(-1)).toContain("idx_app_tasks_global_phase (phase=?)");
+    expect(plans.at(-1)).not.toContain('"SCAN t"');
+  }
+  expect(plans).toHaveLength(3);
 });
 
 function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt: number): void {

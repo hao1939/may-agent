@@ -24,6 +24,11 @@ import {
 const TASK_RESOURCE_SCHEMA_VERSION = 2;
 const MAX_CONTEXT_ATTEMPTS_PER_TASK = 16;
 
+// Read projection only: new input can await a claim while the last accepted
+// maintained cycle still has phase=converged. Do not rewrite that authority.
+const TASK_VIEW_PHASE_SQL =
+  "CASE WHEN phase = 'converged' AND (changed = 1 OR ready = 1) THEN 'pending' ELSE phase END";
+
 /**
  * Task rows share the Host database with events so a later fenced emit can
  * verify its attempt, persist the event, and record exact wakes in one SQLite
@@ -481,6 +486,14 @@ export class AppTaskResourceStore {
     return row?.resource_json ? parseJson<AppTaskResource>(row.resource_json) : null;
   }
 
+  /** Read accepted content and its current display phase from the same row. */
+  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"] } | null {
+    const row = this.db
+      .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase FROM app_tasks WHERE app_id = ? AND task_id = ?`)
+      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"] } | null;
+    return row ? { resource: parseJson<AppTaskResource>(row.resource_json), phase: row.phase } : null;
+  }
+
   readTrigger(taskId: string): AppTaskTrigger | null {
     const row = this.db
       .prepare("SELECT trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
@@ -663,18 +676,21 @@ export class AppTaskResourceStore {
           status === "done" ? ["converged"] : status === "pending" ? ["pending"] : [status],
         )
       : ["pending", "running", "waiting", "attention", "converged"];
+    // Preserve the indexed stored-phase predicate before applying readiness.
+    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged"])] : livePhases;
     const clauses: string[] = [];
     const values: unknown[] = [];
     if (livePhases.length > 0) {
       clauses.push(
         `SELECT task_id AS id FROM app_tasks
-         WHERE app_id = ? AND task_id > ? AND phase IN (${livePhases.map(() => "?").join(", ")})
+         WHERE app_id = ? AND task_id > ? AND phase IN (${storedPhases.map(() => "?").join(", ")})
+           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c
              WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
            )`,
       );
-      values.push(this.appId, after, ...livePhases);
+      values.push(this.appId, after, ...storedPhases, ...livePhases);
     }
     if (includeDone) {
       clauses.push(`SELECT receipt_id AS id FROM app_task_receipts
