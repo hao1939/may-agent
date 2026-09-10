@@ -129,6 +129,15 @@ pre-1.0 minor release can change runtime contracts. Major tooling changes also
 need an explicit compatibility review. Check peer ranges before upgrading
 TypeScript; a newer compiler may not yet be supported by the lint parser.
 
+Keep one supported TypeScript 6 compiler for now. TypeScript 7.0 no longer
+provides the compiler API used by `typescript-eslint` and the SDK export-contract
+test, so Dependabot excludes only 7.0.x. See the
+[upstream migration guidance](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-60).
+Reassess later versions when those consumers are compatible, then verify a
+frozen install, the SDK contract test, and the complete CI gate. Do not bypass
+lint to force an upgrade. Explicit relative `paths` need no `baseUrl` or
+deprecation suppression and work with the supported compiler.
+
 Run `bun audit` when refreshing the lockfile and explain affected dependency
 paths. Prefer updating the parent or removing unused packages over adding
 another override. Existing overrides are transitive compatibility/security

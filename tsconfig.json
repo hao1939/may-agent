@@ -12,22 +12,20 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": ".",
     "paths": {
       "@may-agent/sdk": [
-        "packages/sdk/src/index.ts"
+        "./packages/sdk/src/index.ts"
       ],
       "@may-agent/sdk/app": [
-        "packages/sdk/src/app.ts"
+        "./packages/sdk/src/app.ts"
       ],
       "@may-agent/sdk/task": [
-        "packages/sdk/src/task.ts"
+        "./packages/sdk/src/task.ts"
       ],
       "@may-agent/sdk/testing": [
-        "packages/sdk/src/testing.ts"
+        "./packages/sdk/src/testing.ts"
       ]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "include": [
     "src",
