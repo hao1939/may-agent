@@ -11,6 +11,13 @@ For current work, use `tasks.get` / `tasks.list` with App ID
 console. These reads expose current resources, waits, evidence, and history.
 An unavailable read is not proof that no tasks exist or that work is finished.
 
+Compare when facts were observed, not just when a task finished. A successful
+task records its accepted outcome; it does not prove that an external source is
+still accessible. Earlier success cannot dismiss a later failed access check,
+and a later failure does not invalidate previously verified research. If an
+access issue needs no library change, explain that scope-based no-op without
+claiming access recovered. Report recovery only with newer direct evidence.
+
 Old `.state/tasks/state.json`, `tree.json`, and `condition-routes.json` files
 are retained historical evidence, not live views or bootstrap input. The current
 Host does not maintain a `tree.json` publisher. Do not request regeneration or
