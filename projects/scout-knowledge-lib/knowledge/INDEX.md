@@ -1013,3 +1013,9 @@ Known consolidation clusters:
   June 2026 XHS trends note. Active XHS notes reduced from 6 to 3:
   `xhs_chinese_ai_trends_june2026.md` (canonical), `xhs_chinese_ai_trends_may2026.md`
   (provenance), `agent-patterns-xhs-2024.md` (2024 provenance).
+
+## Additional self-evolution investigations
+
+- [AutoRefine: The Lesson's Execution Boundary Is Part of What Must Be Learned](findings/2026-09-03-arxiv-autorefine-typed-artifact-compilation.md)
+- [Socratic-Zero: Useful Curriculum Distillation, Overstated Co-Evolution](findings/2026-09-03-arxiv-socratic-zero-teacher-guided-curriculum.md)
+- [LoopX: Governed Cross-Harness Work, Not Another Agent Runtime](findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md)
