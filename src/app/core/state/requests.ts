@@ -24,16 +24,18 @@ export type TaskRequestInput = {
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
 };
 
-/** Persist resolved Task input and Topic links. No App mapping, execution or notification calls. */
+/** Persist resolved Task input and Conversation links. No App mapping, execution or notification calls. */
 export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
     const observation = admitAuthorizedTaskRequest(config, input);
     if (input.topicId)
       linkConversationTopicTask(config.resourceStore.db, input.topicId, input.appId, observation.taskId);
-    if (input.requestLink) linkConversationRequestTask(config.resourceStore.db, {
-      ...input.requestLink, taskRef: { appId: input.appId, taskId: observation.taskId },
-    });
+    if (input.requestLink)
+      linkConversationRequestTask(config.resourceStore.db, {
+        ...input.requestLink,
+        taskRef: { appId: input.appId, taskId: observation.taskId },
+      });
     return observation;
   });
 }
