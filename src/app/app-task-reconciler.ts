@@ -3932,6 +3932,8 @@ export function completeAppTask(
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
+    /** Retire only validated action targets, before the fenced commit exposes replacements. */
+    prepareSupersededSessions?: (sessionIds: string[]) => void;
   },
 ): {
   status: "applied" | "stale";
@@ -4103,7 +4105,9 @@ export function completeAppTask(
     if (tree.resources) delete tree.resources[claim.taskId];
     if (tree.taskTriggers) delete tree.taskTriggers[claim.taskId];
   }
-  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+  const resourceMutation = finishResourceMutationScope(mutationScope, tree);
+  input.prepareSupersededSessions?.(supersededSessionIds);
+  commitTaskMutation(config, tree, { resourceMutation });
   return {
     status: "applied",
     actionsApplied,
@@ -4127,6 +4131,8 @@ export function deferAppTask(
     actions?: AppTaskAction[];
     conditions?: AppTaskConditionSpec[];
     acceptedLiveEventIds?: number[];
+    /** Retire only validated action targets, before the fenced commit exposes replacements. */
+    prepareSupersededSessions?: (sessionIds: string[]) => void;
   },
 ): {
   status: "applied" | "stale";
@@ -4222,7 +4228,9 @@ export function deferAppTask(
       trackResourceMutationTask(mutationScope, tree, wake.taskId);
     }
   }
-  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+  const resourceMutation = finishResourceMutationScope(mutationScope, tree);
+  input.prepareSupersededSessions?.(supersededSessionIds);
+  commitTaskMutation(config, tree, { resourceMutation });
   const satisfiedTaskIds = actions.filter((action) => action.kind === "close-task").map((action) => action.taskId);
   const reconcileTaskIds = [
     ...new Set([

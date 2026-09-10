@@ -268,6 +268,32 @@ stale-result fencing do not. Long-running successful work has no attempt cap.
 Execution failures are recorded as failed attempts, distinct from stale results
 and unavailable handlers. No SDK retry settings, new table or retry service.
 
+`app-task-runtime.ts` coordinates the same Task lifecycle across ordinary
+dispatch and startup. `consumePersistedTerminalAgentResult` reuses normal
+transactional admission; `settlePersistedTerminalAgentResult` handles its shared
+cleanup and publication. Validated actions retire exact superseded sessions
+before the fenced Task commit exposes replacements. A cleanup refusal leaves
+the saved result and original claim available for recovery in both ordinary
+dispatch and recovered settlement. It propagates past result-validation and
+execution-failure handling rather than rejecting the result or releasing its
+claim. Cleanup runs
+outside the SQLite transaction; commit still rechecks every resource fence.
+If a concurrent update wins after cleanup, ordinary reconciliation uses the
+current Task, never the stale action. Cleanup may repeat and names only the
+prior exact session, never a replacement. No new outbox or persisted schema is added.
+`taskCompletionDisposition` distinguishes Task completion
+from accepted progress or self-revision. Both paths publish dependency changes
+through the same function. Recovered waits replay persisted Condition facts. Startup retains
+its distinct live-session/lease checks and queue gate; it does not run an App
+attempt or invent another completion policy.
+
+The [whole-lifecycle proposal](../../../may-agent.app/docs/proposals/task-controller-pattern.md)
+connects existing App input mapping, bounded attempts, exact waits and checked
+results. The reconciler above owns the retry-across-restart bound;
+end-to-end owner-decision proof remains separate work. The lifecycle cases
+in `app-task-runtime.test.ts` cover continued input, revised acceptance,
+recovered waits/actions and required workflow verification.
+
 | Contract / implementation | Responsibility |
 | --- | --- |
 | SDK `TaskExecutor(attempt)` | One bounded custom executor call and proposed result; unchanged public contract |

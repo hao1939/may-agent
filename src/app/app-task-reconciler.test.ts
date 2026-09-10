@@ -5474,7 +5474,7 @@ describe("App task reconciler state", () => {
     expect(readTaskSnapshot(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation + 1);
   });
 
-  it("returns sessions superseded by a dependent update-task action", () => {
+  it.each(["complete", "wait"] as const)("prepares exact action sessions before a fenced %s commit", (mode) => {
     const state = fixture();
     const { config } = state;
     const targetIntent: AppTaskIntent = {
@@ -5503,24 +5503,61 @@ describe("App task reconciler state", () => {
     });
     if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
 
-    expect(
-      completeAppTask(config, carrier, {
+    let prepared = 0;
+    let race = false;
+    const settle = (expectedGeneration = target.generation) => {
+      const result = {
         summary: "Advanced the dependent target",
         evidence: ["the dependent target needs revised execution intent"],
         actions: [
           {
-            kind: "update-task",
+            kind: "update-task" as const,
             taskId: targetIntent.id,
-            expectedGeneration: target.generation,
+            expectedGeneration,
             outcome: "Run the revised target generation",
           },
         ],
-      }),
-    ).toMatchObject({
+        prepareSupersededSessions(ids: string[]) {
+          prepared++;
+          expect(ids).toEqual(["running-target-session"]);
+          expect(config.resourceStore.readTask(target.taskId)).toMatchObject({
+            metadata: { generation: target.generation },
+            status: { currentAttemptId: target.attemptId },
+          });
+          if (race)
+            mutateTaskResourceFixture(config, target.taskId, (resource) => {
+              resource.status.summary = "A concurrent observation must not be overwritten";
+            });
+        },
+      };
+      return mode === "complete"
+        ? completeAppTask(config, carrier, result)
+        : deferAppTask(config, carrier, {
+            ...result,
+            disposition: "waiting",
+            conditions: [
+              {
+                id: "proof",
+                type: "sample.proof.ready",
+                subject: "id:proof-1",
+                expected: "ready",
+              },
+            ],
+          });
+    };
+    expect(() => settle(target.generation + 1)).toThrow();
+    expect(prepared).toBe(0); // Invalid actions never interrupt a session.
+    race = true;
+    expect(() => settle()).toThrow("stale fence");
+    expect(config.resourceStore.readTask(target.taskId)?.metadata.generation).toBe(target.generation);
+    expect(config.resourceStore.readTask(carrier.taskId)?.status.currentAttemptId).toBe(carrier.attemptId);
+    race = false;
+    expect(settle()).toMatchObject({
       status: "applied",
       actionsApplied: [`updated ${targetIntent.id}`],
       supersededSessionIds: ["running-target-session"],
     });
+    expect(prepared).toBe(2);
 
     const targetResource = readTaskSnapshot(config).resources?.[targetIntent.id];
     expect(targetResource).toMatchObject({
