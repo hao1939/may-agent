@@ -65,7 +65,6 @@ export function createReadDedupGuard(): (
         reason:
           `READ_DEDUP signal: You have already read "${args.path}" ${count - 1} times this session. ` +
           `Further reads of this file are likely wasteful and may indicate an infinite read loop. ` +
-          `The file content has not changed since your last read. ` +
           `Use the information you already have, or read a different file.`,
       };
     }

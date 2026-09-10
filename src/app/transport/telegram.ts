@@ -1278,6 +1278,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // Verify token
     try {
       const me = await apiCall("getMe");
+      if (!running) return;
       bus.emit({ type: "info", message: `[telegram] Bot: @${me.username} (${me.first_name})` });
       // Configured chats are valid notification surfaces immediately after a
       // restart; receiving a new message is not a prerequisite for alerts.
@@ -1288,6 +1289,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
       conversationRefresh.queue(sharedConversationId);
     } catch (err) {
+      if (!running) return;
       const msg = err instanceof Error ? err.message : String(err);
       bus.emit({ type: "info", message: `[telegram] Failed to connect: ${msg}` });
       return;
@@ -1300,6 +1302,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           timeout: 30,
           allowed_updates: ["message", "callback_query"],
         });
+        if (!running) break;
 
         if (Array.isArray(updates)) {
           for (const update of updates) {
@@ -1336,6 +1339,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
+      telegramClient.close();
       turnControls.clear();
       conversationRefresh.close();
       watchRefresh.close();
