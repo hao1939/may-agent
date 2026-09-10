@@ -18,10 +18,22 @@ export type TaskRequestInput = {
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   request: Readonly<AppRequest>;
+  authorize?: () => void;
+  topicId?: string;
 };
 
 /** Persist Task input only. No mapping, executor, queue or notification calls. */
 export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
+  return stateTransaction(config.resourceStore.db, () => {
+    input.authorize?.();
+    const observation = admitAuthorizedTaskRequest(config, input);
+    if (input.topicId)
+      linkConversationTopicTask(config.resourceStore.db, input.topicId, input.appId, observation.taskId);
+    return observation;
+  });
+}
+
+function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
   if (input.appId !== config.resourceStore.appId) throw new Error("Task request belongs to another App");
   const idempotencyKey = input.idempotencyKey.trim();
   if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");

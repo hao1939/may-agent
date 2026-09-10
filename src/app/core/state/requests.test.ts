@@ -108,6 +108,22 @@ async function worker(path: string, action: string, taskId?: string) {
 }
 
 describe("request-to-Task state operation", () => {
+  it("fences direct follow-up admission and commits its Topic link atomically", () => {
+    const { db, config, input } = fixture();
+    expect(() =>
+      admitTaskRequest(config, {
+        ...input,
+        authorize: () => {
+          throw new Error("turn stopped");
+        },
+      }),
+    ).toThrow("turn stopped");
+    expect(config.resourceStore.readTask("work/one")).toBeNull();
+    expect(() => admitTaskRequest(config, { ...input, topicId: "missing" })).toThrow();
+    expect(config.resourceStore.readTask("work/one")).toBeNull();
+    admitTaskRequest(config, { ...input, topicId: "topic" });
+    expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+  });
   it("commits Task input, exact dependency, Topic and Conversation claim release together", () => {
     const { db, config, input } = fixture();
     attachRequestToTask(config, input);

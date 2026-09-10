@@ -10,6 +10,12 @@ Topic-to-Task links. It reads typed request evidence through
 claims, completion, recovery, and claim-to-Topic association remain there.
 Conversation projection has no scheduler or request lifecycle.
 
+The input Host binds each executing claim to its exact session. Losing claim
+ownership aborts that execution locally; it does not crash the daemon. Replies,
+Task controls and admissions revalidate authority at their commit boundary.
+Already accepted effects are not undone. Cancellation retains capacity until
+the executor settles, and database/reporting failures do not bypass cleanup.
+
 Callers pass the existing database connection. This separation creates no new
 database, cache, transaction boundary, or background process. The request
 handler can still update a Topic and request inside the same transaction.

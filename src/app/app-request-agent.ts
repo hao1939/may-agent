@@ -120,7 +120,7 @@ export function createAppRequestAgentResolver(options: {
   registry: AppRegistry;
   db: SqliteDb;
 }): AppRequestResolver {
-  return async ({ app, request }) => {
+  return async ({ app, request, execution: binding }) => {
     const agent = (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "");
     if (!agent) throw new Error(`App ${app.id} has no conversational agent`);
     const registered = options.manager.getAgentDefinition(agent);
@@ -147,6 +147,8 @@ export function createAppRequestAgentResolver(options: {
         // Retained child-wait requests keep their original capability profile.
         toolPolicy: usesDirectFollowUp ? "app-agent-full" : "app-agent-deputy",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,
+        signal: binding?.signal,
+        sessionStarted: binding?.sessionStarted,
       },
     );
     if (execution.status !== "done" || !execution.structuredResult) {

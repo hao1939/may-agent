@@ -23,10 +23,13 @@ import type { SqliteDb } from "../lib/db.js";
 import { stateTransaction as withTransaction } from "../lib/db/transaction.js";
 import { assertValidAppDefinition } from "./core/apps/definition-validation.js";
 import {
+  assertAppInboxClaim,
+  associateAppInboxClaimSession,
   associateAppInboxClaimTopic,
   claimNextAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
+  excludeExecutingConversations,
   getAppInboxItem,
   listAppInboxChildren,
   listOpenConversationTopicRequests,
@@ -66,6 +69,9 @@ export type AppTaskAttacher = (input: {
   /** Inbox attachment commits its wait and Topic too; direct follow-up admission has no claim. */
   claim?: AppInboxClaim;
   now?: number;
+  /** Revalidate the originating turn inside the Task admission transaction. */
+  authorize?: () => void;
+  topicId?: string;
 }) => Promise<{
   taskId: string;
 }>;
@@ -73,9 +79,14 @@ export type AppTaskAttacher = (input: {
 export type AppRequestResolver = (input: {
   app: Readonly<AppDefinition>;
   request: Readonly<AppRequest>;
+  execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void };
 }) => Promise<AppRequestDecision>;
 
-export type AppRequestTaskController = (input: { requestId: string; control: AppRequestTaskControl }) => Promise<void>;
+export type AppRequestTaskController = (input: {
+  requestId: string;
+  control: AppRequestTaskControl;
+  authorize: () => void;
+}) => Promise<void>;
 
 export type AppActionDescription = {
   id: string;
@@ -142,7 +153,12 @@ export type AppInboxHostOptions = {
   /** Immediate conversational text emitted once while delegated work continues. */
   onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
   /** Durable handoff from one bounded conversational turn to App-owned follow-up work. */
-  onRequestFollowUp?: (item: AppInboxItem, followUp: AppRequestFollowUp, topicId: string) => void | Promise<void>;
+  onRequestFollowUp?: (
+    item: AppInboxItem,
+    followUp: AppRequestFollowUp,
+    topicId: string,
+    authorize: () => void,
+  ) => void | Promise<void>;
 };
 
 type RegisteredApp = AppDefinition;
@@ -274,7 +290,8 @@ export function boundedAppRequestConversation(
   const repliedMessageId = conversation.current?.replyTo;
   const priority = available.filter(
     (candidate) =>
-      candidate.id === repliedMessageId || (currentTopicId !== undefined && candidate.metadata?.topicId === currentTopicId),
+      candidate.id === repliedMessageId ||
+      (currentTopicId !== undefined && candidate.metadata?.topicId === currentTopicId),
   );
   const remaining = available.filter((candidate) => !priority.includes(candidate));
   for (const item of [...priority].reverse().concat([...remaining].reverse())) {
@@ -365,7 +382,8 @@ export class AppInboxHost {
   readonly #onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
   readonly #onRequestDelegated?: (item: AppInboxItem) => void;
   readonly #onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
-  readonly #onRequestFollowUp?: (item: AppInboxItem, followUp: AppRequestFollowUp, topicId: string) => void;
+  readonly #onRequestFollowUp?: AppInboxHostOptions["onRequestFollowUp"];
+  readonly #executions = new Map<string, { claim: AppInboxClaim; controller: AbortController }>();
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
@@ -563,12 +581,14 @@ export class AppInboxHost {
   readyCount(appId: string): number {
     const app = this.#requiredApp(appId);
     const now = this.#now();
+    const executingIds = [...this.#executions.keys()];
     const row = this.#db
       .prepare(
         `SELECT 1 AS ready FROM (
            SELECT candidate.app_id
              FROM app_inbox_items candidate INDEXED BY idx_app_inbox_available
              WHERE candidate.app_id = ? AND candidate.status != 'done' AND candidate.lease_owner IS NULL
+               ${excludeExecutingConversations(executingIds)}
                AND candidate.available_at IS NOT NULL AND candidate.available_at <= ?
                AND (candidate.conversation_id IS NULL OR NOT EXISTS (
                  SELECT 1 FROM app_inbox_items active
@@ -582,6 +602,7 @@ export class AppInboxHost {
            SELECT candidate.app_id
              FROM app_inbox_items candidate INDEXED BY idx_app_inbox_expired
              WHERE candidate.app_id = ? AND candidate.status != 'done'
+               ${excludeExecutingConversations(executingIds)}
                AND candidate.lease_expires_at IS NOT NULL AND candidate.lease_expires_at <= ?
                AND (candidate.conversation_id IS NULL OR NOT EXISTS (
                  SELECT 1 FROM app_inbox_items active
@@ -593,7 +614,7 @@ export class AppInboxHost {
                ))
          ) LIMIT 1`,
       )
-      .get(app.id, now, now, app.id, now, now);
+      .get(app.id, ...executingIds, now, now, app.id, ...executingIds, now, now);
     return row ? 1 : 0;
   }
 
@@ -632,7 +653,10 @@ export class AppInboxHost {
          ) ORDER BY app_id`,
       )
       .all(now, now, now, now) as Array<{ app_id?: unknown }>;
-    return rows.flatMap((row) => (typeof row.app_id === "string" && loaded.has(row.app_id) ? [row.app_id] : []));
+    return rows.flatMap((row) =>
+      typeof row.app_id === "string" && loaded.has(row.app_id) &&
+      (this.#executions.size === 0 || this.readyCount(row.app_id)) ? [row.app_id] : [],
+    );
   }
 
   wake(waitingOn: { kind: AppInboxWaitKind; id: string }): number {
@@ -754,11 +778,15 @@ export class AppInboxHost {
 
   async reconcileOnce(appId: string): Promise<AppInboxReconcileResult> {
     const app = this.#requiredApp(appId);
-    const claim = claimNextAppInboxItem(this.#db, app.id, this.#workerId, this.#leaseMs, this.#now());
+    const claim = claimNextAppInboxItem(this.#db, app.id, this.#workerId, this.#leaseMs, this.#now(), [
+      ...this.#executions.keys(),
+    ]);
     if (!claim) return { claimed: 0, admitted: 0, released: 0, errors: [] };
     this.#notifyConversationChanges([claim.item]);
 
-    const stopRenewing = this.#renewClaim(claim);
+    const controller = new AbortController();
+    this.#executions.set(claim.item.id, { claim, controller });
+    const stopRenewing = this.#renewClaim(claim, controller);
     const outcome: AppInboxReconcileResult = { claimed: 1, admitted: 0, released: 0, errors: [] };
     const conversationIds = new Set<string>();
     try {
@@ -768,19 +796,24 @@ export class AppInboxHost {
       outcome.admitted = 1;
     } catch (error) {
       outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
-      if (
-        releaseAppInboxClaim(this.#db, claim, {
-          retryAfterMs: this.#retryAfterMs,
-          now: this.#now(),
-        })
-      ) {
-        outcome.released = 1;
-        if (claim.item.conversationId) {
-          conversationIds.add(claim.item.conversationId);
+      try {
+        if (
+          releaseAppInboxClaim(this.#db, claim, {
+            retryAfterMs: this.#retryAfterMs,
+            now: this.#now(),
+          })
+        ) {
+          outcome.released = 1;
+          if (claim.item.conversationId) {
+            conversationIds.add(claim.item.conversationId);
+          }
         }
+      } catch (cleanupError) {
+        outcome.errors.push(`Request ${claim.item.id} cleanup: ${errorMessage(cleanupError)}`);
       }
     } finally {
       stopRenewing();
+      this.#executions.delete(claim.item.id);
     }
     if (conversationIds.size > 0) outcome.conversationIds = [...conversationIds].sort();
     return outcome;
@@ -853,7 +886,8 @@ export class AppInboxHost {
       const contextTopicId =
         item.topicId ??
         (item.replyToSourceId
-          ? readConversationMessageTopicId(this.#db, item.appId, item.conversationId, item.replyToSourceId) ?? undefined
+          ? (readConversationMessageTopicId(this.#db, item.appId, item.conversationId, item.replyToSourceId) ??
+            undefined)
           : undefined);
       const conversation = readAppConversationResource(this.#db, item.appId, item.conversationId, {
         limit: 40,
@@ -1007,10 +1041,26 @@ export class AppInboxHost {
     return observed ?? null;
   }
 
-  #renewClaim(claim: AppInboxClaim): () => void {
+  #assertOwned(claim: AppInboxClaim): void {
+    this.#executions.get(claim.item.id)?.controller.signal.throwIfAborted();
+    assertAppInboxClaim(this.#db, claim, this.#now());
+  }
+
+  #renewClaim(claim: AppInboxClaim, controller: AbortController): () => void {
     const intervalMs = Math.max(10, Math.floor(this.#leaseMs / 3));
     const timer = setInterval(() => {
-      renewAppInboxClaim(this.#db, claim, this.#leaseMs, this.#now());
+      try {
+        this.#assertOwned(claim);
+        if (!renewAppInboxClaim(this.#db, claim, this.#leaseMs, this.#now())) throw new Error("claim is stale");
+      } catch (error) {
+        clearInterval(timer);
+        // Invalidate authority before cancellation/reporting, even if SQLite
+        // cannot record the failure. Do not release capacity until it settles.
+        controller.abort(error);
+        console.error(
+          `[app-inbox:${claim.item.appId}:${claim.item.id}:${claim.generation}] ownership lost: ${errorMessage(error)}`,
+        );
+      }
     }, intervalMs);
     timer.unref?.();
     return () => clearInterval(timer);
@@ -1035,6 +1085,7 @@ export class AppInboxHost {
   #completeRequest(claim: AppInboxClaim, result: AppResult): string | undefined {
     let completed = false;
     withTransaction(this.#db, () => {
+      this.#assertOwned(claim);
       const rowCompleted = completeAppInboxClaim(this.#db, claim, result, this.#now());
       if (!rowCompleted) throw new Error("claim is stale");
       completed = true;
@@ -1075,7 +1126,20 @@ export class AppInboxHost {
     reconsiderations = 0,
   ): Promise<string | undefined> {
     if (!this.#resolveRequest) throw new Error("Direct App request resolution is not configured");
-    const decision = await this.#resolveRequest({ app, request });
+    this.#assertOwned(claim);
+    const decision = await this.#resolveRequest({
+      app,
+      request,
+      execution: {
+        signal: this.#executions.get(claim.item.id)!.controller.signal,
+        sessionStarted: (sessionId) => {
+          this.#assertOwned(claim);
+          if (!associateAppInboxClaimSession(this.#db, claim, sessionId, this.#now()))
+            throw new Error("claim is stale");
+        },
+      },
+    });
+    this.#assertOwned(claim);
     if (!Check(appRequestAgentResultSchema, decision)) {
       const first = [...Errors(appRequestAgentResultSchema, decision)][0];
       throw new Error(`App ${app.id} returned an invalid request decision: ${first?.message ?? "schema mismatch"}`);
@@ -1104,9 +1168,7 @@ export class AppInboxHost {
     const availableTaskIdentities = requestTaskIdentityKeys(request);
     if (decision.topic.kind === "existing") {
       const conversation = request.conversation;
-      const topic = conversation
-        ? readConversationTopic(this.#db, app.id, conversation.id, decision.topic.id)
-        : null;
+      const topic = conversation ? readConversationTopic(this.#db, app.id, conversation.id, decision.topic.id) : null;
       if (!topic) throw new Error(`App ${app.id} selected unavailable Topic ${decision.topic.id}`);
       for (const task of topic.taskRefs) availableTaskIdentities.add(`${task.appId}\0${task.taskId}`);
     }
@@ -1214,66 +1276,74 @@ export class AppInboxHost {
     if (taskControls.length > 0) {
       if (!this.#controlTask) throw new Error("Human Task control is not configured");
       for (const control of taskControls) {
-        await this.#controlTask({ requestId: request.id, control });
+        this.#assertOwned(claim);
+        await this.#controlTask({ requestId: request.id, control, authorize: () => this.#assertOwned(claim) });
       }
     }
     if (followUp) {
       if (!this.#onRequestFollowUp) throw new Error("App follow-up event publication is not configured");
-      await this.#onRequestFollowUp(claim.item, followUp, topicId!);
+      this.#assertOwned(claim);
+      await this.#onRequestFollowUp(claim.item, followUp, topicId!, () => this.#assertOwned(claim));
+      const conversationId = this.#completeRequest(claim, {
+        summary: decision.summary,
+        response: decision.response,
+        evidence: decision.evidence,
+      });
       this.#publishRequestMessage(claim.item, decision.response, topicId);
-      return this.#completeRequest(claim, {
-        summary: decision.summary,
-        response: decision.response,
-        evidence: decision.evidence,
-      });
+      return conversationId;
     }
-    this.#publishRequestMessage(claim.item, decision.response, topicId);
     if (dependencies.length === 0) {
-      return this.#completeRequest(claim, {
+      const conversationId = this.#completeRequest(claim, {
         summary: decision.summary,
         response: decision.response,
         evidence: decision.evidence,
       });
+      this.#publishRequestMessage(claim.item, decision.response, topicId);
+      return conversationId;
     }
 
-    for (const dependency of dependencies) {
-      const childId = stableChildRequestId(request.id, dependency.id);
-      const delegated = createAppInboxItem(this.#db, {
-        id: childId,
-        appId: dependency.appId,
-        parentId: request.id,
-        targetTaskId: dependency.taskId,
-        topicId,
-        source: { kind: "app", id: app.id },
-        input: dependency.input,
-        idempotencyKey: `delegate:${request.id}:${dependency.id}`,
-        now: this.#now(),
-      });
-      if (delegated.item.status !== "done" && this.#onRequestDelegated) {
-        try {
-          this.#onRequestDelegated(delegated.item);
-        } catch {
-          // The durable child request is authoritative; the normal ready scan
-          // recovers a missed wake without duplicating work.
+    withTransaction(this.#db, () => {
+      this.#assertOwned(claim);
+      for (const dependency of dependencies) {
+        const childId = stableChildRequestId(request.id, dependency.id);
+        const delegated = createAppInboxItem(this.#db, {
+          id: childId,
+          appId: dependency.appId,
+          parentId: request.id,
+          targetTaskId: dependency.taskId,
+          topicId,
+          source: { kind: "app", id: app.id },
+          input: dependency.input,
+          idempotencyKey: `delegate:${request.id}:${dependency.id}`,
+          now: this.#now(),
+        });
+        if (delegated.item.status !== "done" && this.#onRequestDelegated) {
+          try {
+            this.#onRequestDelegated(delegated.item);
+          } catch {
+            // The durable child request is authoritative; the normal ready scan
+            // recovers a missed wake without duplicating work.
+          }
         }
       }
-    }
-    if (
-      !waitAppInboxClaim(
-        this.#db,
-        claim,
-        { kind: "app", id: appRequestChildrenWaitId(request.id) },
-        { now: this.#now() },
-      )
-    ) {
-      throw new Error("claim is stale");
-    }
-    const unreviewedCompletedChildExists = listAppInboxChildren(this.#db, request.id).some(
-      (child) => child.status === "done" && !reviewedCompletedChildren.has(child.id),
-    );
-    if (unreviewedCompletedChildExists) {
-      wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: appRequestChildrenWaitId(request.id) }, this.#now());
-    }
+      if (
+        !waitAppInboxClaim(
+          this.#db,
+          claim,
+          { kind: "app", id: appRequestChildrenWaitId(request.id) },
+          { now: this.#now() },
+        )
+      ) {
+        throw new Error("claim is stale");
+      }
+      const unreviewedCompletedChildExists = listAppInboxChildren(this.#db, request.id).some(
+        (child) => child.status === "done" && !reviewedCompletedChildren.has(child.id),
+      );
+      if (unreviewedCompletedChildExists) {
+        wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: appRequestChildrenWaitId(request.id) }, this.#now());
+      }
+    });
+    this.#publishRequestMessage(claim.item, decision.response, topicId);
     return claim.item.conversationId;
   }
 
@@ -1283,40 +1353,43 @@ export class AppInboxHost {
     request: Readonly<AppRequest>,
     decision: AppRequestDecision,
   ): string | undefined {
-    const conversation = request.conversation;
-    if (claim.item.topicId) {
-      if (!conversation || !readConversationTopic(this.#db, app.id, conversation.id, claim.item.topicId)) {
-        throw new Error(`App ${app.id} request ${request.id} has unavailable Topic ${claim.item.topicId}`);
+    return withTransaction(this.#db, () => {
+      this.#assertOwned(claim);
+      const conversation = request.conversation;
+      if (claim.item.topicId) {
+        if (!conversation || !readConversationTopic(this.#db, app.id, conversation.id, claim.item.topicId)) {
+          throw new Error(`App ${app.id} request ${request.id} has unavailable Topic ${claim.item.topicId}`);
+        }
+        if (!associateAppInboxClaimTopic(this.#db, claim, claim.item.topicId, this.#now())) {
+          throw new Error("claim is stale");
+        }
+        return claim.item.topicId;
       }
-      if (!associateAppInboxClaimTopic(this.#db, claim, claim.item.topicId, this.#now())) {
+      if (decision.topic.kind === "none") return undefined;
+      if (!conversation) throw new Error(`App ${app.id} cannot assign a Topic without a Conversation`);
+      let topicId: string;
+      if (decision.topic.kind === "existing") {
+        const selectedTopicId = decision.topic.id;
+        const topic = readConversationTopic(this.#db, app.id, conversation.id, selectedTopicId);
+        if (!topic) throw new Error(`App ${app.id} selected unavailable Topic ${selectedTopicId}`);
+        topicId = topic.id;
+      } else {
+        topicId = stableTopicId(app.id, conversation.id, request.source.id);
+        createConversationTopic(this.#db, {
+          id: topicId,
+          appId: app.id,
+          conversationId: conversation.id,
+          title: decision.topic.title,
+          openedBy: request.source.kind,
+          originMessageId: conversation.current?.messageId ?? request.source.id,
+          now: this.#now(),
+        });
+      }
+      if (!associateAppInboxClaimTopic(this.#db, claim, topicId, this.#now())) {
         throw new Error("claim is stale");
       }
-      return claim.item.topicId;
-    }
-    if (decision.topic.kind === "none") return undefined;
-    if (!conversation) throw new Error(`App ${app.id} cannot assign a Topic without a Conversation`);
-    let topicId: string;
-    if (decision.topic.kind === "existing") {
-      const selectedTopicId = decision.topic.id;
-      const topic = readConversationTopic(this.#db, app.id, conversation.id, selectedTopicId);
-      if (!topic) throw new Error(`App ${app.id} selected unavailable Topic ${selectedTopicId}`);
-      topicId = topic.id;
-    } else {
-      topicId = stableTopicId(app.id, conversation.id, request.source.id);
-      createConversationTopic(this.#db, {
-        id: topicId,
-        appId: app.id,
-        conversationId: conversation.id,
-        title: decision.topic.title,
-        openedBy: request.source.kind,
-        originMessageId: conversation.current?.messageId ?? request.source.id,
-        now: this.#now(),
-      });
-    }
-    if (!associateAppInboxClaimTopic(this.#db, claim, topicId, this.#now())) {
-      throw new Error("claim is stale");
-    }
-    return topicId;
+      return topicId;
+    });
   }
 
   async #attachRequestTask(

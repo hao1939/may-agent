@@ -10,6 +10,8 @@ export function fakeTaskAttacher(
 ): AppTaskAttacher {
   return async (input) => {
     const result = await resolve(input);
+    input.authorize?.();
+    if (input.topicId) linkConversationTopicTask(db, input.topicId, input.appId, result.taskId, input.now);
     if (!input.claim) return result;
     if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: result.taskId }, { now: input.now })) {
       throw new Error("claim is stale");

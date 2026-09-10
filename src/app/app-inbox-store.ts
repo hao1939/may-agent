@@ -657,12 +657,25 @@ export function claimAppInboxItem(
   );
 }
 
+/** `candidate` is the ready input; IDs are bound parameters, never SQL text. */
+export function excludeExecutingConversations(executingIds: string[]): string {
+  return executingIds.length
+    ? `AND NOT EXISTS (
+    SELECT 1 FROM app_inbox_items local
+    WHERE local.id IN (${executingIds.map(() => "?").join(",")})
+      AND (local.id = candidate.id OR
+        (local.app_id = candidate.app_id AND local.conversation_id = candidate.conversation_id))
+  )`
+    : "";
+}
+
 export function claimNextAppInboxItem(
   db: SqliteDb,
   appId: string,
   owner: string,
   leaseMs: number,
   now = Date.now(),
+  executingIds: string[] = [],
 ): AppInboxClaim | null {
   requiredText(appId, "appId");
   requiredText(owner, "lease owner");
@@ -684,6 +697,7 @@ export function claimNextAppInboxItem(
          SELECT candidate.id
          FROM app_inbox_items candidate
          WHERE candidate.app_id = ?
+           ${excludeExecutingConversations(executingIds)}
            AND candidate.status != 'done'
            AND (
              (candidate.lease_owner IS NULL
@@ -708,7 +722,7 @@ export function claimNextAppInboxItem(
        )
        RETURNING *`,
     )
-    .get(now, now, owner, now + leaseMs, now, appId, now, now, now);
+    .get(now, now, owner, now + leaseMs, now, appId, ...executingIds, now, now, now);
   if (!row) return null;
   const item = rowToItem(row);
   return { item, generation: item.lease!.generation, owner };
@@ -725,6 +739,18 @@ export function renewAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, leaseMs: 
       [now + leaseMs, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
+}
+
+/** Check at the effect's transaction boundary, not only after execution. */
+export function assertAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, now = Date.now()): void {
+  const item = getAppInboxItem(db, claim.item.id);
+  if (
+    item?.status !== "handling" ||
+    item.lease?.owner !== claim.owner ||
+    item.lease.generation !== claim.generation ||
+    item.lease.expiresAt <= now
+  )
+    throw new Error("claim is stale");
 }
 
 export function associateAppInboxClaimSession(

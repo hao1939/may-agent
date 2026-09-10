@@ -151,7 +151,11 @@ export type CallAgentOptions = Pick<
   | "outputSchema"
   | "toolPolicy"
   | "executionRoot"
-> & { timeout?: number };
+> & {
+  timeout?: number;
+  signal?: AbortSignal;
+  sessionStarted?: (sessionId: string) => void;
+};
 
 interface ActiveSession {
   sessionId: string;
@@ -938,6 +942,7 @@ export class SubagentManager {
     task: string,
     opts?: CallAgentOptions,
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
+    opts?.signal?.throwIfAborted();
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
     const depthError = this.callDepthLimitError(opts?.parentSessionId);
     if (depthError) return depthError;
@@ -960,8 +965,31 @@ export class SubagentManager {
       executionRoot: opts?.executionRoot,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
-    const result = await this.waitFor(sessionId);
-    return { ...result, messages: this.progress(sessionId, 1000) };
+    const cancel = () => {
+      try {
+        this.cancel(sessionId);
+      } catch (error) {
+        // cancel() signals the runner before writing its evidence. A storage
+        // outage must not escape the AbortSignal callback as a fatal exception.
+        console.error(`[session:${sessionId}] cancellation evidence failed: ${String(error)}`);
+      }
+    };
+    opts?.signal?.addEventListener("abort", cancel, { once: true });
+    try {
+      try {
+        opts?.signal?.throwIfAborted();
+        opts?.sessionStarted?.(sessionId);
+      } catch (error) {
+        cancel();
+        await this.waitFor(sessionId);
+        throw error;
+      }
+      const result = await this.waitFor(sessionId);
+      opts?.signal?.throwIfAborted();
+      return { ...result, messages: this.progress(sessionId, 1000) };
+    } finally {
+      opts?.signal?.removeEventListener("abort", cancel);
+    }
   }
 
   runAgent(
@@ -1804,6 +1832,7 @@ export class SubagentManager {
           await agent.prompt(session.promptTask ?? task);
           await agent.waitForIdle();
         } catch (initialCause) {
+          if (session.status === "interrupted") throw initialCause;
           const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
           const messages = agent.state.messages as AgentMessage[];
           const beforeRecovery = messages.length;
@@ -1840,6 +1869,7 @@ export class SubagentManager {
             throw initialCause;
           }
         }
+        if (session.status === "interrupted") throw new Error("Session interrupted");
         if (session.requireFinish && !recoveredThrownFailure) {
           const initialMessages = agent.state.messages as AgentMessage[];
           const missingFinish = !extractFinishParams(initialMessages as any[]);

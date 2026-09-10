@@ -475,7 +475,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         },
       });
     },
-    async onRequestFollowUp(item, followUp, topicId) {
+    async onRequestFollowUp(item, followUp, topicId, authorize) {
       if (!item.conversationId) {
         throw new Error(`App follow-up ${item.id} requires a Conversation`);
       }
@@ -501,8 +501,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         attachment,
         idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
         request,
+        authorize,
+        topicId,
       });
-      linkConversationTopicTask(options.db, topicId, followUp.appId, attached.taskId, now());
+      authorize();
       options.bus.emit({
         type: "conversation.message.created",
         source: "app-task-admission",
