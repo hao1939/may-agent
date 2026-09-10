@@ -4860,7 +4860,8 @@ describe("canonical App task runtime", () => {
       import { AppTaskResourceStore } from ${JSON.stringify(new URL("./app-task-resource-store.ts", import.meta.url).pathname)};
       import { appTaskContext, claimObservedAppTask } from ${JSON.stringify(new URL("./app-task-reconciler.ts", import.meta.url).pathname)};
       const persistDir = ${JSON.stringify(join(f.root, "state"))};
-      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
+      // This probe is a Task worker, not a second Host schema owner.
+      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir, { existingSchemaOnly: true }), "sample");
       const config = appTaskContext({ appDir: ${JSON.stringify(f.appDir)}, projectDir: ${JSON.stringify(f.appDir)}, agent: "sample-owner", maxConcurrent: 1, resourceStore });
       const result = claimObservedAppTask(config, { taskId: ${JSON.stringify(taskId)}, appAgent: "sample-owner", handler: "auto", reason: "attempt-recovery" });
       console.log(JSON.stringify({ kind: result.kind, attempts: Object.keys(resourceStore.readSnapshot().attempts).length }));
