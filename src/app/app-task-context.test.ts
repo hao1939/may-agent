@@ -166,6 +166,17 @@ describe("Task context projections", () => {
         summary: `Still waiting ${"s".repeat(800)}`,
         evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
       })),
+      cancelled: [
+        {
+          taskId: "cancelled-0",
+          parentId: "parent",
+          generation: 1,
+          outcome: `Optional work ${"o".repeat(800)}`,
+          summary: `Not achieved ${"s".repeat(800)}`,
+          evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
+          cancelledAt: "2026-08-20T00:00:00.000Z",
+        },
+      ],
       completed: Array.from({ length: 8 }, (_, index) => ({
         taskId: `done-${index}`,
         parentId: "parent",
@@ -200,5 +211,10 @@ describe("Task context projections", () => {
       agent: "sample-owner",
     });
     expect(projected.completed[0]).not.toHaveProperty("owner");
+    expect(projected.cancelled?.[0]).toMatchObject({ taskId: "cancelled-0", generation: 1 });
+    expect(projected.cancelled?.[0]?.summary.length).toBeLessThanOrEqual(256);
+    expect(projected.cancelled?.[0]?.evidence).toHaveLength(2);
+    expect(projected.live.some((child) => child.taskId === "cancelled-0")).toBe(false);
+    expect(projected.completed.some((child) => child.taskId === "cancelled-0")).toBe(false);
   });
 });

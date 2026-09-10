@@ -316,6 +316,114 @@ describe("App-owned non-success stop", () => {
     expect(readTaskSnapshot(config)).toEqual(before);
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
   });
+
+  for (const relation of ["create", "reparent"] as const) {
+    it.each(["child-first", "stop-first"])(`fences ${relation} against App stop across connections: %s`, (order) => {
+      const base = setup();
+      const path = join(base.config.appDir, "stop-race.sqlite");
+      const store = AppTaskResourceStore.openStandalone(path, "sample");
+      store.bootstrapSnapshot(readTaskSnapshot(base.config), "race");
+      const peer = AppTaskResourceStore.openStandalone(path, "sample");
+      stores.push(store, peer);
+      const config = { ...base.config, resourceStore: store };
+      const other = { ...base.config, resourceStore: peer };
+      const child = { ...base.intent, id: "racing-child", parentId: "operations" };
+      if (relation === "reparent") observeAppTaskIntent(other, { appAgent: "app-owner", intent: child });
+      const addChild = () =>
+        observeAppTaskIntent(other, {
+          appAgent: "app-owner",
+          intent: { ...child, parentId: base.intent.id },
+        });
+      const stop = () => stopAppTask(config, base.claim, decision);
+      const intercepted = order === "child-first" ? store : peer;
+      const commit = intercepted.commit.bind(intercepted);
+      intercepted.commit = (mutation) => {
+        intercepted.commit = commit;
+        if (order === "child-first") addChild();
+        else expect(stop().status).toBe("applied");
+        return commit(mutation);
+      };
+      try {
+        expect(order === "child-first" ? stop : addChild).toThrow();
+      } finally {
+        intercepted.commit = commit;
+      }
+      expect(store.isCancelled(base.intent.id)).toBe(order === "stop-first");
+      expect(peer.readTask(child.id)?.spec.parentId).toBe(
+        order === "child-first" ? base.intent.id : relation === "reparent" ? "operations" : undefined,
+      );
+      expect(store.readReceipt(base.intent.id)).toBeNull();
+    });
+  }
+
+  it("does not cascade human parent cancellation into existing child revisions", () => {
+    const { config, intent } = setup();
+    const child = { ...intent, id: "existing-child", parentId: intent.id };
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: child });
+    const parent = config.resourceStore.readTask(intent.id)!;
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: intent.id,
+      expectedGeneration: parent.metadata.generation,
+      expectedResourceVersion: parent.metadata.resourceVersion,
+      reason: "Stop only this parent",
+    });
+    expect(
+      observeAppTaskIntent(config, {
+        appAgent: "app-owner",
+        intent: { ...child, input: { revision: 2 } },
+      }).kind,
+    ).toBe("observed");
+    expect(config.resourceStore.isCancelled(child.id)).toBe(false);
+    const claim = claimObservedAppTask(config, { taskId: child.id, appAgent: "app-owner", handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error("expected existing child to continue");
+    expect(
+      completeAppTask(config, claim, { summary: "Existing work finished", evidence: ["test:verified"] }).status,
+    ).toBe("applied");
+    expect(config.resourceStore.readTrigger(intent.id)).toBeNull();
+    expect(() =>
+      observeAppTaskIntent(config, {
+        appAgent: "app-owner",
+        intent: { ...child, id: "new-child" },
+      }),
+    ).toThrow("cancelled parent");
+  });
+
+  it.each(["converged", "stopped"])("lets the parent decide %s after its child stops", (state) => {
+    const { config, intent, claim } = setup();
+    observeAppTaskIntent(config, {
+      appAgent: "app-owner",
+      intent: {
+        ...intent,
+        id: "parent",
+        outcome: "Assess the optional feature",
+        acceptance: ["Report the feasibility finding"],
+      },
+    });
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
+    stopAppTask(config, claim, decision);
+    const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
+    if (parent.kind !== "claimed") throw new Error("expected parent review");
+    expect(readAppTaskChildContext(config, "parent")).toMatchObject({
+      live: [],
+      completed: [],
+      cancelled: [{ taskId: intent.id, summary: expect.stringContaining("outcome not achieved") }],
+    });
+    expect(() =>
+      deferAppTask(config, parent, { summary: "Wait on terminal child", disposition: "waiting", evidence: [] }),
+    ).toThrow();
+    const result =
+      state === "stopped"
+        ? stopAppTask(config, parent, decision)
+        : completeAppTask(config, parent, {
+            summary: "The assessment is complete; implementation was not feasible",
+            evidence: decision.evidence,
+          });
+    expect(result.status).toBe("applied");
+    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
+    expect(config.resourceStore.isCancelled(intent.id)).toBe(true);
+    expect(isAppTaskConverged(config, "parent")).toBe(state === "converged");
+  });
 });
 
 /** Most reconciler fixtures exercise mechanics, so give their external waits explicit test ownership. */

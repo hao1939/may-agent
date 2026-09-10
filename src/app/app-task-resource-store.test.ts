@@ -18,6 +18,8 @@ import {
 } from "./app-task-store.js";
 import {
   claimObservedAppTask,
+  cancelAppTask,
+  appTaskContext,
   completeAppTask,
   deferAppTask,
   listHandlerExecutionFailedAppTasks,
@@ -220,6 +222,51 @@ describe("AppTaskResourceStore", () => {
     expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child-00", "child-01", "normal"]);
     expect(Object.keys(context.attempts ?? {})).toEqual([]);
     store.close();
+  });
+
+  it("keeps cancelled children out of the live context limit and reads their terminal evidence separately", () => {
+    const store = open();
+    try {
+      const tree = fixture();
+      tree.resources = { normal: tree.resources!.normal! };
+      tree.attempts = {};
+      tree.taskTriggers = {};
+      for (let index = 0; index < 20; index += 1) {
+        const child = resource(`child-${String(index).padStart(2, "0")}`);
+        child.spec.parentId = "normal";
+        tree.resources[child.metadata.id] = child;
+      }
+      store.bootstrapSnapshot(tree, "revision-1");
+      const config = appTaskContext({
+        appDir: roots.at(-1)!,
+        agent: "owner",
+        maxConcurrent: 1,
+        resourceStore: store,
+      });
+      for (let index = 0; index < 18; index += 1) {
+        const child = store.readTask(`child-${String(index).padStart(2, "0")}`)!;
+        cancelAppTask(config, {
+          appId: "example",
+          taskId: child.metadata.id,
+          expectedGeneration: child.metadata.generation,
+          expectedResourceVersion: child.metadata.resourceVersion,
+          reason: "Optional work no longer needed",
+        });
+      }
+
+      const bounded = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 2 });
+      expect(Object.keys(bounded.resources ?? {}).sort()).toEqual(["child-18", "child-19", "normal"]);
+      const terminal = store.readCancelledChildren("normal", 2);
+      expect(terminal).toHaveLength(2);
+      expect(terminal.every((child) => child.summary.includes("Cancelled by human"))).toBe(true);
+      expect(store.readCancelledChildren("unrelated", 2)).toEqual([]);
+      const full = store.readTaskContext({ taskIds: ["normal"] });
+      expect(Object.keys(full.cancellations ?? {})).toHaveLength(18);
+      expect(full.cancellations).toEqual(store.readSnapshot().cancellations);
+      expect(full.receipts).toEqual({});
+    } finally {
+      store.close();
+    }
   });
 
   it("can read one exact Task without loading its children or attempt history", () => {

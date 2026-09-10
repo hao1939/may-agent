@@ -8,6 +8,7 @@ import {
   type TaskAction as AppTaskAction,
   type TaskExecutorName,
   type TaskIntent as AppTaskIntent,
+  type TaskAttempt,
 } from "@may-agent/sdk";
 import {
   appTaskReadinessById,
@@ -1358,6 +1359,9 @@ function validateIntent(intent: AppTaskIntent): void {
 }
 
 function validateParentReference(tree: TaskTree, taskId: string, parentId: string): void {
+  if (tree.resources?.[taskId]?.spec.parentId !== parentId && tree.cancellations?.[parentId]) {
+    throw new Error(`Cannot attach ${taskId} to cancelled parent ${parentId}`);
+  }
   if (!tree.resources?.[parentId] && !tree.groups?.[parentId]) {
     throw new Error(`Task ${taskId} parent does not exist in the live graph: ${parentId}`);
   }
@@ -1634,6 +1638,7 @@ export function isAppTaskConverged(config: AppTaskContext, taskId: string, gener
 }
 
 export type AppTaskChildContext = {
+  cancelled?: TaskAttempt["children"]["cancelled"];
   live: Array<{
     taskId: string;
     parentId: string;
@@ -1774,7 +1779,7 @@ function liveTaskContext(
           },
         }
       : {}),
-    hasLiveChildren: Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === resource.metadata.id),
+    hasLiveChildren: liveChildTaskIds(tree, resource.metadata.id).length > 0,
     updatedAt: resource.status.updatedAt,
     ...(resource.status.summary ? { summary: boundedChildContextText(resource.status.summary) } : {}),
     evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
@@ -1820,7 +1825,7 @@ function liveTaskSnapshotContext(
           },
         }
       : {}),
-    hasLiveChildren: Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === resource.metadata.id),
+    hasLiveChildren: liveChildTaskIds(tree, resource.metadata.id).length > 0,
     updatedAt: resource.status.updatedAt,
   };
 }
@@ -1834,7 +1839,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
   );
   const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
   const live = Object.values(tree.resources ?? {})
-    .filter((resource) => resource.spec.parentId === taskId)
+    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
     .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
     .slice(0, MAX_LIVE_CHILD_CONTEXT)
     .map((resource) => liveTaskContext(tree, resource, readinessById[resource.metadata.id]));
@@ -1858,7 +1863,16 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
       evidence: boundedChildEvidence([...receipt.evidence]),
       completedAt: receipt.completedAt,
     }));
-  return { live, completed };
+  const cancelled = config.resourceStore.readCancelledChildren(taskId, MAX_COMPLETED_CHILD_CONTEXT).map((child) => ({
+    taskId: child.taskId,
+    parentId: taskId,
+    generation: child.generation,
+    outcome: boundedChildContextText(child.outcome),
+    summary: boundedChildContextText(child.summary),
+    evidence: boundedChildEvidence(child.evidence ?? []),
+    cancelledAt: child.cancelledAt,
+  }));
+  return { live, completed, ...(cancelled.length ? { cancelled } : {}) };
 }
 
 export type AppTaskLiveSnapshot = {
@@ -1987,6 +2001,7 @@ function dependenciesSatisfied(tree: TaskTree, intent: AppTaskIntent): boolean {
 }
 
 function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): boolean {
+  if (tree.cancellations?.[resource.metadata.id]) return false;
   if (isTaskExecutionExhausted(resource)) return false;
   const taskId = resource.metadata.id;
   const intent = resourceIntent(resource);
@@ -1999,7 +2014,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, taskId)) return true;
     if (missedTaskConditionCheckpointIds(tree, taskId).length > 0) return true;
-    const hasLiveChild = Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === taskId);
+    const hasLiveChild = liveChildTaskIds(tree, taskId).length > 0;
     return !hasLiveChild && !(resource.status.conditionIds?.length ?? 0);
   }
   if (resource.status.phase === "attention") return needsAgentHandoff(tree, resource);
@@ -3817,7 +3832,7 @@ function applyTaskActions(
 
 function liveChildTaskIds(tree: TaskTree, taskId: string): string[] {
   return Object.values(tree.resources ?? {})
-    .filter((resource) => resource.spec.parentId === taskId)
+    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
     .map((resource) => resource.metadata.id);
 }
 
@@ -3833,7 +3848,7 @@ function recordExecutableParentTrigger(
   const parentTaskId = child?.spec.parentId ?? undefined;
   if (!parentTaskId) return undefined;
   const parent = tree.resources?.[parentTaskId];
-  if (!parent) return undefined;
+  if (!parent || tree.cancellations?.[parentTaskId]) return undefined;
   const previous = tree.taskTriggers?.[parentTaskId];
   const event: Record<string, unknown> = {
     type: "project.task.child-transitioned",

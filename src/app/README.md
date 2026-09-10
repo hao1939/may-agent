@@ -207,7 +207,15 @@ it records App/agent/attempt attribution, retains findings, stops execution and
 readies linked requests and the executable parent. It never creates a success
 receipt or satisfies a prerequisite. Cancelled identities cannot be revised or
 closed as successful by subsequent actions or desired-intent admission. New
-work needs a new linked identity; maintained and aggregate stops are not supported.
+work needs a new linked identity. Maintained Tasks and Tasks with live children
+cannot stop. Cancellation-backed terminal children are not live work: bounded
+`children.cancelled` context preserves their non-success evidence separately
+from `children.completed`. Their parent can judge its own acceptance or stop;
+the child still does not satisfy a success prerequisite.
+
+The store rechecks the live-child relation under the cancellation transaction
+and rejects new/reparented relations to a cancelled parent. This fences both
+concurrent orderings without adding relation versions or another lock.
 
 `app-task-runtime.ts` uses that operation for normal execution and saved
 direct-agent results. Workflow recovery still reruns the workflow rather than

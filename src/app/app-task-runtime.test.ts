@@ -3438,6 +3438,85 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it("queues the loaded executable parent when its child is cancelled by a human", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const parentId = "work/assessment";
+    const childId = "work/optional";
+    const seen: Parameters<TaskExecutor>[0][] = [];
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      hostCapacity: new HostCapacity(1),
+      executors: {
+        assess: async (attempt) => {
+          seen.push(attempt);
+          return {
+            state: "converged",
+            summary: "Assessment delivered; optional implementation was cancelled",
+            evidence: ["assessment:reviewed"],
+          };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "parent-cancel",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    // Admission is storage-only. The parent's only queue entry below must come
+    // from cancelLoadedAppTask, not attachment, a child return, or recovery.
+    const config = loadedTaskConfig(f);
+    const intent = {
+      id: parentId,
+      parentId: "operations",
+      outcome: "Assess the optional feature",
+      acceptance: ["Return a useful assessment"],
+      mode: "achieve" as const,
+      executor: "assess",
+    };
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent });
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        ...intent,
+        id: childId,
+        parentId,
+        outcome: "Try an optional implementation",
+      },
+    });
+    const parent = claimObservedAppTask(config, { taskId: parentId, appAgent: "sample-owner", handler: "auto" });
+    if (parent.kind !== "claimed") throw new Error("expected parent claim");
+    deferAppTask(config, parent, { disposition: "waiting", summary: "Await child findings", evidence: [] });
+    expect(seen).toHaveLength(0);
+    const settled = new Promise<AgentEvent>((resolve) => {
+      bus.subscribe((event) => {
+        if (event.type === "project.task.reconciled" && event.data.taskId === parentId) resolve(event);
+      });
+    });
+    const child = config.resourceStore.readTask(childId)!;
+    expect(
+      cancelLoadedAppTask({
+        bus,
+        appId: "sample",
+        taskId: childId,
+        expectedGeneration: child.metadata.generation,
+        expectedResourceVersion: child.metadata.resourceVersion,
+        reason: "Optional implementation no longer needed",
+      }).applied,
+    ).toBe(true);
+    expect((await settled).data.disposition).toBe("converged");
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.task.id).toBe(parentId);
+    expect(seen[0]?.children).toMatchObject({
+      live: [],
+      completed: [],
+      cancelled: [{ taskId: childId, summary: expect.stringContaining("Cancelled by human") }],
+    });
+    expect(config.resourceStore.readReceipt(parentId)?.summary).toContain("Assessment delivered");
+    expect(config.resourceStore.readReceipt(childId)).toBeNull();
+    expect(config.resourceStore.readCancellation(childId)?.decidedBy).toEqual({ kind: "human" });
+  }, 5_000);
+
   it("aborts the exact registered executor attempt after durable Task cancellation", async () => {
     const f = fixture();
     const bus = eventBus();

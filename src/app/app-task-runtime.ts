@@ -695,6 +695,7 @@ function runtimeTaskAttempt(input: {
       cwd: input.cwd,
       declaredOutputPaths: [...input.declaredOutputPaths],
       children: {
+        ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
         live: input.childContext.live.map(({ phase, ...child }) => ({
           ...structuredClone(child),
           status: phase === "converged" ? "done" : phase,

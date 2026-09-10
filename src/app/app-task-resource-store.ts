@@ -520,6 +520,18 @@ export class AppTaskResourceStore {
     return row?.cancellation_json ? parseJson<AppTaskCancellation>(row.cancellation_json) : null;
   }
 
+  /** Bounded terminal child evidence, separate from live children and success receipts. */
+  readCancelledChildren(parentId: string, limit: number): AppTaskCancellation[] {
+    return (
+      this.db.prepare(`
+      SELECT c.cancellation_json FROM app_task_relations r
+      JOIN app_task_cancellations c ON c.app_id = r.app_id AND c.task_id = r.source_task_id
+      WHERE r.app_id = ? AND r.relation_kind = 'parent' AND r.target_task_id = ?
+      ORDER BY c.requested_at DESC, c.task_id LIMIT ?
+    `).all(this.appId, parentId, limit) as Array<{ cancellation_json: string }>
+    ).map((row) => parseJson<AppTaskCancellation>(row.cancellation_json));
+  }
+
   readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
     const rows = this.db
       .prepare(
@@ -703,6 +715,7 @@ export class AppTaskResourceStore {
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json"),
       conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
+      cancellations: this.jsonMap<AppTaskCancellation>("app_task_cancellations", "task_id", "cancellation_json"),
       groups: Object.fromEntries(
         Object.entries(this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json")).map(([id, group]) => [
           id,
@@ -785,6 +798,8 @@ export class AppTaskResourceStore {
                  JOIN app_tasks task
                    ON task.app_id = relation.app_id AND task.task_id = relation.source_task_id
                  WHERE relation.app_id = ? AND relation.relation_kind = 'parent'
+                   AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
+                     WHERE c.app_id = task.app_id AND c.task_id = task.task_id)
                    AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})
                ) WHERE position <= ?`,
         )
@@ -824,6 +839,15 @@ export class AppTaskResourceStore {
     }
 
     const taskIds = Object.keys(resources);
+    const cancellations = taskIds.length
+      ? Object.fromEntries(
+          (
+            this.db.prepare(`SELECT task_id, cancellation_json FROM app_task_cancellations
+              WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})`)
+              .all(this.appId, ...taskIds) as Array<{ task_id: string; cancellation_json: string }>
+          ).map((row) => [row.task_id, parseJson<AppTaskCancellation>(row.cancellation_json)]),
+        )
+      : {};
     const attempts =
       options.includeHistory !== false && taskIds.length
         ? Object.fromEntries(
@@ -953,6 +977,7 @@ export class AppTaskResourceStore {
       attempts,
       conditions,
       receipts,
+      cancellations,
       groups,
       appTaskAdmissions,
     };
@@ -1224,6 +1249,25 @@ export class AppTaskResourceStore {
           .prepare("SELECT 1 AS present FROM app_tasks WHERE app_id = ? AND task_id = ?")
           .get(this.appId, taskId);
         if (existing) return false;
+      }
+
+      // Relation writes do not revise the parent resource. Check the leaf rule
+      // under the same write transaction as the stop, not its earlier snapshot.
+      for (const cancellation of mutation.cancellations ?? []) {
+        if (cancellation.decidedBy?.kind !== "app") continue;
+        const child = this.db.prepare(`SELECT 1 FROM app_task_relations r
+          JOIN app_tasks t ON t.app_id = r.app_id AND t.task_id = r.source_task_id
+          WHERE r.app_id = ? AND r.relation_kind = 'parent' AND r.target_task_id = ?
+            AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
+              WHERE c.app_id = t.app_id AND c.task_id = t.task_id)
+          LIMIT 1`).get(this.appId, cancellation.taskId);
+        if (child) return false;
+      }
+      for (const { resource } of mutation.tasks ?? []) {
+        const previous = this.readTask(resource.metadata.id);
+        if (previous?.spec.parentId !== resource.spec.parentId && this.isCancelled(resource.spec.parentId)) {
+          return false;
+        }
       }
 
       for (const taskId of new Set(mutation.deleteTaskIds ?? [])) {
