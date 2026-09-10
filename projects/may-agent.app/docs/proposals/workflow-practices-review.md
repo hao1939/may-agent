@@ -399,3 +399,24 @@ lists and human filtered lists all reported arXiv pending at generation 1,
 with 1 ms sampled control reads. This proves the deployed read boundary for
 that queued cycle, not natural recurrence or its eventual research outcome.
 The candidate is local only; no public branch was pushed or PR merged.
+
+## Partial research is not a no-op — 10:30 UTC
+
+Reddit accepted a grounded HTTP-403 no-op at 6318582, then arXiv started at
+6318585. arXiv retrieved real source evidence but hit the default 24-operation
+finish request before integration. It explicitly returned `finish(partial)`;
+the SDK execution was `done` with that partial finish retained in `evidence`.
+Scout only checked execution status and therefore incorrectly accepted the
+cycle as a no-op at 6318593. No source failure or absence of useful material
+justified that conclusion.
+
+The App now rejects that explicit partial finish as incomplete and preserves
+its evidence on the same Task. One source call uses the existing 48-operation
+allowance and ordinary time limit, with guidance to select one candidate early
+and reserve effort for integration and read-back. This keeps the Host's shared
+default unchanged and adds no workflow retry loop. The partial-admission
+regression failed before the fix; 84 May/Scout tests passed afterward. Live
+completion with the refined call remains to be tested.
+
+The independent natural 10:30 May recovery review converged quietly at
+6318604. It repeated no Conversation message and did not enable disabled Apps.

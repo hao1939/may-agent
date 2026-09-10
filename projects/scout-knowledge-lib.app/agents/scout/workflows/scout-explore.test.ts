@@ -75,12 +75,60 @@ function workflowContext(
         ...(result.structuredResult !== undefined
           ? { output: result.structuredResult }
           : {}),
+        ...(result.evidence !== undefined ? { evidence: result.evidence } : {}),
       };
     }) as WorkflowContext["agents"]["call"],
   });
 }
 
 describe("scout-explore workflow prompt", () => {
+  it("does not turn an explicitly partial finish into a successful no-op", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-partial-result-"));
+    temporaryRoots.push(root);
+    mkdirSync(join(root, "knowledge"));
+    let callOptions: unknown;
+    const ctx = workflowContext(
+      async (_agent, _task, options) => {
+        callOptions = options;
+        return {
+          status: "done",
+          sessionId: "s_partial",
+          lastAssistantText: "Useful candidate found; integration unfinished",
+          evidence: {
+            status: "partial",
+            next_steps: "Verify and integrate the selected paper",
+          },
+          structuredResult: {
+            summary: "Stopped at the operation limit before integration",
+            source: {
+              name: "arxiv",
+              queryOrFeed: "https://export.arxiv.org/api/query",
+              itemIdsOrUrls: ["https://arxiv.org/abs/2609.00001"],
+            },
+            outputs: [],
+          },
+        };
+      },
+      "arxiv",
+    );
+    ctx.workspace = {
+      appRoot: root,
+      projectRoot: root,
+      root,
+      output: join(root, "output"),
+    };
+
+    const result = await executeScoutExplore(ctx);
+
+    expect(result.status).toBe("blocked");
+    expect(result.evidence).toMatchObject({
+      executionId: "s_partial",
+      finish: { status: "partial", next_steps: "Verify and integrate the selected paper" },
+    });
+    expect(result).not.toHaveProperty("output.state", "converged");
+    expect(callOptions).toMatchObject({ operationAllowance: 48 });
+  });
+
   it("does not accept structured output from a blocked agent call", async () => {
     const root = mkdtempSync(join(tmpdir(), "scout-blocked-result-"));
     temporaryRoots.push(root);

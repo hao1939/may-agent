@@ -139,6 +139,9 @@ Result contract:
 - List every created or updated file as an absolute path in outputs.
 - For an evidence-backed no-op, return outputs: [] and explain in summary why
   the current source observation did not justify a useful library change.
+- Pick one promising candidate early; reserve time for integration and read-back.
+  Running out of operations before completing useful work is partial progress,
+  not an evidence-backed decision that no library change is worthwhile.
 `;
 
   return `${task}${sourceContract}
@@ -680,6 +683,10 @@ export async function executeScoutExplore(
 
   const result = await ctx.agents.call(agent, agentTask, {
     schema: ExploreAgentResultSchema,
+    // Source retrieval, duplicate checks, integration and read-back exceeded
+    // the default 24 operations in a real cycle. Keep one bounded call and
+    // the existing time limit; do not add a workflow-owned continuation loop.
+    operationAllowance: 48,
   });
 
   if (result.status !== "done") {
@@ -687,6 +694,16 @@ export async function executeScoutExplore(
       executionId: result.id,
       status: result.status,
       summary: result.summary,
+    });
+  }
+  // Execution "done" means the call returned, not that its work succeeded.
+  // The existing finish evidence preserves an explicitly partial outcome.
+  const finish = result.evidence;
+  if (finish && typeof finish === "object" && "status" in finish && finish.status === "partial") {
+    return ctx.blocked("Scout exploration is incomplete, not a no-op", {
+      executionId: result.id,
+      summary: result.summary,
+      finish,
     });
   }
   const structured = result.output as ExploreAgentResult | undefined;

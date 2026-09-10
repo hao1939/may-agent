@@ -211,6 +211,16 @@ A changed result must name files that exist and whose resolved real paths stay
 inside the allowed Scout roots. A no-op has zero outputs and explains why the
 current source evidence did not justify a useful change.
 
+An explicitly partial agent finish is not a no-op, even when its execution
+status is `done` and its output list is empty. Preserve its finish evidence
+and continuation details on the same source Task, and return a blocked
+workflow result rather than claiming convergence. Source exploration uses the
+existing 48-operation allowance within the ordinary execution time limit:
+select one useful candidate early and leave room for integration and read-back.
+Do not add a workflow-owned retry loop or manufacture a finding to avoid a
+no-op. The [local trial](../../may-agent.app/docs/proposals/workflow-practices-review.md)
+records why this boundary was changed and what was actually verified.
+
 Before dispatch, the workflow records which knowledge files already exist. A
 new Markdown finding is not admitted when one of its credential-free source
 URLs already occurs in another knowledge file. Updating that existing file is
