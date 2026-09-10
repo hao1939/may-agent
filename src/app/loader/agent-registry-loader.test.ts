@@ -53,6 +53,27 @@ function makeRuntime(): AgentRegistryRuntime {
 }
 
 describe("agent registry loader", () => {
+  it("does not read invalid local agents of a disabled App from a source release", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "release", "projects");
+      const appDir = join(projectsRoot, "example.app");
+      mkdirSync(join(appDir, "agents", "worker"), { recursive: true });
+      writeFileSync(join(appDir, "app.ts"), "export default {};\n");
+      writeFileSync(join(appDir, "agents", "worker", "agent.json"), "invalid JSON");
+      const canonicalProjectsRoot = join(root, "projects");
+      mkdirSync(join(canonicalProjectsRoot, "example.app"), { recursive: true });
+      const marker = join(canonicalProjectsRoot, "example.app", ".disabled");
+      writeFileSync(marker, "");
+      const opts = { ...makeOpts(root, join(root, "agents"), projectsRoot), canonicalProjectsRoot };
+      expect((await loadAgents(opts, makeRuntime())).added).toEqual([]);
+      rmSync(marker);
+      await expect(loadAgents(opts, makeRuntime())).rejects.toThrow("agent.json");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("App-local agent silently overrides a global stub with the same name", async () => {
     const root = tempRoot();
     try {

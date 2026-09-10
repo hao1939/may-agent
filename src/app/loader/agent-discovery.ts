@@ -38,7 +38,10 @@ export function listAgentDirectories(agentsRoot: string): AgentDirectory[] {
   return listAgentDirectoriesInRoot(resolve(agentsRoot));
 }
 
-export function listProjectAgentDirectories(projectsRoot: string): AgentDirectory[] {
+export function listProjectAgentDirectories(
+  projectsRoot: string,
+  canonicalProjectsRoot = projectsRoot,
+): AgentDirectory[] {
   if (!existsSync(projectsRoot)) return [];
   const agents: AgentDirectory[] = [];
   for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
@@ -46,6 +49,7 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
     if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
 
     if (entry.name.endsWith(".app")) {
+      if (existsSync(resolve(canonicalProjectsRoot, entry.name, ".disabled"))) continue;
       const appDir = resolve(projectsRoot, entry.name);
       const projectId = entry.name.slice(0, -".app".length);
       const domainDir = resolve(projectsRoot, projectId);
@@ -74,8 +78,15 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
   return agents;
 }
 
-export function listRuntimeAgentDirectories(agentsRoot: string, projectsRoot?: string): AgentDirectory[] {
-  return [...listAgentDirectories(agentsRoot), ...(projectsRoot ? listProjectAgentDirectories(projectsRoot) : [])];
+export function listRuntimeAgentDirectories(
+  agentsRoot: string,
+  projectsRoot?: string,
+  canonicalProjectsRoot = projectsRoot,
+): AgentDirectory[] {
+  return [
+    ...listAgentDirectories(agentsRoot),
+    ...(projectsRoot ? listProjectAgentDirectories(projectsRoot, canonicalProjectsRoot) : []),
+  ];
 }
 
 function configuredNameForDirectory(agentDir: AgentDirectory): string | null {
@@ -91,9 +102,13 @@ function configuredNameForDirectory(agentDir: AgentDirectory): string | null {
   }
 }
 
-export function listConfiguredAgentNames(agentsRoot: string, projectsRoot?: string): string[] {
+export function listConfiguredAgentNames(
+  agentsRoot: string,
+  projectsRoot?: string,
+  canonicalProjectsRoot = projectsRoot,
+): string[] {
   const names = new Set<string>();
-  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot)) {
+  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot, canonicalProjectsRoot)) {
     const name = configuredNameForDirectory(agentDir);
     if (name) names.add(name);
   }

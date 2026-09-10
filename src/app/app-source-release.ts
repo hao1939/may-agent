@@ -50,7 +50,10 @@ function isNonSourcePath(path: string): boolean {
     .split("/")
     .some(
       (part) =>
-        NON_SOURCE_DIRECTORIES.has(part) || part === ".last-eval-state.json" || part.startsWith("ui.root-stale-"),
+        NON_SOURCE_DIRECTORIES.has(part) ||
+        part === ".disabled" ||
+        part === ".last-eval-state.json" ||
+        part.startsWith("ui.root-stale-"),
     );
 }
 

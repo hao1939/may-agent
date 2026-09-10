@@ -7,11 +7,12 @@ import {
 } from "../../../lib/runtime-import.js";
 import type { AppDefinitionSource } from "../../core/apps/registry.js";
 
-export function listAppDefinitionFiles(projectsRoot: string): string[] {
+export function listAppDefinitionFiles(projectsRoot: string, canonicalProjectsRoot = projectsRoot): string[] {
   if (!existsSync(projectsRoot)) return [];
   const files: string[] = [];
   for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
+    if (existsSync(join(canonicalProjectsRoot, entry.name, ".disabled"))) continue;
     const appDir = resolve(projectsRoot, entry.name);
     for (const filename of ["app.ts", "app.js"]) {
       const candidate = join(appDir, filename);
@@ -34,7 +35,7 @@ export function discoverAppDefinitions(
     // Refresh only when invoked, so failed and queued reloads see fresh code.
     invalidateRuntimeModuleCache();
     const loaded: Awaited<ReturnType<AppDefinitionSource>>[number][] = [];
-    for (const modulePath of listAppDefinitionFiles(projectsRoot)) {
+    for (const modulePath of listAppDefinitionFiles(projectsRoot, canonicalProjectsRoot)) {
       const mod = await importRuntimeModule<{ default?: unknown; app?: unknown }>(modulePath, importOptions);
       const exported = mod.default ?? mod.app;
       if (!exported || typeof exported !== "object")
