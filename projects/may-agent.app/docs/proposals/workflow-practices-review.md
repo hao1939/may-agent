@@ -292,3 +292,27 @@ verified the primary source, corrected only the affected note passage, read it
 back and reconciled at 6318369 under generation 1. This was handled by the
 existing agent/workflow, with no new Task or infrastructure. Its research
 and maintenance writes still use the shared checkout; isolation remains open.
+
+## XHS access recovery and detail-reading guidance — 09:50–09:57 UTC
+
+After the human requested opening Xiaohongshu in the local container browser,
+the existing credential observer reported readable content at event 6318390.
+It automatically woke the same `explore-xhs` Task at generation 1. The first
+cycle updated two existing findings and the digest, converging at 6318400.
+No manual retry, new Task, or changed schedule was needed for access recovery.
+
+That cycle exposed a reasoning/context gap: it called detail bodies unavailable
+without trying the existing browser detail reader. Exact feedback 6318405 gave
+the same Task its executable usage. The next cycle successfully read the
+TraceRoot post, distinguished product claims from independently tested facts,
+corrected the notes and digest, and converged at 6318416. LoopX was correctly
+left as not detail-inspected, rather than classified as inaccessible.
+
+The permanent change is source-prompt guidance: show the existing command and
+timeout, distinguish unread from failed reads, and keep access tokens out of
+durable results. No new tool, retry loop, or mandatory deep-dive stage was
+introduced. The prompt regression failed before the change; 37 focused
+workflow, source, browser-helper, and observer tests then passed. Live feedback
+demonstrates the guidance helps; it is not proof that every later cycle will
+choose the best research topic. The 09:55 ready observation did not create a
+second concurrent XHS execution.

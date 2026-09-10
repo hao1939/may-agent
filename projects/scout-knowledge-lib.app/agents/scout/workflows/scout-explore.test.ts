@@ -315,6 +315,25 @@ describe("scout-explore workflow prompt", () => {
     );
   });
 
+  it("explains the existing XHS detail reader without assuming unread bodies are unavailable", () => {
+    const prompt = buildExploreTask(
+      xhsTask,
+      { appDir: "/fixture/scout.app", projectDir: "/fixture/library" },
+      { query: "AI agents", items: [] },
+      "xhs",
+    );
+
+    expect(prompt).toContain(
+      'node "/fixture/scout.app/agents/scout/tools/xhs-browse.mjs" read "FULL_RETURNED_LINK"',
+    );
+    expect(prompt).toContain("45-second tool timeout");
+    expect(prompt).toContain("not inspected");
+    expect(prompt).toContain("actual failed read");
+    expect(prompt).toContain(
+      "never copy access tokens into notes, digests, or result evidence",
+    );
+  });
+
   it("does not dispatch an agent while the current credential is unavailable", async () => {
     let agentCalls = 0;
     let searchCalls = 0;

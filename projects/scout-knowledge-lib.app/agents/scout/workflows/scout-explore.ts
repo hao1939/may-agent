@@ -96,7 +96,9 @@ export function buildExploreTask(
       ? `
 XHS execution contract:
 - The workflow already performed the current live status and search calls. Do not infer current access from old blocked findings, cookie-file timestamps, or legacy cookie paths.
-- Use the current source packet below as the discovery starting point. Read returned links with the XHS tool when more detail is needed.
+- Use the current source packet below as the discovery starting point. When a promising item needs detail, use the existing bash tool: \`node "${paths.appDir}/agents/scout/tools/xhs-browse.mjs" read "FULL_RETURNED_LINK"\`, with a 45-second tool timeout.
+- Use the full returned link for that read; never copy access tokens into notes, digests, or result evidence. Keep XHS access observational.
+- Search cards support discovery, not body-level claims. Distinguish "not inspected" from an actual failed read; do not call a body unavailable without trying the detail reader. A failed read should name its exact access boundary without bypassing it.
 - Only write a finding when current source content supports it. Never create or update a blocked-scan knowledge or digest artifact from stale notes.
 
 Current XHS source packet:
