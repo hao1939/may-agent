@@ -1079,6 +1079,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);
       let dependencyWakeDelivery: DeliveryResult | undefined;
+      if (event.type === "conversation.turn.stop.requested") {
+        host.stopTurn({ appId: String(data.appId ?? ""), conversationId: String(data.conversationId ?? ""),
+          turnId: String(data.turnId ?? ""), expectedRevision: Number(data.expectedRevision) });
+        schedule(String(data.appId));
+        return { accepted: true, by: "conversation-turn-control", route: "direct" };
+      }
       const message = addressedAgentMessage(event);
       if (message) {
         const candidates = host.matchingAppIds(message.targetOwner, message.input);

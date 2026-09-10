@@ -36,6 +36,8 @@ import {
   listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
   recordAppInboxHandling,
+  stopAppInboxTurn,
+  type AppTurnTarget,
   renewAppInboxClaim,
   waitAppInboxClaim,
   wakeAppInboxItem,
@@ -580,6 +582,20 @@ export class AppInboxHost {
     return getAppInboxItem(this.#db, id);
   }
 
+  stopTurn(target: AppTurnTarget): void {
+    const app = this.#requiredApp(target.appId);
+    const item = this.get(target.turnId);
+    if (!item || !app.requests || (app.requests.inputKinds && !app.requests.inputKinds.includes(item.input.kind))) {
+      throw new Error("Stop this turn requires conversational input, not a Task request");
+    }
+    const changed = withTransaction(this.#db, () => stopAppInboxTurn(this.#db, target, this.#now()));
+    const active = this.#executions.get(target.turnId);
+    if (active?.claim.generation === target.expectedRevision && (changed || item.handling?.phase === "stopped")) {
+      active.controller.abort(new Error("Human stopped this turn"));
+    }
+    this.#notifyConversationChanges([item]);
+  }
+
   readyCount(appId: string): number {
     const app = this.#requiredApp(appId);
     const now = this.#now();
@@ -802,7 +818,9 @@ export class AppInboxHost {
     } catch (error) {
       outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
       try {
-        if (claim.item.handling?.phase === "executing") {
+        if (this.get(claim.item.id)?.handling?.phase === "stopped") {
+          if (claim.item.conversationId) conversationIds.add(claim.item.conversationId);
+        } else if (claim.item.handling?.phase === "executing") {
           const reason = errorMessage(error).slice(0, 2000);
           const conversationId = this.#completeRequest(
             claim,

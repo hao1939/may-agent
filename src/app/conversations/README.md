@@ -24,6 +24,13 @@ idempotent admission/publication without rerunning the model. Task callers and
 retained child waits keep their separate handling contract. Row `done` means
 input handling ended; inspect `handling` and the result for its disposition.
 
+Console `/stop` reads `activeTurn` and publishes
+`conversation.turn.stop.requested` with that exact ID and revision. The Host
+persists `stopped` before aborting, without waiting behind model execution.
+Recovery cannot replay it. Old/duplicate controls never select a newer turn.
+Independent Tasks continue; stopping a turn does not close its accepted ask.
+Steering and other human surfaces remain separate follow-up work.
+
 Callers pass the existing database connection. This separation creates no new
 database, cache, transaction boundary, or background process. The request
 handler can still update a Topic and request inside the same transaction.

@@ -6,7 +6,7 @@ import type {
   AppInput,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
-import { listAppInboxConversationItems } from "../app-inbox-store.js";
+import { listAppInboxConversationItems, readActiveAppTurn } from "../app-inbox-store.js";
 import { displayTaskReferences } from "../task-reference-index.js";
 
 export type CreateConversationTopic = {
@@ -333,6 +333,7 @@ export function readAppConversationResource(
     id: conversationId,
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
+    activeTurn: readActiveAppTurn(db, appId, conversationId),
     topics,
     ...(page.nextCursor ? { nextTopicCursor: page.nextCursor } : {}),
     messages,

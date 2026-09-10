@@ -8,7 +8,12 @@ export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 
 /** Input execution evidence, not fulfillment of the accepted human ask. */
 export type AppInboxHandling =
-  { phase: "executing" } | { phase: "decided"; decision: AppRequestDecision } | { phase: "failed"; reason: string };
+  | { phase: "executing" }
+  | { phase: "decided"; decision: AppRequestDecision }
+  | { phase: "failed"; reason: string }
+  | { phase: "stopped"; reason: string };
+
+export type AppTurnTarget = { appId: string; conversationId: string; turnId: string; expectedRevision: number };
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
 
@@ -212,6 +217,56 @@ function validateCreate(input: CreateAppInboxItem): void {
 export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   return row ? rowToItem(row) : null;
+}
+
+export function readActiveAppTurn(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+): { id: string; revision: number } | undefined {
+  const row = db
+    .prepare(
+      `SELECT id, lease_generation FROM app_inbox_items
+    WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
+      AND status = 'handling' AND lease_owner IS NOT NULL
+    ORDER BY conversation_seq, created_at LIMIT 1`,
+    )
+    .get(appId, conversationId);
+  return row ? { id: String(row.id), revision: Number(row.lease_generation) } : undefined;
+}
+
+/** Called inside the Host's stop transaction; terminal input cannot restart. */
+export function stopAppInboxTurn(db: SqliteDb, target: AppTurnTarget, now = Date.now()): boolean {
+  if (!Number.isSafeInteger(target.expectedRevision) || target.expectedRevision < 1)
+    throw new Error("Invalid turn revision");
+  const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(target.turnId);
+  if (
+    !row ||
+    row.app_id !== target.appId ||
+    row.conversation_id !== target.conversationId ||
+    row.source_kind !== "human" ||
+    row.lease_generation !== target.expectedRevision
+  )
+    throw new Error("Turn control is stale or mismatched");
+  if (row.status === "done") return false;
+  const reason = "Human stopped this turn";
+  db.run(
+    `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?,
+    available_at = NULL, review_at = NULL, waiting_on_kind = NULL, waiting_on_id = NULL,
+    lease_owner = NULL, lease_expires_at = NULL, completed_at = ?, changed_at = ?, updated_at = ? WHERE id = ?`,
+    [
+      JSON.stringify({ phase: "stopped", reason }),
+      JSON.stringify({
+        summary: reason,
+        response: "Stopped this turn. The ask remains unresolved; already admitted background Tasks continue.",
+      }),
+      now,
+      now,
+      now,
+      target.turnId,
+    ],
+  );
+  return true;
 }
 
 /** Unfinished requests created by one exact parent Task generation. */
