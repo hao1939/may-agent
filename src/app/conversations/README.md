@@ -61,7 +61,7 @@ seamless current-turn steering remains separate follow-up work.
 
 `app-inbox-runtime.ts` attaches cleanup before dispatch/readiness reads and
 contains detached recovery failures. Structured `handler.failed` diagnostics
-retain known work identity, stage, reason and disposition. Failed diagnostic
+retain known work identity, stage, error and disposition. Failed diagnostic
 persistence falls back to the independent logger, without replaying execution.
 
 Callers pass the existing database connection. This separation creates no new

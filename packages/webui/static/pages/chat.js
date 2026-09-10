@@ -436,15 +436,18 @@ function connectWs() {
         if (all) for (const fn of all) { try { fn(event); } catch (err) { console.error('bus * sub err', err); } }
       }
 
-      if (isMayConversation()) {
+      const mayConversation = isMayConversation();
+      if (mayConversation) {
         if (event.type === 'connected') {
           subscribeMayConversation();
           void refreshMayConversation();
         } else if (event.type === 'conversation.updated' && data.appId === 'may' && data.conversationId === 'may:primary') {
           void refreshMayConversation();
         }
-        // This view renders canonical Conversation messages, not session chunks.
-        return;
+        // Keep global status/feed current while rendering only canonical
+        // messages in May's Conversation pane.
+        currentAssistant = null;
+        currentAssistantRaw = '';
       }
 
       // The session inspector is a read model. Rebuilding it for every
@@ -459,6 +462,7 @@ function connectWs() {
 
       switch (eventType) {
         case 'text':
+          if (mayConversation) break;
           if (!currentAssistant) {
             currentAssistant = document.createElement('div');
             currentAssistant.className = 'msg assistant';
@@ -470,6 +474,7 @@ function connectWs() {
           chatScrollToBottom(messages);
           break;
         case 'tool_call': {
+          if (mayConversation) break;
           currentAssistant = null;
           currentAssistantRaw = '';
           const div = document.createElement('div');
@@ -481,6 +486,7 @@ function connectWs() {
           break;
         }
         case 'tool_result': {
+          if (mayConversation) break;
           const div = document.createElement('div');
           div.className = `msg tool_result ${event.isError ? 'error' : ''}`;
           div.textContent = event.preview || '';
@@ -494,7 +500,7 @@ function connectWs() {
           break;
         case 'session_start': {
           // Show delegation: "→ tech-lead: <task>"
-          if (data.parentSessionId) {
+          if (!mayConversation && data.parentSessionId) {
             const div = document.createElement('div');
             div.className = 'msg';
             div.style.color = 'var(--purple)';
@@ -520,13 +526,15 @@ function connectWs() {
           break;
         }
         case 'session_end': {
-          const div = document.createElement('div');
-          div.className = 'msg';
-          div.style.color = 'var(--fg2)';
-          div.style.fontSize = '12px';
-          div.textContent = `✓ ${data.agent}: ${data.status}${data.duration ? ' (' + data.duration + ')' : ''}`;
-          messages.appendChild(div);
-          chatScrollToBottom(messages);
+          if (!mayConversation) {
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.style.color = 'var(--fg2)';
+            div.style.fontSize = '12px';
+            div.textContent = `✓ ${data.agent}: ${data.status}${data.duration ? ' (' + data.duration + ')' : ''}`;
+            messages.appendChild(div);
+            chatScrollToBottom(messages);
+          }
           // Update session picker
           activeSessions = activeSessions.filter(s => s.sessionId !== data.sessionId);
           renderSessionPicker();
@@ -554,23 +562,25 @@ function connectWs() {
           scheduleLivenessRefresh();
           break;
         case 'notification': {
-          const div = document.createElement('div');
-          div.className = 'msg';
-          div.style.borderLeft = '3px solid var(--yellow)';
-          div.style.paddingLeft = '8px';
-          div.style.fontSize = '12px';
-          div.textContent = `📋 ${event.agent}: ${event.text.slice(0, 300)}`;
-          messages.appendChild(div);
-          chatScrollToBottom(messages);
+          if (!mayConversation) {
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.style.borderLeft = '3px solid var(--yellow)';
+            div.style.paddingLeft = '8px';
+            div.style.fontSize = '12px';
+            div.textContent = `📋 ${event.agent}: ${event.text.slice(0, 300)}`;
+            messages.appendChild(div);
+            chatScrollToBottom(messages);
+          }
           addFeedItem(event.agent, event.text?.slice(0, 120) || '', 'notification');
           break;
         }
         case 'connected':
-          status.textContent = `Connected — ${event.agent} (${event.instance})`;
+          if (!mayConversation) status.textContent = `Connected — ${event.agent} (${event.instance})`;
           activeSessions = event.activeAgents || [];
           renderSessionPicker();
           // Auto-attach to existing chat session (preserves conversation across refreshes)
-          if (!currentSessionId) {
+          if (!mayConversation && !currentSessionId) {
             const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
             if (chatSession) {
               switchSession(chatSession.sessionId);
@@ -586,7 +596,7 @@ function connectWs() {
             activeSessions = event.activeAgents;
             renderSessionPicker();
             // Auto-attach to chat session if we don't have one
-            if (!currentSessionId) {
+            if (!mayConversation && !currentSessionId) {
               const chatSession = activeSessions.find(s => s.agent === 'may' && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
               if (chatSession) {
                 switchSession(chatSession.sessionId);

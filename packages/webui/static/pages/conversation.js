@@ -22,7 +22,7 @@ function updateConversationStop() {
 
 function subscribeMayConversation() {
   if (ws?.readyState === WebSocket.OPEN && isMayConversation()) {
-    ws.send(JSON.stringify({ type: 'subscribe', sessions: [], conversations: ['may:primary'] }));
+    ws.send(JSON.stringify({ type: 'subscribe', sessions: ['*'], conversations: ['may:primary'] }));
   }
   updateConversationStop();
 }

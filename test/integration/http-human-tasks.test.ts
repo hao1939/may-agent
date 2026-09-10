@@ -211,6 +211,14 @@ describe("HTTP human Task reads and board", () => {
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
+      for (const listener of listeners) {
+        listener({ type: "status", activeAgents: [{ agent: "worker", sessionId: "other-session", status: "running" }] });
+        listener({ type: "text", data: { sessionId: "other-session" }, text: "Other session text" });
+        listener({ type: "handler.failed", data: { appId: "other-app", taskId: "work", stage: "execute", error: "Diagnostic survives May chat", disposition: "not-retrying" } });
+      }
+      await page.waitForFunction(() => document.querySelector("#feed-list")!.textContent!.includes("Diagnostic survives May chat"));
+      expect(await page.evaluate("activeSessions.some(s => s.sessionId === 'other-session')")).toBe(true);
+      expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Other session text");
       await page.type("#chat-input", "Discuss costs before implementing");
       await page.click("#chat-stop");
       await page.waitForFunction(() => document.body.textContent!.includes("Stop request accepted"));
