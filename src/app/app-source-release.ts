@@ -27,7 +27,7 @@ export type DefinitionSourceRelease = Readonly<{
 }>;
 
 type ReleaseManifest = {
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3;
   id: string;
   sourceCommit?: string;
 };
@@ -69,7 +69,7 @@ function validateRelease(root: string): DefinitionSourceRelease {
   const manifestPath = join(root, "release.json");
   if (!existsSync(manifestPath)) throw new Error(`App source release has no manifest: ${root}`);
   const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as ReleaseManifest;
-  if (![1, 2, 3, 4].includes(parsed.version) || typeof parsed.id !== "string" || !parsed.id.trim()) {
+  if (![1, 2, 3].includes(parsed.version) || typeof parsed.id !== "string" || !parsed.id.trim()) {
     throw new Error(`Invalid App source release manifest: ${manifestPath}`);
   }
   if (basename(root) !== parsed.id) throw new Error(`App source release identity mismatch: ${root}`);
@@ -319,7 +319,9 @@ export class DefinitionSourceReleaseStore {
     try {
       if (commit) extractCommittedDefinitions(this.projectRoot, commit, stageRoot);
       else copyFilesystemDefinitions(this.projectRoot, stageRoot);
-      const manifest: ReleaseManifest = { version: 4, id, ...(commit ? { sourceCommit: commit } : {}) };
+      // Shared tools change snapshot contents, not the manifest schema. Keep
+      // active snapshots readable when rolling back to the previous Host.
+      const manifest: ReleaseManifest = { version: 3, id, ...(commit ? { sourceCommit: commit } : {}) };
       writeFileSync(join(stageRoot, "release.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
       renameSync(stageRoot, releaseRoot);
     } catch (error) {
