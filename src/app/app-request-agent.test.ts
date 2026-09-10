@@ -229,10 +229,11 @@ describe("conversational attempt contract", () => {
       expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
       if (status === "interrupted") {
         expect(result.errors).toEqual([expect.stringContaining("Fixture interrupted after editing")]);
-        expect(host.get(request.id)?.status).not.toBe("done");
-        expect(host.get(request.id)?.result).toBeUndefined();
+        expect(host.get(request.id)?.status).toBe("done");
+        expect(host.get(request.id)?.handling).toEqual({ phase: "failed", reason: "Fixture interrupted after editing" });
         expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
           expect.objectContaining({ author: { kind: "human", id: "human-1" }, text: input.input.data.text }),
+          expect.objectContaining({ text: expect.stringContaining("I couldn't finish this turn") }),
         ]);
         return;
       }

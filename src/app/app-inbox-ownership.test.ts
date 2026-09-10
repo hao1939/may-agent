@@ -109,7 +109,10 @@ test("rejects an expired execution before Topic creation, reply or handoff", asy
     },
   });
   admit(host, "expired");
-  expect((await host.reconcileOnce(app.id)).errors).toEqual([expect.stringContaining("claim is stale")]);
+  expect((await host.reconcileOnce(app.id)).errors).toEqual([
+    expect.stringContaining("claim is stale"),
+    expect.stringContaining("cleanup: claim is stale"),
+  ]);
   expect(effects).toBe(0);
   expect(db.prepare("SELECT COUNT(*) AS count FROM conversation_topics").get()).toEqual({ count: 0 });
 });

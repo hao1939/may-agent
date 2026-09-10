@@ -593,6 +593,7 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["origin_event_id", "INTEGER"],
   ["started_at", "INTEGER"],
   ["changed_at", "INTEGER"],
+  ["handling", "TEXT"],
 ];
 
 function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
