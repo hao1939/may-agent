@@ -231,13 +231,24 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         `finish(partial) explaining which errors are out-of-scope rather than editing files you were told not to touch.`;
     }
 
+    coderTask +=
+      `\n\n## Checkout\n` +
+      `Edit and verify only in this allocated workspace: ${workspaceRoot}\n` +
+      `Do not switch to the shared checkout or change another worker's branch. ` +
+      `Report a blocker if the allocation or requested scope is unsuitable.\n` +
+      `A passing check is verification evidence, not permission to merge or deploy.`;
+
     const coder = await ctx.agents.call("coder", coderTask);
-    if (coder.status === "error") {
-      return ctx.blocked(`Coder failed on attempt ${attempt}/${maxAttempts}`, {
-        attempt,
-        error: coder.summary,
-        evidence: coder.evidence,
-      });
+    if (coder.status !== "done") {
+      return ctx.blocked(
+        `Coder did not complete attempt ${attempt}/${maxAttempts}`,
+        {
+          attempt,
+          status: coder.status,
+          error: coder.summary,
+          evidence: coder.evidence,
+        },
+      );
     }
 
     // ── Verify step ──────────────────────────────────────────────────

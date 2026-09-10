@@ -23,6 +23,11 @@ recognition, acknowledgment, tracking and closure.
 
 ## Current focus
 
+The [workflow practices review](proposals/workflow-practices-review.md) applies
+multi-worker lessons to installed Apps: isolated changes, exact-candidate
+verification, reviewed integration, and useful progress during external waits.
+It tracks each workflow separately; revised guidance is not deployment proof.
+
 Keep the core simple and robust. The [core review plan](proposals/task-runtime-organization.md)
 prioritizes reproduced input-handling failures and remaining interaction work;
 the [gap index](proposals/design-implementation-convergence.md)

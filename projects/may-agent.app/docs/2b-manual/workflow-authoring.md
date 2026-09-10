@@ -275,6 +275,42 @@ exact result.
 Human attention is a child `may` task dependency or an exact human Condition on
 the source task. May owns channel policy and correlated delivery.
 
+## Repository changes and integration
+
+Review a workflow's actual effects before giving it a worktree. Read-only
+research, observation, and declared runtime scratch need no Git branch.
+Versioned source, instructions, library notes, and maintained documentation
+do. Keep these write classes separate.
+
+For a repository-changing workflow:
+
+1. Identify the actual Git root, target branch, contribution rules, and exact
+   owning Task. A project subdirectory is not necessarily a standalone repo.
+2. Use the Host's existing task-worktree allocation when available. Work inside
+   `ctx.workspace.root`; `projectRoot` and `appRoot` identify canonical resources,
+   not permission to edit a shared checkout. Preserve the recorded worktree on
+   retries. Do not add another worktree manager in the App.
+3. Give every implementing and reviewing call the same explicit checkout and
+   scope. Run verification there too. Output admission must inspect those exact
+   files, not old files at the installed canonical paths.
+4. Commit a small, tested diff on the owned branch. Follow the repository's PR
+   policy and required CI/live verification. Fetch and compare the target before
+   integration; resolve overlaps in the owned branch, not another worker's tree.
+5. Treat prepared, verified, PR-ready, merged, and deployed as distinct outcomes.
+   A workflow may prove one without proving the next. No code path or prompt
+   may infer merge/deploy authority from a passing command.
+6. Return exact branch/commit, checks, PR when applicable, and the next action.
+   Wait through a Task Condition only when no independent authorized work can
+   advance. External observation should free the worker from repetitive polling.
+7. Confirm integration before cleanup; retain unfinished changes and evidence.
+   Do not delete another worker's branch, worktree, or dirty files.
+
+The shared agent guidance supplies these practices for direct work as well.
+Workflow implementation must still make the paths and result contract agree;
+adding a worktree sentence to a prompt is not end-to-end proof. The
+[workflow review](../proposals/workflow-practices-review.md) tracks the installed
+Apps that have not yet met this contract.
+
 ## Shared Mechanics
 
 Shared workflow loading is not supported. If multiple Apps need a pure

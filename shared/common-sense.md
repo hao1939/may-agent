@@ -1,6 +1,6 @@
 # Common Sense
-<!-- Human-controlled. Propose changes with evidence via message({to: "may", content: ...}) -->
-<!-- This doc teaches HOW TO THINK. Operational rules are enforced by guards and workflows. -->
+<!-- Human-controlled. Change with human authority and concrete evidence. -->
+<!-- Shared judgment and working practices; Apps own policy, the Host owns mechanics. -->
 
 ## How the System Works
 
@@ -10,36 +10,69 @@ Understanding the system helps you work WITH it, not against it.
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
 ### Projects
-Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `projects/<name>/project.md`. The project file is your memory across sessions. (See `projects/may-agent.app/docs/2b-manual/agent-convention.md` for the canonical layout. Projects must live under `/app/projects/`; legacy `shared/projects/`, `agents/shared/projects/`, and `agents/<you>/workspace/projects/` locations are not scanned.)
-
-**Project status must match reality:**
-- `active` = concrete next action ready NOW
-- `waiting` = suspended, with explicit resume trigger
-- `paused` = temporarily stopped by owner
-- `blocked` = needs external help
-- `pending-review` = needs human approval
-- `done` = goal achieved
-- `closed` = resolved (done, superseded, or rejected)
-
-**Project comments:** Anyone can append suggestions to a project's `## Comments` section. The owner reads and uses judgment — comments are input, not instructions.
+Projects hold source, knowledge, and documentation. They are not a second work
+lifecycle. A Conversation handles discussion and bounded work; an App Task owns
+an independent outcome that must survive attempts. Continue its exact identity
+after a retry, correction, or external update. Do not create a replacement Task
+just because progress is slow. Project files and comments provide context, not
+Task state or permission to act.
 
 ### Evaluator Feedback (Learning Loop)
 If `projects/evaluation.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.
 
 ### Heartbeats (Autonomy)
-Periodically you wake up for self-directed work. This is YOUR time — observe, judge, act. Nobody tells you what to do. Explore problems, test ideas, push things forward.
+A scheduled wake supplies an opportunity to review the current outcome, not
+new authority or a requirement to invent work. Use current facts and the App's
+scope to choose the next useful action.
 
 ### Metrics (Signal + Judgment)
 You own metrics that signal where attention is needed. Metrics inform your judgment — they don't replace it. A regression is a signal to investigate, not an automatic trigger. Use gym for fast feedback (minutes) when possible.
 
 ### Workflows
-Workflows enforce process so you can focus on the work. The core workflow is `project` — for any work that spans multiple sessions, with metrics, plan items, and owner review.
+A workflow is one bounded recipe inside an attempt, not a persistent worker or
+project controller. Use ordinary tools for simple work and an available skill
+for reusable judgment. Do not invoke a workflow merely because an old note
+names it. A bounded agent call must return before its caller can accept the
+result; independent continuation belongs to an App Task, not a fire-and-forget
+fork or message.
 
-**Metric projects:** Add a `## Metrics` section to declare target metrics. Format: `- metric.id: target > 0.7, baseline 0.29`. The evaluator checks metric movement on completion.
+Inside a workflow step, follow its supplied scope and result contract. An agent
+finishing, a passing command, a commit, a PR, and an integrated result are
+different facts. Report the one actually proved.
 
-**Dispatching work**: Use `agents.fork()` to dispatch work to other agents — it's fire-and-forget, doesn't block you.
+### Repository changes
 
-Inside a workflow step, the workflow may override your available tools and process.
+- Find the actual Git repository and read its current contribution rules. A
+  project directory may be inside a larger repository; never assume `/app` is
+  the repository to commit or push.
+- Work in the assigned isolated worktree. For direct coding without a Host-owned
+  worktree, use ordinary Git to prepare a named branch/worktree and retain its
+  identity with the work. Do not change branches, stash, reset, or clean another
+  worker's checkout. Read-only investigation and declared runtime scratch do
+  not require a worktree.
+- Keep one reviewable change focused. Test and review the exact diff in the
+  checkout that was edited, then commit only owned files. Failed or skipped
+  checks are not passes. Run project-required CI and live tests when authorized;
+  a local test does not replace them.
+- Bring reviewed changes back to the project's target branch (normally `main`)
+  through its required PR/review process. Do not merge, push to `main`, or deploy
+  merely because local checks passed. Confirm the integrated revision before
+  calling an integration outcome complete.
+- Reuse an existing branch/PR for that change. While review or a pipeline runs,
+  continue independent authorized work; do not create overlapping fixes or
+  another capacity queue. Use available external-event observation and exact
+  Task Conditions for later checks instead of keeping an LLM polling.
+- Explain PRs in plain language: problem, change, verification and remaining
+  risks. Include the exact Task/worker reference when supplied, not invented
+  metadata, private logs, or credentials.
+- Keep unfinished work recoverable. Remove only the exact owned worktree/branch
+  after proving integration or receiving explicit discard authority; never
+  clean other workers' files to obtain a clean status.
+
+Workflow authors must align prompts, writable paths, verification, and result
+admission with these rules. A prompt alone cannot fix a workflow that writes
+or verifies the shared checkout. See
+`projects/may-agent.app/docs/2b-manual/workflow-authoring.md`.
 
 ### Guards
 Guards enforce quality automatically — verification, scope, completeness. They exist because these rules work better as structural checks than as instructions. If a guard blocks you, satisfy it. If you genuinely can't, escalate.
@@ -63,9 +96,9 @@ This is what infra can't enforce — your approach to problems.
 - **Convention over configuration.** Follow established patterns — file locations, naming, project structure, status fields. Don't invent new conventions when existing ones work. The system's conventions are documented below.
 - **Simple first.** Try the simplest approach. If it works, stop.
 - **Metric-oriented.** When you want to drive an effort or track progress, build a metric. If you can't measure it, you can't improve it. Metrics make problems visible and progress trackable.
-- **Never stop at target met.** Hitting a target is not permission to stop. Refine the metric, raise the bar, try new approaches, watch for regressions. Continuous forward motion is the expectation — complacency is the enemy.
-- **Event-driven.** When something happens, emit an event. React to signals, don't wait for schedules. A metric breaching, a project changing, a session failing — these are events. The best work starts from a signal, not a calendar.
-- **Own it.** Every metric, project, and event has an owner. If you own it, you're accountable — observe it, react to it, fix it, or escalate it. Don't wait for someone to tell you. If an event fires and nobody handles it, the owner handles it.
+- **Finish the agreed outcome.** Finite work completes when its acceptance is proved. A standing improvement goal continues through useful checkpoints until stopped or replaced. Do not silently turn finite work into a never-ending goal, or stop a standing goal because one PR is ready.
+- **Event-driven integration.** Publish a meaningful fact when a declared consumer or observation needs it. Use local calls for internal steps. External events supply evidence, not instructions or authority; there is no generic owner fallback for an unhandled event.
+- **Own it.** Investigate meaningful gaps within your scope, use available tools and knowledge, and escalate the exact missing prerequisite when necessary. Recheck waiting conditions through the supported trigger; meanwhile look for useful independent work. Do not repeatedly narrate an unchanged blocker.
 - **One thing at a time.** Do one task, verify it worked, then the next.
 - **Context updates are for durable facts only.** `context_updates` in `finish()` persist to your context.md forever. Only add things a future session needs to know: project facts, user preferences, corrections to stale info. Never add session narration ("file looks correct", "now let me commit", "everything healthy"). If it wouldn't make sense to someone reading your context.md cold, don't add it.
 
@@ -88,9 +121,13 @@ Standard locations — follow these, don't invent alternatives:
 
 ## Environment
 
-- **Root:** `/app`. Do NOT use `/Users/`, `/home/`, or `~`.
-- **Agent files** live in `/app/agents/`. Projects live in `/app/projects/`. Commit from `/app`.
-- **Searching files:** Always exclude noise directories. Use `grep --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or `find -path './.state' -prune -o -path './node_modules' -prune -o ...`. Without this, results are dominated by caches and logs.
+- **Installation root:** `/app`. Use the supplied workspace and output paths;
+  an isolated worktree may live elsewhere. Do not invent machine-specific paths.
+- Global agents live in `agents/`; App-local agents live in
+  `projects/<id>.app/agents/`. Git commands run in the exact owning repository
+  and worktree, never an assumed shared root.
+- **Searching files:** Prefer `rg` and `rg --files`, excluding runtime state,
+  dependencies and generated noise unless that evidence is needed.
 
 ## Safety — Destructive Operations FORBIDDEN
 

@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import type { WorkflowContext } from "@may-agent/sdk";
-import { emitStep, parseInput } from "./verified-coder";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { emitStep, execute, parseInput } from "./verified-coder";
 
 const reproducedRunCommand =
   "cd /app/projects/may-agent && bun test src/app/project-app-task-reconciler.test.ts src/app/loader/project-app-loader.test.ts && bun run check && git diff --check -- src/app/project-app-task-reconciler.test.ts src/app/loader/project-app-loader.test.ts src/app/loader/project-app-loader.ts src/app/project-app-task-reconciler.ts";
@@ -33,6 +43,72 @@ function reconciliationInput(outcome: string): string {
 }
 
 describe("verified-coder input contract", () => {
+  for (const status of ["blocked", "interrupted", "error"] as const) {
+    test(`does not run verification or report success after a ${status} coder`, async () => {
+      const root = mkdtempSync(join(tmpdir(), "verified-coder-status-"));
+      try {
+        const result = await execute(
+          createTestAppWorkflowContext({
+            input: {
+              task: "Repair one scoped defect",
+              verifyCommand: "printf verified > checked.txt",
+            },
+            workspace: { appRoot: root, projectRoot: root, root, output: root },
+            callAgent: (async () => ({
+              id: "test-coder",
+              kind: "agent",
+              status,
+              summary: "Could not finish",
+            })) as WorkflowContext["agents"]["call"],
+          }),
+        );
+        expect(result.status).toBe("blocked");
+        expect(existsSync(join(root, "checked.txt"))).toBeFalse();
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+  }
+
+  test("gives the coder the same checkout that the verifier reads", async () => {
+    const root = mkdtempSync(join(tmpdir(), "verified-coder-checkout-"));
+    let prompt = "";
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {
+            task: "Write the scoped candidate",
+            verifyCommand:
+              "test -f candidate.txt && printf verified > checked.txt",
+          },
+          workspace: {
+            appRoot: "/canonical/app",
+            projectRoot: "/canonical/project",
+            root,
+            output: root,
+          },
+          callAgent: (async (_agent: string, task: string) => {
+            prompt = task;
+            writeFileSync(join(root, "candidate.txt"), "candidate");
+            return {
+              id: "test-coder",
+              kind: "agent",
+              status: "done",
+              summary: "Candidate prepared",
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(prompt).toContain(`allocated workspace: ${root}`);
+      expect(prompt).not.toContain("/canonical/project");
+      expect(prompt).toContain("not permission to merge or deploy");
+      expect(result.status).toBe("done");
+      expect(readFileSync(join(root, "checked.txt"), "utf8")).toBe("verified");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("keeps task-owned progress markers attempt-local", async () => {
     const logs: string[] = [];
     let published = false;
