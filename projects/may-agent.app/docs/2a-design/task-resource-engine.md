@@ -45,6 +45,13 @@ A typed cross-App dependency may name an exact `taskId`. Runtime then admits
 the input against that existing Task and waits for the same Task lineage. With
 no `taskId`, normal App task resolution creates or finds the requested outcome.
 
+A live `maintain` Task remains available for explicit next-cycle input while
+converged. Its SDK observation can say `status: done` with `mode: maintain`;
+that means up to date, not permanently finished. Conversation validation and
+Task admission must preserve this distinction. A new ask waits for its new
+cycle, while replaying the same admission must not run another cycle. A
+completed `achieve` Task or immutable receipt is not reopened by this rule.
+
 ## Mental model
 
 ```text
