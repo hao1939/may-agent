@@ -210,6 +210,12 @@ function normalizeAppId(value: string | undefined): string | undefined {
   return normalized || undefined;
 }
 
+// A wake can queue the next cycle without rewriting the last accepted phase.
+// Project that work consistently in exact reads, lists, and status filters.
+const LIVE_TASK_PHASE_SQL = `CASE
+  WHEN t.phase = 'converged' AND (t.ready = 1 OR t.changed = 1) THEN 'pending'
+  ELSE t.phase END`;
+
 function taskStatus(phase: string | undefined, terminal: boolean): HumanTaskStatus {
   if (terminal) return "done";
   if (phase === "converged") return "up-to-date";
@@ -517,7 +523,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
   return db
     .prepare(
       `SELECT * FROM (
-       SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
+       SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
          t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
          t.generation AS current_generation
        FROM app_tasks t
@@ -860,12 +866,12 @@ export class HumanTaskService {
     const values: unknown[] = [];
     if (includeLive && livePhases.length > 0) {
       parts.push(
-        `SELECT t.app_id, t.task_id, t.phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
+        `SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
            t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
-         WHERE t.phase IN (${livePhases.map(() => "?").join(", ")})
+         WHERE (${LIVE_TASK_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
                AND json_extract(r.receipt_json, '$.metadata.generation') >= t.generation
