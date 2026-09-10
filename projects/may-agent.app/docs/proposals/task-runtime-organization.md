@@ -34,20 +34,20 @@ it does not replace the accepted inbox/state sequence below.
 | --- | --- | --- |
 | App registration and input admission | Validated registration, generation publication and atomic Task attachment exist | Preserve the boundary; no new loader service |
 | Events | Durable admission, declared routes and change hints connect components | Reuse exact turn control and improve failure correlation |
-| State and storage | SQLite fences, accepted results, Request revisions and closure are implemented | Consolidate Conversation/Request/Topic reads and decision commits through the [storage slice](storage-state-service.md#conversation-state-and-handler-extraction) |
-| Work runtime | Controller, settlement, retries, waits, finite stop and input containment exist | Separate generic inbox dispatch from conversational handling; preserve the existing model/tool loop |
+| State and storage | SQLite fences, accepted results, Request revisions and closure are implemented | Merged in #129: Conversation/Request/Topic reads and decision commits use the [storage slice](storage-state-service.md#conversation-state-and-handler-extraction) |
+| Work runtime | Controller, settlement, retries, waits, finite stop and input containment exist | Merged in #129: generic dispatch and selected handler are separate; preserve the existing model/tool loop |
 
 Completing an input, fulfilling an accepted Request and finishing a Task remain
 separate facts. Their records now exist; they need truthful App judgment and
 focused usage validation, not another execution lifecycle.
 
-The next ordered implementation work is the
+The completed source sequence is the
 [seven-step inbox and Conversation plan](storage-state-service.md#implementation-order-and-acceptance):
 names, reads, Turn writes, linked work, frontend separation, turn behavior and
 final review. The series starts from Host `0d8c7658`; its
 [candidate review](storage-state-service.md#candidate-review-and-landing-order)
 tracks the three PRs, checks and landing order. The plan owns completion criteria;
-prepared source is not yet merged. The completed fixes below are preserved regression requirements.
+the series merged through #129 as `0bedd93a`. The completed fixes below remain regression requirements.
 
 ## Implementation order and candidate decisions
 

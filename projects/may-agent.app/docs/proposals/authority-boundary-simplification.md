@@ -1,11 +1,11 @@
 # Simplify the system: fewer paths, clear owners
 
-**Status:** Proposal for review. Existing direct-work and attempt-context rules
-remain accepted. The reductions below are recommendations, not implemented
-behavior or a commitment to implement every option.
-**Reviewed:** September 11, 2026, against Host `main` `39a23f22` and the open
-Conversation/state candidate [#129](https://github.com/hao1939/may-agent/pull/129)
-at `e43b80dc`. Source review does not identify the deployed release.
+**Status:** Selected cleanup in implementation review; larger feature reductions
+remain conditional. Existing direct-work and attempt-context contracts remain
+accepted. See [implementation evidence](#implementation-evidence).
+**Reviewed:** September 11, 2026, against Host `main` `0bedd93a`, including the
+merged Conversation/state separation [#129](https://github.com/hao1939/may-agent/pull/129).
+Source review does not identify the deployed release.
 
 Make ordinary conversation and authorized work easier to understand, change and
 operate at acceptable total cost. First remove unnecessary behavior and competing
@@ -70,7 +70,7 @@ for new direct Task handoffs, but retains compatibility handling. Its
 The source declaration search found May as the current App declaring agent
 request handling; that does not prove no retained caller or obligation needs it.
 
-**Recommendation:** Finish #129's review first. Audit the remaining callers and
+**Recommendation:** With #129 merged, audit the remaining callers and
 make Task handoff the sole supported new conversational delegation path. Then
 drain or explicitly migrate retained child waits before deleting their execution
 path. Keep input receipts, accepted Requests, Topic links, Task-to-Task waits and
@@ -153,7 +153,7 @@ Build on its reviewed result. Paths below are relative to the Host checkout.
 | Break the internal barrel-import cycle | `lib/index.ts -> agent-loader.ts -> loader/toolset-loader.ts -> lib/index.ts` becomes direct imports from owning modules. Keep public SDK/control exports. Prefer `lib/db/connection.ts` over the historical `lib/requests.ts` facade in touched code; remove the facade only after its callers are gone. |
 | Make the attempt path readable | In `app-task-runtime.ts`, make claim, prepare/execute, verify, commit and publish easy to follow. Extract a cohesive helper when it reduces shared context; leave atomic mutation and stale-result checks with their owner in the reconciler/state code. Run the existing race/cancellation tests when these boundaries move. |
 | Group retained HTTP/backend implementations | After the feature decisions above, put touched route families under existing `http/` homes and backend files beside their executor family. Use ordinary imports, not a new router/plugin/service framework. |
-| Shorten navigation | Give each component its responsibility, contract, implementation/wiring and owning tests. The current Host source map is 472 lines; link detailed contracts rather than growing another design explanation. |
+| Shorten navigation | Give each component its responsibility, contract, implementation/wiring and owning tests. The #138 source map is 102 lines; link detailed contracts rather than growing another design explanation. |
 
 The resulting ownership is straightforward:
 
@@ -185,8 +185,8 @@ or a repository-wide move is unnecessary.
 
 ## Recommended next milestone
 
-1. Complete independent review of #129 under the existing merge policy. Do not
-   fold this proposal's feature reductions into that PR.
+1. Build on #129, now merged as `0bedd93a`. Keep the feature reductions separate
+   from that completed state/frontend extraction.
 2. Take a small behavior-preserving cleanup: direct internal imports and a shorter
    source map. Address the shared inbox's App-name assumptions as a separate,
    focused capability-boundary change.
@@ -202,12 +202,50 @@ No live-state inventory, provider trial, deployment or Host merge is performed b
 document review. The preceding source review ran 36 focused registry/controller,
 reporting and import-boundary tests on `743aa5de`; those tested modules are
 unchanged at the reviewed `main`. It did not measure field failure frequency,
-redo cost, or certify the pending PR's current full CI.
+redo cost, or certify deployment.
 
 For each selected reduction, record the behavior retained, the behavior given up,
 the actual path deleted and the relevant regression evidence. Stop if migration
 or permanent exceptions cost more than the removed feature. Success means less
 coordination and fewer failure cases for useful work, not merely fewer files.
+
+## Implementation evidence
+
+The approved bounded milestone is delivered as two independent Host PRs based
+on `0bedd93a` (candidates `71ea02a6` and `ccc33d3d`). Both remain subject to human review; no merge or deployment is
+part of this implementation.
+
+| Slice | Result and evidence |
+| --- | --- |
+| [#138](https://github.com/hao1939/may-agent/pull/138) — import ownership and source map | Loader imports owning modules directly; ESLint prevents reintroducing the barrel cycle. Public exports remain. The map is 102 lines; review corrections make module paths explicit. Frozen install and full local CI for the runtime change (`8a95827c`): 2,677 pass, three installation-only checks skipped; browser checks ran. |
+| [#139](https://github.com/hao1939/may-agent/pull/139) — foreground selection and conversation presentation | Composition selects `conversationAppId`, with May as the shipped default. Shared scheduling uses that selection. `conversations/task-status.ts` owns waiting text, message identity and follow-up self-wake suppression. The safeguard follows the owning Conversation even when selection changes or is omitted; other Apps still receive Task facts. 52 focused checks and full local CI passed: 2,681 pass, three installation-only checks skipped; browser checks ran. |
+
+Omitting selection uses background capacity with the existing reserve, an
+accepted utilization cost that avoids another capacity mode. This does not rename
+an installed App or change turn-handler declarations. Existing cancellation,
+Task attachment, accepted Requests and retained child waits remain in place.
+
+The three larger reductions were audited but not selected for deletion:
+
+- **Child waits:** Current declarations favor direct Task handoff, but the
+  handler still supports retained child creation/join/reconsideration and a
+  dated audit found open obligations. Source searches cannot establish that
+  those obligations have drained. Remove only after an authorized retained-state
+  decision; no new compatibility framework is needed.
+- **Evaluation UI:** The shipped session page is a caller of both generation and
+  comment routes. Comments currently append usable line-attributed evidence;
+  generation drops requested line/instructions downstream. A replacement for
+  that feedback path has not been demonstrated, so deleting both would discard
+  working capability without the promised user-path proof. Keep this as a paired
+  HTTP/UI/App decision, preserving historical reads and summary metrics.
+- **Workflow redo:** The separate workflow tool still offers step reuse and
+  child-session resume. Ordinary Task restart already uses fresh attempts, and
+  no concrete workload establishes a worthwhile saving from deleting reuse.
+  Keep existing paths until redo cost and effect safety have been measured.
+
+These are explicit deferrals under the proposal's value/cost rule, not evidence
+that every optional reduction has been implemented. Broad Task/HTTP moves remain
+outside the selected milestone.
 
 ## Remaining work
 

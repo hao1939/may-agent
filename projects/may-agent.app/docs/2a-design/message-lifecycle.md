@@ -6,7 +6,7 @@ September 10, 2026. Interactive model/tool loops, direct Task handoff, one May
 supervision Task, accepted Requests, fenced closure and durable failed/stopped
 turns are implemented. Console Esc and Telegram/browser Stop bindings are
 implemented; seamless current-turn steering remains separate work. Naming and
-storage API consolidation below are not yet implemented. See
+storage API consolidation landed in #129 (`0bedd93a`), confirmed September 11. See
 [current implementation and gaps](#current-implementation-and-gaps) for storage
 and the distinction between implementation tests and live validation.
 
@@ -613,30 +613,30 @@ are not automatically converted into accepted Requests.
 
 ### Input handling remains separate
 
-The Host currently uses `AppRequest` and `app_inbox_items` for accepted input
-handling. These rows are created before May understands the input. The
+The Host uses `AppInputContext` and `app_inbox_items` for accepted input
+handling; `AppRequest` remains a deprecated compatibility alias. These rows are
+created before May understands the input. The
 [request handler](../../../may-agent/src/app/app-inbox-host.ts) completes a
 frontend row after a direct answer or durable follow-up admission; Task-based
 caller rows may instead wait for a Task result. Neither row's `done` status is
 proof of human fulfillment. The separate accepted Request stores that judgment
 and its Conversation explanation; it adds no execution controller or queue.
 
-### Naming and organization gap
+### Naming and organization
 
-Use the vocabulary above in new explanations. The source still uses
-`AppRequest` for input context and `AppRequestDecision` for the agent's handling
-result. The shared runner also calls internal model cycles `turn_start` and
-counts them in `turnCount`; those are not human Conversation Turns.
+Use `AppInputContext` for admitted input context, `ConversationTurnResult` for
+the conversational result, and `modelStepCount` for internal cycles. These
+names and the shared state/handler boundary landed through
+[#129](https://github.com/hao1939/may-agent/pull/129) as `0bedd93a`; the
+[implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
+records the code map and verification. The deprecated `AppRequest` alias and
+retained App-to-App `AppRequestDecision` dependency protocol remain compatibility
+boundaries. Existing execution event names such as `turn_start` and retained
+`turnCount` counters describe model steps, not human Conversation Turns.
 
-The naming direction is `AppInputContext` for admitted input context,
-`ConversationTurnResult` for the conversational result, and `modelStepCount`
-for internal cycles. Use `inboxId` for input correlation, `turnId` when targeting
-its human execution, and `requestId` for the accepted ask. A Turn can reuse its
-inbox identity; this requires no new record or identity generator. These names
-are implemented in the [candidate PR series](../proposals/storage-state-service.md#candidate-review-and-landing-order),
-with the old public input type retained as an alias; they are not yet a merged
-baseline. Separate retained App-to-App dependency
-handling before renaming its shared result contract as conversational.
+Use `inboxId` for input correlation, `turnId` when targeting its human execution,
+and `requestId` for the accepted ask. A Turn can reuse its inbox identity; this
+requires no new record or identity generator.
 
 Keep durable IDs and existing external compatibility at explicit boundaries;
 do not migrate SQLite columns or published events merely for spelling. The

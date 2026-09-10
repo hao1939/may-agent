@@ -4,12 +4,12 @@
 **Implementation status:** SQLite holds canonical work and admission state;
 files hold full execution artifacts. Bounded read projections coexist with
 those authorities. The Conversation state API below consolidates existing
-guarantees; the extraction is pending. The focused source review used Host
+guarantees; #129 extracted their shared state operations. The focused source review used Host
 `99bc1a31` on September 10, 2026.
 
-The [inbox/Conversation candidate review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-tracks the prepared state/handler extraction and its actual code map. Pending
-PRs do not change this page's merged source baseline.
+The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
+records the state/handler extraction, merged in #129 as `0bedd93a`, and its
+actual code map. This updates the source boundary; deployment remains separate.
 
 ## Decision
 

@@ -2,7 +2,9 @@
 
 **Status:** Active index of known source gaps at the [documentation baseline](../README.md).
 Conversation/storage entries include the focused `99bc1a31` review and the
-subsequent merge of #127. This is not a deployment audit or a second subsystem backlog.
+subsequent merges of #127 and #129. Naming and Conversation/state separation
+are complete in source; the [storage review](storage-state-service.md#candidate-review-and-landing-order)
+records that evidence. This is not a deployment audit or a second subsystem backlog.
 
 Start with [System Model](../2a-design/system-model.md) and
 [Architecture](../2a-design/architecture.md). Each row below points to the owner
@@ -10,14 +12,12 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
-| Consistent input/Turn/Request names and frontend separation | [Message Lifecycle](../2a-design/message-lifecycle.md#naming-and-organization-gap) and [storage slice](storage-state-service.md#conversation-state-and-handler-extraction): separate input mechanics from chat handling while preserving identities and behavior |
 | Current-turn redirection | [Core review plan](task-runtime-organization.md#3-validate-redirection-and-request-follow-through): start with Stop then a correction; add immediate steering only when its value is demonstrated |
 | Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [controller proposal](task-controller-pattern.md#remaining-implementation-and-review): extend bounded evidence for correction, restart, scope and truthful closure; storage, retry and finite Task stop mechanics are merged |
 | Correlated failure evidence | [Core review plan](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events): identify exact work, stage and disposition through existing events/reads; investigation does not gate settlement |
-| Conversation/Request/Topic state API | [Storage proposal](storage-state-service.md#conversation-state-and-handler-extraction): consolidate existing reads and atomic decision/result writes; input attachment is already merged |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |
 | External capability scope and complexity | [External component plan](external-components-simplification.md#conditional-follow-ups): Scout credential fix landed on workspace main; Host #132/#133 merged as `23968acd`/`39a23f22`; further features/migrations require demonstrated value |
-| System path reduction and readable code ownership | [System simplification review](authority-boundary-simplification.md#design-choices-before-code-moves): compare Task-only conversational delegation, evaluation UI reduction and affordable redo; small import/layout changes follow demonstrated boundaries |
+| System path reduction and readable code ownership | [System simplification review](authority-boundary-simplification.md#design-choices-before-code-moves): compare Task-only conversational delegation, evaluation UI reduction and affordable redo; selected import/navigation and foreground-App changes are in review; larger deletions remain conditional |
 | Remaining central domain metrics | The migration rule below and [Metrics](../2a-design/metrics.md) |
 | Retained conversational child waits, Evaluation/HTTP policy, behavioral comparison and delivery proof | [Authority proposal](authority-boundary-simplification.md#remaining-work): separate bounded work, with its existing scope limits |
 

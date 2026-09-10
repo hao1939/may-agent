@@ -180,7 +180,8 @@ App-policy replacement is a distinct operation, fenced to the current request
 claim and previous dependency; it is not an automatic retry. Reuse the request
 row and Task admission records instead of adding a generic operation journal.
 
-Start with `core/state/requests.ts` and `lib/db/transaction.ts`, a shared synchronous transaction helper;
+The first slice used `core/state/requests.ts` (renamed `inbox.ts` in #129) and
+`lib/db/transaction.ts`, a shared synchronous transaction helper;
 do not move all stores or introduce a service class. Keep existing claim and
 Task-transition rules authoritative. Capacity ownership, process layout, and
 child-request delegation are outside this slice. Conversational follow-up
@@ -331,17 +332,16 @@ src/lib/db/            # existing canonical schema and transaction primitives
 projects/may.app/      # conversational judgment and supervision policy
 ```
 
-This is a target, not a file-move checklist. `core/state/requests.ts` currently
-means input-to-Task attachment; move/rename it with that responsibility into
-`inbox.ts`. Keep accepted Request state with Conversation state initially, and
-split private SQL by resource only when readability warrants it. Frontend code
-must not retain a second SQL writer after the extraction. A reverse import from
-core state into the frontend defeats the boundary.
+This is an ownership map, not a file-move checklist. The merged extraction names
+input-to-Task attachment `core/state/inbox.ts` and keeps accepted asks in
+`conversation-requests.ts`. Frontend code calls those state operations instead
+of retaining a second SQL writer. Core state must not import the frontend.
 
 ### Implementation order and acceptance
 
-**Plan status:** Prepared in three PRs; #130 and #131 are now squash-merged into
-#129's branch (`5317d627`). #129 remains open; the series has not landed on `main`.
+**Plan status:** Source implementation merged. #130 and #131 were incorporated
+into [#129](https://github.com/hao1939/may-agent/pull/129), which landed on Host
+`main` as `0bedd93a` (confirmed September 11, 2026). Deployment is separate.
 Scope is the agreed inbox, Conversation and shared-state cleanup.
 Completed Stop, ownership and containment fixes remain the baseline. Broader
 Task-controller rewrites and the paused metrics/App-merger proposals are outside
@@ -364,23 +364,22 @@ a merge gate, not a reason to stop preparing the authorized work.
 
 #### Candidate review and landing order
 
-The seven acceptance steps are grouped into three dependent source PRs. This
-keeps names easy to review and moves the state owners with their callers before
-extracting the frontend. The two dependent slices have since merged into the
-first branch; this is not integration into `main` or a deployment claim.
+The seven acceptance steps were delivered as three dependent source PRs, with
+state owners and their callers moved before frontend extraction. The two dependent
+slices were incorporated into #129 and landed together on `main`.
 
 | PR | Plan steps | Review focus |
 | --- | --- | --- |
-| [#129](https://github.com/hao1939/may-agent/pull/129) | 1, now containing 2–7 | Open: names plus the two merged slices below; compatibility semantics documented on retained event counters |
+| [#129](https://github.com/hao1939/may-agent/pull/129) | 1, now containing 2–7 | Merged to main as `0bedd93a`: names plus the two slices below; compatibility semantics documented on retained event counters |
 | [#130](https://github.com/hao1939/may-agent/pull/130) | 2–4 — shared state | Merged into #129: scoped reads, decision/completion transactions, linked Task admission and returned outcomes |
 | [#131](https://github.com/hao1939/may-agent/pull/131) | 5–7 — frontend and verification | Merged into #129: optional handler/context composition, retained dependency path, scripted tool loop and capability absence |
 
-The remaining landing step is #129. Recheck its integrated candidate against
-current `main` and resolve outstanding review before landing. Source remains
-in review until that integration happens. Earlier per-slice verification below
-records its tested revisions; it does not certify a later merged candidate.
+The series is merged; it is no longer a landing dependency. Earlier per-slice
+verification below records its tested revisions. The later import cleanup built
+on `0bedd93a` also passed the full local Host gate (2,677 pass, three installation
+checks skipped), including browser coverage. No deployed-state claim follows.
 
-The candidate's actual code map is:
+The merged code map is:
 
 ```text
 app-inbox-host.ts               admission, claims, Stop, recovery, generic dispatch

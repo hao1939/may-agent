@@ -7,9 +7,9 @@ Task activation and startup recovery are independent of optional schedules.
 [Open work](../proposals/task-runtime-organization.md) is tracked separately;
 this page does not identify the deployed release.
 
-The [inbox/Conversation candidate review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-tracks the prepared state/handler extraction and its actual code map. Pending
-PRs do not change this page's merged source baseline.
+The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
+records the state/handler extraction, merged in #129 as `0bedd93a`, and its
+actual code map. This updates the source boundary; deployment remains separate.
 
 Read [System Model](system-model.md) for the product vocabulary and a complete
 example. This page owns component boundaries, dependencies and code placement.
@@ -161,7 +161,8 @@ src/app/
   core/
     apps/                 validated registry and generations
     events/               publication, admission and observation
-    state/requests.ts     atomic request-to-Task attachment (first extraction)
+    state/inbox.ts        atomic input-to-Task attachment and completion
+    state/conversation*.ts Conversation/Request/Topic reads and coordinated writes
     tasks/                controller and executor/recovery contracts
     scheduling/timer.ts   shared timing mechanics
     reads/                canonical Task/request/result reads
@@ -177,7 +178,7 @@ src/app/
   app-task-*.ts           remaining Task runtime, transitions and stores
   app-inbox-*.ts          input handling, admission and stores
   app-observer-runtime.ts observer registration and execution
-  conversations/         current shared Conversation stores and projections
+  conversations/         replaceable context, turn handler and agent integration
   transport/, http/      existing interface adapter homes
 src/lib/db/              shared schema and transaction primitives
 
@@ -192,8 +193,8 @@ The [storage proposal](../proposals/storage-state-service.md#code-organization)
 considers further meaningful operations in `core/state/`. It does not claim all
 Task stores have moved there or require a separate API server.
 Its [conversation slice](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
-separates core state operations from replaceable frontend handling. Current
-folder names do not yet establish that dependency boundary.
+landed in #129 and separates core state operations from replaceable frontend
+handling. ESLint prevents core imports of concrete conversational handlers.
 
 | Caller | Dependency rule |
 | --- | --- |

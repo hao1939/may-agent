@@ -33,7 +33,9 @@ small shared state boundary.
 The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
 compares removing conversational child waits, reducing evaluation UI features,
 and affordable workflow redo before larger code moves. It builds on #129's
-pending state/frontend separation; the reductions remain proposals for review.
+merged state/frontend separation (`0bedd93a`). The selected import/navigation
+and foreground-App changes are tracked in its implementation evidence; larger
+feature reductions remain conditional.
 
 The [external component plan](proposals/external-components-simplification.md#candidate-evidence)
 records the completed source fixes for guard guidance, the blocking credential
@@ -52,15 +54,14 @@ the [gap index](proposals/design-implementation-convergence.md)
 links its owners. Request storage, bounded failed turns and durable Stop are
 implemented. Host #121 added input-runtime containment and Esc/Stop-button
 bindings; #127 added dispatch-failure pacing and cancellation of capacity waits
-on close (merged as `743aa5de`). Remaining work includes naming/state API
-consolidation, current-turn steering and usage validation. App judgment and
+on close (merged as `743aa5de`). #129 consolidated naming and the state API.
+Remaining work includes current-turn steering and usage validation. App judgment and
 deployment need their own evidence.
 The [sequential implementation plan](proposals/storage-state-service.md#implementation-order-and-acceptance)
 tracks seven acceptance steps, now grouped into three ordered source PRs from
 Host `0d8c7658`. The [candidate review](proposals/storage-state-service.md#candidate-review-and-landing-order)
-records the code map, checks and landing order. #130 and #131 have been merged
-into #129's branch; #129 remains in review. These refinements have not landed
-on `main` or been verified as deployed.
+records the code map and checks. #130 and #131 were incorporated into #129,
+which merged to Host `main` as `0bedd93a`. Deployment has not been verified.
 Completed separation and recovery reviews live in the [archive](archive/README.md).
 Error/metric placement and App consolidation remain
 [paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).

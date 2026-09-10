@@ -132,8 +132,8 @@ Active reviews are:
   — three focused fixes, explicit feature/reliability tradeoffs, and conditional
   evaluation, metric, and layout follow-ups;
 - [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
-  — implemented input-to-Task attachment, with Conversation state/handler
-  extraction and consistent naming as the next proposed slice;
+  — implemented input-to-Task attachment, Conversation state/handler separation
+  and consistent naming, merged through #129;
 - [Task controller pattern](proposals/task-controller-pattern.md)
   — controller/lifecycle direction: ordinary reconciliation, bounded retries,
   recovery and evidence required before claiming simplification;
