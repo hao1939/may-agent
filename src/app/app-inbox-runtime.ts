@@ -3,6 +3,7 @@ import { OwnedTimer } from "./core/scheduling/timer.js";
 import { createHash } from "node:crypto";
 import {
   matchesEventSelector,
+  type AppConversationRequestUpdate,
   type AppDependencyObservation,
   type AppEvent,
   type AppInput,
@@ -14,8 +15,7 @@ import {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 import { stateTransaction } from "../lib/db/transaction.js";
-import { applyConversationRequestUpdates } from "./conversations/requests.js";
-import type { AppConversationRequestUpdate } from "@may-agent/sdk";
+import { applyConversationRequestUpdates, listConversationRequests } from "./conversations/requests.js";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
@@ -410,7 +410,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         ...(change.summary ? { summary: change.summary } : {}),
         ...(change.reason ? { reason: change.reason } : {}),
         topicTitle: topic?.title,
-        requests: conversation.requests,
+        requests: listConversationRequests(options.db, link.appId, link.conversationId, link.topicId, taskRef),
         messages: conversation.messages
           .filter((message) => message.metadata?.topicId === link.topicId)
           .slice(-12)

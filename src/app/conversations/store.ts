@@ -664,7 +664,7 @@ export function listStaleConversationTopicTasks(
          AND ((task.phase IN ('pending', 'running', 'waiting', 'attention') AND receipt.receipt_id IS NULL AND cancellation.task_id IS NULL)
            OR EXISTS (SELECT 1 FROM conversation_requests ask, json_each(ask.task_refs) ref
              WHERE ask.app_id = topic.app_id AND ask.conversation_id = topic.conversation_id
-               AND ask.topic_id = topic.id AND ask.status = 'open'
+               AND ask.status = 'open'
                AND json_extract(ref.value, '$.appId') = linked.app_id AND json_extract(ref.value, '$.taskId') = linked.task_id))
        ORDER BY COALESCE(task.updated_at, receipt.completed_at, cancellation.requested_at, linked.linked_at), linked.linked_at, linked.app_id, linked.task_id
        LIMIT ?`,

@@ -45,15 +45,23 @@ export function listConversationRequests(
   appId: string,
   conversationId: string,
   topicId?: string,
+  taskRef?: { appId: string; taskId: string },
 ): AppConversationRequest[] {
   return (
     db
       .prepare(
         `SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ?
     AND (status = 'open' ${topicId ? "OR topic_id = ?" : ""})
-    ORDER BY ${topicId ? "(topic_id = ?) DESC," : ""} updated_at DESC, id LIMIT 12`,
+    ${taskRef ? "AND EXISTS (SELECT 1 FROM json_each(task_refs) ref WHERE json_extract(ref.value, '$.appId') = ? AND json_extract(ref.value, '$.taskId') = ?)" : ""}
+    ORDER BY (status = 'open') DESC, ${topicId ? "(topic_id = ?) DESC," : ""} updated_at DESC, id LIMIT 12`,
       )
-      .all(appId, conversationId, ...(topicId ? [topicId, topicId] : [])) as Row[]
+      .all(
+        appId,
+        conversationId,
+        ...(topicId ? [topicId] : []),
+        ...(taskRef ? [taskRef.appId, taskRef.taskId] : []),
+        ...(topicId ? [topicId] : []),
+      ) as Row[]
   ).map(view);
 }
 

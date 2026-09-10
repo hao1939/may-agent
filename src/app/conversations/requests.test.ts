@@ -172,6 +172,22 @@ test("failed completion rolls back closure; reopen applies the saved decision wi
 
 test("handoff preserves the accepted ask; finished work remains reviewable and closure includes its message atomically", async () => {
   const { db, root } = fixture();
+  createConversationTopic(db, {
+    id: "origin",
+    appId: app.id,
+    conversationId: "chat",
+    title: "Original discussion",
+    openedBy: "human",
+    originMessageId: "original",
+  });
+  applyConversationRequestUpdates(db, {
+    appId: app.id,
+    conversationId: "chat",
+    topicId: "origin",
+    updates: [ask],
+    updateKey: "original",
+    now: 1,
+  });
   const store = AppTaskResourceStore.fromDb(db, owner.id);
   store.bootstrapSnapshot(
     {
@@ -208,7 +224,6 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
     resolveRequest: async () => ({
       ...answer,
       topic: { kind: "new", title: "Comparison" },
-      requestUpdates: [ask],
       followUp: {
         requestId: ask.id,
         outcome: "Find evidence",
@@ -235,6 +250,16 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
     const accepted = readConversationRequest(db, app.id, "chat", ask.id)!;
     expect(accepted.taskRefs).toEqual([{ appId: owner.id, taskId: "work" }]);
     expect(accepted.status).toBe("open");
+    expect(accepted.topicId).toBe("origin");
+    expect(runtime.host.get("one")?.topicId).not.toBe(accepted.topicId);
+    for (let i = 0; i < 12; i++)
+      applyConversationRequestUpdates(db, {
+        appId: app.id,
+        conversationId: "chat",
+        updates: [{ ...ask, id: `unrelated-${i}` }],
+        updateKey: `unrelated-${i}`,
+        now: Date.now() + i,
+      });
     const claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
     if (claim.kind !== "claimed") throw new Error("fixture claim");
     completeAppTask(config, claim, { summary: "Evidence collected" });
@@ -259,7 +284,7 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
         data: { project: app.id, minQuietMs: 60_000 },
       } as unknown as AgentEvent);
       expect(recovered).toHaveLength(1);
-      expect((recovered[0] as unknown as { data: { requests: unknown[] } }).data.requests).toContainEqual(accepted);
+      expect((recovered[0] as unknown as { data: { requests: unknown[] } }).data.requests).toEqual([accepted]);
     } finally {
       recovery.close();
       reopened.close();
