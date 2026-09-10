@@ -20,10 +20,12 @@ import {
   cancelAppTask,
   claimObservedAppTask,
   completeAppTask,
+  failAppTaskAttempt,
   markAppTaskAttention,
   observeAppTaskIntent,
+  retryFailedAppTask,
 } from "../../app-task-reconciler.js";
-import { finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
+import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
 import { admitTaskRequest, attachRequestToTask } from "./requests.js";
 
 const roots: string[] = [];
@@ -325,6 +327,110 @@ describe("request-to-Task state operation", () => {
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     db.exec("DROP TRIGGER fail_wake");
     expect(completeAppTask(config, claim, { summary: "Verified", evidence: [] }).status).toBe("applied");
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+  });
+
+  it("durably readies the linked request when retries exhaust without an EventBus or executable parent", async () => {
+    const { db, path, config, input } = fixture();
+    attachRequestToTask(config, input);
+    createAppInboxItem(db, {
+      id: "other-request",
+      appId: "other",
+      source: { kind: "system", id: "test" },
+      input: input.request.input,
+    });
+    const other = claimAppInboxItem(db, "other-request", "other-handler", 60_000)!;
+    waitAppInboxClaim(db, other, { kind: "task", id: "work/one" });
+    for (let failure = 1; failure <= 3; failure++) {
+      expect(failTask(config).status).toBe("retrying");
+      expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    }
+    // The last failure commits in a different process; no in-memory wake survives it.
+    expect(await worker(path, "fail")).toEqual({ exitCode: 0, stderr: "" });
+    expect(config.resourceStore.readTask("work/one")?.status).toMatchObject({
+      phase: "attention",
+      executionFailures: 4,
+    });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
+    const review = claimAppInboxItem(db, input.request.id, "reviewer", 60_000);
+    expect(review?.item.waitingOn).toEqual({ kind: "task", id: "work/one" });
+    const restarted = openState(path);
+    connections.push(restarted.resourceStore.db);
+    expect(
+      claimObservedAppTask(restarted, {
+        taskId: "work/one",
+        appAgent: "example-owner",
+        handler: "agent:example-owner",
+      }).kind,
+    ).toBe("attention");
+    const tree = restarted.resourceStore.readTaskContext({ taskIds: ["work/one"] });
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
+    expect(tree.taskTriggers?.["work/one"]?.events).toHaveLength(1);
+  });
+
+  it("readies a request attached after exhaustion without authorizing another execution", () => {
+    const { db, config, input } = fixture();
+    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
+    for (let failure = 0; failure < 4; failure++) failTask(config);
+    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(
+      claimObservedAppTask(config, {
+        taskId: "work/one",
+        appAgent: "example-owner",
+        handler: "agent:example-owner",
+      }).kind,
+    ).toBe("attention");
+    expect(
+      config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers?.["work/one"]?.events,
+    ).toHaveLength(2);
+  });
+
+  it.each(["retry", "revise"])("does not return exhausted attention after an authorized %s", (operation) => {
+    const { db, config, input } = fixture();
+    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
+    for (let failure = 0; failure < 4; failure++) failTask(config);
+    const task = config.resourceStore.readTask("work/one")!;
+    if (operation === "retry") {
+      retryFailedAppTask(config, {
+        appId: "example",
+        taskId: "work/one",
+        expectedGeneration: task.metadata.generation,
+        expectedResourceVersion: task.metadata.resourceVersion,
+      });
+    } else {
+      const attachment = testAttachment();
+      if (attachment.kind !== "desired") throw new Error("fixture");
+      observeAppTaskIntent(config, {
+        appAgent: config.agent,
+        intent: { ...attachment.intent, outcome: "Finish the revised example" },
+      });
+    }
+    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    finishTask(config);
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+  });
+
+  it("rolls back the final execution failure if its request wake cannot commit", () => {
+    const { db, config, input } = fixture();
+    attachRequestToTask(config, input);
+    for (let failure = 0; failure < 3; failure++) failTask(config);
+    const claim = claimObservedAppTask(config, {
+      taskId: "work/one",
+      appAgent: "example-owner",
+      handler: "agent:example-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    db.exec(
+      "CREATE TRIGGER fail_wake BEFORE UPDATE OF available_at ON app_inbox_items WHEN NEW.available_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'wake failure'); END",
+    );
+    expect(() => failAppTaskAttempt(config, claim, "Fixture execution failure")).toThrow("wake failure");
+    expect(config.resourceStore.readTask("work/one")?.status).toMatchObject({ phase: "running", executionFailures: 3 });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    db.exec("DROP TRIGGER fail_wake");
+    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("attention");
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 

@@ -69,6 +69,11 @@ export function isTaskExecutionExhausted(resource: AppTaskResource): boolean {
   return (resource.status.executionFailures ?? 0) >= MAX_TASK_EXECUTION_FAILURES;
 }
 
+/** Exhausted input is retained for an owner decision, not eligible execution. */
+export function isTaskAttentionReadyForReview(resource: AppTaskResource | null, hasPendingInput: boolean): boolean {
+  return resource?.status.phase === "attention" && (!hasPendingInput || isTaskExecutionExhausted(resource));
+}
+
 export type AppTaskAttemptLease = {
   id: string;
   version: number;

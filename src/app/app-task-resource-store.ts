@@ -4,7 +4,7 @@ import { stateTransaction as transaction } from "../lib/db/transaction.js";
 import { wakeAppInboxItemsWaitingOnApp } from "./app-inbox-store.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { isTaskExecutionExhausted } from "./app-task-state.js";
+import { isTaskAttentionReadyForReview, isTaskExecutionExhausted } from "./app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -1382,10 +1382,10 @@ export class AppTaskResourceStore {
       const reviewable = new Set(mutation.deleteTaskIds ?? []);
       for (const write of mutation.tasks ?? []) {
         if (
-          !write.trigger &&
-          (write.resource.status.phase === "attention" ||
-            (write.resource.status.phase === "converged" &&
-              write.resource.status.observedGeneration === write.resource.metadata.generation))
+          isTaskAttentionReadyForReview(write.resource, Boolean(write.trigger)) ||
+          (!write.trigger &&
+            write.resource.status.phase === "converged" &&
+            write.resource.status.observedGeneration === write.resource.metadata.generation)
         ) {
           reviewable.add(write.resource.metadata.id);
         }

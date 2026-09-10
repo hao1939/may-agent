@@ -380,6 +380,13 @@ also recognizes the old target-qualified admission keys when admission committed
 before a crashed Host stored the wait. It reuses that accepted identity without
 replaying input or rewriting admission history.
 
+Attachment and settlement share the attention-readiness rule in
+`app-task-state.ts`. Exhausted execution retains input but cannot run again
+without an explicit retry or revision; its linked request is therefore ready
+for review even with retained input. Ordinary attention with newly pending
+input still waits for fresh execution. This wake reports the need for a
+decision; it neither authorizes another attempt nor proves owner follow-through.
+
 `app-inbox-runtime.ts` still coordinates routes, request scheduling,
 Conversation notifications, schedules, observers, and reload. It is the
 integration point, not a new public API. Broad Task-intent admission runs in

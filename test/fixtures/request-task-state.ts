@@ -1,7 +1,12 @@
 import type { AppTaskAttachment } from "@may-agent/sdk";
 import { openDatabase } from "../../src/lib/db.js";
 import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
-import { appTaskContext, claimObservedAppTask, completeAppTask } from "../../src/app/app-task-reconciler.js";
+import {
+  appTaskContext,
+  claimObservedAppTask,
+  completeAppTask,
+  failAppTaskAttempt,
+} from "../../src/app/app-task-reconciler.js";
 import { getAppInboxItem } from "../../src/app/app-inbox-store.js";
 import { admitTaskRequest, attachRequestToTask } from "../../src/app/core/state/requests.js";
 
@@ -32,12 +37,19 @@ export function finishTask(config: ReturnType<typeof openState>, taskId = "work/
   if (result.status !== "applied") throw new Error(`Unexpected result: ${result.status}`);
 }
 
+export function failTask(config: ReturnType<typeof openState>, taskId = "work/one") {
+  const claim = claimObservedAppTask(config, { taskId, appAgent: "example-owner", handler: "agent:example-owner" });
+  if (claim.kind !== "claimed") throw new Error(`Expected Task claim, got ${claim.kind}`);
+  return failAppTaskAttempt(config, claim, "Fixture execution failure");
+}
+
 if (import.meta.main) {
   const [path, action, taskId = "work/one"] = process.argv.slice(2);
   const config = openState(path!);
   const db = config.resourceStore.db;
   try {
     if (action === "complete") finishTask(config, taskId);
+    else if (action === "fail") failTask(config, taskId);
     else {
       const item = getAppInboxItem(db, "request-one");
       if (!item?.lease) throw new Error("Request is no longer owned");

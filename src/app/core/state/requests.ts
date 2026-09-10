@@ -10,6 +10,7 @@ import {
   type AppTaskObservationResult,
 } from "../../app-task-reconciler.js";
 import type { AppTaskContext } from "../../app-task-store.js";
+import { isTaskAttentionReadyForReview } from "../../app-task-state.js";
 import { linkConversationTopicTask } from "../../conversations/store.js";
 
 export type TaskRequestInput = {
@@ -135,10 +136,10 @@ export function attachRequestToTask(
       throw new Error("claim is stale");
     }
     if (current.topicId) linkConversationTopicTask(db, current.topicId, input.appId, observation.taskId, now);
+    const hasPendingInput = Boolean(readAppTaskTrigger(config, observation.taskId));
     if (
-      !readAppTaskTrigger(config, observation.taskId) &&
-      (isAppTaskConverged(config, observation.taskId, observation.generation) ||
-        config.resourceStore.readTask(observation.taskId)?.status.phase === "attention")
+      isTaskAttentionReadyForReview(config.resourceStore.readTask(observation.taskId), hasPendingInput) ||
+      (!hasPendingInput && isAppTaskConverged(config, observation.taskId, observation.generation))
     ) {
       wakeAppInboxItem(db, current.id, now);
     }
