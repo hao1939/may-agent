@@ -7,7 +7,7 @@ work; events trigger review and are not work queues to replay manually.
 
 Restart the daemon normally. Startup:
 
-1. loads and validates every `app.ts` into one immutable registry snapshot;
+1. loads and validates enabled Apps' `app.ts` files into one immutable registry snapshot;
 2. prepares input routes and the task controller from that same snapshot;
 3. republishes the generation only after every consumer accepts it;
 4. opens the human interfaces and App input handler;
@@ -21,6 +21,27 @@ Restart the daemon normally. Startup:
 
 Do not recreate requests, task ticks, or Condition events merely because the
 process restarted.
+
+## Disable an App
+
+Place an empty `.disabled` file directly in `projects/<name>.app/`, then restart.
+Remove the file and restart to enable the App again.
+No additional configuration or command is needed.
+
+The marker skips the App before importing its code, including its App-local
+agents. Its routes, schedules, observers and Task controller are not installed.
+Existing Tasks and history are retained; disabling is not cancellation or
+deletion. Global agents remain independent.
+
+The marker belongs to the local installation, not a versioned App code
+snapshot; keep it out of Git. There is no filesystem watcher: changes take
+effect on restart or a successful `/reload`. Reload still rejects removing an
+App with unfinished Tasks, requests or admission commands and keeps the prior
+generation; use restart to leave that work saved but inactive. This marker
+does not add a hot-stop mechanism.
+
+**Availability:** Implemented on `feat/app-disable-marker`, not in `v0.2.0`.
+Use a Host build containing the change before relying on the marker.
 
 ## Failed App reload
 

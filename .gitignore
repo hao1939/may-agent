@@ -113,6 +113,7 @@ __pycache__/
 
 # Project app runtime scratch.
 /projects/*.app/.state/
+/projects/*.app/.disabled
 
 # Generated/copied top-level artifacts - not source-of-truth
 /ui/
