@@ -296,6 +296,7 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     hostCapacity,
     maxConcurrentRequests: configuredHostConcurrency,
+    conversationAppId: "may",
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     resolveRequest: createConversationAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),

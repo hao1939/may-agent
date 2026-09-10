@@ -6,6 +6,11 @@ import { createAppScheduleProducer } from "./adapters/producers/app-schedules.js
 import { OwnedTimer } from "./core/scheduling/timer.js";
 import { createHash } from "node:crypto";
 import {
+  isConversationFollowUpTask,
+  oneItemPerConversationTask,
+  publishConversationTaskWaiting,
+} from "./conversations/task-status.js";
+import {
   matchesEventSelector,
   type AppConversationRequestUpdate,
   type AppDependencyObservation,
@@ -31,7 +36,6 @@ import {
 import {
   listAppInboxItemsWaitingOnTask,
   listHumanAppInboxItemsWaitingOnAppRequest,
-  listHumanAppInboxItemsWaitingOnTask,
   type AppInboxItem,
 } from "./app-inbox-store.js";
 import {
@@ -129,6 +133,8 @@ export type StartAppInboxRuntimeOptions = {
   hostCapacity: HostCapacity;
   /** Maximum request decisions admitted to shared Host capacity at once. */
   maxConcurrentRequests?: number;
+  /** Composition selects the conversational App; omission leaves all input in the background lane. */
+  conversationAppId?: string;
   /** Recovery cadence, including retrying Apps whose input dispatch failed. */
   scanIntervalMs?: number;
   /** Select timed App publications only; admission, observers and recovery remain active. */
@@ -393,6 +399,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       reason?: string;
     },
   ): void => {
+    // Live updates and recovery share this boundary. The owning Conversation
+    // must not project its follow-up Task back to itself; other Apps may watch it.
+    if (isConversationFollowUpTask(link.appId, taskRef.appId, taskRef.taskId)) return;
     const topic = readConversationTopic(options.db, link.appId, link.conversationId, link.topicId);
     const conversation = readAppConversationResource(options.db, link.appId, link.conversationId, {
       limit: 20,
@@ -425,20 +434,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       },
       idempotencyKey: change.idempotencyKey,
     } as unknown as AgentEvent);
-  };
-  const oneItemPerConversationTask = (items: AppInboxItem[]): AppInboxItem[] => {
-    const selected = new Map<string, AppInboxItem>();
-    for (const item of items) {
-      if (!item.conversationId || item.waitingOn?.kind !== "task") continue;
-      const key = `${item.conversationId}\0${item.appId}\0${item.waitingOn.id}`;
-      // Prefer the request that first linked this Conversation to the Task.
-      // Later focused human turns steer the same Task; they are not additional
-      // owners of its public output stream. Oldest-first order is the fallback
-      // for Tasks that predate this Conversation.
-      const current = selected.get(key);
-      if (!current || (current.targetTaskId && !item.targetTaskId)) selected.set(key, item);
-    }
-    return [...selected.values()];
   };
   const host = createConversationInbox({
     db: options.db,
@@ -761,11 +756,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const activeCount = () => [...active.values()].reduce((total, count) => total + count, 0);
     if (closed) return;
     const totalActive = activeCount();
-    const foregroundActive = active.get("may") ?? 0;
+    const foregroundActive = (options.conversationAppId ? active.get(options.conversationAppId) : undefined) ?? 0;
     const backgroundActive = totalActive - foregroundActive;
     const backgroundLimit = maxConcurrentRequests === 1 ? 1 : maxConcurrentRequests - 1;
-    const foregroundIndex = pending.findIndex((appId) => appId === "may");
-    const backgroundIndex = pending.findIndex((appId) => appId !== "may");
+    const foregroundIndex = pending.findIndex((appId) => appId === options.conversationAppId);
+    const backgroundIndex = pending.findIndex((appId) => appId !== options.conversationAppId);
     const nextIndex =
       foregroundIndex >= 0 && totalActive < maxConcurrentRequests
         ? foregroundIndex
@@ -797,7 +792,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         resolve(release);
       };
       const cancelAcquire =
-        appId === "may"
+        appId === options.conversationAppId
           ? options.hostCapacity.acquireForegroundCancellable(acquired)
           : options.hostCapacity.acquireCancellable(acquired);
       capacityWaits.add(cancel);
@@ -1366,7 +1361,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
         const summary = typeof data.summary === "string" ? data.summary.trim() : "";
-        if (appId && taskId && !(appId === "may" && taskId === "conversation/follow-up")) {
+        if (appId && taskId) {
           for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
             emitConversationTaskChanged(
               link,
@@ -1423,35 +1418,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             });
           }
         }
-        if (appId === "may" && taskId && disposition === "waiting") {
-          const statusIdentity = `${data.generation ?? "?"}:${createHash("sha256")
-            .update(`${disposition}\0${summary}`)
-            .digest("hex")
-            .slice(0, 16)}`;
-          for (const item of oneItemPerConversationTask(
-            listHumanAppInboxItemsWaitingOnTask(options.db, appId, taskId),
-          )) {
-            const idempotencyKey = `conversation-task-status:${item.conversationId}:${appId}:${taskId}:${statusIdentity}:${disposition}`;
-            options.bus.emit({
-              type: "conversation.message.created",
-              source: "app-inbox",
-              owner: `app:${appId}`,
-              data: {
-                appId,
-                conversationId: item.conversationId!,
-                author: { kind: "agent", id: "may" },
-                text: summary || "I’m continuing this as a Task and it is waiting for new evidence.",
-                metadata: {
-                  channel: item.channel,
-                  channelTargetId: item.channelTargetId,
-                  channelThreadId: item.channelThreadId,
-                  requestId: item.id,
-                  taskRefs: [{ appId, taskId }],
-                },
-                idempotencyKey,
-              },
-            });
-          }
+        if (appId && taskId && appId === options.conversationAppId && disposition === "waiting") {
+          publishConversationTaskWaiting(options.db, options.bus, {
+            appId,
+            taskId,
+            generation: data.generation,
+            summary,
+          });
         }
       }
       const identity = eventIdentity(event);

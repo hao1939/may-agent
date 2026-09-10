@@ -29,7 +29,7 @@ export class HostCapacity {
     }
   }
 
-  /** Keep one lane available for a human-origin May owner pass. */
+  /** Keep one lane available for the selected foreground App. */
   async runForeground<T>(work: () => Promise<T>): Promise<T> {
     const release = await this.acquireForeground();
     try {
