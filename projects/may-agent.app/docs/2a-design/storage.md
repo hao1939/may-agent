@@ -75,6 +75,17 @@ explanatory Conversation message in one transaction. The App judges whether
 the accepted ask is fulfilled. Input completion is not fulfillment, and Request
 storage does not copy Task progress or own execution.
 
+The accepted [child-wait retirement](message-lifecycle.md#retained-state-compatibility)
+uses the existing database-upgrade transaction. It marks only unfinished old
+frontend waits as failed input handling and clears their scheduling/lease state,
+fencing old claims. Original wait and session identities and saved decisions
+remain evidence. Completed inputs, child inputs, Task state/results, Topic links
+and accepted Requests remain intact; finishing an obsolete input never closes
+an accepted ask. Reopening the upgraded database does not repeat the transition.
+The source candidate is tracked in the
+[simplification proposal](../proposals/authority-boundary-simplification.md#1-one-durable-delegation-path);
+rollout remains separate.
+
 Small Event bodies remain inline. Large bodies are written to the
 content-addressed store before their event row commits; SQL retains a bounded
 projection and the artifact reference.

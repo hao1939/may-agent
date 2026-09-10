@@ -9,6 +9,9 @@ implemented; seamless current-turn steering remains separate work. Naming and
 storage API consolidation landed in #129 (`0bedd93a`), confirmed September 11. See
 [current implementation and gaps](#current-implementation-and-gaps) for storage
 and the distinction between implementation tests and live validation.
+Conversational child-wait retirement is now accepted; its source candidate is
+tracked in the [simplification proposal](../proposals/authority-boundary-simplification.md#1-one-durable-delegation-path).
+It has not yet merged or been deployed.
 
 ## Mental model
 
@@ -629,9 +632,10 @@ the conversational result, and `modelStepCount` for internal cycles. These
 names and the shared state/handler boundary landed through
 [#129](https://github.com/hao1939/may-agent/pull/129) as `0bedd93a`; the
 [implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
-records the code map and verification. The deprecated `AppRequest` alias and
-retained App-to-App `AppRequestDecision` dependency protocol remain compatibility
-boundaries. Existing execution event names such as `turn_start` and retained
+records the code map and verification. `AppRequest` remains a deprecated input
+context alias. With child-wait retirement, `AppRequestDecision` and
+`appRequestAgentResultSchema` become deprecated aliases of the single
+`ConversationTurnResult` contract; they no longer accept `dependencies`. Existing execution event names such as `turn_start` and retained
 `turnCount` counters describe model steps, not human Conversation Turns.
 
 Use `inboxId` for input correlation, `turnId` when targeting its human execution,
@@ -669,9 +673,18 @@ outcomes. A delayed closure must not overwrite a newer accepted ask.
 The stable supervision identity is `may/conversation/follow-up`. Recovery and
 future migrations preserve Conversation messages, exact Topic/Task links,
 accepted results and audit Events. Changes to supervision semantics revise that
-same Task; they do not create sibling Tasks or silently abandon retained child
-obligations. See [Operations and Recovery](../2b-manual/app-operations-recovery.md)
+same Task; they do not create sibling Tasks or silently discard accepted asks. See [Operations and Recovery](../2b-manual/app-operations-recovery.md)
 for operating procedures.
+
+The retirement upgrade ends unfinished old child waits with `handling.phase:
+failed` and a visible explanation. A separate `failure:<inputId>` message keeps
+that explanation visible alongside an earlier `result:<inputId>` acknowledgment.
+The old input is no longer scheduled. Accepted Requests stay open, and already
+admitted child inputs and Tasks continue independently with their history and
+results intact. A new human turn can review that work and decide what remains.
+This deliberately gives up automatic aggregation by the original turn; it does
+not claim fulfillment or create replacement work. The accepted rule is tracked
+with candidate evidence in the [simplification proposal](../proposals/authority-boundary-simplification.md#1-one-durable-delegation-path).
 
 ## Instructions for the current attempt
 
@@ -688,16 +701,9 @@ Operations procedures belong to its existing tech-lead profile. There is no
 additional role router or prompt registry. Context tests prove available
 guidance, not that the model followed it.
 
-For a new direct-admission turn, the model's response schema excludes frontend
-child-request dependencies. The installed input catalog includes May's own
-durable goal contract, but excludes its conversational input kinds to avoid
-routing a turn back into itself. Exact feedback and human cancellation retain
-their existing validation and authority rules.
-
-A retained request with its own child work still receives the compatibility
-schema, child-result prompt, and deputy tool profile, even after its App adopts
-direct admission. New turns reuse the bounded full App tool profile, not a new
-conversation-specific tool list or execution engine.
-Another Topic's open work or a focused Task is only context; it does not select
-that compatibility path. This narrows new model attempts without deleting the
-public SDK, changing retained requests, or replacing their recovery mechanism.
+Every conversational turn uses the same result schema: answer, authorized Task
+control, or direct `followUp`. It cannot return child-request dependencies.
+The installed input catalog includes May's own durable goal contract and excludes
+its conversational input kinds. Exact feedback and human cancellation retain
+their validation and authority rules. Frontends reuse the bounded full App tool
+profile; there is no separate child-result prompt or deputy execution mode.

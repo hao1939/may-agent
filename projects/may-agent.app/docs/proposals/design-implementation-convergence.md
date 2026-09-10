@@ -19,7 +19,7 @@ of the remaining contract and its acceptance criteria.
 | External capability scope and complexity | [External component plan](external-components-simplification.md#conditional-follow-ups): Scout credential fix landed on workspace main; Host #132/#133 merged as `23968acd`/`39a23f22`; further features/migrations require demonstrated value |
 | System path reduction and readable code ownership | [System simplification review](authority-boundary-simplification.md#design-choices-before-code-moves): compare Task-only conversational delegation, evaluation UI reduction and affordable redo; selected import/navigation and foreground-App changes are in review; larger deletions remain conditional |
 | Remaining central domain metrics | The migration rule below and [Metrics](../2a-design/metrics.md) |
-| Retained conversational child waits, Evaluation/HTTP policy, behavioral comparison and delivery proof | [Authority proposal](authority-boundary-simplification.md#remaining-work): separate bounded work, with its existing scope limits |
+| Accepted child-wait retirement, Evaluation/HTTP policy, behavioral comparison and delivery proof | [Authority proposal](authority-boundary-simplification.md#remaining-work): separate bounded work, with its existing scope limits |
 
 Input containment and Esc/Stop bindings merged in #121. Dispatch-failure pacing
 and cancellation of pending capacity waits merged in #127 (`743aa5de`). These

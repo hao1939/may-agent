@@ -391,7 +391,7 @@ core/state/conversation-requests.ts  accepted asks, revisions and scoped paging
 core/state/conversation-turns.ts     decision + Topic + Request acceptance
 core/state/conversation-outcomes.ts Task outcome + explanation + Request updates
 conversations/context.ts       bounded conversational context selection
-conversations/turn-handler.ts  answer/effect handling; retained child waits explicit
+conversations/turn-handler.ts  answer/effect handling; child-wait retirement is a later slice
 conversations/turn-agent.ts    selected agent, tools and execution contract
 composition/conversation-inbox.ts   default capability wiring
 ```

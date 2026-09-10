@@ -48,7 +48,7 @@ Neither source moves nor these proposals establish measured bug reductions.
 
 | Choice | Complexity potentially removed | Accepted cost and next decision |
 | --- | --- | --- |
-| One durable delegation path: Task handoff | Conversational child-request creation, waiting, result aggregation, reconsideration and their recovery combinations | Long work is linked to a Task and reported in a later turn; retire the old path only after caller and retained-obligation checks |
+| One durable delegation path: Task handoff | Conversational child-request creation, waiting, result aggregation, reconsideration and their recovery combinations | Long work is linked to a Task and reported in a later turn; retire old frontend waits with a visible failure, preserving accepted asks and admitted work |
 | Evaluation UI keeps supported reads; unsupported generation/editing is removed | HTTP-owned evaluation prompts and feedback writes, plus controls and tests for those operations | Lose inline/line-specific convenience; establish whether existing Conversation/App operations satisfy actual review needs |
 | Cheap interrupted work starts a fresh attempt from current evidence | Eligible workflow step-reuse/session-resume paths and their matching/fallback cases | Extra compute and delay; examine one real workflow before choosing any deletion |
 
@@ -68,65 +68,57 @@ must commit before claiming the handoff succeeded. Failure to admit leaves an
 honest failure and the accepted ask open. Long work can still involve multiple
 Apps through existing Task dependencies and ordinary bounded calls.
 
-The alternative path creates child inbox requests, waits for their results, then
-reconsiders the parent input. #129 separates this code and rejects that protocol
-for new direct Task handoffs, but retains compatibility handling. Its
-`conversations/turn-handler.ts` still creates children and joins their waits.
-The source declaration search found May as the current App declaring agent
-request handling; that does not prove no retained caller or obligation needs it.
+**Decision accepted September 11:** Remove the conversational child-wait
+protocol. The user accepts losing automatic aggregation by the original turn
+in exchange for one simpler conversational path. Keep direct Task handoff and
+Task-to-Task/App dependencies.
 
-The retained protocol means **parent inbox item waiting for child inbox results**.
-Here “request” in names such as `AppRequestDecision` means an input-handling row,
-not the separate accepted human Request resource. Both protocols below already
-use real Tasks for the delegated work.
+The old protocol makes an inbox row another coordinator:
 
 ```text
-retained protocol:
-  human input -> parent inbox P -> agent returns dependencies
-    -> child inbox C1 -> Task T1
-    -> child inbox C2 -> Task T2
-  P waits durably on children:P; no model call or capacity slot stays occupied
-  child completion -> wake P -> read child results -> invoke agent again
-    -> answer and complete P, or retain/add dependencies and wait again
+old:    human input -> parent inbox P -> agent returns dependencies
+          -> child inbox C1 -> Task T1
+          -> child inbox C2 -> Task T2
+        P waits on children:P, then invokes the agent again to review results
 
-current direct handoff:
-  human input -> agent explains and admits the responsible Task -> complete input P
-  accepted Request stays open when an answer is still owed
-  linked Task facts -> existing conversational follow-through -> later explanation
+kept:   human input -> agent answers or admits one responsible Task -> finish P
+        accepted Request stays open when an answer is still owed
+        linked Task facts -> later conversation or ordinary follow-up Task
 ```
 
-The old path can send an immediate acknowledgment, and does not inherently
-prevent another human message. Its cost is the extra coordinating lifecycle:
-parent/child correlation, stable child IDs, joined waits, result collection,
-re-entry, duplicate-work checks and restart handling. The newer path still needs
-Task waits, accepted-ask tracking and follow-through; it puts continuation on
-ordinary Tasks rather than keeping the original inbox input as the coordinator.
-May's existing supervision Task can provide that later explanation.
+The old wait releases model execution and capacity, but still needs child IDs,
+joined waits, result collection, re-entry, duplicate-work checks and restart
+handling. Direct handoff puts ongoing execution on the Task that owns it.
+Discussion stays interactive, and one Task can coordinate work across Apps.
 
-Current source makes the distinction explicit:
+**Retained state:** During database upgrade, mark unfinished conversational
+child waits as failed input handling with a clear explanation. Cover dormant
+aggregate waits, exact App waits, reclaimed parents with children, and saved
+child-delegation decisions. Clear scheduling and lease ownership, fence stale
+claims, and retain the original wait/session identity and saved decision as
+evidence. Do not resume the parent agent or create replacement work.
 
-- `conversations/turn-handler.ts`: `usesDirectTaskHandoff()` selects the schema;
-  the dependency branch creates stable child IDs and records `children:<id>`.
-- `core/inbox/input-context.ts`: `readInputContext()` collects current child
-  observations before a later invocation of the handler.
-- `core/state/inbox.ts`: `completeInboxInput()` wakes the parent in the same
-  transaction that commits the child result.
-- `app-inbox-host.test.ts`: the retained delegation test runs the conversation
-  agent before delegation and again after the worker result, then completes P.
+Keep completed inputs, accepted Requests, child inputs, Tasks, accepted results,
+Topic/Task links and history. Already admitted child work continues independently;
+the migration does not cancel it or close the accepted ask. Expose the failure
+alongside any earlier acknowledgment. A new human turn can inspect the preserved
+work and decide whether to continue, revise scope, or close the ask. Automatic
+aggregation by the old parent is intentionally given up. No drain service or
+second compatibility executor remains.
 
-“Old” identifies a retained protocol, not proven dead code. New direct May
-handoffs use `ConversationTurnResult`, whose schema excludes `dependencies`.
-Inputs with existing child dependencies, and older App request declarations,
-can still select the broader `AppRequestDecision` protocol. Even its
-reconsideration helpers are not all removable: direct handoff also rechecks a
-Task that became terminal while the agent was deciding.
+**Source change:** Use `ConversationTurnResult` and one result schema for every
+frontend declaration. Remove conversational `dependencies`, child-result context,
+creation/join/wake code, the extra prompt/tool-profile branch, and their obsolete
+tests. Deprecated result names remain aliases of the same restricted contract;
+child-specific SDK types are removed. Existing Apps using those removed fields
+must adopt `followUp` before upgrading. The current `may.app` declaration already
+uses direct handoff, and the scoped App source search found no consumers of the
+removed types or context fields. This is source evidence, not an installed-state
+or third-party compatibility guarantee.
 
-**Recommendation:** With #129 merged, audit the remaining callers and
-make Task handoff the sole supported new conversational delegation path. Then
-drain or explicitly migrate retained child waits before deleting their execution
-path. Keep input receipts, accepted Requests, Topic links, Task-to-Task waits and
-historical reads. A temporary drain path needs an explicit removal condition;
-do not replace it with another general compatibility framework.
+Keep the direct handoff's bounded recheck when a selected Task becomes terminal
+while the agent is deciding. Accepted Request revision fences, exact Task
+controls and Task-to-Task dependencies also remain.
 
 **Proof:** A long handoff leaves chat responsive; failed admission cannot claim
 delegation; duplicate/restarted handoff retains the same Task; an interrupted
@@ -251,7 +243,7 @@ its size alone is not a reason to invent another interface.
 Each component gets a short reading map: responsibility, entry point, important
 state changes and owning tests. Update the central source map and canonical
 source links with each move. Directory cleanup must not silently alter storage
-formats, input/result schemas, recovery behavior or the retained child protocol.
+formats, input/result schemas, recovery behavior. Feature retirement has its own separate diff.
 
 ## Limits that keep the system simple
 
@@ -275,9 +267,9 @@ formats, input/result schemas, recovery behavior or the retained child protocol.
 3. Group concrete executors and producers in a separate slice. Then extract
    existing HTTP route families where that makes the server readable. Preserve
    their behavior; evaluation feature deletion remains a separate decision.
-4. Review child-wait retirement and affordable workflow redo separately, using
-   the caller, retained-obligation and cost evidence above. Neither blocks
-   directory organization.
+4. Implement the accepted child-wait retirement in a separate behavioral PR.
+   Affordable workflow redo remains a separate review. Neither blocks directory
+   organization.
 
 For every source slice, run the existing affected tests and full Host CI,
 including subprocess and browser coverage where paths change. Do not add a
@@ -302,13 +294,20 @@ accepted utilization cost that avoids another capacity mode. This does not renam
 an installed App or change turn-handler declarations. Existing cancellation,
 Task attachment, accepted Requests and retained child waits remain in place.
 
-The three larger reductions were audited but not selected for deletion:
+The accepted retirement is implemented in [Host #140](https://github.com/hao1939/may-agent/pull/140),
+candidate `c9c43eb4` based on `67162210`. It removes the frontend child protocol
+and upgrades retained parents to visible failed handling while preserving asks
+and admitted work. Frozen install and full local CI passed: 2,676 tests passed,
+three installation-only checks skipped, zero failures; browser coverage ran.
+Two new storage regressions cover file-backed restart, exact/aggregate/reclaimed/
+saved waits, stale claims, unchanged Task evidence and continued Task execution.
+The canonical design check passed against that SDK. This is source/fixture
+evidence; human review and deployment remain outstanding. Directory moves are
+not part of #140.
 
-- **Child waits:** Current declarations favor direct Task handoff, but the
-  handler still supports retained child creation/join/reconsideration and a
-  dated audit found open obligations. Source searches cannot establish that
-  those obligations have drained. Remove only after an authorized retained-state
-  decision; no new compatibility framework is needed.
+Child-wait removal is now accepted as a separate source change. The earlier
+#138/#139 scope above did not include it. The remaining reductions are:
+
 - **Evaluation UI:** The shipped session page is a caller of both generation and
   comment routes. Comments currently append usable line-attributed evidence;
   generation drops requested line/instructions downstream. A replacement for
@@ -320,16 +319,16 @@ The three larger reductions were audited but not selected for deletion:
   no concrete workload establishes a worthwhile saving from deleting reuse.
   Keep existing paths until redo cost and effect safety have been measured.
 
-These are explicit deferrals under the proposal's value/cost rule, not evidence
-that every optional reduction has been implemented. The directory milestone
-above is newly prioritized; its source moves have not yet been implemented.
-Task algorithm rewrites and feature deletions remain separate decisions.
+Evaluation and workflow redo remain explicit deferrals under the value/cost
+rule. The directory milestone above is newly prioritized; its source moves
+have not yet been implemented.
+Task algorithm rewrites and the remaining feature reductions require separate decisions.
 
 ## Remaining work
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Retire conversational child-request waiting where redundant | Follow [one durable delegation path](#1-one-durable-delegation-path); a dated audit found retained open obligations, so a source search alone cannot justify their deletion. |
+| Retire conversational child waits | Accepted; source candidate removes the protocol and fails retained parents visibly. Follow [one durable delegation path](#1-one-durable-delegation-path). Human review and deployment remain separate. |
 | Reorganize directories for code review | Apply the [layout map](#directory-organization-for-code-review) and [bounded milestone](#recommended-next-milestone), preserving behavior and moving tests with their owners. |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
