@@ -258,6 +258,16 @@ rejected promise. Failure reporting is best-effort: throwing/rejecting reporters
 fall back to process diagnostics, and a pending reporter does not hold capacity.
 No new event family or diagnostic service is required.
 
+`app-task-reconciler.ts` owns the durable execution-retry allowance at the shared
+claim boundary. The existing Task status stores one consecutive-failure count:
+initial execution plus three retries, then attention with retained input and
+an existing parent/dependency notification. Timer retries, recovery scans and
+new processes all obey that same count. Successful progress/waits, a changed
+execution generation, or explicit retry/unblock clear it; ordinary wakes and
+stale-result fencing do not. Long-running successful work has no attempt cap.
+Execution failures are recorded as failed attempts, distinct from stale results
+and unavailable handlers. No SDK retry settings, new table or retry service.
+
 `app-task-runtime.ts` coordinates the same Task lifecycle across ordinary
 dispatch and startup. `consumePersistedTerminalAgentResult` reuses normal
 transactional admission; `settlePersistedTerminalAgentResult` handles its shared
@@ -279,8 +289,8 @@ attempt or invent another completion policy.
 
 The [whole-lifecycle proposal](../../../may-agent.app/docs/proposals/task-controller-pattern.md)
 connects existing App input mapping, bounded attempts, exact waits and checked
-results. Its retry-across-restart and owner-decision proof are separate remaining
-work, not guarantees supplied by these settlement helpers. The lifecycle cases
+results. The reconciler above owns the retry-across-restart bound;
+end-to-end owner-decision proof remains separate work. The lifecycle cases
 in `app-task-runtime.test.ts` cover continued input, revised acceptance,
 recovered waits/actions and required workflow verification.
 

@@ -66,6 +66,7 @@ import {
   type DeliveryResult,
   type EventBus,
 } from "./core/events/bus.js";
+import { MAX_TASK_EXECUTION_FAILURES } from "./app-task-state.js";
 import {
   acknowledgeAppTaskRecoveryAttention,
   assertAppTaskEffectFresh,
@@ -76,6 +77,7 @@ import {
   cancelAppTask,
   completeAppTask,
   deferAppTask,
+  failAppTaskAttempt,
   listHandlerExecutionFailedAppTasks,
   markAppTaskAttention,
   pendingAppTaskRecoveryAttention,
@@ -1494,7 +1496,7 @@ async function reconcileTask(input: {
         ...skip,
       });
       if (primary.kind === "attention") emitAppTaskDependencyChange(opts, descriptor, input.taskId, "attention");
-      return [];
+      return primary.kind === "attention" && primary.parentTaskId ? [primary.parentTaskId] : [];
     }
     activeClaim = primary;
     timing.attemptId = primary.attemptId;
@@ -2002,17 +2004,20 @@ async function reconcileTask(input: {
       !agentHandoff &&
       !primaryHandlerResult.resultRejected
     ) {
-      const summary = `${primaryHandlerResult.summary}; retrying the same Task`;
-      const retry = releaseStaleAppTaskResult(config, primary, summary);
-      if (retry.status !== "released") return [];
+      const retry = persistResult(() => failAppTaskAttempt(config, primary, primaryHandlerResult.summary));
+      if (retry.status === "superseded") return [];
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: "retrying",
+        disposition: retry.status,
         input: intent.input ?? {},
-        summary: primaryHandlerResult.summary,
+        summary: retry.summary,
       });
+      if (retry.status === "attention") {
+        emitAppTaskDependencyChange(opts, descriptor, intent.id, "attention");
+        return retry.parentTaskId ? [retry.parentTaskId] : [];
+      }
       throw new Error(primaryHandlerResult.summary);
     }
     let attention: ReturnType<typeof markAppTaskAttention>;
@@ -2107,8 +2112,8 @@ async function reconcileTask(input: {
         error instanceof Error ? error.message : String(error)
       }`;
       try {
-        const retry = persistResult(() => releaseStaleAppTaskResult(failedConfig, failedClaim, summary));
-        if (retry.status === "released") {
+        const retry = persistResult(() => failAppTaskAttempt(failedConfig, failedClaim, summary));
+        if (retry.status !== "superseded") {
           emitTaskReconciliationEvent(
             opts,
             descriptor,
@@ -2119,10 +2124,14 @@ async function reconcileTask(input: {
               generation: failedClaim.generation,
               attemptId: failedClaim.attemptId,
               handler: failedClaim.handler,
-              disposition: "retrying",
-              summary,
+              disposition: retry.status,
+              summary: retry.summary,
             },
           );
+          if (retry.status === "attention") {
+            emitAppTaskDependencyChange(opts, descriptor, failedClaim.taskId, "attention");
+            return retry.parentTaskId ? [retry.parentTaskId] : [];
+          }
         }
       } catch {
         // Preserve the original failure. Recovery still fences attempts whose
@@ -2575,7 +2584,7 @@ function installConventionTaskControllers(
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
       startAfter: opts.startAfter,
-      maxRetries: 3,
+      maxRetries: MAX_TASK_EXECUTION_FAILURES - 1,
       reconcile: async (taskId, dispatch) => {
         const activeDescriptor = binding.descriptor;
         const activeOpts = binding.opts;

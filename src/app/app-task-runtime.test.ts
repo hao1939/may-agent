@@ -4138,6 +4138,259 @@ describe("canonical App task runtime", () => {
     );
   });
 
+  it("stops controller retries durably while recovery and unrelated work remain available", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      executors: {
+        broken: async () => {
+          calls += 1;
+          throw new Error("fixture execution failed");
+        },
+        healthy: async () => ({
+          state: "converged",
+          summary: "Verified independent work",
+          evidence: ["test:verified"],
+        }),
+      },
+      appRegistrySnapshot: {
+        id: "boot:controller-retry",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const attach = (executor: string) =>
+      attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        idempotencyKey: `attach:${executor}`,
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: `work/${executor}`,
+            parentId: "operations",
+            outcome: `Complete ${executor}`,
+            acceptance: ["Verified result"],
+            mode: "achieve",
+            executor,
+          },
+        },
+        request: {
+          id: `request-${executor}`,
+          source: { kind: "human", id: "operator" },
+          input: { kind: "sample", data: {} },
+        },
+      });
+    await attach("broken");
+    const deadline = Date.now() + 4_000;
+    while (config.resourceStore.readTask("work/broken")?.status.phase !== "attention" && Date.now() < deadline) {
+      await Bun.sleep(5);
+    }
+    expect(calls).toBe(4);
+    expect(config.resourceStore.readTask("work/broken")?.status).toMatchObject({
+      phase: "attention",
+      executionFailures: 4,
+    });
+    for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
+    await attach("healthy");
+    const healthyDeadline = Date.now() + 1_000;
+    while (!readTaskSnapshot(config).receipts?.["work/healthy"] && Date.now() < healthyDeadline) await Bun.sleep(5);
+    expect(readTaskSnapshot(config).receipts?.["work/healthy"]?.summary).toBe("Verified independent work");
+    expect(calls).toBe(4);
+    expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
+  });
+
+  it("counts failed executions once when another connection admits input during failure persistence", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        broken: async () => {
+          calls++;
+          throw new Error("fixture execution failed");
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:failure-contention", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/failure-contention";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Bound genuine failures despite new input",
+        acceptance: ["Failures remain counted"], mode: "achieve", executor: "broken" },
+      trigger: { type: "sample.work", eventId: 100 },
+    });
+    const db = openDatabase(join(f.root, "state", "may.db"));
+    const concurrent = appTaskContext({
+      appDir: f.appDir, projectDir: f.appDir, agent: "sample-owner", maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.activeFromDb(db, "sample")!,
+    });
+    const commit = AppTaskResourceStore.prototype.commit;
+    const racedAttempts = new Set<string>();
+    let saves = 0;
+    AppTaskResourceStore.prototype.commit = function (mutation) {
+      const failure = mutation.attempts?.find((attempt) =>
+        attempt.taskId === taskId && attempt.state === "failed" && attempt.failureReason === "HandlerExecutionFailed");
+      if (failure) {
+        saves++;
+        if (!racedAttempts.has(failure.metadata.id)) {
+          racedAttempts.add(failure.metadata.id);
+          recordAppTaskTrigger(concurrent, taskId, { type: "sample.changed", eventId: 100 + racedAttempts.size });
+        }
+      }
+      return commit.call(this, mutation);
+    };
+    try {
+      for (let index = 0; index < 8; index++) {
+        await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        }).catch(() => {});
+      }
+    } finally {
+      AppTaskResourceStore.prototype.commit = commit;
+      db.close();
+    }
+    expect(calls).toBe(4);
+    expect(racedAttempts.size).toBe(4);
+    expect(saves).toBe(8); // Each failed transaction is retried, not the executor.
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "attention", executionFailures: 4 });
+    const tree = readTaskSnapshot(config);
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
+    for (const attempt of Object.values(tree.attempts ?? {})) {
+      expect(attempt).toMatchObject({ state: "failed", failureReason: "HandlerExecutionFailed" });
+    }
+    expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId).sort()).toEqual([100, 101, 102, 103, 104]);
+  });
+
+  it("bounds failed executions across independent wakes and a fresh process", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        broken: async () => {
+          calls += 1;
+          throw new Error("fixture execution failed");
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:durable-retry",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/bounded-retry";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Finish despite transient failures",
+        acceptance: ["The result is verified"],
+        mode: "achieve",
+        executor: "broken",
+      },
+      trigger: { type: "sample.work", eventId: 100, data: { itemId: "bounded-retry" } },
+    });
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    // Each call is an independent wake, not a controller's own retry timer.
+    for (let index = 0; index < 8; index += 1) await run().catch(() => {});
+    expect(calls).toBe(4);
+    const stopped = config.resourceStore.readTask(taskId)!;
+    expect(stopped.status.phase).toBe("attention");
+    expect(stopped.status.summary).toContain("Explicitly retry");
+    expect(readTaskSnapshot(config).taskTriggers?.[taskId]?.events).toEqual([
+      expect.objectContaining({ event: expect.objectContaining({ eventId: 100 }) }),
+    ]);
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(4);
+
+    // A new diagnostic/event ID is not authorization for more failed execution.
+    recordAppTaskTrigger(config, taskId, { type: "sample.diagnostic", eventId: 101, data: {} });
+    expect(
+      config.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    await run();
+    expect(calls).toBe(4);
+    const stoppedVersion = config.resourceStore.readTask(taskId)!.metadata.resourceVersion;
+    await run();
+    expect(
+      config.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    expect(config.resourceStore.readTask(taskId)!.metadata.resourceVersion).toBe(stoppedVersion);
+
+    await closeInstalledAppTaskRuntimes(bus);
+    closeDb(join(f.root, "state"));
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [
+        "--eval",
+        `
+      import { getDb, closeDb } from ${JSON.stringify(new URL("../lib/requests.ts", import.meta.url).pathname)};
+      import { AppTaskResourceStore } from ${JSON.stringify(new URL("./app-task-resource-store.ts", import.meta.url).pathname)};
+      import { appTaskContext, claimObservedAppTask } from ${JSON.stringify(new URL("./app-task-reconciler.ts", import.meta.url).pathname)};
+      const persistDir = ${JSON.stringify(join(f.root, "state"))};
+      const resourceStore = AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample");
+      const config = appTaskContext({ appDir: ${JSON.stringify(f.appDir)}, projectDir: ${JSON.stringify(f.appDir)}, agent: "sample-owner", maxConcurrent: 1, resourceStore });
+      const result = claimObservedAppTask(config, { taskId: ${JSON.stringify(taskId)}, appAgent: "sample-owner", handler: "auto", reason: "attempt-recovery" });
+      console.log(JSON.stringify({ kind: result.kind, attempts: Object.keys(resourceStore.readSnapshot().attempts).length }));
+      closeDb(persistDir);
+    `,
+      ],
+      { timeout: 10_000 },
+    );
+    expect(JSON.parse(stdout)).toEqual({ kind: "attention", attempts: 4 });
+
+    const restarted = loadedTaskConfig(f);
+    expect(
+      restarted.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    const resource = restarted.resourceStore.readTask(taskId)!;
+    retryFailedAppTask(restarted, {
+      appId: "sample",
+      taskId,
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion,
+    });
+    expect(
+      restarted.resourceStore
+        .readTaskContext({ taskIds: [taskId] })
+        .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
+    ).toEqual([100, 101]);
+    const retry = claimObservedAppTask(restarted, { taskId, appAgent: "sample-owner", handler: "auto" });
+    expect(retry.kind).toBe("claimed");
+    if (retry.kind !== "claimed") throw new Error("expected authorized retry");
+    expect(retry.generation).toBe(1);
+    expect(retry.events.map((entry) => entry.event.eventId)).toEqual([100, 101]);
+    expect(completeAppTask(restarted, retry, { summary: "Repair verified", evidence: ["test:verified"] }).status).toBe(
+      "applied",
+    );
+  });
+
   it("retries the same Task after an executor process failure", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4202,7 +4455,7 @@ describe("canonical App task runtime", () => {
     });
     expect(Object.values(tree.attempts ?? {}).filter((attempt) => attempt.taskId === "work/resume-codex-goal")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ state: "interrupted" }),
+        expect.objectContaining({ state: "failed", failureReason: "HandlerExecutionFailed" }),
         expect.objectContaining({ state: "completed" }),
       ]),
     );
@@ -4941,6 +5194,7 @@ describe("canonical App task runtime", () => {
           expect(f.config.resourceStore.readReceipt("owner")).toBeNull();
           expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
           expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
+          expect(f.config.resourceStore.readTask("owner")?.status.executionFailures ?? 0).toBe(0);
           expect(f.config.resourceStore.readTask("other")).toMatchObject({
             metadata: { generation: 1 },
             status: { phase: "running", currentAttemptId: other.attemptId },

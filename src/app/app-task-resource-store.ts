@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
+import { isTaskExecutionExhausted } from "./app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -208,6 +209,9 @@ export class AppTaskResourceStore {
     ready: boolean,
     nextCheckAt: number | null,
   ): void {
+    // Input remains durable while execution is stopped; it must not leave a
+    // permanently ready/due recovery hint that bypasses or spins on the guard.
+    const executionStopped = isTaskExecutionExhausted(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -238,9 +242,9 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        taskChanged(resource, trigger) ? 1 : 0,
-        ready ? 1 : 0,
-        nextCheckAt,
+        !executionStopped && taskChanged(resource, trigger) ? 1 : 0,
+        !executionStopped && ready ? 1 : 0,
+        executionStopped ? null : nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
         epoch(resource.status.updatedAt) ?? Date.now(),
