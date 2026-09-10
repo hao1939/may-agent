@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { matchesEventSelector } from "@may-agent/sdk";
 import app, {
   evaluationOwnerRequestedInput,
   libraryHealthObservedInput,
@@ -241,11 +242,12 @@ describe("Scout task reconciliation", () => {
     expect(subscription?.event).toEqual({
       type: "project.library_health.observed",
       project: "scout-knowledge-lib",
-      source: "agent:scout",
+      source: "app-task:scout-knowledge-lib",
     });
     const actionable = {
       type: "project.library_health.observed",
-      source: "agent:scout",
+      source: "app-task:scout-knowledge-lib",
+      owner: "agent:scout",
       data: {
         project: "scout-knowledge-lib",
         packetPath:
@@ -254,6 +256,19 @@ describe("Scout task reconciliation", () => {
         wakeSignals: [{ key: "future:path", fingerprint: "abc123" }],
       },
     };
+    expect(subscription).toBeDefined();
+    expect(matchesEventSelector(subscription!.event, actionable)).toBe(true);
+    for (const source of ["agent:scout", "app-task:other", "external"]) {
+      expect(
+        matchesEventSelector(subscription!.event, { ...actionable, source }),
+      ).toBe(false);
+    }
+    expect(
+      matchesEventSelector(subscription!.event, {
+        ...actionable,
+        data: { ...actionable.data, project: "other" },
+      }),
+    ).toBe(false);
     expect(libraryHealthObservedInput(actionable)).toEqual({
       kind: "owner-review",
       data: {
@@ -273,7 +288,7 @@ describe("Scout task reconciliation", () => {
   it("keeps non-actionable and malformed library-health facts visible", () => {
     const base = {
       type: "project.library_health.observed",
-      source: "agent:scout",
+      source: "app-task:scout-knowledge-lib",
       data: {
         project: "scout-knowledge-lib",
         packetPath: "/tmp/packet.jsonl",
@@ -306,7 +321,7 @@ describe("Scout task reconciliation", () => {
       ({ id }) => id === "library-health-observed-actionable",
     );
     expect(subscription?.event).toMatchObject({
-      source: "agent:scout",
+      source: "app-task:scout-knowledge-lib",
       project: "scout-knowledge-lib",
     });
     expect(

@@ -289,6 +289,11 @@ effort, so a transition lost during shutdown may not be replayed.
 collects bounded domain facts and emits signals. It does not decide content
 quality or task progress.
 
+The Host publishes this Task workflow's facts with source
+`app-task:scout-knowledge-lib`; `agent:scout` is the owner, not the producer.
+The owner-review subscription matches that producer and the Scout project,
+then checks the bounded payload before waking `library-maintenance`.
+
 Good signals name raw facts:
 
 - whether the human landing page exists;

@@ -353,7 +353,7 @@ export default defineApp({
       event: {
         type: "project.library_health.observed",
         project: projectId,
-        source: "agent:scout",
+        source: `app-task:${projectId}`,
       },
       toInput: libraryHealthObservedInput,
     },
