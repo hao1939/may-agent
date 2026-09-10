@@ -22,7 +22,7 @@ export type TaskRequestInput = {
   topicId?: string;
 };
 
-/** Persist Task input only. No mapping, executor, queue or notification calls. */
+/** Persist resolved Task input and Topic links. No App mapping, execution or notification calls. */
 export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
