@@ -211,6 +211,25 @@ describe("HTTP human Task reads and board", () => {
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
+      // HTTP readiness does not prove the notification subscription is active.
+      // A status response on the same ordered socket follows the page's subscribe.
+      await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+      await page.evaluate(() => new Promise<void>((resolve, reject) => {
+        const socket = globalThis.eval("ws") as WebSocket;
+        const timer = setTimeout(() => {
+          socket.removeEventListener("message", onMessage);
+          reject(new Error("Notification status response timed out"));
+        }, 5000);
+        const onMessage = (event: MessageEvent) => {
+          const frame = JSON.parse(event.data);
+          if (frame.type !== "status" || !frame.diagnostics) return;
+          clearTimeout(timer);
+          socket.removeEventListener("message", onMessage);
+          resolve();
+        };
+        socket.addEventListener("message", onMessage);
+        socket.send(JSON.stringify({ type: "status", diagnostics: true }));
+      }));
       for (const listener of listeners) {
         listener({ type: "status", activeAgents: [{ agent: "worker", sessionId: "other-session", status: "running" }] });
         listener({ type: "text", data: { sessionId: "other-session" }, text: "Other session text" });
