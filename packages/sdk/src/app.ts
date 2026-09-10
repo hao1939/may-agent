@@ -283,7 +283,7 @@ export type AppRequestFollowUp = {
   task?: { appId: string; taskId: string };
 };
 
-/** One bounded conversational decision. Code applies it; the model decides meaning. */
+/** Retained App input decision, including the older child-result wait protocol. */
 export type AppRequestDecision = {
   summary: string;
   /**
@@ -300,6 +300,9 @@ export type AppRequestDecision = {
   taskControls?: AppRequestTaskControl[];
   requestUpdates?: AppConversationRequestUpdate[];
 };
+
+/** One interactive Turn's answer/effects; background work is an exact Task handoff. */
+export type ConversationTurnResult = Omit<AppRequestDecision, "dependencies">;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 
@@ -362,6 +365,11 @@ export const appRequestAgentResultSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
+/** Human Turns finish or hand off; they do not wait as parents of child App inputs. */
+export const conversationTurnResultSchema = Type.Omit(appRequestAgentResultSchema, ["dependencies"], {
+  additionalProperties: false,
+});
 
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */

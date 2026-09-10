@@ -1,26 +1,28 @@
+import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
+import { fakeModel } from "../../../test/fixtures/model.js";
+import { createConversationInbox } from "../composition/conversation-inbox.js";
 import { afterEach, describe, expect, it } from "bun:test";
-import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
+import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, appRequestAgentResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import { prepareAgentExecution } from "../lib/agent-execution.js";
-import { openDatabase, type SqliteDb } from "../lib/db.js";
-import { applyDbSchema } from "../lib/db/schema.js";
-import type { SubagentManager } from "../lib/index.js";
-import type { CallOptions, SubagentDefinition } from "../lib/types.js";
-import { createReadTool } from "../lib/tools/read.js";
-import { createEditTool } from "../lib/tools/edit.js";
-import { createWriteTool } from "../lib/tools/write.js";
-import { createBashTool } from "../lib/tools/bash.js";
-import { createFinishTool } from "../lib/tools/lifecycle.js";
-import type { AppRegistry } from "./core/apps/registry.js";
-import { createAppRequestAgentResolver } from "./app-request-agent.js";
-import { AppInboxHost } from "./app-inbox-host.js";
-import { listAppInboxChildren } from "./app-inbox-store.js";
-import { readAppConversationResource } from "./core/state/conversations.js";
-import { applyConversationRequestUpdates } from "./core/state/conversation-requests.js";
+import { executePreparedAgent, prepareAgentExecution } from "../../lib/agent-execution.js";
+import { openDatabase, type SqliteDb } from "../../lib/db.js";
+import { applyDbSchema } from "../../lib/db/schema.js";
+import type { SubagentManager } from "../../lib/index.js";
+import type { CallOptions, SubagentDefinition } from "../../lib/types.js";
+import { createReadTool } from "../../lib/tools/read.js";
+import { createEditTool } from "../../lib/tools/edit.js";
+import { createWriteTool } from "../../lib/tools/write.js";
+import { createBashTool } from "../../lib/tools/bash.js";
+import { createFinishTool } from "../../lib/tools/lifecycle.js";
+import type { AppRegistry } from "../core/apps/registry.js";
+import { createConversationAgentResolver } from "./turn-agent.js";
+import { listAppInboxChildren } from "../app-inbox-store.js";
+import { readAppConversationResource } from "../core/state/conversations.js";
+import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
 
 const input = (kind: string) => Type.Object({ kind: Type.Literal(kind), data: Type.Object({ text: Type.String() }) });
 const may = defineApp({
@@ -80,7 +82,7 @@ describe("conversational attempt contract", () => {
     const registry = {
       snapshot: () => ({ entries: [may, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
-    const resolve = createAppRequestAgentResolver({ manager, registry, db });
+    const resolve = createConversationAgentResolver({ manager, registry, db });
     expect(await resolve({ app, request: current })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
@@ -163,6 +165,22 @@ describe("conversational attempt contract", () => {
     ).toBe(true);
   });
 
+  it("rejects child-wait effects from a replacement resolver on a new conversation Turn", async () => {
+    const { db } = await attempt();
+    const host = createConversationInbox({
+      db, apps: [may, owner],
+      resolveRequest: async () => ({
+        ...answer, topic: { kind: "new", title: "Review" },
+        dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: { text: "Review" } } }],
+      }),
+    });
+    host.admit({ ...request, appId: may.id, conversationId: "may:primary", conversationSequence: 1 });
+    expect((await host.reconcileOnce(may.id)).errors).toEqual([expect.stringContaining("invalid request decision")]);
+    expect(host.get(request.id)?.handling?.phase).toBe("failed");
+    expect(listAppInboxChildren(db, request.id)).toEqual([]);
+    expect(readAppConversationResource(db, may.id, "may:primary").topics).toEqual([]);
+  });
+
   it("allows useful direct work without making tool use or App availability a handoff requirement", async () => {
     const { prompt } = await attempt();
     expect(prompt).toContain("investigate, edit, and verify directly");
@@ -174,8 +192,8 @@ describe("conversational attempt contract", () => {
     expect(prompt).not.toContain("only when this App is genuinely the best owner");
   });
 
-  it.each(["done", "interrupted"] as const)(
-    "runs direct file work with real bounded tools and handles a %s attempt honestly",
+  it.each(["done", "interrupted", "budget-exhausted"] as const)(
+    "repairs a failed check within one Turn using the real model/tool loop (%s)",
     async (status) => {
       const root = mkdtempSync(join(tmpdir(), "may-direct-work-"));
       roots.push(root);
@@ -189,7 +207,7 @@ describe("conversational attempt contract", () => {
         domain: "tests",
         systemPrompt: "Use only the authorized fixture files.",
         projectRoot: root,
-        model: { contextWindow: 10_000 } as SubagentDefinition["model"],
+        model: fakeModel(),
         tools: [
           createReadTool(root),
           createEditTool(root),
@@ -208,7 +226,14 @@ describe("conversational attempt contract", () => {
         ],
       };
       let calls = 0;
-      const decision = { ...answer, summary: "Corrected and verified note.txt", response: "Fixed the typo." };
+      applyConversationRequestUpdates(db, {
+        appId: "may", conversationId: "may:primary", updateKey: "earlier-accepted-ask", now: 1,
+        updates: [{ id: "typo", expectedRevision: 0, scope: "Fix and verify the typo", disposition: "open" }],
+      });
+      const decision = { ...answer, summary: "Corrected and verified note.txt", response: "Fixed the typo.",
+        requestUpdates: [{ id: "typo", expectedRevision: 1, scope: "Fix and verify the typo", disposition: "fulfilled", reason: "Exact content verified" }],
+      };
+      const executionFailure = status === "budget-exhausted" ? "Fixture execution budget exhausted" : "Fixture interrupted after editing";
       // Script the model's choices, but use the real resolver, tool policy,
       // file tools, shell, and request persistence. No model service is used.
       const manager = {
@@ -231,19 +256,56 @@ describe("conversational attempt contract", () => {
             "conversation_context",
           ]);
           expect(prepared.runner.beforeToolCall).toBeFunction();
-          const run = async (name: string, input: unknown) =>
-            prepared.tools.find((tool) => tool.name === name)!.execute(name, input);
-          await run("read", { path: "note.txt" });
-          await run("edit", { path: "note.txt", oldText: "teh", newText: "the" });
-          await run("write", { path: "result.txt", content: "Corrected the typo.\n" });
-          const verified = await run("bash", { command: "test -s result.txt && test -s note.txt", timeout: 5 });
-          expect(verified.content).toBeDefined();
+          const steps = [
+            { name: "read", arguments: { path: "note.txt" } },
+            { name: "edit", arguments: { path: "note.txt", oldText: "teh", newText: "THE" } },
+            { name: "write", arguments: { path: "result.txt", content: "Corrected the typo.\n" } },
+            { name: "bash", arguments: { command: 'test "$(cat note.txt)" = "A small typo: the."', timeout: 5 } },
+            { name: "edit", arguments: { path: "note.txt", oldText: "THE", newText: "the" } },
+            { name: "bash", arguments: { command: 'test "$(cat note.txt)" = "A small typo: the." && test -s result.txt', timeout: 5 } },
+            { name: "finish", arguments: {
+              status: "success", summary: decision.summary,
+              verification_evidence: ["The repaired file passed the exact content check"],
+              result: decision,
+            } },
+          ];
+          let step = 0;
+          let modelSteps = 0;
+          const toolOutcomes: Array<{ name: string; failed: boolean }> = [];
+          prepared.runner.streamFn = (model) => {
+            const call = steps[step++];
+            const message: AssistantMessage = {
+              role: "assistant",
+              content: call ? [{ type: "toolCall", id: `step-${step}`, ...call }] : [{ type: "text", text: "Verified." }],
+              api: model.api, provider: model.provider, model: model.id,
+              usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+              stopReason: call ? "toolUse" : "stop", timestamp: step,
+            };
+            const stream = createAssistantMessageEventStream();
+            stream.push({ type: "done", reason: call ? "toolUse" : "stop", message });
+            return stream;
+          };
+          const execution = await executePreparedAgent(prepared, {
+            timeoutMs: 5_000,
+            onObservation: (event) => {
+              if (event.type === "turn_start") modelSteps++;
+              if (event.type === "tool_execution_end") toolOutcomes.push({ name: event.toolName, failed: event.isError });
+            },
+          });
+          expect(execution.error).toBeUndefined();
+          expect(execution.structuredResult).toEqual(decision);
+          expect(modelSteps).toBe(steps.length);
+          expect(toolOutcomes).toEqual(steps.map((call, index) => ({ name: call.name, failed: index === 3 })));
           expect(readFileSync(join(root, "note.txt"), "utf8")).toBe("A small typo: the.\n");
           expect(Check(options.outputSchema!, decision)).toBe(true);
+
           return {
-            status,
-            structuredResult: decision,
-            ...(status === "interrupted" ? { error: "Fixture interrupted after editing" } : {}),
+            ...execution,
+            // Inject executor terminal statuses independently of its proposed
+            // result: a failed or exhausted execution cannot fulfill the ask.
+            status: status === "budget-exhausted" ? "error" : status,
+            ...(status !== "done" ? { error: executionFailure } : {}),
           };
         },
       } as unknown as SubagentManager;
@@ -253,7 +315,7 @@ describe("conversational attempt contract", () => {
       const options = {
         db,
         apps: [may, owner],
-        resolveRequest: createAppRequestAgentResolver({ manager, registry, db }),
+        resolveRequest: createConversationAgentResolver({ manager, registry, db }),
         attachTask: async () => {
           throw new Error("Direct work must not create a Task");
         },
@@ -261,7 +323,7 @@ describe("conversational attempt contract", () => {
           throw new Error("Direct work must not hand off");
         },
       };
-      const host = new AppInboxHost(options);
+      const host = createConversationInbox(options);
       const input = {
         ...request,
         input: { kind: "message", data: { text: "Fix and verify the typo in note.txt" } },
@@ -274,12 +336,13 @@ describe("conversational attempt contract", () => {
       expect(calls).toBe(1);
       expect(listAppInboxChildren(db, request.id)).toEqual([]);
       expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
-      if (status === "interrupted") {
-        expect(result.errors).toEqual([expect.stringContaining("Fixture interrupted after editing")]);
+      if (status !== "done") {
+        expect(readConversationRequest(db, "may", "may:primary", "typo")?.status).toBe("open");
+        expect(result.errors).toEqual([expect.stringContaining(executionFailure)]);
         expect(host.get(request.id)?.status).toBe("done");
         expect(host.get(request.id)?.handling).toEqual({
           phase: "failed",
-          reason: "Fixture interrupted after editing",
+          reason: executionFailure,
         });
         expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
           expect.objectContaining({ author: { kind: "human", id: "human-1" }, text: input.input.data.text }),
@@ -288,9 +351,10 @@ describe("conversational attempt contract", () => {
         return;
       }
       expect(result.errors).toEqual([]);
+      expect(readConversationRequest(db, "may", "may:primary", "typo")?.status).toBe("closed");
       expect(host.get(request.id)).toMatchObject({ status: "done", result: { response: decision.response } });
       // Duplicate delivery and reopening the Host must not repeat accepted work.
-      const reopened = new AppInboxHost(options);
+      const reopened = createConversationInbox(options);
       reopened.admit(input);
       expect((await reopened.reconcileOnce("may")).errors).toEqual([]);
       expect(calls).toBe(1);
@@ -365,7 +429,7 @@ describe("conversational attempt contract", () => {
         ...(completed ? { summary: "Owner verified the result" } : {}),
       }),
     };
-    const before = new AppInboxHost({
+    const before = createConversationInbox({
       ...capabilities,
       apps: [legacy, owner],
       resolveRequest: async () => ({
@@ -381,7 +445,7 @@ describe("conversational attempt contract", () => {
     expect(retained).toHaveLength(1);
     expect(before.get(request.id)?.waitingOn).toEqual({ kind: "app", id: `children:${request.id}` });
 
-    const after = new AppInboxHost({ ...capabilities, apps: [may, owner], resolveRequest: resolve });
+    const after = createConversationInbox({ ...capabilities, apps: [may, owner], resolveRequest: resolve });
     completed = true;
     expect(after.wake({ kind: "task", id: "owner-work" })).toBe(1);
     expect((await after.reconcileOnce("owner")).errors).toEqual([]);

@@ -1,3 +1,4 @@
+import { createConversationInbox } from "./composition/conversation-inbox.js";
 import { afterEach, expect, test } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -62,7 +63,7 @@ test.each(["renewal write", "lost claim", "cleanup write"])(
     const settled = Promise.withResolvers<void>();
     let calls = 0;
     let published = 0;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app],
       leaseMs: 300,
@@ -114,7 +115,7 @@ test("rejects an expired execution before Topic creation, reply or handoff", asy
   const db = database();
   let now = 1000;
   let effects = 0;
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db,
     apps: [app],
     now: () => now,

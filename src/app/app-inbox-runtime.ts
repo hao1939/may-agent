@@ -1,3 +1,6 @@
+import { createConversationInbox } from "./composition/conversation-inbox.js";
+import type { AppInputResolver } from "./conversations/turn-handler.js";
+import type { AppRequestTaskController } from "./conversations/turn-handler.js";
 import { recordConversationTaskOutcome } from "./core/state/conversation-outcomes.js";
 import { createAppScheduleProducer } from "./adapters/producers/app-schedules.js";
 import { OwnedTimer } from "./core/scheduling/timer.js";
@@ -23,8 +26,6 @@ import {
   AppInboxHost,
   type AppInboxFailure,
   type AppInboxReconcileResult,
-  type AppRequestResolver,
-  type AppRequestTaskController,
   type AppTaskAttacher,
 } from "./app-inbox-host.js";
 import {
@@ -96,7 +97,7 @@ export type StartAppInboxRuntimeOptions = {
   db: SqliteDb;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
-  resolveRequest?: AppRequestResolver;
+  resolveRequest?: AppInputResolver;
   controlTask?: AppRequestTaskController;
   admitTaskEvent?: (input: {
     appId: string;
@@ -439,7 +440,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     return [...selected.values()];
   };
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
     attachTask,

@@ -42,6 +42,18 @@ export default [
 
   // Architecture rules inspect imports, not the formatting of source lines.
   {
+    files: ["src/app/app-inbox-host.ts", "src/app/core/inbox/**/*.ts", "src/app/core/state/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/conversations/**", "**/composition/**", "**/app-request-agent*"],
+          message: "Core inbox and state must not depend on the conversational frontend; supply it through composition.",
+        }],
+      }],
+    },
+  },
+  {
     files: ["src/lib/agent-runner.ts", "src/lib/agent-execution.ts"],
     rules: {
       "no-restricted-imports": [
