@@ -6,7 +6,12 @@ are implemented, and Cron is the sole Host snapshot scheduler. Host Operations
 still carries a legacy central catalog for Host measurements and domain metrics
 not yet moved to their Apps. That remaining authority gap is tracked in the
 convergence tracker. The expanded default core-metrics proposal and later
-App-subscriber alternative are [archived and paused](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
+App-subscriber alternative are [archived](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
+The narrower [workflow tracing and health metrics proposal](../proposals/workflow-tracing-and-health-metrics.md)
+is now under review; it does not change the accepted contract or activation.
+Its [first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
+at Host `676b3692` adds optional workflow outcome observations and richer metric
+reads. It is not deployed; the existing contract below remains the baseline.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation
 or reporting requirements. The existing metric service contract below remains
@@ -30,6 +35,16 @@ A breach means “inspect this evidence,” not “the project failed.” A reco
 means the alert rule no longer matches, not “all related work is complete.”
 
 ## Default failure visibility
+
+The candidate keeps measurements outside core execution: the optional source
+sampler installs done/error/blocked/interrupted run-count definitions, without
+new timers or automatic alerts. Each sample states its time, retained finished
+cohort and denominator; zero sample size is no activity, not proven health.
+SDK metric reads expose the latest retained observation's value, `measuredAt`,
+`sampleSize`, `note` and `measureInterval`. With no retained observation, value
+and evidence are null rather than presenting a cached number as freshly measured.
+The definition's `status` remains its lifecycle, not a health verdict. Source
+errors preserve prior samples and retain a bounded diagnostic explanation.
 
 Users should get useful error handling and visibility without assembling a
 complex system. This remains a product goal. Whether default collection and

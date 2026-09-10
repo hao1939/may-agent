@@ -64,8 +64,13 @@ Host `0d8c7658`. The [candidate review](proposals/storage-state-service.md#candi
 records the code map and checks. #130 and #131 were incorporated into #129,
 which merged to Host `main` as `0bedd93a`. Deployment has not been verified.
 Completed separation and recovery reviews live in the [archive](archive/README.md).
-Error/metric placement and App consolidation remain
-[paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
+The [workflow tracing and health metrics proposal](proposals/workflow-tracing-and-health-metrics.md)
+reopens the discussion with a narrower direction: keep evidence with each run
+and derive balanced health summaries through replaceable components, with a
+stronger path for investigating failures. A bounded first source slice is under
+review; the proposal records its limits and remaining work. It is not deployed.
+The earlier error-routing alternatives and App consolidation remain
+[archived](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
 
 ## Choose a reading path
 

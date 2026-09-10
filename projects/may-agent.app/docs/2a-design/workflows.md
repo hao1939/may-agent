@@ -253,6 +253,17 @@ current authority, input, result shape and allowed changes before committing.
 This convention uses existing workflow control flow and adds no repair service
 or automatic verifier-feedback protocol.
 
+## Execution evidence candidate
+
+The [workflow-first proposal](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
+has a first source slice at Host `676b3692`, under review, not a deployed claim.
+It retains bounded `ctx.log` diagnostics beside the run and exposes them with
+outcomes, reasons, timing and exact child/step links through existing trace reads.
+Diagnostic persistence and presentation failures cannot fail unrelated execution;
+required execution-state persistence remains required. This needs neither a
+metric collector nor an error subscriber. The proposal owns candidate limits,
+verification and remaining input/output, retention and presentation gaps.
+
 ## Durable waits
 
 Do not keep a workflow open across human replies, approval, long timers,

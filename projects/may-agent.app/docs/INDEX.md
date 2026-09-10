@@ -128,6 +128,9 @@ current-design list.
 
 Active reviews are:
 
+- [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md)
+  — first source slice under review: run diagnostics, replaceable outcome
+  observations, explicit limits and remaining investigation/UI work;
 - [External components: simple, solid, and clearly organized](proposals/external-components-simplification.md)
   — three focused fixes, explicit feature/reliability tradeoffs, and conditional
   evaluation, metric, and layout follow-ups;
@@ -171,7 +174,9 @@ remain in the active core proposal.
 
 [Error handling, metrics and responsive conversation — paused September 10](archive/reviews/error-handling-and-conversation-discussion-20260910.md)
 preserves the open choices, earlier draft and live PoC. App placement and
-consolidation remain undecided.
+consolidation remain undecided. The narrower
+[workflow-first proposal](proposals/workflow-tracing-and-health-metrics.md)
+resumes tracing and metrics for review without adopting those alternatives.
 
 [Documentation clarity review and cleanup](archive/reviews/documentation-clarity-20260909.md)
 records the source-backed September 9 audit and fixes.
