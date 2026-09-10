@@ -20,6 +20,7 @@ import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 import { listAppInboxChildren } from "./app-inbox-store.js";
 import { readAppConversationResource } from "./conversations/store.js";
+import { applyConversationRequestUpdates } from "./conversations/requests.js";
 
 const input = (kind: string) => Type.Object({ kind: Type.Literal(kind), data: Type.Object({ text: Type.String() }) });
 const may = defineApp({
@@ -66,12 +67,12 @@ describe("conversational attempt contract", () => {
     const db = openDatabase(":memory:");
     databases.push(db);
     applyDbSchema(db);
-    let captured: { prompt: string; options: CallOptions } | undefined;
+    let captured: { definition: SubagentDefinition; prompt: string; options: CallOptions } | undefined;
     const calls: Array<{ prompt: string; options: CallOptions }> = [];
     const manager = {
       getAgentDefinition: () => ({ name: "may", tools: [] }) as unknown as SubagentDefinition,
       callAgentDefinition: async (_definition: SubagentDefinition, prompt: string, options: CallOptions) => {
-        captured = { prompt, options };
+        captured = { definition: _definition, prompt, options };
         calls.push(captured);
         return { status: "done", structuredResult: answer };
       },
@@ -83,6 +84,52 @@ describe("conversational attempt contract", () => {
     expect(await resolve({ app, request: current })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
+
+  it("retrieves omitted asks by exact identity and pages without crossing Conversations", async () => {
+    const current = { ...request, conversation: { id: "chat", owner: may.id, messages: [] } };
+    const { db, definition, options } = await attempt(current);
+    for (let i = 0; i < 13; i++)
+      applyConversationRequestUpdates(db, {
+        appId: may.id,
+        conversationId: "chat",
+        updateKey: `accept-${i}`,
+        now: i,
+        updates: [
+          {
+            id: `ask-${String(i).padStart(2, "0")}`,
+            expectedRevision: 0,
+            scope: "s".repeat(2000),
+            disposition: "open",
+          },
+        ],
+      });
+    applyConversationRequestUpdates(db, {
+      appId: may.id,
+      conversationId: "other",
+      updateKey: "private",
+      now: 1,
+      updates: [{ id: "private", expectedRevision: 0, scope: "Other Conversation", disposition: "open" }],
+    });
+    const tool = definition.tools.find((tool) => tool.name === "conversation_context")!;
+    const read = async (input: unknown) => {
+      const output = await tool.execute("lookup", input);
+      const content = output.content[0];
+      if (content.type !== "text") throw new Error("expected text");
+      return JSON.parse(content.text);
+    };
+    const page = await read({ action: "requests" });
+    expect(page).toHaveLength(12);
+    expect(page[0].scopePreview).toHaveLength(160);
+    expect(await read({ action: "requests", afterId: page.at(-1).id })).toHaveLength(1);
+    expect((await read({ action: "request", id: "ask-12" })).scope).toHaveLength(2000);
+    expect(await read({ action: "request", id: "private" })).toBeNull();
+    expect(
+      Check(options.outputSchema!, {
+        ...answer,
+        requestUpdates: [{ id: "ask", expectedRevision: -1, scope: "scope", disposition: "open" }],
+      }),
+    ).toBe(false);
+  });
 
   it("offers only direct handoff for new May turns without changing the public compatibility schema", async () => {
     const { prompt, options } = await attempt();
@@ -230,7 +277,10 @@ describe("conversational attempt contract", () => {
       if (status === "interrupted") {
         expect(result.errors).toEqual([expect.stringContaining("Fixture interrupted after editing")]);
         expect(host.get(request.id)?.status).toBe("done");
-        expect(host.get(request.id)?.handling).toEqual({ phase: "failed", reason: "Fixture interrupted after editing" });
+        expect(host.get(request.id)?.handling).toEqual({
+          phase: "failed",
+          reason: "Fixture interrupted after editing",
+        });
         expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
           expect.objectContaining({ author: { kind: "human", id: "human-1" }, text: input.input.data.text }),
           expect.objectContaining({ text: expect.stringContaining("I couldn't finish this turn") }),

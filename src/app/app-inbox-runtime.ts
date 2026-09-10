@@ -507,10 +507,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         request,
         authorize,
         topicId,
-        ...(followUp.requestId ? { requestLink: {
-          appId: item.appId, conversationId: item.conversationId, id: followUp.requestId,
-          revision: item.handling?.phase === "decided" ? item.handling.requestRevisions?.[followUp.requestId] ?? -1 : -1,
-        } } : {}),
+        ...(followUp.requestId
+          ? {
+              requestLink: {
+                appId: item.appId,
+                conversationId: item.conversationId,
+                id: followUp.requestId,
+                revision:
+                  item.handling?.phase === "decided"
+                    ? (item.handling.requestRevisions?.[followUp.requestId] ?? -1)
+                    : -1,
+              },
+            }
+          : {}),
       });
       authorize();
       options.bus.emit({
@@ -1088,8 +1097,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const data = eventData(event);
       let dependencyWakeDelivery: DeliveryResult | undefined;
       if (event.type === "conversation.turn.stop.requested") {
-        host.stopTurn({ appId: String(data.appId ?? ""), conversationId: String(data.conversationId ?? ""),
-          turnId: String(data.turnId ?? ""), expectedRevision: Number(data.expectedRevision) });
+        host.stopTurn({
+          appId: String(data.appId ?? ""),
+          conversationId: String(data.conversationId ?? ""),
+          turnId: String(data.turnId ?? ""),
+          expectedRevision: Number(data.expectedRevision),
+        });
         schedule(String(data.appId));
         return { accepted: true, by: "conversation-turn-control", route: "direct" };
       }
@@ -1341,34 +1354,39 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
           if (topic) {
             stateTransaction(options.db, () => {
-            if (conversationResult.requestUpdates !== undefined) applyConversationRequestUpdates(options.db, {
-              appId, conversationId: targetConversationId, topicId: targetTopicId,
-              updates: conversationResult.requestUpdates as AppConversationRequestUpdate[],
-              updateKey: `task-result:${appId}:${followUpId}`, messageId: `result:${followUpId}`, now: now(),
-            });
-            for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
-            options.bus.emit({
-              type: "conversation.message.created",
-              source: "app-task-follow-up",
-              owner: `app:${appId}`,
-              data: {
-                appId,
-                conversationId: targetConversationId,
-                messageId: `result:${followUpId}`,
-                author: { kind: "agent", id: appId },
-                text,
-                metadata: {
-                  requestId: followUpId,
+              if (conversationResult.requestUpdates !== undefined)
+                applyConversationRequestUpdates(options.db, {
+                  appId,
+                  conversationId: targetConversationId,
                   topicId: targetTopicId,
-                  taskRefs,
-                  ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
+                  updates: conversationResult.requestUpdates as AppConversationRequestUpdate[],
+                  updateKey: `task-result:${appId}:${followUpId}`,
+                  messageId: `result:${followUpId}`,
+                  now: now(),
+                });
+              for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
+              options.bus.emit({
+                type: "conversation.message.created",
+                source: "app-task-follow-up",
+                owner: `app:${appId}`,
+                data: {
+                  appId,
+                  conversationId: targetConversationId,
+                  messageId: `result:${followUpId}`,
+                  author: { kind: "agent", id: appId },
+                  text,
+                  metadata: {
+                    requestId: followUpId,
+                    topicId: targetTopicId,
+                    taskRefs,
+                    ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
+                  },
+                  idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
+                    .update(text)
+                    .digest("hex")
+                    .slice(0, 16)}`,
                 },
-                idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
-                  .update(text)
-                  .digest("hex")
-                  .slice(0, 16)}`,
-              },
-            });
+              });
             });
           } else {
             options.bus.emit({

@@ -238,6 +238,32 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
     const claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
     if (claim.kind !== "claimed") throw new Error("fixture claim");
     completeAppTask(config, claim, { summary: "Evidence collected" });
+    // A new runtime can recover the missing review from durable state alone.
+    const reopened = openDatabase(join(root, "may.db"));
+    const recoveryBus = new EventBus();
+    const recovered: AgentEvent[] = [];
+    recoveryBus.subscribe((event) => {
+      if (event.type === "conversation.task.changed") recovered.push(event);
+    });
+    const recovery = await startAppInboxRuntime({
+      db: reopened,
+      bus: recoveryBus,
+      registry,
+      hostCapacity: new HostCapacity(1),
+      deferStart: true,
+      now: () => Date.now() + 120_000,
+    });
+    try {
+      recoveryBus.emit({
+        type: "conversation.supervision.review",
+        data: { project: app.id, minQuietMs: 60_000 },
+      } as unknown as AgentEvent);
+      expect(recovered).toHaveLength(1);
+      expect((recovered[0] as unknown as { data: { requests: unknown[] } }).data.requests).toContainEqual(accepted);
+    } finally {
+      recovery.close();
+      reopened.close();
+    }
     expect(listStaleConversationTopicTasks(db, app.id, { updatedBefore: Date.now() + 1, limit: 10 })).toContainEqual(
       expect.objectContaining({ taskId: "work" }),
     );
@@ -273,6 +299,21 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
     bus.emit(event());
     expect(readConversationRequest(db, app.id, "chat", ask.id)?.status).toBe("open");
     db.exec("DROP TRIGGER reject_message");
+    // A late completed-Task review cannot erase a subsequent human correction.
+    applyConversationRequestUpdates(db, {
+      appId: app.id,
+      conversationId: "chat",
+      updates: [{ ...ask, expectedRevision: accepted.revision, scope: "Compare options including costs" }],
+      updateKey: "correction",
+      now: Date.now(),
+    });
+    bus.emit(event());
+    expect(readConversationRequest(db, app.id, "chat", ask.id)).toMatchObject({
+      status: "open",
+      revision: accepted.revision + 1,
+    });
+    update.expectedRevision++;
+    update.scope = "Compare options including costs";
     bus.emit(event());
     bus.emit(event());
     expect(readConversationRequest(db, app.id, "chat", ask.id)?.closure?.messageId).toBe("result:review-one");

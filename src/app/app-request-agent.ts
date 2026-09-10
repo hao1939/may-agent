@@ -30,10 +30,16 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
     name: "conversation_context",
     label: "Conversation Context",
     description:
-      "Find bounded historical Topic candidates or read one exact Topic in this Conversation. This is read-only retrieval: inspect the evidence and decide its meaning yourself; the tool never selects work or changes context.",
+      "Find historical Topics, list open accepted Requests (requests, paged by afterId), or read one exact Topic (read) or Request (request). Read the full Request scope before updating it. All reads are scoped to this Conversation; this tool never selects or changes work.",
     parameters: Type.Union([
-      Type.Object({ action: Type.Literal("request"), id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
-      Type.Object({ action: Type.Literal("requests"), afterId: Type.Optional(Type.String()) }, { additionalProperties: false }),
+      Type.Object(
+        { action: Type.Literal("request"), id: Type.String({ minLength: 1 }) },
+        { additionalProperties: false },
+      ),
+      Type.Object(
+        { action: Type.Literal("requests"), afterId: Type.Optional(Type.String()) },
+        { additionalProperties: false },
+      ),
       Type.Object(
         {
           action: Type.Literal("find"),
@@ -48,12 +54,22 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
       ),
     ]),
     execute: async (_toolCallId, raw) => {
-      const input = raw as { action: "find"; query: string; limit?: number } | { action: "read"; topicId: string } |
-        { action: "request"; id: string } | { action: "requests"; afterId?: string };
-      if (input.action === "request") return result(readConversationRequest(db, conversation.owner, conversation.id, input.id));
-      if (input.action === "requests") return result(db.prepare(`SELECT id, revision, substr(scope, 1, 160) AS scopePreview, status
-        FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND status = 'open' AND id > ? ORDER BY id LIMIT 12`)
-        .all(conversation.owner, conversation.id, input.afterId ?? ""));
+      const input = raw as
+        | { action: "find"; query: string; limit?: number }
+        | { action: "read"; topicId: string }
+        | { action: "request"; id: string }
+        | { action: "requests"; afterId?: string };
+      if (input.action === "request")
+        return result(readConversationRequest(db, conversation.owner, conversation.id, input.id));
+      if (input.action === "requests")
+        return result(
+          db
+            .prepare(
+              `SELECT id, revision, substr(scope, 1, 160) AS scopePreview, status
+        FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND status = 'open' AND id > ? ORDER BY id LIMIT 12`,
+            )
+            .all(conversation.owner, conversation.id, input.afterId ?? ""),
+        );
       if (input.action === "find") {
         return result({
           candidates: findConversationTopics(db, conversation.owner, conversation.id, input.query, input.limit ?? 8),

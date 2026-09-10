@@ -1228,7 +1228,7 @@ export class AppInboxHost {
     const taskControls = decision.taskControls ?? [];
     const followUp = decision.followUp;
     const requestUpdates = decision.requestUpdates ?? [];
-    if (requestUpdates.length && (!directTurn || !decision.response))
+    if (requestUpdates.length && (!directTurn || !decision.response?.trim() || dependencies.length))
       throw new Error("Accepted Request updates require a conversational answer");
     if (requestUpdates.some((update) => update.disposition !== "open" && !update.reason?.trim()))
       throw new Error("Request closure requires an explicit reason");

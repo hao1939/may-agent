@@ -177,14 +177,33 @@ export type AppConversationRequestUpdate = {
   taskRefs?: Array<{ appId: string; taskId: string }>;
 };
 
-export const conversationRequestUpdatesSchema = Type.Array(Type.Object({
-  id: Type.String({ minLength: 1, maxLength: 200 }),
-  expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
-  scope: Type.String({ minLength: 1, maxLength: 2000 }),
-  disposition: Type.Union([Type.Literal("open"), Type.Literal("fulfilled"), Type.Literal("withdrawn"), Type.Literal("unfulfilled")]),
-  reason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
-  taskRefs: Type.Optional(Type.Array(Type.Object({ appId: Type.String({ minLength: 1 }), taskId: Type.String({ minLength: 1 }) }, { additionalProperties: false }), { maxItems: 32 })),
-}, { additionalProperties: false }), { maxItems: 8 });
+export const conversationRequestUpdatesSchema = Type.Array(
+  Type.Object(
+    {
+      id: Type.String({ minLength: 1, maxLength: 200 }),
+      expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
+      scope: Type.String({ minLength: 1, maxLength: 2000 }),
+      disposition: Type.Union([
+        Type.Literal("open"),
+        Type.Literal("fulfilled"),
+        Type.Literal("withdrawn"),
+        Type.Literal("unfulfilled"),
+      ]),
+      reason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
+      taskRefs: Type.Optional(
+        Type.Array(
+          Type.Object(
+            { appId: Type.String({ minLength: 1 }), taskId: Type.String({ minLength: 1 }) },
+            { additionalProperties: false },
+          ),
+          { maxItems: 32 },
+        ),
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  { maxItems: 8 },
+);
 
 /** Author-visible request. Host lifecycle and lease fields stay private. */
 export type AppRequest<TData = unknown> = {
@@ -295,15 +314,9 @@ export const appRequestAgentResultSchema = Type.Object(
           constraints: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
           acceptance: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
           appId: nonEmptyStringSchema,
-          input: Type.Object(
-            { kind: nonEmptyStringSchema, data: Type.Unknown() },
-            { additionalProperties: false },
-          ),
+          input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
           task: Type.Optional(
-            Type.Object(
-              { appId: nonEmptyStringSchema, taskId: nonEmptyStringSchema },
-              { additionalProperties: false },
-            ),
+            Type.Object({ appId: nonEmptyStringSchema, taskId: nonEmptyStringSchema }, { additionalProperties: false }),
           ),
         },
         { additionalProperties: false },
