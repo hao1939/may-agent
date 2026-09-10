@@ -17,6 +17,7 @@ export type {
   AppAction,
   AppDefinition,
   AppRequestDecision,
+  ConversationTurnResult,
   AppRequestFollowUp,
   AppRequestDependency,
   AppRequestDependencyObservation,
@@ -76,7 +77,7 @@ export type {
   WorkflowMetricCapability,
   AgentCallOptions,
 } from "./app.js";
-export { appRequestAgentResultSchema } from "./app.js";
+export { appRequestAgentResultSchema, conversationTurnResultSchema } from "./app.js";
 export type {
   Condition,
   TaskAcceptanceBasis,

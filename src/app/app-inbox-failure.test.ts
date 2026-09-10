@@ -1,3 +1,4 @@
+import { createConversationInbox } from "./composition/conversation-inbox.js";
 import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -76,13 +77,13 @@ test.each(["throws", "invalid", "missing-topic"])(
         return {} as AppRequestDecision;
       },
     };
-    const host = new AppInboxHost({ ...options, db: f.db });
+    const host = createConversationInbox({ ...options, db: f.db });
     admit(host);
     for (let i = 0; i < 6; i++) {
       now += 2000;
       await host.reconcileOnce(app.id);
     }
-    const reopened = new AppInboxHost({ ...options, db: f.open() });
+    const reopened = createConversationInbox({ ...options, db: f.open() });
     for (let i = 0; i < 6; i++) {
       now += 2000;
       await reopened.reconcileOnce(app.id);
@@ -92,7 +93,7 @@ test.each(["throws", "invalid", "missing-topic"])(
     expect(readAppConversationResource(f.db, app.id, "sample:primary").messages.at(-1)?.text).toContain(
       "ask remains unresolved",
     );
-    const next = new AppInboxHost({ ...options, db: f.db, resolveRequest: async () => answer });
+    const next = createConversationInbox({ ...options, db: f.db, resolveRequest: async () => answer });
     admit(next, "second", 2);
     expect((await next.reconcileOnce(app.id)).admitted).toBe(1);
   },
@@ -102,7 +103,7 @@ test("recovers a failure that could not be recorded without another model call",
   const f = fixture();
   let now = 1000;
   let calls = 0;
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db: f.db,
     apps: [app],
     now: () => now,
@@ -119,7 +120,7 @@ test("recovers a failure that could not be recorded without another model call",
   expect(host.get("first")?.handling?.phase).toBe("executing");
   f.db.exec("DROP TRIGGER reject_result");
   now += 2000;
-  const after = new AppInboxHost({
+  const after = createConversationInbox({
     db: f.open(),
     apps: [app],
     now: () => now,
@@ -166,7 +167,7 @@ test.each(["new", "existing"] as const)(
         };
       },
     };
-    const before = new AppInboxHost({ ...options, db: f.db });
+    const before = createConversationInbox({ ...options, db: f.db });
     admit(before);
     const result = await before.reconcileOnce(app.id);
     expect(result.errors).toEqual([
@@ -175,7 +176,7 @@ test.each(["new", "existing"] as const)(
     ]);
 
     const db = f.open();
-    const after = new AppInboxHost({ ...options, db });
+    const after = createConversationInbox({ ...options, db });
     expect(after.get("first")?.handling?.phase).toBe("executing");
     expect(after.get("first")?.topicId).toBeUndefined();
     const conversation = readAppConversationResource(db, app.id, "sample:primary");
@@ -209,13 +210,13 @@ test("replays a saved decision after result persistence fails and ignores failed
       throw new Error("fixture notification failure");
     },
   };
-  const host = new AppInboxHost({ ...options, db: f.db });
+  const host = createConversationInbox({ ...options, db: f.db });
   admit(host);
   await host.reconcileOnce(app.id);
   expect(host.get("first")?.handling?.phase).toBe("decided");
   f.db.exec("DROP TRIGGER reject_result");
   now += 2000;
-  const after = new AppInboxHost({ ...options, db: f.open() });
+  const after = createConversationInbox({ ...options, db: f.open() });
   await after.reconcileOnce(app.id);
   now += 2000;
   await after.reconcileOnce(app.id);
@@ -267,10 +268,10 @@ test.each(["control", "handoff"])("a rejected %s ends the turn instead of replay
     controlTask: reject,
     onRequestFollowUp: reject,
   };
-  const before = new AppInboxHost({ ...options, db: f.db });
+  const before = createConversationInbox({ ...options, db: f.db });
   admit(before);
   await before.reconcileOnce(app.id);
-  const after = new AppInboxHost({ ...options, db: f.open() });
+  const after = createConversationInbox({ ...options, db: f.open() });
   for (let i = 0; i < 12; i++) {
     now += 2000;
     await after.reconcileOnce(app.id);
@@ -279,7 +280,7 @@ test.each(["control", "handoff"])("a rejected %s ends the turn instead of replay
   expect(effects).toBe(1);
   expect(after.get("first")).toMatchObject({ status: "done", handling: { phase: "failed" } });
   expect(after.get("first")?.result?.response).toContain("This Task does not accept this operation");
-  const next = new AppInboxHost({ ...options, db: f.db, resolveRequest: async () => answer });
+  const next = createConversationInbox({ ...options, db: f.db, resolveRequest: async () => answer });
   admit(next, "second", 2);
   expect((await next.reconcileOnce(app.id)).admitted).toBe(1);
 });
@@ -308,7 +309,7 @@ test.each(["available", "removed"])(
         effects++;
       },
     };
-    const before = new AppInboxHost({ ...options, db: f.db });
+    const before = createConversationInbox({ ...options, db: f.db });
     admit(before);
     await before.reconcileOnce(app.id);
     expect(before.get("first")?.handling?.phase).toBe("decided");
@@ -317,7 +318,7 @@ test.each(["available", "removed"])(
     expect(effects).toBe(1);
     f.db.exec("DROP TRIGGER reject_result");
     const db = f.open();
-    const after = new AppInboxHost({
+    const after = createConversationInbox({
       ...options,
       db,
       apps: availability === "available" ? [app, owner] : [app],

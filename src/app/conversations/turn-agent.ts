@@ -1,23 +1,26 @@
+import { usesDirectTaskHandoff, type AppInputResolver } from "./turn-handler.js";
 import {
   Type,
   appRequestAgentResultSchema,
+  conversationTurnResultSchema,
+  type ConversationTurnResult,
   type AppDefinition,
   type AppInputContext,
   type AppRequestDecision,
 } from "@may-agent/sdk";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { SubagentManager } from "../lib/index.js";
-import type { SqliteDb } from "../lib/db.js";
-import type { AppRegistry } from "./core/apps/registry.js";
-import { appDependencyCatalog } from "./app-dependency-catalog.js";
-import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./core/state/conversations.js";
-import { pageOpenConversationRequests, readConversationRequest } from "./core/state/conversation-requests.js";
-import type { AppRequestResolver } from "./app-inbox-host.js";
+import type { SubagentManager } from "../../lib/index.js";
+import type { SqliteDb } from "../../lib/db.js";
+import type { AppRegistry } from "../core/apps/registry.js";
+import { appDependencyCatalog } from "../app-dependency-catalog.js";
+import {
+  findConversationTopics,
+  readAppConversationResource,
+  readConversationTopic,
+} from "../core/state/conversations.js";
+import { pageOpenConversationRequests, readConversationRequest } from "../core/state/conversation-requests.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
-const directFollowUpResultSchema = Type.Omit(appRequestAgentResultSchema, ["dependencies"], {
-  additionalProperties: false,
-});
 
 function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext>): AgentTool | null {
   const conversation = request.conversation;
@@ -62,9 +65,7 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext
       if (input.action === "request")
         return result(readConversationRequest(db, conversation.owner, conversation.id, input.id));
       if (input.action === "requests")
-        return result(
-          pageOpenConversationRequests(db, conversation.owner, conversation.id, input.afterId),
-        );
+        return result(pageOpenConversationRequests(db, conversation.owner, conversation.id, input.afterId));
       if (input.action === "find") {
         return result({
           candidates: findConversationTopics(db, conversation.owner, conversation.id, input.query, input.limit ?? 8),
@@ -125,7 +126,7 @@ function requestPrompt(
     "Finish exactly once with finish().result matching the supplied schema.",
     "Accepted asks are bounded context: use conversation_context action requests (afterId for the next page) to list open asks, and action request with id to read the full exact scope before revising or closing an omitted ask. Never close from a truncated preview.",
     "",
-    "## Request and context",
+    "## Input and context",
     "```json",
     JSON.stringify(request, null, 2),
     "```",
@@ -137,11 +138,11 @@ function requestPrompt(
   ].join("\n");
 }
 
-export function createAppRequestAgentResolver(options: {
+export function createConversationAgentResolver(options: {
   manager: SubagentManager;
   registry: AppRegistry;
   db: SqliteDb;
-}): AppRequestResolver {
+}): AppInputResolver {
   return async ({ app, request, execution: binding }) => {
     const agent = (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "");
     if (!agent) throw new Error(`App ${app.id} has no conversational agent`);
@@ -152,10 +153,7 @@ export function createAppRequestAgentResolver(options: {
     // Retained child requests must finish under their original protocol even
     // after an App adopts direct Task handoff. Other Topics' work is context,
     // not a child obligation of this request.
-    const usesDirectFollowUp =
-      Boolean(app.requests?.inputKinds && app.tasks) &&
-      !request.dependencies?.length &&
-      request.dependency?.kind !== "app";
+    const usesDirectFollowUp = usesDirectTaskHandoff(app, request);
     const execution = await options.manager.callAgentDefinition(
       definition,
       requestPrompt(app, request, options.registry, usesDirectFollowUp),
@@ -164,7 +162,7 @@ export function createAppRequestAgentResolver(options: {
         projectId: app.id,
         recoveryOwner: "app-inbox",
         requireFinish: true,
-        outputSchema: usesDirectFollowUp ? directFollowUpResultSchema : appRequestAgentResultSchema,
+        outputSchema: usesDirectFollowUp ? conversationTurnResultSchema : appRequestAgentResultSchema,
         // Reuse bounded App execution, without detached lifecycle tools.
         // Retained child-wait requests keep their original capability profile.
         toolPolicy: usesDirectFollowUp ? "app-agent-full" : "app-agent-deputy",
@@ -178,6 +176,8 @@ export function createAppRequestAgentResolver(options: {
         execution.error || execution.lastAssistantText || `Agent ${agent} did not return a request decision`,
       );
     }
-    return execution.structuredResult as AppRequestDecision;
+    return usesDirectFollowUp
+      ? (execution.structuredResult as ConversationTurnResult)
+      : (execution.structuredResult as AppRequestDecision);
   };
 }

@@ -1,3 +1,6 @@
+import { Type, defineApp } from "@may-agent/sdk";
+import { AppInboxHost } from "../../app-inbox-host.js";
+import { readAppConversationResource } from "./conversations.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -535,4 +538,28 @@ describe("request-to-Task state operation", () => {
     expect(config.resourceStore.readTask("work/one")).toBeNull();
     expect(getAppInboxItem(db, input.request.id)?.waitingOn).toBeUndefined();
   });
+});
+
+it("runs Task-only input with no conversational frontend and keeps retained Conversation state readable", async () => {
+  const { db, config } = fixture();
+  const app = defineApp({
+    id: "example", version: 1, agent: "example-owner",
+    inputSchema: Type.Object({ kind: Type.Literal("example"), data: Type.Object({}) }),
+    tasks: {}, task: () => testAttachment("work/without-chat"),
+  });
+  const host = new AppInboxHost({
+    db, apps: [app],
+    attachTask: async (input) => attachRequestToTask(config, { ...input, claim: input.claim! }),
+    readDependency: async ({ dependency }) => ({ ...dependency, status: "done", summary: "Verified", evidence: ["fixture:checked"] }),
+  });
+  const before = readAppConversationResource(db, "example", "chat");
+  host.admit({ id: "no-chat", appId: app.id, source: { kind: "system", id: "scheduler" }, input: { kind: "example", data: {} } });
+  expect((await host.reconcileOnce(app.id)).errors).toEqual([]);
+  expect(config.resourceStore.readTask("work/without-chat")?.metadata.generation).toBe(1);
+  finishTask(config, "work/without-chat");
+  host.wakeAppIds({ kind: "task", id: "work/without-chat" }, app.id);
+  expect((await host.reconcileOnce(app.id)).errors).toEqual([]);
+  expect(host.get("no-chat")).toMatchObject({ status: "done", result: { summary: "Verified" } });
+  expect(readAppConversationResource(db, "example", "chat")).toEqual(before);
+  expect(listConversationTopicLinksForTask(db, app.id, "work/without-chat")).toEqual([]);
 });
