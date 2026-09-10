@@ -1354,6 +1354,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
           if (topic) {
             stateTransaction(options.db, () => {
+              // Request updates may reference links introduced by this same result.
+              for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
               if (conversationResult.requestUpdates !== undefined)
                 applyConversationRequestUpdates(options.db, {
                   appId,
@@ -1364,7 +1366,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                   messageId: `result:${followUpId}`,
                   now: now(),
                 });
-              for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
               options.bus.emit({
                 type: "conversation.message.created",
                 source: "app-task-follow-up",

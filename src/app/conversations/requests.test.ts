@@ -15,6 +15,7 @@ import {
   linkConversationTopicTask,
   listStaleConversationTopicTasks,
   readAppConversationResource,
+  readConversationTopic,
 } from "./store.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "./requests.js";
 import { startAppInboxRuntime } from "../app-inbox-runtime.js";
@@ -228,7 +229,7 @@ test("Task links accumulate without duplicates; overflow and unknown links roll 
   expect(readConversationRequest(db, app.id, "chat", "unknown")).toBeNull();
 });
 
-test("handoff preserves the accepted ask; finished work remains reviewable and closure includes its message atomically", async () => {
+test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)", async (links) => {
   const { db, root } = fixture();
   createConversationTopic(db, {
     id: "origin",
@@ -350,12 +351,15 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
     expect(listStaleConversationTopicTasks(db, app.id, { updatedBefore: Date.now() + 1, limit: 10 })).toContainEqual(
       expect.objectContaining({ taskId: "work" }),
     );
+    const addedRefs = links === "add" ? [{ appId: owner.id, taskId: "additional-evidence" }] : [];
+    const resultRefs = [...accepted.taskRefs, ...addedRefs];
+    const priorTopicRefs = readConversationTopic(db, app.id, "chat", accepted.topicId!)!.taskRefs;
     const update = {
       ...ask,
       expectedRevision: accepted.revision,
       disposition: "fulfilled",
       reason: "The evidence supports the comparison",
-      taskRefs: [],
+      taskRefs: addedRefs,
     };
     const event = () =>
       ({
@@ -372,7 +376,7 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
               topicId: accepted.topicId,
               followUpId: "review-one",
               text: "Both options compared with costs.",
-              taskRefs: accepted.taskRefs,
+              taskRefs: resultRefs,
               requestUpdates: [update],
             },
           },
@@ -382,6 +386,8 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
       BEGIN SELECT RAISE(ABORT, 'fixture publication failure'); END;`);
     bus.emit(event());
     expect(readConversationRequest(db, app.id, "chat", ask.id)?.status).toBe("open");
+    expect(readConversationRequest(db, app.id, "chat", ask.id)?.taskRefs).toEqual(accepted.taskRefs);
+    expect(readConversationTopic(db, app.id, "chat", accepted.topicId!)?.taskRefs).toEqual(priorTopicRefs);
     db.exec("DROP TRIGGER reject_message");
     // A late completed-Task review cannot erase a subsequent human correction.
     applyConversationRequestUpdates(db, {
@@ -396,12 +402,17 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
       status: "open",
       revision: accepted.revision + 1,
     });
+    expect(readConversationRequest(db, app.id, "chat", ask.id)?.taskRefs).toEqual(accepted.taskRefs);
+    expect(readConversationTopic(db, app.id, "chat", accepted.topicId!)?.taskRefs).toEqual(priorTopicRefs);
     update.expectedRevision++;
     update.scope = "Compare options including costs";
     bus.emit(event());
     bus.emit(event());
     expect(readConversationRequest(db, app.id, "chat", ask.id)?.closure?.messageId).toBe("result:review-one");
-    expect(readConversationRequest(db, app.id, "chat", ask.id)?.taskRefs).toEqual(accepted.taskRefs);
+    expect(readConversationRequest(db, app.id, "chat", ask.id)?.taskRefs).toEqual(resultRefs);
+    expect(readConversationTopic(db, app.id, "chat", accepted.topicId!)?.taskRefs).toEqual(
+      expect.arrayContaining(resultRefs.map((ref) => expect.objectContaining(ref))),
+    );
     expect(
       readAppConversationResource(db, app.id, "chat").messages.filter((message) => message.id === "result:review-one"),
     ).toHaveLength(1);
