@@ -32,6 +32,9 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Core implementation after #111 and #112 — 2026-09-10](reviews/core-implementation-post112-20260910.md)
+  — 229 passing focused tests and three reproduced input dispatch/recovery/reporting
+  failures; portable probe and source limits retained with the review.
 - [Refined core design against implementation — 2026-09-10](reviews/core-implementation-alignment-20260910.md)
   — Host #110 and committed May App comparison; 111 passing focused tests,
   reproduced input renewal/retry failures, and prioritized implementation slices.

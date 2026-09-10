@@ -11,9 +11,10 @@ projection filters progress and accepted observations by exact attempt
 identity; prior-attempt observations remain history.
 Host PR #112 implemented accepted Request records and fenced closure, input-lease
 renewal containment, failed-turn disposition, and durable current-turn Stop.
-The Console exposes `/stop`; a stopped turn cannot silently retry, and
-independent Tasks continue. This does not claim every adapter implements the
-complete [Stop/Steer experience](human-control-surfaces.md#current-turn-control).
+The Console currently exposes `/stop`; the accepted interface replaces it with
+Esc and uses Stop buttons in Telegram/browser. Those bindings and current-turn
+steering remain work in the [control design](human-control-surfaces.md#current-turn-control).
+A stopped turn cannot silently retry, and independent Tasks continue.
 The Host `AppRequest`/inbox row still tracks input handling and can finish at
 Task admission; it is not the accepted ask. See
 [current implementation and gaps](#current-implementation-and-gaps) for storage

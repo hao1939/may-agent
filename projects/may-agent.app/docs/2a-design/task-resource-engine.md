@@ -8,7 +8,8 @@ intervals; historical fields remain readable. Task activation is independent
 of `--cron` since Host PR #96; that flag selects optional schedule producers.
 Core/executor separation and shared settlement are implemented through PR #106;
 durable retry limits and atomic request attachment merged in PRs #107 and #108.
-Owner-decision follow-through remains open in the
+Parent-owned repair and finite Task stop are implemented through PRs #110–#111.
+App judgment and live follow-through need separate evidence; see the
 [controller proposal](../proposals/task-controller-pattern.md).
 
 This page owns the durable Task contract. Bounded conversational work is covered
@@ -217,6 +218,7 @@ See the [checked wait example](../examples/app.ts).
 | --- | --- |
 | Valid `converged` result | Admit only when current evidence, children, actions and verification allow acceptance |
 | Valid `waiting` result | Retain exact external Conditions or live direct children/dependencies; release execution capacity |
+| Valid `stopped` result | For an `achieve` Task without live direct children, retain the App's non-success decision and partial evidence using cancellation authority; wake its executable parent without writing a success receipt |
 | Workflow `needs-agent` | At most one sequential selected-agent judgment for the same Task; no ownership transfer |
 | Unavailable agent/workflow/executor or failed workspace prerequisite | Visible attention; no silent executor substitution |
 | Invalid/rejected handler result or explicitly blocked workflow | Preserve evidence and require attention; invalid output is not automatically retried as a transport failure |
@@ -229,6 +231,13 @@ result may retain a bounded typed judgment in `result`; later attempts read it
 without reconstructing state from prose. A failed verifier cannot establish
 completion. Result settlement, including newer input, uses the fences described
 below; this table does not override them.
+
+`stopped` requires a reason and evidence; it cannot include actions, Conditions
+or child App requests. The Host checks eligibility inside the fenced transaction.
+It ends this Task without fulfilling its original outcome or a linked Request.
+Ordinary retry cannot reopen it; new work needs a new linked identity. See the
+[stop contract](../proposals/task-controller-pattern.md#stop-without-claiming-success)
+for attribution, parent review and retained-state behavior.
 
 Creating follow-up work does not complete the current task. Required
 decomposition creates direct children and returns `waiting`; independent later

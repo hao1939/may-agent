@@ -145,9 +145,10 @@ See [events.md](../2a-design/events.md).
 ## One authority for each resource
 
 A conversational Request is an accepted ask that May must close the loop on.
-Host request rows track input handling and caller correlation; that storage is
-not yet the full Request contract. [Message Lifecycle](../2a-design/message-lifecycle.md)
-owns the distinction and remaining gaps.
+Host input-handling rows track input handling and caller correlation;
+accepted Request records track the ask and its closure. Completing one must
+not imply completing the other. [Message Lifecycle](../2a-design/message-lifecycle.md)
+owns that distinction.
 
 A bounded turn may finish authorized work directly. An App Task preserves an
 independent outcome across attempts; it owns execution, waits and results.

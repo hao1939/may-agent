@@ -1,212 +1,186 @@
 # Core review: simple, robust, replaceable
 
-**Status:** Active review plan. Core separation, shared settlement, durable retry
-limits and atomic request attachment are implemented at the
-[documented source baseline](../README.md). The latest
-[implementation review](../archive/reviews/core-implementation-alignment-20260910.md)
-found two input-handling failures and confirmed the remaining human-control gaps.
-The four conversational slices below now have source candidates: Host PRs
-[#112](https://github.com/hao1939/may-agent/pull/112),
-[#114](https://github.com/hao1939/may-agent/pull/114), and Request tracking
-[#115](https://github.com/hao1939/may-agent/pull/115). PR #113 was merged into #112's branch,
-not `main`. Merge in that order, followed by the matching May App guidance.
-These are review candidates, not a deployment record.
+**Status:** Active improvement plan at the [reviewed source baseline](../README.md).
+The four core boundaries, shared settlement, durable retries, atomic attachment,
+finite Task stop and conversational Request/Stop mechanics are implemented.
+The [post-merge review](../archive/reviews/core-implementation-post112-20260910.md)
+records 229 passing focused tests and three additional reproduced failures.
+This plan covers the remaining source and interaction work; deployment has its
+own evidence.
 
 ## Current focus: simple and robust core
 
 > Removal should degrade capability, while preserving the remaining system's correctness.
 
-The [Architecture](../2a-design/architecture.md#core-responsibilities) owns the
-four core responsibilities, dependency rules, code map and absence behavior.
-The [System Model](../2a-design/system-model.md) explains the whole flow.
-These are ordinary modules using existing contracts, not a new service framework.
+Keep the four responsibilities in [Architecture](../2a-design/architecture.md#core-responsibilities):
+App registration/admission, Events, State/storage and Work runtime. The controller,
+event routes, SQLite transactions and bounded executors already fit this model.
 
-Judge a change by its contribution to May's goal and its total cost. Prefer
-safe, affordable redo over elaborate recovery. Start from a reproduced failure
-or a demonstrated maintenance cost; stop when the required outcome is met.
-The [decision guide](../1-principles/core-principles.md#review-rule) supplies the
-tradeoff rules.
+Judge each change by its useful outcome, total cost, likely lifetime and cost of
+being wrong. Fix reproduced failures first. Prefer affordable redo over elaborate
+resume; stop when the required outcome is met. The
+[decision guide](../1-principles/core-principles.md#review-rule) owns these tradeoffs.
 
 ## Design against implementation
 
-The four core responsibilities already have working boundaries. Retain them.
-
-| Core responsibility | Source assessment | Useful next change |
+| Core responsibility | Current assessment | Next useful work |
 | --- | --- | --- |
-| App registration and input admission | Validated registration and atomic Task attachment exist | Preserve conventional discovery and the current admission boundary |
-| Events | Existing routes, durable admissions and change hints connect components | Reuse them for exact turn control and correlated failure evidence |
-| State and storage | SQLite fences, transactions and request readiness are implemented | Persist only the missing turn disposition and accepted-ask state |
-| Work runtime | Task controller, shared settlement, durable retries and parent-owned repair are present; conversational handling has weaker containment | Fix input renewal/retries and durable turn control; finish the existing finite-Task stop review |
+| App registration and input admission | Validated registration, generation publication and atomic Task attachment exist | Preserve the boundary; no new loader service |
+| Events | Durable admission, declared routes and change hints connect components | Reuse exact turn control and improve failure correlation |
+| State and storage | SQLite fences, accepted results, Request revisions and closure are implemented | Extract another operation only for a demonstrated atomicity or maintenance problem |
+| Work runtime | Controller, shared settlement, retries, waits, finite Task stop and bounded failed turns exist | Contain uncovered input dispatch/recovery/reporting failures |
 
-The largest gaps are at the Conversation boundary. Internal `AppRequest` input
-rows are not the accepted human Request defined by the design. Completing an
-input, fulfilling an ask and completing a Task remain separate facts.
+Completing an input, fulfilling an accepted Request and finishing a Task remain
+separate facts. Their records now exist; they need truthful App judgment and
+focused usage validation, not another execution lifecycle.
 
 ## Implementation order and candidate decisions
 
-The changes retain the existing controller, event routes, SQLite transactions
-and bounded executor. Full Host CI and file-backed fault/restart fixtures gate
-each slice. No live installation, external service, or model is required by
-these checks; model judgment and deployment still need separate validation.
+### 1. Contain the reproduced input-runtime failures
 
-- **#112:** exact claim/session abort binding, guarded effects, failure outcome
-  in input handling, and accepted-decision replay. An event write joins an
-  enclosing state transaction instead of opening a nested SQL transaction.
-- **#114:** Console `/stop` reads the exact active turn/revision and publishes
-  `conversation.turn.stop.requested`. The Host commits Stop before aborting.
-- **Request tracking:** `conversation_requests` stores the accepted scope,
-  revision, links and closure. `requestUpdates` carries App judgment; direct
-  acceptance/refinement commits before handoff, closure with its explanation.
-  Existing Topic recovery also reviews terminal Tasks with an open linked ask.
-  Discussion-only open asks do not cause background model turns.
+**Value:** An ordinary storage or reporting fault should not terminate unrelated
+work or leave local dispatch bookkeeping unusable.
 
-The current candidate deliberately leaves steering and a Telegram Stop button
-for a later surface change. It neither reconstructs old asks from transcripts
-nor infers fulfillment from Task status. External tool effects remain outside
-the SQLite transaction and must be inspected before explicit retry.
+The post-merge probes found these paths in `app-inbox-runtime.ts`:
 
-### 1. Contain input ownership failures
+- A readiness read throws after work starts but before its completion/cleanup
+  handlers attach. The exception escapes the timer; the daemon's fatal handler
+  exits. An outer catch alone would still leave the cleanup-ordering defect.
+- A detached dependency-recovery promise has no catch; a failed read escapes as
+  an unhandled rejection.
+- Failure reporting writes to the failed event sink again from its catch and
+  escapes as an unhandled rejection. This does not prove a daemon exit: the
+  current unhandled-rejection handler logs without exiting.
 
-**Value:** One failed renewal must not terminate unrelated work. The production
-renewal callback currently lets a SQLite exception reach the fatal process
-handler and ignores a false renewal result.
+Attach cleanup before fallible readiness reads. Contain dispatch and rescheduling
+failures, handle the entire detached recovery promise, and give best-effort
+reporting a small local diagnostic fallback independent of the broken store.
+Reuse current ownership fences, capacity and persisted state. The earlier lease
+renewal fix and durable failed-turn outcome are already merged.
 
-Catch renewal errors locally and handle lost or uncertain ownership explicitly.
-Stop/fence the exact execution, reject late Host replies/admissions, and clean up even when
-reporting or the next database write also fails. Reuse existing ownership and
-execution controls; make the input resolver expose the cancellation binding it
-currently lacks. Capacity remains occupied until execution actually stops.
-Failure evidence should identify App, input, claim and execution using existing
-events/reads, with a local diagnostic fallback when storage is unavailable.
+**Accept when:** Each injected fault stays local; active counters and capacity
+remain usable; another Conversation progresses after the store recovers; stale
+replies/admissions remain fenced. Reporting failure must not repeat an accepted
+effect or rerun failed model execution. Use focused fault/restart tests, then
+required Host checks. Do not add a new retry policy or service for this fix.
 
-**Accept when:** Injected renewal error or lost claim leaves the Host and another
-Conversation usable; stale replies/admissions are rejected; reporting failure
-does not skip cleanup. Recheck authority after database recovery. This does not
-promise to undo external effects or keep accepting writes during a DB outage.
+### 2. Finish the small human-control interface
 
-### 2. Finish failed conversational handling truthfully
+**Value:** The human can interrupt a slow turn without learning a command or
+accidentally cancelling independent work.
 
-**Value:** Repeated model execution costs money and holds up the Conversation.
-The current failed resolver returned to pending after all 12 probe attempts,
-including six after reopening SQLite; Task retry limits do not cover this path.
+Implement Console Esc using the existing exact `conversation.turn.stop.requested`
+event, then reuse it for Telegram/browser Stop buttons. Preserve the existing
+commit-before-abort and stale-target behavior. Remove Console `/stop` from its
+parser, help and completion in the same Console slice. An open menu/dialog gets
+Esc first; idle Esc preserves the draft and Conversation.
 
-**Proposed default:** After unsuccessful or invalid completed conversational
-execution, retain a failed handling outcome and a truthful response, release
-the Conversation, and wait for a new human turn or explicit retry. The accepted
-ask remains unresolved. Cheap coordination failures before execution can retain
-their safe retry behavior. A small durable automatic execution allowance is an
-alternative only if its demonstrated value warrants the extra policy/state.
+Group everyday controls separately from Host administration and diagnostics in
+help. Keep `/cancel <ref>` for background work; bare `/cancel` requires the
+watched Task and its acknowledgment names the exact target. `/unwatch` only ends
+notifications; `/exit` closes Console. `/reload` and `/restart` affect the Host.
+Remove Telegram's ambiguous hidden `/close` shutdown command from the ordinary
+adapter; do not add a replacement command framework. `/todo` means Task actions,
+not all open Requests.
 
-Apply this first to direct conversational handling. Do not turn Task callers or
-retained child waits into successful results on error. Keep existing row status
-meaning compatible and make failure distinguishable from fulfillment. Reuse
-input result/claim storage; add only the outcome information needed by readers.
+**Accept when:** The shortcut/button works during a busy turn, menu and idle
+behavior preserve input, stale buttons cannot stop newer work, independent Tasks
+continue, and an acknowledgment reports the actual outcome. Keep current durable
+Stop/restart tests. The [human-control design](../2a-design/human-control-surfaces.md#current-turn-control)
+owns the detailed contract. These bindings are not implemented yet.
 
-**Accept when:** Persistent resolver failure stops spending after the chosen
-allowance, remains stopped after reopen, exposes the reason, and permits the
-next message. Failure to publish a response or a lost change hint must not rerun the model.
-The candidate selects this no-automatic-model-retry default. Accepted decisions
-can replay their idempotent Host effects without spending another model turn.
+### 3. Validate redirection and Request follow-through
 
-### 3. Make Stop this turn durable, then add steering
+Start with Stop, then a new correction in the same Conversation. Ordinary input
+currently queues behind a running turn; do not present that as immediate steering.
+If this two-step interaction is insufficient in use, add a way to save the
+correction and interrupt/continue from current evidence. No `/steer` command or
+seamless resume is required. A completed-target race must retain the correction.
 
-Use the exact input/claim execution binding from step 1. Persist Stop before
-aborting the executor; late callbacks cannot reply or admit follow-up work.
-Recovery must not restart that turn. Independent Tasks continue. Adapters send
-the observed target through existing event control; delayed commands cannot
-affect a newer turn. Start with one end-to-end Stop path before adding surfaces.
+Request identity, revision checks, Task links and closure are already implemented,
+as is May's supervision guidance. The documented May/Scout trial shows one useful
+handoff/closure path. Check the remaining cases against
+[Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps):
+correction keeps the same ask, failed/stopped work does not imply fulfillment,
+and a completed linked Task still gets its owed explanation after restart.
+Tests of stored decisions do not prove the model's judgment in every discussion.
 
-Steering can save the correction, interrupt and start the next bounded
-execution from current evidence. Seamless resumption is optional. Verify Stop
-racing with completion, restart, duplicate control, and a delayed old command.
-The [Human controls](../2a-design/human-control-surfaces.md#current-turn-control)
-page owns the full contract, including Request withdrawal and external effects.
+**Accept when:** The human can redirect work without losing the correction or
+silently reviving a stopped turn; accepted obligations stay visible until an
+explicit outcome. Add implementation only for a demonstrated missing boundary.
 
-### 4. Close the loop on accepted Requests
+### 4. Improve failure evidence through existing events
 
-Reuse Conversation storage and the existing May supervision Task. The minimum
-record needs accepted-ask identity, current scope/revision, Conversation
-references, exact linked Tasks when applicable, and open/closed with the closure
-message/reason. This is a data requirement, not a selected table or new lifecycle.
-The App recognizes/refines asks and judges closure; the Host checks versions
-and persists closure consistently with its explanation.
+**Value:** Runtime handling keeps work moving; later investigation identifies
+which failure repeats and whether repair is worth its cost.
 
-Add bounded reads of open asks to existing context and supervision recovery.
-A Request does not run or retry execution itself. Test discussion-only closure,
-handoff remaining open, results after restart, withdrawal, and a delayed closure
-rejected after scope changes. Keep stopped turns stopped even while their ask is
-open. [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps)
-owns these requirements.
+The controller already has a best-effort `onError`. Its current runtime wiring
+uses `handler.failed` with `source: "cron"` and embeds identity/retry details in
+strings; input failures use free-form `info`. Add useful work identity, stage,
+reason and disposition to existing event payloads/readers. Report the actual
+origin when known; do not label all Task controller failures as schedule work.
+Choose measurements only when they answer an operating question, for example
+failure frequency or repeated execution cost.
+
+**Accept when:** An operator can follow a failure to its exact work and subsequent
+disposition without parsing prose. Diagnostic failure cannot prevent cleanup or
+settlement. Apps/LLMs judge repair, scope and stop; the Host enforces mechanics.
+A new core collector or investigation service is not required. This small change
+does not reopen the paused error-App/metrics placement decision.
 
 ## Code homes and boundaries
 
-| Change | Start in existing code | Boundary to preserve |
+| Change | Existing home | Responsibility |
 | --- | --- | --- |
-| Input failure and exact execution control | `app-inbox-host.ts`, `app-request-agent.ts`, manager/session cancellation adapter | Input Host owns handling; executor adapter owns its live execution handle |
-| Durable turn outcomes and fenced controls | `app-inbox-store.ts`, `core/state/requests.ts` where a combined operation is justified; schema in `lib/db/` | One transaction owner; no executor or App policy inside a transaction |
-| Public Stop and failure visibility | Existing event routes/composition, control protocol and one human adapter | Events address exact work; local state changes remain typed calls |
-| Accepted ask recognition and closure | Host `conversations/store.ts` and existing request protocol; `projects/may.app/app.ts` and May guidance | Host stores/fences; App judges meaning; supervision reuses the existing Task |
+| Dispatch, recovery and reporting containment | `app-inbox-runtime.ts`; ownership rules in `app-inbox-host.ts` | Own detached work and cleanup; keep execution control with its adapter |
+| Esc, buttons and command help | `packages/terminal`, `src/app/transport/telegram.ts`, relevant browser adapter | Capture exact work identity and render control outcome |
+| Durable turn Stop | Existing turn-control event route and inbox state | Reuse persisted disposition and exact execution fences |
+| Accepted Request meaning and storage | `conversations/requests.ts`, `projects/may.app/app.ts` | App judges; Host stores and checks revisions |
+| Correlated failure facts | Existing event contract, runtime publishers and read projections | Best-effort evidence independent of work settlement |
+| Further atomic state operations | `core/state/` and existing resource stores | One transaction owner for each coherent change |
 
-Extract a coherent function only when it removes duplicated decisions. Large
-runtime files warrant attention, but moving them wholesale or creating empty
-destination modules supplies no demonstrated benefit.
+Extract a function or module when it removes duplicated decisions or makes a
+failure/transaction boundary independently understandable. Large files are a
+reason to inspect the cost, not a reason to move everything. Keep local reads,
+executor calls and atomic changes as typed calls. Events carry meaningful input,
+changes and wakes; no API server, universal adapter or event for every SQL call.
 
-## Other work and deliberate deferrals
+## Conditional work and deliberate deferrals
 
-- Parent-owned repair now has merged proof in #110. Review the existing
-  [finite-Task stop candidate](task-controller-pattern.md#candidate-stop-without-claiming-success)
-  separately; it does not implement conversational Stop or Request closure.
-- [Atomic attachment](storage-state-service.md#first-slice-implementation-evidence)
-  is already implemented. Extract another state operation only for a demonstrated
-  consistency or maintenance problem.
-- Recovery-query work grows with eligible backlog even with a fixed return limit.
-  The latest synthetic measurement is about 24 ms at 20,000 eligible Tasks.
-  Measure representative load and control responsiveness before optimizing.
+Recovery uses indexed branches, union and ordering before its result limit.
+A bounded returned page does not prove fixed query cost. The earlier synthetic
+review measured about 24 ms with 20,000 eligible Tasks; the post-merge review
+ran no new workload benchmark. Measure representative backlog and human-control
+latency before optimizing. Preserve current correctness fences.
 
-A bounded result count does not prove bounded query cost. Likewise, moving
-files does not prove simpler behavior, and a passing synthetic fixture does
-not prove arbitrary external effects are safe to repeat.
-
-## Review a change
-
-Follow one exact Task or input across admission, execution, result acceptance,
-and a failure or restart. Verify only the boundaries the change affects:
-
-- Accepted work and evidence survive; a stale attempt cannot overwrite current state.
-- Work and retries are bounded; waits release capacity; cleanup still runs if reporting fails.
-- Normal and recovered results use the same acceptance rules.
-- Missing optional capabilities leave unrelated work and canonical reads correct.
-- The owner receives enough evidence to act; inability to finish is visible and never success.
-
-Then compare the removed decisions and ongoing cost with the complexity added.
-Keep App judgment with the App. Events carry meaningful inputs, changes and
-wakes; local reads, executor calls and atomic transitions remain typed calls.
-
-## Deferred choices
-
-Error-hook/metric placement and App consolidation remain in the
-[archived discussion](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
-Existing failure containment is required; an additional core metric service is
-not. Capacity events and a separate API server require a demonstrated consumer
-or consistency problem; they are options in the storage proposal, not prerequisites.
+[Atomic attachment](storage-state-service.md#first-slice-implementation-evidence)
+is complete. Further storage extraction needs an actual consistency or maintenance
+problem. Error-hook/metric placement and App consolidation remain in the
+[paused discussion](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
+Capacity events and an API server require a demonstrated consumer; neither is a
+prerequisite for the fixes above.
 
 ## Completed work and evidence
 
-The latest [design/source comparison and portable probes](../archive/reviews/core-implementation-alignment-20260910.md)
-record 111 passing focused tests, two reproduced input failures, and scope limits.
-The [dated core snapshot](../archive/implementation/core-separation-review-20260910.md)
-preserves the separation steps, source findings and PR-specific validation.
-The [controller review snapshot](../archive/implementation/controller-review-20260910.md)
-preserves settlement/retry candidates and their proof. Current behavior belongs
-in the owning design pages; do not restart completed extraction steps from
-these historical records.
+The [post-merge review and portable probe](../archive/reviews/core-implementation-post112-20260910.md)
+cover the current source. The
+[earlier comparison](../archive/reviews/core-implementation-alignment-20260910.md)
+records the pre-#112 renewal/retry failures; those particular fixes are merged.
+Host #112 includes the earlier #113/#114/#115 conversational slices, so they
+are no longer a merge sequence or active implementation backlog.
+
+Core separation, shared settlement, durable retry limits, atomic attachment and
+parent-owned repair are complete. Their dated evidence remains in the
+[core snapshot](../archive/implementation/core-separation-review-20260910.md) and
+[controller snapshot](../archive/implementation/controller-review-20260910.md).
+Preserve regression coverage without restarting completed work.
 
 ### First stop slice: the current finite Task only
 
-The active specification moved to the
-[controller proposal](task-controller-pattern.md#candidate-stop-without-claiming-success).
-This link remains for earlier reviews; the stop candidate is not part of the
-merged source baseline.
+Host #111 merged finite `achieve` Task stop without live direct children. The
+[current stop contract](task-controller-pattern.md#stop-without-claiming-success)
+retains non-success evidence and parent review. It is distinct from turn Stop
+and Request closure. Policy quality and live follow-through have separate proof.
 
 ## Earlier review links
 

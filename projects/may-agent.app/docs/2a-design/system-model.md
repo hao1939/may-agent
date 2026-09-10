@@ -3,8 +3,10 @@
 **Design status:** Accepted.
 **Implementation status:** App Tasks, bounded conversational work, shared reads,
 and event-driven follow-through are implemented at the [source baseline](../README.md).
-Cross-turn Request tracking and current-turn Stop/Steer have
-[remaining gaps](message-lifecycle.md#current-implementation-and-gaps).
+Accepted Request storage and durable turn Stop are implemented. Esc/button
+bindings and current-turn steering have
+[remaining gaps](human-control-surfaces.md#current-turn-control); App judgment
+needs separate [behavioral evidence](message-lifecycle.md#current-implementation-and-gaps).
 
 May helps a human discuss, decide and get useful work done. An App owns a
 responsibility and decides what a useful outcome means. The Host records work,
@@ -28,8 +30,10 @@ or explain it; they do not own additional work.
 
 A Request can span turns and link Tasks. Ending a turn, starting a Task, and
 fulfilling the ask are different outcomes. Current Host `AppRequest`/inbox rows
-track input handling, which can finish at handoff. They do not yet implement
-[Request acceptance and closure](message-lifecycle.md#requests-acceptance-and-closure).
+track input handling, which can finish at handoff. Separate `conversation_requests`
+records retain the accepted scope, revision, exact Task links and closure.
+The App judges [acceptance and closure](message-lifecycle.md#requests-acceptance-and-closure);
+the Host checks revisions and persists closure with its explanation.
 
 ## A turn or a Task?
 
@@ -66,7 +70,8 @@ The comparison can finish entirely in Conversation if no independent work is
 needed. “The benchmark is running” can finish a turn while the comparison
 Request remains open. If the ask was only to start the benchmark, confirmed
 admission may fulfill that narrower ask. Closure follows the accepted scope.
-The final cross-turn closure behavior remains an implementation gap.
+The source supports this tracking and closure; storage tests alone do not prove
+that May consistently judges the accepted scope correctly in real discussion.
 
 The same flow has ordinary branches:
 

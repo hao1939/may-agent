@@ -52,6 +52,7 @@ reference/hash/size metadata.
 | --- | --- | --- |
 | Tasks, attempts, accepted results/receipts, Conditions and links | Canonical SQLite Task resource rows and fenced transactions | Not reconstructible from session artifacts; preserve the database |
 | Host input handling and cross-App request correlation | SQLite request rows, exact Task/dependency links and accepted results | Not disposable; preserve identity and accepted state |
+| Accepted conversational Requests | SQLite `conversation_requests`: scope, revision, exact Task links and closure | Not reconstructible from input completion; preserve accepted obligations |
 | Pending admission and ordered Task input | SQLite admission journal and Task-event links | Required to recover unaccepted input; an in-memory queue is only a hint |
 | Event and causal links | SQLite identity, envelope and trace; large bodies in content-addressed files | Requires retained rows and referenced bodies; transcripts are not substitutes |
 | Conversation messages, Topics and Task links | Durable message evidence and canonical SQLite Topic/correlation records | Read views derive from retained evidence; exact links are authoritative |
@@ -61,12 +62,12 @@ reference/hash/size metadata.
 | Metrics and alerts | SQLite definitions, samples and alert state | Definitions may be reloaded; historical samples cannot be recreated by remeasurement |
 | Task lists, human-action views, event graphs and dashboards | Read projections of the authorities above | Disposable views; never restore Task state from presentation |
 
-The current request rows track input handling. The accepted
+Host inbox rows track input handling. Separate `conversation_requests` implement the
 [conversational Request contract](message-lifecycle.md#requests-acceptance-and-closure)
-needs durable ask, scope, reference and closure state across turns; its exact
-mapping into storage remains unimplemented. Preserve one authority with bounded
-reads and a consistent closure/message write. Do not reinterpret existing row
-completion as fulfillment or copy Task progress into Request storage.
+across turns. The Host fences updates by revision and commits closure with its
+explanatory Conversation message in one transaction. The App judges whether
+the accepted ask is fulfilled. Input completion is not fulfillment, and Request
+storage does not copy Task progress or own execution.
 
 Small Event bodies remain inline. Large bodies are written to the
 content-addressed store before their event row commits; SQL retains a bounded

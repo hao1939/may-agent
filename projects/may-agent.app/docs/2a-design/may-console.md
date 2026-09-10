@@ -4,7 +4,9 @@
 **Implementation status:** Shared commands, Conversation reads, focused App,
 one Task watch and Task cards are implemented. Direct responsible-Task admission
 sets the watch, and an exact correlated Conversation result suppresses its
-equivalent supporting terminal card. Shared semantics belong to
+equivalent supporting terminal card. Durable turn Stop currently uses `/stop`;
+the Esc binding below is accepted design and remains unimplemented.
+Shared semantics belong to
 [Human Control Surfaces](human-control-surfaces.md).
 
 May Console is a small terminal adapter for the running daemon. It owns
@@ -34,12 +36,15 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 
 ## Commands
 
+Everyday help presents conversation and Task controls first:
+
 | Command                  | Meaning                                               |
 | ------------------------ | ----------------------------------------------------- |
 | `/apps [app]`            | List Apps or select one App                           |
 | `/topics`, `/topics more` | List Conversation Topics page by page                |
 | `/topic [ref\|clear]`   | Show, follow, or leave one Topic                      |
 | `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps/history |
+| `/tasks more`            | Continue the current Task page                        |
 | `/todo [all]`            | Show Tasks that explicitly need human action         |
 | `/todo more`             | Continue the current human-action page                |
 | `/task <ref>`            | Read one exact Task                                   |
@@ -47,17 +52,44 @@ The socket is derived from `STATE_DIR`, `DAEMON_INSTANCE`/`INSTANCE`, and
 | `/unwatch`               | Stop watching without changing the Task               |
 | `/cancel [ref]`          | Cancel the named or currently watched Task            |
 | `/help`                  | Show the ordinary interface                           |
-| `/reload`, `/restart`    | Typed Runtime controls                                |
-| `/shell`                 | Leave Console for an interactive shell                |
-| `/exit`                  | Close only this adapter                               |
+
+Local client and Host administration commands have a separate help group:
+
+| Command | Meaning |
+| --- | --- |
+| `/exit` (`/quit` alias) | Close only this adapter |
+| `/shell` | Leave Console for an interactive shell; exiting that shell exits the client |
+| `/reload` | Reload Host definitions across Apps |
+| `/restart` | Restart the Host, affecting all Apps |
 
 Command, App, Topic references, and recently rendered Task references
 support tab completion. Completion uses bounded local caches; it never asks a
 model to interpret a command.
 
-Host request history, session listing, steering, and session cancellation are
+Host request history, session listing, and session cancellation are
 not ordinary Console commands. Diagnostic raw/session output remains behind
 explicit developer debug controls and is not shown in help.
+`/todo` means Tasks needing human action; it is not a list of all open Requests.
+
+## Keyboard control
+
+Esc stops the active conversational turn when the conversation input has focus.
+An open menu or dialog consumes Esc first. While idle, Esc preserves the draft
+and Conversation. It never exits Console or cancels a background Task. Display
+`Esc: stop this turn` while work is active.
+
+Use the existing `conversation.turn.stop.requested` event with the observed
+App, Conversation, turn ID and revision. Stop persists before execution is
+interrupted; late controls cannot affect a newer turn. Render whether the
+request was accepted or the target already ended. The
+[shared control contract](human-control-surfaces.md#current-turn-control)
+owns persistence, stale-control and external-effect semantics.
+
+The current source exposes this through `/stop` and does not bind Esc. Replace
+that entrypoint and its help/completion entries when implementing the shortcut.
+Ordinary messages currently queue during an active turn. Stopping and then
+sending a correction is the first redirection path; a seamless steering/resume
+feature is optional, and no `/steer` command is required.
 
 ## Ordinary conversation
 
@@ -221,6 +253,9 @@ current truth. A missed wake is harmless.
 means “kill this session.” The daemon persists cancellation, fences stale
 attempt results, removes recovery readiness, interrupts a linked local session,
 and returns the retained Task cancellation view.
+Bare `/cancel` requires a watched Task. Show its exact reference and summary in
+the acknowledgment; `/unwatch` only ends notifications. Closing the Console
+client does not stop a conversational turn or a Task.
 
 ## Conversation synchronization
 

@@ -10,8 +10,8 @@ Atomic request attachment followed in PR #108; exhausted-Task request readiness
 merged in PR #109. PR #110 merged the parent-owner proof as `6dcb0fa3` without
 changing production behavior. Historical candidate evidence below is not the validation
 result for combined main. The existing parent-owner route has the bounded proof
-below; the narrow non-success stop has a candidate described below. App policy
-and live follow-through remain open. No deployment is claimed.
+below; finite non-success stop merged in #111 as `cdcb008b`. App judgment and
+live follow-through need separate evidence. No deployment is claimed here.
 Authoring examples use the existing SDK, not a new schema.
 **Date:** 2026-09-10.
 **Source baseline:** See the [documentation baseline](../README.md).
@@ -371,18 +371,18 @@ dispatch have separate entry points.
 | --- | --- |
 | `core/tasks/controller.ts`, `core/tasks/queue.ts` and Host capacity | Deduplicate, dispatch, delay retry and release capacity. PR #105 fixed the demonstrated exception boundary. No App diagnosis or acceptance policy here. |
 | `app-task-recovery.ts` | Find eligible Task identities and enqueue them through existing timing. Keep the small scheduler; its row limit is not a constant-time query guarantee. |
-| `app-task-runtime.ts`: `reconcileTask` and `recoverInterruptedAppTasks` | Coordinate observation, execution and outcome publication. Consolidate repeated recovered-result handling and interruption decisions where the inputs and rules match. |
+| `app-task-runtime.ts`: `reconcileTask` and `recoverInterruptedAppTasks` | Coordinate observation and execution; both use shared persisted-result settlement. Preserve distinct startup ownership checks. |
 | `app-task-runtime.ts`: `consumePersistedTerminalAgentResult` | Already shares supported recovered-result normalization and admission. Preserve that reuse; do not claim two entirely independent validators exist. |
 | `app-task-reconciler.ts` and `app-task-resource-store.ts` | Own Task transitions and transactional authority checks. Share eligible transitions without weakening distinct lease, generation or cancellation conditions. |
 | `core/tasks/startup-recovery.ts`, `core/tasks/handler-recovery.ts` | Preserve Task ownership of sessions and bounded checks for restored capabilities. These small helpers are not automatically redundant. |
 | Executor adapters and App workflows | Observe provider results, perform bounded work and apply domain judgment. They do not gain their own Task queue or recovery lifecycle. |
 
 The [normal reconciliation path][normal] and [startup recovery path][startup]
-both inspect terminal sessions, invoke the [shared consumer][consumer], publish
-the recovered disposition and arrange dependent wakes. This is a concrete
-consolidation candidate. Start with the repeated post-acceptance handling or an
-internal per-Task settlement function; retain distinct startup ownership checks.
-Do not add a generic callback pipeline just to share a few statements.
+both use [shared settlement][settlement], which invokes the
+[persisted-result consumer][consumer], publishes the committed disposition and
+arranges dependent wakes. This consolidation is implemented. Retain distinct
+startup ownership checks; further extraction needs a demonstrated duplicated
+decision, not a generic callback pipeline.
 
 Other repairs cover missing attempts, dependency admission and historical
 recovery states. Remove one only after showing its behavior is covered by the
@@ -391,9 +391,9 @@ not evidence that all of them can be deleted.
 
 ## Remaining implementation and review
 
-1. Review the finite-Task stop candidate below, including cancellation races,
-   attribution, caller explanation and retained partial evidence. App policy
-   determines when a handler may make that decision.
+1. Preserve the merged finite-Task stop checks below: cancellation races,
+   attribution, caller explanation and retained partial evidence. Review App
+   policy when a handler begins using this decision; the mechanism is complete.
 2. Exercise the whole commitment through existing App mapping: accepted input,
    wait or failure, owner decision, changed scope or retry, and truthful outcome.
    Reuse boundary tests; add evidence only for an actual gap. Scripted owner
@@ -485,7 +485,7 @@ The two focused cases passed 52 assertions. The workspace design check passed
 with zero errors and six pre-existing layout warnings. GitHub Quality and
 Container also [passed on that revision](https://github.com/hao1939/may-agent/actions/runs/34438290694).
 The two cases also passed on merged `6dcb0fa3` during the
-[latest core review](../archive/reviews/core-implementation-alignment-20260910.md).
+[pre-#112 core review](../archive/reviews/core-implementation-alignment-20260910.md).
 That review ran focused tests, not the full CI above. Deployment remains separate.
 
 Authoring is part of the contract: use a real executable parent for aggregate
@@ -495,19 +495,21 @@ not put the children the parent must review in its own `dependsOn` list.
 No default reviewer is invented when none was declared. App policy and a
 truthful non-success stop remain separate from this verified retry route.
 
-## Candidate: stop without claiming success
+<a id="candidate-stop-without-claiming-success"></a>
 
-**Candidate status:** Host [PR #111](https://github.com/hao1939/may-agent/pull/111),
-candidate `716d33a9` on `feat/app-task-stop`, includes current main `6dcb0fa3`
-(merged #110); #111 is not merged or deployed. The source guide and regression tests travel
-with the Host change. This proposal remains the canonical design; existing
-App policies need no change unless they choose to use this result.
+## Stop without claiming success
 
-The latest core comparison did not review this stop candidate. Its dated PR
-observation is recorded separately; historical validation below retains the
-revision on which each check ran.
+**Implementation status:** Host [PR #111](https://github.com/hao1939/may-agent/pull/111)
+merged as `cdcb008b` and is included in the [reviewed source baseline](../README.md).
+The source guide and regression tests accompany the implementation. Existing
+App policies need no change unless they choose to use this result. Source
+implementation alone does not establish model judgment or deployment.
 
-Add `state: "stopped"` to the existing handler result contract, with a non-empty
+The [post-merge review](../archive/reviews/core-implementation-post112-20260910.md)
+includes this implementation. Historical candidate validation below retains
+the revision on which each check ran.
+
+The existing handler result contract accepts `state: "stopped"`, with a non-empty
 reason in `summary`, non-empty evidence, and optional caller response/partial
 result. It means the requested outcome was **not** achieved. Do not combine it
 with Task actions, Conditions or child App requests. This is a handler decision,
@@ -588,6 +590,7 @@ or a generic controller framework.
 - [Core review and reproducible evidence](../archive/reviews/core-simplicity-review-20260910.md).
 - [Existing core boundary proposal](task-runtime-organization.md).
 
-[normal]: https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-runtime.ts#L1290
-[startup]: https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-runtime.ts#L2962
-[consumer]: https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-runtime.ts#L409
+[normal]: https://github.com/hao1939/may-agent/blob/b81a5d622bd1d2990d483d1b536a228b4f9b3157/src/app/app-task-runtime.ts#L1446
+[startup]: https://github.com/hao1939/may-agent/blob/b81a5d622bd1d2990d483d1b536a228b4f9b3157/src/app/app-task-runtime.ts#L3084
+[consumer]: https://github.com/hao1939/may-agent/blob/b81a5d622bd1d2990d483d1b536a228b4f9b3157/src/app/app-task-runtime.ts#L426
+[settlement]: https://github.com/hao1939/may-agent/blob/b81a5d622bd1d2990d483d1b536a228b4f9b3157/src/app/app-task-runtime.ts#L535

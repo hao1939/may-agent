@@ -11,10 +11,11 @@ Human-action projection follows exact dependency leaves and preserves legacy
 `Hao` approval visibility while canonical `human:<role>` ownership is adopted.
 Durable May admission exposes the responsible Task directly; the supervision
 Task remains separately visible for diagnostics.
-Current-turn Stop/Steer below is accepted design with remaining implementation
-work; existing session controls do not yet provide that full contract.
-Explicit conversational Request tracking and closure also remain an
-[implementation gap](message-lifecycle.md#current-implementation-and-gaps).
+Durable turn Stop and accepted Request storage/closure are implemented at the
+[source baseline](../README.md). Console currently exposes `/stop`; the accepted
+Esc and Telegram/browser Stop-button bindings below remain to be implemented.
+Current-turn steering also remains open. App judgment needs separate
+[behavioral evidence](message-lifecycle.md#current-implementation-and-gaps).
 
 **Aligned with:** [system-model.md](system-model.md),
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
@@ -73,12 +74,27 @@ Every human adapter exposes the same small meanings:
 | watch one Task        | `/watch [ref]`                               | `/watch [ref]`, later buttons allowed               |
 | stop watching         | `/unwatch`                                   | `/unwatch`                                          |
 | cancel one Task       | `/cancel [ref]`                              | `/cancel [ref]`                                     |
-| reload definitions    | `/reload`                                    | native `/reload`                                    |
+| stop this turn        | Esc when the conversation input has focus     | Stop button on the active turn                      |
 | talk or give feedback | bare text                                    | ordinary message                                    |
 
 Adapters may render these resources differently. Console uses aligned text and
 tab completion. Telegram uses compact messages and may add native buttons.
 The Host resolves Apps and Task references and revalidates canonical identity.
+The Stop row is the accepted interface; see [current-turn control](#current-turn-control)
+for the current implementation. A browser conversation uses the same Stop button
+and exact turn target.
+
+Help groups everyday conversation and Task controls separately from Host
+administration and diagnostics. `/reload` reloads Host definitions; Console
+`/restart` restarts the Host. Neither is limited to the selected App. Console
+`/exit` closes the client; `/shell` leaves it for a local shell. Keep raw/session
+diagnostics out of ordinary help. This is presentation in the existing adapters,
+not a new command framework.
+
+Telegram currently also accepts an unlisted `/close` that shuts down the entire
+Host. Remove that ambiguous command from the ordinary adapter; any retained
+shutdown control belongs to explicit Host administration with its scope visible.
+`/todo` lists Tasks needing human action, not every open conversational Request.
 
 Each surface may also follow one Topic. `/topics` lists the newest page of short
 references, plain titles, and linked Task counts; `/topics more` reads older
@@ -341,25 +357,35 @@ Watch does not poll and owns no timer, workflow, session, or model turn.
 
 ## Current-turn control
 
-**Source candidate:** [Host #114](https://github.com/hao1939/may-agent/pull/114)
-adds Console `/stop`. It reads `activeTurn: { id, revision }` from the existing
-Conversation resource, then publishes `conversation.turn.stop.requested` with
-App, Conversation, turn ID and expected revision. The Host persists Stop before
-aborting the exact execution; duplicate/late controls cannot select a newer
-turn. It bypasses ordinary conversational execution, not persistence checks.
-Independent Tasks continue, and an accepted Request remains unresolved.
-This candidate includes restart/race and real Console socket tests. It does
-not yet add steering or a Telegram control and is not deployment evidence.
+**Interface decision:** Use Esc in Console and a Stop button in Telegram/browser.
+No `/stop` command is needed in the intended everyday vocabulary.
 
-**Implementation gap:** Ordinary human messages are currently admitted in order
-and wait for the active Conversation claim. Low-level `session.steer.requested`
-and `session.cancel.requested` controls exist, but do not establish durable
-current-turn steering or stopping. The
-[request-agent resolver](../../../may-agent/src/app/app-request-agent.ts)
-treats an unsuccessful session as an error; the
-[request handler](../../../may-agent/src/app/app-inbox-host.ts) releases errors for retry.
-Stopping that session alone therefore cannot promise that the turn stays
-stopped. The controls below are requirements, not shipped commands or buttons.
+| Console context | Esc behavior |
+| --- | --- |
+| A menu or dialog is open | Dismiss that UI first; do not stop work |
+| Conversation input has focus and a turn is active | Request Stop for that exact turn; preserve the draft and Conversation |
+| No turn is active | Preserve the draft and Conversation; do not exit Console |
+
+Show the shortcut while a turn is active. A Stop button carries the observed
+turn identity and becomes inactive when that turn ends. A control reports
+whether Stop was accepted or its target had already ended; acknowledging the
+request does not promise every external operation has already halted.
+If persistence fails or the adapter is disconnected, report that Stop was not
+confirmed. Never display a stopped outcome based only on a local keypress.
+
+**Current implementation:** Merged Host #112 includes durable Stop with a
+Console `/stop` entrypoint. It reads `activeTurn: { id, revision }` from the
+Conversation resource and publishes `conversation.turn.stop.requested` with
+App, Conversation, turn ID and expected revision. Reuse this mechanism for
+Esc/buttons, then remove the Console command and its completion/help entry.
+Esc and the buttons are not implemented at the reviewed source baseline.
+
+Ordinary messages still wait for the active Conversation claim. Stop followed
+by a new message provides the first simple redirection path; with the intended
+binding this becomes Esc, then the correction. The later steering capability
+below must retain the correction durably. Existing low-level session controls
+alone do not establish that contract. Failed conversational execution already
+has a durable failed outcome and does not automatically rerun the model.
 
 Human adapters expose distinct meanings:
 
@@ -395,6 +421,9 @@ current evidence. Do not require seamless execution recovery or blindly repeat
 side effects. If the target turn has already finished, retain the unconsumed
 correction for the next turn rather than silently losing it. Receiving a
 correction is not evidence that its requested change has been completed.
+No `/steer` command is required. Keep ordinary discussion and corrections in
+Conversation; an explicit steering gesture, if added, supplies timing and the
+exact target while the App interprets the correction.
 
 Keep these mechanics on the existing event system, turn/request state, and
 execution controls. Adapters provide presentation and exact targets; the Host enforces
@@ -415,6 +444,11 @@ separate control service, or new work lifecycle is required.
 An in-flight stale result cannot cross the new resource fence. A maintained
 responsibility may refuse generic cancellation and name its App-specific
 control instead. `/unwatch` is never cancellation.
+Use `/cancel <ref>` when the target is not already watched. Bare `/cancel`
+resolves only the currently watched Task and fails when there is none. Render
+the exact Task reference and summary in its acknowledgment so the target is
+clear. Esc never substitutes for Task cancellation, and `/exit` only closes
+the Console client.
 
 ## Performance boundary
 
@@ -456,8 +490,10 @@ terminal exit, durable Task cancellation, stale-attempt fencing, cross-surface
 Conversation context, exact human-Condition membership, bounded `/todo`
 reconstruction, and independence from adapter delivery.
 
-Before claiming current-turn control is implemented, also verify that controls
+Retain the existing durable Stop checks: controls
 bypass a busy turn, stopped requests stay stopped after restart, late results
 and admissions are rejected, already admitted Tasks survive a turn Stop, stale
-controls cannot affect a newer turn, and steering survives completion races
-without losing or applying the same correction twice.
+controls cannot affect a newer turn. Before claiming the new interfaces work,
+verify Esc precedence for menus/dialogs, draft preservation, idle behavior,
+exact button targets and truthful acknowledgments. Steering separately needs
+completion-race checks without losing or applying the same correction twice.

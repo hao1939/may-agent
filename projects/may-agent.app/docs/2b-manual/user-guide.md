@@ -61,19 +61,34 @@ agent run named `may`.
 | `/watch [ref]`        | Watch or show one Task                                    |
 | `/unwatch`            | Leave the watch without changing the Task                 |
 | `/cancel [ref]`       | Cancel the named or currently watched Task                |
-| `/reload`, `/restart` | Reload definitions or restart the Runtime                 |
-| `/shell`, `/exit`     | Leave Console for a shell, or close only Console          |
+| `/stop`              | Stop the active conversational turn; current interim control |
+| `/help`              | Show available controls                                  |
+
+Local client and Host administration controls:
+
+| Command | Action |
+| --- | --- |
+| `/exit` (`/quit`) | Close only Console |
+| `/shell` | Leave Console for a shell; exiting that shell exits the client |
+| `/reload` | Reload Host definitions across Apps |
+| `/restart` | Restart the Host, affecting all Apps |
 
 `/tasks` shows each Task's plain state, concrete goal, and whether it needs you.
 Use `/task <ref>` for the goal, current progress or wait, expected result, exact
 human action (or `Nothing needed right now`), and last update time. Technical
 IDs and sessions are shown only as secondary details.
 
-`/cancel` cancels a Task; `/unwatch` only ends its watch. Explicit Stop/Steer for
-the current conversational turn is an
-[accepted design with an implementation gap](../2a-design/human-control-surfaces.md#current-turn-control),
-not an available shared Console/Telegram command. Ordinary text sent during a
-running turn is currently admitted but waits for the next Conversation claim.
+`/cancel <ref>` cancels that Task; bare `/cancel` requires a watched Task.
+`/unwatch` only ends notifications. `/stop` stops the current conversational turn
+and leaves admitted background Tasks running. It does not withdraw an accepted
+Request or undo earlier effects. Send a new message to continue or correct the
+discussion; text sent during a running turn currently waits for the next claim.
+
+The [accepted interface](../2a-design/human-control-surfaces.md#current-turn-control)
+replaces Console `/stop` with Esc and adds Telegram/browser Stop buttons.
+Those bindings and current-turn steering are not available at the documented
+source baseline. Do not rely on Esc to stop work yet. These command descriptions
+describe that source; an installed release may lag it.
 
 Bare text always goes through May with the selected App as context. While
 watching, Console also attaches the exact Task identity as context. May decides
@@ -91,6 +106,7 @@ best-effort off-watch notifications update from Task events without polling.
 `/watch <ref>` opens one action for live progress and natural feedback;
 satisfying its Condition removes it from `/todo` without a delivery
 acknowledgement.
+This view lists Task actions, not every open conversational Request.
 
 ## Starting and development modes
 

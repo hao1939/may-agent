@@ -9,10 +9,11 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
-| Input failure containment and repeated conversational execution | [Core review plan](task-runtime-organization.md#implementation-order-and-candidate-decisions): contain renewal failure, preserve authority, and choose a bounded failure outcome; [reproductions](../archive/reviews/core-implementation-alignment-20260910.md) |
-| Accepted Requests across turns | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps): preserve ask identity, corrections, linked results and closure through restart |
-| Stop/Steer the current turn | [Human controls](../2a-design/human-control-surfaces.md#current-turn-control): stopped turns do not restart; independent Tasks remain separate |
-| App decision when work cannot finish | [Controller proposal](task-controller-pattern.md#candidate-stop-without-claiming-success): review the finite-Task stop candidate and prove authorized owner follow-through |
+| Input dispatch, recovery and reporting containment | [Core review plan](task-runtime-organization.md#implementation-order-and-candidate-decisions): attach cleanup before fallible reads, contain detached recovery, and make diagnostics best effort; [post-merge reproductions](../archive/reviews/core-implementation-post112-20260910.md) |
+| Esc/Stop-button bindings and clear command help | [Human controls](../2a-design/human-control-surfaces.md#current-turn-control): reuse merged durable Stop, replace Console `/stop`, separate Task controls from Host administration |
+| Current-turn redirection | [Core review plan](task-runtime-organization.md#3-validate-redirection-and-request-follow-through): start with Stop then a correction; add immediate steering only when its value is demonstrated |
+| Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [controller proposal](task-controller-pattern.md#remaining-implementation-and-review): extend bounded evidence for correction, restart, scope and truthful closure; storage, retry and finite Task stop mechanics are merged |
+| Correlated failure evidence | [Core review plan](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events): identify exact work, stage and disposition through existing events/reads; investigation does not gate settlement |
 | Further atomic storage operations | [Storage proposal](storage-state-service.md): extract only a demonstrated consistency boundary; the request attachment slice is merged |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |
 | Remaining central domain metrics | The migration rule below and [Metrics](../2a-design/metrics.md) |

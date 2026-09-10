@@ -7,8 +7,8 @@ the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
 
 **Source baseline:** Current implementation descriptions refer to Host `main`
-at `6dcb0fa3` (through PR #110, reviewed September 10, 2026). PR #110 adds
-parent-owner tests and source guidance; production behavior is unchanged from #109.
+at `b81a5d62` (reviewed September 10, 2026), including finite Task stop (#111)
+and conversational ownership, bounded failure, Requests and durable turn Stop (#112).
 Candidate-branch behavior and its validation stay in the linked proposals until
 merged. This baseline identifies source behavior, not the deployed release.
 
@@ -31,8 +31,10 @@ It tracks each workflow separately; revised guidance is not deployment proof.
 Keep the core simple and robust. The [core review plan](proposals/task-runtime-organization.md)
 prioritizes reproduced input-handling failures and remaining interaction work;
 the [gap index](proposals/design-implementation-convergence.md)
-links its owners. Request tracking and current-turn Stop/Steer are accepted
-design with implementation gaps. Controller stop behavior is a source candidate.
+links its owners. Request storage, bounded failed turns and durable Stop are
+implemented. Remaining work includes input-runtime failure containment, Esc and
+Stop-button bindings, and current-turn steering. App judgment and deployment
+need their own evidence.
 Completed separation and recovery reviews live in the [archive](archive/README.md).
 Error/metric placement and App consolidation remain
 [paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).

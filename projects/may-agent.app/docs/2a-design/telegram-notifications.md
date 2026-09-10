@@ -8,6 +8,8 @@ is no durable per-surface replay cursor. Watch refreshes suppress unchanged
 semantic Task revisions and render only meaningful changes. Follow-up
 admission now presents the responsible Task directly, and human-action reads
 follow exact dependency links to the Task that owns the action.
+The accepted [current-turn Stop button](human-control-surfaces.md#current-turn-control)
+remains unimplemented; Task cancellation and ending a watch have separate effects.
 
 ## Purpose
 
