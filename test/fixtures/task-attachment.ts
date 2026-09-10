@@ -1,8 +1,8 @@
 import type { AppTaskAttacher } from "../../src/app/app-inbox-host.js";
 import { waitAppInboxClaim, wakeAppInboxItem } from "../../src/app/app-inbox-store.js";
-import { linkConversationTopicTask } from "../../src/app/conversations/store.js";
+import { linkConversationTopicTask } from "../../src/app/core/state/conversations.js";
 import type { SqliteDb } from "../../src/lib/db.js";
-import { linkConversationRequestTask } from "../../src/app/conversations/requests.js";
+import { linkConversationRequestTask } from "../../src/app/core/state/conversation-requests.js";
 
 /** Inbox-only tests fake Task storage; state and runtime tests use the real operation. */
 export function fakeTaskAttacher(

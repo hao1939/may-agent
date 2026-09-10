@@ -19,8 +19,8 @@ import type { AppRegistry } from "./core/apps/registry.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 import { listAppInboxChildren } from "./app-inbox-store.js";
-import { readAppConversationResource } from "./conversations/store.js";
-import { applyConversationRequestUpdates } from "./conversations/requests.js";
+import { readAppConversationResource } from "./core/state/conversations.js";
+import { applyConversationRequestUpdates } from "./core/state/conversation-requests.js";
 
 const input = (kind: string) => Type.Object({ kind: Type.Literal(kind), data: Type.Object({ text: Type.String() }) });
 const may = defineApp({

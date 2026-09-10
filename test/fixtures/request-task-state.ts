@@ -8,7 +8,7 @@ import {
   failAppTaskAttempt,
 } from "../../src/app/app-task-reconciler.js";
 import { getAppInboxItem } from "../../src/app/app-inbox-store.js";
-import { admitTaskRequest, attachRequestToTask } from "../../src/app/core/state/requests.js";
+import { admitTaskRequest, attachRequestToTask } from "../../src/app/core/state/inbox.js";
 
 export const testAttachment = (taskId = "work/one"): AppTaskAttachment => ({
   kind: "desired",

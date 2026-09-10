@@ -16,7 +16,7 @@ import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./ap
 import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { createAppRequestAgentResolver } from "./app-request-agent.js";
-import { readAppConversationResource } from "./conversations/store.js";
+import { readAppConversationResource } from "./core/state/conversations.js";
 import { HostCapacity } from "./host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
 import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
