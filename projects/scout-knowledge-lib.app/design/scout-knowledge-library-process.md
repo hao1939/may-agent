@@ -318,10 +318,14 @@ owner every six hours. A fact disappears when current domain truth no longer
 produces it.
 
 Each packet includes at most 16 owner signals. `wake_decisions` records
-eligibility before that limit; only inclusion in `wake_signals` starts the
-fact's reminder interval. Omitted eligible facts remain due on later ordinary
-scans. The packet is an observation and signal selection, not proof that Scout
-reviewed or repaired the finding. No second queue or owner-state ledger is needed.
+eligibility before that limit. History is appended only after the Host accepts
+the event; only `wake_signals` in that history start a fact's reminder interval.
+Failed publication and omitted eligible facts leave signals due on later scans.
+The event contains the owner facts; `packetPath` points to the observer's mutable
+history, which may not yet contain this observation when the event is received.
+A crash between publication and history append can repeat a signal rather than
+lose it. The packet is not proof that Scout reviewed or repaired the finding.
+No second queue or owner-state ledger is needed.
 
 Scout decides what to do with those facts. The useful outcomes are:
 

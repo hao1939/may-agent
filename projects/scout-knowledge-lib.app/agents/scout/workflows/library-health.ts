@@ -6,7 +6,7 @@ import {
   statSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
@@ -735,12 +735,9 @@ export function buildLibraryHealthPacket(input: {
   };
 }
 
-function writePacket(appDir: string, packet: LibraryHealthPacket): string {
-  const stateDir = join(appDir, ".state");
-  mkdirSync(stateDir, { recursive: true });
-  const path = join(stateDir, packetFile);
+function writePacket(path: string, packet: LibraryHealthPacket): void {
+  mkdirSync(dirname(path), { recursive: true });
   appendFileSync(path, `${JSON.stringify(packet)}\n`, "utf8");
-  return path;
 }
 
 export function acceptedSourceOutputsMetricDefinition() {
@@ -814,7 +811,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     },
   );
   const packet = buildLibraryHealthPacket({ appDir, projectDir });
-  const packetPath = writePacket(appDir, packet);
+  const packetPath = join(appDir, ".state", packetFile);
 
   await ctx.events.emit({
     type: "project.library_health.observed",
@@ -828,6 +825,10 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       wakeSignals: packet.wake_signals,
     },
   });
+  // The event carries the owner facts. Start reminder history only after the
+  // Host accepts publication; a failed emit must leave those facts due.
+  // A crash before this append may repeat a signal, but cannot silence it.
+  writePacket(packetPath, packet);
 
   const summary =
     packet.wake_signals.length > 0

@@ -62,6 +62,43 @@ function oversizedNote(projectDir: string, lines: number): void {
 }
 
 describe("Scout library-health observer", () => {
+  it("keeps signals due when event publication fails", async () => {
+    const paths = fixture();
+    oversizedNote(paths.projectDir, 801);
+    const ctx = createTestAppWorkflowContext({
+      input: {},
+      workspace: {
+        appRoot: paths.appDir,
+        projectRoot: paths.projectDir,
+        root: paths.projectDir,
+        output: join(paths.appDir, ".state", "output"),
+      },
+    });
+    ctx.events.emit = async () => {
+      throw new Error("publication unavailable");
+    };
+    await expect(execute(ctx)).rejects.toThrow("publication unavailable");
+    const due = buildLibraryHealthPacket(paths);
+    expect(due.wake_signals).toContainEqual(
+      expect.objectContaining({
+        key: "oversized-canonical-note:knowledge/large.md",
+      }),
+    );
+
+    const published: Parameters<typeof ctx.events.emit>[0][] = [];
+    ctx.events.emit = async (event) => {
+      published.push(event);
+    };
+    expect((await execute(ctx)).status).toBe("done");
+    expect(published).toHaveLength(1);
+    expect(published[0].data?.wakeSignals).toContainEqual(
+      expect.objectContaining({
+        key: "oversized-canonical-note:knowledge/large.md",
+      }),
+    );
+    expect(buildLibraryHealthPacket(paths).wake_signals).toEqual([]);
+  });
+
   it("retires the obsolete JSON output metric when the observer runs", async () => {
     const paths = fixture();
     const ctx = createTestAppWorkflowContext({
