@@ -17,7 +17,7 @@ function updateConversationStop() {
   document.getElementById('md-toggle').hidden = isMayConversation();
   document.querySelector('#chat-agent-banner .banner-session').hidden = isMayConversation();
   button.hidden = !isMayConversation();
-  button.disabled = !isMayConversation() || !mayActiveTurn || mayStopPending || !ws || ws.readyState !== WebSocket.OPEN;
+  button.disabled = !isMayConversation() || !mayActiveTurn || mayStopPending;
 }
 
 function subscribeMayConversation() {
@@ -57,7 +57,8 @@ function refreshMayConversation() {
         document.getElementById('chat-status').textContent = mayActiveTurn ? 'Working — Stop returns control to you' : 'Ready';
       } catch (error) {
         if (isMayConversation()) {
-          mayActiveTurn = null;
+          // Retain the last exact target: HTTP Stop is independent of these
+          // reads/notifications, and the Host rejects a stale turn revision.
           document.getElementById('chat-status').textContent = error.message;
         }
       }

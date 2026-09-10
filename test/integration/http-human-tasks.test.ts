@@ -235,6 +235,20 @@ describe("HTTP human Task reads and board", () => {
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
       expect(published.at(-1)).toEqual(unconfirmed);
+      rejectConversationRead = true;
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      await page.waitForFunction(() => document.querySelector("#chat-status")!.textContent!.includes("storage unavailable"));
+      // Drop the actual notification connection while the HTTP control route
+      // remains usable. Its normal reconnect must later recover a lost wake.
+      await page.evaluate("ws.close()");
+      await page.waitForFunction("ws === null");
+      expect(await page.$eval("#chat-stop", el => (el as HTMLButtonElement).disabled)).toBe(false);
+      const stoppedOverHttp = page.waitForResponse(response => response.url() === `${base}/api/events` && response.request().method() === "POST");
+      await page.click("#chat-stop");
+      expect((await stoppedOverHttp).status()).toBe(201);
+      expect(published.at(-1)).toMatchObject({ type: "conversation.turn.stop.requested",
+        data: { turnId: "turn-two", expectedRevision: 8 } });
+      rejectConversationRead = false;
       conversation.activeTurn = undefined;
       for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
