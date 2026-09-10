@@ -24,9 +24,10 @@ behavior change rather than treating this guide as replacement design.
 
 | Home | Responsibility | Current entrypoint |
 | --- | --- | --- |
-| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/` registration, `events/` admission/observation, `reads/` canonical reads, `tasks/` controller, queue and execution/recovery contracts, `scheduling/` owned timing |
+| `core/` | Identity, authority, and recovery rules shared by every capability | `apps/` registration, `events/` admission/observation, `inbox/` input context and handler contract, `state/` consistent resource operations, `reads/` canonical reads, `tasks/` controller, queue and execution/recovery contracts, `scheduling/` owned timing |
 | `adapters/` | Concrete capability implementations | `discovery/`, `executors/`, `workspaces/`, `producers/`, `maintenance/`, `reporting/` |
-| `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts`, `task-execution.ts`, `maintenance.ts`, `maintenance-activation.ts`, `reporting.ts` |
+| `conversations/` | Replaceable conversational context and execution | `context.ts`, `turn-handler.ts`, `turn-agent.ts`; durable state stays in `core/state/` |
+| `composition/` | Select implementations and wire process startup/lifecycle | `background-startup.ts`, `conversation-inbox.ts`, `task-execution.ts`, `maintenance.ts`, `maintenance-activation.ts`, `reporting.ts` |
 
 `app-runtime.ts` remains the main composition root. Transaction-critical Task
 stores/reconciliation and request admission retain their existing flat files;
@@ -37,8 +38,9 @@ not every file or an entire runtime-instance rewrite.
 Core depends on contracts and foundational utilities, not concrete adapters.
 Composition may import both sides. Adapters receive the narrow capabilities
 they need; they do not become another Task state or recovery authority.
-ESLint rejects imports from `core/` (and the still-flat Task runtime) into
-`adapters/` or `composition/`. Boundary tests may wire both sides. Keep new
+ESLint rejects imports from `core/` (and the still-flat Task runtime and inbox
+Host) into `adapters/`, `composition/` or the `conversations/` frontend.
+Boundary tests may wire both sides. Keep new
 contracts next to their core owner; do not expose Host internals through the SDK.
 
 Loading prepares definitions and handlers without activating producers.
@@ -65,6 +67,7 @@ existing implementation; register it with an ordinary import, not a manifest.
 | Built-in agent/workflow/session backend | `core/tasks/execution.ts` | `adapters/executors/`; `composition/task-execution.ts` | `app-task-runtime.test.ts`: removal, restoration and exact attempt fencing |
 | Task worktree | `core/tasks/workspace.ts` | `adapters/workspaces/git.ts`; `composition/task-execution.ts` | `adapters/workspaces/git.test.ts` plus workspace admission tests in `app-task-runtime.test.ts` |
 | App schedule | SDK schedule declarations; `core/scheduling/timer.ts` mechanics | `adapters/producers/app-schedules.ts`; `app-inbox-runtime.ts` | `adapters/producers/app-schedules.test.ts`: publication failure and reload |
+| Conversation handling | `core/inbox/input-handler.ts`: `AppInputHandler` | `conversations/turn-handler.ts` and `turn-agent.ts`; `composition/conversation-inbox.ts` | `core/state/inbox.test.ts`: Task-only operation without the frontend retains Conversation reads |
 | Optional reports | `core/reads/reporting.ts` | `adapters/reporting/`; `composition/reporting.ts` | `composition/reporting.test.ts`: unavailable/failing reports do not reject App publication |
 
 For deterministic Host maintenance, follow the existing
@@ -171,16 +174,18 @@ owners; the registry does not take over their lifecycle.
 | What may an external caller publish or read?     | `packages/control/src/events.ts` and `client.ts` in the repository root        |
 | How does the Host admit an event?                | `core/events/interface.ts`: `createEventInterface()`                           |
 | How are declared routes selected and remembered? | `app-inbox-runtime.ts`; `app-event-admission-store.ts`                         |
-| How is one request handled?                      | `app-inbox-host.ts`: `reconcileOnce()` and `#handleRequest()`                  |
-| Where are requests claimed and settled?          | `app-inbox-store.ts`                                                           |
-| How are messages and Topics read?                | `conversations/store.ts`: `readAppConversationResource()`                      |
+| How is one admitted input handled?               | `app-inbox-host.ts`: `reconcileOnce()` and `#handleRequest()`                  |
+| Where are inputs claimed and settled?            | `app-inbox-store.ts` claim primitives; `core/state/inbox.ts`: `completeInboxInput()` |
+| How are messages and Topics read?                | `core/state/conversations.ts`: `readAppConversationResource()`                |
+| Where are accepted asks read and revised?        | `core/state/conversation-requests.ts`: scoped reads, paging and revision checks |
+| Where is conversational execution selected?      | `composition/conversation-inbox.ts` wires `conversations/turn-handler.ts`     |
 | Where does admission hand off durable work?      | `app-task-capability.ts`: `attach()`                                           |
 
 ## Two entry paths
 
 ```text
-typed input -> persist request -> deferred request handler -> attach Task
-fact        -> select and persist routes -> request admission or Task admission
+typed input -> persist inbox item -> deferred input handler -> answer or attach Task
+fact        -> select and persist routes -> input admission or Task admission
 ```
 
 An App's `task(input)` maps a typed request to an existing or desired Task.
@@ -188,11 +193,16 @@ Its `subscriptions[].toInput(event)` translates a fact into typed input;
 `tasks.resolve(event)` can map a subscribed fact directly to Task intent.
 These are pure mappings. The Task runtime owns execution after admission.
 
-The request handler has three branches: handle a declared conversational input,
-return the observed result of linked work, or attach the request to a Task.
-Conversation handling uses `app-request-agent.ts`; Task attachment uses the
-supplied Task capability. Dependency waiting is durable state, so it releases
-the request handler's execution slot.
+The inbox Host has three branches: invoke the selected handler for a declared
+conversational input, return the observed result of linked work, or attach the
+input to a Task. `composition/conversation-inbox.ts` selects the existing
+`conversations/context.ts` enrichment and `conversations/turn-handler.ts`;
+`conversations/turn-agent.ts` invokes the shared model/tool runner. Generic
+dispatch owns claims, Stop and recovery; core state owns consistent writes.
+Task-only operation can omit the conversation frontend and still read retained
+Conversation state. Task attachment uses the supplied Task capability.
+Retained child waits release the execution slot; new interactive Turns answer
+or hand off to independent Tasks rather than becoming waiting parents.
 
 ## App-owned non-success stop
 
@@ -441,15 +451,20 @@ old accepted results and new execution remain intact.
 These boundaries implement Step 5 of the sibling core proposal; they do not
 add a reporting registry, lifecycle, queue, or alternative state authority.
 
-`app-inbox-store.ts` owns durable requests and their claims; the word inbox is
-the implementation name for those requests. `conversations/store.ts` reads
-that evidence and owns Topic links. Both use the same Host database.
+`app-inbox-store.ts` owns admitted input records and their claim primitives.
+An inbox item is not an accepted conversational Request. The shared
+`core/state/conversations.ts` reads message evidence and owns Topic links;
+`core/state/conversation-requests.ts` owns accepted asks and scoped revision checks.
+`core/state/conversation-turns.ts` accepts decisions, Topics and Request updates
+together. `core/state/inbox.ts` commits input completion with Request closure;
+`core/state/conversation-outcomes.ts` records supervised outcomes with their
+links, explanation and Request updates. All use the same Host database.
 `app-event-admission-store.ts` remembers the selected route payloads so retries
 apply the recorded decision. None of these stores is an additional work owner.
 
-`core/state/requests.ts` atomically attaches a claimed request: Task input,
-request wait/claim release, and Topic link commit together. Task settlement
-persists request readiness; notifications only accelerate discovery. Recovery
+`core/state/inbox.ts` atomically attaches a claimed input: Task input,
+input wait/claim release, and Topic link commit together. Task settlement
+persists input readiness; notifications only accelerate discovery. Recovery
 also recognizes the old target-qualified admission keys when admission committed
 before a crashed Host stored the wait. It reuses that accepted identity without
 replaying input or rewriting admission history.

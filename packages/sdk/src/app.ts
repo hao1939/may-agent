@@ -210,11 +210,12 @@ export const conversationRequestUpdatesSchema = Type.Array(
   { maxItems: 8 },
 );
 
-/** Author-visible request. Host lifecycle and lease fields stay private. */
-export type AppRequest<TData = unknown> = {
+/** Context for one admitted input, distinct from an accepted conversational Request. */
+export type AppInputContext<TData = unknown> = {
+  /** Inbox input identity; not an accepted Request ID. Host lifecycle and leases stay private. */
   id: string;
   source: AppInputSource;
-  /** True when this request is direct work on behalf of a human turn. */
+  /** True when this input is direct work on behalf of a human Turn. */
   humanRequested?: true;
   parentId?: string;
   input: AppInput<TData>;
@@ -233,6 +234,9 @@ export type AppRequest<TData = unknown> = {
   /** Bounded exact conversation evidence; it never owns or schedules work. */
   conversation?: AppConversationResource;
 };
+
+/** @deprecated Use AppInputContext. Retained for existing SDK consumers. */
+export type AppRequest<TData = unknown> = AppInputContext<TData>;
 
 /** Pure, durable identity supplied when an admitted App input is resolved to work. */
 export type AppTaskInput<TData = unknown> = {
@@ -279,7 +283,7 @@ export type AppRequestFollowUp = {
   task?: { appId: string; taskId: string };
 };
 
-/** One bounded conversational decision. Code applies it; the model decides meaning. */
+/** Retained App input decision, including the older child-result wait protocol. */
 export type AppRequestDecision = {
   summary: string;
   /**
@@ -296,6 +300,9 @@ export type AppRequestDecision = {
   taskControls?: AppRequestTaskControl[];
   requestUpdates?: AppConversationRequestUpdate[];
 };
+
+/** One interactive Turn's answer/effects; background work is an exact Task handoff. */
+export type ConversationTurnResult = Omit<AppRequestDecision, "dependencies">;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 
@@ -358,6 +365,11 @@ export const appRequestAgentResultSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
+/** Human Turns finish or hand off; they do not wait as parents of child App inputs. */
+export const conversationTurnResultSchema = Type.Omit(appRequestAgentResultSchema, ["dependencies"], {
+  additionalProperties: false,
+});
 
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */

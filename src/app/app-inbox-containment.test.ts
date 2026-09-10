@@ -9,7 +9,7 @@ import { AppRegistry } from "./core/apps/registry.js";
 import { EventBus, type AgentEvent } from "./core/events/bus.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { HostCapacity } from "./host-capacity.js";
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversations/requests.js";
+import { applyConversationRequestUpdates, readConversationRequest } from "./core/state/conversation-requests.js";
 
 async function until(predicate: () => boolean) {
   const deadline = Date.now() + 3000;

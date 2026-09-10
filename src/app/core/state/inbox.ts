@@ -1,4 +1,13 @@
-import type { AppRequest, AppTaskAttachment } from "@may-agent/sdk";
+import type { SqliteDb } from "../../../lib/db.js";
+import {
+  assertAppInboxClaim,
+  completeAppInboxClaim,
+  recordAppInboxHandling,
+  wakeAppInboxItemsWaitingOn,
+  type AppInboxHandling,
+} from "../../app-inbox-store.js";
+import { applyConversationRequestUpdates, ConversationRequestConflict } from "./conversation-requests.js";
+import type { AppInputContext, AppTaskAttachment, AppResult } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { getAppInboxItem, waitAppInboxClaim, wakeAppInboxItem, type AppInboxClaim } from "../../app-inbox-store.js";
@@ -11,14 +20,14 @@ import {
 } from "../../app-task-reconciler.js";
 import type { AppTaskContext } from "../../app-task-store.js";
 import { isTaskAttentionReadyForReview } from "../../app-task-state.js";
-import { linkConversationTopicTask } from "../../conversations/store.js";
-import { linkConversationRequestTask } from "../../conversations/requests.js";
+import { linkConversationTopicTask } from "./conversations.js";
+import { linkConversationRequestTask } from "./conversation-requests.js";
 
 export type TaskRequestInput = {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppRequest>;
+  request: Readonly<AppInputContext>;
   authorize?: () => void;
   topicId?: string;
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
@@ -164,4 +173,58 @@ export function attachRequestToTask(
     }
     return observation;
   });
+}
+
+/** Retry an uncommitted result, not a rejected decision or Task operation. */
+export class InputCompletionError extends Error {}
+
+export function appRequestChildrenWaitId(requestId: string): string {
+  if (!requestId.trim()) throw new Error("App input id must be a non-empty string");
+  return `children:${requestId.trim()}`;
+}
+
+/** Input result, accepted-ask closure and dependent wakes share one commit. */
+export function completeInboxInput(
+  db: SqliteDb,
+  input: {
+    claim: AppInboxClaim;
+    result: AppResult;
+    handling?: AppInboxHandling;
+    authorize: () => void;
+    now: number;
+  },
+): void {
+  const { claim, result, handling, authorize, now } = input;
+  try {
+    stateTransaction(db, () => {
+      authorize();
+      assertAppInboxClaim(db, claim, now);
+      if (handling) recordAppInboxHandling(db, claim, handling, now);
+      if (!handling && claim.item.handling?.phase === "decided" && claim.item.conversationId) {
+        const closing = (claim.item.handling.decision.requestUpdates ?? []).filter(
+          (update) => update.disposition !== "open",
+        );
+        if (closing.length)
+          applyConversationRequestUpdates(db, {
+            appId: claim.item.appId,
+            conversationId: claim.item.conversationId,
+            topicId: claim.item.topicId,
+            updates: closing.map((update) => ({ ...update, expectedRevision: update.expectedRevision + 1 })),
+            updateKey: `input:${claim.item.id}:close`,
+            messageId: `result:${claim.item.id}`,
+            now,
+          });
+      }
+      const rowCompleted = completeAppInboxClaim(db, claim, result, now);
+      if (!rowCompleted) throw new Error("claim is stale");
+      wakeAppInboxItemsWaitingOn(db, { kind: "app", id: claim.item.id }, now);
+      if (claim.item.parentId) {
+        wakeAppInboxItemsWaitingOn(db, { kind: "app", id: appRequestChildrenWaitId(claim.item.parentId) }, now);
+      }
+    });
+  } catch (error) {
+    if (!handling && claim.item.handling?.phase === "decided" && !(error instanceof ConversationRequestConflict))
+      throw new InputCompletionError(error instanceof Error ? error.message : String(error), { cause: error });
+    throw error;
+  }
 }

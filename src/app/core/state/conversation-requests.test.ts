@@ -1,27 +1,29 @@
+import { createConversationInbox } from "../../composition/conversation-inbox.js";
+import { APP_REQUEST_CONVERSATION_MAX_BYTES } from "../../conversations/context.js";
+import { boundedAppRequestConversation } from "../../conversations/context.js";
 import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Type, defineApp, type AppRequestDecision, type AppConversationRequestUpdate } from "@may-agent/sdk";
-import { getDb, closeDb } from "../../lib/requests.js";
-import { openDatabase } from "../../lib/db.js";
-import { DbWriter } from "../../lib/db-writer.js";
-import { AppInboxHost, boundedAppRequestConversation, APP_REQUEST_CONVERSATION_MAX_BYTES } from "../app-inbox-host.js";
-import { AppTaskResourceStore } from "../app-task-resource-store.js";
-import { appTaskContext, claimObservedAppTask, completeAppTask } from "../app-task-reconciler.js";
-import { admitTaskRequest } from "../core/state/requests.js";
+import { getDb, closeDb } from "../../../lib/requests.js";
+import { openDatabase } from "../../../lib/db.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { appTaskContext, claimObservedAppTask, completeAppTask } from "../../app-task-reconciler.js";
+import { admitTaskRequest } from "./inbox.js";
 import {
   createConversationTopic,
   linkConversationTopicTask,
   listStaleConversationTopicTasks,
   readAppConversationResource,
   readConversationTopic,
-} from "./store.js";
-import { readConversationRequest, applyConversationRequestUpdates } from "./requests.js";
-import { startAppInboxRuntime } from "../app-inbox-runtime.js";
-import { AppRegistry } from "../core/apps/registry.js";
-import { EventBus, type AgentEvent } from "../core/events/bus.js";
-import { HostCapacity } from "../host-capacity.js";
+} from "./conversations.js";
+import { readConversationRequest, applyConversationRequestUpdates } from "./conversation-requests.js";
+import { startAppInboxRuntime } from "../../app-inbox-runtime.js";
+import { AppRegistry } from "../apps/registry.js";
+import { EventBus, type AgentEvent } from "../events/bus.js";
+import { HostCapacity } from "../../host-capacity.js";
 
 const roots: string[] = [];
 afterEach(() =>
@@ -61,7 +63,7 @@ function fixture() {
   const db = getDb(root);
   let sequence = 0;
   const makeHost = (decision: AppRequestDecision) =>
-    new AppInboxHost({ db, apps: [app, owner], resolveRequest: async () => decision });
+    createConversationInbox({ db, apps: [app, owner], resolveRequest: async () => decision });
   const turn = async (decision: AppRequestDecision) => {
     const host = makeHost(decision);
     const id = `turn-${++sequence}`;
@@ -138,7 +140,7 @@ test("failed completion rolls back closure; reopen applies the saved decision wi
   db.exec(
     `CREATE TRIGGER reject_result BEFORE UPDATE ON app_inbox_items WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END;`,
   );
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db,
     apps: [app],
     retryAfterMs: 0,
@@ -160,7 +162,7 @@ test("failed completion rolls back closure; reopen applies the saved decision wi
   db.exec("DROP TRIGGER reject_result");
   const reopened = openDatabase(join(root, "may.db"));
   try {
-    const after = new AppInboxHost({
+    const after = createConversationInbox({
       db: reopened,
       apps: [app],
       resolveRequest: async () => {
@@ -447,7 +449,7 @@ test("open asks fit bounded context; an omitted ask can still be read and handed
   expect(bounded.requests!.every((item) => item.scope.length === 2000)).toBe(true);
   expect(readConversationRequest(db, app.id, "chat", "ask-0")?.scope.length).toBe(2000);
   let handoffs = 0;
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db,
     apps: [app, owner],
     resolveRequest: async ({ request }) => {
@@ -498,7 +500,7 @@ test.each(["closed", "foreign"])("a %s ask cannot be handed off through the scop
     now: 1,
   });
   let handoffs = 0;
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db,
     apps: [app, owner],
     resolveRequest: async () => ({

@@ -1,3 +1,4 @@
+import { createConversationInbox } from "./composition/conversation-inbox.js";
 import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -10,10 +11,9 @@ import { AppRegistry } from "./core/apps/registry.js";
 import { EventBus } from "./core/events/bus.js";
 import { createEventInterface } from "./core/events/interface.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
-import { AppInboxHost } from "./app-inbox-host.js";
 import { HostCapacity } from "./host-capacity.js";
-import { readAppConversationResource } from "./conversations/store.js";
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversations/requests.js";
+import { readAppConversationResource } from "./core/state/conversations.js";
+import { applyConversationRequestUpdates, readConversationRequest } from "./core/state/conversation-requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
 
@@ -147,7 +147,7 @@ test("public Stop persists before abort, rejects late output and cannot affect t
     const databasePath = db.prepare("PRAGMA database_list").get()!.file as string;
     const reopenedDb = openDatabase(databasePath);
     try {
-      const after = new AppInboxHost({
+      const after = createConversationInbox({
         db: reopenedDb,
         apps: [app],
         resolveRequest: async () => {
@@ -176,7 +176,7 @@ test("failed Stop persistence does not abort; completed input and stale revision
   const entered = Promise.withResolvers<void>();
   const finish = Promise.withResolvers<void>();
   let aborted = false;
-  const host = new AppInboxHost({
+  const host = createConversationInbox({
     db,
     apps: [app],
     resolveRequest: async ({ execution }) => {

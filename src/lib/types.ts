@@ -94,7 +94,7 @@ export interface SessionInfo {
   kind?: SessionKind;
   /** Number of state-changing tool calls executed so far. */
   opCount?: number;
-  /** LLM turns completed. */
+  /** Compatibility wire name: model steps started, not human Conversation Turns. */
   turnCount?: number;
   /** Structured finish() parameters (context_updates, completed_items, etc). */
   finishParams?: Record<string, unknown>;

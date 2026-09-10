@@ -40,23 +40,40 @@ it("enforces bounded imports with and without extensions, but allows neutral hel
   }
 });
 
-it("keeps concrete adapters and composition out of core, but allows wiring and boundary tests", async () => {
+it("keeps capability implementations out of core, but allows wiring and boundary tests", async () => {
   const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
   const source = [
     'import { adapter } from "../../adapters/workspaces/git.js"; void adapter;',
     'import type { Wiring } from "../../composition/task-execution.js"; export type Check = Wiring;',
     'export { adapter } from "../../adapters/workspaces/git";',
+    'import { createConversationTurnHandler } from "../../conversations/turn-handler.js"; void createConversationTurnHandler;',
+    'export { prepareConversationInput } from "../../conversations/context";',
     'import type { TaskWorkspaces } from "./workspace.js"; export type Contract = TaskWorkspaces;',
   ].join("\n");
-  for (const filePath of ["src/app/core/tasks/controller.ts", "src/app/app-task-runtime.ts"]) {
+  for (const filePath of [
+    "src/app/core/tasks/controller.ts",
+    "src/app/core/inbox/input-context.ts",
+    "src/app/core/state/inbox.ts",
+    "src/app/app-inbox-host.ts",
+    "src/app/app-task-runtime.ts",
+  ]) {
     const [result] = await eslint.lintText(source, { filePath });
     expect(result.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual([
       ["no-restricted-imports", 1],
       ["no-restricted-imports", 2],
       ["no-restricted-imports", 3],
+      ["no-restricted-imports", 4],
+      ["no-restricted-imports", 5],
     ]);
   }
-  for (const filePath of ["src/app/composition/task-execution.ts", "src/app/core/tasks/controller.test.ts"]) {
+  for (const filePath of [
+    "src/app/composition/task-execution.ts",
+    "src/app/composition/conversation-inbox.ts",
+    "src/app/core/tasks/controller.test.ts",
+    "src/app/core/inbox/input-context.test.ts",
+    "src/app/core/state/inbox.test.ts",
+    "src/app/app-inbox-host.test.ts",
+  ]) {
     const [result] = await eslint.lintText(source, { filePath });
     expect(result.messages).toEqual([]);
   }

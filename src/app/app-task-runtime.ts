@@ -13,13 +13,13 @@ import type {
 import { appTaskSessionBinding } from "./core/tasks/session-binding.js";
 import { recoverUnavailableTaskHandlers } from "./core/tasks/handler-recovery.js";
 import { getDb } from "../lib/requests.js";
-import { admitTaskRequest, attachRequestToTask } from "./core/state/requests.js";
+import { admitTaskRequest, attachRequestToTask } from "./core/state/inbox.js";
 import type { AppInboxClaim } from "./app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type AppTaskAttachment,
   type Condition as AppTaskConditionSpec,
   type TaskAppDependency,
@@ -2890,7 +2890,7 @@ export function attachLoadedAppTask(input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppRequest>;
+  request: Readonly<AppInputContext>;
   /** Inbox calls attach atomically; direct Task admission has no request claim. */
   claim?: AppInboxClaim;
   now?: number;

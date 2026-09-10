@@ -4,8 +4,8 @@ import {
   type AppConversationRequestUpdate,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import type { SqliteDb } from "../../lib/db.js";
-import { stateTransaction } from "../../lib/db/transaction.js";
+import type { SqliteDb } from "../../../lib/db.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 
 export class ConversationRequestConflict extends Error {}
 type Row = {
@@ -63,6 +63,19 @@ export function listConversationRequests(
         ...(topicId ? [topicId] : []),
       ) as Row[]
   ).map(view);
+}
+
+/** Bounded discovery; use readConversationRequest for the full scope before changing it. */
+export function pageOpenConversationRequests(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+  afterId = "",
+): Array<{ id: string; revision: number; scopePreview: string; status: "open" }> {
+  return db.prepare(
+    `SELECT id, revision, substr(scope, 1, 160) AS scopePreview, status
+     FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND status = 'open' AND id > ? ORDER BY id LIMIT 12`,
+  ).all(appId, conversationId, afterId) as Array<{ id: string; revision: number; scopePreview: string; status: "open" }>;
 }
 
 /** The caller includes the explanation/result write in this same transaction. */

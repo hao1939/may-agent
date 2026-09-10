@@ -1,3 +1,6 @@
+import { createConversationInbox } from "./composition/conversation-inbox.js";
+import { APP_REQUEST_CONVERSATION_MAX_BYTES } from "./conversations/context.js";
+import { boundedAppRequestConversation } from "./conversations/context.js";
 import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { createHash } from "node:crypto";
@@ -7,7 +10,7 @@ import {
   defineApp,
   type AppConversationResource,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type AppTaskAttachment,
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -17,8 +20,8 @@ import {
   createConversationTopic,
   linkConversationTopicTask,
   readAppConversationResource,
-} from "./conversations/store.js";
-import { APP_REQUEST_CONVERSATION_MAX_BYTES, AppInboxHost, boundedAppRequestConversation } from "./app-inbox-host.js";
+} from "./core/state/conversations.js";
+import { AppInboxHost } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
   kind: Type.Literal("probe"),
@@ -69,7 +72,7 @@ describe("App inbox host", () => {
   }
 
   it("validates input and exposes typed actions without lifecycle machinery", () => {
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [
         defineApp({
@@ -119,7 +122,7 @@ describe("App inbox host", () => {
           },
         ],
       });
-    const host = new AppInboxHost({ db, apps: [subscribed("old.event")] });
+    const host = createConversationInbox({ db, apps: [subscribed("old.event")] });
 
     expect(host.subscriptionInputs({ type: "old.event", data: {} })).toHaveLength(1);
     expect(host.subscriptionInputs({ type: "unrelated.event", data: {} })).toEqual([]);
@@ -131,7 +134,7 @@ describe("App inbox host", () => {
 
   it("resolves every admitted input to exactly one durable Task", async () => {
     const attachments: Array<{ appId: string; idempotencyKey: string; attachment: AppTaskAttachment }> = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app()],
       attachTask: fakeTaskAttacher(db, async ({ appId, attachment, idempotencyKey }) => {
@@ -161,7 +164,7 @@ describe("App inbox host", () => {
       requests: { mode: "agent" },
     });
     const attachments: AppTaskAttachment[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may],
       resolveRequest: async () => ({
@@ -203,7 +206,7 @@ describe("App inbox host", () => {
       tasks: {},
     });
     const handoffs: unknown[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app("evaluation")],
       resolveRequest: async () => ({
@@ -266,7 +269,7 @@ describe("App inbox host", () => {
 
     let calls = 0;
     const handoffs: Array<{ task?: { appId: string; taskId: string }; outcome: string }> = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app()],
       readDependency: async ({ dependency }) => ({ ...dependency, status: "done" }),
@@ -336,7 +339,7 @@ describe("App inbox host", () => {
       }),
     });
     const attachments: AppTaskAttachment[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [
         defineApp({
@@ -406,7 +409,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent", conversationId: "may:primary" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may],
       resolveRequest: async ({ request }) => {
@@ -451,11 +454,11 @@ describe("App inbox host", () => {
     });
     const worker = app("worker");
     const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
-    const attachedRequests: Readonly<AppRequest>[] = [];
+    const attachedRequests: Readonly<AppInputContext>[] = [];
     const delegated: string[] = [];
     let workerDone = false;
     let mayCalls = 0;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, worker],
       resolveRequest: async ({ request }) => {
@@ -547,7 +550,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app("worker")],
       resolveRequest: async () => ({
@@ -585,7 +588,7 @@ describe("App inbox host", () => {
 
   it("publishes a direct conversational answer instead of only storing its receipt", async () => {
     const messages: unknown[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [
         defineApp({
@@ -638,7 +641,7 @@ describe("App inbox host", () => {
     });
     const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
     const messages: string[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [
         defineApp({
@@ -702,7 +705,7 @@ describe("App inbox host", () => {
     });
     const completedTasks = new Set<string>();
     let mayCalls = 0;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app("worker")],
       resolveRequest: async ({ request }) => {
@@ -768,7 +771,7 @@ describe("App inbox host", () => {
     const worker = app("worker");
     const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
     let first = true;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, worker],
       resolveRequest: async ({ request }) => {
@@ -839,7 +842,7 @@ describe("App inbox host", () => {
     const followUpEntered = new Promise<void>((resolve) => (followUpStarted = resolve));
     let firstCalls = 0;
     let secondCalls = 0;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app("worker")],
       resolveRequest: async ({ request }) => {
@@ -942,8 +945,8 @@ describe("App inbox host", () => {
   });
 
   it("attaches typed follow-up input to one exact existing Task", async () => {
-    const attachments: Array<{ attachment: AppTaskAttachment; request: Readonly<AppRequest> }> = [];
-    const host = new AppInboxHost({
+    const attachments: Array<{ attachment: AppTaskAttachment; request: Readonly<AppInputContext> }> = [];
+    const host = createConversationInbox({
       db,
       apps: [app()],
       attachTask: fakeTaskAttacher(db, async ({ attachment, request }) => {
@@ -978,7 +981,7 @@ describe("App inbox host", () => {
   it("wakes an attention Task but does not silently apply input to a terminal Task", async () => {
     const attachments: AppTaskAttachment[] = [];
     const completed: unknown[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app()],
       readDependency: async ({ dependency }) => ({
@@ -1026,7 +1029,7 @@ describe("App inbox host", () => {
   it("projects the Task semantic result to the correlated request", async () => {
     const completed: unknown[] = [];
     let done = false;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app()],
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
@@ -1142,7 +1145,7 @@ describe("App inbox host", () => {
       ...app("may-agent"),
       task: () => capture.ownerResult.disposition.task,
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [mayApp],
       attachTask: fakeTaskAttacher(db, async ({ appId, attachment, idempotencyKey }) => {
@@ -1211,7 +1214,7 @@ describe("App inbox host", () => {
 
   it("accepts the attachment operation's ready request without creating a second Task", async () => {
     let attachments = 0;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app()],
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
@@ -1245,7 +1248,7 @@ describe("App inbox host", () => {
         task: () => ({ kind: "existing" as const, taskId: "runtime/owner-review" }),
       });
     const reads: string[] = [];
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [constantTaskApp("evaluation"), constantTaskApp("alpha-project")],
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
@@ -1282,7 +1285,7 @@ describe("App inbox host", () => {
 
   it("yields control traffic between dependency recovery items from one App", async () => {
     let reads = 0;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app()],
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
@@ -1321,7 +1324,7 @@ describe("App inbox host", () => {
       ...app("may-agent"),
       task: () => ({ kind: "existing" as const, taskId: "runtime/platform-owner-review" }),
     });
-    const legacyHost = new AppInboxHost({
+    const legacyHost = createConversationInbox({
       db,
       apps: [legacy],
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
@@ -1337,7 +1340,7 @@ describe("App inbox host", () => {
     });
 
     const attachments: AppTaskAttachment[] = [];
-    const repairedHost = new AppInboxHost({
+    const repairedHost = createConversationInbox({
       db,
       apps: [app("may-agent")],
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
@@ -1369,7 +1372,7 @@ describe("App inbox host", () => {
 
   it("passes bounded Conversation context to the Task Event", async () => {
     let request: unknown;
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [app("may")],
       attachTask: fakeTaskAttacher(db, async (input) => {
@@ -1398,8 +1401,8 @@ describe("App inbox host", () => {
   });
 
   it("projects one exact focused Task observation without making focus an action", async () => {
-    let request: AppRequest | undefined;
-    const host = new AppInboxHost({
+    let request: AppInputContext | undefined;
+    const host = createConversationInbox({
       db,
       apps: [
         defineApp({
@@ -1460,7 +1463,7 @@ describe("App inbox host", () => {
   });
 
   it("resolves exact Tasks from recent command views into bounded canonical request context", async () => {
-    let request: AppRequest | undefined;
+    let request: AppInputContext | undefined;
     const may = defineApp({
       id: "may",
       version: 1,
@@ -1468,7 +1471,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may],
       readDependency: async ({ appId, dependency }) => ({
@@ -1534,7 +1537,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may],
       readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
@@ -1597,7 +1600,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may],
       retryAfterMs: 0,
@@ -1630,7 +1633,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app("worker")],
       retryAfterMs: 0,
@@ -1683,7 +1686,7 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [may, app("worker")],
       resolveRequest: async () => ({
@@ -1739,7 +1742,7 @@ describe("App inbox host", () => {
   });
 
   it("continues with the next request after one Task resolver fails", async () => {
-    const host = new AppInboxHost({
+    const host = createConversationInbox({
       db,
       apps: [
         defineApp({
@@ -1769,7 +1772,7 @@ describe("App inbox host", () => {
   });
 
   it("does not remove an App while it owns unfinished requests", () => {
-    const host = new AppInboxHost({ db, apps: [app()] });
+    const host = createConversationInbox({ db, apps: [app()] });
     admit(host, "owned");
     expect(() => host.replaceApps([])).toThrow("Cannot remove App evaluation while it owns unfinished inbox items");
     host.replaceApps([app(), app("next")]);
@@ -1788,7 +1791,7 @@ describe("App inbox host", () => {
        VALUES (101, 'evaluation', 'inbox', 'probe', ?, 'pending', 1000)`,
     ).run(JSON.stringify({ input: { kind: "probe", data: { value: "retained" } } }));
 
-    const host = new AppInboxHost({ db, apps: [app("next")] });
+    const host = createConversationInbox({ db, apps: [app("next")] });
     expect(host.appIds()).toEqual(["next"]);
     const retained = db.prepare("SELECT * FROM app_event_admission_commands WHERE event_id = 101").get();
     expect(retained).toMatchObject({ app_id: "evaluation", status: "pending", updated_at: 1000 });

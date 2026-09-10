@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { readAppConversationResource } from "./conversations/store.js";
+import { readAppConversationResource } from "./core/state/conversations.js";
 import {
   associateAppInboxClaimSession,
   claimAppInboxItem,

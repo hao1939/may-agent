@@ -9,7 +9,7 @@ import {
   defineApp,
   taskAgentResultSchema,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type TaskExecutor,
 } from "@may-agent/sdk";
 import { DbWriter } from "../lib/db-writer.js";
@@ -17,7 +17,7 @@ import { openDatabase } from "../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./core/events/bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppInboxHost } from "./app-inbox-host.js";
-import { attachRequestToTask } from "./core/state/requests.js";
+import { attachRequestToTask } from "./core/state/inbox.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
@@ -3136,7 +3136,7 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     });
-    const request: Readonly<AppRequest> = {
+    const request: Readonly<AppInputContext> = {
       id: "request-1",
       source: { kind: "human", id: "operator" },
       input: { kind: "sample", data: {} },
@@ -5216,7 +5216,7 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const request: Readonly<AppRequest> = {
+    const request: Readonly<AppInputContext> = {
       id: "request-paused",
       source: { kind: "human", id: "operator" },
       input: { kind: "sample", data: {} },

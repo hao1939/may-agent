@@ -92,7 +92,7 @@ export default [
   },
 
   {
-    files: ["src/app/core/**/*.ts", "src/app/app-task-runtime.ts"],
+    files: ["src/app/core/**/*.ts", "src/app/app-task-runtime.ts", "src/app/app-inbox-host.ts"],
     ignores: ["**/*.test.ts"],
     rules: {
       "no-restricted-imports": [
@@ -100,8 +100,8 @@ export default [
         {
           patterns: [
             {
-              group: ["**/adapters/**", "**/composition/**"],
-              message: "Core depends on contracts; select concrete adapters in composition.",
+              group: ["**/adapters/**", "**/composition/**", "**/conversations/**"],
+              message: "Core depends on contracts; select adapters and conversational handlers in composition.",
             },
           ],
         },
