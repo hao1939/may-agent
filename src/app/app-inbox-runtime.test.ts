@@ -1097,6 +1097,7 @@ describe("App inbox runtime", () => {
         ...task.options,
         conversationAppId,
         deferStart: true,
+        now: () => 120_000,
       });
       const publish = (taskId: string, generation = 1, summary = "") =>
         bus.emit({
@@ -1145,6 +1146,40 @@ describe("App inbox runtime", () => {
         appId: "other",
         conversationId: "other-chat",
         taskRef: { appId: "evaluation", taskId: "conversation/follow-up" },
+      });
+
+      // Both links qualify for recovery. Apply the same self-wake rule there,
+      // without suppressing ordinary work or another App's diagnostic watch.
+      for (const taskId of ["probe/current", "conversation/follow-up"]) {
+        db.prepare(
+          `INSERT INTO app_tasks(
+             app_id, task_id, generation, resource_version, observed_generation, phase,
+             lane, changed, ready, updated_at, resource_json
+           ) VALUES ('evaluation', ?, 1, 1, 1, 'waiting', 'normal', 0, 0, 1, '{}')`,
+        ).run(taskId);
+      }
+      const review = (appId: string) =>
+        bus.emit({
+          type: "conversation.supervision.review",
+          source: "test-schedule",
+          owner: `app:${appId}`,
+          data: { project: appId, minQuietMs: 60_000, limit: 10 },
+        } as any);
+      review("evaluation");
+      expect(changes).toHaveLength(5);
+      expect(changes[4]).toMatchObject({
+        appId: "evaluation",
+        conversationId: "chat",
+        taskRef: { appId: "evaluation", taskId: "probe/current" },
+        reason: "No Task update was observed during the review interval.",
+      });
+      review("other");
+      expect(changes).toHaveLength(6);
+      expect(changes[5]).toMatchObject({
+        appId: "other",
+        conversationId: "other-chat",
+        taskRef: { appId: "evaluation", taskId: "conversation/follow-up" },
+        reason: "No Task update was observed during the review interval.",
       });
     },
   );

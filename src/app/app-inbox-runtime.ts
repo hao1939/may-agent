@@ -399,6 +399,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       reason?: string;
     },
   ): void => {
+    // Live updates and recovery share this boundary. The owning Conversation
+    // must not project its follow-up Task back to itself; other Apps may watch it.
+    if (isConversationFollowUpTask(link.appId, taskRef.appId, taskRef.taskId)) return;
     const topic = readConversationTopic(options.db, link.appId, link.conversationId, link.topicId);
     const conversation = readAppConversationResource(options.db, link.appId, link.conversationId, {
       limit: 20,
@@ -1360,7 +1363,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const summary = typeof data.summary === "string" ? data.summary.trim() : "";
         if (appId && taskId) {
           for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
-            if (isConversationFollowUpTask(link.appId, appId, taskId)) continue;
             emitConversationTaskChanged(
               link,
               { appId, taskId },

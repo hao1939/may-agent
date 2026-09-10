@@ -15,9 +15,11 @@ frontend's Task status presentation. The shipped Host selects `may`; the shared
 scheduler does not recognize a particular App name. [`task-status.ts`](task-status.ts)
 owns waiting-message wording/deduplication and the conventional
 `conversation/follow-up` self-wake suppression. The latter follows the owning
-Conversation, so retained follow-up work cannot wake itself through Task status
-projection if selection changes or is omitted; other Apps can still observe it. Omitting selection leaves inputs
-in the background lane; the shared capacity limit and reserve remain unchanged.
+Conversation, so retained follow-up work cannot wake itself through live Task
+updates or supervision recovery if selection changes or is omitted. Both paths
+apply the safeguard before projecting a Task change; other Apps can still
+observe it. Omitting selection leaves inputs in the background lane; the shared
+capacity limit and reserve remain unchanged.
 This internal selection does not rename an installed App or change its stored
 identities, event routes, or turn-handler declarations.
 
