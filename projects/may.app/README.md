@@ -30,5 +30,10 @@ material change, concrete human decision, or explicit human status question
 still deserves a clear answer. An intentionally disabled App is not permission
 to enable it or replace its work.
 
+Keep new progress separate from old asks. A maintained Task can produce useful
+findings after the linked Request is fulfilled. Report those findings on their
+own merits; old retry messages do not establish why a later cycle ran. Name a
+retry or human-requested run only when current evidence supports that link.
+
 This App owns no Host operations policy. Those outcomes belong to the separate
 Host Operations App (stable compatibility ID `app:may-agent`).

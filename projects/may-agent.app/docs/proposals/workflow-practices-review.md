@@ -343,3 +343,20 @@ by its reproduced regression, not yet a second natural post-deployment queue.
 The brief missing-tab startup observation produced a maintenance no-op, not
 duplicate research or another human request. This remains a local candidate,
 not a published release or proof of long-duration reliability.
+
+## Continued observation and result attribution — 10:15 UTC
+
+The natural recovery wake 6318497 completed at 6318505 with a quiet review of
+the two previously unavailable linked Tasks. It emitted no Conversation
+message, reopened no Request and did not enable another App. The original HN
+ask remained fulfilled at revision 2.
+
+Inspection of the 10:00 HN report confirmed a narrower communication defect:
+May called scheduled research a retry, even though the original ask had already
+closed. The current Task evidence established a new finding, not a new human
+request. May guidance now distinguishes historical Conversation context from
+the cause of current work. When the cause is unknown, report the finding
+without guessing; useful ongoing research can still deserve an update.
+No new event, lifecycle rule or suppression mechanism was added. The missing
+guidance regression failed before the change; 67 May/Scout contract and
+workflow tests passed afterward. Future model behavior still needs live proof.

@@ -124,6 +124,16 @@ describe("canonical May conversation App", () => {
       expect(result.result).not.toHaveProperty("result.conversation");
   });
 
+  test("separates fresh Task progress from a previously fulfilled ask", () => {
+    const guidance = JSON.stringify(
+      mayFollowUpTask({ type: "conversation.task.changed", data: {} })!.input,
+    );
+    expect(guidance).toContain("Past Conversation messages are historical context");
+    expect(guidance).toContain("not proof of what triggered this cycle");
+    expect(guidance).toContain("already-closed Request");
+    expect(guidance).toContain("If the trigger is unknown, report the finding");
+  });
+
   test("keeps common authority shared and separates domain Task guidance", () => {
     const common = readFileSync(
       new URL("../../agents/may/AGENTS.md", import.meta.url),
