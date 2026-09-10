@@ -3,7 +3,7 @@ import { openDatabase } from "../../src/lib/db.js";
 import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
 import { appTaskContext, claimObservedAppTask, completeAppTask } from "../../src/app/app-task-reconciler.js";
 import { getAppInboxItem } from "../../src/app/app-inbox-store.js";
-import { attachRequestToTask } from "../../src/app/core/state/requests.js";
+import { admitTaskRequest, attachRequestToTask } from "../../src/app/core/state/requests.js";
 
 export const testAttachment = (taskId = "work/one"): AppTaskAttachment => ({
   kind: "desired",
@@ -41,6 +41,17 @@ if (import.meta.main) {
     else {
       const item = getAppInboxItem(db, "request-one");
       if (!item?.lease) throw new Error("Request is no longer owned");
+      if (action === "crash-admission-existing" || action === "crash-admission-desired") {
+        const kind = action === "crash-admission-existing" ? "existing" : "desired";
+        // Released Hosts committed admission before the request wait/Topic link.
+        admitTaskRequest(config, {
+          appId: "example",
+          attachment: kind === "existing" ? { kind, taskId } : testAttachment(taskId),
+          idempotencyKey: `task:${item.id}:${kind}:${taskId}`,
+          request: { id: item.id, source: item.source, input: item.input },
+        });
+        process.kill(process.pid, "SIGKILL");
+      }
       if (action === "crash-before") {
         const run = db.run.bind(db);
         db.run = (sql, params) => {

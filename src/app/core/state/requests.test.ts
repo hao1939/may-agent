@@ -21,6 +21,7 @@ import {
   claimObservedAppTask,
   completeAppTask,
   markAppTaskAttention,
+  observeAppTaskIntent,
 } from "../../app-task-reconciler.js";
 import { finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
 import { admitTaskRequest, attachRequestToTask } from "./requests.js";
@@ -96,6 +97,7 @@ async function worker(path: string, action: string, taskId?: string) {
     {
       stdout: "pipe",
       stderr: "pipe",
+      timeout: 10_000,
     },
   );
   const [exitCode, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
@@ -142,6 +144,73 @@ describe("request-to-Task state operation", () => {
     expect(() =>
       attachRequestToTask(config, { ...input, request: { ...input.request, input: { kind: "changed", data: {} } } }),
     ).toThrow("does not match");
+  });
+
+  it.each([
+    ["desired", false],
+    ["existing", false],
+    ["desired", true],
+    ["existing", true],
+  ] as const)("recovers a released %s admission after a crash (completed: %j)", async (kind, completed) => {
+    const { db, path, config, input } = fixture();
+    const desired = testAttachment();
+    if (desired.kind !== "desired") throw new Error("fixture");
+    if (kind === "existing") observeAppTaskIntent(config, { intent: desired.intent, appAgent: config.agent });
+    expect(await worker(path, `crash-admission-${kind}`)).toEqual({ exitCode: 137, stderr: "" });
+    expect(getAppInboxItem(db, input.request.id)?.waitingOn).toBeUndefined();
+    if (completed) finishTask(config);
+    const before = config.resourceStore.readTaskContext({ taskIds: ["work/one"] });
+    const legacyKey = `task:request-one:${kind}:work/one`;
+    const admissions = () =>
+      config.resourceStore.readTaskContext({
+        taskIds: [],
+        admissionIds: [legacyKey, input.idempotencyKey],
+      }).appTaskAdmissions;
+    const accepted = admissions()?.[legacyKey];
+    expect(accepted).toBeDefined();
+    const now = input.claim.item.lease!.expiresAt + 1;
+    const claim = claimAppInboxItem(db, input.request.id, "restarted-handler", 60_000, now)!;
+    const resumed = {
+      ...input,
+      claim,
+      now,
+      attachment: kind === "existing" ? ({ kind, taskId: "work/one" } as const) : desired,
+    };
+    db.exec(
+      "CREATE TRIGGER fail_topic BEFORE INSERT ON conversation_topic_tasks BEGIN SELECT RAISE(ABORT, 'link failure'); END",
+    );
+    expect(() => attachRequestToTask(config, resumed)).toThrow("link failure");
+    expect(admissions()?.[input.idempotencyKey]).toBeUndefined();
+    expect(admissions()?.[legacyKey]).toEqual(accepted);
+    expect(getAppInboxItem(db, input.request.id)?.lease?.owner).toBe("restarted-handler");
+    db.exec("DROP TRIGGER fail_topic");
+    const result = attachRequestToTask(config, resumed);
+    expect(result.taskId).toBe("work/one");
+    expect(admissions()?.[input.idempotencyKey]).toBeUndefined();
+    expect(admissions()?.[legacyKey]).toEqual(accepted);
+    expect(config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers).toEqual(before.taskTriggers);
+    expect(getAppInboxItem(db, input.request.id)?.waitingOn?.id).toBe("work/one");
+    expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+    expect(Boolean(getAppInboxItem(db, input.request.id)?.availableAt)).toBe(completed);
+    const revision = config.resourceStore.revision();
+    attachRequestToTask(config, resumed);
+    expect(config.resourceStore.revision()).toBe(revision);
+  });
+
+  it("rejects changed desired work but can recover its prior admission as an existing Task", () => {
+    const { db, config, input } = fixture();
+    const legacyKey = "task:request-one:desired:work/one";
+    admitTaskRequest(config, { ...input, idempotencyKey: legacyKey });
+    const before = config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers;
+    const changed = testAttachment();
+    if (changed.kind !== "desired") throw new Error("fixture");
+    changed.intent.outcome = "Different work";
+    expect(() => attachRequestToTask(config, { ...input, attachment: changed })).toThrow("different desired work");
+    expect(getAppInboxItem(db, input.request.id)?.waitingOn).toBeUndefined();
+    expect(getAppInboxItem(db, input.request.id)?.lease?.owner).toBe(input.claim.owner);
+    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    expect(config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers).toEqual(before);
+    expect(getAppInboxItem(db, input.request.id)?.waitingOn?.id).toBe("work/one");
   });
 
   it("rejects an expired or superseded request claim before creating Task work", () => {

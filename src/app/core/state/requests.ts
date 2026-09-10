@@ -102,6 +102,23 @@ export function attachRequestToTask(
     ) {
       throw new Error("claim is stale");
     }
+    // A released Host could commit admission and crash before storing the wait.
+    // Reuse that exact target's identity; normal admission checks still reject
+    // changed work. The request wait becomes authoritative in this transaction,
+    // so no admission rewrite, scan or schema migration is needed.
+    let admissionKey = operationKey;
+    if (!previous) {
+      const keys = [
+        operationKey,
+        `task:${current.id}:${input.attachment.kind}:${taskId}`,
+        `task:${current.id}:${input.attachment.kind === "existing" ? "desired" : "existing"}:${taskId}`,
+      ];
+      const admissions = config.resourceStore.readTaskContext({
+        taskIds: [],
+        admissionIds: keys,
+      }).appTaskAdmissions;
+      admissionKey = keys.find((key) => admissions?.[key]) ?? operationKey;
+    }
     // Rechecks of accepted work retain its admission identity; App-selected
     // replacement has a separate key and is fenced by this request claim.
     const continuing = input.attachment.kind === "existing" && previous?.kind === "task" && previous.id === taskId;
@@ -112,7 +129,7 @@ export function attachRequestToTask(
     if (continuing && generation === undefined) throw new Error(`Attached Task ${taskId} is missing`);
     const observation: AppTaskObservationResult = continuing
       ? { kind: "observed", taskId, generation: generation!, changed: false }
-      : admitTaskRequest(config, input);
+      : admitTaskRequest(config, { ...input, idempotencyKey: admissionKey });
     if (replay) return observation;
     if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: observation.taskId }, { now })) {
       throw new Error("claim is stale");

@@ -337,6 +337,13 @@ that evidence and owns Topic links. Both use the same Host database.
 `app-event-admission-store.ts` remembers the selected route payloads so retries
 apply the recorded decision. None of these stores is an additional work owner.
 
+`core/state/requests.ts` atomically attaches a claimed request: Task input,
+request wait/claim release, and Topic link commit together. Task settlement
+persists request readiness; notifications only accelerate discovery. Recovery
+also recognizes the old target-qualified admission keys when admission committed
+before a crashed Host stored the wait. It reuses that accepted identity without
+replaying input or rewriting admission history.
+
 `app-inbox-runtime.ts` still coordinates routes, request scheduling,
 Conversation notifications, schedules, observers, and reload. It is the
 integration point, not a new public API. Broad Task-intent admission runs in
