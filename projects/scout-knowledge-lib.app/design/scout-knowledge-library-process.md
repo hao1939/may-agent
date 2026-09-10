@@ -398,7 +398,9 @@ an explicit capability grants a particular write. A path such as
 `projects/scout-knowledge-lib/...` is not an acceptable output instruction
 because it changes meaning with the current working directory. Source-output
 admission requires an absolute existing file and rejects a real path outside
-the allowed roots, including a symlink that escapes them.
+the allowed roots, including a symlink that escapes them. Allowed roots are
+independent: a knowledge output does not require the optional scratch directory
+to exist. Missing output files still fail admission.
 
 The existing nested
 `/app/projects/scout-knowledge-lib/projects/scout-knowledge-lib/` tree is

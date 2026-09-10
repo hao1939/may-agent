@@ -68,6 +68,27 @@ In particular, the Scout domain directory belongs to the containing workspace
 repository, while the Host project has its own Git repository. Preserve the
 correct relative project path when allocating a checkout of either repository.
 
+The remaining Scout isolation change needs one coherent result contract:
+
+- Select task workspaces only for editing workflows; health and digest work
+  can keep the existing shared-workspace mode. No second worktree manager is
+  needed.
+- Use the candidate's nested domain path for editing and validation. Treat
+  canonical uncommitted research as separate current evidence, not silently
+  committed candidate input.
+- Inspect and verify the exact candidate diff before authorized integration.
+  Refuse overlapping human edits rather than stashing, resetting or overwriting
+  them. Keep the candidate and return the exact unresolved boundary.
+- After integration, retain canonical file references plus the verified commit
+  and repository-relative path. Temporary worktree paths alone are not durable
+  result links: normal Host cleanup removes them.
+- Append the shared digest's claim of integration only after integration is
+  verified. Preserve candidate evidence separately while review remains open.
+
+Disposable integration probes verified the separate-path and overlapping-edit
+cases. This is not permission to merge live research automatically; the
+workflow change and a narrowly authorized live integration are still open.
+
 ## One-by-one inventory
 
 There are 24 top-level workflow entry modules under current App agent folders.
@@ -542,3 +563,24 @@ to earlier intentional deployments; there were no automatic container restarts.
 Only May and Scout were loaded. The two protected human-edit hashes remained
 unchanged. Scout still writes the shared checkout: safe isolated editing and
 integration remain the main open workflow boundary.
+
+## Output-admission fixture fix — 13:47 UTC
+
+A disposable worktree probe exposed an unrelated eager path check: an existing
+knowledge output was rejected when the optional scratch directory did not yet
+exist. Commit `cc7764b115` resolves existing allowed roots independently while
+retaining exact-file and realpath containment checks. The regression failed
+before the fix; 45 App/source tests, the installed-project typecheck and
+formatting with the installed Prettier 3.8.3 passed. The isolated checkout lacks
+TypeScript's type dependencies, so its failed typecheck was not counted. Reload
+6319065/6319066 succeeded without a container restart or source Task wake.
+
+The integration fixture then proved that a verified commit can be integrated
+without changing an unrelated dirty note, while an overlapping dirty note
+refuses integration and the candidate remains readable. Normal successful
+cleanup removed the candidate path; canonical and commit-qualified references
+remained readable. Only disposable repositories were modified.
+
+Scout's complete suite subsequently passed 344 tests across 33 files, zero
+failures, in 157 seconds. This verifies the source revision and fixtures; the
+next automatic source cycle remains the model-backed check.
