@@ -121,6 +121,38 @@ include their lockfile or checksum changes and relevant compatibility tests;
 do not auto-merge them.
 There is no macOS/Windows matrix: the released deployment is Linux/container.
 
+### Dependency and image maintenance
+
+Dependabot checks `bun.lock`, Actions, and base images weekly. Keep Pi runtime
+packages and TypeBox together, separate from routine tooling updates; a
+pre-1.0 minor release can change runtime contracts. Major tooling changes also
+need an explicit compatibility review. Check peer ranges before upgrading
+TypeScript; a newer compiler may not yet be supported by the lint parser.
+
+Run `bun audit` when refreshing the lockfile and explain affected dependency
+paths. Prefer updating the parent or removing unused packages over adding
+another override. Existing overrides are transitive compatibility/security
+pins: refresh within their major versions and remove them only when the
+parent dependency graph no longer needs them. The Host uses built-in Bun/Node
+SQLite, not `better-sqlite3`.
+
+The CLI versions and terminal checksums live in `container/Dockerfile`; the
+Bun version lives in `.bun-version`. Dependabot does not update those embedded
+tool pins. Review them explicitly, retain exact versions, and validate CLI
+flags/configuration and the image smoke test. For Codex, compare generated
+schemas with the old CLI before updating `scripts/poc/codex-goal-protocol.snapshot.json`;
+the image smoke test checks that snapshot against the shipped CLI without a
+model call. Node/npm move together through
+the Node base image. Upgrading the standalone Pi CLI does not upgrade the Pi
+libraries linked into May. A new CLI version still needs model-backed checks
+before claiming live provider compatibility.
+
+Publish reviewed image changes as a new release and deploy separately. Do not
+run ad-hoc global upgrades in a live container. Refresh base digests and check
+OS/browser packages as part of image maintenance; an unchanged cached apt
+layer is not evidence that security packages are current. `bun audit` covers
+the project lockfile, not the image's OS packages or global CLI dependency trees.
+
 ## Review and merge rules
 
 Use a PR, pass both checks on its current revision, resolve review discussions,

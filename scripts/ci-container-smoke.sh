@@ -57,3 +57,12 @@ done
 curl --fail --silent --max-time 5 "http://$address/" > test-results/index.html
 grep -qi '<!doctype html>' test-results/index.html
 echo 'Candidate image served its UI and answered the daemon readiness probe.'
+
+# Reuse the protocol gate against the shipped CLI, without calling a model.
+# These three files belong only to this disposable test container, not the image.
+docker exec "$container_id" mkdir /tmp/codex-protocol-check
+for file in check-codex-goal-protocol.ts codex-goal-protocol.ts codex-goal-protocol.snapshot.json; do
+  docker cp "scripts/poc/$file" "$container_id:/tmp/codex-protocol-check/$file"
+done
+docker exec "$container_id" timeout 30 bun /tmp/codex-protocol-check/check-codex-goal-protocol.ts \
+  | tee test-results/codex-protocol.txt
