@@ -10,6 +10,9 @@ updates:
       # Reassess later releases against the lint integration before upgrading.
       - dependency-name: typescript
         versions: ["7.0.x"]
+      # A new type-definition major must be reviewed with the Node runtime upgrade.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       pi-runtime:
         patterns: ["@earendil-works/*", "typebox"]
