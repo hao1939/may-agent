@@ -108,6 +108,12 @@ Do not keep a project `active` merely for monitoring. Use events, schedules,
 Conditions, bounded resync, or a review task to wake it when facts
 change.
 
+In catalog views, label this as **saved project status**. It describes authored
+intent, not which Apps are loaded or which Tasks are running. An installation's
+`.disabled` marker prevents App loading without rewriting project posture or
+removing saved context. Use loaded-App and Task reads for current execution;
+do not change project status merely to make it resemble installation state.
+
 ## Project And Task State Are Separate
 
 Project posture is not task execution state:
