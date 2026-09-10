@@ -1,3 +1,4 @@
+import { recordConversationTaskOutcome } from "./core/state/conversation-outcomes.js";
 import { createAppScheduleProducer } from "./adapters/producers/app-schedules.js";
 import { OwnedTimer } from "./core/scheduling/timer.js";
 import { createHash } from "node:crypto";
@@ -15,8 +16,7 @@ import {
 } from "@may-agent/sdk";
 import { log } from "../lib/log.js";
 import type { SqliteDb } from "../lib/db.js";
-import { stateTransaction } from "../lib/db/transaction.js";
-import { applyConversationRequestUpdates, listConversationRequests } from "./conversations/requests.js";
+import { listConversationRequests } from "./core/state/conversation-requests.js";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
@@ -34,12 +34,11 @@ import {
   type AppInboxItem,
 } from "./app-inbox-store.js";
 import {
-  linkConversationTopicTask,
   listConversationTopicLinksForTask,
   listStaleConversationTopicTasks,
   readAppConversationResource,
   readConversationTopic,
-} from "./conversations/store.js";
+} from "./core/state/conversations.js";
 import type {
   AppDefinitionSource,
   AppRegistry,
@@ -1412,45 +1411,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const targetConversationId = correlatedConversationId || conversationId;
         const targetTopicId = correlatedTopicId || topicId;
         if (appId && targetConversationId && targetTopicId && followUpId && text) {
-          const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
-          if (topic) {
-            stateTransaction(options.db, () => {
-              // Request updates may reference links introduced by this same result.
-              for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
-              if (conversationResult.requestUpdates !== undefined)
-                applyConversationRequestUpdates(options.db, {
-                  appId,
-                  conversationId: targetConversationId,
-                  topicId: targetTopicId,
-                  updates: conversationResult.requestUpdates as AppConversationRequestUpdate[],
-                  updateKey: `task-result:${appId}:${followUpId}`,
-                  messageId: `result:${followUpId}`,
-                  now: now(),
-                });
-              options.bus.emit({
-                type: "conversation.message.created",
-                source: "app-task-follow-up",
-                owner: `app:${appId}`,
-                data: {
-                  appId,
-                  conversationId: targetConversationId,
-                  messageId: `result:${followUpId}`,
-                  author: { kind: "agent", id: appId },
-                  text,
-                  metadata: {
-                    requestId: followUpId,
-                    topicId: targetTopicId,
-                    taskRefs,
-                    ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
-                  },
-                  idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
-                    .update(text)
-                    .digest("hex")
-                    .slice(0, 16)}`,
-                },
-              });
-            });
-          } else {
+          if (!recordConversationTaskOutcome(options.db, options.bus, {
+            appId, conversationId: targetConversationId, topicId: targetTopicId, followUpId,
+            text, taskRefs, requestUpdates: conversationResult.requestUpdates as AppConversationRequestUpdate[] | undefined,
+            now: now(),
+          })) {
             options.bus.emit({
               type: "info",
               message: `[app-inbox:${appId}] Follow-up ${followUpId} result names unavailable Topic ${targetTopicId}`,

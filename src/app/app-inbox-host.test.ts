@@ -17,7 +17,7 @@ import {
   createConversationTopic,
   linkConversationTopicTask,
   readAppConversationResource,
-} from "./conversations/store.js";
+} from "./core/state/conversations.js";
 import { APP_REQUEST_CONVERSATION_MAX_BYTES, AppInboxHost, boundedAppRequestConversation } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({

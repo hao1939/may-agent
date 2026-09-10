@@ -13,7 +13,7 @@ import type {
 import { appTaskSessionBinding } from "./core/tasks/session-binding.js";
 import { recoverUnavailableTaskHandlers } from "./core/tasks/handler-recovery.js";
 import { getDb } from "../lib/requests.js";
-import { admitTaskRequest, attachRequestToTask } from "./core/state/requests.js";
+import { admitTaskRequest, attachRequestToTask } from "./core/state/inbox.js";
 import type { AppInboxClaim } from "./app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,

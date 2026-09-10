@@ -12,8 +12,8 @@ import { createEventInterface } from "./core/events/interface.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 import { HostCapacity } from "./host-capacity.js";
-import { readAppConversationResource } from "./conversations/store.js";
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversations/requests.js";
+import { readAppConversationResource } from "./core/state/conversations.js";
+import { applyConversationRequestUpdates, readConversationRequest } from "./core/state/conversation-requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
 

@@ -10,7 +10,7 @@ import {
   createConversationTopic,
   linkConversationTopicTask,
   readAppConversationResource,
-} from "./conversations/store.js";
+} from "./core/state/conversations.js";
 
 const app = defineApp({
   id: "sample",

@@ -24,7 +24,7 @@ import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { type EventBus } from "../core/events/bus.js";
 import { getDb } from "../../lib/requests.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
-import { readAppConversationResource } from "../conversations/store.js";
+import { readAppConversationResource } from "../core/state/conversations.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
   isTaskDerivedViewWake,

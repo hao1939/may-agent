@@ -10,8 +10,8 @@ import type { SubagentManager } from "../lib/index.js";
 import type { SqliteDb } from "../lib/db.js";
 import type { AppRegistry } from "./core/apps/registry.js";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
-import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./conversations/store.js";
-import { readConversationRequest } from "./conversations/requests.js";
+import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./core/state/conversations.js";
+import { pageOpenConversationRequests, readConversationRequest } from "./core/state/conversation-requests.js";
 import type { AppRequestResolver } from "./app-inbox-host.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
@@ -63,12 +63,7 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext
         return result(readConversationRequest(db, conversation.owner, conversation.id, input.id));
       if (input.action === "requests")
         return result(
-          db
-            .prepare(
-              `SELECT id, revision, substr(scope, 1, 160) AS scopePreview, status
-        FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND status = 'open' AND id > ? ORDER BY id LIMIT 12`,
-            )
-            .all(conversation.owner, conversation.id, input.afterId ?? ""),
+          pageOpenConversationRequests(db, conversation.owner, conversation.id, input.afterId),
         );
       if (input.action === "find") {
         return result({

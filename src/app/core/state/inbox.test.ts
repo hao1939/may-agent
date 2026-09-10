@@ -15,7 +15,7 @@ import {
   waitAppInboxClaim,
   wakeAppInboxItem,
 } from "../../app-inbox-store.js";
-import { createConversationTopic, listConversationTopicLinksForTask } from "../../conversations/store.js";
+import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import {
   cancelAppTask,
   claimObservedAppTask,
@@ -27,7 +27,7 @@ import {
   stopAppTask,
 } from "../../app-task-reconciler.js";
 import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
-import { admitTaskRequest, attachRequestToTask } from "./requests.js";
+import { admitTaskRequest, attachRequestToTask } from "./inbox.js";
 
 const roots: string[] = [];
 const connections: SqliteDb[] = [];

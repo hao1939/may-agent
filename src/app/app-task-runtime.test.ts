@@ -17,7 +17,7 @@ import { openDatabase } from "../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "./core/events/bus.js";
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppInboxHost } from "./app-inbox-host.js";
-import { attachRequestToTask } from "./core/state/requests.js";
+import { attachRequestToTask } from "./core/state/inbox.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "./app-inbox-store.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
