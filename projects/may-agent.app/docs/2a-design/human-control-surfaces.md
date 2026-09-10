@@ -11,10 +11,9 @@ Human-action projection follows exact dependency leaves and preserves legacy
 `Hao` approval visibility while canonical `human:<role>` ownership is adopted.
 Durable May admission exposes the responsible Task directly; the supervision
 Task remains separately visible for diagnostics.
-Durable turn Stop and accepted Request storage/closure are implemented at the
-[source baseline](../README.md). Console currently exposes `/stop`; the accepted
-Esc and Telegram/browser Stop-button bindings below remain to be implemented.
-Current-turn steering also remains open. App judgment needs separate
+The focused review at Host `99bc1a31` includes durable turn Stop, accepted Request
+storage/closure, Console Esc and Telegram/browser Stop-button bindings. Current-turn
+steering remains open. App judgment needs separate
 [behavioral evidence](message-lifecycle.md#current-implementation-and-gaps).
 
 **Aligned with:** [system-model.md](system-model.md),
@@ -46,7 +45,7 @@ The ordinary human objects are:
 - a Topic, which links related turns to exact Tasks; and
 - a Conversation message, which is how a human talks with May.
 
-A Host input-handling request correlates one input with its handling result.
+An inbox item correlates one input with its handling result.
 It may finish while a conversational Request remains unresolved. Host row IDs
 and replaceable execution sessions remain diagnostic details.
 May does not create a wrapper Task for a Conversation or human request. The
@@ -373,16 +372,16 @@ request does not promise every external operation has already halted.
 If persistence fails or the adapter is disconnected, report that Stop was not
 confirmed. Never display a stopped outcome based only on a local keypress.
 
-**Current implementation:** Merged Host #112 includes durable Stop with a
-Console `/stop` entrypoint. It reads `activeTurn: { id, revision }` from the
-Conversation resource and publishes `conversation.turn.stop.requested` with
-App, Conversation, turn ID and expected revision. Reuse this mechanism for
-Esc/buttons, then remove the Console command and its completion/help entry.
-Esc and the buttons are not implemented at the reviewed source baseline.
+**Current implementation:** Host #112 added durable Stop; #121 added Console
+Esc and Telegram/browser Stop buttons and removed Console `/stop`. Adapters
+read `activeTurn: { id, revision }` from the Conversation resource and publish
+`conversation.turn.stop.requested` with App, Conversation, turn ID and expected
+revision. This is present in the focused `99bc1a31` source review, not a claim
+that an installation is running that release.
 
 Ordinary messages still wait for the active Conversation claim. Stop followed
-by a new message provides the first simple redirection path; with the intended
-binding this becomes Esc, then the correction. The later steering capability
+by a new message provides the first simple redirection path: Esc, then the
+correction. The later steering capability
 below must retain the correction durably. Existing low-level session controls
 alone do not establish that contract. Failed conversational execution already
 has a durable failed outcome and does not automatically rerun the model.

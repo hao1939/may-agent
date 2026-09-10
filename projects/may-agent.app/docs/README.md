@@ -9,8 +9,10 @@ specific contract.
 **Source baseline:** Current implementation descriptions refer to Host `main`
 at `b81a5d62` (reviewed September 10, 2026), including finite Task stop (#111)
 and conversational ownership, bounded failure, Requests and durable turn Stop (#112).
-Candidate-branch behavior and its validation stay in the linked proposals until
-merged. This baseline identifies source behavior, not the deployed release.
+Later focused reviews state a newer revision on their owning page: Conversation
+and storage were reviewed against `99bc1a31`. Candidate-branch behavior and its
+validation stay in the linked proposals until merged. Source baselines do not
+identify the deployed release.
 
 Conversation is the default for discussion and joint work. A **Request** is an
 accepted ask May must close the loop on. An independent **Task** can run in the
@@ -20,6 +22,11 @@ Read the [System Model](2a-design/system-model.md) for a complete example, then
 [Architecture](2a-design/architecture.md) for the four core responsibilities and
 code layout. [Message Lifecycle](2a-design/message-lifecycle.md) owns Request
 recognition, acknowledgment, tracking and closure.
+It also distinguishes an interactive Turn from an internal model step and an
+inbox item from an accepted Request. [Architecture](2a-design/architecture.md#conversation-core-and-capability-boundary)
+places durable guarantees in core and conversational behavior in replaceable
+capabilities; [Storage](2a-design/storage.md#conversation-state-api) defines their
+small shared state boundary.
 
 ## Current focus
 
@@ -29,12 +36,14 @@ verification, reviewed integration, and useful progress during external waits.
 It tracks each workflow separately; revised guidance is not deployment proof.
 
 Keep the core simple and robust. The [core review plan](proposals/task-runtime-organization.md)
-prioritizes reproduced input-handling failures and remaining interaction work;
+tracks completed input-handling fixes and remaining state/interaction work;
 the [gap index](proposals/design-implementation-convergence.md)
 links its owners. Request storage, bounded failed turns and durable Stop are
-implemented. Remaining work includes input-runtime failure containment, Esc and
-Stop-button bindings, and current-turn steering. App judgment and deployment
-need their own evidence.
+implemented. Host #121 added input-runtime containment and Esc/Stop-button
+bindings; #127 added dispatch-failure pacing and cancellation of capacity waits
+on close (merged as `743aa5de`). Remaining work includes naming/state API
+consolidation, current-turn steering and usage validation. App judgment and
+deployment need their own evidence.
 Completed separation and recovery reviews live in the [archive](archive/README.md).
 Error/metric placement and App consolidation remain
 [paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).

@@ -5,8 +5,9 @@ The four core boundaries, shared settlement, durable retries, atomic attachment,
 finite Task stop and conversational Request/Stop mechanics are implemented.
 The [post-merge review](../archive/reviews/core-implementation-post112-20260910.md)
 records 229 passing focused tests and three additional reproduced failures.
-This plan covers the remaining source and interaction work; deployment has its
-own evidence.
+Later source fixes merged in #121 and #127; the focused Conversation review uses
+`99bc1a31` plus that #127 merge status. This plan covers remaining source and
+interaction work; deployment has its own evidence.
 
 ## Current focus: simple and robust core
 
@@ -27,8 +28,8 @@ resume; stop when the required outcome is met. The
 | --- | --- | --- |
 | App registration and input admission | Validated registration, generation publication and atomic Task attachment exist | Preserve the boundary; no new loader service |
 | Events | Durable admission, declared routes and change hints connect components | Reuse exact turn control and improve failure correlation |
-| State and storage | SQLite fences, accepted results, Request revisions and closure are implemented | Extract another operation only for a demonstrated atomicity or maintenance problem |
-| Work runtime | Controller, shared settlement, retries, waits, finite Task stop and bounded failed turns exist | Contain uncovered input dispatch/recovery/reporting failures |
+| State and storage | SQLite fences, accepted results, Request revisions and closure are implemented | Consolidate Conversation/Request/Topic reads and decision commits through the [storage slice](storage-state-service.md#conversation-state-and-handler-extraction) |
+| Work runtime | Controller, settlement, retries, waits, finite stop and input containment exist | Separate generic inbox dispatch from conversational handling; preserve the existing model/tool loop |
 
 Completing an input, fulfilling an accepted Request and finishing a Task remain
 separate facts. Their records now exist; they need truthful App judgment and
@@ -38,56 +39,25 @@ focused usage validation, not another execution lifecycle.
 
 ### 1. Contain the reproduced input-runtime failures
 
-**Value:** An ordinary storage or reporting fault should not terminate unrelated
-work or leave local dispatch bookkeeping unusable.
+**Source status:** Completed in [#121](https://github.com/hao1939/may-agent/pull/121)
+and [#127](https://github.com/hao1939/may-agent/pull/127). Cleanup attaches before
+fallible dispatch/readiness work, detached recovery errors stay contained and
+diagnostics have an independent fallback. Persistent dispatch faults wait for
+recovery instead of spinning; closing input runtime cancels pending capacity
+waits. Durable unstarted input remains available to the next runtime.
 
-The post-merge probes found these paths in `app-inbox-runtime.ts`:
-
-- A readiness read throws after work starts but before its completion/cleanup
-  handlers attach. The exception escapes the timer; the daemon's fatal handler
-  exits. An outer catch alone would still leave the cleanup-ordering defect.
-- A detached dependency-recovery promise has no catch; a failed read escapes as
-  an unhandled rejection.
-- Failure reporting writes to the failed event sink again from its catch and
-  escapes as an unhandled rejection. This does not prove a daemon exit: the
-  current unhandled-rejection handler logs without exiting.
-
-Attach cleanup before fallible readiness reads. Contain dispatch and rescheduling
-failures, handle the entire detached recovery promise, and give best-effort
-reporting a small local diagnostic fallback independent of the broken store.
-Reuse current ownership fences, capacity and persisted state. The earlier lease
-renewal fix and durable failed-turn outcome are already merged.
-
-**Accept when:** Each injected fault stays local; active counters and capacity
-remain usable; another Conversation progresses after the store recovers; stale
-replies/admissions remain fenced. Reporting failure must not repeat an accepted
-effect or rerun failed model execution. Use focused fault/restart tests, then
-required Host checks. Do not add a new retry policy or service for this fix.
+Keep these fault/close regressions when extracting the input handler. The
+[earlier reproductions](../archive/reviews/core-implementation-post112-20260910.md)
+explain the failures; they are no longer an instruction to reimplement the fixes.
 
 ### 2. Finish the small human-control interface
 
-**Value:** The human can interrupt a slow turn without learning a command or
-accidentally cancelling independent work.
-
-Implement Console Esc using the existing exact `conversation.turn.stop.requested`
-event, then reuse it for Telegram/browser Stop buttons. Preserve the existing
-commit-before-abort and stale-target behavior. Remove Console `/stop` from its
-parser, help and completion in the same Console slice. An open menu/dialog gets
-Esc first; idle Esc preserves the draft and Conversation.
-
-Group everyday controls separately from Host administration and diagnostics in
-help. Keep `/cancel <ref>` for background work; bare `/cancel` requires the
-watched Task and its acknowledgment names the exact target. `/unwatch` only ends
-notifications; `/exit` closes Console. `/reload` and `/restart` affect the Host.
-Remove Telegram's ambiguous hidden `/close` shutdown command from the ordinary
-adapter; do not add a replacement command framework. `/todo` means Task actions,
-not all open Requests.
-
-**Accept when:** The shortcut/button works during a busy turn, menu and idle
-behavior preserve input, stale buttons cannot stop newer work, independent Tasks
-continue, and an acknowledgment reports the actual outcome. Keep current durable
-Stop/restart tests. The [human-control design](../2a-design/human-control-surfaces.md#current-turn-control)
-owns the detailed contract. These bindings are not implemented yet.
+**Source status:** Completed in #121, including Console Esc, Telegram/browser
+Stop buttons, removal of Console `/stop` and clearer command help. The shortcut
+and buttons reuse exact-turn durable Stop; background Tasks retain separate
+controls. Keep the existing busy-turn, stale-target, draft and idle checks.
+The [human-control design](../2a-design/human-control-surfaces.md#current-turn-control)
+owns the contract and the separate steering gap.
 
 ### 3. Validate redirection and Request follow-through
 

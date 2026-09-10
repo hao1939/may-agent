@@ -89,6 +89,40 @@ the previous generation; running attempts keep their captured definitions.
 Activation and Host deployment are separate operations. See
 [Runtime](runtime.md) and [Operations and Recovery](../2b-manual/app-operations-recovery.md).
 
+## Conversation core and capability boundary
+
+Classify the guarantee, not the whole feature or its current folder. Conversation
+uses the existing four core responsibilities; it is not a fifth core component.
+
+| Core guarantee | Replaceable capability using it |
+| --- | --- |
+| Durable input admission, ordering, claims and caller correlation | The selected handler for conversational input |
+| Bounded execution, cancellation and failure containment | The agent/model, tools and conversational prompt |
+| Conversation/Request/Topic reads and consistent writes in State and storage | Context selection, Topic choice and presentation |
+| Version-checked Request acceptance/closure with evidence and exact Task links | May's judgment of scope, fulfillment, repair and stopping |
+| Task execution and declared event routing | May's ordinary supervision Task and its policy |
+
+Core owns the stored fact that an ask is open and rejects a stale closure; May
+judges whether the ask has been addressed. State operations validate a proposed
+decision without reading chat text to infer intent or calling a model.
+
+Without a conversational frontend, new chat handling is unavailable but unrelated
+Tasks and Events continue. Retained messages, Requests and Task links remain
+readable; open asks do not silently disappear or close. Removing supervision
+removes proactive follow-through, not Task correctness or the stored obligation.
+Restoring a compatible capability can use the same state. Supported removal may
+require draining active work; arbitrary live unloading is not a requirement.
+
+Conversation-specific records and links are used only when present. Generic Task
+admission must not require a Conversation, Topic or Request. A required store
+failure remains a failure; optional capability does not mean optional integrity.
+
+The frontend may live in the same Host process and repository while remaining
+outside the stable core. Composition selects it through a narrow input-handler
+contract; core storage imports neither that frontend nor May policy. The
+[storage contract](storage.md#conversation-state-api) owns the small local API,
+and [Message Lifecycle](message-lifecycle.md) owns interactive behavior.
+
 ## Behavior when a capability is absent
 
 Start with deliberate absence at startup and the supported reload behavior.
@@ -104,6 +138,7 @@ resources must have an owner and cleanup path.
 | Observer | Its external facts are not discovered | Waits stay unsatisfied until actual evidence arrives; unrelated work proceeds |
 | Selected executor | Affected work cannot execute | Exact Task/evidence remain in visible attention; no false completion, silent substitution or retry storm |
 | App | New work for its responsibility is unavailable | Reject newly addressed input; preserve existing obligations and identities |
+| Conversational frontend or May supervision | Chat handling or proactive follow-through is unavailable | Retained asks and links remain visible; unrelated Tasks continue; no false closure |
 
 App removal is currently rejected while unfinished Tasks exist. Drain those
 obligations before removal; this contract does not authorize discarding them.
@@ -138,7 +173,7 @@ src/app/
   app-task-*.ts           remaining Task runtime, transitions and stores
   app-inbox-*.ts          input handling, admission and stores
   app-observer-runtime.ts observer registration and execution
-  conversations/         shared Conversation state
+  conversations/         current shared Conversation stores and projections
   transport/, http/      existing interface adapter homes
 src/lib/db/              shared schema and transaction primitives
 
@@ -152,6 +187,9 @@ projects/<id>.app/       App-owned policy, agents and workflows (workspace)
 The [storage proposal](../proposals/storage-state-service.md#code-organization)
 considers further meaningful operations in `core/state/`. It does not claim all
 Task stores have moved there or require a separate API server.
+Its [conversation slice](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
+separates core state operations from replaceable frontend handling. Current
+folder names do not yet establish that dependency boundary.
 
 | Caller | Dependency rule |
 | --- | --- |

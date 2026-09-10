@@ -3,13 +3,15 @@
 **Design status:** Accepted.
 **Implementation status:** SQLite holds canonical work and admission state;
 files hold full execution artifacts. Bounded read projections coexist with
-those authorities.
+those authorities. The Conversation state API below consolidates existing
+guarantees; the extraction is pending. The focused source review used Host
+`99bc1a31` on September 10, 2026.
 
 ## Decision
 
 SQLite is authoritative for Tasks, attempts, accepted results, Conditions,
-requests, admission records, Events and Conversation relationships. It also
-holds indexes and read projections. The database cannot be discarded and
+inbox items, accepted Requests, admission records, Events and Conversation
+relationships. It also holds indexes and read projections. The database cannot be discarded and
 rebuilt from transcripts. Backup and recovery must preserve both the database
 and its referenced artifacts.
 
@@ -51,7 +53,7 @@ reference/hash/size metadata.
 | Record | Authority and storage | Rebuildability |
 | --- | --- | --- |
 | Tasks, attempts, accepted results/receipts, Conditions and links | Canonical SQLite Task resource rows and fenced transactions | Not reconstructible from session artifacts; preserve the database |
-| Host input handling and cross-App request correlation | SQLite request rows, exact Task/dependency links and accepted results | Not disposable; preserve identity and accepted state |
+| Host input handling and cross-App caller correlation | SQLite inbox rows, exact Task/dependency links and accepted results | Not disposable; preserve identity and accepted state |
 | Accepted conversational Requests | SQLite `conversation_requests`: scope, revision, exact Task links and closure | Not reconstructible from input completion; preserve accepted obligations |
 | Pending admission and ordered Task input | SQLite admission journal and Task-event links | Required to recover unaccepted input; an in-memory queue is only a hint |
 | Event and causal links | SQLite identity, envelope and trace; large bodies in content-addressed files | Requires retained rows and referenced bodies; transcripts are not substitutes |
@@ -122,6 +124,53 @@ handler, metric_id, alert_id, escalation_id, subject_status, duration_ms
 
 Queries use typed columns. Full-content inspection resolves the artifact
 reference.
+
+## Conversation state API
+
+Conversation, accepted Request and Topic data belong behind the Host's State
+and storage boundary. Use a small set of typed local functions backed by the
+existing SQLite connection. Apps and agents use SDK reads and return proposed
+decisions; they do not receive the database or the Host-private state API.
+Adapters use their existing read/control protocols. No new server, database,
+resource controller, generic repository or per-write event protocol is required.
+
+Group the API by what the caller needs to accomplish:
+
+| Operation | Required contract |
+| --- | --- |
+| Read Conversation | Return bounded messages, active Turn and related context; paging must use stable identities |
+| Read/list accepted Requests | Scope by App/Conversation; page open asks and read an exact full scope, revision, links and closure |
+| Find/read Topics | Return bounded context and exact Task references; Topic has no work status |
+| Accept a Turn decision | Check the current inbox claim; save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
+| Admit Task with conversation links | Commit Task admission and supplied Topic/Request links together, checking current authority and Request revision |
+| Complete a Turn | Commit input result, completion and any Request closure with durable answer evidence; failure/Stop never implies fulfillment |
+| Record a Task's conversational outcome | Check the exact Task attempt and referenced Request versions; persist the message and closure together under existing Task settlement |
+
+These are operation families, not new exported signatures. Stop uses the existing
+exact-turn operation. Topic creation and Request updates join their enclosing
+operation; callers must not sequence independent saves to manufacture atomicity.
+Task admission remains valid without conversation links. App mapping, model/tool
+execution and judgment run outside short transactions; state rechecks their
+authority and expected versions at commit.
+
+Closure requires a durable explanation with stable message identity. For a
+direct Turn, the inbox result can supply that evidence and its Conversation
+projection; a separately published message uses the same identity. This does
+not require a new messages table or an independently successful adapter send.
+Repeated accepted operations reuse existing identity/version checks. Retain one
+writer for each fact, and never reconstruct accepted asks by guessing from chat.
+
+Events admit human input and announce meaningful changes. After commit,
+`conversation.updated` tells readers to reread state. Losing a presentation hint
+must not lose the result. A wake that creates work must retain its existing
+durable admission/recovery guarantee; it is not merely a best-effort UI callback.
+
+Keep page sizes and payloads bounded and inspect query plans for common reads.
+A response limit alone does not prove bounded query cost. Reuse current evidence
+and projections; do not copy Task status into Requests or introduce a second chat
+history. [Architecture](architecture.md#conversation-core-and-capability-boundary)
+owns placement; the [storage proposal](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
+records the current helpers, extraction order and proof required.
 
 ## Retention And Maintenance
 

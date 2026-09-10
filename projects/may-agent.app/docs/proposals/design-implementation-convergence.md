@@ -1,7 +1,8 @@
 # Design and implementation gaps
 
 **Status:** Active index of known source gaps at the [documentation baseline](../README.md).
-This is not a deployment audit or a second subsystem backlog.
+Conversation/storage entries include the focused `99bc1a31` review and the
+subsequent merge of #127. This is not a deployment audit or a second subsystem backlog.
 
 Start with [System Model](../2a-design/system-model.md) and
 [Architecture](../2a-design/architecture.md). Each row below points to the owner
@@ -9,15 +10,18 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
-| Input dispatch, recovery and reporting containment | [Core review plan](task-runtime-organization.md#implementation-order-and-candidate-decisions): attach cleanup before fallible reads, contain detached recovery, and make diagnostics best effort; [post-merge reproductions](../archive/reviews/core-implementation-post112-20260910.md) |
-| Esc/Stop-button bindings and clear command help | [Human controls](../2a-design/human-control-surfaces.md#current-turn-control): reuse merged durable Stop, replace Console `/stop`, separate Task controls from Host administration |
+| Consistent input/Turn/Request names and frontend separation | [Message Lifecycle](../2a-design/message-lifecycle.md#naming-and-organization-gap) and [storage slice](storage-state-service.md#conversation-state-and-handler-extraction): separate input mechanics from chat handling while preserving identities and behavior |
 | Current-turn redirection | [Core review plan](task-runtime-organization.md#3-validate-redirection-and-request-follow-through): start with Stop then a correction; add immediate steering only when its value is demonstrated |
 | Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [controller proposal](task-controller-pattern.md#remaining-implementation-and-review): extend bounded evidence for correction, restart, scope and truthful closure; storage, retry and finite Task stop mechanics are merged |
 | Correlated failure evidence | [Core review plan](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events): identify exact work, stage and disposition through existing events/reads; investigation does not gate settlement |
-| Further atomic storage operations | [Storage proposal](storage-state-service.md): extract only a demonstrated consistency boundary; the request attachment slice is merged |
+| Conversation/Request/Topic state API | [Storage proposal](storage-state-service.md#conversation-state-and-handler-extraction): consolidate existing reads and atomic decision/result writes; input attachment is already merged |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |
 | Remaining central domain metrics | The migration rule below and [Metrics](../2a-design/metrics.md) |
 | Retained conversational child waits, Evaluation/HTTP policy, behavioral comparison and delivery proof | [Authority proposal](authority-boundary-simplification.md#remaining-work): separate bounded work, with its existing scope limits |
+
+Input containment and Esc/Stop bindings merged in #121. Dispatch-failure pacing
+and cancellation of pending capacity waits merged in #127 (`743aa5de`). These
+are source fixes; their deployment is a separate operating decision.
 
 ## Remaining metric ownership migration
 

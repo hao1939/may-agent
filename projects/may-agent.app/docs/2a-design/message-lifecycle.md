@@ -1,22 +1,12 @@
 # Message Lifecycle
 
 **Design status:** Accepted.
-**Implementation status:** Bounded direct investigation/editing/verification,
-the conversational frontend, visible
-`may/conversation/follow-up` maintain Task, direct responsible-Task admission,
-linked-Task wakes, explicit terminal Conversation append, and
-window-independent response identity are implemented. The supervision Task no
-longer mediates, parents, or waits on destination work. The shared Task
-projection filters progress and accepted observations by exact attempt
-identity; prior-attempt observations remain history.
-Host PR #112 implemented accepted Request records and fenced closure, input-lease
-renewal containment, failed-turn disposition, and durable current-turn Stop.
-The Console currently exposes `/stop`; the accepted interface replaces it with
-Esc and uses Stop buttons in Telegram/browser. Those bindings and current-turn
-steering remain work in the [control design](human-control-surfaces.md#current-turn-control).
-A stopped turn cannot silently retry, and independent Tasks continue.
-The Host `AppRequest`/inbox row still tracks input handling and can finish at
-Task admission; it is not the accepted ask. See
+**Implementation status:** Reviewed against Host `99bc1a31` and `may.app` on
+September 10, 2026. Interactive model/tool loops, direct Task handoff, one May
+supervision Task, accepted Requests, fenced closure and durable failed/stopped
+turns are implemented. Console Esc and Telegram/browser Stop bindings are
+implemented; seamless current-turn steering remains separate work. Naming and
+storage API consolidation below are not yet implemented. See
 [current implementation and gaps](#current-implementation-and-gaps) for storage
 and the distinction between implementation tests and live validation.
 
@@ -45,16 +35,21 @@ Human
                     `- return outcome to Conversation -> close or update Request
 ```
 
-The conversation model uses these concepts:
+The product model is: **discuss in Conversation, track accepted asks as
+Requests, and use Tasks for independent execution.** Topics organize context.
+The implementation vocabulary distinguishes the smaller execution units:
 
-- **Conversation** is the append-only message stream shared by Console,
-  Telegram, and future adapters.
-- **Request** is an accepted ask that May owes an appropriate outcome to;
-  it can span several Turns and reference background Tasks.
-- **Topic** connects related Turns and exact Task references. It has no work
-  state.
-- **Task** is an executable goal owned by one App.
-- **Event** is a fact or input that wakes the component that can act on it.
+| Term | Meaning |
+| --- | --- |
+| Message | Something a human, agent or tool said |
+| Conversation | The shared append-only message stream and related context |
+| Inbox item | A durably admitted input and its handling/caller correlation |
+| Turn | One interactive execution responding to human input, including repeated model calls and tool use |
+| Request | An accepted ask May owes an outcome to; it can span Turns and link Tasks |
+| Topic | Related discussion and exact Task links, with no execution lifecycle |
+| Task | An App-owned outcome with independent execution and lifecycle |
+| Model step | One internal model/tool cycle inside a Turn or Task attempt |
+| Event | Input or a fact; an explicit route determines what acts on it |
 
 These definitions do not imply a separate controller for each concept.
 Current Request storage and remaining validation are described below.
@@ -135,7 +130,8 @@ and reason. Start with open or closed; derive progress, blockers, and execution
 results from Tasks. Keep one authority for the accepted ask and closure, using
 stored identities rather than reconstructing promises from full chat history.
 Do not copy Task state or add a Request executor, retry policy, or per-Request
-supervision Task. The storage mapping remains an implementation decision.
+supervision Task. [Storage](storage.md#conversation-state-api) owns persistence
+and atomic operations; May owns the meaning of the accepted ask.
 
 Closure must match the latest accepted scope and explain the outcome in
 Conversation. Persist its message and closure decision consistently, so retry
@@ -159,6 +155,34 @@ conversational record alone does not stop a Task.
 
 ## Frontend: one bounded turn
 
+A Turn is a complete interactive work cycle, not one model response:
+
+```text
+input -> understand -> act -> inspect evidence -> answer
+                        ^           |
+                        +-- repair -+
+```
+
+Continue authorized work until the ask is addressed, human input is necessary,
+independent work is durably handed off, or execution must stop. A bug fix may
+include reproduction, edits, tests and corrections in the same Turn. A design
+discussion may end this Turn with a useful explanation and continue when the
+human replies. A progress message alone is not a reason to end executable work.
+
+| Stopping point | Effect on the accepted Request |
+| --- | --- |
+| The answer or verified work addresses the ask | May may close it with the explanation |
+| A material question needs human input | Leave it open; continue the discussion on the reply |
+| Independent work is durably admitted | Usually leave it open; admission fulfills it only if starting work was the accepted ask |
+| Budget, failure or interruption stops execution | Preserve evidence and the unresolved ask; never report the limit as fulfillment |
+
+The existing executor owns the model/tool loop. No outer Request controller or
+second LLM judge is needed for every Turn. Code enforces authority, shapes and
+execution limits; the App/agent judges usefulness and whether further work is
+worth its cost. Progress should remain visible and Stop available while work
+runs. Current ordinary input queues behind the active Turn; admission remaining
+responsive is not a claim of seamless steering or concurrent conversation.
+
 Every human surface publishes the same event:
 
 ```text
@@ -174,7 +198,7 @@ transient messages may update presentation or context but never recursively
 invoke May.
 
 Admission does not wait for a Conversation read or a previous May decision.
-It durably records the human Turn and its Host input-handling request, returns
+It durably records the human message and its inbox item, returns
 that receipt, and only then emits the coalesced `conversation.updated`
 presentation wake.
 Presentation resynchronizes from the Conversation resource, so this wake is
@@ -472,6 +496,14 @@ Conversation or Topic identity.
 
 ## Ownership boundary
 
+Inbox admission/ownership, bounded execution and the consistency of retained
+Conversation/Request/Topic records belong to the existing core responsibilities.
+The conversational frontend, May's judgment and supervision policy, and concrete
+interfaces are replaceable capabilities. An installation without conversation
+can still run Tasks; replacing the frontend must preserve retained obligations.
+[Architecture](architecture.md#conversation-core-and-capability-boundary) owns
+this split and absence behavior. It does not create a fifth core component.
+
 | Component      | Owns                                                                          | Does not own                                      |
 | -------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- |
 | May frontend   | interactive discussion, Request recognition/refinement and closure, bounded work, clarification, typed input/feedback | independent background execution, child waits, recovery |
@@ -588,6 +620,29 @@ frontend row after a direct answer or durable follow-up admission; Task-based
 caller rows may instead wait for a Task result. Neither row's `done` status is
 proof of human fulfillment. The separate accepted Request stores that judgment
 and its Conversation explanation; it adds no execution controller or queue.
+
+### Naming and organization gap
+
+Use the vocabulary above in new explanations. The source still uses
+`AppRequest` for input context and `AppRequestDecision` for the agent's handling
+result. The shared runner also calls internal model cycles `turn_start` and
+counts them in `turnCount`; those are not human Conversation Turns.
+
+The naming direction is `AppInputContext` for admitted input context,
+`ConversationTurnResult` for the conversational result, and `modelStepCount`
+for internal cycles. Use `inboxId` for input correlation, `turnId` when targeting
+its human execution, and `requestId` for the accepted ask. A Turn can reuse its
+inbox identity; this requires no new record or identity generator. These names
+are a target, not current SDK exports. Separate retained App-to-App dependency
+handling before renaming its shared result contract as conversational.
+
+Keep durable IDs and existing external compatibility at explicit boundaries;
+do not migrate SQLite columns or published events merely for spelling. The
+[storage proposal](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
+owns the coordinated extraction and caller migration. Current ten-minute turn
+timeouts and shared tool-count/elapsed-time finish prompts are execution cost
+controls, not evidence of fulfillment. Tune them from observed premature stops
+or excess cost; this refinement does not change their values or add auto-retry.
 
 ### Live validation and remaining checks
 

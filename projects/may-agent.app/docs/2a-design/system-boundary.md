@@ -94,16 +94,16 @@ scheduler, queue, retry worker, or recovery worker of its own.
 ## Request and task
 
 May owns recognizing and closing conversational Requests; the Host stores the
-related state and validates effects. The current Host request row is narrower:
+related state and validates effects. The current Host inbox row is narrower:
 it correlates an input with handling and may finish before the conversational
 ask is fulfilled. [Message Lifecycle](message-lifecycle.md#current-implementation-and-gaps)
 owns that implementation distinction. Request tracking adds no execution owner.
 
-When a caller asks an App for durable work, the Host records a request and
+When a caller asks an App for durable work, the Host records an inbox item and
 links it to the Task that owns the outcome:
 
 ```text
-request -> Task owned by the App -> accepted result
+inbox item -> Task owned by the App -> accepted result
 ```
 
 A conversational frontend may finish authorized work directly or admit durable
@@ -118,7 +118,7 @@ Task -> check current state -> run one bounded attempt
      -> done, wait for an exact fact, require attention, or try again
 ```
 
-The Host request retains caller correlation and the Task owns execution.
+The inbox item retains caller correlation and the Task owns execution.
 Conversational closure follows the accepted ask and its communicated outcome,
 which can require more than a Task result alone. Sessions and workflow runs are
 attempt evidence and may be replaced after a restart.

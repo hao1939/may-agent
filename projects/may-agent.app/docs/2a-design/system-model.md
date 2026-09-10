@@ -3,9 +3,9 @@
 **Design status:** Accepted.
 **Implementation status:** App Tasks, bounded conversational work, shared reads,
 and event-driven follow-through are implemented at the [source baseline](../README.md).
-Accepted Request storage and durable turn Stop are implemented. Esc/button
-bindings and current-turn steering have
-[remaining gaps](human-control-surfaces.md#current-turn-control); App judgment
+The focused Conversation review at Host `99bc1a31` confirms accepted Request
+storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
+[open](human-control-surfaces.md#current-turn-control); App judgment
 needs separate [behavioral evidence](message-lifecycle.md#current-implementation-and-gaps).
 
 May helps a human discuss, decide and get useful work done. An App owns a
@@ -13,12 +13,16 @@ responsibility and decides what a useful outcome means. The Host records work,
 runs bounded execution, and preserves truthful state through waits and failures.
 An agent, workflow or native executor performs the work within that boundary.
 
+**Discuss in Conversation. Track accepted asks as Requests. Use Tasks when
+work needs independent execution.**
+
 ## The records
 
 | Concept | What it means |
 | --- | --- |
 | Conversation | The shared discussion: human, May, command and tool messages |
 | Request | An accepted ask that May must close the loop on |
+| Turn | One interactive execution, including repeated model calls, tool use and verification |
 | Task | An App-owned outcome that can progress independently across attempts |
 | Attempt | One bounded execution of a Task, returning evidence and a proposed result |
 | Event | Input or a reported change; declared routes determine what wakes |
@@ -27,6 +31,9 @@ An agent, workflow or native executor performs the work within that boundary.
 These concepts do not each require a service or controller. Task results are
 accepted state. Sessions, queues, leases, traces and metrics support execution
 or explain it; they do not own additional work.
+An inbox item tracks admitted input handling; a model step is one internal
+cycle. [Message Lifecycle](message-lifecycle.md#mental-model) owns the detailed
+vocabulary and its current code-name mismatches.
 
 A Request can span turns and link Tasks. Ending a turn, starting a Task, and
 fulfilling the ask are different outcomes. Current Host `AppRequest`/inbox rows
@@ -40,6 +47,11 @@ the Host checks revisions and persists closure with its explanation.
 Conversation is the default for discussion and joint work, across as many turns
 as useful. May can investigate, edit, verify and answer directly within the
 human's authorization. Length, complexity and tool use do not require a Task.
+A Turn can repeat work, checks and repairs until it produces an appropriate
+answer or reaches an explicit stopping point. "Bounded" limits execution cost;
+it does not restrict the Turn to one model response or imply fulfillment when
+time runs out. [Turn behavior](message-lifecycle.md#frontend-one-bounded-turn)
+defines the stopping points.
 
 Use a Task for an authorized outcome that can advance independently and needs
 background continuation, later work control or restart-safe execution. Its
@@ -109,6 +121,13 @@ but their implementations are replaceable. Removing an interface must not stop
 Tasks; removing a selected executor may block its Tasks but must preserve their
 state and let unrelated work continue. Optional schedules do not control Task
 activation or required recovery.
+
+For Conversation, core preserves input ownership and the consistency of messages,
+accepted Requests and exact links. The frontend, May's judgment/supervision and
+presentation are replaceable. Removing them may remove chat or proactive
+follow-through, while retained asks remain visible and unrelated Tasks continue.
+The [component split](architecture.md#conversation-core-and-capability-boundary)
+and [state API](storage.md#conversation-state-api) make this boundary explicit.
 
 Events integrate meaningful input, changes and wakes. Typed local calls handle
 reads, execution and atomic state changes. No broker, API server or event for

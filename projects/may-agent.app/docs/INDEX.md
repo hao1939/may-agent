@@ -18,6 +18,9 @@ archive.
 | What is the whole mental model? | [system-model.md](2a-design/system-model.md) |
 | What are the four core components, their dependencies and code homes? | [architecture.md](2a-design/architecture.md) |
 | How does May track and close an accepted ask? | [message-lifecycle.md](2a-design/message-lifecycle.md#requests-acceptance-and-closure) |
+| How do Message, inbox item, Turn, Request and model step differ? | [Message vocabulary](2a-design/message-lifecycle.md#mental-model) |
+| Which Conversation guarantees are core and which behavior is replaceable? | [Conversation boundary](2a-design/architecture.md#conversation-core-and-capability-boundary) |
+| How should Conversation, Request and Topic reads/writes be coordinated? | [Conversation state API](2a-design/storage.md#conversation-state-api) |
 | Is this Host or App responsibility? | [system-boundary.md](2a-design/system-boundary.md) |
 | Is this a request, task, or fact? | [work-model.md](1-principles/work-model.md) |
 | How does an App declare behavior? | [agent-app.md](2a-design/agent-app.md) |
@@ -126,8 +129,8 @@ current-design list.
 Active reviews are:
 
 - [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
-  — new proposal for meaningful Task/request operations, consistency boundaries,
-  code organization and a bounded first extraction;
+  — implemented input-to-Task attachment, with Conversation state/handler
+  extraction and consistent naming as the next proposed slice;
 - [Task controller pattern](proposals/task-controller-pattern.md)
   — controller/lifecycle direction: ordinary reconciliation, bounded retries,
   recovery and evidence required before claiming simplification;

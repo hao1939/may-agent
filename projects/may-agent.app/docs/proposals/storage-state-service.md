@@ -1,17 +1,23 @@
 # Storage: a state service backed by SQLite
 
-**Design status:** Request-to-Task slice approved for implementation; broader
-extraction remains conditional on its evidence.
+**Design status:** The local state-service boundary is accepted. Input-to-Task
+attachment is implemented; Conversation state and handler extraction below is
+the next proposed slice. Broader extraction remains conditional on evidence.
 **Implementation status:** The request-to-Task slice merged as Host `569e4da0`
 in PR #108 using the existing SQLite stores, fenced
 transitions and request leases. The broader storage layout, combined
 capacity/claim ownership and a separate API server remain unimplemented choices.
 Source checks and temporary-state experiments below are not deployment proof.
 **Date:** 2026-09-10.
-**Source baseline:** Current review uses Host `569e4da0` (PR #108). The original
-inventory and candidate evidence below refer to `350552a4` and `54b9eecf`, not
-the final merged validation. Settlement/retry slices also merged and are
-tracked in the [controller proposal](task-controller-pattern.md).
+**Source baseline:** The Conversation review uses Host `99bc1a31`. Historical
+attachment evidence uses `569e4da0` (PR #108), with the original inventory and
+candidate at `350552a4` and `54b9eecf`. Settlement/retry slices also merged and
+are tracked in the [controller proposal](task-controller-pattern.md).
+
+**Vocabulary:** In the historical attachment sections, "request" means an inbox
+item and caller correlation. An accepted human ask is a separate **Request**.
+[Message Lifecycle](../2a-design/message-lifecycle.md#mental-model) owns the terms;
+the next slice removes that ambiguity from active APIs without rewriting history.
 
 ## Goal and recommendation
 
@@ -44,8 +50,9 @@ SQLite is the agreed on-disk authority for spec, status and related work records
 Call this core component **State and storage**. Its Host-internal interface offers
 resource reads and meaningful operations; SQLite tables and write coordination
 are private implementation details. Reuse the existing admission, transition and
-store code. The service starts with Tasks and requests, where coordination is
-demonstrated; it does not absorb every SQL-backed feature.
+store code. The first slice covers Tasks and inbox inputs; the Conversation
+slice extends their shared state boundary where coordination is demonstrated.
+It does not absorb every SQL-backed feature.
 
 | Owner | Responsibility |
 | --- | --- |
@@ -245,7 +252,8 @@ The proposed destination, as operations become coherent, is:
 src/app/core/
   state/
     tasks.ts           # typed Task transitions and authoritative reads
-    requests.ts        # request claims, attachment and settlement
+    inbox.ts           # input claims, Task attachment and completion
+    conversations.ts   # Conversation, accepted Request and Topic state API
     sqlite.ts          # private resource SQL and transaction integration
   tasks/
     controller.ts      # dispatch and bounded retry timing
@@ -269,6 +277,100 @@ EventBus callbacks do not run inside that transaction. Extract SQL and transitio
 rules together so old callers do not keep a second authoritative write path.
 The full reconciler should not simply move wholesale into `state/` if it still
 mixes execution coordination with state rules.
+
+## Conversation state and handler extraction
+
+### Why this slice
+
+The [Conversation state contract](../2a-design/storage.md#conversation-state-api)
+needs no new persistence system. At `99bc1a31`, the guarantees are already spread
+across `app-inbox-host.ts`, `app-inbox-store.ts`, `conversations/store.ts`,
+`conversations/requests.ts` and `core/state/requests.ts`. The context tool in
+`app-request-agent.ts` also queries `conversation_requests` directly.
+
+The demonstrated maintenance problem is that a reader must follow frontend
+handling, SQL and cross-resource commits through the same large orchestration
+files. Success means fewer places coordinating those writes and one obvious
+read path. Moving files without removing that coordination is not enough.
+
+### Boundary and small API
+
+Keep storage operations in core; keep conversational context selection, prompt
+construction and handler invocation in a replaceable Host frontend. May's
+Request judgment and supervision policy stay in `projects/may.app`.
+[Architecture](../2a-design/architecture.md#conversation-core-and-capability-boundary)
+owns the removal contract. Optional conversation links never become required
+for generic Task work.
+
+Start with existing helpers and short operations, using names such as
+`readConversation`, `listRequests`, `readRequest`, `findTopics` and `readTopic`.
+The writes accept a Turn decision, admit linked Task work, complete a Turn, or
+record a supervised outcome. Their transaction requirements belong in
+[Storage](../2a-design/storage.md#conversation-state-api); these illustrative
+names are not a new SDK or HTTP API.
+
+Keep exact resource reads available beyond the initial context window. Move the
+context tool's Request SQL behind a typed paged read. Request/Topic selection
+and scope interpretation remain with the App/agent, not the query layer.
+
+The selected destination is ordinary modules:
+
+```text
+src/app/core/
+  state/
+    inbox.ts           # admitted inputs, claims, completion, Task attachment
+    conversations.ts   # message/Request/Topic reads and consistent writes
+    tasks.ts           # existing Task state boundary, extracted when useful
+  inbox/               # generic dispatch, capacity and recovery coordination
+src/app/conversations/
+  turn-handler.ts      # context -> selected executor -> state operations
+  turn-agent.ts        # model context/tool integration for that frontend
+src/app/composition/   # select handlers and connect committed changes to events
+src/lib/db/            # existing canonical schema and transaction primitives
+projects/may.app/      # conversational judgment and supervision policy
+```
+
+This is a target, not a file-move checklist. `core/state/requests.ts` currently
+means input-to-Task attachment; move/rename it with that responsibility into
+`inbox.ts`. Keep accepted Request state with Conversation state initially, and
+split private SQL by resource only when readability warrants it. Frontend code
+must not retain a second SQL writer after the extraction. A reverse import from
+core state into the frontend defeats the boundary.
+
+### Implementation order and acceptance
+
+1. Align type/local names with the owning vocabulary. Preserve stored IDs and
+   external contracts through explicit compatibility boundaries. Separate the
+   retained App-to-App dependency result before giving the chat result a purely
+   conversational name. Do not create aliases throughout the implementation.
+2. Consolidate Conversation/Request/Topic reads and switch the context tool and
+   Host readers. Reuse current projections and pagination; add no chat cache or
+   replacement messages table.
+3. Extract decision acceptance and Turn completion from the inbox Host. Move
+   the transaction and its invariants together. Reuse atomic Task admission
+   and the Task-result closure path; do not wrap multiple committing stores.
+4. Separate the frontend from generic inbox dispatch and retained caller waits.
+   Keep the existing executor loop and current budgets. Review premature
+   completion separately from this behavior-preserving extraction.
+
+Use existing integration tests as the baseline, adding coverage only for a
+changed boundary: stale Request revisions and stopped/expired claims reject
+effects; Task admission retains exact links after rollback/reopen; closure
+retains its answer after a missed hint; bounded context still allows reading an
+older full ask. A valid installation without chat must run unrelated Task work;
+retained Conversation state must be readable without the frontend. Test supported
+absence, not an invented live-unload protocol. No model call or deployment is
+needed to prove these mechanical guarantees.
+
+For the separate turn-behavior review, retain the existing model/tool loop and
+check that an agent can inspect and repair a failed check before answering.
+Budget exhaustion must preserve an unresolved ask. Use behavioral evidence to
+judge model persistence; schema tests alone cannot establish useful completion.
+
+The turn model is consistent with the [Codex turn definition](https://learn.chatgpt.com/docs/app-server)
+(user input plus the agent work that follows) and [Claude Code's agent loop](https://code.claude.com/docs/en/how-claude-code-works#the-agentic-loop)
+(gather context, act and verify repeatedly). Those comparisons support reusing
+the existing loop; they do not require copying either product's APIs or controls.
 
 ## Apply in small steps
 
