@@ -135,6 +135,15 @@ describe("canonical May conversation App", () => {
     expect(review).toContain("conversationId, topicId, followUpId");
     expect(review).toContain("Leave healthy progress");
     expect(review).toContain("not that the linked work is complete");
+    expect(review).toContain("event.data.requests");
+    expect(review).toContain("expectedRevision");
+    expect(review).toContain(
+      "Progress, blockers and clarification leave the ask open",
+    );
+    expect(review).toContain("does not authorize restarting a stopped turn");
+    expect(supervision.acceptance.join(" ")).toContain(
+      "Task completion alone is not closure",
+    );
     expect(JSON.stringify(goal.intent.input)).not.toContain(
       "result.conversation",
     );

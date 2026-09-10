@@ -338,6 +338,16 @@ Watch does not poll and owns no timer, workflow, session, or model turn.
 
 ## Current-turn control
 
+**Source candidate:** [Host #114](https://github.com/hao1939/may-agent/pull/114)
+adds Console `/stop`. It reads `activeTurn: { id, revision }` from the existing
+Conversation resource, then publishes `conversation.turn.stop.requested` with
+App, Conversation, turn ID and expected revision. The Host persists Stop before
+aborting the exact execution; duplicate/late controls cannot select a newer
+turn. It bypasses ordinary conversational execution, not persistence checks.
+Independent Tasks continue, and an accepted Request remains unresolved.
+This candidate includes restart/race and real Console socket tests. It does
+not yet add steering or a Telegram control and is not deployment evidence.
+
 **Implementation gap:** Ordinary human messages are currently admitted in order
 and wait for the active Conversation claim. Low-level `session.steer.requested`
 and `session.cancel.requested` controls exist, but do not establish durable

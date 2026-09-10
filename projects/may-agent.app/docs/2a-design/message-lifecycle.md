@@ -15,6 +15,9 @@ It does not yet implement the full conversational Request contract; see
 [current implementation and gaps](#current-implementation-and-gaps).
 Explicit current-turn Stop/Steer and durable suppression of stopped-turn retries
 remain implementation gaps; see [turn control](human-control-surfaces.md#current-turn-control).
+The [implementation candidates](../proposals/task-runtime-organization.md#implementation-order-and-candidate-decisions)
+add renewal containment, failed-turn disposition, Console Stop and explicit
+Request records. They are not yet the merged or deployed baseline.
 
 ## Mental model
 
@@ -538,6 +541,44 @@ Conversation or Topic identity.
     a Task, and Request tracking never becomes a second execution controller.
 
 ## Current implementation and gaps
+
+### Candidate Request contract
+
+The Request-tracking candidate stores one `conversation_requests` row per
+accepted ask, keyed by App, Conversation and App-chosen ID. It holds current
+scope/revision, optional Topic, exact Task links, and open/closed with a closure
+reason and message identity. It owns no execution state.
+
+May returns `requestUpdates` in its bounded decision. `expectedRevision: 0`
+accepts a new ask; a correction uses the same ID and observed revision. A
+`followUp.requestId` links the actual admitted Task to that ask atomically.
+Acceptance/refinement is stored before handoff. Fulfilled, withdrawn and
+unfulfilled dispositions preserve the accepted scope and commit with the
+Conversation explanation. A simple answer can accept and close an ask in one
+turn without creating a Task. A failed or stopped turn never closes it.
+
+The existing `conversation_context` read tool lists open asks in pages of 12
+(`requests`, then `afterId`) and reads a full exact ask (`request`, `id`). Bounded
+prompt context retains whole records, never truncated scopes; omitted asks
+remain discoverable. Request updates use at most eight records per decision,
+2,000 characters per scope and 32 exact Task links per ask. These are explicit
+bounded-context limits, not a guarantee of bounded total SQL query cost.
+
+The existing supervision wake includes current Request records. May may return
+the same `requestUpdates` contract in `result.conversation`; its closure and
+message are stored together, with stale revisions rejected. The existing
+recovery scan includes terminal linked Tasks while their accepted ask remains
+open, so losing the first completion wake need not lose the owed explanation.
+An open discussion without linked work waits for human input, not another
+controller. Stopped-turn recovery remains suppressed even when its ask is open.
+
+Host and May App candidates must be reviewed together: the Host validates and
+stores the decision; May's supervision guidance supplies meaning and judgment.
+Portable tests prove storage, fencing and context availability, not that a live
+model always recognizes or fulfills every ask. Existing historical messages
+are not automatically converted into accepted Requests.
+
+### Merged baseline
 
 The Host currently uses `AppRequest` and `app_inbox_items` for accepted input
 handling. These rows are created before May understands the input. The
