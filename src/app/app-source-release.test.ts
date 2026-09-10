@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
+import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
 
 function loadAppDefinitions(projectsRoot: string, canonicalProjectsRoot = projectsRoot) {
   return new AppRegistry(discoverAppDefinitions(projectsRoot, canonicalProjectsRoot)).reload();
@@ -116,6 +117,57 @@ describe("App source releases", () => {
     expect((await loadAppDefinitions(store.ensureCurrent().projectsRoot, projectsRoot))[0]?.definition.id).toBe(
       "sample-v1",
     );
+  });
+
+  it.each([true, false])("pins shared tool imports with the agent source (git: %s)", async (withGit) => {
+    const { root, stateDir } = fixture(withGit);
+    const sharedTools = join(root, "shared", "tools");
+    const localTools = join(root, "agents", "worker", "tools");
+    mkdirSync(sharedTools, { recursive: true });
+    mkdirSync(localTools, { recursive: true });
+    const helper = join(sharedTools, "sample.js");
+    writeFileSync(helper, 'export const createTool = () => ({ name: "sample-v1" });\n');
+    writeFileSync(
+      join(localTools, "sample.js"),
+      'import { createTool } from "../../../shared/tools/sample.js"; export default createTool;\n',
+    );
+    if (withGit) {
+      execFileSync("git", ["add", "shared/tools", "agents/worker/tools"], { cwd: root });
+      execFileSync("git", ["commit", "-qm", "shared tool"], { cwd: root });
+    }
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const first = store.ensureCurrent();
+    writeFileSync(helper, 'export const createTool = () => ({ name: "sample-v2" });\n');
+    const notices: string[] = [];
+    const load = async (release: typeof first) =>
+      (
+        await loadAgentLocalTools("worker", join(release.agentsRoot, "worker"), {
+          projectRoot: root,
+          persistDir: stateDir,
+          onNotice: (notice) => notices.push(notice),
+        })
+      ).map((tool) => tool.name);
+    expect(await load(first)).toEqual(["sample-v1"]);
+    expect(first.id).toEndWith("-definitions-v4");
+    expect(notices).toEqual([]);
+    if (withGit) {
+      expect(() => store.stage()).toThrow("commit them before reload");
+      execFileSync("git", ["add", "shared/tools"], { cwd: root });
+      execFileSync("git", ["commit", "-qm", "update shared tool"], { cwd: root });
+    }
+    const second = store.stage();
+    expect(second.id).not.toBe(first.id);
+    expect(await load(second)).toEqual(["sample-v2"]);
+    expect(await load(first)).toEqual(["sample-v1"]);
+    expect(store.current()?.id).toBe(first.id);
+    expect(notices).toEqual([]);
+  });
+
+  it("rejects an untracked shared tool before publishing a release", () => {
+    const { root, stateDir } = fixture();
+    mkdirSync(join(root, "shared", "tools"), { recursive: true });
+    writeFileSync(join(root, "shared", "tools", "untracked.ts"), "export const value = 1;\n");
+    expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("untracked executable/config files");
   });
 
   it("keeps minimal non-git sandboxes valid without inventing shared guidance", () => {

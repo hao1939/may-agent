@@ -27,7 +27,7 @@ export type DefinitionSourceRelease = Readonly<{
 }>;
 
 type ReleaseManifest = {
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   id: string;
   sourceCommit?: string;
 };
@@ -69,7 +69,7 @@ function validateRelease(root: string): DefinitionSourceRelease {
   const manifestPath = join(root, "release.json");
   if (!existsSync(manifestPath)) throw new Error(`App source release has no manifest: ${root}`);
   const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as ReleaseManifest;
-  if (![1, 2, 3].includes(parsed.version) || typeof parsed.id !== "string" || !parsed.id.trim()) {
+  if (![1, 2, 3, 4].includes(parsed.version) || typeof parsed.id !== "string" || !parsed.id.trim()) {
     throw new Error(`Invalid App source release manifest: ${manifestPath}`);
   }
   if (basename(root) !== parsed.id) throw new Error(`App source release identity mismatch: ${root}`);
@@ -125,6 +125,7 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string): v
     "agents",
     "shared/common-sense.md",
     "shared/skills",
+    "shared/tools",
     ...trackedNames.map((name) => `projects/${name}`),
   ];
   try {
@@ -156,7 +157,12 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string): v
     .filter(Boolean)
     .filter((path) => {
       if (isNonSourcePath(path)) return false;
-      if (path.startsWith("agents/") || path.startsWith("shared/skills/") || path === "shared/common-sense.md") {
+      if (
+        path.startsWith("agents/") ||
+        path.startsWith("shared/skills/") ||
+        path.startsWith("shared/tools/") ||
+        path === "shared/common-sense.md"
+      ) {
         return true;
       }
       return /\.(?:cjs|js|json|jsx|mjs|ts|tsx)$/.test(path);
@@ -169,6 +175,10 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string): v
 }
 
 function extractCommittedDefinitions(projectRoot: string, commit: string, stageRoot: string): void {
+  // Optional authored helpers: agents can import these, but minimal Apps need none.
+  const sharedTools = execFileSync("git", ["-C", projectRoot, "ls-tree", "--name-only", commit, "--", "shared/tools"], {
+    encoding: "utf8",
+  }).trim();
   const trackedNames = execFileSync("git", ["-C", projectRoot, "ls-tree", "-d", "--name-only", `${commit}:projects`], {
     encoding: "utf8",
   })
@@ -192,6 +202,7 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
         "agents",
         "shared/common-sense.md",
         "shared/skills",
+        ...(sharedTools ? [sharedTools] : []),
         ...trackedNames.map((name) => `projects/${name}`),
       ],
       { stdio: ["ignore", archiveFd, "pipe"] },
@@ -238,20 +249,19 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
   const sourceSharedRoot = join(projectRoot, "shared");
   const targetSharedRoot = join(stageRoot, "shared");
   const commonSense = join(sourceSharedRoot, "common-sense.md");
-  const sharedSkills = join(sourceSharedRoot, "skills");
   mkdirSync(targetSharedRoot, { recursive: true });
   if (existsSync(commonSense)) cpSync(commonSense, join(targetSharedRoot, "common-sense.md"));
   else writeFileSync(join(targetSharedRoot, "common-sense.md"), "", "utf8");
-  if (existsSync(sharedSkills)) {
-    cpSync(sharedSkills, join(targetSharedRoot, "skills"), {
-      recursive: true,
-      filter: (path) => {
-        const rel = relative(sharedSkills, path);
-        return !isNonSourcePath(rel.replace(/\\/g, "/"));
-      },
-    });
-  } else {
-    mkdirSync(join(targetSharedRoot, "skills"), { recursive: true });
+  for (const directory of ["skills", "tools"]) {
+    const source = join(sourceSharedRoot, directory);
+    if (existsSync(source)) {
+      cpSync(source, join(targetSharedRoot, directory), {
+        recursive: true,
+        filter: (path) => !isNonSourcePath(relative(source, path).replace(/\\/g, "/")),
+      });
+    } else if (directory === "skills") {
+      mkdirSync(join(targetSharedRoot, directory), { recursive: true });
+    }
   }
 }
 
@@ -299,7 +309,8 @@ export class DefinitionSourceReleaseStore {
     mkdirSync(this.releasesRoot, { recursive: true });
     const commit = gitCommit(this.projectRoot);
     if (commit) assertCommittedDefinitionSource(this.projectRoot, commit);
-    const id = commit ? `${commit}-definitions-v3` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v3`;
+    // v4 includes shared tools; never reuse a cached v3 snapshot that omitted them.
+    const id = commit ? `${commit}-definitions-v4` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v4`;
     const releaseRoot = join(this.releasesRoot, id);
     if (existsSync(releaseRoot)) return validateRelease(releaseRoot);
 
@@ -308,7 +319,7 @@ export class DefinitionSourceReleaseStore {
     try {
       if (commit) extractCommittedDefinitions(this.projectRoot, commit, stageRoot);
       else copyFilesystemDefinitions(this.projectRoot, stageRoot);
-      const manifest: ReleaseManifest = { version: 3, id, ...(commit ? { sourceCommit: commit } : {}) };
+      const manifest: ReleaseManifest = { version: 4, id, ...(commit ? { sourceCommit: commit } : {}) };
       writeFileSync(join(stageRoot, "release.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
       renameSync(stageRoot, releaseRoot);
     } catch (error) {
