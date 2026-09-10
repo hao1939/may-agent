@@ -3,14 +3,12 @@ import type {
   AppInputContext,
   AppConversationResource,
   AppDependencyObservation,
-  AppRequestOpenRequest,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
-import { listAppInboxChildren, listOpenConversationTopicRequests, type AppInboxItem } from "../app-inbox-store.js";
+import type { AppInboxItem } from "../app-inbox-store.js";
 import { readAppConversationResource, readConversationMessageTopicId } from "../core/state/conversations.js";
 import {
   observeTaskDependency,
-  requestDependencyObservation,
   type AppDependencyReader,
 } from "../core/inbox/input-context.js";
 
@@ -18,7 +16,6 @@ export const APP_REQUEST_CONVERSATION_MAX_BYTES = 12 * 1_024;
 const APP_REQUEST_MESSAGE_BYTES = 7_500;
 const APP_REQUEST_MESSAGE_TEXT_BYTES = 2_000;
 const APP_REQUEST_REFERENCED_TASK_MAX = 8;
-const APP_REQUEST_OPEN_REQUEST_MAX_BYTES = 8_000;
 
 function encodedBytes(value: unknown): number {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
@@ -159,35 +156,6 @@ export async function prepareConversationInput(
       item.id,
     );
     request.conversation = boundedConversation;
-    const openRequests = listOpenConversationTopicRequests(
-      db,
-      item.appId,
-      item.conversationId,
-      boundedConversation.topics?.map((topic) => topic.id) ?? [],
-      item.id,
-    );
-    if (openRequests.length > 0) {
-      const observed: AppRequestOpenRequest[] = [];
-      for (const open of openRequests) {
-        const full: AppRequestOpenRequest = {
-          requestId: open.id,
-          topicId: open.topicId!,
-          dependencies: await Promise.all(
-            listAppInboxChildren(db, open.id).map((child) => requestDependencyObservation(readDependency, child)),
-          ),
-        };
-        const candidate =
-          encodedBytes([...observed, full]) <= APP_REQUEST_OPEN_REQUEST_MAX_BYTES
-            ? full
-            : {
-                ...full,
-                dependencies: full.dependencies.map(({ input: _input, ...dependency }) => dependency),
-              };
-        if (encodedBytes([...observed, candidate]) > APP_REQUEST_OPEN_REQUEST_MAX_BYTES) continue;
-        observed.push(candidate);
-      }
-      if (observed.length > 0) request.openRequests = observed;
-    }
     const referencedTasks = referencedTaskIdentities(boundedConversation);
     if (referencedTasks.length > 0) {
       request.referencedTasks = await Promise.all(

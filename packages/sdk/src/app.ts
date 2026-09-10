@@ -71,22 +71,6 @@ export type AppDependencyObservation = {
   evidence?: string[];
 } & Partial<Omit<TaskDetail, "id" | "status" | "summary" | "response" | "result" | "evidence">>;
 
-/** One exact delegated App request observed while a conversational App reviews its request. */
-export type AppRequestDependencyObservation = AppDependencyObservation & {
-  requestId: string;
-  appId: string;
-  taskId?: string;
-  /** Exact admitted input when it fits the bounded decision context. */
-  input?: AppInput;
-};
-
-/** Earlier unfinished human request and its exact delegated work in this Conversation Topic. */
-export type AppRequestOpenRequest = {
-  requestId: string;
-  topicId: string;
-  dependencies: AppRequestDependencyObservation[];
-};
-
 /** Current canonical state for one exact Task shown in recent human context. */
 export type AppRequestTaskObservation = {
   appId: string;
@@ -220,10 +204,6 @@ export type AppInputContext<TData = unknown> = {
   parentId?: string;
   input: AppInput<TData>;
   dependency?: AppDependencyObservation;
-  /** Exact child App work previously delegated for this request. */
-  dependencies?: AppRequestDependencyObservation[];
-  /** Bounded unfinished requests from the visible Topics; context only, never another work resource. */
-  openRequests?: AppRequestOpenRequest[];
   /** Exact bounded observation for the human's focused Task, when supplied. */
   focusedTask?: {
     appId: string;
@@ -247,15 +227,6 @@ export type AppTaskInput<TData = unknown> = {
 };
 
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
-
-export type AppRequestDependency = {
-  /** Stable name within this conversational request. */
-  id: string;
-  appId: string;
-  /** Continue this exact unfinished Task instead of creating a sibling. */
-  taskId?: string;
-  input: AppInput;
-};
 
 export type AppRequestTopicDecision =
   { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };
@@ -283,8 +254,8 @@ export type AppRequestFollowUp = {
   task?: { appId: string; taskId: string };
 };
 
-/** Retained App input decision, including the older child-result wait protocol. */
-export type AppRequestDecision = {
+/** One interactive Turn's answer/effects; background work is an exact Task handoff. */
+export type ConversationTurnResult = {
   summary: string;
   /**
    * Plain-language answer shown now. With no effects it completes the turn;
@@ -295,19 +266,17 @@ export type AppRequestDecision = {
   topic: AppRequestTopicDecision;
   /** Admit one responsible Task directly and link it to the chosen Topic; the request then completes. */
   followUp?: AppRequestFollowUp;
-  /** Exact existing Task input or genuinely new App work selected by the model. */
-  dependencies?: AppRequestDependency[];
   taskControls?: AppRequestTaskControl[];
   requestUpdates?: AppConversationRequestUpdate[];
 };
 
-/** One interactive Turn's answer/effects; background work is an exact Task handoff. */
-export type ConversationTurnResult = Omit<AppRequestDecision, "dependencies">;
+/** @deprecated Use ConversationTurnResult. Child-result waits are no longer supported. */
+export type AppRequestDecision = ConversationTurnResult;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 
 /** Structured output required from an App's direct conversational agent. */
-export const appRequestAgentResultSchema = Type.Object(
+export const conversationTurnResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
     requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
@@ -334,20 +303,6 @@ export const appRequestAgentResultSchema = Type.Object(
         { additionalProperties: false },
       ),
     ),
-    dependencies: Type.Optional(
-      Type.Array(
-        Type.Object(
-          {
-            id: nonEmptyStringSchema,
-            appId: nonEmptyStringSchema,
-            taskId: Type.Optional(nonEmptyStringSchema),
-            input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
-          },
-          { additionalProperties: false },
-        ),
-        { maxItems: 8 },
-      ),
-    ),
     taskControls: Type.Optional(
       Type.Array(
         Type.Object(
@@ -366,10 +321,8 @@ export const appRequestAgentResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
-/** Human Turns finish or hand off; they do not wait as parents of child App inputs. */
-export const conversationTurnResultSchema = Type.Omit(appRequestAgentResultSchema, ["dependencies"], {
-  additionalProperties: false,
-});
+/** @deprecated Use conversationTurnResultSchema; both names enforce the same contract. */
+export const appRequestAgentResultSchema = conversationTurnResultSchema;
 
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */

@@ -15,7 +15,6 @@ import {
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { listAppInboxChildren } from "./app-inbox-store.js";
 import {
   createConversationTopic,
   linkConversationTopicTask,
@@ -236,7 +235,7 @@ describe("App inbox host", () => {
       status: "done",
       result: { response: expect.stringContaining("keep this review moving") },
     });
-    expect(listAppInboxChildren(db, "turn-review")).toEqual([]);
+    expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all("turn-review")).toEqual([]);
     expect(handoffs).toEqual([
       expect.objectContaining({
         item: "turn-review",
@@ -396,7 +395,7 @@ describe("App inbox host", () => {
       status: "done",
       result: { response: expect.stringContaining("wait makes sense") },
     });
-    expect(listAppInboxChildren(db, "turn-ask-about-task")).toEqual([]);
+    expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all("turn-ask-about-task")).toEqual([]);
     expect(attachments).toEqual([]);
   });
 
@@ -444,103 +443,6 @@ describe("App inbox host", () => {
     expect(changed).toEqual(["may/may:primary"]);
   });
 
-  it("links one Topic to real App Tasks and reviews their results without a May wrapper Task", async () => {
-    const may = defineApp({
-      id: "may",
-      version: 1,
-      agent: "may",
-      inputSchema: probeInput,
-      requests: { mode: "agent" },
-    });
-    const worker = app("worker");
-    const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
-    const attachedRequests: Readonly<AppInputContext>[] = [];
-    const delegated: string[] = [];
-    let workerDone = false;
-    let mayCalls = 0;
-    const host = createConversationInbox({
-      db,
-      apps: [may, worker],
-      resolveRequest: async ({ request }) => {
-        mayCalls += 1;
-        if (request.dependencies?.[0]?.status === "done") {
-          return {
-            summary: "The review is complete.",
-            response: request.dependencies[0].response ?? "The review passed.",
-            topic: { kind: "existing", id: request.conversation!.topics![0]!.id },
-          };
-        }
-        return {
-          summary: "The worker owns the review.",
-          topic: { kind: "new", title: "Review the design" },
-          dependencies: [
-            {
-              id: "design-review",
-              appId: "worker",
-              input: { kind: "probe", data: { value: "review the design" } },
-            },
-          ],
-        };
-      },
-      attachTask: fakeTaskAttacher(db, async ({ appId, attachment, request }) => {
-        attachments.push({ appId, attachment });
-        attachedRequests.push(request);
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      }),
-      readDependency: async ({ dependency }) => ({
-        ...dependency,
-        status: workerDone ? "done" : "running",
-        ...(workerDone ? { summary: "Review passed", response: "The design review passed." } : {}),
-      }),
-      onRequestDelegated: (item) => delegated.push(item.appId),
-    });
-    host.admit({
-      id: "turn-review",
-      appId: "may",
-      conversationId: "may:primary",
-      conversationSequence: 1,
-      source: { kind: "human", id: "message-review" },
-      input: { kind: "probe", data: { value: "review the design" } },
-    });
-
-    await host.reconcileOnce("may");
-    const children = listAppInboxChildren(db, "turn-review");
-    expect(children).toHaveLength(1);
-    expect(delegated).toEqual(["worker"]);
-    expect(children[0]).toMatchObject({ appId: "worker", status: "pending", topicId: expect.any(String) });
-    expect(host.get("turn-review")).toMatchObject({
-      status: "handling",
-      waitingOn: { kind: "app", id: "children:turn-review" },
-    });
-    expect(attachments).toEqual([]);
-
-    await host.reconcileOnce("worker");
-    const topic = readAppConversationResource(db, "may", "may:primary").topics![0]!;
-    const workerTaskId = topic.taskRefs[0]!.taskId;
-    expect(topic).toMatchObject({
-      title: "Review the design",
-      openedBy: "human",
-      originMessageId: "message-review",
-      taskRefs: [{ appId: "worker", taskId: expect.any(String) }],
-    });
-    expect(attachments).toHaveLength(1);
-    expect(attachments[0]!.appId).toBe("worker");
-    expect(attachedRequests[0]?.humanRequested).toBe(true);
-
-    workerDone = true;
-    expect(host.wake({ kind: "task", id: workerTaskId })).toBe(1);
-    await host.reconcileOnce("worker");
-    await host.reconcileOnce("may");
-
-    expect(host.get("turn-review")).toMatchObject({
-      status: "done",
-      topicId: topic.id,
-      result: { response: "The design review passed." },
-    });
-    expect(mayCalls).toBe(2);
-    expect(attachments.every((entry) => entry.appId !== "may")).toBeTrue();
-  });
-
   it("emits one immediate explanation while delegated work continues", async () => {
     const messages: unknown[] = [];
     const may = defineApp({
@@ -557,10 +459,12 @@ describe("App inbox host", () => {
         summary: "Started the exact review.",
         response: "I’ll check the existing evidence first and report the result here.",
         topic: { kind: "new", title: "Review the evidence" },
-        dependencies: [
-          { id: "review", appId: "worker", input: { kind: "probe", data: { value: "review evidence" } } },
-        ],
+        followUp: {
+          outcome: "Review evidence", acceptance: ["Evidence checked"],
+          appId: "worker", input: { kind: "probe", data: { value: "review evidence" } },
+        },
       }),
+      onRequestFollowUp: async () => undefined,
       onRequestMessage: (item, text, topicId) => messages.push({ item: item.id, text, topicId }),
     });
     host.admit({
@@ -581,8 +485,8 @@ describe("App inbox host", () => {
       },
     ]);
     expect(host.get("turn-explain-and-work")).toMatchObject({
-      status: "handling",
-      waitingOn: { kind: "app", id: "children:turn-explain-and-work" },
+      status: "done",
+      waitingOn: undefined,
     });
   });
 
@@ -658,19 +562,16 @@ describe("App inbox host", () => {
         summary: "The wait lacks a live blocker, so the existing Task should reconsider it.",
         response: "The wait does not make sense. I’m asking the same Evaluation Task to re-check it now.",
         topic: { kind: "new", title: "Review the invalid wait" },
-        dependencies: [
-          {
-            id: "reconsider-wait",
-            appId: "evaluation",
-            taskId: "review/docs",
-            input: { kind: "probe", data: { value: "Reconsider the wait from current evidence." } },
-          },
-        ],
+        followUp: {
+          outcome: "Reconsider the wait", acceptance: ["Review current evidence"],
+          appId: "evaluation", task: { appId: "evaluation", taskId: "review/docs" },
+          input: { kind: "probe", data: { value: "Reconsider the wait from current evidence." } },
+        },
       }),
-      attachTask: fakeTaskAttacher(db, async ({ appId, attachment }) => {
-        attachments.push({ appId, attachment });
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      }),
+      onRequestFollowUp: async (_item, followUp, _topicId, authorize) => {
+        authorize();
+        attachments.push({ appId: followUp.appId, attachment: { kind: "existing", taskId: followUp.task!.taskId } });
+      },
       onRequestMessage: (_item, text) => messages.push(text),
     });
     host.admit({
@@ -690,74 +591,9 @@ describe("App inbox host", () => {
 
     expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
     expect(messages).toEqual(["The wait does not make sense. I’m asking the same Evaluation Task to re-check it now."]);
-    expect(listAppInboxChildren(db, "turn-challenge-wait")).toHaveLength(1);
-    await host.reconcileOnce("evaluation");
+    expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all("turn-challenge-wait")).toHaveLength(0);
+    expect(host.get("turn-challenge-wait")?.status).toBe("done");
     expect(attachments).toEqual([{ appId: "evaluation", attachment: { kind: "existing", taskId: "review/docs" } }]);
-  });
-
-  it("reviews each completed child once while other delegated work keeps running", async () => {
-    const may = defineApp({
-      id: "may",
-      version: 1,
-      agent: "may",
-      inputSchema: probeInput,
-      requests: { mode: "agent" },
-    });
-    const completedTasks = new Set<string>();
-    let mayCalls = 0;
-    const host = createConversationInbox({
-      db,
-      apps: [may, app("worker")],
-      resolveRequest: async ({ request }) => {
-        mayCalls += 1;
-        const topic = request.conversation?.topics?.[0];
-        return {
-          summary: "Both checks must finish.",
-          topic: topic ? { kind: "existing", id: topic.id } : { kind: "new", title: "Run both checks" },
-          dependencies: [
-            { id: "first", appId: "worker", input: { kind: "probe", data: { value: "first" } } },
-            { id: "second", appId: "worker", input: { kind: "probe", data: { value: "second" } } },
-          ],
-        };
-      },
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
-        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      })),
-      readDependency: async ({ dependency }) => ({
-        ...dependency,
-        status: completedTasks.has(dependency.id) ? "done" : "running",
-        ...(completedTasks.has(dependency.id) ? { summary: `${dependency.id} finished` } : {}),
-      }),
-    });
-    host.admit({
-      id: "turn-two-checks",
-      appId: "may",
-      conversationId: "may:primary",
-      conversationSequence: 1,
-      source: { kind: "human", id: "message-two-checks" },
-      input: { kind: "probe", data: { value: "run two checks" } },
-    });
-
-    await host.reconcileOnce("may");
-    await host.reconcileOnce("worker");
-    await host.reconcileOnce("worker");
-    const [first, second] = listAppInboxChildren(db, "turn-two-checks");
-    expect(first?.waitingOn?.kind).toBe("task");
-    expect(second?.waitingOn?.kind).toBe("task");
-
-    completedTasks.add(first!.waitingOn!.id);
-    expect(host.wake({ kind: "task", id: first!.waitingOn!.id })).toBe(1);
-    await host.reconcileOnce("worker");
-    await host.reconcileOnce("may");
-
-    expect(host.get("turn-two-checks")).toMatchObject({
-      status: "handling",
-      waitingOn: { kind: "app", id: "children:turn-two-checks" },
-      availableAt: undefined,
-    });
-    expect(host.readyCount("may")).toBe(0);
-    expect(host.get(second!.id)?.status).toBe("handling");
-    expect(mayCalls).toBe(2);
   });
 
   it("lets a later natural turn reuse a Topic and steer its exact unfinished Task", async () => {
@@ -776,29 +612,35 @@ describe("App inbox host", () => {
       apps: [may, worker],
       resolveRequest: async ({ request }) => {
         const existing = request.conversation?.topics?.[0];
-        const dependency = first
+        const followUp = first
           ? {
-              id: "initial",
+              outcome: "Improve the design", acceptance: ["Reviewed"],
               appId: "worker",
               input: { kind: "probe", data: { value: "start" } },
             }
           : {
-              id: "feedback",
+              outcome: "Focus on simplicity", acceptance: ["Reviewed"],
               appId: "worker",
-              taskId: existing!.taskRefs[0]!.taskId,
+              task: { appId: "worker", taskId: existing!.taskRefs[0]!.taskId },
               input: { kind: "probe", data: { value: "focus on simplicity" } },
             };
         first = false;
         return {
           summary: "Worker owns the request.",
+          response: "The worker Task will handle this review.",
           topic: existing ? { kind: "existing", id: existing.id } : { kind: "new", title: "Improve design" },
-          dependencies: [dependency],
+          followUp,
         };
       },
-      attachTask: fakeTaskAttacher(db, async ({ appId, attachment }) => {
-        attachments.push({ appId, attachment });
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      }),
+      onRequestFollowUp: async (item, followUp, topicId, authorize) => {
+        authorize();
+        const attachment = followUp.task
+          ? { kind: "existing" as const, taskId: followUp.task.taskId }
+          : desiredTask(item.id);
+        attachments.push({ appId: followUp.appId, attachment });
+        linkConversationTopicTask(db, topicId, followUp.appId,
+          attachment.kind === "existing" ? attachment.taskId : attachment.intent.id);
+      },
       readDependency: async ({ dependency }) => ({ ...dependency, status: "running" }),
     });
     for (const [id, sequence, value] of [
@@ -813,8 +655,7 @@ describe("App inbox host", () => {
         source: { kind: "human", id: `message-${sequence}` },
         input: { kind: "probe", data: { value } },
       });
-      await host.reconcileOnce("may");
-      await host.reconcileOnce("worker");
+      expect((await host.reconcileOnce("may")).errors).toEqual([]);
     }
 
     const topic = readAppConversationResource(db, "may", "may:primary").topics![0]!;
@@ -825,123 +666,6 @@ describe("App inbox host", () => {
       attachment: { kind: "existing", taskId: topic.taskRefs[0]!.taskId },
     });
     expect(host.get("turn-2")?.topicId).toBe(topic.id);
-  });
-
-  it("reconsiders a rapid follow-up and continues the open Topic request instead of creating a sibling Task", async () => {
-    const may = defineApp({
-      id: "may",
-      version: 1,
-      agent: "may",
-      inputSchema: probeInput,
-      requests: { mode: "agent" },
-    });
-    const attachments: AppTaskAttachment[] = [];
-    let releaseFollowUp!: () => void;
-    let followUpStarted!: () => void;
-    const followUpGate = new Promise<void>((resolve) => (releaseFollowUp = resolve));
-    const followUpEntered = new Promise<void>((resolve) => (followUpStarted = resolve));
-    let firstCalls = 0;
-    let secondCalls = 0;
-    const host = createConversationInbox({
-      db,
-      apps: [may, app("worker")],
-      resolveRequest: async ({ request }) => {
-        if (request.id === "topic-seed") {
-          return {
-            summary: "Started a Topic.",
-            response: "What should we review?",
-            topic: { kind: "new", title: "Review the backlog" },
-          };
-        }
-        const topicId = request.conversation!.topics![0]!.id;
-        const open = request.openRequests?.[0];
-        if (open) {
-          secondCalls += 1;
-          if (!open.dependencies[0]?.taskId) {
-            followUpStarted();
-            await followUpGate;
-            return {
-              summary: "Worker owns the backlog review.",
-              topic: { kind: "existing", id: topicId },
-              dependencies: [
-                {
-                  id: "backlog-review",
-                  appId: "worker",
-                  input: { kind: "probe", data: { value: "review and retire obsolete work" } },
-                },
-              ],
-            };
-          }
-          return {
-            summary: "The existing review already covers this follow-up.",
-            response: "It is already underway; I will return the recommendations here.",
-            topic: { kind: "existing", id: topicId },
-          };
-        }
-        if (request.id === "review-one") {
-          firstCalls += 1;
-        } else {
-          secondCalls += 1;
-        }
-        return {
-          summary: "Worker owns the backlog review.",
-          topic: { kind: "existing", id: topicId },
-          dependencies: [
-            {
-              id: "backlog-review",
-              appId: "worker",
-              input: { kind: "probe", data: { value: "review and retire obsolete work" } },
-            },
-          ],
-        };
-      },
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
-        attachments.push(attachment);
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      }),
-      readDependency: async ({ dependency }) => ({ ...dependency, status: "running" }),
-    });
-    host.admit({
-      id: "topic-seed",
-      appId: "may",
-      conversationId: "may:primary",
-      conversationSequence: 1,
-      source: { kind: "human", id: "message-seed" },
-      input: { kind: "probe", data: { value: "review the backlog" } },
-    });
-    await host.reconcileOnce("may");
-
-    for (const [id, sequence, value] of [
-      ["review-one", 2, "systematically review every task and retire obsolete work"],
-      ["review-two", 3, "please do it for me and suggest"],
-    ] as const) {
-      host.admit({
-        id,
-        appId: "may",
-        conversationId: "may:primary",
-        conversationSequence: sequence,
-        source: { kind: "human", id: `message-${sequence}` },
-        input: { kind: "probe", data: { value } },
-      });
-    }
-
-    expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
-    const followUp = host.reconcileOnce("may");
-    await followUpEntered;
-    await host.reconcileOnce("worker");
-    releaseFollowUp();
-    expect(await followUp).toMatchObject({ admitted: 1, errors: [] });
-
-    expect(firstCalls).toBe(1);
-    expect(secondCalls).toBe(2);
-    expect(listAppInboxChildren(db, "review-one")).toHaveLength(1);
-    expect(listAppInboxChildren(db, "review-two")).toHaveLength(0);
-    expect(host.get("review-two")).toMatchObject({
-      status: "done",
-      result: { response: "It is already underway; I will return the recommendations here." },
-    });
-    expect(attachments).toHaveLength(1);
-    expect(readAppConversationResource(db, "may", "may:primary").topics![0]!.taskRefs).toHaveLength(1);
   });
 
   it("attaches typed follow-up input to one exact existing Task", async () => {
@@ -1640,14 +1364,12 @@ describe("App inbox host", () => {
       resolveRequest: async () => ({
         summary: "Tried an unavailable continuation.",
         topic: { kind: "new", title: "Unavailable work" },
-        dependencies: [
-          {
-            id: "continue-invented",
-            appId: "worker",
-            taskId: "probe/invented",
-            input: { kind: "probe", data: { value: "continue it" } },
-          },
-        ],
+        response: "Continuing the task.",
+        followUp: {
+          outcome: "Continue the task", acceptance: ["Reviewed"],
+          appId: "worker", task: { appId: "worker", taskId: "probe/invented" },
+          input: { kind: "probe", data: { value: "continue it" } },
+        },
       }),
     });
     host.admit({
@@ -1660,7 +1382,7 @@ describe("App inbox host", () => {
     const result = await host.reconcileOnce("may");
 
     expect(result.errors).toEqual([
-      expect.stringContaining("cannot continue unavailable Task worker/probe/invented"),
+      expect.stringContaining("cannot follow unavailable Task worker/probe/invented"),
     ]);
     expect(host.get("turn-invalid-target")?.status).toBe("pending");
   });
@@ -1686,20 +1408,20 @@ describe("App inbox host", () => {
       inputSchema: probeInput,
       requests: { mode: "agent" },
     });
+    const handoffs: unknown[] = [];
     const host = createConversationInbox({
       db,
       apps: [may, app("worker")],
+      onRequestFollowUp: (_item, followUp, topicId) => { handoffs.push({ followUp, topicId }); },
       resolveRequest: async () => ({
         summary: "Continued the old review.",
         topic: { kind: "existing", id: "00000000" },
-        dependencies: [
-          {
-            id: "continue-old-review",
-            appId: "worker",
-            taskId: "probe/old-review",
-            input: { kind: "probe", data: { value: "include Telegram" } },
-          },
-        ],
+        response: "Continuing the old review.",
+        followUp: {
+          outcome: "Continue the old review", acceptance: ["Reviewed"],
+          appId: "worker", task: { appId: "worker", taskId: "probe/old-review" },
+          input: { kind: "probe", data: { value: "include Telegram" } },
+        },
       }),
     });
     host.admit({
@@ -1712,9 +1434,10 @@ describe("App inbox host", () => {
     });
 
     expect(await host.reconcileOnce("may")).toMatchObject({ admitted: 1, errors: [] });
-    expect(listAppInboxChildren(db, "turn-old-topic")).toMatchObject([
-      { appId: "worker", targetTaskId: "probe/old-review", topicId: oldTopicId },
+    expect(handoffs).toMatchObject([
+      { followUp: { appId: "worker", task: { appId: "worker", taskId: "probe/old-review" } }, topicId: oldTopicId },
     ]);
+    expect(host.get("turn-old-topic")?.status).toBe("done");
   });
 
   it("bounds owner Conversation context by bytes instead of retained message count", () => {

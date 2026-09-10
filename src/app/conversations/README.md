@@ -59,10 +59,12 @@ Task controls and admissions revalidate authority at their commit boundary.
 Already accepted effects are not undone. Cancellation retains capacity until
 the executor settles, and database/reporting failures do not bypass cleanup.
 
-`ConversationTurnResult` describes new interactive Turn answers/effects, without
-the retained child-wait protocol. Both the agent adapter and the handler enforce
-its schema for Apps using direct Task handoff. The deprecated `AppRequest` SDK
-name remains an alias of `AppInputContext`, not an accepted Request resource.
+`ConversationTurnResult` is the single interactive Turn contract: answer, apply
+an authorized Task control, or hand off to one responsible Task. Both the agent
+adapter and handler enforce it, including for a frontend without its own Task
+capability. `AppRequestDecision` and `appRequestAgentResultSchema` are deprecated
+aliases of this contract; neither accepts `dependencies`. `AppRequest` remains
+an alias of `AppInputContext`, not an accepted Request resource.
 
 Direct human turns persist a small `handling` record before model execution.
 A failed or interrupted execution, or a rejected Task control/handoff, finishes
@@ -72,7 +74,7 @@ A validated decision is saved before applying effects, so recovery can replay
 idempotent admission/publication after a crash or failed result write without
 rerunning the model. Rejected decisions or effects end the turn, including
 when recovery finds that a handoff's target App is no longer available.
-Task callers and retained child waits keep their separate handling contract.
+Task callers keep their separate Task-result handling contract.
 Row `done` means input handling ended; inspect `handling` and the result for
 its disposition.
 
@@ -98,8 +100,17 @@ accepts decisions with Topics and Request updates;
 Request closure; [`conversation-outcomes.ts`](../core/state/conversation-outcomes.ts)
 records supervised outcomes with their explanation and Request updates.
 Execution stays outside those transactions. There is no new database, cache,
-background process or alternate state authority. Retained App-to-App child
-delegation keeps its explicit transaction in the handler.
+background process or alternate state authority.
+
+The database upgrade retires unfinished conversational child waits as failed
+input handling. It preserves accepted Requests, existing child inputs, Tasks,
+Topic links, results and history. Those Tasks continue independently. A failed
+turn is visible as `failure:<inputId>` alongside any earlier acknowledgment;
+new human input is needed to review the remaining work. This deliberately gives
+up automatic child-result aggregation without keeping a second execution path.
+Task-to-Task/App dependencies are unaffected. The upgrade is covered by
+[`retired-conversation-waits.test.ts`](../core/state/retired-conversation-waits.test.ts),
+including file-backed reopen, stale claims and continuation of admitted work.
 
 [`core/state/conversations.test.ts`](../core/state/conversations.test.ts) covers
 message deduplication, bounded views, Topic discovery and reopen reads.

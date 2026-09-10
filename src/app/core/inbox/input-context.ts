@@ -1,7 +1,6 @@
-import type { AppInputContext, AppDependencyObservation, AppRequestDependencyObservation } from "@may-agent/sdk";
+import type { AppInputContext, AppDependencyObservation } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
-import { getAppInboxItem, listAppInboxChildren, type AppInboxItem } from "../../app-inbox-store.js";
-import { appRequestChildrenWaitId } from "../state/inbox.js";
+import { getAppInboxItem, type AppInboxItem } from "../../app-inbox-store.js";
 
 export type AppDependencyReader = (input: {
   appId: string;
@@ -26,39 +25,6 @@ export async function observeTaskDependency(
   return observed ?? null;
 }
 
-export async function requestDependencyObservation(
-  readDependency: AppDependencyReader | undefined,
-  child: AppInboxItem,
-): Promise<AppRequestDependencyObservation> {
-  if (child.waitingOn?.kind === "task") {
-    const observed = (await observeTaskDependency(readDependency, child.appId, {
-      kind: "task",
-      id: child.waitingOn.id,
-    })) ?? { kind: "task" as const, id: child.waitingOn.id, status: "unknown" as const };
-    return {
-      ...observed,
-      requestId: child.id,
-      appId: child.appId,
-      taskId: child.waitingOn.id,
-      input: child.input,
-    };
-  }
-  return {
-    kind: "app",
-    id: child.id,
-    requestId: child.id,
-    appId: child.appId,
-    ...(child.targetTaskId ? { taskId: child.targetTaskId } : {}),
-    status:
-      child.status === "done" ? "done" : child.status === "pending" ? "pending" : child.lease ? "running" : "waiting",
-    summary: child.result?.summary,
-    response: child.result?.response,
-    result: child.result?.result,
-    evidence: child.result?.evidence,
-    input: child.input,
-  };
-}
-
 /** Input identity and exact caller/Task observations; no conversational context selection. */
 export async function readInputContext(
   db: SqliteDb,
@@ -73,18 +39,8 @@ export async function readInputContext(
     parentId: item.parentId,
     input: item.input,
   };
-  const childRequests = listAppInboxChildren(db, item.id);
-  if (childRequests.length > 0) {
-    request.dependencies = await Promise.all(
-      childRequests.map((child) => requestDependencyObservation(readDependency, child)),
-    );
-  }
   const waitingOn = item.waitingOn;
   if (!waitingOn) return freezeInputContext(request);
-
-  if (waitingOn.kind === "app" && waitingOn.id === appRequestChildrenWaitId(item.id)) {
-    return freezeInputContext(request);
-  }
 
   if (waitingOn.kind === "app") {
     const child = getAppInboxItem(db, waitingOn.id);

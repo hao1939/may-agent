@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource, AppResult, AppRequestDecision } from "@may-agent/sdk";
+import type { AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
@@ -9,7 +9,7 @@ export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 /** Input execution evidence, not fulfillment of the accepted human ask. */
 export type AppInboxHandling =
   | { phase: "executing" }
-  | { phase: "decided"; decision: AppRequestDecision; requestRevisions?: Record<string, number> }
+  | { phase: "decided"; decision: ConversationTurnResult; requestRevisions?: Record<string, number> }
   | { phase: "failed"; reason: string }
   | { phase: "stopped"; reason: string };
 
@@ -420,47 +420,6 @@ export function associateAppInboxClaimTopic(
       [id, now, now, claim.item.id, claim.generation, claim.owner, id],
     ).changes === 1
   );
-}
-
-export function listAppInboxChildren(db: SqliteDb, parentId: string): AppInboxItem[] {
-  return db
-    .prepare("SELECT * FROM app_inbox_items WHERE parent_id = ? ORDER BY created_at, id")
-    .all(requiredText(parentId, "parent request id"))
-    .map(rowToItem);
-}
-
-/** Unfinished human requests already associated with the visible Conversation Topics. */
-export function listOpenConversationTopicRequests(
-  db: SqliteDb,
-  appId: string,
-  conversationId: string,
-  topicIds: string[],
-  excludeRequestId: string,
-  limit = 8,
-): AppInboxItem[] {
-  const topics = [...new Set(topicIds.map((topicId) => requiredText(topicId, "topic id")))];
-  if (topics.length === 0) return [];
-  if (!Number.isSafeInteger(limit) || limit <= 0 || limit > 32) {
-    throw new Error("Open Conversation request limit must be an integer from 1 to 32");
-  }
-  return db
-    .prepare(
-      `SELECT * FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ?
-         AND source_kind = 'human' AND status != 'done'
-         AND continues_request_id IS NULL AND id != ?
-         AND topic_id IN (${topics.map(() => "?").join(", ")})
-       ORDER BY created_at DESC, id DESC
-       LIMIT ?`,
-    )
-    .all(
-      requiredText(appId, "appId"),
-      requiredText(conversationId, "conversationId"),
-      requiredText(excludeRequestId, "excludeRequestId"),
-      ...topics,
-      limit,
-    )
-    .map(rowToItem);
 }
 
 /** One bounded page of distinct canonical Task dependencies awaiting review. */

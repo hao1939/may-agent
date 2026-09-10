@@ -1,30 +1,22 @@
-import { createHash } from "node:crypto";
 import {
-  appRequestAgentResultSchema,
   conversationTurnResultSchema,
   type AppDefinition,
   type AppInput,
   type AppInputContext,
-  type AppRequestDecision,
+  type ConversationTurnResult,
   type AppRequestFollowUp,
   type AppRequestTaskControl,
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../../lib/db.js";
-import { stateTransaction as withTransaction } from "../../lib/db/transaction.js";
 import {
   recordAppInboxHandling,
-  createAppInboxItem,
-  listAppInboxChildren,
-  waitAppInboxClaim,
-  wakeAppInboxItemsWaitingOn,
   type AppInboxItem,
   type AppInboxClaim,
 } from "../app-inbox-store.js";
 import { acceptConversationTurnDecision, applyTurnTopic } from "../core/state/conversation-turns.js";
 import { readConversationTopic } from "../core/state/conversations.js";
 import { readConversationRequest, ConversationRequestConflict } from "../core/state/conversation-requests.js";
-import { appRequestChildrenWaitId } from "../core/state/inbox.js";
 import { observeTaskDependency, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 import type { AppInputHandler } from "../core/inbox/input-handler.js";
 
@@ -35,7 +27,7 @@ export type AppInputResolver = (input: {
   app: Readonly<AppDefinition>;
   request: Readonly<AppInputContext>;
   execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void };
-}) => Promise<AppRequestDecision>;
+}) => Promise<ConversationTurnResult>;
 
 export type AppRequestTaskController = (input: {
   requestId: string;
@@ -49,9 +41,7 @@ export type ConversationHandlerOptions = {
   resolveRequest?: AppInputResolver;
   controlTask?: AppRequestTaskController;
   now?: () => number;
-  /** Wake-only hint after a direct request durably delegates to another App. */
-  onRequestDelegated?: (item: AppInboxItem) => void;
-  /** Immediate conversational text emitted once while delegated work continues. */
+  /** Conversational text emitted after the turn finishes or hands off. */
   onRequestMessage?: (item: AppInboxItem, text: string, topicId: string) => void;
   /** Durable handoff from one bounded conversational turn to App-owned follow-up work. */
   onRequestFollowUp?: (
@@ -74,31 +64,7 @@ function requestTaskIdentityKeys(request: Readonly<AppInputContext>): Set<string
   for (const task of currentTopic?.taskRefs ?? []) {
     identities.add(`${task.appId}\0${task.taskId}`);
   }
-  for (const dependency of request.dependencies ?? []) {
-    if (dependency.taskId) identities.add(`${dependency.appId}\0${dependency.taskId}`);
-  }
-  for (const open of request.openRequests ?? []) {
-    for (const dependency of open.dependencies) {
-      if (dependency.taskId) identities.add(`${dependency.appId}\0${dependency.taskId}`);
-    }
-  }
   return identities;
-}
-
-function openRequestFingerprint(request: Readonly<AppInputContext>, topicId: string): string {
-  return JSON.stringify(
-    (request.openRequests ?? [])
-      .filter((open) => open.topicId === topicId)
-      .map((open) => ({
-        requestId: open.requestId,
-        dependencies: open.dependencies.map((dependency) => ({
-          requestId: dependency.requestId,
-          appId: dependency.appId,
-          taskId: dependency.taskId,
-        })),
-      }))
-      .sort((left, right) => left.requestId.localeCompare(right.requestId)),
-  );
 }
 
 function validateInput(app: Readonly<AppDefinition>, input: AppInput): void {
@@ -106,21 +72,6 @@ function validateInput(app: Readonly<AppDefinition>, input: AppInput): void {
     const first = [...Errors(app.inputSchema, input)][0];
     throw new Error(`Invalid input for App ${app.id}: ${first?.message ?? "schema mismatch"}`);
   }
-}
-
-function stableId(prefix: string, ...parts: string[]): string {
-  return `${prefix}_${createHash("sha256").update(parts.join("\0")).digest("hex").slice(0, 24)}`;
-}
-
-export function stableChildRequestId(parentRequestId: string, dependencyId: string): string {
-  return stableId("appreq", parentRequestId, dependencyId);
-}
-
-/** New explicit-input frontends hand off to Tasks; retained child waits keep their original protocol. */
-export function usesDirectTaskHandoff(app: Readonly<AppDefinition>, input: Readonly<AppInputContext>): boolean {
-  return (
-    Boolean(app.requests?.inputKinds && app.tasks) && !input.dependencies?.length && input.dependency?.kind !== "app"
-  );
 }
 
 export function createConversationTurnHandler(options: ConversationHandlerOptions): AppInputHandler {
@@ -144,11 +95,7 @@ export function createConversationTurnHandler(options: ConversationHandlerOption
     ): Promise<string | undefined> {
       if (!options.resolveRequest) throw new Error("Direct App request resolution is not configured");
       authorize();
-      const directTurn =
-        request.source.kind === "human" &&
-        Boolean(claim.item.conversationId) &&
-        !request.dependencies?.length &&
-        request.dependency?.kind !== "app";
+      const directTurn = request.source.kind === "human" && Boolean(claim.item.conversationId);
       const saved = claim.item.handling;
       if (directTurn && saved?.phase === "executing" && reconsiderations === 0) {
         throw new Error(
@@ -168,31 +115,24 @@ export function createConversationTurnHandler(options: ConversationHandlerOption
               execution,
             });
       authorize();
-      const resultSchema = usesDirectTaskHandoff(app, request)
-        ? conversationTurnResultSchema
-        : appRequestAgentResultSchema;
-      if (!Check(resultSchema, decision)) {
-        const first = [...Errors(resultSchema, decision)][0];
+      if (!Check(conversationTurnResultSchema, decision)) {
+        const first = [...Errors(conversationTurnResultSchema, decision)][0];
         throw new Error(`App ${app.id} returned an invalid request decision: ${first?.message ?? "schema mismatch"}`);
       }
-      const dependencies = decision.dependencies ?? [];
       const taskControls = decision.taskControls ?? [];
       const followUp = decision.followUp;
       const requestUpdates = decision.requestUpdates ?? [];
-      if (requestUpdates.length && (!directTurn || !decision.response?.trim() || dependencies.length))
+      if (requestUpdates.length && (!directTurn || !decision.response?.trim()))
         throw new Error("Accepted Request updates require a conversational answer");
       if (requestUpdates.some((update) => update.disposition !== "open" && !update.reason?.trim()))
         throw new Error("Request closure requires an explicit reason");
-      if ((followUp || dependencies.length) && decision.topic.kind === "none" && !claim.item.topicId)
+      if (followUp && decision.topic.kind === "none" && !claim.item.topicId)
         throw new Error("Durable handoff requires a Topic");
-      if (followUp && (dependencies.length > 0 || taskControls.length > 0)) {
+      if (followUp && taskControls.length > 0) {
         throw new Error(`App ${app.id} request decision cannot combine follow-up with direct Task effects`);
       }
-      if (taskControls.length > 0 && dependencies.length > 0) {
-        throw new Error(`App ${app.id} request decision cannot control and delegate at the same time`);
-      }
-      if (!decision.response && !followUp && dependencies.length === 0 && taskControls.length === 0) {
-        throw new Error(`App ${app.id} request decision must answer or delegate exact App work`);
+      if (!decision.response && !followUp && taskControls.length === 0) {
+        throw new Error(`App ${app.id} request decision must answer or hand off exact Task work`);
       }
       if (followUp && !decision.response) {
         throw new Error(`App ${app.id} request decision must explain its durable follow-up to the human`);
@@ -269,49 +209,6 @@ export function createConversationTurnHandler(options: ConversationHandlerOption
           }
         }
       }
-      const dependencyIds = new Set<string>();
-      const reviewedCompletedChildren = new Set(
-        (request.dependencies ?? [])
-          .filter((dependency) => dependency.status === "done")
-          .map((dependency) => dependency.requestId),
-      );
-      for (const dependency of dependencies) {
-        if (dependencyIds.has(dependency.id)) {
-          throw new Error(`App ${app.id} request decision repeats dependency ${dependency.id}`);
-        }
-        dependencyIds.add(dependency.id);
-        const target = getApp(dependency.appId);
-        if (!target.task || !target.tasks) {
-          throw new Error(`App request dependency ${dependency.id} targets non-Task App ${target.id}`);
-        }
-        validateInput(target, dependency.input);
-        if (dependency.taskId) {
-          const taskId = dependency.taskId.trim();
-          const identity = `${target.id}\0${taskId}`;
-          if (!availableTaskIdentities.has(identity)) {
-            throw new Error(`App ${app.id} request decision cannot continue unavailable Task ${target.id}/${taskId}`);
-          }
-        }
-        if (target.id === app.id) {
-          throw new Error(`Direct App request ${request.id} cannot delegate back to ${app.id}`);
-        }
-      }
-
-      const existingTopicId =
-        claim.item.topicId ?? (decision.topic.kind === "existing" ? decision.topic.id : undefined);
-      if (saved?.phase !== "decided" && existingTopicId && dependencies.some((dependency) => !dependency.taskId)) {
-        const freshRequest = await refreshInput();
-        if (
-          openRequestFingerprint(freshRequest, existingTopicId) !== openRequestFingerprint(request, existingTopicId)
-        ) {
-          if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
-            throw new Error(
-              `Conversation work changed repeatedly while App ${app.id} was deciding; retry with fresh context`,
-            );
-          }
-          return resolveDirectRequest(app, claim, freshRequest, reconsiderations + 1);
-        }
-      }
       let topicId: string | undefined;
       if (directTurn && saved?.phase !== "decided") {
         const accepted = acceptConversationTurnDecision(options.db, {
@@ -333,7 +230,7 @@ export function createConversationTurnHandler(options: ConversationHandlerOption
         });
       }
 
-      if ((dependencies.length > 0 || followUp) && !topicId) {
+      if (followUp && !topicId) {
         throw new Error(`Delegated App request ${request.id} requires a Topic`);
       }
       if (taskControls.length > 0) {
@@ -359,60 +256,13 @@ export function createConversationTurnHandler(options: ConversationHandlerOption
           }
         });
       }
-      if (dependencies.length === 0) {
-        const conversationId = complete({
-          summary: decision.summary,
-          response: decision.response,
-          evidence: decision.evidence,
-        });
-        publishRequestMessage(claim.item, decision.response, topicId);
-        return conversationId;
-      }
-
-      // Retained App-to-App child waits only; ordinary human Turns hand off and finish.
-      withTransaction(options.db, () => {
-        authorize();
-        for (const dependency of dependencies) {
-          const childId = stableChildRequestId(request.id, dependency.id);
-          const delegated = createAppInboxItem(options.db, {
-            id: childId,
-            appId: dependency.appId,
-            parentId: request.id,
-            targetTaskId: dependency.taskId,
-            topicId,
-            source: { kind: "app", id: app.id },
-            input: dependency.input,
-            idempotencyKey: `delegate:${request.id}:${dependency.id}`,
-            now: now(),
-          });
-          if (delegated.item.status !== "done" && options.onRequestDelegated) {
-            try {
-              options.onRequestDelegated(delegated.item);
-            } catch {
-              // The durable child request is authoritative; the normal ready scan
-              // recovers a missed wake without duplicating work.
-            }
-          }
-        }
-        if (
-          !waitAppInboxClaim(
-            options.db,
-            claim,
-            { kind: "app", id: appRequestChildrenWaitId(request.id) },
-            { now: now() },
-          )
-        ) {
-          throw new Error("claim is stale");
-        }
-        const unreviewedCompletedChildExists = listAppInboxChildren(options.db, request.id).some(
-          (child) => child.status === "done" && !reviewedCompletedChildren.has(child.id),
-        );
-        if (unreviewedCompletedChildExists) {
-          wakeAppInboxItemsWaitingOn(options.db, { kind: "app", id: appRequestChildrenWaitId(request.id) }, now());
-        }
+      const conversationId = complete({
+        summary: decision.summary,
+        response: decision.response,
+        evidence: decision.evidence,
       });
       publishRequestMessage(claim.item, decision.response, topicId);
-      return claim.item.conversationId;
+      return conversationId;
     }
 
     return resolveDirectRequest(app, claim, request);

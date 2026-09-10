@@ -451,9 +451,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     onConversationChanged: notifyConversationUpdated,
-    onRequestDelegated(item) {
-      schedule(item.appId);
-    },
     onRequestMessage(item, text, topicId) {
       if (!item.conversationId) return;
       options.bus.emit({
@@ -595,31 +592,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           },
           idempotencyKey: `conversation-task-linked:${item.conversationId}:${item.topicId}:${item.appId}:${taskId}`,
         } as unknown as AgentEvent);
-        return;
-      }
-      const directParent = item.parentId ? host.get(item.parentId) : null;
-      if (directParent?.conversationId) {
-        options.bus.emit({
-          type: "conversation.message.created",
-          source: "app-inbox",
-          owner: `app:${directParent.appId}`,
-          data: {
-            appId: directParent.appId,
-            conversationId: directParent.conversationId,
-            author: { kind: "agent", id: directParent.appId },
-            text: assignmentText(item),
-            metadata: {
-              channel: directParent.channel,
-              channelTargetId: directParent.channelTargetId,
-              channelThreadId: directParent.channelThreadId,
-              requestId: directParent.id,
-              ...(item.topicId ? { topicId: item.topicId } : {}),
-              taskRefs: [{ appId: item.appId, taskId }],
-              followTask: { appId: item.appId, taskId },
-            },
-            idempotencyKey: `conversation-task-assigned:${directParent.conversationId}:${directParent.id}:${item.appId}:${taskId}`,
-          },
-        });
         return;
       }
       for (const parent of oneItemPerConversationTask(listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id))) {
