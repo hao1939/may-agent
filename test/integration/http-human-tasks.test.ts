@@ -32,6 +32,7 @@ describe("HTTP human Task reads and board", () => {
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
   let listeners: Set<(event: ControlEvent) => void>;
+  let subscribed: ReturnType<typeof Promise.withResolvers<void>>;
 
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
@@ -39,6 +40,7 @@ describe("HTTP human Task reads and board", () => {
     rejectPublish = false;
     rejectConversationRead = false;
     listeners = new Set();
+    subscribed = Promise.withResolvers<void>();
     root = mkdtempSync(join(tmpdir(), "may-http-tasks-"));
     db = openStateDb(join(root, "may.db"));
     const projects = join(root, "projects");
@@ -56,7 +58,7 @@ describe("HTTP human Task reads and board", () => {
       getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
-      subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+      subscribeEvents: (listener) => { listeners.add(listener); subscribed.resolve(); return () => listeners.delete(listener); },
       getAppConversation: (appId, conversationId, options) => {
         if (appId !== "may" || conversationId !== "may:primary" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
@@ -211,6 +213,10 @@ describe("HTTP human Task reads and board", () => {
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
+      // HTTP Conversation readiness does not imply that the WebSocket proxy
+      // has subscribed to control events yet. Emit only after that exact boundary.
+      await subscribed.promise;
+      await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
       for (const listener of listeners) {
         listener({ type: "status", activeAgents: [{ agent: "worker", sessionId: "other-session", status: "running" }] });
         listener({ type: "text", data: { sessionId: "other-session" }, text: "Other session text" });
