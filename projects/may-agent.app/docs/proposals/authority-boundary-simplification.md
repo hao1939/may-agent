@@ -258,8 +258,8 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. Finish human review of #138/#139 under the existing merge policy. Prepare
-   the layout work while review is pending; land overlapping moves afterward.
+1. #138/#139 are merged (`ca6c9d7f`, `b725f546`). Build the layout slices on
+   those ownership boundaries; keep #140's behavioral removal independently reviewable.
 2. Reorganize core Task, inbox, state and shared scheduling files in one cohesive
    move-only slice. Put the mixed inbox orchestration and worker entry points in
    composition. Move tests, update imports, lint boundaries, worker/build paths
@@ -280,9 +280,10 @@ the directory milestone.
 
 ## Implementation evidence
 
-The approved bounded milestone is delivered as two independent Host PRs based
-on `0bedd93a` (candidates `71ea02a6` and `ccc33d3d`). Both remain subject to human review; no merge or deployment is
-part of this implementation.
+The import/navigation and foreground-selection milestone landed as two
+independent Host PRs: #138 as `ca6c9d7f`, and #139 as `b725f546` on September 11.
+The table records their earlier local implementation checks; later review
+follow-ups are included in the merged revisions. Deployment remains separate.
 
 | Slice | Result and evidence |
 | --- | --- |
@@ -292,12 +293,13 @@ part of this implementation.
 Omitting selection uses background capacity with the existing reserve, an
 accepted utilization cost that avoids another capacity mode. This does not rename
 an installed App or change turn-handler declarations. Existing cancellation,
-Task attachment, accepted Requests and retained child waits remain in place.
+Task attachment and accepted Requests remain in place. Those two PRs did not
+retire child waits; that change is isolated in #140.
 
 The accepted retirement is implemented in [Host #140](https://github.com/hao1939/may-agent/pull/140),
-candidate `c9c43eb4` based on `67162210`. It removes the frontend child protocol
+candidate `f050b1a3` rebased onto `b725f546`. It removes the frontend child protocol
 and upgrades retained parents to visible failed handling while preserving asks
-and admitted work. Frozen install and full local CI passed: 2,676 tests passed,
+and admitted work. Frozen install and full local CI passed: 2,682 tests passed,
 three installation-only checks skipped, zero failures; browser coverage ran.
 Two new storage regressions cover file-backed restart, exact/aggregate/reclaimed/
 saved waits, stale claims, unchanged Task evidence and continued Task execution.

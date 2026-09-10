@@ -31,11 +31,12 @@ small shared state boundary.
 ## Current focus
 
 The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
-compares removing conversational child waits, reducing evaluation UI features,
-and affordable workflow redo before larger code moves. It builds on #129's
-merged state/frontend separation (`0bedd93a`). The selected import/navigation
-and foreground-App changes are tracked in its implementation evidence; larger
-feature reductions remain conditional.
+tracks the accepted removal of conversational child waits in Host #140, with
+visible retirement of old waits and preservation of accepted Requests and Task
+work. Import/navigation and foreground-App selection landed in #138/#139.
+Directory organization is the next independent milestone for code review;
+Evaluation feature reduction and workflow redo remain conditional. Candidate
+validation and merge status live in the proposal; deployment remains separate.
 
 The [external component plan](proposals/external-components-simplification.md#candidate-evidence)
 records the completed source fixes for guard guidance, the blocking credential

@@ -285,7 +285,10 @@ delegation, or non-conversation callers. A conversational App may name one
 default Conversation for addressed event/API requests. A correlated agent
 response carries `messageId=result:<requestId>`, so its explicit Event and
 bounded compatibility projection remain one message across independent read
-windows. Accepted responses to addressed event/API requests enter that
+windows. Failed input handling is projected as `failure:<inputId>` so an earlier
+acknowledgment remains history and cannot hide the failure. See
+[Message Lifecycle](message-lifecycle.md#retained-state-compatibility).
+Accepted responses to addressed event/API requests enter that
 Conversation, but their inputs are not presented as human Turns.
 
 ## Admission state

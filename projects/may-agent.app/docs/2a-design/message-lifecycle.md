@@ -463,7 +463,9 @@ explicit message exists, the inbox result remains execution evidence but is
 not a second Conversation message. Both the explicit Event and the bounded
 compatibility projection use `result:<requestId>`; a read prefers explicit
 message data when both are present. Message identity, not text comparison,
-establishes the one canonical presentation.
+establishes the one canonical presentation. Failed input handling uses
+`failure:<inputId>` so an earlier acknowledgment cannot hide its failure.
+This additional explanation leaves the historical acknowledgment intact.
 
 Progress is deduplicated by stable event or result identity and appears at most
 once in durable Conversation. Adapters may render faster transient progress
@@ -673,12 +675,14 @@ outcomes. A delayed closure must not overwrite a newer accepted ask.
 The stable supervision identity is `may/conversation/follow-up`. Recovery and
 future migrations preserve Conversation messages, exact Topic/Task links,
 accepted results and audit Events. Changes to supervision semantics revise that
-same Task; they do not create sibling Tasks or silently discard accepted asks. See [Operations and Recovery](../2b-manual/app-operations-recovery.md)
-for operating procedures.
+same Task; they do not create sibling Tasks or silently discard accepted asks.
+See [Operations and Recovery](../2b-manual/app-operations-recovery.md) for operating
+procedures.
 
-The retirement upgrade ends unfinished old child waits with `handling.phase:
-failed` and a visible explanation. A separate `failure:<inputId>` message keeps
-that explanation visible alongside an earlier `result:<inputId>` acknowledgment.
+The retirement upgrade ends unfinished old child waits with
+`handling.phase: failed` and a visible explanation. A separate `failure:<inputId>`
+message keeps that explanation visible alongside an earlier `result:<inputId>`
+acknowledgment.
 The old input is no longer scheduled. Accepted Requests stay open, and already
 admitted child inputs and Tasks continue independently with their history and
 results intact. A new human turn can review that work and decide what remains.
