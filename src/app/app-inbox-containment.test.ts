@@ -84,6 +84,9 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
       registry,
       hostCapacity: capacity,
       maxConcurrentRequests: 1,
+      // Admissions can share a timestamp; independent Conversations have no
+      // cross-Conversation FIFO promise, even with one execution slot.
+      now: () => 1_000,
       scanIntervalMs: 50,
       deferStart: true,
       readDependency: async () => null,
@@ -114,7 +117,8 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
       await until(
         () => runtime.host.get("correction")?.status === "done" && runtime.host.get("unrelated")?.status === "done",
       );
-      expect(calls).toEqual(["first", "correction", "unrelated"]);
+      expect(calls[0]).toBe("first");
+      expect([...calls].sort()).toEqual(["correction", "first", "unrelated"]);
       expect(readConversationRequest(db, app.id, "chat", "ask")).toEqual(accepted);
       expect(failures.length).toBeGreaterThan(0);
       if (mode === "report-write") {
