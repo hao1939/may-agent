@@ -1,10 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource, AppResult } from "@may-agent/sdk";
+import type { AppInput, AppInputSource, AppResult, AppRequestDecision } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
+
+/** Input execution evidence, not fulfillment of the accepted human ask. */
+export type AppInboxHandling =
+  { phase: "executing" } | { phase: "decided"; decision: AppRequestDecision } | { phase: "failed"; reason: string };
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
 
@@ -35,6 +39,7 @@ export type AppInboxItem = {
   sessionId?: string;
   waitingOn?: { kind: AppInboxWaitKind; id: string };
   result?: AppResult;
+  handling?: AppInboxHandling;
   availableAt?: number;
   reviewAt?: number;
   lease?: { generation: number; owner: string; expiresAt: number };
@@ -153,6 +158,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     sessionId: optionalText(row.session_id),
     waitingOn: waitingKind && waitingId ? { kind: waitingKind, id: waitingId } : undefined,
     result: result ? parseJson<AppResult>(result, "result") : undefined,
+    handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
     availableAt: optionalNumber(row.available_at),
     reviewAt: optionalNumber(row.review_at),
     lease:
@@ -751,6 +757,20 @@ export function assertAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, now = Da
     item.lease.expiresAt <= now
   )
     throw new Error("claim is stale");
+}
+
+export function recordAppInboxHandling(
+  db: SqliteDb,
+  claim: AppInboxClaim,
+  handling: AppInboxHandling | null,
+  now = Date.now(),
+): void {
+  const changed = db.run(
+    `UPDATE app_inbox_items SET handling = ?, updated_at = ?
+    WHERE id = ? AND status = 'handling' AND lease_owner = ? AND lease_generation = ? AND lease_expires_at > ?`,
+    [handling ? JSON.stringify(handling) : null, now, claim.item.id, claim.owner, claim.generation, now],
+  ).changes;
+  if (changed !== 1) throw new Error("claim is stale");
 }
 
 export function associateAppInboxClaimSession(

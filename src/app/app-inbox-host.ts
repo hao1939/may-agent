@@ -35,12 +35,14 @@ import {
   listOpenConversationTopicRequests,
   listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
+  recordAppInboxHandling,
   renewAppInboxClaim,
   waitAppInboxClaim,
   wakeAppInboxItem,
   wakeAppInboxItemsWaitingOn,
   wakeAppInboxItemsWaitingOnApp,
   type AppInboxClaim,
+  type AppInboxHandling,
   type AppInboxItem,
   type AppInboxWaitKind,
   type AppInboxTaskDependencyKey,
@@ -654,8 +656,11 @@ export class AppInboxHost {
       )
       .all(now, now, now, now) as Array<{ app_id?: unknown }>;
     return rows.flatMap((row) =>
-      typeof row.app_id === "string" && loaded.has(row.app_id) &&
-      (this.#executions.size === 0 || this.readyCount(row.app_id)) ? [row.app_id] : [],
+      typeof row.app_id === "string" &&
+      loaded.has(row.app_id) &&
+      (this.#executions.size === 0 || this.readyCount(row.app_id))
+        ? [row.app_id]
+        : [],
     );
   }
 
@@ -797,7 +802,19 @@ export class AppInboxHost {
     } catch (error) {
       outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
       try {
-        if (
+        if (claim.item.handling?.phase === "executing") {
+          const reason = errorMessage(error).slice(0, 2000);
+          const conversationId = this.#completeRequest(
+            claim,
+            {
+              summary: "This conversational turn failed; the ask remains unresolved.",
+              response:
+                "I couldn't finish this turn. Your ask remains unresolved. Send a new message or explicitly ask me to retry. Any work already admitted continues independently.",
+            },
+            { phase: "failed", reason },
+          );
+          if (conversationId) conversationIds.add(conversationId);
+        } else if (
           releaseAppInboxClaim(this.#db, claim, {
             retryAfterMs: this.#retryAfterMs,
             now: this.#now(),
@@ -1082,10 +1099,11 @@ export class AppInboxHost {
     }
   }
 
-  #completeRequest(claim: AppInboxClaim, result: AppResult): string | undefined {
+  #completeRequest(claim: AppInboxClaim, result: AppResult, handling?: AppInboxHandling): string | undefined {
     let completed = false;
     withTransaction(this.#db, () => {
       this.#assertOwned(claim);
+      if (handling) recordAppInboxHandling(this.#db, claim, handling, this.#now());
       const rowCompleted = completeAppInboxClaim(this.#db, claim, result, this.#now());
       if (!rowCompleted) throw new Error("claim is stale");
       completed = true;
@@ -1127,18 +1145,36 @@ export class AppInboxHost {
   ): Promise<string | undefined> {
     if (!this.#resolveRequest) throw new Error("Direct App request resolution is not configured");
     this.#assertOwned(claim);
-    const decision = await this.#resolveRequest({
-      app,
-      request,
-      execution: {
-        signal: this.#executions.get(claim.item.id)!.controller.signal,
-        sessionStarted: (sessionId) => {
-          this.#assertOwned(claim);
-          if (!associateAppInboxClaimSession(this.#db, claim, sessionId, this.#now()))
-            throw new Error("claim is stale");
-        },
-      },
-    });
+    const directTurn =
+      request.source.kind === "human" &&
+      Boolean(claim.item.conversationId) &&
+      !request.dependencies?.length &&
+      request.dependency?.kind !== "app";
+    const saved = claim.item.handling;
+    if (directTurn && saved?.phase === "executing" && reconsiderations === 0) {
+      throw new Error(
+        "Previous conversational execution ended without an accepted decision; explicit retry is required",
+      );
+    }
+    if (directTurn && saved?.phase !== "decided") {
+      recordAppInboxHandling(this.#db, claim, { phase: "executing" }, this.#now());
+      claim.item.handling = { phase: "executing" };
+    }
+    const decision =
+      saved?.phase === "decided"
+        ? saved.decision
+        : await this.#resolveRequest({
+            app,
+            request,
+            execution: {
+              signal: this.#executions.get(claim.item.id)!.controller.signal,
+              sessionStarted: (sessionId) => {
+                this.#assertOwned(claim);
+                if (!associateAppInboxClaimSession(this.#db, claim, sessionId, this.#now()))
+                  throw new Error("claim is stale");
+              },
+            },
+          });
     this.#assertOwned(claim);
     if (!Check(appRequestAgentResultSchema, decision)) {
       const first = [...Errors(appRequestAgentResultSchema, decision)][0];
@@ -1201,7 +1237,7 @@ export class AppInboxHost {
       if (followUp.task && followUp.task.appId.trim().replace(/\.app$/, "") !== target.id) {
         throw new Error(`App follow-up Task owner must match target App ${target.id}`);
       }
-      if (followUp.task && this.#readDependency) {
+      if (followUp.task && this.#readDependency && saved?.phase !== "decided") {
         const taskId = followUp.task.taskId.trim();
         const observed =
           (await this.#observeDependency(target.id, { kind: "task", id: taskId })) ??
@@ -1258,7 +1294,7 @@ export class AppInboxHost {
     }
 
     const existingTopicId = claim.item.topicId ?? (decision.topic.kind === "existing" ? decision.topic.id : undefined);
-    if (existingTopicId && dependencies.some((dependency) => !dependency.taskId)) {
+    if (saved?.phase !== "decided" && existingTopicId && dependencies.some((dependency) => !dependency.taskId)) {
       const freshRequest = await this.#authorRequest(claim.item);
       if (openRequestFingerprint(freshRequest, existingTopicId) !== openRequestFingerprint(request, existingTopicId)) {
         if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
@@ -1268,6 +1304,11 @@ export class AppInboxHost {
         }
         return this.#resolveDirectRequest(app, claim, freshRequest, reconsiderations + 1);
       }
+    }
+    if (directTurn && saved?.phase !== "decided") {
+      const handling: AppInboxHandling | undefined = dependencies.length ? undefined : { phase: "decided", decision };
+      recordAppInboxHandling(this.#db, claim, handling ?? null, this.#now());
+      claim.item.handling = handling;
     }
     const topicId = this.#applyTopicDecision(app, claim, request, decision);
     if ((dependencies.length > 0 || followUp) && !topicId) {

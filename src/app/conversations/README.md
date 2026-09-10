@@ -16,6 +16,14 @@ Task controls and admissions revalidate authority at their commit boundary.
 Already accepted effects are not undone. Cancellation retains capacity until
 the executor settles, and database/reporting failures do not bypass cleanup.
 
+Direct human turns persist a small `handling` record before model execution.
+A failed or interrupted execution finishes input handling with an explicit
+failure response, not fulfillment. It needs new human input to try again.
+A validated decision is saved before applying effects, so recovery can replay
+idempotent admission/publication without rerunning the model. Task callers and
+retained child waits keep their separate handling contract. Row `done` means
+input handling ended; inspect `handling` and the result for its disposition.
+
 Callers pass the existing database connection. This separation creates no new
 database, cache, transaction boundary, or background process. The request
 handler can still update a Topic and request inside the same transaction.
