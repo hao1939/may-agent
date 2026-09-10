@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import type { WorkflowContext } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import {
   admittedOutputPaths,
   buildExploreTask,
@@ -215,8 +215,23 @@ describe("scout-explore workflow prompt", () => {
           type: "credential.state",
           subject: "credential:xhs",
           expected: { field: "state", equals: "ready" },
+          owner: "human:operator",
+          reviewAfterMs: 3_600_000,
         },
       ],
+    });
+    expect(result?.conditions?.[0]?.requestedAction).toContain(
+      "container browser",
+    );
+    // Assert the production result contract, not just the workflow's old shape.
+    expect(
+      admitTaskReconcileResult(result, { allowNeedsAgent: false }),
+    ).toMatchObject({
+      ok: true,
+      result: {
+        state: "waiting",
+        conditions: [{ owner: "human:operator", reviewAfterMs: 3_600_000 }],
+      },
     });
   });
 

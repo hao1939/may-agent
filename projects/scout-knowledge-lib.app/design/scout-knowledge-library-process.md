@@ -236,6 +236,12 @@ explore-xhs finds credentials unavailable
 Scout remains the owner throughout. The design must not create or repeatedly
 run a child task owned by `human`.
 
+New XHS credential waits name `human:operator`, show the browser-access action,
+and set an hourly `reviewAfterMs`. The existing five-minute credential observer
+can satisfy the wait sooner. The review deadline is not credential readiness;
+an unavailable browser must never dispatch a source agent or claim a source
+check succeeded. Tests admit this wait through the current Host result contract.
+
 Credential observations are level-triggered. A transition to `ready` wakes the
 waiting source task once; repeated `ready` observations and stale observations
 from an older credential revision do not start work. A transition back to

@@ -197,6 +197,10 @@ export function xhsWaitResult(
         type: "credential.state",
         subject: "credential:xhs",
         expected: { field: "state", equals: "ready" },
+        owner: "human:operator",
+        requestedAction:
+          "Check the reported browser-access failure. Open Xiaohongshu in the container browser and sign in if prompted; leave the tab open for Scout.",
+        reviewAfterMs: 3_600_000,
       },
     ],
   };
