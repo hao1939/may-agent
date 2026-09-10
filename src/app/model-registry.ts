@@ -67,7 +67,30 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
     },
     "claude-opus-5": claudeOpus5,
     "gemini-3.1-pro-preview": {
-      ...getBuiltinModel("github-copilot", "gemini-3.1-pro-preview"),
+      // This endpoint route is independent of Pi's current public catalog.
+      // Preserve its 0.81.1 metadata; do not silently select a different model
+      // when an upstream catalog entry is retired.
+      id: "gemini-3.1-pro-preview",
+      name: "Gemini 3.1 Pro Preview",
+      api: "openai-completions",
+      provider: "github-copilot",
+      reasoning: true,
+      input: ["text", "image"],
+      maxTokens: 64_000,
+      cost: {
+        input: 2,
+        output: 12,
+        cacheRead: 0.2,
+        cacheWrite: 0,
+        tiers: [{ inputTokensAbove: 200_000, input: 4, output: 18, cacheRead: 0.4, cacheWrite: 0 }],
+      },
+      headers: {
+        "User-Agent": "GitHubCopilotChat/0.35.0",
+        "Editor-Version": "vscode/1.107.0",
+        "Editor-Plugin-Version": "copilot-chat/0.35.0",
+        "Copilot-Integration-Id": "vscode-chat",
+      },
+      compat: { supportsStore: false, supportsDeveloperRole: false, supportsReasoningEffort: false },
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-3.1-pro-preview"],
       baseUrl,
       apiKey,

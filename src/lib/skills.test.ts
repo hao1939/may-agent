@@ -53,6 +53,7 @@ describe("May skill catalog", () => {
     expect(catalog.skills.get("review-change")?.content).toContain("APP BODY");
     expect(catalog.skills.get("shared-only")?.scope).toBe("shared");
     expect(catalog.skills.has("archived")).toBe(false);
+    expect(catalog.diagnostics).toEqual([]);
   });
 
   it("rejects invalid metadata and symlinks escaping trusted roots", async () => {
