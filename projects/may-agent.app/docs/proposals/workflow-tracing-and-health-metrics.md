@@ -392,7 +392,8 @@ tracing backend or automatic repair.
 
 ## First implementation candidate
 
-Host `676b3692` keeps this first PR independently useful:
+Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `676b3692`,
+keeps this first PR independently useful:
 
 - Workflow errors return the attempted run ID. Run inspection includes stored
   outcomes, reasons, timing, exact child links and step-session evidence.
@@ -419,6 +420,11 @@ are best-effort: an available snapshot is not a completeness guarantee after a
 crash or write failure. Existing secret patterns are not a general PII guarantee;
 authors must still avoid logging secrets or personal configuration. No live data
 was used for validation.
+
+Local `bun run ci` passed at that revision: 2,688 passed, three installation-only
+skips and zero failures, including browser tests. Hosted checks and review remain
+the PR's gate. Regression tests fail if diagnostic persistence and failed-run
+identity are removed; no killed live worker or deployed installation was used.
 
 A local synthetic trial used 40 runs with 20 messages each: median logging time
 was 0.06 ms without persistence versus 12.75 ms with persistence, with 2,614 bytes
