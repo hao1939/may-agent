@@ -194,6 +194,31 @@ Conversation handling uses `app-request-agent.ts`; Task attachment uses the
 supplied Task capability. Dependency waiting is durable state, so it releases
 the request handler's execution slot.
 
+## Parent-owned failure review
+
+Use `app-task-runtime.test.ts`'s "lets an existing parent repair exhausted work"
+cases to trace request attachment, controller execution, persisted parent wakes,
+executor context, fenced `unblock-task`, and the accepted caller result. The
+restart case closes and reopens SQLite and installs a new runtime/EventBus before
+the parent review. It does not simulate a process kill or test model judgment.
+See the canonical [existing-parent owner proof](../../../may-agent.app/docs/proposals/task-controller-pattern.md#existing-parent-owner-proof)
+and [parents and dependencies contract](../../../may-agent.app/docs/2a-design/task-resource-engine.md#parents-and-dependencies)
+for the tested boundary and authoring rules.
+
+`app-task-reconciler.ts` records a child transition for an existing executable
+parent. `app-task-context.ts` and `runtimeTaskAttempt()` expose child facts and
+the transition to the selected executor. The parent returns `waiting` while its
+child runs, then judges aggregate acceptance. Neither retry exhaustion nor child
+completion alone completes the parent's caller request.
+
+Structural groups do not execute reviews. `dependsOn` gates execution order; it
+does not designate a reviewer and must not be used to wait on children the
+parent needs to review. The App chooses repair, explicit retry or revision under
+its existing authority. No default reviewer is created for otherwise unowned
+attention. An App-authorized non-success stop remains proposed; `close-task`
+records completion, not abandonment. See the canonical
+[owner-decision proposal](../../../may-agent.app/docs/proposals/task-runtime-organization.md#when-finishing-the-original-task-is-no-longer-the-right-choice).
+
 ## Unavailable Task handlers
 
 `core/tasks/handler-recovery.ts` runs one bounded pass over retained
@@ -290,7 +315,10 @@ attempt or invent another completion policy.
 The [whole-lifecycle proposal](../../../may-agent.app/docs/proposals/task-controller-pattern.md)
 connects existing App input mapping, bounded attempts, exact waits and checked
 results. The reconciler above owns the retry-across-restart bound;
-end-to-end owner-decision proof remains separate work. The lifecycle cases
+the [parent-owned failure review](#parent-owned-failure-review) cases prove the
+existing executable-parent retry route through the caller's result, including
+database reopen. App policy, model judgment and live follow-through remain
+separate validation. The lifecycle cases
 in `app-task-runtime.test.ts` cover continued input, revised acceptance,
 recovered waits/actions and required workflow verification.
 
