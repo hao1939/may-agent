@@ -80,7 +80,7 @@ describe("portable CI contract", () => {
     expect(release.jobs["publish-image"]).toMatchObject({
       needs: "release-please",
       if: "${{ needs.release-please.outputs.release_created == 'true' }}",
-      permissions: { contents: "read", packages: "write" },
+      permissions: { contents: "write", packages: "write" },
       uses: "./.github/workflows/release-image.yml",
       with: { tag: "${{ needs.release-please.outputs.tag_name }}" },
     });
@@ -97,6 +97,85 @@ describe("portable CI contract", () => {
     expect(steps.find((step: any) => step.uses?.startsWith("actions/checkout@")).with.ref).toBe(
       "refs/tags/${{ steps.release.outputs.tag }}",
     );
+    expect(image.permissions).toEqual({ contents: "write", packages: "write" });
+    expect(image.concurrency).toEqual({
+      group: "release-image-${{ inputs.tag || github.ref_name }}",
+      "cancel-in-progress": false,
+    });
+    const publication = steps.findIndex((step: any) => step.id === "image");
+    const notes = steps.findIndex((step: any) => step.id === "release-notes");
+    expect(publication).toBeGreaterThan(-1);
+    expect(steps[publication].with.push).toBe(true);
+    expect(notes).toBeGreaterThan(publication);
+    expect(steps[notes].if).toBeUndefined(); // Default success gate: never annotate a failed push.
+    expect(steps[notes].env).toEqual({
+      RELEASE_TAG: "${{ steps.release.outputs.tag }}",
+      IMAGE_DIGEST: "${{ steps.image.outputs.digest }}",
+    });
+  });
+
+  it("links the actual image digest, preserves notes, and replaces only its section on rerun", async () => {
+    const image = Bun.YAML.parse(read(".github/workflows/release-image.yml")) as any;
+    const script = image.jobs.publish.steps.find((step: any) => step.id === "release-notes").with.script;
+    // Execute the shipped workflow script with only its GitHub API boundary substituted.
+    const run = new Function("github", "context", "process", `return (async () => {${script}})();`);
+    const changelog = "## Changes\n\nA human note and the generated changelog.\n";
+    let body: string | null = changelog;
+    let writes = 0;
+    const github = {
+      rest: {
+        repos: {
+          getReleaseByTag: async (input: unknown) => {
+            expect(input).toEqual({ owner: "example", repo: "agent", tag: "v1.2.3" });
+            return { data: { id: 42, body } };
+          },
+          updateRelease: async (input: { owner: string; repo: string; release_id: number; body: string }) => {
+            expect(input).toMatchObject({ owner: "example", repo: "agent", release_id: 42 });
+            body = input.body;
+            writes++;
+          },
+        },
+      },
+    };
+    const invoke = (digest = `sha256:${"a".repeat(64)}`) =>
+      run(
+        github,
+        { repo: { owner: "example", repo: "agent" } },
+        { env: { RELEASE_TAG: "v1.2.3", IMAGE_DIGEST: digest } },
+      );
+    await invoke();
+    expect(body).toContain("https://github.com/example/agent/pkgs/container/agent");
+    expect(body).toContain("docker pull ghcr.io/example/agent:v1.2.3");
+    expect(body).toContain(`docker pull ghcr.io/example/agent@sha256:${"a".repeat(64)}`);
+    expect(body!.endsWith(changelog)).toBe(true);
+    await invoke();
+    expect(writes).toBe(1);
+    body = `Human introduction\n\n${body}`;
+    await invoke(`sha256:${"b".repeat(64)}`);
+    expect(writes).toBe(2);
+    expect(body!.startsWith("Human introduction\n\n")).toBe(true);
+    expect(body!.endsWith(changelog)).toBe(true);
+    expect(body!.match(/## Container image/g)).toHaveLength(1);
+    expect(body).not.toContain(`sha256:${"a".repeat(64)}`);
+    expect(body).toContain(`sha256:${"b".repeat(64)}`);
+    await expect(invoke("")).rejects.toThrow("valid digest");
+    expect(writes).toBe(2);
+    body = "Human notes\n<!-- may-container-image:start -->\nUnfinished section";
+    await expect(invoke()).rejects.toThrow("Malformed container image section");
+    expect(writes).toBe(2);
+    body = null;
+    await invoke();
+    expect(body).toContain("docker pull ghcr.io/example/agent:v1.2.3");
+    github.rest.repos.updateRelease = async () => {
+      throw new Error("API write denied");
+    };
+    body = changelog;
+    await expect(invoke()).rejects.toThrow("API write denied");
+    expect(body).toBe(changelog);
+    github.rest.repos.getReleaseByTag = async () => {
+      throw new Error("release not found");
+    };
+    await expect(invoke()).rejects.toThrow("release not found");
   });
 
   it("selects the supplied release tag under the caller's real event context", async () => {

@@ -18,8 +18,12 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
   packages: write
+
+concurrency:
+  group: release-image-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -66,6 +70,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push release image
+        id: image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         env:
           # Do not publish the raw webhook through provenance or build records.
@@ -83,3 +88,53 @@ jobs:
           build-args: MAY_AGENT_BUILD_COMMIT=${{ steps.source.outputs.commit }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Link published image from the GitHub release
+        id: release-notes
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        with:
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            const digest = process.env.IMAGE_DIGEST;
+            if (!/^sha256:[a-f0-9]{64}$/.test(digest ?? "")) {
+              throw new Error("Image publication did not return a valid digest; release notes unchanged.");
+            }
+            const { owner, repo } = context.repo;
+            const image = `ghcr.io/${owner}/${repo}`.toLowerCase();
+            const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            const start = "<!-- may-container-image:start -->";
+            const end = "<!-- may-container-image:end -->";
+            const section = [
+              start,
+              "## Container image",
+              "",
+              `Published to [GitHub Container Registry](https://github.com/${owner}/${repo}/pkgs/container/${repo}).`,
+              "",
+              "Pull this release:",
+              "```sh",
+              `docker pull ${image}:${tag}`,
+              "```",
+              "",
+              "Or pin the exact published image (tags can change):",
+              "```sh",
+              `docker pull ${image}@${digest}`,
+              "```",
+              end,
+            ].join("\n");
+            const body = release.body ?? "";
+            const first = body.indexOf(start);
+            const last = body.indexOf(end);
+            if ((first < 0) !== (last < 0) || last < first ||
+                (first >= 0 && (body.indexOf(start, first + start.length) >= 0 ||
+                               body.indexOf(end, last + end.length) >= 0))) {
+              throw new Error("Malformed container image section; release notes unchanged.");
+            }
+            const updated = first < 0
+              ? `${section}\n\n${body}`
+              : body.slice(0, first) + section + body.slice(last + end.length);
+            if (updated !== body) {
+              await github.rest.repos.updateRelease({ owner, repo, release_id: release.id, body: updated });
+            }
