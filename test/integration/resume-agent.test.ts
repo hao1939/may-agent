@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
@@ -18,6 +20,11 @@ import {
 import type { PersistedSession } from "../../src/lib/persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { fakeModel } from "../fixtures/model.js";
+import { createAgentRun } from "../../src/lib/agent-runner.js";
+import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
+import { buildAgentDefinition } from "../../src/app/loader/agent-definition.js";
+import { resolveRuntimeAgentDirectory } from "../../src/app/loader/agent-discovery.js";
+import { shouldResumeStartupSession } from "../../src/app/core/tasks/startup-recovery.js";
 
 function userMessage(text: string): AgentMessage {
   return {
@@ -77,6 +84,121 @@ describe("SubagentManager.resumeStaleSessions()", () => {
   afterEach(() => {
     closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
+  });
+
+  it.each(["job", "call"] as const)("refuses cross-folder %s recovery after a real process exit", async (kind) => {
+    const root = join(persistDir, "installation");
+    const agentsRoot = join(root, "agents");
+    const projectsRoot = join(root, "projects");
+    const appDir = join(projectsRoot, "sample.app");
+    const appAgentDir = join(appDir, "agents", "local-owner");
+    const globalAgentDir = join(agentsRoot, "global-owner");
+    const config = { name: "arc", description: "Fixture agent", domain: "test", model: "test", tools: [] };
+    for (const dir of [appAgentDir, globalAgentDir]) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "agent.json"), JSON.stringify(config));
+    }
+    writeFileSync(join(appDir, "app.ts"), "export default {};\n");
+    writeFileSync(join(globalAgentDir, "last-session.md"), "Global history\n");
+    const definitionOptions = {
+      config,
+      model: fakeModel(),
+      tools: [],
+      projectRoot: root,
+      sharedRoot: join(root, "shared"),
+      globalAgentsRoot: agentsRoot,
+    };
+    const source = resolveRuntimeAgentDirectory(agentsRoot, "arc", projectsRoot)!;
+    const sessionId = `crashed-${kind}`;
+    // The child saves a real running session, then exits without terminal cleanup.
+    // Its in-memory definition cannot participate in the parent's recovery.
+    await promisify(execFile)(
+      process.execPath,
+      [
+        "-e",
+        `
+      import { SubagentManager } from ${JSON.stringify(new URL("../../src/lib/manager.ts", import.meta.url).href)};
+      import { createAgentRun } from ${JSON.stringify(new URL("../../src/lib/agent-runner.ts", import.meta.url).href)};
+      import { buildAgentDefinition } from ${JSON.stringify(new URL("../../src/app/loader/agent-definition.ts", import.meta.url).href)};
+      const manager = new SubagentManager({
+        persistDir: ${JSON.stringify(persistDir)}, projectRoot: ${JSON.stringify(root)}, noObservationTimeoutMs: 0,
+        agentRunFactory: config => { const run = createAgentRun(config); run.prompt = () => new Promise(() => {}); return run; }
+      });
+      manager.register(await buildAgentDefinition(${JSON.stringify({ ...definitionOptions, source })}));
+      manager.run("arc", "Finish original work", { sessionId: ${JSON.stringify(sessionId)}, kind: ${JSON.stringify(kind)} });
+      process.exit(0);
+    `,
+      ],
+      { timeout: 5_000 },
+    );
+    const saved = readSessionMeta(persistDir, sessionId)!;
+    expect(saved.status).toBe("running");
+    expect(saved.agentRelativeDir).toBe("projects/sample.app/agents/local-owner");
+
+    writeFileSync(join(appDir, ".disabled"), "");
+    const globalSource = resolveRuntimeAgentDirectory(agentsRoot, "arc", projectsRoot)!;
+    expect(globalSource.dir).toBe(globalAgentDir);
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    bus.subscribe(createLastSessionWriter(root));
+    let executions = 0;
+    const manager = new SubagentManager({
+      persistDir,
+      projectRoot: root,
+      bus,
+      agentRunFactory: (options) => {
+        executions++;
+        const run = createAgentRun(options);
+        run.prompt = async () => {
+          run.state.messages.push(assistantMessage("Recovered original work"));
+        };
+        return run;
+      },
+    });
+    manager.register(await buildAgentDefinition({ ...definitionOptions, source: globalSource }));
+    const { resumed, interrupted } = manager.resumeStaleSessions({
+      kinds: [kind],
+      shouldResume: (_id, meta) => shouldResumeStartupSession(meta, persistDir),
+    });
+    expect(resumed).toEqual([]);
+    expect(interrupted).toHaveLength(1);
+    expect(interrupted[0].error).toContain("refusing cross-owner resume");
+    expect(() => manager.resumeSession(sessionId, "Continue")).toThrow("refusing cross-owner resume");
+    expect(executions).toBe(0);
+    expect(existsSync(join(persistDir, "sessions", sessionId, "session.jsonl"))).toBe(false);
+    expect(readSessionMeta(persistDir, sessionId)?.agentRelativeDir).toBe(saved.agentRelativeDir);
+    expect(events.filter((event) => event.type === "session.start" || event.type === "session.end")).toEqual([]);
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "session.resume_failed",
+        data: expect.objectContaining({ category: "agent_identity_changed" }),
+      }),
+    );
+
+    // Restoring the original owner permits explicit recovery of the same session.
+    rmSync(join(appDir, ".disabled"));
+    manager.register(await buildAgentDefinition({ ...definitionOptions, source }));
+    expect(manager.resumeSession(sessionId, "Continue with the original owner")).toBe(sessionId);
+    expect((await manager.waitFor(sessionId)).status).toBe("done");
+    expect(executions).toBe(1);
+    expect(readFileSync(join(appAgentDir, "last-session.md"), "utf8")).toContain(sessionId);
+    expect(readFileSync(join(globalAgentDir, "last-session.md"), "utf8")).toBe("Global history\n");
+  });
+
+  it("does not guess a directory-backed owner for a legacy session without one", () => {
+    writeRegistryState(persistDir, {
+      legacy: { agent: "arc", task: "Old work", status: "running", startedAt: 1 },
+    });
+    setupSession(persistDir, "legacy", [userMessage("Old work")]);
+    const transcript = join(persistDir, "sessions", "legacy", "session.jsonl");
+    const before = readFileSync(transcript, "utf8");
+    const manager = new SubagentManager({ persistDir });
+    registerAgent(manager, "arc");
+    manager.register({ ...manager.getAgentDefinition("arc")!, agentRelativeDir: "agents/arc" });
+    expect(() => manager.resumeSession("legacy", "Continue")).toThrow("no recorded agent directory");
+    expect(readFileSync(transcript, "utf8")).toBe(before);
+    expect(readSessionMeta(persistDir, "legacy")?.status).toBe("running");
   });
 
   it("does not treat a session started by the current manager as stale", async () => {

@@ -200,12 +200,10 @@ export async function runAppRuntime(opts: {
     discoverAppDefinitions(activeAppSource.projectsRoot, opts.projectsRoot, {}, activeAppDirectories),
   );
   await appRegistry.reload();
-  const workerDefinitionSource = () => {
-    const source = appSources.current();
-    return source
-      ? { ...source, appDirectories: appRegistry.snapshot().entries.map(({ appDir }) => basename(appDir)) }
-      : null;
-  };
+  // Registry publication can await recovery after the source link has moved.
+  // Workers must capture one accepted pair, never combine those two clocks.
+  let acceptedWorkerSource = { ...activeAppSource, appDirectories: activeAppDirectories };
+  const workerDefinitionSource = () => acceptedWorkerSource;
   markStartupPhase("apps");
   bus.emit({
     type: "info",
@@ -426,7 +424,7 @@ export async function runAppRuntime(opts: {
         async ({ snapshot, commit }) => {
           // Capture and restore while holding the registry transaction. A queued
           // reload must restore its committed predecessor, not its staging source.
-          const previous = appSources.current();
+          const previous = acceptedWorkerSource;
           try {
             const result = await appTasks.publishGeneration({
               snapshot,
@@ -437,19 +435,22 @@ export async function runAppRuntime(opts: {
               },
               publish: () => {
                 appSources.activate(candidate);
+                acceptedWorkerSource = candidate;
                 try {
                   publishAgents();
                   commit();
                 } catch (error) {
                   // Restore before Task rollback yields to other worker dispatch.
-                  if (previous) appSources.activate(previous);
+                  acceptedWorkerSource = previous;
+                  appSources.activate(previous);
                   throw error;
                 }
               },
             });
             taskApps = result.apps;
           } catch (error) {
-            if (previous && appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
+            acceptedWorkerSource = previous;
+            if (appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
               appSources.activate(previous);
             }
             throw error;

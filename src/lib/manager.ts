@@ -396,6 +396,23 @@ export class SubagentManager {
       taskBinding?: TaskBinding;
     },
   ): void {
+    // A name can now select another App/global folder. Check durable ownership
+    // before changing the transcript, persistence, or starting an agent run.
+    const definition = this.agents.get(meta.agent)?.definition;
+    if ((meta.agentRelativeDir ?? null) !== (definition?.agentRelativeDir ?? null)) {
+      const unknown = meta.agentRelativeDir === undefined;
+      const reason = unknown
+        ? `Session ${sessionId} has no recorded agent directory; cannot verify the resume owner`
+        : `Session ${sessionId} agent directory changed from ${meta.agentRelativeDir ?? "<programmatic>"} to ${definition?.agentRelativeDir ?? "<programmatic>"}; refusing cross-owner resume`;
+      this.emitSessionResumeFailed(
+        sessionId,
+        meta,
+        reason,
+        unknown ? "agent_identity_unknown" : "agent_identity_changed",
+        false,
+      );
+      throw new Error(reason);
+    }
     const resume = this.buildResumeMessages(sessionId);
     const resumeMessages = resume.messages;
 
@@ -676,6 +693,7 @@ export class SubagentManager {
     this._registry.saveSession(sessionId, {
       ...(existingMeta ?? {}),
       agent: def.name,
+      agentRelativeDir: def.agentRelativeDir ?? null,
       task: sessionTask,
       status: "running",
       startedAt,
