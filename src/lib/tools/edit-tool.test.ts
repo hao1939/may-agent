@@ -79,8 +79,44 @@ describe("edit tool", () => {
         oldText: "x",
         newText: "y",
       }),
-    ).rejects.toThrow(/not found/i);
+    ).rejects.toMatchObject({ code: "ENOENT" });
   });
+
+  it.each(["EROFS", "EACCES", "EIO"])(
+    "preserves %s instead of reporting a missing file",
+    async (code) => {
+      const error = Object.assign(
+        new Error(`${code}: cannot access protected.md`),
+        { code },
+      );
+      let reads = 0;
+      let writes = 0;
+      const tool = createEditTool(tmpDir, {
+        operations: {
+          access: async () => {
+            throw error;
+          },
+          readFile: async () => {
+            reads++;
+            return Buffer.from("old");
+          },
+          writeFile: async () => {
+            writes++;
+          },
+        },
+      });
+
+      await expect(
+        tool.execute("id", {
+          path: "protected.md",
+          oldText: "old",
+          newText: "new",
+        }),
+      ).rejects.toBe(error);
+      expect(reads).toBe(0);
+      expect(writes).toBe(0);
+    },
+  );
 
   it("handles fuzzy matching (trailing whitespace)", async () => {
     const filePath = join(tmpDir, "test.ts");

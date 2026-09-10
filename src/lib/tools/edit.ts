@@ -94,12 +94,9 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 			}
 
 			return withAbortSignal(signal, async (isAborted) => {
-				// Check if file exists
-				try {
-					await ops.access(absolutePath);
-				} catch {
-					throw new Error(`File not found: ${path}`);
-				}
+				// Preserve the actual boundary: missing, permission denied, read-only,
+				// and I/O errors require different responses from the caller.
+				await ops.access(absolutePath);
 
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
