@@ -10,6 +10,7 @@ describe("real Task worker boundary", () => {
     ["restoredAgent", "recovers a restored non-default agent without executing it"],
     ["recoverySourceRace", "rejects availability from a release replaced during inspection"],
     ["pinnedSource", "pins workflow and shared definitions across reload"],
+    ["rejectedDisable", "keeps accepted Apps in recovery and attempts after rejected disable reload"],
     ["inheritedAgent", "runs an inherited non-default agent"],
     ["liveControl", "receives feedback and cancels without duplicate Events"],
   ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-worker-scenario.ts", scenario), 20_000);

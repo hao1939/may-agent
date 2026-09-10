@@ -348,6 +348,57 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("Send the desired outcome and proof to that app");
   });
 
+  it.each(["call", "fork"])("keeps %s caller ownership after a same-name registry replacement", async (action) => {
+    const target = {
+      name: "dev",
+      description: "Fixture",
+      domain: "test",
+      model: mockModel(),
+      tools: [],
+      appLocal: true,
+      projectId: "sample",
+    };
+    manager.register(target);
+    let dispatched = 0;
+    manager.callAgent = async () => {
+      dispatched++;
+      return {
+        sessionId: "child",
+        status: "done",
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+        lastAssistantText: "ok",
+      };
+    };
+    manager.runAgent = () => {
+      dispatched++;
+      return "child";
+    };
+    for (const originallyLocal of [false, true]) {
+      const original = {
+        ...target,
+        name: "caller",
+        appLocal: originallyLocal,
+        projectId: originallyLocal ? "sample" : undefined,
+      };
+      // Input to the tool boundary is an existing session's accepted definition.
+      // Capturing that definition in a real session is covered by the chat regression.
+      manager.activeSessions.set("caller-session", { definition: original } as any);
+      manager.register({ ...original, appLocal: !originallyLocal, projectId: originallyLocal ? undefined : "sample" });
+      const tool = manager.createAgentsTool({
+        getCallerAgentName: () => "caller",
+        getCallerSessionId: () => "caller-session",
+      });
+      const before = dispatched;
+      const result = await callTool(tool, { action, agent: "dev", task: "fixture" });
+      expect(dispatched - before).toBe(originallyLocal ? 1 : 0);
+      if (!originallyLocal) expect(result.error).toContain("app-local");
+      else expect(result.error).toBeUndefined();
+    }
+    manager.activeSessions.delete("caller-session");
+  });
+
   it("allows same-app cooperation and a linked May break-glass override", async () => {
     manager.register({
       name: "owner",

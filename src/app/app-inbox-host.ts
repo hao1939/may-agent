@@ -504,7 +504,11 @@ export class AppInboxHost {
       const routeKind = requiredText(command.route_kind, "Pending App event admission route kind");
       const app = next.get(appId);
       if (!app) {
-        throw new Error(`Cannot remove App ${appId} while it owns pending event admission commands`);
+        if (this.#apps.has(appId)) {
+          throw new Error(`Cannot remove App ${appId} while it owns pending event admission commands`);
+        }
+        // An App absent at startup may be disabled. Retain its commands without loading it.
+        continue;
       }
       if ((routeKind === "task" || routeKind === "exact-task") && !app.tasks) {
         throw new Error(

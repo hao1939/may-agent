@@ -72,12 +72,14 @@ describe("E9: session resume from cold (interrupted) end via typed control", () 
       //  - meta.json present (status=interrupted is fine; only "running"
       //    in _sessions map would be a problem, and we haven't run() it)
       //  - the agent ("may") to be registered
+      //  - its recorded folder to match the registered definition
       const sid = `s_e9_${Date.now()}`;
       const sessionDir = join(sb.stateDir, "sessions", sid);
       mkdirSync(sessionDir, { recursive: true });
       const startedAt = Date.now() - 5_000;
       const meta = {
         agent: "may",
+        agentRelativeDir: "agents/may",
         task: "fixture: e9 resume target",
         status: "interrupted",
         startedAt,
