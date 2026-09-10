@@ -16,6 +16,7 @@ of the remaining contract and its acceptance criteria.
 | Correlated failure evidence | [Core review plan](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events): identify exact work, stage and disposition through existing events/reads; investigation does not gate settlement |
 | Conversation/Request/Topic state API | [Storage proposal](storage-state-service.md#conversation-state-and-handler-extraction): consolidate existing reads and atomic decision/result writes; input attachment is already merged |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |
+| External capability bounds, cleanup, freshness and layout | [External component plan](external-components-simplification.md): observer/Telegram lifetime, optional collection, sample freshness and targeted extraction |
 | Remaining central domain metrics | The migration rule below and [Metrics](../2a-design/metrics.md) |
 | Retained conversational child waits, Evaluation/HTTP policy, behavioral comparison and delivery proof | [Authority proposal](authority-boundary-simplification.md#remaining-work): separate bounded work, with its existing scope limits |
 

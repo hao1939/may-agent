@@ -128,6 +128,9 @@ current-design list.
 
 Active reviews are:
 
+- [External components: simple, solid, and clearly organized](proposals/external-components-simplification.md)
+  — proposed observer/Telegram bounds, HTTP/Evaluation ownership, metric
+  lifecycle/freshness, and targeted executor organization;
 - [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
   — implemented input-to-Task attachment, with Conversation state/handler
   extraction and consistent naming as the next proposed slice;

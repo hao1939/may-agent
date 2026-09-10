@@ -340,7 +340,9 @@ core state into the frontend defeats the boundary.
 
 ### Implementation order and acceptance
 
-**Plan status:** Prepared in three ordered PRs; no slice is marked merged yet. Scope is the agreed inbox, Conversation and shared-state cleanup.
+**Plan status:** Prepared in three PRs; #130 and #131 are now squash-merged into
+#129's branch (`5317d627`). #129 remains open; the series has not landed on `main`.
+Scope is the agreed inbox, Conversation and shared-state cleanup.
 Completed Stop, ownership and containment fixes remain the baseline. Broader
 Task-controller rewrites and the paused metrics/App-merger proposals are outside
 this sequence.
@@ -364,17 +366,19 @@ a merge gate, not a reason to stop preparing the authorized work.
 
 The seven acceptance steps are grouped into three dependent source PRs. This
 keeps names easy to review and moves the state owners with their callers before
-extracting the frontend. None is a deployment or a source-merge claim.
+extracting the frontend. The two dependent slices have since merged into the
+first branch; this is not integration into `main` or a deployment claim.
 
 | PR | Plan steps | Review focus |
 | --- | --- | --- |
-| [#129](https://github.com/hao1939/may-agent/pull/129) | 1 — names | `AppInputContext` plus the old SDK alias; internal `modelStepCount`, unchanged wire fields |
-| [#130](https://github.com/hao1939/may-agent/pull/130) | 2–4 — shared state | Scoped reads, decision/completion transactions, linked Task admission and returned outcomes |
-| [#131](https://github.com/hao1939/may-agent/pull/131) | 5–7 — frontend and verification | Optional handler/context composition, explicit retained dependency path, real scripted tool loop and capability absence |
+| [#129](https://github.com/hao1939/may-agent/pull/129) | 1, now containing 2–7 | Open: names plus the two merged slices below; compatibility semantics documented on retained event counters |
+| [#130](https://github.com/hao1939/may-agent/pull/130) | 2–4 — shared state | Merged into #129: scoped reads, decision/completion transactions, linked Task admission and returned outcomes |
+| [#131](https://github.com/hao1939/may-agent/pull/131) | 5–7 — frontend and verification | Merged into #129: optional handler/context composition, retained dependency path, scripted tool loop and capability absence |
 
-Land in that order. Each dependent PR targets its predecessor's branch for a
-small review diff; rebase it onto current `main`, retarget and verify after the
-predecessor lands. Source remains in review until that integration happens.
+The remaining landing step is #129. Recheck its integrated candidate against
+current `main` and resolve outstanding review before landing. Source remains
+in review until that integration happens. Earlier per-slice verification below
+records its tested revisions; it does not certify a later merged candidate.
 
 The candidate's actual code map is:
 

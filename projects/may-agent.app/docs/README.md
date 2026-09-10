@@ -30,6 +30,11 @@ small shared state boundary.
 
 ## Current focus
 
+The [external component plan](proposals/external-components-simplification.md)
+turns the source review into bounded implementation slices: optional I/O
+containment, HTTP/Evaluation ownership, metric lifecycle/freshness, and targeted
+code organization. It is a draft for review, not an implementation claim.
+
 The [workflow practices review](proposals/workflow-practices-review.md) applies
 multi-worker lessons to installed Apps: isolated changes, exact-candidate
 verification, reviewed integration, and useful progress during external waits.
@@ -47,8 +52,9 @@ deployment need their own evidence.
 The [sequential implementation plan](proposals/storage-state-service.md#implementation-order-and-acceptance)
 tracks seven acceptance steps, now grouped into three ordered source PRs from
 Host `0d8c7658`. The [candidate review](proposals/storage-state-service.md#candidate-review-and-landing-order)
-records the code map, checks and landing order. These refinements are in review;
-none is marked merged or deployed.
+records the code map, checks and landing order. #130 and #131 have been merged
+into #129's branch; #129 remains in review. These refinements have not landed
+on `main` or been verified as deployed.
 Completed separation and recovery reviews live in the [archive](archive/README.md).
 Error/metric placement and App consolidation remain
 [paused](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
