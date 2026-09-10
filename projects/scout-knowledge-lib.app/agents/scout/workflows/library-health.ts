@@ -478,12 +478,8 @@ function lastWakeAt(
 ): number | undefined {
   for (let index = history.length - 1; index >= 0; index -= 1) {
     const packet = history[index];
-    if (
-      !packet.wake_decisions?.some(
-        (decision) => decision.key === key && decision.wake,
-      )
-    )
-      continue;
+    // Eligibility before the packet limit is not an owner signal.
+    if (!packet.wake_signals?.some((signal) => signal.key === key)) continue;
     const timestamp = Date.parse(packet.generated_at);
     if (Number.isFinite(timestamp)) return timestamp;
   }

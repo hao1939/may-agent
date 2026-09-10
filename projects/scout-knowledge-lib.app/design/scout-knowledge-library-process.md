@@ -312,6 +312,12 @@ review interval expires. An unchanged fact remains visible without paging the
 owner every six hours. A fact disappears when current domain truth no longer
 produces it.
 
+Each packet includes at most 16 owner signals. `wake_decisions` records
+eligibility before that limit; only inclusion in `wake_signals` starts the
+fact's reminder interval. Omitted eligible facts remain due on later ordinary
+scans. The packet is an observation and signal selection, not proof that Scout
+reviewed or repaired the finding. No second queue or owner-state ledger is needed.
+
 Scout decides what to do with those facts. The useful outcomes are:
 
 - update an existing note;

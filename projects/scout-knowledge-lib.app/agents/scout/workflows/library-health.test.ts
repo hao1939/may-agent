@@ -460,7 +460,7 @@ describe("Scout library-health observer", () => {
     ).toBe(false);
   });
 
-  it("bounds facts and owner wake signals", () => {
+  it("bounds owner signals without delaying the omitted facts' first wake", () => {
     const paths = fixture();
     for (let index = 0; index < 60; index += 1) {
       writeFileSync(
@@ -473,14 +473,29 @@ describe("Scout library-health observer", () => {
       );
     }
 
-    const packet = buildLibraryHealthPacket({
-      ...paths,
-      now: Date.parse("2026-07-20T00:00:00.000Z"),
-    });
+    const now = Date.parse("2026-07-20T00:00:00.000Z");
+    let packet = buildLibraryHealthPacket({ ...paths, now });
 
     expect(packet.facts.length).toBeLessThanOrEqual(50);
     expect(packet.facts.length).toBeGreaterThan(16);
     expect(packet.wake_signals.length).toBe(16);
     expect(packet.truncated).toBe(true);
+
+    const facts = packet.facts;
+    const selected = new Set(packet.wake_signals.map((fact) => fact.key));
+    for (let scan = 1; scan <= Math.ceil(facts.length / 16); scan += 1) {
+      saveHistory(paths.appDir, packet);
+      packet = buildLibraryHealthPacket({
+        ...paths,
+        now: now + scan * 6 * 60 * 60_000,
+      });
+      const expected = facts
+        .filter((fact) => !selected.has(fact.key))
+        .slice(0, 16);
+      expect(packet.wake_signals).toEqual(expected);
+      for (const fact of packet.wake_signals) selected.add(fact.key);
+    }
+    expect(selected.size).toBe(facts.length);
+    expect(packet.wake_signals).toEqual([]);
   });
 });
