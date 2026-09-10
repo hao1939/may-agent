@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { EventBus } from "./core/events/bus.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { closeDb } from "../lib/requests.js";
@@ -56,26 +57,45 @@ function makeFixture(): string {
 function invoke(entry: string, args: string[], stateDir: string) {
   const command = entry === DEV_ENTRY ? process.execPath : entry;
   const commandArgs = entry === DEV_ENTRY ? [entry, ...args] : args;
-  return spawnSync(command, commandArgs, {
-    cwd: PROJECT_ROOT,
-    env: {
-      ...process.env,
-      PROJECT_ROOT,
-      STATE_DIR: stateDir,
-      INSTANCE: "status-regression",
-    },
-    encoding: "utf8",
-    timeout: 15_000,
+  return new Promise<{ status: number; stdout: string; stderr: string }>((resolve, reject) => {
+    execFile(
+      command,
+      commandArgs,
+      {
+        cwd: PROJECT_ROOT,
+        env: {
+          ...process.env,
+          PROJECT_ROOT,
+          STATE_DIR: stateDir,
+          INSTANCE: "status-regression",
+        },
+        encoding: "utf8",
+        timeout: 15_000,
+        killSignal: "SIGKILL",
+      },
+      (error, stdout, stderr) => {
+        if (error && typeof error.code !== "number") {
+          reject(error);
+          return;
+        }
+        resolve({ status: error?.code ?? 0, stdout, stderr });
+      },
+    );
   });
 }
 
-beforeAll(() => {
-  const build = spawnSync("bun", ["build", "--compile", "src/app/binary-entry.ts", "--outfile", compiledEntry], {
-    cwd: PROJECT_ROOT,
-    encoding: "utf8",
-    timeout: 120_000,
-  });
-  expect(build.status, build.stderr).toBe(0);
+// Keep compiler/CLI subprocesses asynchronous so the test worker can enforce deadlines.
+beforeAll(async () => {
+  await promisify(execFile)(
+    process.execPath,
+    ["build", "--compile", "src/app/binary-entry.ts", "--outfile", compiledEntry],
+    {
+      cwd: PROJECT_ROOT,
+      encoding: "utf8",
+      timeout: 120_000,
+      killSignal: "SIGKILL",
+    },
+  );
 }, 120_000);
 
 afterAll(() => rmSync(buildDir, { recursive: true, force: true }));
@@ -84,12 +104,11 @@ describe.each([
   ["development", DEV_ENTRY],
   ["compiled operator", compiledEntry],
 ])("%s status CLI", (_label, entry) => {
-  it("returns --status without recovery, startup, stale-pair closure, or persisted-state mutation", () => {
+  it("returns --status without recovery, startup, stale-pair closure, or persisted-state mutation", async () => {
     const stateDir = makeFixture();
     const before = stateDigest(stateDir);
     try {
-      const result = invoke(entry, ["--status"], stateDir);
-      expect(result.error).toBeUndefined();
+      const result = await invoke(entry, ["--status"], stateDir);
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toContain("may-agent status");
       expect(`${result.stdout}\n${result.stderr}`).not.toContain("workflow-recovery");
@@ -102,12 +121,11 @@ describe.each([
     }
   });
 
-  it("rejects positional status before recovery, startup, or persisted-state mutation", () => {
+  it("rejects positional status before recovery, startup, or persisted-state mutation", async () => {
     const stateDir = makeFixture();
     const before = stateDigest(stateDir);
     try {
-      const result = invoke(entry, ["status"], stateDir);
-      expect(result.error).toBeUndefined();
+      const result = await invoke(entry, ["status"], stateDir);
       expect(result.status).toBe(2);
       expect(result.stderr).toContain('Unsupported positional command "status". Use "may-agent --status".');
       expect(`${result.stdout}\n${result.stderr}`).not.toContain("workflow-recovery");
