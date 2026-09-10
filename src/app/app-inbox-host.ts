@@ -1367,11 +1367,13 @@ export class AppInboxHost {
         return this.#resolveDirectRequest(app, claim, freshRequest, reconsiderations + 1);
       }
     }
-    const topicId = this.#applyTopicDecision(app, claim, request, decision);
+    let topicId: string | undefined;
     if (directTurn && saved?.phase !== "decided") {
       const requestRevisions: Record<string, number> = Object.create(null);
-      const handling = withTransaction(this.#db, () => {
+      const accepted = withTransaction(this.#db, () => {
         this.#assertOwned(claim);
+        // Topic effects and accepted Requests must not outlive an unsaved decision.
+        const topicId = this.#applyTopicDecision(app, claim, request, decision);
         for (const update of requestUpdates) {
           const current = readConversationRequest(this.#db, app.id, claim.item.conversationId!, update.id);
           if (update.disposition !== "open" && current && current.scope !== update.scope) {
@@ -1400,9 +1402,12 @@ export class AppInboxHost {
           ? undefined
           : { phase: "decided", decision, requestRevisions };
         recordAppInboxHandling(this.#db, claim, handling ?? null, this.#now());
-        return handling;
+        return { topicId, handling };
       });
-      claim.item.handling = handling;
+      topicId = accepted.topicId;
+      claim.item.handling = accepted.handling;
+    } else {
+      topicId = this.#applyTopicDecision(app, claim, request, decision);
     }
     if ((dependencies.length > 0 || followUp) && !topicId) {
       throw new Error(`Delegated App request ${request.id} requires a Topic`);
