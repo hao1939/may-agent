@@ -140,9 +140,9 @@ Active reviews are:
 - [Stable core and replaceable capabilities](proposals/task-runtime-organization.md)
   — compact remaining-work plan; canonical boundaries live in Architecture
   and completed separation/recovery evidence lives in the archive;
-- [authority-boundary-simplification.md](proposals/authority-boundary-simplification.md)
-  — remaining request-path, behavioral-comparison and App-owned delivery work;
-  dated incident and pilot evidence lives in the archive;
+- [Simplify the system: fewer paths, clear owners](proposals/authority-boundary-simplification.md)
+  — design reductions before code moves: Task handoff, evaluation UI scope and
+  affordable redo; retained behavioral-comparison and App-owned delivery work;
 - [design-implementation-convergence.md](proposals/design-implementation-convergence.md)
   — index of known source gaps and their owning contracts, including Request
   closure, turn control, owner decisions and remaining metric migration.

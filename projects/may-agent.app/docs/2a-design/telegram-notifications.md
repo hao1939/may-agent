@@ -10,9 +10,9 @@ admission now presents the responsible Task directly, and human-action reads
 follow exact dependency links to the Task that owns the action.
 The [current-turn Stop button](human-control-surfaces.md#current-turn-control)
 is implemented; Task cancellation and ending a watch have separate effects.
-Request deadlines and close cancellation are implemented in candidate Host
-[PR #133](https://github.com/hao1939/may-agent/pull/133), with passing source
-checks and pending review. They are not a deployment claim.
+Request deadlines and close cancellation merged in Host
+[PR #133](https://github.com/hao1939/may-agent/pull/133) as `39a23f22`.
+Source checks and merge state are not a deployment claim.
 
 ## Purpose
 

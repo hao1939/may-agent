@@ -22,6 +22,12 @@ being wrong. Fix reproduced failures first. Prefer affordable redo over elaborat
 resume; stop when the required outcome is met. The
 [decision guide](../1-principles/core-principles.md#review-rule) owns these tradeoffs.
 
+Before a larger extraction, use the
+[system simplification review](authority-boundary-simplification.md#design-choices-before-code-moves)
+to decide which execution/recovery paths should remain. It also records the
+September 11 source-layout findings and small import/composition improvements;
+it does not replace the accepted inbox/state sequence below.
+
 ## Design against implementation
 
 | Core responsibility | Current assessment | Next useful work |

@@ -1,13 +1,18 @@
-# One fact, one owner: remaining simplification work
+# Simplify the system: fewer paths, clear owners
 
-**Status:** Active proposal. Direct-work and attempt-context rules are incorporated
-in current design and source. Further request-path deletion, a model-behavior
-comparison, and the delivery pilot remain unfinished.
-**Reviewed:** September 9, 2026, against the [documented source baseline](../README.md).
+**Status:** Proposal for review. Existing direct-work and attempt-context rules
+remain accepted. The reductions below are recommendations, not implemented
+behavior or a commitment to implement every option.
+**Reviewed:** September 11, 2026, against Host `main` `39a23f22` and the open
+Conversation/state candidate [#129](https://github.com/hao1939/may-agent/pull/129)
+at `e43b80dc`. Source review does not identify the deployed release.
 
-Keep one owner for each fact and outcome. Use existing Tasks, bounded attempts,
-events and reads to remove competing decisions and writers. The next changes
-should make an existing path simpler without adding another work lifecycle.
+Make ordinary conversation and authorized work easier to understand, change and
+operate at acceptable total cost. First remove unnecessary behavior and competing
+continuation paths; then organize the implementation that remains. Follow the
+[value/cost rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff).
+One existing proposal owns this review; subsystem contracts and implementation
+plans remain with the owners linked below.
 
 ## Current contract
 
@@ -30,11 +35,186 @@ scoped authorization record. The [September 6 pilot](../archive/reviews/authorit
 records the exercised lifecycle, wait and restart cases. Neither establishes
 the current deployed release or completion of provider-facing delivery work.
 
+## Design choices before code moves
+
+The most promising savings come from removing ways to execute, wait, recover or
+write the same outcome. A directory move alone removes none of those cases.
+These are structural opportunities, not measured bug reductions or line savings.
+
+| Choice | Complexity potentially removed | Accepted cost and next decision |
+| --- | --- | --- |
+| One durable delegation path: Task handoff | Conversational child-request creation, waiting, result aggregation, reconsideration and their recovery combinations | Long work is linked to a Task and reported in a later turn; retire the old path only after caller and retained-obligation checks |
+| Evaluation UI keeps supported reads; unsupported generation/editing is removed | HTTP-owned evaluation prompts and feedback writes, plus controls and tests for those operations | Lose inline/line-specific convenience; establish whether existing Conversation/App operations satisfy actual review needs |
+| Cheap interrupted work starts a fresh attempt from current evidence | Eligible workflow step-reuse/session-resume paths and their matching/fallback cases | Extra compute and delay; examine one real workflow before choosing any deletion |
+
+### 1. One durable delegation path
+
+Keep the human interaction simple:
+
+```text
+human input -> bounded turn with as many useful model/tool steps as needed
+  -> answer directly, or explain and admit linked Task work
+  -> end the turn; later Task facts support a new reply or follow-up
+```
+
+Discussion remains interactive. A Request records the accepted ask; a Task owns
+independent work; neither requires keeping the original turn alive. Task admission
+must commit before claiming the handoff succeeded. Failure to admit leaves an
+honest failure and the accepted ask open. Long work can still involve multiple
+Apps through existing Task dependencies and ordinary bounded calls.
+
+The alternative path creates child inbox requests, waits for their results, then
+reconsiders the parent input. #129 separates this code and rejects that protocol
+for new direct Task handoffs, but retains compatibility handling. Its
+`conversations/turn-handler.ts` still creates children and joins their waits.
+The source declaration search found May as the current App declaring agent
+request handling; that does not prove no retained caller or obligation needs it.
+
+**Recommendation:** Finish #129's review first. Audit the remaining callers and
+make Task handoff the sole supported new conversational delegation path. Then
+drain or explicitly migrate retained child waits before deleting their execution
+path. Keep input receipts, accepted Requests, Topic links, Task-to-Task waits and
+historical reads. A temporary drain path needs an explicit removal condition;
+do not replace it with another general compatibility framework.
+
+**Proof:** A long handoff leaves chat responsive; failed admission cannot claim
+delegation; duplicate/restarted handoff retains the same Task; an interrupted
+answer does not lose an open ask; the final Task outcome remains available for
+its owed explanation. The existing
+[storage slice](storage-state-service.md#candidate-review-and-landing-order)
+owns the transactional extraction and its tests.
+
+### 2. Reduce evaluation UI obligations
+
+`http/server.ts` constructs evaluation instructions and directly appends feedback
+to a trail. The [current contract](../2a-design/session-eval-trail.md) records that
+the Evaluation Task drops the selected line/instructions and does not generate
+that requested trail. Moving these handlers would preserve a partially working
+feature and its maintenance burden.
+
+**Recommendation:** Prefer historical trail reads and supported App review
+operations. Before removing generation/comment controls and their write routes,
+inspect known callers and check whether a concrete whole-session or line-specific
+review can be expressed adequately through existing Conversation/App input.
+Do not claim the alternative preserves inline editing or exact line attribution
+unless it does. If that convenience is valuable enough, retain it with one
+App-owned writer instead. The
+[external plan](external-components-simplification.md#conditional-follow-ups)
+owns this decision and the paired HTTP/UI/contract change.
+
+**Proof:** Retained trails remain readable; disabled operations return unavailable
+and the UI offers no false saved/generated state. Removing the feature must not
+remove unrelated summary evaluation, metrics or ordinary conversation.
+
+### 3. Prefer affordable redo where it actually deletes a path
+
+Task restart already uses persisted identity and current evidence rather than
+resuming a JavaScript stack. That is an existing benefit, not a new saving.
+However, `src/lib/workflow-tool.ts` still offers `resume` and can reuse completed
+steps or resume child sessions. These paths warrant a separate cost review.
+The separate workflow tool's reuse path must not be confused with ordinary Task
+restart; removing it may save little on the common Task path.
+
+**Recommendation:** Inspect one frequently used, bounded workflow. Compare fresh
+execution from Task input/evidence with its present reuse behavior. Favor redo
+when the discarded work is cheap and effects can be checked or safely repeated.
+Preserve accepted Task progress, results, transcripts and artifact references.
+For expensive work, one explicit coarse checkpoint may earn its cost; keep
+useful existing reuse when that is cheaper than replacing it.
+
+Rerunning a workflow can repeat code between agent steps even when step results
+are reused. Neither resume nor Task idempotency proves external-effect safety.
+Before a replacement attempt, establish that the old execution has stopped or
+is adequately fenced. Read provider state or use its idempotency mechanism for
+consequential operations. If an earlier effect remains uncertain, expose attention
+for an App/human decision instead of blindly repeating it. A prior terminal
+session is evidence, not automatically an accepted Task result.
+
+Estimate interruption frequency times discarded effort over the feature's likely
+lifetime, plus failure loss, against implementation and ongoing maintenance cost.
+If new and old execution paths would both remain indefinitely, claim no deletion
+savings. This is a conditional experiment, not a new recovery-mode setting or an
+instruction to remove all resume APIs.
+
+**Proof:** Interrupt the selected fixture around meaningful steps and an uncertain
+effect; verify retained identity, stopped-work behavior, accepted evidence and
+the absence of an unsafe duplicate action. Measure redo cost for that workload.
+Update [workflows](../2a-design/workflows.md) and the
+[Task engine](../2a-design/task-resource-engine.md) only with the selected change.
+
+## Smaller organization changes worth keeping
+
+#129 already gives core state and the conversational frontend separate homes.
+Build on its reviewed result. Paths below are relative to the Host checkout.
+
+| Change | Smallest sufficient implementation and useful proof |
+| --- | --- |
+| Remove shared inbox assumptions about `may` | Composition selects the foreground App, with May as the shipped default. Shared capacity consumes that selection; conversation status wording and follow-up suppression belong with the frontend/App policy. Test a differently named frontend and an omitted frontend without losing background progress or the interactive reserve. No user-facing scheduler configuration or App-renaming migration is required. |
+| Break the internal barrel-import cycle | `lib/index.ts -> agent-loader.ts -> loader/toolset-loader.ts -> lib/index.ts` becomes direct imports from owning modules. Keep public SDK/control exports. Prefer `lib/db/connection.ts` over the historical `lib/requests.ts` facade in touched code; remove the facade only after its callers are gone. |
+| Make the attempt path readable | In `app-task-runtime.ts`, make claim, prepare/execute, verify, commit and publish easy to follow. Extract a cohesive helper when it reduces shared context; leave atomic mutation and stale-result checks with their owner in the reconciler/state code. Run the existing race/cancellation tests when these boundaries move. |
+| Group retained HTTP/backend implementations | After the feature decisions above, put touched route families under existing `http/` homes and backend files beside their executor family. Use ordinary imports, not a new router/plugin/service framework. |
+| Shorten navigation | Give each component its responsibility, contract, implementation/wiring and owning tests. The current Host source map is 472 lines; link detailed contracts rather than growing another design explanation. |
+
+The resulting ownership is straightforward:
+
+```text
+core/          admission, state consistency, Task/event/timing mechanics
+conversations/ selected conversational context and turn handling
+adapters/      concrete executors, producers, discovery, reporting, workspaces
+composition/   defaults, selection, activation and cleanup
+transport/, http/, client packages  input and presentation
+owning App     domain decisions, acceptance and situational repair
+```
+
+Foundational database primitives stay in `src/lib/db/`. Still-flat Task/inbox
+modules can keep their current paths while their responsibility is clear.
+Folder symmetry is not an acceptance criterion. Use existing ESLint import
+rules to protect boundaries as they are extracted; a dependency-analysis service
+or a repository-wide move is unnecessary.
+
+## Limits that keep the system simple
+
+| Tempting change | Decision for this proposal |
+| --- | --- |
+| Combine Turn, Request and Task into one status | Keep the distinct facts: execution ended, the accepted ask was addressed, and background work finished. Combining them would reintroduce false fulfillment. |
+| Drop leases, identity fences, atomic writes or worker isolation | Keep these safeguards. They address duplicate ownership, stale results, partial commits and unresponsive execution; replaying cheap work does not replace them. |
+| Remove every workflow-to-agent handoff | Defer. Gym source contains `needs-agent` consumers, and workflow verifiers still apply after handoff. A blanket deletion is not justified by file size; audit actual callers before proposing an App-owned replacement. |
+| Replace existing atomic App reload with a restart-only Host | Defer. The supported reload boundary already has consumer/rollback tests; operational savings have not been established. New optional capabilities can start with omission/draining/restart rather than seamless live replacement. |
+| Guaranteed cross-channel display or seamless turn steering | Keep the accepted limits: canonical reads recover missing presentation, Telegram sends are best effort, and Stop followed by a correction is the initial redirection path. These are existing simplifications, not new work. |
+| Turn every local operation into an event/API-server request | Keep SQLite transactions and typed local calls. Events remain the integration contract for meaningful inputs, changes and independent observers. |
+
+## Recommended next milestone
+
+1. Complete independent review of #129 under the existing merge policy. Do not
+   fold this proposal's feature reductions into that PR.
+2. Take a small behavior-preserving cleanup: direct internal imports and a shorter
+   source map. Address the shared inbox's App-name assumptions as a separate,
+   focused capability-boundary change.
+3. Review removal of the conversational child-wait path first, and evaluation UI
+   feature reduction separately. Each needs its caller/retained-data decision,
+   owning-contract update and a concrete retained user path before source deletion.
+4. Consider the workflow redo experiment only when an actual workload makes its
+   savings plausible. Defer large Task/HTTP extractions until the remaining paths
+   and a useful change justify them.
+
+Steps 3 and 4 are conditional choices, not an automatic implementation queue.
+No live-state inventory, provider trial, deployment or Host merge is performed by this
+document review. The preceding source review ran 36 focused registry/controller,
+reporting and import-boundary tests on `743aa5de`; those tested modules are
+unchanged at the reviewed `main`. It did not measure field failure frequency,
+redo cost, or certify the pending PR's current full CI.
+
+For each selected reduction, record the behavior retained, the behavior given up,
+the actual path deleted and the relevant regression evidence. Stop if migration
+or permanent exceptions cost more than the removed feature. Success means less
+coordination and fewer failure cases for useful work, not merely fewer files.
+
 ## Remaining work
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Retire conversational child-request waiting where redundant | A dated audit found retained open obligations. Inventory current callers and retained requests before deletion; keep ordinary caller/result correlation and Task-to-Task dependencies. Drain or migrate real obligations explicitly. |
+| Retire conversational child-request waiting where redundant | Follow [one durable delegation path](#1-one-durable-delegation-path); a dated audit found retained open obligations, so a source search alone cannot justify their deletion. |
+| Review workflow redo and code organization | Use the [design choices](#design-choices-before-code-moves) and [bounded milestone](#recommended-next-milestone); the existing core/storage plans keep ownership of their accepted work. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
 | Prove one App-owned delivery workflow | Select one repository, responsible Task, executor and requested terminal outcome. The recorded read-only PR assessment did not exercise publication, review dispatch or validation effects. |
@@ -108,7 +288,8 @@ A slice is complete when:
 
 - one responsible Task retains its identity and accepted state across attempts,
   duplicate events, interface closure and restart;
-- late or replaced attempts cannot accept results or duplicate external effects;
+- late or replaced attempts cannot accept results, and the selected effect
+  boundary checks uncertain outcomes before repeating consequential operations;
 - stopped work stays stopped, while an authorized newer generation remains visible;
 - an unchanged blocker stays quiet, retains its recovery review, and resumes on
   the relevant fact without repeated model polling or human notifications;

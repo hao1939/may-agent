@@ -30,11 +30,16 @@ small shared state boundary.
 
 ## Current focus
 
-The [external component plan](proposals/external-components-simplification.md)
-prioritizes three small corrections: guard guidance, the blocking credential
-probe, and Telegram I/O. Scout's fix is on workspace `main`; the Host PRs and
-their checks are recorded in the plan. Review and deployment remain separate. Evaluation feature reduction,
-metric improvements, and code moves remain conditional follow-ups.
+The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
+compares removing conversational child waits, reducing evaluation UI features,
+and affordable workflow redo before larger code moves. It builds on #129's
+pending state/frontend separation; the reductions remain proposals for review.
+
+The [external component plan](proposals/external-components-simplification.md#candidate-evidence)
+records the completed source fixes for guard guidance, the blocking credential
+probe, and Telegram I/O. Scout's fix is on workspace `main`; Host #132 and #133
+merged as `23968acd` and `39a23f22`. Deployment remains separate. Evaluation
+feature reduction, metric improvements, and code moves remain conditional.
 
 The [workflow practices review](proposals/workflow-practices-review.md) applies
 multi-worker lessons to installed Apps: isolated changes, exact-candidate

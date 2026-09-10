@@ -3,9 +3,10 @@
 **Design status:** First milestone accepted for implementation; follow-ups remain
 conditional.
 **Implementation status:** The Scout fix and owning documentation are integrated
-into the App workspace's `main`. The two Host fixes are verified PRs awaiting
-merge. See [candidate evidence](#candidate-evidence). No deployment or live
-provider trial has been performed.
+into the App workspace's `main`. Host #132 and #133 merged as `23968acd` and
+`39a23f22`; the three source fixes are complete. See
+[candidate evidence](#candidate-evidence). No deployment or live provider trial
+was performed as part of this milestone.
 
 ## Goal and stopping point
 
@@ -20,6 +21,10 @@ a blocking credential probe, and unbounded Telegram requests. Stop after their
 checks pass. The remaining findings are choices for later work, not promised
 phases of a seven-part refactor. A known architectural gap can remain documented
 when fixing it costs more than its current consequences.
+
+The [system simplification review](authority-boundary-simplification.md#design-choices-before-code-moves)
+now compares feature/path reductions before broader organization work. This page
+retains ownership of the external decisions below, especially evaluation UI scope.
 
 ## What changed after reviewing the plan
 
@@ -152,9 +157,9 @@ The shared checkouts remain on `main`; implementation uses isolated branches.
 
 | Change | Source / review | Evidence |
 | --- | --- | --- |
-| Truthful guard guidance | [Host #132](https://github.com/hao1939/may-agent/pull/132), `013b7226` | Existing 8 guard tests and full local CI passed: 2,664 pass, 3 deployment-only skips |
+| Truthful guard guidance | [Host #132](https://github.com/hao1939/may-agent/pull/132), candidate `013b7226`, merged `23968acd` | Existing 8 guard tests and full local CI passed: 2,664 pass, 3 deployment-only skips |
 | Nonblocking credential probe | App workspace `main`, source commit `2e1b713e09` | All 350 App tests passed, including parser-failure containment; syntax, types, changed-file formatting, projection, links and navigation thresholds passed; see the aggregate-check limitation below |
-| Telegram request bounds and close | [Host #133](https://github.com/hao1939/may-agent/pull/133), `280d06ad` | Focused network, input, refresh, multipart, Stop and integration checks passed; full local CI passed: 2,670 pass, 3 deployment-only skips |
+| Telegram request bounds and close | [Host #133](https://github.com/hao1939/may-agent/pull/133), candidate `280d06ad`, merged `39a23f22` | Focused network, input, refresh, multipart, Stop and integration checks passed; full local CI passed: 2,670 pass, 3 deployment-only skips |
 
 Scout retains its 30-second budget and existing ready/unavailable interpretation.
 A temporary marker in its existing cache fences stale results across separately
@@ -176,8 +181,9 @@ Telegram call, credential inspection, live App-state operation, restart or deplo
 was used as validation. The App fix and Host fixes can land independently.
 Workspace integration preserved later `main` documentation changes; the 38
 affected Scout tests and `check:may-design` passed again before landing.
-The Telegram contract is present on workspace `main` and clearly labels its
-Host implementation as awaiting merge.
+GitHub merge state was rechecked September 11, 2026. Both Host fixes are on remote
+`main`; the canonical local checkout remains at `743aa5de`. Source integration
+does not establish which runtime is deployed.
 
 ## Conditional follow-ups
 
