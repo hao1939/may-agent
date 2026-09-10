@@ -158,12 +158,12 @@ export function listWorkflowRunIds(persistDir: string): string[] {
 }
 
 /** Read only the direct children needed to render one workflow trace. */
-export function listChildWorkflowRunIds(persistDir: string, parentWorkflowRunId: string): string[] {
+export function listChildWorkflowRunIds(persistDir: string, parentWorkflowRunId: string, limit = -1): string[] {
   const db = getDb(persistDir);
   return (
     db
-      .prepare("SELECT runId FROM workflow_runs WHERE parentWorkflowRunId = ? ORDER BY startedAt, runId")
-      .all(parentWorkflowRunId) as Array<{ runId: string }>
+      .prepare("SELECT runId FROM workflow_runs WHERE parentWorkflowRunId = ? ORDER BY startedAt, runId LIMIT ?")
+      .all(parentWorkflowRunId, limit) as Array<{ runId: string }>
   ).map((row) => row.runId);
 }
 
@@ -178,15 +178,15 @@ export function listRunningWorkflowRunIdsBefore(persistDir: string, startedBefor
 }
 
 /** Get step sessions for a workflow run, ordered by startedAt. */
-export function getWorkflowStepSessions(persistDir: string, workflowRunId: string): Array<{
+export function getWorkflowStepSessions(persistDir: string, workflowRunId: string, limit = -1): Array<{
   sessionId: string; agent: string; task: string; status: string;
-  stepLabel: string | null; startedAt: number; endedAt: number | null; outcome: string | null;
+  stepLabel: string | null; startedAt: number; endedAt: number | null; outcome: string | null; error: string | null;
 }> {
   const db = getDb(persistDir);
   const rows = db.prepare(
-    `SELECT sessionId, agent, task, status, stepLabel, startedAt, endedAt, outcome
-     FROM sessions WHERE workflowRunId = ? ORDER BY startedAt`
-  ).all(workflowRunId) as any[];
+    `SELECT sessionId, agent, task, status, stepLabel, startedAt, endedAt, outcome, error
+     FROM sessions WHERE workflowRunId = ? ORDER BY startedAt, sessionId LIMIT ?`
+  ).all(workflowRunId, limit) as any[];
   return rows.map((row) => {
     const meta = readSessionMeta(persistDir, row.sessionId);
     return meta?.task ? { ...row, task: meta.task } : row;

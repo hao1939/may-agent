@@ -6,10 +6,14 @@ export function readMetricView(metrics: Pick<MetricService, "get">, id: string):
   if (!metric) return null;
   return {
     id: metric.id,
-    value: metric.current,
+    value: metric.observation?.value ?? null,
     status: metric.status,
     target: metric.target,
     threshold: metric.threshold,
     unit: metric.unit,
+    measuredAt: metric.observation?.measuredAt ?? null,
+    sampleSize: metric.observation?.sampleSize ?? null,
+    note: metric.observation?.note ?? null,
+    measureInterval: metric.measure_interval ?? null,
   };
 }

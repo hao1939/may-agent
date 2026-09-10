@@ -431,6 +431,7 @@ CREATE INDEX IF NOT EXISTS idx_wfr_status ON workflow_runs(status);
 CREATE INDEX IF NOT EXISTS idx_wfr_status_started ON workflow_runs(status, startedAt);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent_workflow ON workflow_runs(parentWorkflowRunId, startedAt);
+CREATE INDEX IF NOT EXISTS idx_wfr_parent_ended ON workflow_runs(parentWorkflowRunId, endedAt, status);
 CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, startedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_wfr_task_binding ON workflow_runs(app_id, task_id, task_generation, attempt_id);
 `;

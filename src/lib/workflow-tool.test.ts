@@ -467,7 +467,7 @@ export async function execute(ctx) {
     });
     expect(agentSessionSource).toBe("heartbeat");
     expect(operationAllowance).toBe(50);
-    expect(logged).toEqual(["bounded move complete"]);
+    expect(logged).toEqual([expect.stringMatching(/^\[workflow:wr_[^\]]+\] \[info\] bounded move complete$/)]);
   });
 
   it("rejects invalid operation allowances before provider execution", async () => {

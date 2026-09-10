@@ -59,6 +59,7 @@ export interface WorkflowStep {
 }
 import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
 import { log } from "./log.js";
+import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
@@ -1006,8 +1007,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     steeringQueue: string[],
     previousRun?: WorkflowRun,
     authoredInput?: { value: unknown },
+    runId = generateRunId(),
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
-    const runId = generateRunId();
     const localSteps: CompletedStep[] = [];
     let stepCounter = 0;
     const callerMeta = getCallerSessionMeta(parentSessionId);
@@ -1410,7 +1411,17 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         getDb: opts.runtimeCtx?.getDb ?? (() => { throw new Error("No runtimeCtx - read unavailable"); }),
         readMetric: async (id) => readMetricView(metricService(), id),
       });
-    const workflowLog = (message: string) => opts.runtimeCtx?.log(message);
+    const recordDiagnostic = createWorkflowDiagnostics(persistDir, runId);
+    const workflowLog = (level: "debug" | "info" | "warn" | "error", message: string) => {
+      // Late asynchronous code must not append evidence to a settled attempt.
+      if (run.status !== "running") return;
+      const safe = recordDiagnostic(level, message);
+      try {
+        opts.runtimeCtx?.log(`[workflow:${runId}] [${level}] ${safe}`);
+      } catch {
+        // An optional presentation sink cannot fail the workflow.
+      }
+    };
     const taskEventUnsubscribers = new Set<() => void>();
 
     const ctx: AppWorkflowContext = {
@@ -1419,10 +1430,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       read: appRead,
 
       log: {
-        debug: (message) => workflowLog(`[debug] ${message}`),
-        info: workflowLog,
-        warn: (message) => workflowLog(`[warn] ${message}`),
-        error: (message) => workflowLog(`[error] ${message}`),
+        debug: (message) => workflowLog("debug", message),
+        info: (message) => workflowLog("info", message),
+        warn: (message) => workflowLog("warn", message),
+        error: (message) => workflowLog("error", message),
       },
       metrics: {
         define: (definition) => {
@@ -1632,6 +1643,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       run.endedAt = Date.now();
       if (err instanceof WorkflowInterrupted) {
         run.status = "interrupted";
+        run.result = { reason: err.steeringMessage };
       } else if (err instanceof WorkflowBlocked) {
         run.status = "blocked";
         run.result = { reason: `Blocked by guard: ${err.reason}` };
@@ -1695,11 +1707,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     const steeringQueue: string[] = [];
     activeSteeringQueue = steeringQueue;
     activeWorkflowName = workflow.name;
+    const runId = generateRunId();
 
     onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
 
     try {
-      const { result, runId } = await executeWorkflow(
+      const { result } = await executeWorkflow(
         catalog,
         workflow,
         task,
@@ -1710,6 +1723,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         steeringQueue,
         previousRun,
         !previousRun && opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined,
+        runId,
       );
 
       activeSteeringQueue = null;
@@ -1767,7 +1781,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       }
 
       const msg = err instanceof Error ? err.message : String(err);
-      const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, error: msg };
+      const toolResult: WorkflowToolResult = { type: "error", workflow: workflow.name, workflowRunId: runId, error: msg };
       return toolResult;
     }
   }

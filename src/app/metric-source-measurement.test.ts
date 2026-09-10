@@ -6,8 +6,10 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { getDb } from "../lib/requests.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID } from "./core/events/bus.js";
+import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import {
   attachMetricSourceMeasurement,
+  measureSourceMetrics,
   batchableProjectMetricCommand,
   type MetricSourceMeasurementRuntime,
   INTENTIONAL_OBSERVATION_EVENT_TYPES,
@@ -414,6 +416,14 @@ describe("source-query metric measurement", () => {
       { metric_id: "batch.first", value: 9, note: persistDir },
       { metric_id: "batch.second", value: 9, note: persistDir },
     ]);
+
+    writeFileSync(sampler, `throw new Error("synthetic batch failure");`);
+    const failed = await measureSourceMetrics({ bus, persistDir });
+    expect(failed.failures).toEqual([
+      { id: "batch.first", reason: expect.stringContaining("synthetic batch failure") },
+      { id: "batch.second", reason: expect.stringContaining("synthetic batch failure") },
+    ]);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id LIKE 'batch.%'").get()).toEqual({ n: 2 });
   });
 
   it("uses measureInterval as a lightweight minimum cadence and allows an explicit forced sample", async () => {
@@ -523,6 +533,7 @@ describe("source-query metric measurement", () => {
 
     insertSnapshot.run(SUBSCRIBER_FAILED_COUNT_METRIC_ID, now - 60_000);
     insertSnapshot.run(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID, now - 60_000);
+    for (const metric of WORKFLOW_OUTCOME_METRICS) insertSnapshot.run(metric.id, now - 60_000);
     insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
     insertSnapshot.run("query.fresh", now - 60_000);
     insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);

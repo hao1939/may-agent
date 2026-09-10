@@ -95,6 +95,11 @@ export type MetricView = {
   target: number | null;
   threshold: number | null;
   unit: string | null;
+  /** Latest retained observation, not definition update time or an assurance of health. */
+  measuredAt?: number | null;
+  sampleSize?: number | null;
+  note?: string | null;
+  measureInterval?: number | null;
 };
 
 export type MetricDefinition = {

@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { insertWorkflowRun, getWorkflowRun } from "../../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../../src/lib/requests.js";
+import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
+import { readWorkflowEvidence } from "../../src/lib/workflow-evidence.js";
 
 let persistDir: string;
 
@@ -39,6 +41,7 @@ describe("stale workflow run cleanup", () => {
   it("resumeStaleSessions marks stale workflow runs as interrupted", () => {
     const manager = new SubagentManager({ persistDir });
     insertWorkflowRun(persistDir, makeStaleRun("wr_stale_1"));
+    createWorkflowDiagnostics(persistDir, "wr_stale_1")("info", "prepared before restart");
 
     manager.resumeStaleSessions();
 
@@ -47,6 +50,7 @@ describe("stale workflow run cleanup", () => {
     expect(updated!.status).toBe("interrupted");
     expect(updated!.endedAt).toBeTypeOf("number");
     expect(updated!.result_reason).toBe("Process restarted");
+    expect(readWorkflowEvidence(persistDir, "wr_stale_1")!.diagnostics.entries[0]?.message).toBe("prepared before restart");
   });
 
   it("resumeStaleSessions leaves completed workflow runs untouched", () => {
