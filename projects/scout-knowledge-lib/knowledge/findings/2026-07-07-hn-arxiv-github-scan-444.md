@@ -1,5 +1,5 @@
 <ai_context>
-summary: "HN/arXiv/GitHub Scan #444 (2026-07-18): The Comprehension Dividend. The Sovereignty Standard (#443) predicted standards would change what gets built. One scan later, the evidence arrives: the community's investment in comprehension (not consumption) produces measurable returns. Chat Control Explained (252pts, +53.7%) grows faster than the vote itself (442pts, +15.7%); 30papers (225pts, +45.2%) becomes the strongest Foundations Turn signal; Automating AI Away (68pts, ratio 1.89) inverts the usual framing — the practitioner automates the AI, not the reverse. The comprehension-investment thesis completes a cycle: comprehension demand (#370) → sovereignty density (#442) → sovereignty standard (#443) → comprehension dividend (#444). On arXiv, three uncovered papers deepen the structural picture: Skills Are Not Islands (2607.01136) proves agent skill supply chains have the same dependency risks as npm/pip, MemSyco-Bench (2607.01071) benchmarks a new failure mode where retrieved memories induce sycophancy, and AgentGym2 (2607.05174) proves production-deployed agents fail on de-idealized inputs that standard benchmarks miss. GitHub: Omnigent crosses 6.6K★ (meta-harness orchestrating multiple agent frameworks); NVIDIA SkillSpector hits 12.3K★; Rowboat reaches 15.1K★; Cognitive-Core-Skills (273★) taxonomizes agent skills as cognitive primitives; GateMem (154★) benchmarks memory governance for multi-principal agents. The 1K★ cohort (shepherd 1,029★, local-llm 1,155★, mex 1,151★) remains in post-breakout plateau. Predictions from #443: Amazon without knockoffs 273pts (tracking, not yet >300 — PENDING), 30papers 225pts (tracking toward >200 — ON TRACK ✅ early). Running accuracy: ~93.8% (60/64)."
+summary: "HN/arXiv/GitHub Scan #444 (2026-07-18): The Comprehension Dividend. Primary review now qualifies Skills Are Not Islands (2607.01136): one SkillsMP snapshot supports graph-aware dependency inspection but not npm/PyPI risk equivalence or a general dependency-risk concentration. The original HN counters, MemSyco-Bench, AgentGym2, and GitHub observations remain separately sourced and retain their original uncertainty."
 triggers: "comprehension dividend, comprehension investment, comprehension return, chat control explained, foundations turn, 30papers, ilya papers, automating AI away, attribution error practitioner, skill supply chain, skills not islands, memory sycophancy, MemSyco, AgentGym2, de-idealized benchmark, meta-harness, omnigent, cognitive core skills, memory governance, GateMem, brain.md, scan 444"
 source_basis: "HN front page 2026-07-18 (30 stories via Firebase API + Algolia), arXiv API (2607.01136 Skills Are Not Islands, 2607.01071 MemSyco-Bench, 2607.05174 AgentGym2, 2607.00213 FSTP, 2607.05382 SearchGen, 2607.04974 M-Agent Bugs), GitHub API (omnigent 6,617★, SkillSpector 12,287★, Rowboat 15,146★, Cognitive-Core-Skills 273★, GateMem 154★, brain.md 205★, MemoryData 98★, superlog 996★, Halo 7★). Cross-referenced with Sovereignty Standard (#443), Attribution Error (#440), Memory Control Plane (#441), Skill Supply Chain (#375)."
 </ai_context>
@@ -148,14 +148,24 @@ While the arXiv API returns many papers already covered in #443, three structura
 
 **Title**: Skills Are Not Islands: Measuring Dependency and Risk in Agent Skill Supply Chains
 
-**Key finding**: Agent skills are no longer isolated prompts — they are dependency-bearing artifacts with implicit identities, versions, and provenance. The paper introduces the Agent Skill Supply Chain concept: skills depend on other skills, on specific tool APIs, on memory schemas, and on model capabilities. This dependency graph has the same structural properties as npm/pip dependency trees — transitive closure, diamond dependencies, version conflicts, and supply chain attack surfaces.
+**Key finding, qualified**: The paper constructs skill→package→service graphs
+over 1,434,046 GitHub-backed SkillsMP records. It reports concentrated reuse,
+cycles, convergent nodes, and hidden package inventory. Those results support
+graph-aware dependency inspection. They do not establish memory/model-capability
+edges, matched npm/PyPI security risk, executable attack prevalence, or a
+general claim that risk concentrates outside root skills. See the
+[primary-source scope audit](./2026-09-08-agent-skill-supply-chain-scope.md).
 
 **Connection to existing library**:
-- Directly extends the **Skill Supply Chain** thesis (scan #375): the paper names and measures what #375 identified qualitatively. Skills have version drift, dependency conflicts, and provenance gaps.
-- Validates NVIDIA's **SkillSpector** (12,287★): security scanning of agent skills is not a nice-to-have but a structural necessity when skills have dependency graphs.
-- Connects to the **Persistence Attack Surface** (#423): skill dependencies persist across sessions, creating attack vectors that outlive individual invocations.
+- Directly extends the **Skill Supply Chain** thesis (scan #375): the paper measures sparse version/dependency metadata, name collisions, and transitive inventory on one snapshot; it does not measure drift over time.
+- Motivates graph-aware scanning alongside NVIDIA's **SkillSpector** (12,287★), but does not evaluate that product or show that scanning prevents harm.
+- Connects to the **Persistence Attack Surface** (#423) as a design risk: unpinned references can remain reachable, while cross-session execution and incident persistence remain unmeasured.
 
-**Design insight**: Before deploying an agent skill, audit its dependency tree — not just the skill's code, but what it assumes about other skills, tool APIs, and memory state. The npm ecosystem learned this lesson with left-pad; the agent ecosystem is about to learn it with skill composition.
+**Design insight**: Before deploying an agent skill, resolve its declared and
+inferred dependency graph, preserve source/version evidence, and distinguish an
+audit signal from a confirmed executable vulnerability. The paper motivates
+that visibility; it does not validate a deployment gate or predict an npm-like
+incident trajectory.
 
 ### Paper 2: MemSyco-Bench (2607.01071)
 

@@ -288,20 +288,20 @@ supply-chain incident within 6 months.
   since 2026-06-01. See scan #107 for full table.
 
 **UPDATE (Jul 2026 — Scan #318)**: "Skills Are Not Islands" (2607.01136) formalizes
-this exactly. Introduces Agent Skill Supply Chains (ASSCs) and SkillDepAnalyzer,
-analyzing 1.43M skills. Four structural findings: (1) metadata is activation-ready
-but governance-poor, (2) dependency graphs span skill → package → service layers,
-(3) recursive skill reuse creates hidden package inventory (transitive dependencies
-invisible to consuming agents), (4) workflow clusters propagate failure along
-boundaries. The paper identifies and reports **known malicious skills persisting in
-active supply chains**. Recommends typed dependency manifests, lockfile-like records,
-and risk-warning audit commands. This validates the "supply-chain incident within 6
-months" prediction — the structural conditions now have academic documentation.
+part of this picture. It introduces Agent Skill Supply Chains (ASSCs) and
+SkillDepAnalyzer over 1,434,046 GitHub-backed SkillsMP records. The generated
+graphs span skill → package → service edges, expose hidden package inventory,
+and form workflow clusters. Security rows show that root-only inspection can
+miss transitive audit signals, including 26 of 194 roots reached by publicly
+reported malicious-skill labels. They do not establish active execution,
+incident prevalence, or the earlier six-month incident prediction. Use the
+[primary qualification](./findings/2026-09-08-agent-skill-supply-chain-scope.md)
+before transferring the result beyond that registry snapshot.
 Source: https://arxiv.org/abs/2607.01136
 
 **UPDATE (Jul 2026 — Scan #444)**: A three-layer Skill Governance Stack is crystallizing:
 1. **Taxonomy** (eli-labz/Cognitive-Core-Skills, 273★): Universal, industry-neutral taxonomy of cognitive core skills — perception, memory, reasoning, planning, action, verification. JSON Schema format.
-2. **Dependency** (Skills Are Not Islands, 2607.01136): Skill dependency graphs with transitive closure, diamond dependencies, and supply chain risks.
+2. **Dependency** (Skills Are Not Islands, 2607.01136): Generated skill dependency graphs expose transitive inventory and audit signals; runtime risk remains unmeasured.
 3. **Security** (NVIDIA/SkillSpector, 12,287★): Scanning skill dependency graphs for vulnerabilities and malicious patterns.
 Each layer addresses a different concern; all three are needed for governed skill composition.
 

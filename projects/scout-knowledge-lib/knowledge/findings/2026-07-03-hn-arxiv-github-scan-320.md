@@ -1,5 +1,5 @@
 <ai_context>
-Scan #320 — The Measurement Crisis. Six fresh arXiv papers converge with HN front page signals and GitHub trends to reveal that the instruments used to evaluate agent systems are themselves structurally unsound. Coding benchmarks don't reproduce across machines (2607.01211: only 39/102 GSO tasks replay-valid). Skill ecosystems carry hidden dependency-graph risks (2607.01136: 1.43M skills analyzed, security signals hide in dependencies). Memory management was never measured as a separate trainable skill until now (2607.01224: 2-4x gains from memory-only optimization). Verification requires auditable state-transition architecture (2607.01223: 94.7% vs 83.2% on adversarial proofs). Stealth biases hide in logit distributions invisible to text inspection (2607.01208). Safety evaluations compress distinct failure modes into ambiguous pass/fail labels (2607.01153). The Surface Stability Trap (#319) has recursed: the measurement instruments are themselves surface-stable-but-structurally-fragile. Reference when evaluating benchmark reliability, agent evaluation pipeline design, skill dependency governance, memory system architecture, or verification methodology.
+Scan #320 — The Measurement Crisis. Six fresh arXiv papers connect measurement gaps across coding benchmarks, skill dependency graphs, memory, verification, bias, and safety evaluation. Primary review now qualifies the skill result: 2607.01136 analyzes 1,434,046 GitHub-backed SkillsMP records and finds transitive audit signals, but does not measure ecosystem-wide vulnerability prevalence or runtime harm. Reference when evaluating benchmark reliability, agent evaluation pipeline design, skill dependency governance, memory system architecture, or verification methodology.
 </ai_context>
 
 # The Measurement Crisis
@@ -8,7 +8,7 @@ Scan #320 — The Measurement Crisis. Six fresh arXiv papers converge with HN fr
 
 ## Thesis
 
-The Surface Stability Trap (#319) showed that agent systems consistently pass surface-level quality checks while failing deeper structural tests. Today's signals reveal the **recursion**: the measuring instruments themselves are structurally unsound. Coding benchmarks don't reproduce across machines. Skill dependencies carry hidden risks invisible to surface inspection. Memory management — a capability dimension worth 2-4× performance — was never measured as a separate skill. Verification architectures using scalar LLM judges miss the exact error classes (hidden premises, fabricated citations) that matter most. Stealth biases hide entirely in logit distributions below the threshold of text-based inspection. Safety evaluations compress linguistically distinct failure modes into ambiguous binary labels.
+The Surface Stability Trap (#319) showed that agent systems consistently pass surface-level quality checks while failing deeper structural tests. Today's signals reveal the **recursion**: the measuring instruments themselves are structurally unsound. Coding benchmarks don't reproduce across machines. Skill root-only review misses transitive audit signals, while executable risk remains unmeasured. Memory management — a capability dimension worth 2-4× performance — was never measured as a separate skill. Verification architectures using scalar LLM judges miss the exact error classes (hidden premises, fabricated citations) that matter most. Stealth biases hide entirely in logit distributions below the threshold of text-based inspection. Safety evaluations compress linguistically distinct failure modes into ambiguous binary labels.
 
 The Evaluation Mirage (prior concept) identified that we were measuring the wrong things. The Surface Stability Trap (#319) showed that what we measured looked stable but wasn't. The Measurement Crisis is the next recursion: **the instruments used to detect surface-stability traps are themselves surface-stable-but-structurally-fragile.**
 
@@ -90,16 +90,16 @@ Source: https://arxiv.org/abs/2607.01211
 
 ### Skills Are Not Islands: Measuring Dependency and Risk in Agent Skill Supply Chains (2607.01136)
 
-**The skill dependency paper.** Introduces Agent Skill Supply Chains (ASSCs) borrowing from SBOMs. SkillDepAnalyzer recovers dependency graphs from 1.43 million skills. Four structural findings:
+**The skill dependency paper.** Introduces Agent Skill Supply Chains (ASSCs) borrowing from SBOMs. SkillDepAnalyzer recovers dependency graphs from 1,434,046 GitHub-backed SkillsMP records. Four structural findings:
 
 1. **Governance-poor metadata**: Skill metadata is activation-ready but governance-poor — you can run a skill but can't audit it
 2. **Concentrated reuse**: Dependency graphs span skill/package/service with concentrated reuse — few skills are depended upon by many
 3. **Hidden package inventory**: Recursive skill reuse expands dependency graphs and creates hidden package inventory invisible to surface inspection
 4. **Workflow clustering**: Skill dependency clusters form around related workflows
 
-**Security finding**: "Inspecting a skill alone misses security-relevant signals hiding in its dependencies." Known malicious skills found persisting in supply chains.
+**Security finding, qualified**: "Inspecting a skill alone misses security-relevant signals hiding in its dependencies." The rows mostly measure conditional signal reachability, not confirmed vulnerability prevalence or execution; only 26/194 roots reached by publicly reported malicious-skill labels are dependency-only. See the [primary scope audit](./2026-09-08-agent-skill-supply-chain-scope.md).
 
-**Measurement crisis instance**: Skill quality was measured per-skill. The actual risk surface is the dependency graph. The unit of measurement was wrong. This directly extends the Dependency Awakening (#318) from "skills have dependencies" to "those dependencies carry measurable, hidden risks."
+**Measurement crisis instance**: Per-skill review omits graph-visible inventory and audit signals. The paper does not establish that the dependency graph is the complete runtime risk surface or compare security outcomes with a root-only baseline.
 
 Source: https://arxiv.org/abs/2607.01136
 
@@ -194,7 +194,7 @@ Six dimensions of measurement failure have surfaced simultaneously:
 | Dimension | Paper/Signal | What's Unmeasured | Surface Metric |
 |-----------|-------------|-------------------|----------------|
 | **Benchmark** | 2607.01211 | Cross-machine reproducibility, scoring rule dependency, saturation | Leaderboard rank |
-| **Dependency** | 2607.01136 | Transitive risk in skill supply chains | Per-skill quality |
+| **Dependency** | 2607.01136 | Transitive inventory and audit-signal visibility | Per-skill quality |
 | **Memory** | 2607.01224 | Memory management as independent capability (worth 2-4×) | Task performance |
 | **Verification** | 2607.01223 | Hidden premises, fabricated citations (28pp gap) | LLM judge score |
 | **Bias** | 2607.01208 | Logit-level distributional shifts below text inspection | Text output |
