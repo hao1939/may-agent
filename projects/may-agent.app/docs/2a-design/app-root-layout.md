@@ -82,6 +82,8 @@ Do not use top-level `docs/` for new paper/doc storage.
   artifacts; ignored by git.
 - `.copilot/` - local tool configuration and possible secrets; ignored by git.
 - `.codex/`, `.agents/` - local tool or runtime metadata; ignored by git.
+- `.azure/` - local Azure CLI configuration and credentials; ignored by git.
+- `.tools/` - locally installed tooling; ignored by git.
 - `test-results/` - generated test runner state; ignored by git.
 
 ## Layout hygiene

@@ -16,8 +16,10 @@ may.db
 
 # Local tool config/secrets - never track
 .agents/
+.azure/
 .codex/
 .copilot/
+.tools/
 test-results/
 
 # Build artifacts - never track
