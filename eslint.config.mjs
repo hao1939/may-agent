@@ -109,6 +109,24 @@ export default [
     },
   },
 
+  {
+    files: ["src/app/agent-loader.ts", "src/app/loader/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/lib/index", "**/lib/index.*"],
+              message: "Import the owning module; the runtime barrel exports this loader.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Disable rules that conflict with Prettier
   eslintConfigPrettier,
 ];
