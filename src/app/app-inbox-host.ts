@@ -1201,6 +1201,8 @@ export class AppInboxHost {
     const dependencies = decision.dependencies ?? [];
     const taskControls = decision.taskControls ?? [];
     const followUp = decision.followUp;
+    if ((followUp || dependencies.length) && decision.topic.kind === "none" && !claim.item.topicId)
+      throw new Error("Durable handoff requires a Topic");
     if (followUp && (dependencies.length > 0 || taskControls.length > 0)) {
       throw new Error(`App ${app.id} request decision cannot combine follow-up with direct Task effects`);
     }

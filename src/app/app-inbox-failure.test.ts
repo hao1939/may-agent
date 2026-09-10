@@ -45,7 +45,7 @@ function admit(host: AppInboxHost, id = "first", sequence = 1) {
   });
 }
 
-test.each(["throws", "invalid"])(
+test.each(["throws", "invalid", "missing-topic"])(
   "ends a %s execution once, survives reopen, and frees the Conversation",
   async (mode) => {
     const f = fixture();
@@ -57,6 +57,10 @@ test.each(["throws", "invalid"])(
       resolveRequest: async () => {
         calls++;
         if (mode === "throws") throw new Error("fixture failure");
+        if (mode === "missing-topic") return {
+          ...answer,
+          followUp: { appId: "owner", outcome: "Compare", acceptance: ["Evidence"], input: {} },
+        };
         return {} as AppRequestDecision;
       },
     };
