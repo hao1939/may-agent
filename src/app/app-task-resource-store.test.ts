@@ -18,12 +18,15 @@ import {
 } from "./app-task-store.js";
 import {
   claimObservedAppTask,
+  cancelAppTask,
+  appTaskContext,
   completeAppTask,
   deferAppTask,
   listHandlerExecutionFailedAppTasks,
   observeAppTaskIntent,
   recordAppTaskTrigger,
   releaseHandlerExecutionFailedAppTask,
+  stopAppTask,
 } from "./app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -222,6 +225,51 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("keeps cancelled children out of the live context limit and reads their terminal evidence separately", () => {
+    const store = open();
+    try {
+      const tree = fixture();
+      tree.resources = { normal: tree.resources!.normal! };
+      tree.attempts = {};
+      tree.taskTriggers = {};
+      for (let index = 0; index < 20; index += 1) {
+        const child = resource(`child-${String(index).padStart(2, "0")}`);
+        child.spec.parentId = "normal";
+        tree.resources[child.metadata.id] = child;
+      }
+      store.bootstrapSnapshot(tree, "revision-1");
+      const config = appTaskContext({
+        appDir: roots.at(-1)!,
+        agent: "owner",
+        maxConcurrent: 1,
+        resourceStore: store,
+      });
+      for (let index = 0; index < 18; index += 1) {
+        const child = store.readTask(`child-${String(index).padStart(2, "0")}`)!;
+        cancelAppTask(config, {
+          appId: "example",
+          taskId: child.metadata.id,
+          expectedGeneration: child.metadata.generation,
+          expectedResourceVersion: child.metadata.resourceVersion,
+          reason: "Optional work no longer needed",
+        });
+      }
+
+      const bounded = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 2 });
+      expect(Object.keys(bounded.resources ?? {}).sort()).toEqual(["child-18", "child-19", "normal"]);
+      const terminal = store.readCancelledChildren("normal", 2);
+      expect(terminal).toHaveLength(2);
+      expect(terminal.every((child) => child.summary.includes("Cancelled by human"))).toBe(true);
+      expect(store.readCancelledChildren("unrelated", 2)).toEqual([]);
+      const full = store.readTaskContext({ taskIds: ["normal"] });
+      expect(Object.keys(full.cancellations ?? {})).toHaveLength(18);
+      expect(full.cancellations).toEqual(store.readSnapshot().cancellations);
+      expect(full.receipts).toEqual({});
+    } finally {
+      store.close();
+    }
+  });
+
   it("can read one exact Task without loading its children or attempt history", () => {
     const store = open();
     const tree = fixture();
@@ -310,6 +358,71 @@ describe("AppTaskResourceStore", () => {
     expect(snapshot.groups?.project).not.toHaveProperty("goal");
     expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
+  });
+
+  it("round-trips human and App cancellations through snapshot bootstrap and reopen", () => {
+    const source = open();
+    const target = open();
+    const path = join(roots.at(-1)!, "host.sqlite");
+    try {
+      const tree = fixture();
+      tree.project_lifecycle = "active";
+      tree.resources = { human: resource("human") };
+      tree.attempts = {};
+      tree.taskTriggers = {};
+      source.bootstrapSnapshot(tree, "source");
+      const config = appTaskContext({
+        appDir: roots.at(-2)!,
+        projectDir: roots.at(-2)!,
+        agent: "owner",
+        maxConcurrent: 1,
+        resourceStore: source,
+      });
+      cancelAppTask(config, {
+        appId: "example",
+        taskId: "human",
+        expectedGeneration: 1,
+        expectedResourceVersion: 1,
+        reason: "Human stopped the work",
+      });
+      observeAppTaskIntent(config, {
+        appAgent: "owner",
+        intent: { id: "optional", ...resource("optional").spec },
+      });
+      const claim = claimObservedAppTask(config, { taskId: "optional", appAgent: "owner", handler: "agent" });
+      if (claim.kind !== "claimed") throw new Error(`expected optional Task claim, got ${JSON.stringify(claim)}`);
+      stopAppTask(config, claim, {
+        summary: "Optional work is not feasible",
+        evidence: ["analysis:feasibility"],
+        result: { partial: "Findings" },
+      });
+      const snapshot = source.readSnapshot();
+      target.bootstrapSnapshot(snapshot, "copied", ["human", "optional"]);
+      expect(target.readSnapshot()).toEqual(snapshot);
+      expect(target.readCancellation("optional")?.result).toEqual({ partial: "Findings" });
+    } finally {
+      source.close();
+      target.close();
+    }
+    const reopened = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      const config = appTaskContext({
+        appDir: roots.at(-1)!,
+        projectDir: roots.at(-1)!,
+        agent: "owner",
+        maxConcurrent: 1,
+        resourceStore: reopened,
+      });
+      for (const taskId of ["human", "optional"]) {
+        expect(reopened.isCancelled(taskId)).toBe(true);
+        expect(reopened.readReceipt(taskId)).toBeNull();
+        expect(claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent" }).kind).toBe("completed");
+      }
+      expect(reopened.listRecoveryCandidates().items).toEqual([]);
+      expect(reopened.readCancelledChildren("project", 8)).toHaveLength(2);
+    } finally {
+      reopened.close();
+    }
   });
 
   it("atomically bootstraps a new active resource authority", () => {

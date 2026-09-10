@@ -133,6 +133,16 @@ export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
   const evidence = (items: string[]) =>
     items.slice(0, MAX_PROMPT_CHILD_EVIDENCE).map((item) => boundedPromptChildText(item));
   return {
+    ...(context.cancelled?.length
+      ? {
+          cancelled: context.cancelled.map((child) => ({
+            ...child,
+            outcome: boundedPromptChildText(child.outcome),
+            summary: boundedPromptChildText(child.summary),
+            evidence: evidence(child.evidence),
+          })),
+        }
+      : {}),
     live: context.live.map((child) => ({
       taskId: child.taskId,
       generation: child.generation,

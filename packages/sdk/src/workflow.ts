@@ -307,6 +307,16 @@ export type TaskAttempt = {
   children: {
     live: TaskReconciliationChild[];
     completed: TaskReconciliationChild[];
+    /** Terminal non-success findings. Never successful prerequisites or live work. */
+    cancelled?: Array<{
+      taskId: string;
+      parentId: string;
+      generation: number;
+      outcome: string;
+      summary: string;
+      evidence: string[];
+      cancelledAt: string;
+    }>;
   };
   /** Exact accepted waits that currently keep this Task from converging. */
   waits: {
@@ -355,10 +365,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   outcome: string;
   acceptance: string[];
   input: TInput;
-  children: {
-    live: TaskReconciliationChild[];
-    completed: TaskReconciliationChild[];
-  };
+  children: TaskAttempt["children"];
   /**
    * Bounded projection of the App's other live tasks for workflows that review
    * frontier health. The current reconciliation task is intentionally omitted.

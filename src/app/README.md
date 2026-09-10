@@ -194,6 +194,44 @@ Conversation handling uses `app-request-agent.ts`; Task attachment uses the
 supplied Task capability. Dependency waiting is durable state, so it releases
 the request handler's execution slot.
 
+## App-owned non-success stop
+
+The SDK accepts `state: "stopped"` with a reason in `summary` and non-empty
+`evidence`; optional `response` and `result` retain partial findings. This is
+valid only for the current finite Task without live direct children, and cannot
+include actions, Conditions or child App requests. App policy decides whether
+the selected handler has discretion; otherwise it requests an owner decision.
+
+`app-task-reconciler.ts: stopAppTask()` reuses the human-cancellation transaction:
+it records App/agent/attempt attribution, retains findings, stops execution and
+readies linked requests and the executable parent. It never creates a success
+receipt or satisfies a prerequisite. Cancelled identities cannot be revised or
+closed as successful by subsequent actions or desired-intent admission. New
+work needs a new linked identity. Explicit retry also rejects cancellation-backed
+Tasks, including replay of an earlier retry control; the original control receipt
+remains historical evidence. Snapshot bootstrap preserves cancellation records
+and their attribution so copying a seed cannot make terminal work runnable again.
+Maintained Tasks and Tasks with live children
+cannot stop. Cancellation-backed terminal children are not live work: bounded
+`children.cancelled` context preserves their non-success evidence separately
+from `children.completed`. Their parent can judge its own acceptance or stop;
+the child still does not satisfy a success prerequisite.
+
+The store rechecks the live-child relation under the cancellation transaction
+and rejects new/reparented relations to a cancelled parent. This fences both
+concurrent orderings without adding relation versions or another lock.
+
+`app-task-runtime.ts` uses that operation for normal execution and saved
+direct-agent results. Workflow recovery still reruns the workflow rather than
+bypassing its continuation. Task workspaces use existing failed-attempt retention.
+Human reads show terminal cancellation; App reads keep the existing `attention`
+status with an explicit non-success summary and partial output. Caller request
+completion means the answer was delivered, not that the Task achieved its outcome.
+
+The SDK contract, reconciler, request-state and runtime tests cover rejection,
+stale input, parent/caller wakes, transaction rollback, workspace retention and
+restart. See the governing [stop slice](../../../may-agent.app/docs/proposals/task-runtime-organization.md#first-stop-slice-the-current-finite-task-only).
+
 ## Parent-owned failure review
 
 Use `app-task-runtime.test.ts`'s "lets an existing parent repair exhausted work"
@@ -215,8 +253,9 @@ Structural groups do not execute reviews. `dependsOn` gates execution order; it
 does not designate a reviewer and must not be used to wait on children the
 parent needs to review. The App chooses repair, explicit retry or revision under
 its existing authority. No default reviewer is created for otherwise unowned
-attention. An App-authorized non-success stop remains proposed; `close-task`
-records completion, not abandonment. See the canonical
+attention. For an authorized non-success decision, use the
+[finite Task stop](#app-owned-non-success-stop); `close-task` records completion,
+not abandonment. See the canonical
 [owner-decision proposal](../../../may-agent.app/docs/proposals/task-runtime-organization.md#when-finishing-the-original-task-is-no-longer-the-right-choice).
 
 ## Unavailable Task handlers

@@ -41,7 +41,8 @@ export type Condition = {
   reviewAfterMs?: number;
 };
 
-export type TaskReconcileState = "converged" | "waiting" | "needs-agent";
+/** `stopped` ends this finite leaf Task without achieving its outcome. */
+export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "stopped";
 
 /** One child App outcome required by the current task. */
 export type TaskAppDependency = {

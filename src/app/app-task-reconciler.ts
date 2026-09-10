@@ -8,6 +8,7 @@ import {
   type TaskAction as AppTaskAction,
   type TaskExecutorName,
   type TaskIntent as AppTaskIntent,
+  type TaskAttempt,
 } from "@may-agent/sdk";
 import {
   appTaskReadinessById,
@@ -1358,6 +1359,9 @@ function validateIntent(intent: AppTaskIntent): void {
 }
 
 function validateParentReference(tree: TaskTree, taskId: string, parentId: string): void {
+  if (tree.resources?.[taskId]?.spec.parentId !== parentId && tree.cancellations?.[parentId]) {
+    throw new Error(`Cannot attach ${taskId} to cancelled parent ${parentId}`);
+  }
   if (!tree.resources?.[parentId] && !tree.groups?.[parentId]) {
     throw new Error(`Task ${taskId} parent does not exist in the live graph: ${parentId}`);
   }
@@ -1384,6 +1388,9 @@ export function observeAppTaskIntent(
 ): AppTaskObservationResult {
   input = { ...input, intent: normalizeTaskAgent(input.intent) };
   validateIntent(input.intent);
+  if (config.resourceStore.isCancelled(input.intent.id)) {
+    throw new Error(`Cannot admit intent for cancelled task ${input.intent.id}; create a new linked task`);
+  }
   const admissionKey = input.admissionKey?.trim();
   if (input.admissionKey !== undefined && !admissionKey) {
     throw new Error("Task admission key must be non-empty when provided");
@@ -1631,6 +1638,7 @@ export function isAppTaskConverged(config: AppTaskContext, taskId: string, gener
 }
 
 export type AppTaskChildContext = {
+  cancelled?: TaskAttempt["children"]["cancelled"];
   live: Array<{
     taskId: string;
     parentId: string;
@@ -1771,7 +1779,7 @@ function liveTaskContext(
           },
         }
       : {}),
-    hasLiveChildren: Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === resource.metadata.id),
+    hasLiveChildren: liveChildTaskIds(tree, resource.metadata.id).length > 0,
     updatedAt: resource.status.updatedAt,
     ...(resource.status.summary ? { summary: boundedChildContextText(resource.status.summary) } : {}),
     evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
@@ -1817,7 +1825,7 @@ function liveTaskSnapshotContext(
           },
         }
       : {}),
-    hasLiveChildren: Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === resource.metadata.id),
+    hasLiveChildren: liveChildTaskIds(tree, resource.metadata.id).length > 0,
     updatedAt: resource.status.updatedAt,
   };
 }
@@ -1831,7 +1839,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
   );
   const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
   const live = Object.values(tree.resources ?? {})
-    .filter((resource) => resource.spec.parentId === taskId)
+    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
     .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
     .slice(0, MAX_LIVE_CHILD_CONTEXT)
     .map((resource) => liveTaskContext(tree, resource, readinessById[resource.metadata.id]));
@@ -1855,7 +1863,16 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
       evidence: boundedChildEvidence([...receipt.evidence]),
       completedAt: receipt.completedAt,
     }));
-  return { live, completed };
+  const cancelled = config.resourceStore.readCancelledChildren(taskId, MAX_COMPLETED_CHILD_CONTEXT).map((child) => ({
+    taskId: child.taskId,
+    parentId: taskId,
+    generation: child.generation,
+    outcome: boundedChildContextText(child.outcome),
+    summary: boundedChildContextText(child.summary),
+    evidence: boundedChildEvidence(child.evidence ?? []),
+    cancelledAt: child.cancelledAt,
+  }));
+  return { live, completed, ...(cancelled.length ? { cancelled } : {}) };
 }
 
 export type AppTaskLiveSnapshot = {
@@ -1984,6 +2001,7 @@ function dependenciesSatisfied(tree: TaskTree, intent: AppTaskIntent): boolean {
 }
 
 function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): boolean {
+  if (tree.cancellations?.[resource.metadata.id]) return false;
   if (isTaskExecutionExhausted(resource)) return false;
   const taskId = resource.metadata.id;
   const intent = resourceIntent(resource);
@@ -1996,7 +2014,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, taskId)) return true;
     if (missedTaskConditionCheckpointIds(tree, taskId).length > 0) return true;
-    const hasLiveChild = Object.values(tree.resources ?? {}).some((child) => child.spec.parentId === taskId);
+    const hasLiveChild = liveChildTaskIds(tree, taskId).length > 0;
     return !hasLiveChild && !(resource.status.conditionIds?.length ?? 0);
   }
   if (resource.status.phase === "attention") return needsAgentHandoff(tree, resource);
@@ -2300,6 +2318,9 @@ export function retryFailedAppTask(
     controlKey?: string;
   },
 ): AppTaskRetryReceipt {
+  if (config.resourceStore.isCancelled(input.taskId)) {
+    throw new Error(`Cannot retry cancelled task ${input.appId}/${input.taskId}; create a new linked task`);
+  }
   const priorControl = input.controlKey ? config.resourceStore.readControlReceipt(input.controlKey) : null;
   if (priorControl) {
     if (
@@ -2392,6 +2413,7 @@ export type AppTaskCancellationResult = {
   cancellation: AppTaskCancellation;
   cancelledAttemptId?: string;
   applied: boolean;
+  parentTaskId?: string;
 };
 
 /** Cancel one exact Task through the same fenced resource authority used by reconciliation. */
@@ -2457,8 +2479,79 @@ export function cancelAppTask(
   }
 
   const reason = input.reason.trim() || "human requested cancellation";
+  return commitTaskCancellation(config, tree, {
+    ...input,
+    reason,
+    summary: `Cancelled by human: ${reason}`,
+    decidedBy: { kind: "human" },
+  });
+}
+
+/** The selected App handler may stop its own finite leaf, never claim success. */
+export function stopAppTask(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  input: {
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    evidence: string[];
+    acceptedLiveEventIds?: number[];
+  },
+): { status: "applied" | "stale"; summary?: string; parentTaskId?: string } {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+  const match = matchingTaskAttempt(tree, claim);
+  if (!match) return { status: "stale" };
+  if (hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
+    throw new AppTaskActionStaleError({
+      taskId: claim.taskId,
+      expectedGeneration: claim.generation,
+      currentGeneration: match.resource.metadata.generation,
+      reason: "newer Task evidence is pending",
+    });
+  }
+  if (match.resource.spec.mode !== "achieve" || liveChildTaskIds(tree, claim.taskId).length > 0) {
+    throw new Error("Stopping requires a finite Task without live direct children");
+  }
+  requireNonEmptyString(input.summary, "Stop decision summary");
+  requireStringList(input.evidence, "Stop decision evidence");
+  const summary = `Stopped by App ${config.resourceStore.appId}; outcome not achieved: ${input.summary.trim()}`;
+  const stopped = commitTaskCancellation(config, tree, {
+    appId: config.resourceStore.appId,
+    taskId: claim.taskId,
+    expectedGeneration: claim.generation,
+    expectedResourceVersion: match.resource.metadata.resourceVersion,
+    reason: input.summary.trim(),
+    summary,
+    response: input.response,
+    result: input.result,
+    evidence: input.evidence,
+    decidedBy: { kind: "app", agent: claim.agent, attemptId: claim.attemptId },
+  });
+  return { status: "applied", summary, ...(stopped.parentTaskId ? { parentTaskId: stopped.parentTaskId } : {}) };
+}
+
+/** Human cancellation and an App stop share the same atomic terminal boundary. */
+function commitTaskCancellation(
+  config: AppTaskContext,
+  tree: TaskTree,
+  input: {
+    appId: string;
+    taskId: string;
+    expectedGeneration: number;
+    expectedResourceVersion: number;
+    reason: string;
+    summary: string;
+    decidedBy: NonNullable<AppTaskCancellation["decidedBy"]>;
+    response?: string;
+    result?: Record<string, unknown>;
+    evidence?: string[];
+    controlKey?: string;
+  },
+): AppTaskCancellationResult {
+  const resource = tree.resources![input.taskId]!;
+  const { reason, summary } = input;
   const cancelledAt = new Date().toISOString();
-  const summary = `Cancelled by human: ${reason}`;
   const mutationScope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
   const cancelledAttemptId = resource.status.currentAttemptId;
   const attempt = cancelledAttemptId ? tree.attempts?.[cancelledAttemptId] : undefined;
@@ -2474,6 +2567,9 @@ export function cancelAppTask(
     observedGeneration: resource.metadata.generation,
     currentAttemptId: undefined,
     summary,
+    response: input.response ?? summary,
+    result: input.result ? structuredClone(input.result) : undefined,
+    evidence: [...(input.evidence ?? resource.status.evidence ?? [])],
     conditionIds: [],
   });
   resource.status.updatedAt = cancelledAt;
@@ -2486,7 +2582,20 @@ export function cancelAppTask(
     reason,
     summary,
     cancelledAt,
+    decidedBy: input.decidedBy,
+    response: resource.status.response,
+    result: resource.status.result,
+    evidence: resource.status.evidence,
   };
+  const parentTaskId = recordExecutableParentTrigger(
+    tree,
+    input.taskId,
+    "attention",
+    summary,
+    cancellation.evidence,
+    cancelledAt,
+  );
+  trackResourceMutationTask(mutationScope, tree, parentTaskId);
   commitTaskMutation(config, tree, {
     resourceMutation: {
       ...finishResourceMutationScope(mutationScope, tree),
@@ -2514,6 +2623,7 @@ export function cancelAppTask(
     cancellation,
     ...(cancelledAttemptId ? { cancelledAttemptId } : {}),
     applied: true,
+    ...(parentTaskId ? { parentTaskId } : {}),
   };
 }
 
@@ -3544,6 +3654,10 @@ function applyTaskActions(
   const supersededSessionIds = new Set<string>();
 
   for (const action of actions) {
+    const targetId = action.kind === "create-task" ? action.id : action.taskId;
+    if (config.resourceStore.isCancelled(targetId)) {
+      throw new Error(`Handler action cannot mutate cancelled task ${targetId}; create a new linked task`);
+    }
     if (action.kind !== "create-task" && action.taskId === claim.taskId && action.kind !== "update-task") {
       throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
     }
@@ -3721,7 +3835,7 @@ function applyTaskActions(
 
 function liveChildTaskIds(tree: TaskTree, taskId: string): string[] {
   return Object.values(tree.resources ?? {})
-    .filter((resource) => resource.spec.parentId === taskId)
+    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
     .map((resource) => resource.metadata.id);
 }
 
@@ -3737,7 +3851,7 @@ function recordExecutableParentTrigger(
   const parentTaskId = child?.spec.parentId ?? undefined;
   if (!parentTaskId) return undefined;
   const parent = tree.resources?.[parentTaskId];
-  if (!parent) return undefined;
+  if (!parent || tree.cancellations?.[parentTaskId]) return undefined;
   const previous = tree.taskTriggers?.[parentTaskId];
   const event: Record<string, unknown> = {
     type: "project.task.child-transitioned",

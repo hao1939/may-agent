@@ -1,4 +1,5 @@
 import type {
+  AppTaskCancellation,
   AppTaskCondition as AppTaskCondition,
   AppTaskAcceptanceBasis as AppTaskAcceptanceBasis,
   AppTaskAttempt as AppTaskAttempt,
@@ -150,6 +151,8 @@ export type TaskTree = {
   /** Retry fence for canonical App inbox attachments. Host-private state. */
   appTaskAdmissions?: Record<string, AppTaskAdmission>;
   receipts?: Record<string, TaskCompletionReceipt>;
+  /** Read projection of the existing terminal cancellation records. */
+  cancellations?: Record<string, AppTaskCancellation>;
   /** Structural labels/containers only. Executable task nodes are projected from resources. */
   groups?: Record<string, TaskGroup>;
 };
@@ -329,7 +332,7 @@ function appTaskReadiness(
   const conditionWokeTask = resource.status.phase === "waiting" && satisfiedConditionIds.length > 0;
   if (resource.status.phase === "waiting" && !conditionWokeTask) {
     const childIds = Object.values(tree.resources ?? {})
-      .filter((child) => child.spec.parentId === resource.metadata.id)
+      .filter((child) => child.spec.parentId === resource.metadata.id && !tree.cancellations?.[child.metadata.id])
       .map((child) => child.metadata.id)
       .sort();
     if (!conditionIds.length && childIds.length) {

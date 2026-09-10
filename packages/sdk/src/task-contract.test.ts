@@ -4,6 +4,29 @@ import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultS
 
 const workflowOptions = { allowNeedsAgent: true, defaultParentId: "app-root" };
 
+describe("App stop contract", () => {
+  const stopped = {
+    state: "stopped",
+    summary: "Optional export is not feasible",
+    evidence: ["analysis:export"],
+    result: { partial: "Feasibility findings" },
+  };
+  it("admits a non-success decision and keeps normalization replayable", () => {
+    expect(Check(taskAgentResultSchema, stopped)).toBe(true);
+    const admitted = admitTaskReconcileResult(stopped, workflowOptions);
+    expect(admitted).toEqual({ ok: true, result: stopped });
+    if (!admitted.ok) throw new Error("expected admitted stop");
+    expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
+  });
+  it.each([{ evidence: [] }, { actions: [] }, { conditions: [] }, { dependencies: [] }])(
+    "rejects incomplete or mixed stop decisions: %j",
+    (extra) => {
+      expect(Check(taskAgentResultSchema, { ...stopped, ...extra })).toBe(false);
+      expect(admitTaskReconcileResult({ ...stopped, ...extra }, workflowOptions).ok).toBe(false);
+    },
+  );
+});
+
 describe("project task handler contract", () => {
   it("preserves a caller response separately from task summary", () => {
     expect(
@@ -462,7 +485,7 @@ describe("project task handler contract", () => {
   it("keeps failure outside the public handler states", () => {
     expect(
       admitTaskReconcileResult({ state: "failed", summary: "attempt failed", evidence: [] }, workflowOptions),
-    ).toEqual({ ok: false, error: "state must be converged, waiting, or needs-agent" });
+    ).toEqual({ ok: false, error: "state must be converged, waiting, stopped, or needs-agent" });
   });
 
   it("allows needs-agent only at the workflow boundary", () => {

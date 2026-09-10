@@ -195,6 +195,7 @@ async function executeTaskCapability(
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},
         children: {
+          ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
           live: input.childContext.live.map(({ phase, ...child }) => ({
             ...child,
             status: phase === "converged" ? "done" : phase,

@@ -89,8 +89,9 @@ export function appTaskAgentProtocol(appId: string): string {
   return [
     `You are the agent pursuing one Task goal owned by App ${appId}.`,
     "Keep working through as many internal turns and tool calls as needed to satisfy the task outcome and acceptance. Use current evidence and tools; do not edit Host task storage.",
-    "Finish exactly once with finish().result only when the Task is complete or genuinely waiting for something external. The tool schema is authoritative. A successful session without result does not resolve the task.",
+    "Finish exactly once with finish().result when the Task is complete, genuinely waiting for something external, or deliberately stopped under App authority. The tool schema is authoritative. A successful session without result does not resolve the task.",
     "Return state converged only when current evidence satisfies this task. Include a direct response when a caller is owed one.",
+    "Return state stopped only when existing App policy authorizes ending this finite Task without achieving its outcome. Explain the reason, partial work and unresolved effects with evidence; include no actions, Conditions or dependencies. This cannot end a maintained Task or a Task with live children. Otherwise seek the owner's decision through the existing route.",
     "Do not finish merely because one useful step or model turn ended.",
     "For App-defined machine-readable state or a domain decision, include result as an object; keep its human explanation in summary. A waiting Task may preserve a current decision there for its next reconciliation.",
     "Return state waiting only for an exact observable Condition, a live direct child, or a typed App dependency. Omit response while waiting; put operational progress in summary. Otherwise keep working now.",

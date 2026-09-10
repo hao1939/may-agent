@@ -13,6 +13,7 @@ import {
   associateAppTaskSession,
   assertAppTaskEffectFresh,
   cancelAppTask,
+  stopAppTask,
   claimObservedAppTask,
   completeAppTask,
   deferAppTask as deferCanonicalAppTask,
@@ -195,6 +196,273 @@ describe("durable execution retry allowance", () => {
       ],
     });
     expect(claim().generation).toBe(1);
+  });
+});
+
+describe("App-owned non-success stop", () => {
+  const decision = {
+    summary: "Optional feature is not feasible",
+    result: { partial: "Feasibility findings" },
+    evidence: ["analysis:feasibility"],
+  };
+  function setup(mode: "achieve" | "maintain" = "achieve") {
+    const { config } = fixture();
+    const intent: AppTaskIntent = {
+      id: "work/optional",
+      parentId: "operations",
+      outcome: "Build optional feature",
+      acceptance: ["Feature works"],
+      mode,
+    };
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent });
+    const claim = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error("expected claimed Task");
+    return { config, intent, claim };
+  }
+
+  it("persists attribution, partial work and the parent decision wake without success", () => {
+    const { config, intent, claim } = setup();
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent", mode: "maintain" } });
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
+    expect(stopAppTask(config, claim, decision)).toMatchObject({ status: "applied", parentTaskId: "parent" });
+    expect(config.resourceStore.readCancellation(intent.id)).toMatchObject({
+      decidedBy: { kind: "app", agent: claim.agent, attemptId: claim.attemptId },
+      reason: decision.summary,
+      evidence: decision.evidence,
+      result: decision.result,
+    });
+    expect(readRuntimeTaskView({ taskStateConfig: config }, intent.id)).toMatchObject({
+      status: "attention",
+      result: decision.result,
+      evidence: decision.evidence,
+      summary: expect.stringContaining("outcome not achieved"),
+    });
+    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
+    expect(isAppTaskConverged(config, intent.id, claim.generation)).toBe(false);
+    expect(() =>
+      observeAppTaskIntent(config, {
+        appAgent: "app-owner",
+        intent: { ...intent, input: { revised: true } },
+      }),
+    ).toThrow("cancelled task");
+    expect(config.resourceStore.readTask(intent.id)).toMatchObject({
+      metadata: { generation: 1 },
+      status: { summary: expect.stringContaining("outcome not achieved") },
+    });
+    observeAppTaskIntent(config, {
+      appAgent: "app-owner",
+      intent: { ...intent, id: "dependent", dependsOn: [intent.id] },
+    });
+    expect(
+      claimObservedAppTask(config, { taskId: "dependent", appAgent: "app-owner", handler: "agent" }),
+    ).toMatchObject({
+      kind: "waiting",
+      dependencyIds: [intent.id],
+    });
+    const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
+    if (parent.kind !== "claimed") throw new Error("expected parent review");
+    expect(JSON.stringify(parent.events)).toContain("outcome not achieved");
+    for (const kind of ["close-task", "unblock-task"] as const) {
+      expect(() =>
+        completeAppTask(config, parent, {
+          summary: "Invalid reclassification",
+          evidence: ["test:decision"],
+          actions: [{ kind, taskId: intent.id, expectedGeneration: 1, summary: "Done", reason: "Retry" }],
+        }),
+      ).toThrow("cancelled task");
+    }
+    recordAppTaskTrigger(config, intent.id, { type: "sample.wake", eventId: 77 });
+    expect(claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" }).kind).toBe(
+      "completed",
+    );
+    expect(completeAppTask(config, claim, { summary: "Late success", evidence: [] }).status).toBe("stale");
+    expect(stopAppTask(config, claim, decision).status).toBe("stale");
+    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
+  });
+
+  it("rejects retry after an exhausted Task is cancelled without relabelling its terminal state", () => {
+    const { config, intent, claim } = setup();
+    let attempt = claim;
+    for (let index = 0; index < 4; index += 1) {
+      failAppTaskAttempt(config, attempt, "Repeated execution failure");
+      if (index < 3) {
+        const next = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
+        if (next.kind !== "claimed") throw new Error("expected bounded retry");
+        attempt = next;
+      }
+    }
+    const failed = config.resourceStore.readTask(intent.id)!;
+    expect(failed.status.executionFailures).toBe(4);
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: intent.id,
+      expectedGeneration: failed.metadata.generation,
+      expectedResourceVersion: failed.metadata.resourceVersion,
+      reason: "Do not pursue this failed work",
+    });
+    const cancelled = config.resourceStore.readTask(intent.id)!;
+    const before = readTaskSnapshot(config);
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: intent.id,
+        expectedGeneration: cancelled.metadata.generation,
+        expectedResourceVersion: cancelled.metadata.resourceVersion,
+        controlKey: "retry-cancelled",
+      }),
+    ).toThrow("cancelled task");
+    expect(readTaskSnapshot(config)).toEqual(before);
+    expect(config.resourceStore.readControlReceipt("retry-cancelled")).toBeNull();
+    expect(readRuntimeTaskView({ taskStateConfig: config }, intent.id)).toMatchObject({
+      status: "attention",
+      summary: expect.stringContaining("Cancelled by human"),
+    });
+    expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(intent.id);
+  });
+
+  it.each(["maintain", "children", "evidence", "new-input", "revision"])("refuses an unsafe stop: %s", (reason) => {
+    const { config, intent, claim } = setup(reason === "maintain" ? "maintain" : "achieve");
+    if (reason === "children")
+      observeAppTaskIntent(config, {
+        appAgent: "app-owner",
+        intent: {
+          ...intent,
+          id: "child",
+          parentId: intent.id,
+        },
+      });
+    if (reason === "new-input") recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 11 });
+    if (reason === "revision")
+      observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 2 } } });
+    if (reason === "revision") expect(stopAppTask(config, claim, decision).status).toBe("stale");
+    else
+      expect(() =>
+        stopAppTask(config, claim, { ...decision, ...(reason === "evidence" ? { evidence: [] } : {}) }),
+      ).toThrow();
+    expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
+    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
+    if (reason === "new-input") expect(readTaskSnapshot(config).taskTriggers?.[intent.id]?.events).toHaveLength(1);
+  });
+
+  it("rolls back the terminal state and parent wake if cancellation storage fails", () => {
+    const { config, intent, claim } = setup();
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent", mode: "maintain" } });
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
+    const before = readTaskSnapshot(config);
+    config.resourceStore.db.exec(
+      "CREATE TRIGGER reject_stop BEFORE INSERT ON app_task_cancellations BEGIN SELECT RAISE(ABORT, 'stop write rejected'); END",
+    );
+    expect(() => stopAppTask(config, claim, decision)).toThrow("stop write rejected");
+    expect(readTaskSnapshot(config)).toEqual(before);
+    expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
+  });
+
+  for (const relation of ["create", "reparent"] as const) {
+    it.each(["child-first", "stop-first"])(`fences ${relation} against App stop across connections: %s`, (order) => {
+      const base = setup();
+      const path = join(base.config.appDir, "stop-race.sqlite");
+      const store = AppTaskResourceStore.openStandalone(path, "sample");
+      store.bootstrapSnapshot(readTaskSnapshot(base.config), "race");
+      const peer = AppTaskResourceStore.openStandalone(path, "sample");
+      stores.push(store, peer);
+      const config = { ...base.config, resourceStore: store };
+      const other = { ...base.config, resourceStore: peer };
+      const child = { ...base.intent, id: "racing-child", parentId: "operations" };
+      if (relation === "reparent") observeAppTaskIntent(other, { appAgent: "app-owner", intent: child });
+      const addChild = () =>
+        observeAppTaskIntent(other, {
+          appAgent: "app-owner",
+          intent: { ...child, parentId: base.intent.id },
+        });
+      const stop = () => stopAppTask(config, base.claim, decision);
+      const intercepted = order === "child-first" ? store : peer;
+      const commit = intercepted.commit.bind(intercepted);
+      intercepted.commit = (mutation) => {
+        intercepted.commit = commit;
+        if (order === "child-first") addChild();
+        else expect(stop().status).toBe("applied");
+        return commit(mutation);
+      };
+      try {
+        expect(order === "child-first" ? stop : addChild).toThrow();
+      } finally {
+        intercepted.commit = commit;
+      }
+      expect(store.isCancelled(base.intent.id)).toBe(order === "stop-first");
+      expect(peer.readTask(child.id)?.spec.parentId).toBe(
+        order === "child-first" ? base.intent.id : relation === "reparent" ? "operations" : undefined,
+      );
+      expect(store.readReceipt(base.intent.id)).toBeNull();
+    });
+  }
+
+  it("does not cascade human parent cancellation into existing child revisions", () => {
+    const { config, intent } = setup();
+    const child = { ...intent, id: "existing-child", parentId: intent.id };
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: child });
+    const parent = config.resourceStore.readTask(intent.id)!;
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: intent.id,
+      expectedGeneration: parent.metadata.generation,
+      expectedResourceVersion: parent.metadata.resourceVersion,
+      reason: "Stop only this parent",
+    });
+    expect(
+      observeAppTaskIntent(config, {
+        appAgent: "app-owner",
+        intent: { ...child, input: { revision: 2 } },
+      }).kind,
+    ).toBe("observed");
+    expect(config.resourceStore.isCancelled(child.id)).toBe(false);
+    const claim = claimObservedAppTask(config, { taskId: child.id, appAgent: "app-owner", handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error("expected existing child to continue");
+    expect(
+      completeAppTask(config, claim, { summary: "Existing work finished", evidence: ["test:verified"] }).status,
+    ).toBe("applied");
+    expect(config.resourceStore.readTrigger(intent.id)).toBeNull();
+    expect(() =>
+      observeAppTaskIntent(config, {
+        appAgent: "app-owner",
+        intent: { ...child, id: "new-child" },
+      }),
+    ).toThrow("cancelled parent");
+  });
+
+  it.each(["converged", "stopped"])("lets the parent decide %s after its child stops", (state) => {
+    const { config, intent, claim } = setup();
+    observeAppTaskIntent(config, {
+      appAgent: "app-owner",
+      intent: {
+        ...intent,
+        id: "parent",
+        outcome: "Assess the optional feature",
+        acceptance: ["Report the feasibility finding"],
+      },
+    });
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
+    stopAppTask(config, claim, decision);
+    const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
+    if (parent.kind !== "claimed") throw new Error("expected parent review");
+    expect(readAppTaskChildContext(config, "parent")).toMatchObject({
+      live: [],
+      completed: [],
+      cancelled: [{ taskId: intent.id, summary: expect.stringContaining("outcome not achieved") }],
+    });
+    expect(() =>
+      deferAppTask(config, parent, { summary: "Wait on terminal child", disposition: "waiting", evidence: [] }),
+    ).toThrow();
+    const result =
+      state === "stopped"
+        ? stopAppTask(config, parent, decision)
+        : completeAppTask(config, parent, {
+            summary: "The assessment is complete; implementation was not feasible",
+            evidence: decision.evidence,
+          });
+    expect(result.status).toBe("applied");
+    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
+    expect(config.resourceStore.isCancelled(intent.id)).toBe(true);
+    expect(isAppTaskConverged(config, "parent")).toBe(state === "converged");
   });
 });
 
@@ -5206,6 +5474,26 @@ describe("App task reconciler state", () => {
       type: "project.comment.created",
       eventId: 811,
     });
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: failed.taskId,
+      expectedGeneration: failed.generation,
+      expectedResourceVersion: receipt.resourceVersion,
+      reason: "Cancel after the accepted retry",
+    });
+    const cancelled = readTaskSnapshot(config);
+    const controlKey = `app-task-retry:sample:${failed.taskId}:${failed.generation}:${failedResourceVersion}`;
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: failed.taskId,
+        expectedGeneration: failed.generation,
+        expectedResourceVersion: failedResourceVersion,
+        controlKey,
+      }),
+    ).toThrow("cancelled task");
+    expect(readTaskSnapshot(config)).toEqual(cancelled);
+    expect(config.resourceStore.readControlReceipt(controlKey)?.result).toEqual(receipt);
   });
 
   it("rejects retry controls for non-attention tasks and attention without a failed attempt", () => {
