@@ -15,6 +15,67 @@ async function until(predicate: () => boolean) {
   }
 }
 
+test("closing the bot aborts its active network poll", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-telegram-close-"));
+  const priorFetch = globalThis.fetch;
+  const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+  const priorChat = process.env.TELEGRAM_CHAT_ID;
+  const arrived = Promise.withResolvers<void>();
+  const aborted = Promise.withResolvers<unknown>();
+  const response = Promise.withResolvers<Response>();
+  let polls = 0;
+  const server = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    idleTimeout: 0,
+    fetch(request) {
+      if (new URL(request.url).pathname.endsWith("/getMe")) {
+        return Response.json({ ok: true, result: { username: "fixture", first_name: "May" } });
+      }
+      polls++;
+      arrived.resolve();
+      return response.promise;
+    },
+  });
+  globalThis.fetch = (async (url, init) => {
+    try {
+      return await priorFetch(new URL(new URL(String(url)).pathname, server.url), init);
+    } catch (error) {
+      aborted.resolve(error);
+      throw error;
+    }
+  }) as typeof fetch;
+  process.env.TELEGRAM_BOT_TOKEN = "fixture-token";
+  process.env.TELEGRAM_CHAT_ID = "123";
+  const bot = attachTelegramBot({
+    bus: new EventBus(),
+    persistDir: root,
+    interfaceAgent: "may",
+    humanTasks: { listApps: () => [], listTasks: () => ({ items: [], total: 0 }), getTask: () => null },
+    publishEvent() {
+      throw new Error("No input should be admitted during shutdown");
+    },
+  });
+  try {
+    await arrived.promise;
+    bot.close();
+    expect(await aborted.promise).toMatchObject({ name: "AbortError" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(polls).toBe(1);
+  } finally {
+    bot.close();
+    response.resolve(Response.json({ ok: true, result: [] }));
+    server.stop(true);
+    globalThis.fetch = priorFetch;
+    if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+    else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+    if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+    else process.env.TELEGRAM_CHAT_ID = priorChat;
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls and survive rejected publication", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-telegram-stop-"));
   const priorFetch = globalThis.fetch;
