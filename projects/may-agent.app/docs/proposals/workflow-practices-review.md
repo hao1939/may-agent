@@ -385,3 +385,17 @@ receiving the new instructions, it again called the HN result a retry at
 6318537. The closed Request remained unchanged, but the wording was wrong.
 Guidance now includes a concise finding-first example. This is not yet a
 proved behavioral fix; do not add a Host lifecycle rule to enforce phrasing.
+
+The agent-read fix is Host commit `b97f063e`, based on freshly fetched
+`origin/main`. Its full CI passed 2,626 tests with three installation-only
+skips. Combined local candidate `6305fcfa` passed 2,641 tests with the same
+three skips and all static checks. After deployment at 10:26 UTC, XHS remained
+readable without another login. The brief startup missing-tab observation
+produced a maintenance no-op, not a new research Task or human request.
+
+Explicit Reddit and arXiv actions 6318571 and 6318576 supplied live queue
+proof: Reddit ran while arXiv was pending. Agent exact reads, agent filtered
+lists and human filtered lists all reported arXiv pending at generation 1,
+with 1 ms sampled control reads. This proves the deployed read boundary for
+that queued cycle, not natural recurrence or its eventual research outcome.
+The candidate is local only; no public branch was pushed or PR merged.
