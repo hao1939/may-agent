@@ -161,6 +161,8 @@ interface ActiveSession {
   sessionId: string;
   agent: AgentRun;
   agentName: string;
+  /** Selected once for all turns, skills and completion of this live session. */
+  readonly definition: SubagentDefinition;
   task: string;
   startedAt: number;
   status: "running" | "paused" | "idle" | "interrupted";
@@ -395,6 +397,23 @@ export class SubagentManager {
       taskBinding?: TaskBinding;
     },
   ): void {
+    // A name can now select another App/global folder. Check durable ownership
+    // before changing the transcript, persistence, or starting an agent run.
+    const definition = this.agents.get(meta.agent)?.definition;
+    if ((meta.agentRelativeDir ?? null) !== (definition?.agentRelativeDir ?? null)) {
+      const unknown = meta.agentRelativeDir === undefined;
+      const reason = unknown
+        ? `Session ${sessionId} has no recorded agent directory; cannot verify the resume owner`
+        : `Session ${sessionId} agent directory changed from ${meta.agentRelativeDir ?? "<programmatic>"} to ${definition?.agentRelativeDir ?? "<programmatic>"}; refusing cross-owner resume`;
+      this.emitSessionResumeFailed(
+        sessionId,
+        meta,
+        reason,
+        unknown ? "agent_identity_unknown" : "agent_identity_changed",
+        false,
+      );
+      throw new Error(reason);
+    }
     const resume = this.buildResumeMessages(sessionId);
     const resumeMessages = resume.messages;
 
@@ -629,6 +648,7 @@ export class SubagentManager {
       sessionId,
       agent,
       agentName: def.name,
+      definition: def,
       task: sessionTask,
       startedAt,
       status: "running",
@@ -674,6 +694,7 @@ export class SubagentManager {
     this._registry.saveSession(sessionId, {
       ...(existingMeta ?? {}),
       agent: def.name,
+      agentRelativeDir: def.agentRelativeDir ?? null,
       task: sessionTask,
       status: "running",
       startedAt,
@@ -782,8 +803,7 @@ export class SubagentManager {
     const parsedSkill = parseExplicitSkill(text);
     const skillName = opts?.skill ?? parsedSkill.skill;
     const turnTask = parsedSkill.skill ? parsedSkill.task : text;
-    const def = this.agents.get(session.agentName)?.definition;
-    const activation = skillName ? invokeCatalogSkill(def?.skillCatalog, skillName, turnTask) : undefined;
+    const activation = skillName ? invokeCatalogSkill(session.definition.skillCatalog, skillName, turnTask) : undefined;
     this.queueTurnTrace(session, opts?.trace);
     if (activation) {
       session.loadedSkillHashes.add(activation.skill.contentHash);
@@ -1972,6 +1992,7 @@ export class SubagentManager {
         data: {
           sessionId,
           agent: agentName,
+          agentRelativeDir: session.definition.agentRelativeDir,
           outcome: status,
           summary: lastText,
           error: errorText,
@@ -2052,23 +2073,21 @@ export class SubagentManager {
 
   private startChatTurn(session: ActiveSession, start: () => Promise<void>, turnTask?: string): void {
     const { sessionId } = session;
-    const def = this.agents.get(session.agentName)?.definition;
-    if (def) {
-      session.agent.state.systemPrompt = prepareAgentExecution({
-        definition: def,
-        projectRoot: this._projectRoot,
+    const def = session.definition;
+    session.agent.state.systemPrompt = prepareAgentExecution({
+      definition: def,
+      projectRoot: this._projectRoot,
+      sessionId,
+      task: turnTask ?? session.task,
+      persistentChat: true,
+      promptTimestamp: this._promptTimestamp,
+      chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(
         sessionId,
-        task: turnTask ?? session.task,
-        persistentChat: true,
-        promptTimestamp: this._promptTimestamp,
-        chatContext: `${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(
-          sessionId,
-          def.name,
-          turnTask ?? session.task,
-        )}`,
-        onNotice: (message) => log("warn", message),
-      }).systemPrompt;
-    }
+        def.name,
+        turnTask ?? session.task,
+      )}`,
+      onNotice: (message) => log("warn", message),
+    }).systemPrompt;
     session.status = "running";
     session.lastError = undefined;
     session.interruptionKind = undefined;
@@ -2192,6 +2211,7 @@ export class SubagentManager {
         data: {
           sessionId,
           agent: agentName,
+          agentRelativeDir: session.definition.agentRelativeDir,
           outcome: status,
           summary: lastText,
           durationMs,
@@ -2407,8 +2427,8 @@ export class SubagentManager {
           if ((event as any).toolName === "read") {
             const args = (event as any).args as { path?: unknown; offset?: unknown; limit?: unknown } | undefined;
             const path = typeof args?.path === "string" ? args.path : "";
-            const def = this.agents.get(agentName)?.definition;
-            if (path && def?.skillCatalog && args?.offset === undefined && args?.limit === undefined) {
+            const def = session.definition;
+            if (path && def.skillCatalog && args?.offset === undefined && args?.limit === undefined) {
               try {
                 const canonicalPath = realpathSync(resolve(def.projectRoot ?? process.cwd(), path));
                 const skill = [...def.skillCatalog.skills.values()].find(

@@ -3,6 +3,7 @@
 // indefinite loops are stopped at their boundaries. No model call is made.
 import assert from "node:assert/strict";
 import { mock, spyOn } from "bun:test";
+import { spawn } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,6 +14,8 @@ import * as daemon from "../../src/app/daemon.js";
 import * as inbox from "../../src/app/app-inbox-runtime.js";
 import * as interfaces from "../../src/app/interface-startup.js";
 import * as background from "../../src/app/composition/background-startup.js";
+import * as taskCapability from "../../src/app/app-task-capability.js";
+import * as taskWorkers from "../../src/app/task-attempt-process.js";
 import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
 import { getAgentMaintenance } from "../../src/app/agent-loader.js";
 import * as agentLoader from "../../src/app/agent-loader.js";
@@ -29,6 +32,8 @@ const actualDaemon = { ...daemon };
 const actualInbox = { ...inbox };
 const actualInterfaces = { ...interfaces };
 const actualBackground = { ...background };
+const actualTaskCapability = { ...taskCapability };
+const actualTaskWorkers = { ...taskWorkers };
 
 const root = mkdtempSync(join(tmpdir(), "may-startup-"));
 const mode = process.argv[2];
@@ -38,6 +43,13 @@ const schedulesEnabled = mode === "headless" || noInterfaces;
 const startupJob = mode === "startup-job";
 const activationFailure = mode === "activation-failure";
 const reportingFailure = mode === "reporting-failure";
+const workerPublication = mode === "worker-publication";
+let publicationPause: {
+  entered: ReturnType<typeof Promise.withResolvers<void>>;
+  release: ReturnType<typeof Promise.withResolvers<void>>;
+  reject: boolean;
+} | undefined;
+let dispatchedSource: taskWorkers.TaskWorkerDefinitionSource | undefined;
 const taskExecution = activationFailure || reportingFailure || noInterfaces;
 let reportingCalls = 0;
 const agentNames = activationFailure ? ["may", "aux"] : ["may"];
@@ -55,6 +67,58 @@ let attemptFinished = Promise.withResolvers<void>();
 Object.defineProperty(process.stdin, "isTTY", { value: tty });
 process.env.MAY_HOST_MAX_CONCURRENT = "2";
 process.env.MAY_DAEMON_QUIET = "1";
+
+if (workerPublication) {
+  mock.module("../../src/app/app-task-capability.js", () => ({
+    ...actualTaskCapability,
+    createAppTaskCapability: (options: Parameters<typeof taskCapability.createAppTaskCapability>[0]) => {
+      const capability = actualTaskCapability.createAppTaskCapability(options);
+      return {
+        ...capability,
+        publishGeneration: async (input: Parameters<typeof capability.publishGeneration>[0]) => {
+          const result = await capability.publishGeneration(input);
+          // Hold the actual Runtime apply callback open after its synchronous
+          // publication, before AppRegistry.current advances. No copied reload logic.
+          const pause = publicationPause;
+          if (pause) {
+            pause.entered.resolve();
+            await pause.release.promise;
+            if (pause.reject) throw new Error("fixture rejects published generation");
+          }
+          return result;
+        },
+      };
+    },
+  }));
+  mock.module("../../src/app/task-attempt-process.js", () => ({
+    ...actualTaskWorkers,
+    createTaskAttemptProcessExecutor: (options: Parameters<typeof taskWorkers.createTaskAttemptProcessExecutor>[0]) =>
+      actualTaskWorkers.createTaskAttemptProcessExecutor({
+        ...options,
+        // Exercise actual dispatch and isolated App discovery. This probe reports
+        // loaded App IDs; it does not claim to execute a domain Task.
+        spawnWorker: (request) => {
+          dispatchedSource = request.definitionSource;
+          return spawn(
+            process.execPath,
+            [
+              "-e",
+              `
+            import { AppRegistry } from ${JSON.stringify(new URL("../../src/app/core/apps/registry.ts", import.meta.url).href)};
+            import { discoverAppDefinitions } from ${JSON.stringify(new URL("../../src/app/adapters/discovery/app-definitions.ts", import.meta.url).href)};
+            const source = ${JSON.stringify(request.definitionSource)};
+            const registry = new AppRegistry(discoverAppDefinitions(source.projectsRoot, ${JSON.stringify(join(root, "projects"))}, {}, source.appDirectories));
+            await registry.reload();
+            process.send({ kind: "result", dependentTaskIds: registry.entries().map(entry => entry.definition.id).sort() });
+            process.disconnect();
+          `,
+            ],
+            { stdio: ["ignore", "ignore", "inherit", "ipc"], serialization: "json" },
+          );
+        },
+      }),
+  }));
+}
 
 const subscribeToBus = HostMaintenance.prototype.subscribeToBus;
 const closeCron = HostMaintenance.prototype.close;
@@ -376,6 +440,61 @@ export async function execute(ctx) {
       reload.mockRestore();
       prepare.mockRestore();
       publication.mockRestore();
+    }
+  }
+  if (workerPublication) {
+    const enabledDir = join(root, "projects/enabled.app");
+    const excludedDir = join(root, "projects/excluded.app");
+    mkdirSync(enabledDir, { recursive: true });
+    mkdirSync(excludedDir, { recursive: true });
+    writeFileSync(
+      join(enabledDir, "app.js"),
+      'export default { id: "enabled", version: 1, agent: "may", inputSchema: { type: "object" } };',
+    );
+    writeFileSync(join(excludedDir, "app.js"), 'throw new Error("excluded App must not import");');
+    writeFileSync(join(excludedDir, ".disabled"), "");
+    writeFileSync(appPath, appSource("worker publication"));
+    const probe = () =>
+      preparedOptions.executeTaskAttempt!({
+        appId: "enabled",
+        taskId: "probe",
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    for (const reject of [false, true]) {
+      if (reject) writeFileSync(join(enabledDir, ".disabled"), "");
+      const previousSource = new DefinitionSourceReleaseStore(root, join(root, "state")).current()!;
+      // A marker-only change can reuse an immutable release. Rollback must
+      // restore the selection even when the source ID itself does not change.
+      const staging = reject
+        ? spyOn(DefinitionSourceReleaseStore.prototype, "stage").mockReturnValue(previousSource)
+        : undefined;
+      const before = registry!.snapshot();
+      publicationPause = { entered: Promise.withResolvers<void>(), release: Promise.withResolvers<void>(), reject };
+      const reload = lifecycle!.handleReload();
+      try {
+        await publicationPause.entered.promise;
+        assert.equal(registry!.snapshot(), before, "dispatch occurs before the public registry advances");
+        // Changing the live marker after preparation cannot change this selection.
+        rmSync(join(excludedDir, ".disabled"));
+        assert.deepEqual(await probe(), reject ? ["fixture"] : ["enabled", "fixture"]);
+        assert.equal(
+          dispatchedSource!.projectsRoot,
+          new DefinitionSourceReleaseStore(root, join(root, "state")).current()!.projectsRoot,
+        );
+      } finally {
+        writeFileSync(join(excludedDir, ".disabled"), "");
+        publicationPause.release.resolve();
+      }
+      const result = await reload;
+      staging?.mockRestore();
+      publicationPause = undefined;
+      assert.equal(result.ok, !reject);
+      if (reject) {
+        assert.match(result.summary, /fixture rejects published generation/);
+        assert.equal(registry!.snapshot(), before);
+        assert.equal(new DefinitionSourceReleaseStore(root, join(root, "state")).current()!.id, previousSource.id);
+      }
+      assert.deepEqual(await probe(), ["enabled", "fixture"], "workers use the complete accepted or restored pair");
     }
   }
   if (taskExecution) {

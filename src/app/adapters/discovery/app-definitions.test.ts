@@ -24,6 +24,27 @@ function fixture(): string {
 }
 
 describe("conventional App file discovery", () => {
+  it("skips disabled Apps before import and enables them after marker removal on reload", async () => {
+    const sourceRoot = fixture();
+    const canonicalRoot = fixture();
+    const appPath = join(sourceRoot, "evaluation.app", "app.js");
+    const marker = join(canonicalRoot, "evaluation.app", ".disabled");
+    writeFileSync(appPath, 'throw new Error("disabled App must not import");\n');
+    writeFileSync(marker, "");
+    const registry = new AppRegistry(discoverAppDefinitions(sourceRoot, canonicalRoot));
+    expect(await registry.reload()).toEqual([]);
+    rmSync(marker);
+    await expect(registry.reload()).rejects.toThrow("disabled App must not import");
+    expect(registry.entries()).toEqual([]);
+    writeFileSync(
+      appPath,
+      'export default { id: "evaluation", version: 1, agent: "evaluator", inputSchema: { type: "object" } };\n',
+    );
+    expect(await registry.reload()).toHaveLength(1);
+    writeFileSync(marker, "");
+    expect(await registry.reload()).toEqual([]);
+  });
+
   it("loads one manifest per App directory, preferring app.ts and falling back to app.js", async () => {
     const root = fixture();
     const modulePath = join(root, "evaluation.app", "app.ts");
@@ -53,7 +74,8 @@ describe("conventional App file discovery", () => {
       join(root, "evaluation.app", "app.js"),
       join(root, "empty.app", "project.ts"),
       join(root, "not-an-app", "app.ts"),
-    ]) writeFileSync(path, 'throw new Error("must not import this file");\n');
+    ])
+      writeFileSync(path, 'throw new Error("must not import this file");\n');
 
     expect(listAppDefinitionFiles(root)).toEqual([modulePath, fallbackPath]);
     const loaded = await loadAppDefinitions(root);

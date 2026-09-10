@@ -24,6 +24,8 @@ export interface SubagentDefinition {
   // Caller-managed paths (persisted for resume)
   /** Agent directory containing AGENTS.md, heartbeat.md, knowledge/, workspace/, etc. */
   agentDir?: string;
+  /** Canonical installation-relative owner for recovery and completion, not the immutable source directory. */
+  agentRelativeDir?: string;
   workspace?: string;
   /** Directory containing agent knowledge files (INDEX.md, etc.). */
   knowledgeDir?: string;
@@ -62,7 +64,7 @@ export interface SubagentDefinition {
    */
   contextFiles?: string[];
 
-  /** Validated, precedence-resolved skill snapshot used by new turns. */
+  /** Validated skill snapshot retained with this definition by each live session. */
   skillCatalog?: SkillCatalog;
 
 }

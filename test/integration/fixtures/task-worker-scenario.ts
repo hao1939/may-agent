@@ -9,6 +9,10 @@ import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-releas
 import { appTaskContext, cancelAppTask } from "../../../src/app/app-task-reconciler.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { EventBus } from "../../../src/app/core/events/bus.js";
+import { AppRegistry } from "../../../src/app/core/apps/registry.js";
+import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
+import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/app-task-runtime.js";
+import { HostCapacity } from "../../../src/app/host-capacity.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
@@ -133,6 +137,7 @@ function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output
         const { ${worker} } = await import(${JSON.stringify(new URL("../../../src/app/task-attempt-process.ts", import.meta.url).href)});
         await ${worker}({
           request: ${JSON.stringify(f.request)},
+          definitionSource: ${JSON.stringify(f.request.definitionSource)},
           roots: ${JSON.stringify({ projectRoot: f.root, projectsRoot: join(f.root, "projects"), sharedRoot: join(f.root, "shared"), persistDir: f.persistDir })},
           models: { test: { id: "test", name: "test", provider: "test", api: "openai-completions", apiKey: "fixture-only", baseUrl: "http://127.0.0.1:1", contextWindow: 8192, maxTokens: 1024, input: ["text"], cost: {} } }
         });
@@ -351,6 +356,56 @@ export async function execute(ctx) {
     releases.activate(releases.stage());
     await run(f);
     assert.equal(f.store.readReceipt("work/one")?.summary, "original workflow: Use fixture evidence only.");
+  },
+
+  async rejectedDisable() {
+    const f = fixture("specialist");
+    // Disabled source is intentionally broken. A worker must not import it,
+    // even if its live marker is removed after the generation was accepted.
+    const excluded = join(f.root, "projects", "excluded.app");
+    mkdirSync(join(excluded, "agents", "broken"), { recursive: true });
+    writeFileSync(join(excluded, "app.ts"), 'throw new Error("excluded App imported");');
+    writeFileSync(join(excluded, "agents", "broken", "agent.json"), "invalid JSON");
+    writeFileSync(join(excluded, ".disabled"), "");
+    const release = new DefinitionSourceReleaseStore(f.root, f.persistDir).ensureCurrent();
+    const registry = new AppRegistry(discoverAppDefinitions(release.projectsRoot, join(f.root, "projects")));
+    await registry.reload();
+    const accepted = registry.snapshot();
+    let releaseStart!: () => void;
+    const options = {
+      projectRoot: f.root,
+      projectsRoot: release.projectsRoot,
+      persistDir: f.persistDir,
+      agentsRoot: release.agentsRoot,
+      sharedRoot: release.sharedRoot,
+      bus: f.bus,
+      hostCapacity: new HostCapacity(2),
+      // Keep parent controllers gated; the test dispatches a real child itself.
+      startAfter: new Promise<void>((resolveStart) => {
+        releaseStart = resolveStart;
+      }),
+    };
+    try {
+      await installAppTaskRuntimes({ ...options, appRegistrySnapshot: accepted }, { deferRecovery: true });
+      writeFileSync(join(f.appDir, ".disabled"), "");
+      await assert.rejects(
+        registry.reload(async (snapshot) => {
+          await installAppTaskRuntimes({ ...options, appRegistrySnapshot: snapshot }, { deferRecovery: true });
+        }),
+        /Cannot remove App sample while it has unfinished Tasks/,
+      );
+      assert.equal(registry.snapshot(), accepted);
+      f.request.definitionSource = { ...release, appDirectories: ["sample.app"] };
+      rmSync(join(excluded, ".disabled"));
+      // Recovery and the next attempt both keep the accepted App selection.
+      await run(f, true);
+      await run(f);
+      assert.equal(f.store.readReceipt("work/one")?.summary, "completed by specialist");
+    } finally {
+      const closed = closeInstalledAppTaskRuntimes(f.bus);
+      releaseStart();
+      await closed;
+    }
   },
 
   async inheritedAgent() {

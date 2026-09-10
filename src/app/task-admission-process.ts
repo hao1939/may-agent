@@ -7,6 +7,7 @@ import { DefinitionSourceReleaseStore } from "./app-source-release.js";
 import { admitStandaloneCanonicalAppTaskEvent, standaloneAppTaskAdmissionDescriptors } from "./app-task-runtime.js";
 import { EVENT_ROW_ID, type AgentEvent } from "./core/events/bus.js";
 import { isBundled } from "./bundle-mode.js";
+import type { TaskWorkerDefinitionSource } from "./task-attempt-process.js";
 
 export type TaskAdmissionProcessResult = {
   taskIds: string[];
@@ -29,6 +30,7 @@ export function createTaskAdmissionProcess(
   input: {
     onExit?(error: Error): void;
     timeoutMs?: number;
+    definitionSource?: TaskWorkerDefinitionSource;
   } = {},
 ): {
   dispatch(command: AppEventAdmissionCommand, event: AgentEvent): Promise<TaskAdmissionProcessResult>;
@@ -37,12 +39,20 @@ export function createTaskAdmissionProcess(
   const timeoutMs = input.timeoutMs ?? 30_000;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error("Invalid Task admission worker timeout");
   const target = invocation();
-  const child = spawn(target.command, [...target.args, "--task-admission-worker"], {
-    cwd: process.cwd(),
-    env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
-    stdio: ["ignore", "inherit", "inherit", "ipc"],
-    serialization: "json",
-  });
+  const child = spawn(
+    target.command,
+    [
+      ...target.args,
+      "--task-admission-worker",
+      ...(input.definitionSource ? ["--task-worker-source", JSON.stringify(input.definitionSource)] : []),
+    ],
+    {
+      cwd: process.cwd(),
+      env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+      stdio: ["ignore", "inherit", "inherit", "ipc"],
+      serialization: "json",
+    },
+  );
   let nextId = 1;
   let closed = false;
   let ready = false;
@@ -143,14 +153,17 @@ export async function runTaskAdmissionWorker(input: {
   projectRoot: string;
   projectsRoot: string;
   persistDir: string;
+  definitionSource?: TaskWorkerDefinitionSource;
 }): Promise<void> {
   if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") throw new Error("Task admission worker mode is private");
   const parentEnded = !process.connected
     ? Promise.resolve()
     : new Promise<void>((resolveDone) => process.once("disconnect", resolveDone));
   const releases = new DefinitionSourceReleaseStore(input.projectRoot, input.persistDir);
-  const source = releases.ensureCurrent();
-  const registry = new AppRegistry(discoverAppDefinitions(source.projectsRoot, input.projectsRoot));
+  const source = input.definitionSource ?? releases.ensureCurrent();
+  const registry = new AppRegistry(
+    discoverAppDefinitions(source.projectsRoot, input.projectsRoot, {}, input.definitionSource?.appDirectories),
+  );
   await registry.reload();
   const descriptors = standaloneAppTaskAdmissionDescriptors({
     persistDir: input.persistDir,

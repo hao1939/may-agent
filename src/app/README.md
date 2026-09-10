@@ -283,6 +283,13 @@ active validated agent catalog, including non-default agents named or inherited
 by retained Tasks. This uses ordinary generation loading rather than a second
 agent-selection index; it constructs definitions but never executes agents.
 
+Execution scope is not read scope. A one-App attempt can read one exact peer
+Task with `tasks.get` and `target.appId`, using the accepted App registry and
+existing resource store. This does not load the peer's agents, start its
+controllers, bootstrap state, or enable a disabled App. Collection reads remain
+local; a foreign target on `list` or `outcomes` is rejected rather than silently
+returning the current App's work.
+
 `app-task-runtime.ts` supplies the selected bindings, fences checks against the installed
 definition, and queues recovered IDs through the existing controller. Neither
 an old reload nor a slow check may release a newer Task attempt. Missing
