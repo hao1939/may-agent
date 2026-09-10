@@ -1,4 +1,4 @@
-import type { AppRequest, AppTaskAttachment } from "@may-agent/sdk";
+import type { AppInputContext, AppTaskAttachment } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { getAppInboxItem, waitAppInboxClaim, wakeAppInboxItem, type AppInboxClaim } from "../../app-inbox-store.js";
@@ -18,7 +18,7 @@ export type TaskRequestInput = {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppRequest>;
+  request: Readonly<AppInputContext>;
   authorize?: () => void;
   topicId?: string;
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;

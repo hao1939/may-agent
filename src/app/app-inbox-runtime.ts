@@ -8,7 +8,7 @@ import {
   type AppEvent,
   type AppInput,
   type AppInputSource,
-  type AppRequest,
+  type AppInputContext,
   type EventSelector,
   type ObserverContext,
   type TaskIntent,
@@ -493,7 +493,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       if (!attachTask) throw new Error("App follow-up Task admission is not configured");
       const source = { kind: "app" as const, id: item.appId };
-      const request: AppRequest = {
+      const request: AppInputContext = {
         id: requestId,
         source,
         ...(item.source.kind === "human" ? { humanRequested: true } : {}),

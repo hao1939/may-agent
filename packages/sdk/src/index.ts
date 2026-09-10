@@ -39,6 +39,7 @@ export type {
   AppInputSource,
   AppObserver,
   AppRead,
+  AppInputContext,
   AppRequest,
   AppResult,
   AppSchedule,

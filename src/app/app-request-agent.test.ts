@@ -3,7 +3,7 @@ import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, appRequestAgentResultSchema, defineApp, type AppRequest } from "@may-agent/sdk";
+import { Type, appRequestAgentResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import { prepareAgentExecution } from "../lib/agent-execution.js";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -40,7 +40,7 @@ const owner = defineApp({
   task: (request) => ({ kind: "existing", taskId: request.id }),
   tasks: {},
 });
-const request: AppRequest = {
+const request: AppInputContext = {
   id: "turn-1",
   source: { kind: "human", id: "human-1" },
   input: { kind: "message", data: { text: "Review the options" } },

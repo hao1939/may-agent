@@ -19,7 +19,7 @@ import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type AppTaskAttachment,
   type Condition as AppTaskConditionSpec,
   type TaskAppDependency,
@@ -2890,7 +2890,7 @@ export function attachLoadedAppTask(input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppRequest>;
+  request: Readonly<AppInputContext>;
   /** Inbox calls attach atomically; direct Task admission has no request claim. */
   claim?: AppInboxClaim;
   now?: number;

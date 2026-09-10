@@ -7,7 +7,7 @@ import {
   defineApp,
   type AppConversationResource,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type AppTaskAttachment,
 } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
@@ -451,7 +451,7 @@ describe("App inbox host", () => {
     });
     const worker = app("worker");
     const attachments: Array<{ appId: string; attachment: AppTaskAttachment }> = [];
-    const attachedRequests: Readonly<AppRequest>[] = [];
+    const attachedRequests: Readonly<AppInputContext>[] = [];
     const delegated: string[] = [];
     let workerDone = false;
     let mayCalls = 0;
@@ -942,7 +942,7 @@ describe("App inbox host", () => {
   });
 
   it("attaches typed follow-up input to one exact existing Task", async () => {
-    const attachments: Array<{ attachment: AppTaskAttachment; request: Readonly<AppRequest> }> = [];
+    const attachments: Array<{ attachment: AppTaskAttachment; request: Readonly<AppInputContext> }> = [];
     const host = new AppInboxHost({
       db,
       apps: [app()],
@@ -1398,7 +1398,7 @@ describe("App inbox host", () => {
   });
 
   it("projects one exact focused Task observation without making focus an action", async () => {
-    let request: AppRequest | undefined;
+    let request: AppInputContext | undefined;
     const host = new AppInboxHost({
       db,
       apps: [
@@ -1460,7 +1460,7 @@ describe("App inbox host", () => {
   });
 
   it("resolves exact Tasks from recent command views into bounded canonical request context", async () => {
-    let request: AppRequest | undefined;
+    let request: AppInputContext | undefined;
     const may = defineApp({
       id: "may",
       version: 1,

@@ -9,7 +9,7 @@ import {
   defineApp,
   taskAgentResultSchema,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type TaskExecutor,
 } from "@may-agent/sdk";
 import { DbWriter } from "../lib/db-writer.js";
@@ -3136,7 +3136,7 @@ describe("canonical App task runtime", () => {
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     });
-    const request: Readonly<AppRequest> = {
+    const request: Readonly<AppInputContext> = {
       id: "request-1",
       source: { kind: "human", id: "operator" },
       input: { kind: "sample", data: {} },
@@ -5216,7 +5216,7 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const request: Readonly<AppRequest> = {
+    const request: Readonly<AppInputContext> = {
       id: "request-paused",
       source: { kind: "human", id: "operator" },
       input: { kind: "sample", data: {} },

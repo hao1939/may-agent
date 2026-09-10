@@ -178,7 +178,7 @@ interface ActiveSession {
   timeoutTimer?: ReturnType<typeof setTimeout>;
   admittedTimeoutMs?: number;
   toolCalls: number;
-  turnCount: number;
+  modelStepCount: number;
   boundedFinishRequested?: boolean;
   requestId?: string;
   conversationId?: string;
@@ -661,7 +661,7 @@ export class SubagentManager {
       source: opts?.source,
       admittedTimeoutMs: opts?.timeoutMs ?? def.timeoutMs,
       toolCalls: 0,
-      turnCount: 0,
+      modelStepCount: 0,
       requestId: opts?.requestId,
       conversationId: opts?.conversationId,
       channelMessageId: opts?.channelMessageId,
@@ -856,7 +856,7 @@ export class SubagentManager {
         stepLabel: s.stepLabel,
         kind: s.kind,
         autoClose: s.autoClose,
-        turnCount: s.turnCount,
+        turnCount: s.modelStepCount,
         error: s.lastError,
       }));
   }
@@ -2002,7 +2002,7 @@ export class SubagentManager {
           task,
           finishParams: finishParams as any,
           opCount: session.toolCalls,
-          turnCount: session.turnCount,
+          turnCount: session.modelStepCount,
           parentSessionId: session.parentSessionId,
           workflowRunId: session.workflowRunId,
           projectId: session.projectId,
@@ -2221,7 +2221,7 @@ export class SubagentManager {
           interruptionKind: session.interruptionKind,
           finishParams: finishParams as any,
           opCount: session.toolCalls,
-          turnCount: session.turnCount,
+          turnCount: session.modelStepCount,
           parentSessionId: session.parentSessionId,
           workflowRunId: session.workflowRunId,
           projectId: session.projectId,
@@ -2267,7 +2267,7 @@ export class SubagentManager {
         task,
         finishParams: finishParams as any,
         opCount: session.toolCalls,
-        turnCount: session.turnCount,
+        turnCount: session.modelStepCount,
         retry: retriedEmptyTurn ? { reason: retryReason, attempts: 1, recovered: !retryableChatFailure } : undefined,
         parentSessionId: session.parentSessionId,
         workflowRunId: session.workflowRunId,
@@ -2393,7 +2393,7 @@ export class SubagentManager {
     agent.subscribe((event) => {
       switch (event.type) {
         case "turn_start":
-          session.turnCount++;
+          session.modelStepCount++;
           persistProgress();
           break;
         case "tool_execution_start":

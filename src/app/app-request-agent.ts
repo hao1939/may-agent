@@ -2,7 +2,7 @@ import {
   Type,
   appRequestAgentResultSchema,
   type AppDefinition,
-  type AppRequest,
+  type AppInputContext,
   type AppRequestDecision,
 } from "@may-agent/sdk";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -19,7 +19,7 @@ const directFollowUpResultSchema = Type.Omit(appRequestAgentResultSchema, ["depe
   additionalProperties: false,
 });
 
-function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): AgentTool | null {
+function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext>): AgentTool | null {
   const conversation = request.conversation;
   if (!conversation) return null;
   const result = (value: unknown): AgentToolResult<unknown> => ({
@@ -92,7 +92,7 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
 
 function requestPrompt(
   app: Readonly<AppDefinition>,
-  request: Readonly<AppRequest>,
+  request: Readonly<AppInputContext>,
   registry: AppRegistry,
   usesDirectFollowUp: boolean,
 ): string {

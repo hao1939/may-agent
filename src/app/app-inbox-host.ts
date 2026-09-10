@@ -8,7 +8,7 @@ import {
   type AppEvent,
   type AppInput,
   type AppInputSource,
-  type AppRequest,
+  type AppInputContext,
   type AppRequestDecision,
   type AppRequestDependencyObservation,
   type AppRequestFollowUp,
@@ -74,7 +74,7 @@ export type AppTaskAttacher = (input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppRequest>;
+  request: Readonly<AppInputContext>;
   /** Inbox attachment commits its wait and Topic too; direct follow-up admission has no claim. */
   claim?: AppInboxClaim;
   now?: number;
@@ -88,7 +88,7 @@ export type AppTaskAttacher = (input: {
 
 export type AppRequestResolver = (input: {
   app: Readonly<AppDefinition>;
-  request: Readonly<AppRequest>;
+  request: Readonly<AppInputContext>;
   execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void };
 }) => Promise<AppRequestDecision>;
 
@@ -251,7 +251,7 @@ function referencedTaskIdentities(
   return result;
 }
 
-function requestTaskIdentityKeys(request: Readonly<AppRequest>): Set<string> {
+function requestTaskIdentityKeys(request: Readonly<AppInputContext>): Set<string> {
   const identities = new Set<string>();
   if (request.focusedTask) {
     identities.add(`${request.focusedTask.appId}\0${request.focusedTask.task.id}`);
@@ -275,7 +275,7 @@ function requestTaskIdentityKeys(request: Readonly<AppRequest>): Set<string> {
   return identities;
 }
 
-function openRequestFingerprint(request: Readonly<AppRequest>, topicId: string): string {
+function openRequestFingerprint(request: Readonly<AppInputContext>, topicId: string): string {
   return JSON.stringify(
     (request.openRequests ?? [])
       .filter((open) => open.topicId === topicId)
@@ -916,7 +916,7 @@ export class AppInboxHost {
   async #handleRequest(
     app: RegisteredApp,
     claim: AppInboxClaim,
-    request: Readonly<AppRequest>,
+    request: Readonly<AppInputContext>,
   ): Promise<string | undefined> {
     if (
       app.requests &&
@@ -949,9 +949,9 @@ export class AppInboxHost {
     return app;
   }
 
-  async #authorRequest(item: AppInboxItem): Promise<AppRequest> {
+  async #authorRequest(item: AppInboxItem): Promise<AppInputContext> {
     const parent = item.parentId ? getAppInboxItem(this.#db, item.parentId) : null;
-    const request: AppRequest = {
+    const request: AppInputContext = {
       id: item.id,
       source: item.source,
       ...(item.source.kind === "human" || parent?.source.kind === "human" ? { humanRequested: true } : {}),
@@ -1238,7 +1238,7 @@ export class AppInboxHost {
   async #resolveDirectRequest(
     app: RegisteredApp,
     claim: AppInboxClaim,
-    request: Readonly<AppRequest>,
+    request: Readonly<AppInputContext>,
     reconsiderations = 0,
   ): Promise<string | undefined> {
     if (!this.#resolveRequest) throw new Error("Direct App request resolution is not configured");
@@ -1357,7 +1357,7 @@ export class AppInboxHost {
           const prior = fresh.referencedTasks?.find(
             (candidate) => candidate.appId === target.id && candidate.task.id === taskId,
           );
-          const reconsidered: AppRequest = {
+          const reconsidered: AppInputContext = {
             ...fresh,
             referencedTasks: [
               { appId: target.id, ...(prior?.ref ? { ref: prior.ref } : {}), task: observed },
@@ -1536,7 +1536,7 @@ export class AppInboxHost {
   #applyTopicDecision(
     app: RegisteredApp,
     claim: AppInboxClaim,
-    request: Readonly<AppRequest>,
+    request: Readonly<AppInputContext>,
     decision: AppRequestDecision,
   ): string | undefined {
     return withTransaction(this.#db, () => {
@@ -1581,7 +1581,7 @@ export class AppInboxHost {
   async #attachRequestTask(
     app: RegisteredApp,
     claim: AppInboxClaim,
-    request: Readonly<AppRequest>,
+    request: Readonly<AppInputContext>,
   ): Promise<string | undefined> {
     if (!app.tasks) throw new Error(`App ${app.id} does not declare Task reconciliation`);
     if (!app.task) throw new Error(`App ${app.id} does not resolve admitted input to a Task`);
