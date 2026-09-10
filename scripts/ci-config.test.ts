@@ -41,13 +41,14 @@ describe("portable CI contract", () => {
     expect(read(".github/workflows/ci.yml")).toContain("bun-version-file: .bun-version");
 
     const packageJson = JSON.parse(read("package.json"));
-    const nodeMajor = packageJson.engines.node.match(/^>=(\d+)\./)?.[1];
+    const nodeMajor = packageJson.engines.node.trim().match(/^>=\s*(\d+)(?:\.\d+){0,2}$/)?.[1];
     expect(nodeMajor).toBeDefined();
-    expect(packageJson.devDependencies["@types/node"]).toStartWith(`^${nodeMajor}.`);
+    // Accept exact, caret, or tilde pins, but not a range spanning Node majors.
+    expect(packageJson.devDependencies["@types/node"].trim()).toMatch(new RegExp(`^[~^]?${nodeMajor}\\.\\d+\\.\\d+$`));
     expect(read("container/Dockerfile")).toContain(`ARG NODE_IMAGE=node:${nodeMajor}-`);
     const ci = Bun.YAML.parse(read(".github/workflows/ci.yml")) as any;
     const setupNode = ci.jobs.quality.steps.find((step: any) => step.uses?.startsWith("actions/setup-node@"));
-    expect(setupNode?.with?.["node-version"]).toBe(nodeMajor);
+    expect(String(setupNode?.with?.["node-version"])).toBe(nodeMajor);
   });
 
   it("includes script regressions but keeps installation checks explicit", () => {
