@@ -108,6 +108,7 @@ export type SessionEvent =
       agent: string;
       toolCalls: number;
       durationMs: number;
+      /** Compatibility wire name: model steps started, not human Conversation Turns. */
       turnCount?: number;
       errorCount?: number;
     }
@@ -150,6 +151,7 @@ export type SessionEvent =
         duration?: string;
         error?: string;
         opCount?: number;
+        /** Compatibility wire name: model steps started, not human Conversation Turns. */
         turnCount?: number;
         /** Structured finish() data — context_updates, completed_items, new_items, etc. */
         finishParams?: Record<string, unknown>;
@@ -179,6 +181,7 @@ export type SessionEvent =
         error?: string;
         task?: string;
         opCount?: number;
+        /** Compatibility wire name: model steps started, not human Conversation Turns. */
         turnCount?: number;
         retry?: { reason?: string; attempts: number; recovered: boolean };
         finishParams?: Record<string, unknown>;
