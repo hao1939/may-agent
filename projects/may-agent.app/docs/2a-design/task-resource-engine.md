@@ -52,6 +52,12 @@ Task admission must preserve this distinction. A new ask waits for its new
 cycle, while replaying the same admission must not run another cycle. A
 completed `achieve` Task or immutable receipt is not reopened by this rule.
 
+For a conversational handoff, the App names the accepted ask in
+`followUp.requestId`. Omit `requestUpdates[].taskRefs` for that handoff: the
+Host adds the actual Task link atomically during admission. Explicit Request
+link additions refer only to Tasks already linked to the Conversation, not
+merely focused or proposed work. Omitting links preserves earlier links.
+
 ## Mental model
 
 ```text
