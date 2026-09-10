@@ -25,8 +25,9 @@ Before dispatching ANY recurring or previously-attempted task:
    - Owner review: Does a durable delivery receipt show the same material
      finding was already delivered, even under a different stable request ID?
      Compare the desired outcome, evidence, and owner obligation—not only the
-     incoming identity. Unless changed evidence requires updating the existing
-     owner work, treat prior material delivery as completion.
+     incoming identity. A matching delivery receipt completes the delivery
+     obligation only; remediation remains open until its outcome is verified.
+     Reuse existing owner work unless changed evidence requires an update.
    - One-off task: Does the deliverable file exist?
    → If YES: Skip dispatch. Log "already complete."
 

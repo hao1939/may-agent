@@ -1,534 +1,202 @@
 # Native Coding Workers
 
-**Design status:** Accepted.
-**Implementation status:** Implemented as a direct Task executor adapter and a
-compatibility execution tool. Persistent worker records, classified failures,
-expected-output validation, resumable Codex goals, and the native process
-runner are present. Task cancellation now interrupts the exact managed session,
-workflow, Codex turn, or Codex/Claude process tree through the shared attempt
-signal. Runtime resolves one executor-neutral `TaskAttempt`; Codex's canonical
-packet is only its JSON transport projection of that Runtime-owned boundary.
+**Design status:** One Task owns each durable outcome; native workers supply
+bounded execution or evidence.
+**Implementation status:** The bounded `run_cli_agent` replacement is merged
+in [Host PR #56](https://github.com/hao1939/may-agent/pull/56). Apply this
+companion revision with that Host revision; neither change is deployed by
+editing or merging source. The existing `codex-goal` Task executor is unchanged.
+The Host evidence projection is merged in
+[PR #57](https://github.com/hao1939/may-agent/pull/57). Its Gym correction remains
+a source companion; integrate the updated Host/SDK before enabling that Gym revision.
 
-Tasks that select `codex-goal` use the persistent Codex goal executor described
-here. Codex keeps working toward the Task goal, receives live Task events, and
-resumes the same thread after process failure. The older `codex` executor
-remains a one-shot compatibility adapter. The earlier
-[executor proposal](../archive/implementation/codex-goal-executor.md) records evaluation
-history but does not override this accepted design.
+## The simple model
 
-## Primary Task executor path
+There are two uses, not two work queues:
 
-```text
-Task runtime -> fenced TaskAttempt -> selected native adapter
-             <- proposed TaskReconcileResult and attempt evidence
-```
+| Need | Mechanism |
+| --- | --- |
+| A second opinion, focused investigation, or patch during this attempt | Await `run_cli_agent`, then review its returned evidence. |
+| Work that must continue across attempts or restarts | Use an ordinary App Task; it may select the `codex-goal` executor. |
 
-`codex-goal` runs the persistent goal/thread adapter; `codex` and `claude` use
-one-shot CLI process adapters. They share Task identity, cancellation and result
-admission. The later `run_cli_agent` sections describe the compatibility tool
-and CLI process records, not a requirement to route `codex-goal` through that tool.
-The [Task contract](task-resource-engine.md#one-attempt-interface) owns the
-executor-neutral interface.
-
-## Accepted Codex Goal Boundaries
-
-The correction boundary is the current fenced Task attempt: malformed output or
-a result-admission rejection is sent back to the same Codex thread, and Codex
-continues on its next automatic turn without ending that attempt. A native
-process failure ends the attempt; ordinary Runtime recovery retries the same
-Task and resumes its persisted thread. These two boundaries preserve one Task
-identity while avoiding a second correction lifecycle.
-
-Usage or budget exhaustion is an execution failure, not a Task wait. The
-executor throws the classified failure, Runtime releases and requeues the same
-Task under bounded retry policy, and a later attempt resumes the persisted
-thread. The executor must not return a `time.after` Condition, use
-`reviewAfterMs` as evidence, or claim that elapsed time proves capacity is
-available. If a future provider exposes a durable quota-reset observation, a
-separate accepted design may define an exact provider-backed Condition; until
-then no usage-limit Condition is valid.
-
-Direct execution sessions can delegate bounded coding work to native coding
-agents such as Codex CLI and Claude Code. These tools are not terminal tabs,
-project owners, App requests, or tasks. They are worker runtimes behind the
-event system.
-
-A Task may select `executor: "codex-goal"`, `executor: "codex"`, or
-`executor: "claude"`; Runtime then
-awaits the native result inside that exact fenced attempt and admits it through
-the ordinary `TaskReconcileResult` boundary. An owner may still call
-`run_cli_agent` for a bounded second opinion, but that compatibility tool
-returns an accepted worker record and the caller must await/review its terminal
-evidence before using it. Work that must outlive the caller belongs to a Task
-or cross-App dependency, never a detached CLI process.
-
-Codex and Claude are default entries behind the same named executor boundary
-used by Host extensions. Replacing one adapter does not change Task intent,
-events, result admission, or recovery.
-
-## Compatibility tool flow
+An App owns the outcome and acceptance. The Host owns execution, limits,
+cancellation, and recovery. Native sessions and artifacts are evidence, not
+another owner or durable promise.
 
 ```text
-an execution session needs bounded native-worker evidence
-        |
-        v
-the calling agent decides whether delegation is useful
-        |
-        v
-tool call: run_cli_agent(...)
-  writes prompt.md and task metadata
-  emits cli.task.requested
-        |
-        v
-cli-task-runner
-  owns process lifecycle and native session continuity
-        |
-        v
-Codex CLI or Claude Code
-  performs one bounded task
-        |
-        v
-cli.task.completed / cli.task.failed / cli.task.orphaned
-  returns evidence to the caller for judgment
+App Task -> bounded caller attempt -> await run_cli_agent
+                                   -> native CLI -> terminal result + artifacts
+                                   -> caller judges evidence
+         <- normal fenced Task result
 ```
 
-For a direct Task executor, the Task Runtime validates and fences the returned
-JSON; for `run_cli_agent`, the live caller reviews it. In both cases the worker
-only reports what it did. Its record and native session never become durable
-unfinished work.
+A direct conversational session can also make a bounded call. If the work
+needs durable follow-through, admit it to the responsible App's Task first.
+A worker is not permission to act beyond the caller's authorized scope.
 
-The native worker result is never accepted merely because the process exited
-successfully. It must satisfy the declared JSON shape and then pass normal Task
-result validation and acceptance, or be reviewed by the bounded compatibility
-caller.
+## Bounded tool contract
 
-When the purpose is a second or third opinion, independence matters:
+`run_cli_agent` runs Codex CLI or Claude Code without an interactive terminal.
+The tool waits for the native process and process-group cleanup. It returns
+`completed` or `failed`, never `accepted`. There is no worker queue,
+`request.json`, `task.json`, auto-resume scheduler, completion steering, or
+CLI-terminal Condition to wait on.
 
-- Follow a tool named by Hao.
-- Otherwise select an available capable worker without inventing claims about
-  vendor strengths.
-- Start a fresh native context for an independent opinion. Resume only to
-  continue the same worker's unfinished line of work.
-- Ask one neutral question and attach only the trusted evidence needed to
-  answer it. Do not give the next worker another worker's conclusion.
-- Resolve disagreement with primary evidence. A majority vote is not proof.
-- Ask for a third opinion only when the decision is material and the evidence
-  still leaves meaningful uncertainty.
-- The accountable App owns the final decision, action, and follow-through.
+Inputs describe the tool, prompt, optional mode (`investigate`, `review`,
+`patch`), working directory, files, deadline, prepared worktree, optional
+expected JSON fields, and an explicit native session ID when continuing work.
 
-The split is intentional:
+- The default deadline is ten minutes. Choose a smaller packet when that is
+  too long for the caller's remaining budget. Caller cancellation wins over
+  a nominally successful native exit.
+- Success requires zero exit, a successful native terminal protocol, usable
+  output, and the requested JSON-object/own-field contract. This proves a
+  usable worker result, not that the App's outcome is achieved.
+- `worktreePolicy: "require"` rejects patch mode without a supplied worktree.
+  The caller prepares and verifies the worktree; the tool does not create,
+  merge, or clean branches.
+- Working directories stay inside the project root; worktrees may be under
+  its parent to allow siblings. Relative files resolve against the worktree
+  or working directory. Explicit caller-agent context may also be attached.
+  Real-path checks reject symlink escapes. These are input-scope checks, not
+  an OS security sandbox or proof of Git worktree registration.
+- Modes express intent, not permissions. The existing trusted-container
+  commands use full native permissions. A requested narrower sandbox is
+  normalized and reported through `effectiveSandbox` and
+  `sandboxFallbackReason`; do not claim read-only isolation.
 
-- The tool call records the caller's decision to start a worker;
-  `cli.task.requested` is the persistent process-lifecycle opener in the
-  existing trace.
-- The event is the process handoff, not an App/task ownership transfer.
-- The runner is the runtime owner of the external process.
-- The native CLI process is replaceable implementation detail.
-- The owner-facing completion is compact; full native output stays in
-  artifacts.
+The result includes a compact summary, failure category when relevant,
+artifact paths, exit code when available, and `nativeSessionId` when observed.
+`taskId` is retained only as the historical CLI correlation key. It is **not**
+an App Task ID or an execution-resource ID.
 
-Event publication does not block inside the Codex or Claude process. The
-asynchronous runner owns it, while the bounded Task/caller awaits the terminal
-event when the result is required for its own decision.
+Failure categories are `timeout`, `cancelled`, `permission`, `tool`,
+`no_output`, `output_schema`, and `process`. Diagnostics help choose the next
+step; they do not grant permission to retry indefinitely. Inspect the failure
+and change the failed assumption before another call.
 
-Accepted is not completed. Before a caller uses a result, it waits for
-`cli.task.completed`, `cli.task.failed`, or `cli.task.orphaned`, then inspects
-`result.md`, `result.json`, and `events.jsonl`. A retry must name the observed
-failure category and change the failed assumption, such as timeout, context,
-permission, output contract, or hypothesis. Repeating the same request is not
-recovery.
+## Evidence and continuity
 
-## Why This Exists
-
-External coding agents are useful for a second opinion, focused review, or
-isolated patch attempt within a bounded execution. They are bad as hidden work
-queues because worker records do not own eventual completion.
-
-The correct boundary is an adapter:
-
-- The caller owns the bounded intent and review; the App owns project state.
-- The CLI worker owns one native coding-agent process.
-- The adapter translates May events into native CLI calls and native streams
-  back into May events and artifacts.
-
-This is the same core pattern used by OpenClaw/Hermes-style coding-agent
-integration: the framework owns orchestration, while Codex or Claude owns code
-execution. The "magic" is small:
-
-- teach the caller when to use the native coding agent;
-- launch the native runtime in the right mode;
-- remember the native session id;
-- parse the native event stream;
-- return a persisted worker result for caller review.
-
-The native worker does not become an App planner or owner.
-
-## Current Implementation
-
-The compatibility process path has these integration points:
-
-| Layer            | File                                                  | Responsibility                                                                                                  |
-| ---------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Task adapter     | `projects/may-agent/src/app/app-task-cli-executor.ts` | Translate one fenced Task attempt into a CLI request and return its terminal JSON to normal Task admission.     |
-| Tool surface     | `projects/may-agent/src/lib/tools/run-cli-agent.ts`   | Create task id, write prompt/request files, emit `cli.task.requested`, return immediately.                      |
-| Runtime runner   | `projects/may-agent/src/app/cli-task-runner.ts`       | Subscribe to `cli.task.requested`, spawn Codex/Claude, persist task record, parse output, emit terminal events. |
-| Event schema     | `projects/may-agent/src/app/core/events/bus.ts`             | Defines `cli.task.requested`, `started`, `completed`, `failed`, and `orphaned`.                                 |
-| Restart recovery | `projects/may-agent/src/app/daemon-events.ts`         | Marks in-flight CLI tasks as orphaned after runtime restart.                                                    |
-
-The old blocking `codex_worker`, `cc_worker`, and `dual_review` tools are
-retired. Both the Task adapter and compatibility tool use the same
-`cli.task.*` process boundary; only the caller and final result admission
-differ.
-
-Shipped behavior today:
-
-- `TaskIntent.executor` selects `codex` or `claude`; Runtime creates a
-  deterministic worker identity per Task attempt, renews the Task lease, and
-  admits the returned JSON through the ordinary Task fence.
-- A Git-backed direct CLI Task receives an isolated task-generation worktree;
-  process and native-session records remain attempt evidence.
-- `run_cli_agent` writes `prompt.md` and `request.json`.
-- `cli-task-runner` writes `task.json`, `events.jsonl`, `result.md`, and
-  `result.json`, plus `session.json` when the native session id is known.
-- Completion requires a successful process, usable output, and any requested
-  JSON/required-field contract. Failures are classified by category.
-- A still-live source session receives a compact `session.steer.requested` update
-  with paths and session id when `sourceSessionId` is available.
-- `files` are added to the worker prompt as scoped context.
-- `worktree` is used as the native process cwd when provided.
-- Relative `files` resolve against `worktree` when present, otherwise `cwd`.
-- `structuredResultPath` points at `result.json` in terminal events.
-
-## Compatibility tool runtime flow
-
-Within a compatible bounded execution session, the flow is:
+Each call writes:
 
 ```text
-caller invokes run_cli_agent({
-  tool: "codex",
-  mode: "review",
-  prompt: "...focused review packet...",
-  cwd: "/app/projects/...",
-  reuseSession: true
-})
-        |
-        v
-run_cli_agent writes:
-  .state/cli-tasks/<taskId>/prompt.md
-  .state/cli-tasks/<taskId>/request.json
-        |
-        v
-run_cli_agent emits:
-  cli.task.requested {
-    taskId,
-    tool,
-    mode,
-    cwd,
-    promptPath,
-    resultPath,
-    eventsPath,
-    sourceOwner,
-    sourceSessionId
-  }
-        |
-        v
-cli-task-runner starts native process:
-  codex exec ...    or    claude -p ...
-        |
-        v
-cli-task-runner writes:
-  .state/cli-tasks/<taskId>/task.json
-  .state/cli-tasks/<taskId>/events.jsonl
-  .state/cli-tasks/<taskId>/result.md
-  .state/cli-tasks/<taskId>/result.json
-  .state/cli-tasks/<taskId>/session.json  (when native id is known)
-        |
-        v
-cli-task-runner emits one terminal event:
-  cli.task.completed | cli.task.failed | cli.task.orphaned
+.state/cli-runs/<cli-id>/
+  prompt.md    supplied packet
+  result.md    native answer, including useful partial output
+  result.json terminal tool result
+  events.jsonl raw native stdout/stderr capture
 ```
 
-Only a compact completion is injected back into a still-live source session.
-The full native stream stays in the task artifacts.
-
-```text
-source session receives:
-  CLI task <taskId> completed.
-  Tool: codex
-  Summary: ...
-  Result: .../result.md
-  Events: .../events.jsonl
-  CLI session: ...
-
-Disk receives:
-  prompt.md
-  request.json
-  task.json
-  result.md
-  result.json
-  events.jsonl
-  session.json
-```
-
-Do not paste the full native tool stream into the caller's context by default.
-The caller can read the artifact files when it needs details.
-
-## Skill-Guided Operation
-
-Hermes packages its Claude/Codex knowledge as skills: when to use print mode,
-when to use tmux/PTY, which flags avoid prompts, how to resume, how to monitor
-background work, and when to isolate work with git worktrees. That is worth
-copying as an operating pattern.
-
-The runtime uses the same split:
-
-- A skill or design guide teaches agents how to decide and packetize native
-  coding work.
-- Runtime code executes the packet through `run_cli_agent` and `cli.task.*`.
-
-Do not encode every vendor-specific habit in project workflows. Keep workflows
-business-focused and let the native-worker guide plus adapter handle CLI
-details.
-
-## Compatibility process event contract
-
-The current event contract is intentionally small. The historical `cli.task.*`
-name identifies a native-worker process record, not a canonical App task.
-`cli.task.requested` is the handoff to the runtime, `cli.task.started` is
-observability, and exactly one of `cli.task.completed`, `cli.task.failed`, or
-`cli.task.orphaned` closes the worker run.
-
-The executable envelopes are defined in
-[Host event types](../../../may-agent/src/app/core/events/bus.ts). Requests carry exact
-worker identity, tool/mode, workspace and artifact paths, source correlation,
-optional native-session continuity and output constraints. Terminal events
-carry the same identity plus result paths, native session, and failure evidence.
-Failure categories distinguish timeout, permission, tool, missing output,
-output schema and process failures.
-
-
-`cli.task.requested` targets `runtime:cli-task-runner`. Terminal events return
-to `sourceOwner`, usually the agent that requested the worker.
-
-The originating trace is part of the durable CLI record. A live source session
-receives the terminal update. If that session is gone, the runtime retains the
-artifacts but does not invent a replacement owner or human reply. Work that
-must survive caller loss belongs in an App request or task before the caller
-ends.
-
-## State Semantics
-
-The CLI task state describes the worker process, not the project outcome.
-
-| Event                | Meaning                                                                               | Owner response                                                             |
-| -------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `cli.task.started`   | The runner accepted the request and spawned the native process.                       | Usually observe only.                                                      |
-| `cli.task.completed` | The native worker produced a usable result artifact.                                  | Review the result and decide whether the original work is resolved.        |
-| `cli.task.failed`    | The native worker could not produce a usable result.                                  | Retry, adjust prompt/config, or handle the failure directly.               |
-| `cli.task.orphaned`  | Runtime restarted while the native worker was running, so process ownership was lost. | Inspect artifacts/session id, then resume or retry from an owning attempt. |
-
-The runner owns the deadline. Once it expires, the task fails as `timeout`
-regardless of the native process exit code. The runner stops the whole CLI
-process group, first gracefully and then forcibly after a short fixed grace
-period. A zero exit code alone is insufficient for completion: Codex must emit
-`turn.completed`, Claude must emit a successful `result`, and the result
-artifact must contain usable output.
-
-Do not close the original project task just because `cli.task.completed` fired.
-Close it only after the owner judges the result.
-
-## Native Session Continuity
-
-Each external runtime has its own session concept:
-
-- Codex emits a thread id from JSONL events.
-- Claude emits a session id in stream output.
-
-The runner stores these as native worker session ids. If `reuseSession` is true,
-it can resume the latest native session for that owner and tool. If
-`resumeSessionId` is provided, it wins for that request.
-
-Session reuse is useful for continuity, but it is not a substitute for a clear
-task packet. Every request still needs enough context to be independently
-auditable.
-
-## Command Shapes And Execution Modes
-
-Claude should be headless-first. Prefer print mode because it returns and does
-not need terminal dialog handling:
-
-```bash
-claude -p "$PROMPT" --output-format stream-json --verbose --permission-mode "$MODE"
-```
-
-Use Claude interactive PTY/tmux only when the job is truly conversational:
-slash commands, human-in-the-loop choices, or exploratory multi-turn work.
-
-Codex should also prefer structured non-interactive execution when it works in
-the service environment:
-
-```bash
-codex exec --json --skip-git-repo-check --sandbox "$SANDBOX" -o "$RESULT_PATH" "$PROMPT"
-```
-
-For native continuation:
-
-```bash
-codex exec --json --skip-git-repo-check --sandbox "$SANDBOX" -o "$RESULT_PATH" resume "$THREAD_ID" "$PROMPT"
-```
-
-If a native CLI requires a PTY in a specific version or environment, the PTY is
-an adapter implementation detail. May should still expose the same durable
-`cli.task.*` events rather than terminal polling as the public model.
-
-## Runtime Model Endpoint
-
-May Runtime, Codex, and Claude use the shared model API configured by
-`MODEL_BASE_URL` and `MODEL_API_KEY`. The clients only depend on their standard
-wire protocols; LiteLLM is the current external implementation, not a runtime
-concept.
-
-At container startup, May writes Codex's endpoint configuration into
-`CODEX_HOME`, then `MAY_CODEX_HOME`, then `$HOME/.codex`, in that order. The CLI
-runner uses the same precedence so native session state and configuration stay
-together. Claude receives the shared URL and credential through its
-`ANTHROPIC_BASE_URL` and `ANTHROPIC_API_KEY` interface.
-
-The practical check is simple:
-
-```bash
-codex exec --json --skip-git-repo-check --sandbox read-only -o /tmp/codex-smoke.md "Reply with exactly: ok"
-```
-
-If that works for the daemon user, a compatible execution session can launch Codex through
-`run_cli_agent`. A custom Codex home must contain the generated endpoint
-configuration before the worker starts.
-
-## Result Contract
-
-The worker writes `result.md` plus `result.json`. `result.md` is optimized for
-human reading. `result.json` is optimized for the owning Task attempt that must judge
-the result without parsing prose. The minimum `result.json` includes:
-
-```typescript
-{
-  status: "completed" | "failed" | "partial" | "timed_out";
-  summary: string;
-  changedFiles?: string[];
-  verification?: Array<{ command: string; outcome: "passed" | "failed" | "not_run"; outputRef?: string }>;
-  evidenceRefs: string[];
-  nativeSessionId?: string;
-  nextAction?: string;
-  exitCode?: number;
-  error?: string;
-}
-```
-
-Raw stdout/stderr and JSONL streams are evidence, not the primary project
-decision format.
-
-The runner should not decide project truth from this result. It only decides
-whether the native worker process produced a usable worker result. The owner
-decides whether that result resolves the original project problem.
-
-## Policy
-
-Modes describe intent, not trust:
-
-| Mode          | Expected behavior                                                                  |
-| ------------- | ---------------------------------------------------------------------------------- |
-| `investigate` | Read, reason, and produce an evidence-backed report.                               |
-| `review`      | Inspect code/design and produce findings; no mutation unless explicitly requested. |
-| `patch`       | Change files in a bounded scope and report diff plus verification.                 |
-
-Mutation-heavy work should prefer an isolated worktree when practical. Full
-permission modes are acceptable only inside the trusted May container or an
-explicitly prepared worktree.
-
-The runner records both requested sandbox and effective sandbox. The current
-trusted-container adapter normalizes requests to `danger-full-access` and
-records the reason when that differs from the request. Callers must treat the
-effective value, not the requested value, as the execution fact.
-
-Worktree isolation is the default answer for parallel patch work:
-
-```text
-main repo
-  -> worktree A for issue/spec A
-  -> worktree B for issue/spec B
-  -> worktree C for issue/spec C
-```
-
-Each worker receives one worktree, one task, and one expected artifact. The
-bounded caller reviews the evidence and the owning App admits any result; the
-worker does not own broad repo state.
-The runner accepts worktrees inside the project parent, so sibling git
-worktrees are supported.
-
-Do not rely only on process exit code. The current runner also rejects missing
-output and invalid requested JSON shapes. Richer partial-success interpretation
-from native streams remains a follow-up.
-
-## Review Boundary
-
-The runner never mutates Task persistence or project posture directly. It emits the
-terminal CLI event to the owner and optionally steers the source session with a
-compact update. The owner can then:
-
-- accept the result;
-- return it to the owning App for review;
-- retry with a better prompt;
-- create a follow-up task;
-- reject the result and keep the original work open.
-
-This keeps code responsible for process lifecycle and agents responsible for
-judgment.
-
-## Validation Checklist
-
-A correct implementation should satisfy these checks:
-
-1. `run_cli_agent` returns quickly with `{ taskId, status: "accepted" }`.
-2. A persistent worker directory exists before the external CLI starts.
-3. `cli.task.requested` is addressed to `runtime:cli-task-runner`.
-4. `cli-task-runner` emits `started` and exactly one terminal event.
-5. Terminal events are addressed back to `sourceOwner`.
-6. Still-live source sessions receive only compact steering text.
-7. Full native output is recoverable from artifact paths.
-8. Restart recovery marks in-flight tasks `orphaned`.
-9. Session ids are stored for explicit resume or `reuseSession`.
-10. Patch work can be isolated from the main checkout before mutation.
-
-## Human Surface
-
-Humans should not need to know whether a bounded worker is Codex, Claude, a
-terminal, or a subprocess unless they explicitly ask. Natural requests such as
-these enter the May App first:
-
-- "ask Codex to review this"
-- "get a second opinion"
-- "compare Claude and Codex"
-- "delegate this investigation"
-- "let Claude try a patch"
-
-May's Task may converge directly or request the outcome from the Task owned by
-the accountable App. That App may use a bounded awaited worker call as implementation
-capacity; it cannot turn `run_cli_agent` into an asynchronous ownership path.
-
-## Current Boundaries
-
-- A process that produced useful partial text but no schema-valid terminal
-  result remains a failed attempt. Its retained stream and artifacts are
-  evidence for the retry; they are not an implicitly accepted Task result.
-- Required fields are validated today. Richer JSON Schema support is not a
-  separate lifecycle and should be added only when a concrete result contract
-  cannot be expressed by the shared validator.
-- Direct CLI Task execution creates and finalizes a task-generation worktree
-  for Git-backed Apps. Compatibility `run_cli_agent` calls require an explicitly
-  supplied prepared worktree when mutation isolation is needed.
-- Task, attempt, session, trace, and artifact views remain the supported
-  inspection surfaces. Add a worker-specific projection or metric only when a
-  measured operator question cannot be answered from those records.
-
-Any follow-up improves the existing adapter and shared read models in place; it
-must not introduce another owner, queue, retry lifecycle, or execution path.
+The events file includes diagnostic text and is not guaranteed to be pure
+JSONL. Protocol parsing retains bounded diagnostics, skips oversized lines,
+and limits result reads to 1 MiB. Full native output remains on disk; artifact
+disk usage is not capped by the in-memory limit.
+
+The historical `cli.task.requested`, `started`, `completed`, and `failed`
+events remain trace observations. They do not launch work or steer a session.
+Emitting `cli.task.requested` is no longer an execution API. Old cancellation
+events cannot cancel new calls; cancel the actual caller/Task instead.
+
+Use the tool's terminal return and named artifact paths. Do not poll worker
+records, manufacture a `cli-task-terminal` Condition, or look up its CLI
+correlation key as a Task/execution resource. If the Host stops mid-call, a
+terminal artifact/event may be missing; the caller's normal recovery owns the
+unfinished attempt.
+
+If terminal event recording fails after execution, the returned result keeps
+the actual worker outcome and evidence, plus `observationError`. Do not repeat
+an executed patch merely to repair its observation.
+
+Start a fresh native context for an independent opinion. Pass
+`resumeSessionId` only to continue an exact known native thread.
+Implicit shared `reuseSession: true` is rejected without an explicit ID.
+The tool neither reads nor writes an owner-wide latest-session map.
+
+Native process groups are recorded against the exact caller session using
+the same tracking and drain code as shell commands. Cancellation and timeout
+drain that group before returning; a group that cannot be drained remains
+recorded for normal session recovery. Process-group cleanup is not a security
+boundary against a process deliberately escaping its group. Output-pipe
+settlement is separately bounded so escaped descendants cannot hang the call.
+
+## Persistent Codex Tasks
+
+The existing `codex-goal` adapter is the persistent native Task executor.
+The removed one-shot `codex`/`claude` Task adapters are not current built-ins;
+the tool names above do not imply named Task executors.
+
+Runtime creates one fenced `TaskAttempt`. Codex receives its transport
+projection, and returned results go through normal Task admission.
+Malformed output or admission rejection is corrected on the same native
+thread within that attempt. Native process failure ends the attempt;
+ordinary Runtime retry resumes the same Task's persisted thread.
+
+Usage or budget exhaustion is an execution failure, not a Task wait.
+Do not invent a timer Condition or claim elapsed time proves provider capacity.
+Runtime's bounded recovery remains responsible for retrying the Task.
+
+## Models and implementation
+
+Codex defaults to `gpt-5.6-sol` with high reasoning; `CODEX_MODEL` and
+`CODEX_REASONING_EFFORT` override those values. Claude defaults to
+`claude-opus-5`; `CLAUDE_MODEL` overrides it. Commands use the existing shared
+model endpoint configuration. Codex configuration precedence is `CODEX_HOME`,
+then `MAY_CODEX_HOME`, otherwise its normal home. Claude receives the shared
+endpoint through its standard Anthropic environment variables.
+
+| Host code | Responsibility |
+| --- | --- |
+| `src/lib/tools/run-cli-agent.ts` | Tool schema; capture caller identity, trace, and signal; await result. |
+| `src/lib/cli-agent.ts` | Native command, bounded parsing, evidence, process execution, legacy upgrade check. |
+| `src/lib/tools/bash.ts` and `persistence.ts` | Shared caller-session process-group tracking and cleanup. |
+| `src/app/codex-goal-executor.ts` | Existing persistent Codex Task adapter. |
+
+The `native-coding-worker` skill teaches packet preparation and evidence
+review. Host code enforces mechanics; it does not decide whether another
+opinion is useful or whether a patch should merge.
+
+## Upgrade and verification
+
+Before changing the running Host:
+
+1. Drain or cancel old CLI work with the old Host. The new Host refuses startup
+   if `.state/cli-tasks` has unfinished, orphaned, or unreadable admissions.
+   The old runner could mark a job orphaned without stopping its process.
+   Review those artifacts and confirm their work and processes have settled
+   before archiving the reviewed directories outside `cli-tasks`. The new
+   Host neither guesses their outcome nor changes their evidence.
+2. Integrate this App guidance and the matching Host revision together. Keep
+   current user edits when applying the companion skill change. Retained
+   historical records/session maps need not be deleted.
+3. Apply through the normal Host Operations deployment boundary. A merge is
+   not deployment authority.
+
+Portable verification covers both native protocols, exact concurrent caller
+identity, cancellation and descendant drain, timeout despite zero exit,
+bounded output, JSON validation, explicit continuation, path scope, event
+observation, and the read-only upgrade fence. Tests use local subprocess
+fixtures, never model credentials. Image smoke and portable tests do not
+certify a live provider or an installed App's complete behavior.
+
+The companion Gym correction consumes `ExecutionResult.cliCalls`: compact
+Host-recorded tool results bound to the calling session and tool-call ID. It
+does not query `read.execution` with a CLI ID or derive observations from the
+agent's reflection. It compares the reflection to observed outcomes and named
+paths, counts each CLI ID once, and retains failures as well as successful
+retries. Expected failures (for example timeout practice) remain assessable;
+unexpected runtime failures, interrupted callers, and missing evidence mark
+the attempt invalid, not an agent behavior failure. Invalid attempts do not
+automatically repeat live practice.
+
+This projection uses at most 64 records from the retained session transcript
+tail, including replay. Missing records, old Hosts, and pre-upgrade transcripts
+cannot prove that a CLI never ran. Artifact paths identify what the tool
+produced; they do not prove the agent read it, its current availability, the
+quality of its reasoning, or independent native contexts. Those remain limits
+of the deterministic practice check, not passing semantic-quality claims.
+Portable tests exercise local native subprocess fixtures and the Gym adapter;
+they do not certify live Gym practice or authorize deployment.
+
+For second opinions: use a neutral packet, avoid sharing another worker's
+conclusion, and settle disagreements with primary evidence. More opinions
+are useful only when they improve the owner's decision.

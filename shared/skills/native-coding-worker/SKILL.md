@@ -1,6 +1,6 @@
 ---
 name: native-coding-worker
-description: Delegate a bounded investigation, review, comparison, or patch to Codex CLI or Claude Code through May's durable run_cli_agent path. Use when an independent coding worker adds capacity or a second opinion.
+description: Run a bounded investigation, review, comparison, or patch with Codex CLI or Claude Code through May's awaited run_cli_agent tool. Use when an independent coding worker adds useful capacity or a second opinion.
 ---
 
 # Native Coding Worker
@@ -15,18 +15,16 @@ decision. A CLI worker is capacity, not a project owner or completion oracle.
 1. Choose `investigate`, `review`, or `patch` from the requested outcome.
 2. State one question or deliverable, relevant files, constraints, expected
    evidence, and a stop condition.
-3. Prefer `reuseSession: true` for May's normal Codex/Claude continuity. Use a
-   fresh native session only when the human asks or context isolation matters.
-4. For mutation-heavy patch work, prepare an isolated worktree and set
+3. Start fresh for an independent opinion. Pass `resumeSessionId` only to
+   continue an exact known native thread; implicit shared reuse is retired.
+4. For mutation-heavy patch work, prepare an isolated worktree outside `/app` and set
    `worktreePolicy: "require"`. Do not let a worker improvise branch cleanup.
 5. Use `expectedOutput` when a deterministic JSON handoff is useful.
-6. Treat acceptance as asynchronous. Follow `cli.task.completed` or
-   `cli.task.failed`, then inspect the result and evidence paths. After a CLI
-   task is durably accepted, do not sleep or repeatedly poll it inside the
-   current attempt. If its terminal event is not already available for bounded
-   review, immediately return an exact `cli-task-terminal` Condition with the
-   accepted task identity and result path; inspect that artifact on the next
-   reconciliation.
+6. Await the tool's terminal result, then inspect its named result and evidence
+   paths. Do not poll a worker record or return a CLI-terminal Condition.
+   The returned `taskId` is only an evidence correlation key, not a Task or
+   execution resource. Work that must outlive this call belongs to the
+   responsible App's ordinary Task.
 7. Verify patches in the owning checkout before claiming completion.
 
 Prefer TypeScript/JavaScript and Bun for new May-agent helpers. Use another
@@ -40,7 +38,8 @@ Use the recorded category to choose the next move:
 - `tool`: repair the command/tool packet;
 - `no_output` or `output_schema`: sharpen the expected artifact;
 - `timeout`: reduce scope or resume the native session;
-- `process` or `orphaned`: inspect events and runtime health before retrying.
+- `process`: inspect events and runtime health before retrying;
+- `cancelled`: respect the caller's cancellation rather than restarting it.
 
 Do not treat a zero process exit alone as success, and do not retry blindly.
 
@@ -50,4 +49,5 @@ Do not treat a zero process exit alone as success, and do not retry blindly.
 - Delegating ownership or human judgment to the CLI worker.
 - Using a patch worker in the main dirty checkout when isolation is practical.
 - Claiming success without reviewing result, diff, and verification evidence.
-- Creating a parallel request lifecycle outside `cli.task.*` and its trace.
+- Creating a separate worker queue or completion lifecycle beside the caller's
+  Task.
