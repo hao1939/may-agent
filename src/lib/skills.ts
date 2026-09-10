@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
+import { BACKGROUND_CONTEXT } from "@earendil-works/pi-agent-core/harness/context";
 import {
   formatSkillInvocation,
   formatSkillsForSystemPrompt,
@@ -69,6 +70,8 @@ export async function discoverAgentSkills(opts: {
   const loaded = await loadSourcedSkills(
     env,
     sources.map((source) => ({ path: source.packagePath, source })),
+    undefined,
+    BACKGROUND_CONTEXT,
   );
   const diagnostics = loaded.diagnostics.map(
     (diagnostic) => `${diagnostic.source.scope}:${diagnostic.path}: ${diagnostic.message}`,

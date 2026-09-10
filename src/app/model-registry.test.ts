@@ -18,7 +18,18 @@ describe("model registry", () => {
     expect(registry["gpt-5.5"]?.contextWindow).toBe(400_000);
     expect(registry["gpt-5.6-sol"]?.contextWindow).toBe(400_000);
     expect(registry["claude-opus-4.7"]?.contextWindow).toBe(200_000);
-    expect(registry["gemini-3.1-pro-preview"]?.contextWindow).toBe(200_000);
+    expect(registry["gemini-3.1-pro-preview"]).toMatchObject({
+      id: "gemini-3.1-pro-preview",
+      api: "openai-completions",
+      provider: "github-copilot",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 200_000,
+      maxTokens: 64_000,
+      reasoning: true,
+      input: ["text", "image"],
+      compat: { supportsStore: false, supportsDeveloperRole: false, supportsReasoningEffort: false },
+    });
     expect(registry["claude-opus-4.7"]?.id).toBe("claude-opus-4.7");
     for (const [name, model] of Object.entries(registry)) expect(name).toBe(model.id);
   });
