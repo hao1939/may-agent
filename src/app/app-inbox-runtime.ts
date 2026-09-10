@@ -129,6 +129,7 @@ export type StartAppInboxRuntimeOptions = {
   hostCapacity: HostCapacity;
   /** Maximum request decisions admitted to shared Host capacity at once. */
   maxConcurrentRequests?: number;
+  /** Recovery cadence, including retrying Apps whose input dispatch failed. */
   scanIntervalMs?: number;
   /** Select timed App publications only; admission, observers and recovery remain active. */
   schedulesEnabled?: boolean;
@@ -677,6 +678,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const dirty = new Set<string>();
   const pending: string[] = [];
   const queued = new Set<string>();
+  const recoveryPending = new Set<string>();
+  const capacityWaits = new Set<() => void>();
   let pumpHandle: ReturnType<typeof setTimeout> | null = null;
   const maxConcurrentRequests = options.maxConcurrentRequests ?? 2;
   if (!Number.isSafeInteger(maxConcurrentRequests) || maxConcurrentRequests <= 0) {
@@ -732,7 +735,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     });
   };
   const scheduleReady = (appId: string): void => {
-    if (closed) return;
+    if (closed || recoveryPending.has(appId)) return;
     try {
       if (dirty.has(appId) || host.readyCount(appId) > 0) schedule(appId);
     } catch (error) {
@@ -773,7 +776,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const [appId] = pending.splice(nextIndex, 1);
     if (!appId) return;
     queued.delete(appId);
-    if (!dirty.has(appId)) {
+    if (recoveryPending.has(appId) || !dirty.has(appId)) {
       armPump();
       return;
     }
@@ -781,14 +784,32 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const agent = loaded.find(({ definition }) => definition.id === appId)?.definition.agent ?? "runtime";
     active.set(appId, appActive + 1);
     dirty.delete(appId);
-    // Attach cleanup before any fallible work/read. This also contains a
-    // synchronous executor/capacity failure without leaking the active count.
-    void Promise.resolve()
-      .then(() => {
-        if (closed) return;
-        return appId === "may"
-          ? options.hostCapacity.runForeground(() => host.reconcileOnce(appId))
-          : options.hostCapacity.run(() => host.reconcileOnce(appId));
+    // Own the wait as well as execution. Closing releases an unstarted
+    // reservation and settles its dispatch without claiming durable input.
+    void new Promise<(() => void) | undefined>((resolve) => {
+      const cancel = () => {
+        cancelAcquire();
+        capacityWaits.delete(cancel);
+        resolve(undefined);
+      };
+      const acquired = (release: () => void) => {
+        capacityWaits.delete(cancel);
+        resolve(release);
+      };
+      const cancelAcquire =
+        appId === "may"
+          ? options.hostCapacity.acquireForegroundCancellable(acquired)
+          : options.hostCapacity.acquireCancellable(acquired);
+      capacityWaits.add(cancel);
+    })
+      .then(async (release) => {
+        if (!release) return;
+        try {
+          if (closed || recoveryPending.has(appId)) return;
+          return await host.reconcileOnce(appId);
+        } finally {
+          release();
+        }
       })
       .then((outcome) => {
         if (!outcome) return;
@@ -797,7 +818,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           notifyConversationUpdated(appId, conversationId);
         }
       })
-      .catch((error) => reportRuntimeFailure("input-dispatch", error, appId, agent))
+      .catch((error) => {
+        // A failed claim can remain ready. Even new input must not turn it
+        // into a retry loop; the existing recovery scan releases this App.
+        recoveryPending.add(appId);
+        dirty.delete(appId);
+        reportRuntimeFailure("input-dispatch", error, appId, agent);
+      })
       .finally(() => {
         const remaining = (active.get(appId) ?? 1) - 1;
         if (remaining > 0) active.set(appId, remaining);
@@ -812,7 +839,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   };
 
   const schedule = (appId: string): void => {
-    if (closed || !host.appIds().includes(appId)) return;
+    if (closed || recoveryPending.has(appId) || !host.appIds().includes(appId)) return;
     dirty.add(appId);
     if (queued.has(appId)) return;
     queued.add(appId);
@@ -843,7 +870,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const recoverNow = () => {
     if (closed || !started) return;
     const currentTime = now();
-    for (const appId of host.readyAppIds()) schedule(appId);
+    const readyAppIds = host.readyAppIds();
+    recoveryPending.clear();
+    for (const appId of readyAppIds) schedule(appId);
     if (currentTime >= nextDependencyRecoveryAt) void recoverTaskDependencies();
     recoverAdmissionPlans();
   };
@@ -1719,6 +1748,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     close() {
       if (closed) return;
       closed = true;
+      for (const cancel of capacityWaits) cancel();
+      recoveryPending.clear();
       timer.close();
       initialRecovery.close();
       if (pumpHandle) clearTimeout(pumpHandle);
