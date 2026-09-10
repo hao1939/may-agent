@@ -489,3 +489,56 @@ May/Scout tests and the design checks also passed. Formatting cleanup touched
 only the recent partial-result checks and regressions, with no behavior change.
 The next all-source recurrence remains a separate live check; these tests do
 not prove it or solve the shared-checkout writes.
+
+## Natural source recurrence — 12:00–12:12 UTC
+
+The five scheduled source events (6318788–6318792) ran without manual feedback
+or retries. All retained generation 1 and completed their bounded calls:
+
+- arXiv (6318814, 30 tool calls) added IdeaAMBIG to the existing evaluation
+  companion note and digest.
+- HN (6318829, 38 calls) added Procedural Graphs to the existing self-evolution
+  note and digest.
+- XHS (6318848, 10 calls) read the HarnessEvolve post and correctly made no
+  change because the finding was already covered. Browser access remained ready.
+- Reddit (6318860, 12 calls) read the public Atom feed, then recorded an HTTP
+  429 boundary on a follow-up request; it made no library change.
+- GitHub (6318877, 25 calls) created a pinned-revision Containarium finding and
+  digest highlight. It explicitly distinguishes static code observations from
+  a reproduced runtime escape or security test.
+
+May reported the HN finding once (6318842), without calling it a retry. The
+original HN Request remains closed/fulfilled at revision 2. Subsequent bounded
+recovery reviews were quiet. This is natural recurrence evidence for the
+expanded source allowance, completed-result acceptance and revised attribution
+guidance; it is not a long-term reliability guarantee.
+
+The operator read the new output and checked the IdeaAMBIG figures against the
+retained paper HTML. The cited experiments were not independently reproduced.
+An arXiv whole-file date assertion failed on three dates already present in
+the committed baseline; Scout then passed a narrower check of its new section.
+That does not resolve the existing dates. Library health recorded 26 unchanged
+facts at 6318885, not a clean-library result.
+
+## Small guidance iteration — 13:41 UTC
+
+Repeated source calls tried missing `python`, `bs4`, `pdftotext`, or `file`
+before recovering with available tools. Scout's existing context now explains
+the standard container's `python3`/Node/Bun paths, checking optional tools,
+and keeping missing optional feedback separate from source availability. It
+also distinguishes a narrowly passing check from unresolved pre-existing
+problems. No dependency, Host rule, retry mechanism or new Task was added.
+
+Guidance commit `9940cbf3d6` was reviewed and fast-forwarded locally without
+staging research. Formatting and 44 affected App/source-workflow tests passed;
+an initial test command without explicit relative paths matched no tests and
+was corrected, not counted as a pass. Reload 6319047/6319048 succeeded without
+restarting the container. Model behavior with this guidance still needs the
+next natural cycle; successful reload alone does not establish that behavior.
+
+Through 13:41 UTC the recorder held 309 one-minute samples. Control-read p95
+was 17 ms and the maximum 32 ms. Its two missing-socket samples corresponded
+to earlier intentional deployments; there were no automatic container restarts.
+Only May and Scout were loaded. The two protected human-edit hashes remained
+unchanged. Scout still writes the shared checkout: safe isolated editing and
+integration remain the main open workflow boundary.
