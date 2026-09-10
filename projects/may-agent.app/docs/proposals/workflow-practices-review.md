@@ -360,3 +360,28 @@ without guessing; useful ongoing research can still deserve an update.
 No new event, lifecycle rule or suppression mechanism was added. The missing
 guidance regression failed before the change; 67 May/Scout contract and
 workflow tests passed afterward. Future model behavior still needs live proof.
+
+## Manual source trial — 10:17–10:20 UTC
+
+Two explicit `explore-now` actions (6318511, 6318512) tested HN and XHS without
+changing schedules. HN ran first; XHS was correctly pending in human list and
+status-filtered reads, with 2–4 ms sampled control latency. Both retained their
+generation-1 Task identities. HN converged with a grounded no-op at 6318524;
+XHS started less than a second later and converged at 6318548. The XHS agent
+used the documented detail reader without extra feedback, read a HarnessEvolve
+post, and updated the existing self-evolution note and digest. It attributed
+the post's paper claims rather than claiming independent verification. The
+operator checked the resulting note and digest link, not the paper's results.
+
+The same live queue exposed an agent-read gap: `app.task.get` still returned
+`done` for pending XHS work. A focused Host candidate uses the existing
+`changed`/`ready` fields for exact and filtered read projections; stored phase,
+accepted results, identity and scheduling remain unchanged. Its lifecycle
+regression failed before the fix; 221 affected read, store, tool and reconciler
+tests passed. Full CI and live deployment verification are separate checks.
+
+May's reporting guidance did not yet pass the model-backed check: despite
+receiving the new instructions, it again called the HN result a retry at
+6318537. The closed Request remained unchanged, but the wording was wrong.
+Guidance now includes a concise finding-first example. This is not yet a
+proved behavioral fix; do not add a Host lifecycle rule to enforce phrasing.

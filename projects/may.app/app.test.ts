@@ -131,6 +131,7 @@ describe("canonical May conversation App", () => {
     expect(guidance).toContain("Past Conversation messages are historical context");
     expect(guidance).toContain("not proof of what triggered this cycle");
     expect(guidance).toContain("already-closed Request");
+    expect(guidance).toContain("Lead with the finding: 'Scout found ...'");
     expect(guidance).toContain("If the trigger is unknown, report the finding");
   });
 

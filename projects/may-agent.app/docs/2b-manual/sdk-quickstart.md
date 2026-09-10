@@ -111,6 +111,13 @@ evidence. `pending`/`running` mean work remains, `waiting` names a dependency,
 accepted completion. Later reads use the same IDs. Neither publication nor an
 agent process exit proves the review succeeded.
 
+For a maintained Task, `done` means its latest cycle is up to date, not that
+standing work has ended. New accepted work awaiting execution must read as
+`pending`, even if its retained summary describes a successful earlier cycle.
+Exact reads and status-filtered lists must agree. The
+[local workflow trial](../proposals/workflow-practices-review.md) tracks the
+queued-cycle read fixes separately from the released Host baseline.
+
 ## 4. Understand the two mappings
 
 | Callback | Receives | Returns |
