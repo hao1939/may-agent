@@ -245,6 +245,7 @@ function interruptSupersededAgentSession(
     data: {
       sessionId: cleanSessionId,
       agent: meta.agent,
+      agentRelativeDir: meta.agentRelativeDir ?? undefined,
       outcome: recoveredStatus,
       summary: recoveredSummary,
       ...(persistedFinish ? { finishParams: persistedFinish } : {}),

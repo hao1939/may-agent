@@ -1,4 +1,5 @@
-import { join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
 import { buildTools } from "./loader/toolset-loader.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
@@ -42,6 +43,8 @@ export async function prepareDaemonAgents(opts: {
   sharedRoot: string;
   definitionSharedRoot: string;
   projectsRoot: string;
+  canonicalProjectsRoot?: string;
+  appDirectories?: readonly string[];
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -68,6 +71,8 @@ export async function prepareDaemonAgents(opts: {
     sharedRoot: opts.sharedRoot,
     definitionSharedRoot: opts.definitionSharedRoot,
     projectsRoot: opts.projectsRoot,
+    canonicalProjectsRoot: opts.canonicalProjectsRoot,
+    appDirectories: opts.appDirectories,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,
@@ -106,12 +111,19 @@ export async function prepareDaemonAgents(opts: {
     }
 
     const model = opts.models[config.model];
+    const appFolder = basename(appDir);
+    const projectId = appFolder.replace(/\.app$/, "");
+    const domainDir = resolve(opts.canonicalProjectsRoot ?? opts.projectsRoot, projectId);
     const definition = await buildAgentDefinition({
       config,
       source: {
-        name: config.name,
+        name: basename(agentDir),
         dir: agentDir,
-        agentsRoot: resolve(appDir, "agents"),
+        agentsRoot: dirname(agentDir),
+        projectId,
+        projectDir: existsSync(domainDir) ? domainDir : appDir,
+        // agentDir may be in a source release; writes belong to the installation.
+        relativeDir: `projects/${appFolder}/agents/${basename(agentDir)}`,
       },
       model,
       tools: await buildTools(config, {

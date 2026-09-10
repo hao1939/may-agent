@@ -49,6 +49,8 @@ export interface TaskBinding {
 /** Serializable session record stored as meta.json per session directory. */
 export interface PersistedSession {
   agent: string;
+  /** Selected installation-relative folder; null is programmatic, absent is legacy/unknown. */
+  agentRelativeDir?: string | null;
   task: string;
   status: "running" | "done" | "error" | "interrupted" | "idle";
   startedAt: number;

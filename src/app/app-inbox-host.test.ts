@@ -1775,4 +1775,26 @@ describe("App inbox host", () => {
     host.replaceApps([app(), app("next")]);
     expect(host.appIds()).toEqual(["evaluation", "next"]);
   });
+
+  it("retains pending admission for an unloaded App without blocking other Apps at startup", () => {
+    db.prepare(
+      `INSERT INTO app_event_admission_plans
+       (event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)
+       VALUES (101, 'previous:1', 1, 'pending', 1000, 1000)`,
+    ).run();
+    db.prepare(
+      `INSERT INTO app_event_admission_commands
+       (event_id, app_id, route_kind, route_id, payload, status, updated_at)
+       VALUES (101, 'evaluation', 'inbox', 'probe', ?, 'pending', 1000)`,
+    ).run(JSON.stringify({ input: { kind: "probe", data: { value: "retained" } } }));
+
+    const host = new AppInboxHost({ db, apps: [app("next")] });
+    expect(host.appIds()).toEqual(["next"]);
+    const retained = db.prepare("SELECT * FROM app_event_admission_commands WHERE event_id = 101").get();
+    expect(retained).toMatchObject({ app_id: "evaluation", status: "pending", updated_at: 1000 });
+    host.replaceApps([app("next"), app()]);
+    expect(host.appIds()).toEqual(["evaluation", "next"]);
+    expect(db.prepare("SELECT * FROM app_event_admission_commands WHERE event_id = 101").get()).toEqual(retained);
+    expect(() => host.replaceApps([app("next")])).toThrow("pending event admission commands");
+  });
 });

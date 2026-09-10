@@ -19,7 +19,12 @@ import { getDb } from "../lib/requests.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { runMaintenanceMode } from "./modes/maintenance.js";
 import { runRequestedControlExitMode } from "./runtime-exit-modes.js";
-import { parseTaskAttemptProcessRequest, runTaskAttemptWorker, runTaskRecoveryWorker } from "./task-attempt-process.js";
+import {
+  parseTaskAttemptProcessRequest,
+  parseTaskWorkerDefinitionSource,
+  runTaskAttemptWorker,
+  runTaskRecoveryWorker,
+} from "./task-attempt-process.js";
 import { runTaskAdmissionWorker } from "./task-admission-process.js";
 
 declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
@@ -157,9 +162,13 @@ if (appArgs.taskWorkerRequest || appArgs.taskRecoveryWorker || appArgs.taskAdmis
         persistDir: PERSIST_DIR,
       },
       models,
+      ...(appArgs.taskWorkerSource
+        ? { definitionSource: parseTaskWorkerDefinitionSource(appArgs.taskWorkerSource) }
+        : {}),
     };
     if (appArgs.taskAdmissionWorker) {
       await runTaskAdmissionWorker({
+        definitionSource: workerInput.definitionSource,
         projectRoot: PROJECT_ROOT,
         projectsRoot: ROOTS.projectsRoot,
         persistDir: PERSIST_DIR,

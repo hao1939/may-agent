@@ -194,7 +194,11 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
 // ── Context Updater ─────────────────────────────────────────────────────
 // Applies durable `finish().context_updates` to the registered agent's context.md.
 
-function writableAgentDir(projectRoot: string, agent: string): string {
+function writableAgentDir(projectRoot: string, agent: string, agentRelativeDir?: string): string {
+  // Completion belongs to the selected definition even after a marker or registry
+  // change. Resolve against writable installation files, never a source release.
+  if (agentRelativeDir) return join(projectRoot, agentRelativeDir);
+  // Programmatic definitions without a discovered folder retain the legacy lookup.
   return resolveRuntimeAgentDirectory(join(projectRoot, "agents"), agent, join(projectRoot, "projects"))?.dir
     ?? join(projectRoot, "agents", agent);
 }
@@ -207,7 +211,7 @@ export function createContextUpdater(projectRoot: string): (event: AgentEvent) =
     const updates = (info.finishParams as any)?.context_updates;
     if (!Array.isArray(updates) || updates.length === 0) return;
 
-    const agentDir = writableAgentDir(projectRoot, info.agent);
+    const agentDir = writableAgentDir(projectRoot, info.agent, info.agentRelativeDir);
     const contextPath = join(agentDir, "context.md");
 
     try {
@@ -302,7 +306,7 @@ export function createLastSessionWriter(projectRoot: string): (event: AgentEvent
     const summary = finishParams?.summary ?? info.outcome ?? "";
     if (!summary) return;
 
-    const agentDir = writableAgentDir(projectRoot, info.agent);
+    const agentDir = writableAgentDir(projectRoot, info.agent, info.agentRelativeDir);
     const status = finishParams?.status ?? info.status ?? "interrupted";
     const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? info.filesModified ?? [];
     const nextSteps = finishParams?.next_steps ?? null;
