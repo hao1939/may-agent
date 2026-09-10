@@ -139,6 +139,10 @@ export type AppConversationResource = {
   owner: string;
   /** Latest durable message sequence represented by this view. */
   version: number;
+  /** Exact observed turn for human control; a stale revision cannot stop its replacement. */
+  activeTurn?: { id: string; revision: number };
+  /** Bounded accepted asks, independent of input handling and Task completion. */
+  requests?: AppConversationRequest[];
   /** Exact incoming message currently being reconciled, when authoring an App request. */
   current?: {
     messageId: string;
@@ -152,6 +156,59 @@ export type AppConversationResource = {
   /** Durable messages only, in the order shared by every human surface. */
   messages: AppConversationMessage[];
 };
+
+export type AppConversationRequest = {
+  id: string;
+  revision: number;
+  scope: string;
+  status: "open" | "closed";
+  topicId?: string;
+  taskRefs: Array<{ appId: string; taskId: string }>;
+  closure?: { disposition: "fulfilled" | "withdrawn" | "unfulfilled"; reason: string; messageId: string };
+};
+
+/** App judgment; expectedRevision=0 accepts a new ask. Closing cannot silently change scope. */
+export type AppConversationRequestUpdate = {
+  id: string;
+  expectedRevision: number;
+  scope: string;
+  disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
+  reason?: string;
+  /** Add exact links; omitted/empty lists retain admitted work. At most 32 distinct links in total. */
+  taskRefs?: Array<{ appId: string; taskId: string }>;
+};
+
+export const conversationRequestUpdatesSchema = Type.Array(
+  Type.Object(
+    {
+      id: Type.String({ minLength: 1, maxLength: 200 }),
+      expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
+      scope: Type.String({ minLength: 1, maxLength: 2000 }),
+      disposition: Type.Union([
+        Type.Literal("open"),
+        Type.Literal("fulfilled"),
+        Type.Literal("withdrawn"),
+        Type.Literal("unfulfilled"),
+      ]),
+      reason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
+      taskRefs: Type.Optional(
+        Type.Array(
+          Type.Object(
+            { appId: Type.String({ minLength: 1 }), taskId: Type.String({ minLength: 1 }) },
+            { additionalProperties: false },
+          ),
+          {
+            maxItems: 32,
+            description:
+              "Add exact Task links. Empty or omitted lists retain existing links; at most 32 distinct links in total.",
+          },
+        ),
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  { maxItems: 8 },
+);
 
 /** Author-visible request. Host lifecycle and lease fields stay private. */
 export type AppRequest<TData = unknown> = {
@@ -209,6 +266,8 @@ export type AppRequestTaskControl = {
 
 /** Durable intent handed from a bounded conversational turn to App-owned work. */
 export type AppRequestFollowUp = {
+  /** Exact accepted ask served by this handoff, when tracking an ask. */
+  requestId?: string;
   outcome: string;
   constraints?: string[];
   acceptance: string[];
@@ -235,6 +294,7 @@ export type AppRequestDecision = {
   /** Exact existing Task input or genuinely new App work selected by the model. */
   dependencies?: AppRequestDependency[];
   taskControls?: AppRequestTaskControl[];
+  requestUpdates?: AppConversationRequestUpdate[];
 };
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
@@ -243,6 +303,7 @@ const nonEmptyStringSchema = Type.String({ minLength: 1 });
 export const appRequestAgentResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
+    requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
     response: Type.Optional(nonEmptyStringSchema),
     evidence: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
     topic: Type.Union([
@@ -254,18 +315,13 @@ export const appRequestAgentResultSchema = Type.Object(
       Type.Object(
         {
           outcome: nonEmptyStringSchema,
+          requestId: Type.Optional(nonEmptyStringSchema),
           constraints: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
           acceptance: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
           appId: nonEmptyStringSchema,
-          input: Type.Object(
-            { kind: nonEmptyStringSchema, data: Type.Unknown() },
-            { additionalProperties: false },
-          ),
+          input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
           task: Type.Optional(
-            Type.Object(
-              { appId: nonEmptyStringSchema, taskId: nonEmptyStringSchema },
-              { additionalProperties: false },
-            ),
+            Type.Object({ appId: nonEmptyStringSchema, taskId: nonEmptyStringSchema }, { additionalProperties: false }),
           ),
         },
         { additionalProperties: false },

@@ -38,6 +38,8 @@ export interface EventEnvelope {
 
 /** Typed commands accepted by the runtime. */
 export type AgentCommand =
+  | { type: "conversation.turn.stop.requested"; source: string; owner: string;
+      data: { appId: string; conversationId: string; turnId: string; expectedRevision: number } }
   | {
       type: "chat.start.requested";
       source: string;

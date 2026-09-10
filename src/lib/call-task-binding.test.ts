@@ -13,6 +13,48 @@ afterEach(() => {
   }
 });
 
+test("input cancellation waits for execution settlement even when cancellation reporting fails", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-call-cancel-"));
+  roots.push(root);
+  const manager = new SubagentManager({ persistDir: root });
+  const definition = { name: "worker" } as SubagentDefinition;
+  const settled = Promise.withResolvers<never>();
+  const entered = Promise.withResolvers<void>();
+  const run = spyOn(manager, "runDefinition").mockReturnValue("exact-session");
+  const wait = spyOn(manager, "waitFor").mockImplementation(() => settled.promise);
+  const cancel = spyOn(manager, "cancel").mockImplementation(() => {
+    throw new Error("fixture evidence unavailable");
+  });
+  const controller = new AbortController();
+  let finished = false;
+  const result = manager
+    .callAgentDefinition(definition, "Work", {
+      signal: controller.signal,
+      sessionStarted: (id) => {
+        expect(id).toBe("exact-session");
+        entered.resolve();
+      },
+    })
+    .catch((error) => {
+      finished = true;
+      return error;
+    });
+  try {
+    await entered.promise;
+    controller.abort(new Error("Ownership lost"));
+    await Promise.resolve();
+    expect(cancel).toHaveBeenCalledWith("exact-session");
+    expect(finished).toBe(false);
+    settled.resolve({ status: "interrupted" } as never);
+    expect((await result).message).toBe("Ownership lost");
+  } finally {
+    settled.resolve({ status: "interrupted" } as never);
+    run.mockRestore();
+    wait.mockRestore();
+    cancel.mockRestore();
+  }
+});
+
 test("workflow calls preserve the exact supplied Task binding without inferring one from project identity", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-call-binding-"));
   roots.push(root);

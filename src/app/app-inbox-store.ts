@@ -1,10 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource, AppResult } from "@may-agent/sdk";
+import type { AppInput, AppInputSource, AppResult, AppRequestDecision } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
+
+/** Input execution evidence, not fulfillment of the accepted human ask. */
+export type AppInboxHandling =
+  | { phase: "executing" }
+  | { phase: "decided"; decision: AppRequestDecision; requestRevisions?: Record<string, number> }
+  | { phase: "failed"; reason: string }
+  | { phase: "stopped"; reason: string };
+
+export type AppTurnTarget = { appId: string; conversationId: string; turnId: string; expectedRevision: number };
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
 
@@ -35,6 +44,7 @@ export type AppInboxItem = {
   sessionId?: string;
   waitingOn?: { kind: AppInboxWaitKind; id: string };
   result?: AppResult;
+  handling?: AppInboxHandling;
   availableAt?: number;
   reviewAt?: number;
   lease?: { generation: number; owner: string; expiresAt: number };
@@ -153,6 +163,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     sessionId: optionalText(row.session_id),
     waitingOn: waitingKind && waitingId ? { kind: waitingKind, id: waitingId } : undefined,
     result: result ? parseJson<AppResult>(result, "result") : undefined,
+    handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
     availableAt: optionalNumber(row.available_at),
     reviewAt: optionalNumber(row.review_at),
     lease:
@@ -206,6 +217,56 @@ function validateCreate(input: CreateAppInboxItem): void {
 export function getAppInboxItem(db: SqliteDb, id: string): AppInboxItem | null {
   const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   return row ? rowToItem(row) : null;
+}
+
+export function readActiveAppTurn(
+  db: SqliteDb,
+  appId: string,
+  conversationId: string,
+): { id: string; revision: number } | undefined {
+  const row = db
+    .prepare(
+      `SELECT id, lease_generation FROM app_inbox_items
+    WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
+      AND status = 'handling' AND lease_owner IS NOT NULL
+    ORDER BY conversation_seq, created_at LIMIT 1`,
+    )
+    .get(appId, conversationId);
+  return row ? { id: String(row.id), revision: Number(row.lease_generation) } : undefined;
+}
+
+/** Called inside the Host's stop transaction; terminal input cannot restart. */
+export function stopAppInboxTurn(db: SqliteDb, target: AppTurnTarget, now = Date.now()): boolean {
+  if (!Number.isSafeInteger(target.expectedRevision) || target.expectedRevision < 1)
+    throw new Error("Invalid turn revision");
+  const row = db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(target.turnId);
+  if (
+    !row ||
+    row.app_id !== target.appId ||
+    row.conversation_id !== target.conversationId ||
+    row.source_kind !== "human" ||
+    row.lease_generation !== target.expectedRevision
+  )
+    throw new Error("Turn control is stale or mismatched");
+  if (row.status === "done") return false;
+  const reason = "Human stopped this turn";
+  db.run(
+    `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?,
+    available_at = NULL, review_at = NULL, waiting_on_kind = NULL, waiting_on_id = NULL,
+    lease_owner = NULL, lease_expires_at = NULL, completed_at = ?, changed_at = ?, updated_at = ? WHERE id = ?`,
+    [
+      JSON.stringify({ phase: "stopped", reason }),
+      JSON.stringify({
+        summary: reason,
+        response: "Stopped this turn. The ask remains unresolved; already admitted background Tasks continue.",
+      }),
+      now,
+      now,
+      now,
+      target.turnId,
+    ],
+  );
+  return true;
 }
 
 /** Unfinished requests created by one exact parent Task generation. */
@@ -657,12 +718,25 @@ export function claimAppInboxItem(
   );
 }
 
+/** `candidate` is the ready input; IDs are bound parameters, never SQL text. */
+export function excludeExecutingConversations(executingIds: string[]): string {
+  return executingIds.length
+    ? `AND NOT EXISTS (
+    SELECT 1 FROM app_inbox_items local
+    WHERE local.id IN (${executingIds.map(() => "?").join(",")})
+      AND (local.id = candidate.id OR
+        (local.app_id = candidate.app_id AND local.conversation_id = candidate.conversation_id))
+  )`
+    : "";
+}
+
 export function claimNextAppInboxItem(
   db: SqliteDb,
   appId: string,
   owner: string,
   leaseMs: number,
   now = Date.now(),
+  executingIds: string[] = [],
 ): AppInboxClaim | null {
   requiredText(appId, "appId");
   requiredText(owner, "lease owner");
@@ -684,6 +758,7 @@ export function claimNextAppInboxItem(
          SELECT candidate.id
          FROM app_inbox_items candidate
          WHERE candidate.app_id = ?
+           ${excludeExecutingConversations(executingIds)}
            AND candidate.status != 'done'
            AND (
              (candidate.lease_owner IS NULL
@@ -708,7 +783,7 @@ export function claimNextAppInboxItem(
        )
        RETURNING *`,
     )
-    .get(now, now, owner, now + leaseMs, now, appId, now, now, now);
+    .get(now, now, owner, now + leaseMs, now, appId, ...executingIds, now, now, now);
   if (!row) return null;
   const item = rowToItem(row);
   return { item, generation: item.lease!.generation, owner };
@@ -725,6 +800,32 @@ export function renewAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, leaseMs: 
       [now + leaseMs, now, claim.item.id, claim.generation, claim.owner],
     ).changes === 1
   );
+}
+
+/** Check at the effect's transaction boundary, not only after execution. */
+export function assertAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, now = Date.now()): void {
+  const item = getAppInboxItem(db, claim.item.id);
+  if (
+    item?.status !== "handling" ||
+    item.lease?.owner !== claim.owner ||
+    item.lease.generation !== claim.generation ||
+    item.lease.expiresAt <= now
+  )
+    throw new Error("claim is stale");
+}
+
+export function recordAppInboxHandling(
+  db: SqliteDb,
+  claim: AppInboxClaim,
+  handling: AppInboxHandling | null,
+  now = Date.now(),
+): void {
+  const changed = db.run(
+    `UPDATE app_inbox_items SET handling = ?, updated_at = ?
+    WHERE id = ? AND status = 'handling' AND lease_owner = ? AND lease_generation = ? AND lease_expires_at > ?`,
+    [handling ? JSON.stringify(handling) : null, now, claim.item.id, claim.owner, claim.generation, now],
+  ).changes;
+  if (changed !== 1) throw new Error("claim is stale");
 }
 
 export function associateAppInboxClaimSession(

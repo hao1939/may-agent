@@ -3,6 +3,7 @@ import { OwnedTimer } from "./core/scheduling/timer.js";
 import { createHash } from "node:crypto";
 import {
   matchesEventSelector,
+  type AppConversationRequestUpdate,
   type AppDependencyObservation,
   type AppEvent,
   type AppInput,
@@ -13,6 +14,8 @@ import {
   type TaskIntent,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
+import { stateTransaction } from "../lib/db/transaction.js";
+import { applyConversationRequestUpdates, listConversationRequests } from "./conversations/requests.js";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
@@ -407,6 +410,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         ...(change.summary ? { summary: change.summary } : {}),
         ...(change.reason ? { reason: change.reason } : {}),
         topicTitle: topic?.title,
+        requests: listConversationRequests(options.db, link.appId, link.conversationId, link.topicId, taskRef),
         messages: conversation.messages
           .filter((message) => message.metadata?.topicId === link.topicId)
           .slice(-12)
@@ -475,7 +479,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         },
       });
     },
-    async onRequestFollowUp(item, followUp, topicId) {
+    async onRequestFollowUp(item, followUp, topicId, authorize) {
       if (!item.conversationId) {
         throw new Error(`App follow-up ${item.id} requires a Conversation`);
       }
@@ -501,8 +505,23 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         attachment,
         idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
         request,
+        authorize,
+        topicId,
+        ...(followUp.requestId
+          ? {
+              requestLink: {
+                appId: item.appId,
+                conversationId: item.conversationId,
+                id: followUp.requestId,
+                revision:
+                  item.handling?.phase === "decided"
+                    ? (item.handling.requestRevisions?.[followUp.requestId] ?? -1)
+                    : -1,
+              },
+            }
+          : {}),
       });
-      linkConversationTopicTask(options.db, topicId, followUp.appId, attached.taskId, now());
+      authorize();
       options.bus.emit({
         type: "conversation.message.created",
         source: "app-task-admission",
@@ -1077,6 +1096,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);
       let dependencyWakeDelivery: DeliveryResult | undefined;
+      if (event.type === "conversation.turn.stop.requested") {
+        host.stopTurn({
+          appId: String(data.appId ?? ""),
+          conversationId: String(data.conversationId ?? ""),
+          turnId: String(data.turnId ?? ""),
+          expectedRevision: Number(data.expectedRevision),
+        });
+        schedule(String(data.appId));
+        return { accepted: true, by: "conversation-turn-control", route: "direct" };
+      }
       const message = addressedAgentMessage(event);
       if (message) {
         const candidates = host.matchingAppIds(message.targetOwner, message.input);
@@ -1324,28 +1353,41 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (appId && targetConversationId && targetTopicId && followUpId && text) {
           const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
           if (topic) {
-            for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
-            options.bus.emit({
-              type: "conversation.message.created",
-              source: "app-task-follow-up",
-              owner: `app:${appId}`,
-              data: {
-                appId,
-                conversationId: targetConversationId,
-                messageId: `result:${followUpId}`,
-                author: { kind: "agent", id: appId },
-                text,
-                metadata: {
-                  requestId: followUpId,
+            stateTransaction(options.db, () => {
+              // Request updates may reference links introduced by this same result.
+              for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
+              if (conversationResult.requestUpdates !== undefined)
+                applyConversationRequestUpdates(options.db, {
+                  appId,
+                  conversationId: targetConversationId,
                   topicId: targetTopicId,
-                  taskRefs,
-                  ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
+                  updates: conversationResult.requestUpdates as AppConversationRequestUpdate[],
+                  updateKey: `task-result:${appId}:${followUpId}`,
+                  messageId: `result:${followUpId}`,
+                  now: now(),
+                });
+              options.bus.emit({
+                type: "conversation.message.created",
+                source: "app-task-follow-up",
+                owner: `app:${appId}`,
+                data: {
+                  appId,
+                  conversationId: targetConversationId,
+                  messageId: `result:${followUpId}`,
+                  author: { kind: "agent", id: appId },
+                  text,
+                  metadata: {
+                    requestId: followUpId,
+                    topicId: targetTopicId,
+                    taskRefs,
+                    ...(taskRefs.length === 1 ? { followTask: taskRefs[0] } : {}),
+                  },
+                  idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
+                    .update(text)
+                    .digest("hex")
+                    .slice(0, 16)}`,
                 },
-                idempotencyKey: `conversation-follow-up:${appId}:${followUpId}:${createHash("sha256")
-                  .update(text)
-                  .digest("hex")
-                  .slice(0, 16)}`,
-              },
+              });
             });
           } else {
             options.bus.emit({

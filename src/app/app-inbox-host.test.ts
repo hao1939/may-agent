@@ -1547,7 +1547,8 @@ describe("App inbox host", () => {
         ],
       }),
       controlTask: async (input) => {
-        controls.push(input);
+        input.authorize();
+        controls.push({ requestId: input.requestId, control: input.control });
       },
     });
     db.prepare(
