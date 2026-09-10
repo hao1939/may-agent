@@ -93,6 +93,14 @@ Every workflow returns exactly one `ExecutionResult` through `ctx.done(...)` or
 App request or task. The calling App/task boundary validates and admits the
 output.
 
+An agent call can finish its bounded execution with `status: "done"` while
+explicitly reporting partial progress in `evidence.status`. Inspect the
+agent's finish evidence and the App's acceptance contract before accepting its
+output. For work that requires a completed result, `evidence.status ===
+"partial"` is incomplete, not a successful no-op. Retain that evidence when
+returning a blocker. A real no-op needs a completed observation and a reason
+that no useful change is warranted; exhausting the call allowance is not one.
+
 `blocked` means this run cannot continue locally. It does not delegate,
 escalate, start an agent session, notify a human, or keep the workflow open.
 The owning App request or task decides the durable next state.

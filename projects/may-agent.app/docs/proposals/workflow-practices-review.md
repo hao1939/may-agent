@@ -447,3 +447,25 @@ catch and preserves native errors. Tests cover missing files, read-only,
 permission and I/O failures with no downstream writes. A disposable container
 probe of a read-only fixture returned `EROFS` correctly. Deployment remains
 separate from that probe.
+
+## Error reporting deployment and quiet recurrence — 10:41–10:46 UTC
+
+Host fix `033bd116` passed 2,628 tests with three installation-only skips.
+Combined local candidate `50234d9b` passed 2,644 tests, the same three skips,
+and all static checks. It was deployed at 10:41 UTC while both Apps were idle;
+the installed binary reports that revision and readiness passes. Only May and
+Scout remained enabled. XHS was reopened, became readable without another
+login, and the protected file hashes remained unchanged. This is a local
+candidate deployment, not a published release.
+
+The natural May review 6318651 started at 10:45 and converged at 6318659. It
+read both exact disabled-App links and emitted no repeated Conversation
+message or replacement Task. This checks quiet recovery, not the still-open
+scheduled-research attribution wording. The fulfilled HN ask was not retried.
+
+A read-only library check passed all 136 selected landing-page links. The
+existing health observer still reports 26 unchanged facts (future dates,
+oversized notes and unsourced backlog), with no new wake signal. Zero new
+wakes does not mean those quality issues were fixed. Neither this inspection
+nor the deployment rewrote the existing research edits. The manual now also
+explains the observed distinction between execution done and partial progress.
