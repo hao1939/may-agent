@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
+import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
+
+const git = (cwd: string, ...args: string[]) => promisify(execFile)("git", args, { cwd, timeout: 10_000 });
 
 function loadAppDefinitions(projectsRoot: string, canonicalProjectsRoot = projectsRoot) {
   return new AppRegistry(discoverAppDefinitions(projectsRoot, canonicalProjectsRoot)).reload();
@@ -18,7 +22,7 @@ describe("App source releases", () => {
     for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
   });
 
-  function fixture(withGit = true): { root: string; stateDir: string; appPath: string } {
+  async function fixture(withGit = true): Promise<{ root: string; stateDir: string; appPath: string }> {
     const root = join(tmpdir(), `app-source-release-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const appDir = join(root, "projects", "sample.app");
     const appPath = join(appDir, "app.js");
@@ -40,27 +44,24 @@ describe("App source releases", () => {
     writeFileSync(join(root, "shared", "common-sense.md"), "shared guidance v1\n");
     writeFileSync(join(sharedSkillsDir, "SKILL.md"), "---\nname: sample\ndescription: sample\n---\n\n# Sample\n");
     if (withGit) {
-      execFileSync("git", ["init", "-q"], { cwd: root });
-      execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: root });
-      execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
-      execFileSync(
-        "git",
-        [
-          "add",
-          "agents/worker/agent.json",
-          "projects/sample.app/app.js",
-          "shared/common-sense.md",
-          "shared/skills/sample/SKILL.md",
-        ],
-        { cwd: root },
+      await git(root, "init", "-q");
+      await git(root, "config", "user.email", "test@example.com");
+      await git(root, "config", "user.name", "Test");
+      await git(
+        root,
+        "add",
+        "agents/worker/agent.json",
+        "projects/sample.app/app.js",
+        "shared/common-sense.md",
+        "shared/skills/sample/SKILL.md",
       );
-      execFileSync("git", ["commit", "-qm", "initial"], { cwd: root });
+      await git(root, "commit", "-qm", "initial");
     }
     return { root, stateDir, appPath };
   }
 
   it("restores the activated committed source until a later release is explicitly activated", async () => {
-    const { root, stateDir, appPath } = fixture();
+    const { root, stateDir, appPath } = await fixture();
     const store = new DefinitionSourceReleaseStore(root, stateDir);
     const first = store.ensureCurrent();
     const canonicalProjectsRoot = join(root, "projects");
@@ -79,8 +80,8 @@ describe("App source releases", () => {
     );
     expect((await loadAppDefinitions(store.ensureCurrent().projectsRoot))[0]?.definition.id).toBe("sample-v1");
 
-    execFileSync("git", ["add", "projects/sample.app/app.js"], { cwd: root });
-    execFileSync("git", ["commit", "-qm", "second"], { cwd: root });
+    await git(root, "add", "projects/sample.app/app.js");
+    await git(root, "commit", "-qm", "second");
     const second = store.stage();
     expect(second.id).not.toBe(first.id);
     expect((await loadAppDefinitions(second.projectsRoot))[0]?.definition.id).toBe("dirty");
@@ -90,8 +91,8 @@ describe("App source releases", () => {
     expect(store.current()?.id).toBe(second.id);
   });
 
-  it("snapshots small non-git fixture Apps without copying runtime state", () => {
-    const { root, stateDir } = fixture(false);
+  it("snapshots small non-git fixture Apps without copying runtime state", async () => {
+    const { root, stateDir } = await fixture(false);
     const runtimeState = join(root, "projects", "sample.app", ".state", "runtime.json");
     mkdirSync(join(runtimeState, ".."), { recursive: true });
     writeFileSync(runtimeState, "{}\n");
@@ -104,7 +105,7 @@ describe("App source releases", () => {
   });
 
   it("keeps an untracked disable marker outside committed definition releases", async () => {
-    const { root, stateDir } = fixture();
+    const { root, stateDir } = await fixture();
     const projectsRoot = join(root, "projects");
     const marker = join(projectsRoot, "sample.app", ".disabled");
     writeFileSync(marker, "");
@@ -118,8 +119,62 @@ describe("App source releases", () => {
     );
   });
 
-  it("keeps minimal non-git sandboxes valid without inventing shared guidance", () => {
-    const { root, stateDir } = fixture(false);
+  it.each([true, false])("pins shared tool imports with the agent source (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const sharedTools = join(root, "shared", "tools");
+    const localTools = join(root, "agents", "worker", "tools");
+    mkdirSync(sharedTools, { recursive: true });
+    mkdirSync(localTools, { recursive: true });
+    const helper = join(sharedTools, "sample.js");
+    writeFileSync(helper, 'export const createTool = () => ({ name: "sample-v1" });\n');
+    writeFileSync(
+      join(localTools, "sample.js"),
+      'import { createTool } from "../../../shared/tools/sample.js"; export default createTool;\n',
+    );
+    if (withGit) {
+      await git(root, "add", "shared/tools", "agents/worker/tools");
+      await git(root, "commit", "-qm", "shared tool");
+    }
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const first = store.ensureCurrent();
+    writeFileSync(helper, 'export const createTool = () => ({ name: "sample-v2" });\n');
+    const notices: string[] = [];
+    const load = async (release: typeof first) =>
+      (
+        await loadAgentLocalTools("worker", join(release.agentsRoot, "worker"), {
+          projectRoot: root,
+          persistDir: stateDir,
+          onNotice: (notice) => notices.push(notice),
+        })
+      ).map((tool) => tool.name);
+    expect(await load(first)).toEqual(["sample-v1"]);
+    expect(first.id).toEndWith("-definitions-v4");
+    // Content cache identity changes; the manifest schema does not. Previous
+    // Hosts must still be able to read the active source after binary rollback.
+    expect(JSON.parse(readFileSync(join(first.root, "release.json"), "utf8")).version).toBe(3);
+    expect(notices).toEqual([]);
+    if (withGit) {
+      expect(() => store.stage()).toThrow("commit them before reload");
+      await git(root, "add", "shared/tools");
+      await git(root, "commit", "-qm", "update shared tool");
+    }
+    const second = store.stage();
+    expect(second.id).not.toBe(first.id);
+    expect(await load(second)).toEqual(["sample-v2"]);
+    expect(await load(first)).toEqual(["sample-v1"]);
+    expect(store.current()?.id).toBe(first.id);
+    expect(notices).toEqual([]);
+  });
+
+  it("rejects an untracked shared tool before publishing a release", async () => {
+    const { root, stateDir } = await fixture();
+    mkdirSync(join(root, "shared", "tools"), { recursive: true });
+    writeFileSync(join(root, "shared", "tools", "untracked.ts"), "export const value = 1;\n");
+    expect(() => new DefinitionSourceReleaseStore(root, stateDir).stage()).toThrow("untracked executable/config files");
+  });
+
+  it("keeps minimal non-git sandboxes valid without inventing shared guidance", async () => {
+    const { root, stateDir } = await fixture(false);
     rmSync(join(root, "shared"), { recursive: true, force: true });
 
     const release = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
@@ -127,8 +182,8 @@ describe("App source releases", () => {
     expect(existsSync(join(release.sharedRoot, "skills"))).toBeTrue();
   });
 
-  it("rejects implicit activation of uncommitted App code", () => {
-    const { root, stateDir, appPath } = fixture();
+  it("rejects implicit activation of uncommitted App code", async () => {
+    const { root, stateDir, appPath } = await fixture();
     const store = new DefinitionSourceReleaseStore(root, stateDir);
     store.ensureCurrent();
     writeFileSync(
@@ -140,8 +195,8 @@ describe("App source releases", () => {
     expect(store.current()?.sourceCommit).toMatch(/^[0-9a-f]{40}$/);
   });
 
-  it("rejects implicit activation of uncommitted agent definitions", () => {
-    const { root, stateDir } = fixture();
+  it("rejects implicit activation of uncommitted agent definitions", async () => {
+    const { root, stateDir } = await fixture();
     const store = new DefinitionSourceReleaseStore(root, stateDir);
     const active = store.ensureCurrent();
     const agentPath = join(root, "agents", "worker", "agent.json");
@@ -155,8 +210,8 @@ describe("App source releases", () => {
     expect(store.current()?.id).toBe(active.id);
   });
 
-  it("rejects implicit activation of uncommitted shared prompt definitions", () => {
-    const { root, stateDir } = fixture();
+  it("rejects implicit activation of uncommitted shared prompt definitions", async () => {
+    const { root, stateDir } = await fixture();
     const store = new DefinitionSourceReleaseStore(root, stateDir);
     const active = store.ensureCurrent();
     writeFileSync(join(root, "shared", "common-sense.md"), "dirty guidance\n");
@@ -166,8 +221,8 @@ describe("App source releases", () => {
     expect(store.current()?.id).toBe(active.id);
   });
 
-  it("ignores runtime evidence but rejects an untracked executable source file", () => {
-    const { root, stateDir } = fixture();
+  it("ignores runtime evidence but rejects an untracked executable source file", async () => {
+    const { root, stateDir } = await fixture();
     const evidenceDir = join(root, "projects", "sample.app", "evidence");
     mkdirSync(evidenceDir, { recursive: true });
     writeFileSync(join(evidenceDir, "receipt.json"), "{}\n");
