@@ -178,11 +178,6 @@ export function attachRequestToTask(
 /** Retry an uncommitted result, not a rejected decision or Task operation. */
 export class InputCompletionError extends Error {}
 
-export function appRequestChildrenWaitId(requestId: string): string {
-  if (!requestId.trim()) throw new Error("App input id must be a non-empty string");
-  return `children:${requestId.trim()}`;
-}
-
 /** Input result, accepted-ask closure and dependent wakes share one commit. */
 export function completeInboxInput(
   db: SqliteDb,
@@ -218,9 +213,6 @@ export function completeInboxInput(
       const rowCompleted = completeAppInboxClaim(db, claim, result, now);
       if (!rowCompleted) throw new Error("claim is stale");
       wakeAppInboxItemsWaitingOn(db, { kind: "app", id: claim.item.id }, now);
-      if (claim.item.parentId) {
-        wakeAppInboxItemsWaitingOn(db, { kind: "app", id: appRequestChildrenWaitId(claim.item.parentId) }, now);
-      }
     });
   } catch (error) {
     if (!handling && claim.item.handling?.phase === "decided" && !(error instanceof ConversationRequestConflict))

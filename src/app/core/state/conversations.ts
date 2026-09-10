@@ -206,7 +206,9 @@ export function listAppConversationMessages(
     // stays beside the feedback that most recently shaped that Task.
     if (projectedTaskResults.has(resultIdentity)) continue;
     projectedTaskResults.add(resultIdentity);
-    const resultMessageId = `result:${item.id}`;
+    // A failed old wait may already have published an acknowledgment as result:<id>.
+    // Preserve that history and give the failure its own stable visible identity.
+    const resultMessageId = `${item.handling?.phase === "failed" ? "failure" : "result"}:${item.id}`;
     // Explicit and compatibility projections share one semantic identity.
     // Prefer the explicit Event when both happen to be inside this read.
     if (eventMessagesById.has(resultMessageId)) continue;
@@ -546,10 +548,10 @@ export function readConversationMessageTopicId(
   const inbox = db
     .prepare(
       `SELECT topic_id FROM app_inbox_items
-       WHERE app_id = ? AND conversation_id = ? AND (source_id = ? OR 'result:' || id = ?)
+       WHERE app_id = ? AND conversation_id = ? AND (source_id = ? OR 'result:' || id = ? OR 'failure:' || id = ?)
        ORDER BY created_at DESC LIMIT 1`,
     )
-    .get(appId, conversationId, id, id) as { topic_id?: unknown } | undefined;
+    .get(appId, conversationId, id, id, id) as { topic_id?: unknown } | undefined;
   if (typeof inbox?.topic_id === "string" && inbox.topic_id.trim()) return inbox.topic_id.trim();
   const eventId = id.startsWith("event:") ? Number(id.slice("event:".length)) : NaN;
   if (!Number.isSafeInteger(eventId)) return null;

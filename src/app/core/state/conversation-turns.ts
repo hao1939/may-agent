@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { AppInputContext, AppRequestDecision } from "@may-agent/sdk";
+import type { AppInputContext, ConversationTurnResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as withTransaction } from "../../../lib/db/transaction.js";
 import {
@@ -19,7 +19,7 @@ import {
 type TurnDecisionInput = {
   claim: AppInboxClaim;
   request: Readonly<AppInputContext>;
-  decision: AppRequestDecision;
+  decision: ConversationTurnResult;
   authorize: () => void;
   now: number;
 };
@@ -74,7 +74,6 @@ export function applyTurnTopic(db: SqliteDb, input: TurnDecisionInput): string |
 export function acceptConversationTurnDecision(db: SqliteDb, input: TurnDecisionInput) {
   const { claim, request, decision, authorize, now } = input;
   const requestUpdates = decision.requestUpdates ?? [];
-  const dependencies = decision.dependencies ?? [];
   const followUp = decision.followUp;
   const requestRevisions: Record<string, number> = Object.create(null);
   return withTransaction(db, () => {
@@ -106,10 +105,8 @@ export function acceptConversationTurnDecision(db: SqliteDb, input: TurnDecision
         throw new ConversationRequestConflict("Handoff must name an open accepted Request in this Conversation");
       requestRevisions[followUp.requestId] = observed.revision;
     }
-    const handling: AppInboxHandling | undefined = dependencies.length
-      ? undefined
-      : { phase: "decided", decision, requestRevisions };
-    recordAppInboxHandling(db, claim, handling ?? null, now);
+    const handling: AppInboxHandling = { phase: "decided", decision, requestRevisions };
+    recordAppInboxHandling(db, claim, handling, now);
     return { topicId, handling };
   });
 }

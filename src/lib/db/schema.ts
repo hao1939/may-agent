@@ -466,6 +466,7 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppEventAdmissionColumns(db);
+    retireConversationChildWaits(db);
     ensureExistingTaskBindingColumns(db);
     db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
@@ -698,4 +699,32 @@ function ensureColumn(db: SqliteDb, table: string, column: string, definition: s
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: unknown }>;
   if (columns.some((item) => item.name === column)) return;
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+/** Retire the removed frontend protocol once, without replaying or cancelling its Tasks. */
+function retireConversationChildWaits(db: SqliteDb): void {
+  const reason = "Conversational child-result waiting is no longer supported.";
+  const response =
+    "This older turn can no longer wait for child results. Your ask remains unresolved. " +
+    "Any work already admitted continues independently; its results and history remain available. " +
+    "Send a new message to review that work and decide what is still needed.";
+  const now = Date.now();
+  db.run(
+    `UPDATE app_inbox_items AS parent
+     SET status = 'done',
+         handling = json_set(COALESCE(handling, '{}'), '$.phase', 'failed', '$.reason', ?),
+         result = json_set(COALESCE(result, '{}'), '$.summary', ?, '$.response', ?),
+         available_at = NULL, review_at = NULL,
+         lease_generation = lease_generation + 1, lease_owner = NULL, lease_expires_at = NULL,
+         completed_at = ?, changed_at = ?, updated_at = ?
+     WHERE status != 'done' AND (
+       (waiting_on_kind = 'app' AND waiting_on_id = 'children:' || id)
+       OR (conversation_id IS NOT NULL AND (
+         waiting_on_kind = 'app'
+         OR EXISTS (SELECT 1 FROM app_inbox_items child WHERE child.parent_id = parent.id)
+         OR json_array_length(handling, '$.decision.dependencies') > 0
+       ))
+     )`,
+    [reason, reason, response, now, now, now],
+  );
 }

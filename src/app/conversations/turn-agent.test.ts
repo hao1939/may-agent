@@ -2,7 +2,6 @@ import { createAssistantMessageEventStream, type AssistantMessage } from "@earen
 import { fakeModel } from "../../../test/fixtures/model.js";
 import { createConversationInbox } from "../composition/conversation-inbox.js";
 import { afterEach, describe, expect, it } from "bun:test";
-import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,7 +19,6 @@ import { createBashTool } from "../../lib/tools/bash.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { createConversationAgentResolver } from "./turn-agent.js";
-import { listAppInboxChildren } from "../app-inbox-store.js";
 import { readAppConversationResource } from "../core/state/conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
 
@@ -48,15 +46,6 @@ const request: AppInputContext = {
   input: { kind: "message", data: { text: "Review the options" } },
 };
 const answer = { summary: "Answered", response: "Here are the options.", topic: { kind: "none" } };
-const child = {
-  kind: "app" as const,
-  id: "child-1",
-  requestId: "child-1",
-  appId: "owner",
-  status: "done" as const,
-  summary: "The owner verified the work",
-};
-
 describe("conversational attempt contract", () => {
   const databases: SqliteDb[] = [];
   const roots: string[] = [];
@@ -133,13 +122,13 @@ describe("conversational attempt contract", () => {
     ).toBe(false);
   });
 
-  it("offers only direct handoff for new May turns without changing the public compatibility schema", async () => {
+  it("offers one handoff schema, including through the deprecated SDK name", async () => {
     const { prompt, options } = await attempt();
     const schema = options.outputSchema!;
     expect(Check(schema, answer)).toBe(true);
     const waiting = { ...answer, dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: {} } }] };
     expect(Check(schema, waiting)).toBe(false);
-    expect(Check(appRequestAgentResultSchema, waiting)).toBe(true);
+    expect(Check(appRequestAgentResultSchema, waiting)).toBe(false);
     expect(Check(schema, { ...answer, dependencies: [] })).toBe(false);
     expect(prompt).toContain("request completes");
     expect(prompt).not.toContain("Choose dependency appId");
@@ -165,10 +154,13 @@ describe("conversational attempt contract", () => {
     ).toBe(true);
   });
 
-  it("rejects child-wait effects from a replacement resolver on a new conversation Turn", async () => {
+  it.each([
+    ["explicit inputs", may],
+    ["all inputs", { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined }],
+  ] as const)("rejects child-wait effects without creating work (%s)", async (_kind, frontend) => {
     const { db } = await attempt();
     const host = createConversationInbox({
-      db, apps: [may, owner],
+      db, apps: [frontend, owner],
       resolveRequest: async () => ({
         ...answer, topic: { kind: "new", title: "Review" },
         dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: { text: "Review" } } }],
@@ -177,7 +169,7 @@ describe("conversational attempt contract", () => {
     host.admit({ ...request, appId: may.id, conversationId: "may:primary", conversationSequence: 1 });
     expect((await host.reconcileOnce(may.id)).errors).toEqual([expect.stringContaining("invalid request decision")]);
     expect(host.get(request.id)?.handling?.phase).toBe("failed");
-    expect(listAppInboxChildren(db, request.id)).toEqual([]);
+    expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all(request.id)).toEqual([]);
     expect(readAppConversationResource(db, may.id, "may:primary").topics).toEqual([]);
   });
 
@@ -334,7 +326,7 @@ describe("conversational attempt contract", () => {
       host.admit(input);
       const result = await host.reconcileOnce("may");
       expect(calls).toBe(1);
-      expect(listAppInboxChildren(db, request.id)).toEqual([]);
+      expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all(request.id)).toEqual([]);
       expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
       if (status !== "done") {
         expect(readConversationRequest(db, "may", "may:primary", "typo")?.status).toBe("open");
@@ -381,79 +373,13 @@ describe("conversational attempt contract", () => {
     ).toEqual(["work"]);
   });
 
-  it("keeps the child-result protocol for retained requests after the App adopts direct handoff", async () => {
-    const { prompt, options } = await attempt({ ...request, dependencies: [child] });
+  it("uses the same turn contract for an App without its own Task capability", async () => {
+    const frontend = { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined };
+    const { prompt, options } = await attempt(request, frontend);
     expect(options.outputSchema).toBe(appRequestAgentResultSchema);
-    expect(options.toolPolicy).toBe("app-agent-deputy");
-    expect(prompt).toContain("final result comes after the work finishes");
-    expect(prompt).not.toContain("Do not return dependencies");
-    expect(prompt).toContain(child.summary);
-    const exactWait = await attempt({ ...request, dependency: { kind: "app", id: "old-child", status: "unknown" } });
-    expect(exactWait.options.outputSchema).toBe(appRequestAgentResultSchema);
-    expect(exactWait.options.toolPolicy).toBe("app-agent-deputy");
-  });
-
-  it("does not mistake another Topic's work or a focused Task for this request's child wait", async () => {
-    const { options } = await attempt({
-      ...request,
-      dependencies: [],
-      openRequests: [{ requestId: "older-turn", topicId: "old-topic", dependencies: [child] }],
-      focusedTask: { appId: "owner", task: { kind: "task", id: "work-1", status: "waiting" } },
-    });
-    expect(Check(options.outputSchema!, { ...answer, dependencies: [] })).toBe(false);
-  });
-
-  it("preserves the all-input conversational App protocol", async () => {
-    const legacy = { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined };
-    const { prompt, options } = await attempt(request, legacy);
-    expect(options.outputSchema).toBe(appRequestAgentResultSchema);
-    expect(options.toolPolicy).toBe("app-agent-deputy");
-    expect(prompt).toContain("final result comes after the work finishes");
-  });
-
-  it("finishes the same retained child wait after recreating the Host with the current May definition", async () => {
-    const { db, resolve, calls } = await attempt();
-    const legacy = { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined };
-    let completed = false;
-    let attachments = 0;
-    const capabilities = {
-      db,
-      attachTask: fakeTaskAttacher(db, async () => {
-        attachments += 1;
-        return { taskId: "owner-work" };
-      }),
-      readDependency: async () => ({
-        kind: "task" as const,
-        id: "owner-work",
-        status: completed ? ("done" as const) : ("running" as const),
-        ...(completed ? { summary: "Owner verified the result" } : {}),
-      }),
-    };
-    const before = createConversationInbox({
-      ...capabilities,
-      apps: [legacy, owner],
-      resolveRequest: async () => ({
-        summary: "The owner must review the work",
-        topic: { kind: "new", title: "Review work" },
-        dependencies: [{ id: "review", appId: "owner", input: { kind: "work", data: { text: "Review" } } }],
-      }),
-    });
-    before.admit({ ...request, appId: "may", conversationId: "may:primary", conversationSequence: 1 });
-    expect((await before.reconcileOnce("may")).errors).toEqual([]);
-    expect((await before.reconcileOnce("owner")).errors).toEqual([]);
-    const retained = listAppInboxChildren(db, request.id);
-    expect(retained).toHaveLength(1);
-    expect(before.get(request.id)?.waitingOn).toEqual({ kind: "app", id: `children:${request.id}` });
-
-    const after = createConversationInbox({ ...capabilities, apps: [may, owner], resolveRequest: resolve });
-    completed = true;
-    expect(after.wake({ kind: "task", id: "owner-work" })).toBe(1);
-    expect((await after.reconcileOnce("owner")).errors).toEqual([]);
-    expect((await after.reconcileOnce("may")).errors).toEqual([]);
-    expect(calls.at(-1)?.options.outputSchema).toBe(appRequestAgentResultSchema);
-    expect(calls.at(-1)?.prompt).toContain("Owner verified the result");
-    expect(after.get(request.id)).toMatchObject({ status: "done", result: { response: answer.response } });
-    expect(listAppInboxChildren(db, request.id).map(({ id }) => id)).toEqual(retained.map(({ id }) => id));
-    expect(attachments).toBe(1);
+    expect(options.toolPolicy).toBe("app-agent-full");
+    expect(prompt).toContain("Do not return dependencies");
+    const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
+    expect(catalog.map((entry: { appId: string }) => entry.appId)).toEqual(["owner"]);
   });
 });
