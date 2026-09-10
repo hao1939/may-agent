@@ -1,6 +1,6 @@
 import type { SubagentManager } from "../../lib/index.js";
 import type { EventBus } from "../core/events/bus.js";
-import type { AppTaskRuntimeOptions } from "../app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "../core/tasks/app-task-runtime.js";
 import { createTaskAgentRunner } from "../adapters/executors/managed-agent.js";
 import { createTaskWorkflowRunner } from "../adapters/executors/workflow.js";
 import { createTaskSessionRecovery } from "../adapters/executors/session-recovery.js";

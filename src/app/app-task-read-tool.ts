@@ -114,7 +114,7 @@ export function createAppTaskReadTool(options: {
           };
           const eventId = options.publisher
             ? await options.publisher.publish(publishInput)
-            : (await import("./app-task-runtime.js")).publishLoadedAppTaskEvent(publishInput);
+            : (await import("./core/tasks/app-task-runtime.js")).publishLoadedAppTaskEvent(publishInput);
           return result({ eventId, type: eventType });
         }
         const requestedAppId = params.target?.appId?.trim().replace(/\.app$/, "");
@@ -134,7 +134,7 @@ export function createAppTaskReadTool(options: {
           const value = options.reader?.outcomes
             ? await options.reader.outcomes({ bus: options.bus, appId, projection })
             : await (
-                await import("./app-task-runtime.js")
+                await import("./core/tasks/app-task-runtime.js")
               ).listLoadedAppTaskOutcomeViews({
                 bus: options.bus,
                 appId,
@@ -152,7 +152,7 @@ export function createAppTaskReadTool(options: {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for get" });
           const readAppId = params.target?.appId?.trim() || appId;
-          const reader = options.reader ?? (await import("./app-task-runtime.js"));
+          const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
           const value =
             "get" in reader
               ? await reader.get({ bus: options.bus, appId: readAppId, taskId })
@@ -164,7 +164,7 @@ export function createAppTaskReadTool(options: {
           ...(params.limit === undefined ? {} : { limit: params.limit }),
           ...(params.cursor ? { cursor: params.cursor } : {}),
         };
-        const reader = options.reader ?? (await import("./app-task-runtime.js"));
+        const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
         const value =
           "list" in reader
             ? await reader.list({ bus: options.bus, appId, options: listOptions })

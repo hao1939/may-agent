@@ -1,5 +1,5 @@
 import { Type, defineApp } from "@may-agent/sdk";
-import { AppInboxHost } from "../../app-inbox-host.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { readAppConversationResource } from "./conversations.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -9,15 +9,15 @@ import { fileURLToPath } from "node:url";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
-import { cacheTaskSnapshots, readTaskSnapshot } from "../../app-task-store.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { cacheTaskSnapshots, readTaskSnapshot } from "../tasks/app-task-store.js";
 import {
   claimAppInboxItem,
   createAppInboxItem,
   getAppInboxItem,
   waitAppInboxClaim,
   wakeAppInboxItem,
-} from "../../app-inbox-store.js";
+} from "./app-inbox-store.js";
 import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import {
   cancelAppTask,
@@ -28,7 +28,7 @@ import {
   observeAppTaskIntent,
   retryFailedAppTask,
   stopAppTask,
-} from "../../app-task-reconciler.js";
+} from "../tasks/app-task-reconciler.js";
 import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
 import { admitTaskRequest, attachRequestToTask } from "./inbox.js";
 

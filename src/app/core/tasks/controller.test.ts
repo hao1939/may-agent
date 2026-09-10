@@ -1,6 +1,6 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { AppTaskController } from "./controller.js";
-import { HostCapacity } from "../../host-capacity.js";
+import { HostCapacity } from "../scheduling/host-capacity.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const started = Date.now();

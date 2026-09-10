@@ -13,7 +13,7 @@ import {
   recordAppInboxHandling,
   type AppInboxItem,
   type AppInboxClaim,
-} from "../app-inbox-store.js";
+} from "../core/state/app-inbox-store.js";
 import { acceptConversationTurnDecision, applyTurnTopic } from "../core/state/conversation-turns.js";
 import { readConversationTopic } from "../core/state/conversations.js";
 import { readConversationRequest, ConversationRequestConflict } from "../core/state/conversation-requests.js";

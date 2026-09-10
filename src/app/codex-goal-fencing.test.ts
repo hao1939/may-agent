@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { claimObservedAppTask, completeAppTask, observeAppTaskIntent } from "./app-task-reconciler.js";
+import { claimObservedAppTask, completeAppTask, observeAppTaskIntent } from "./core/tasks/app-task-reconciler.js";
 import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
-import { appTaskTestContext } from "./app-task-test-support.js";
+import { appTaskTestContext } from "./core/tasks/app-task-test-support.js";
 
 const roots: string[] = [];
 

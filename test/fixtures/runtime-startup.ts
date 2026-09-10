@@ -11,11 +11,11 @@ import { fakeModel } from "./model.js";
 import { closeAllDbs } from "../../src/lib/requests.js";
 import { parseAppArgs } from "../../src/app/app-args.js";
 import * as daemon from "../../src/app/daemon.js";
-import * as inbox from "../../src/app/app-inbox-runtime.js";
+import * as inbox from "../../src/app/composition/app-inbox-runtime.js";
 import * as interfaces from "../../src/app/interface-startup.js";
 import * as background from "../../src/app/composition/background-startup.js";
-import * as taskCapability from "../../src/app/app-task-capability.js";
-import * as taskWorkers from "../../src/app/task-attempt-process.js";
+import * as taskCapability from "../../src/app/core/tasks/app-task-capability.js";
+import * as taskWorkers from "../../src/app/composition/workers/task-attempt-process.js";
 import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
 import { getAgentMaintenance } from "../../src/app/agent-loader.js";
 import * as agentLoader from "../../src/app/agent-loader.js";
@@ -26,7 +26,7 @@ import {
   attachLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
-} from "../../src/app/app-task-runtime.js";
+} from "../../src/app/core/tasks/app-task-runtime.js";
 
 const actualDaemon = { ...daemon };
 const actualInbox = { ...inbox };
@@ -69,7 +69,7 @@ process.env.MAY_HOST_MAX_CONCURRENT = "2";
 process.env.MAY_DAEMON_QUIET = "1";
 
 if (workerPublication) {
-  mock.module("../../src/app/app-task-capability.js", () => ({
+  mock.module("../../src/app/core/tasks/app-task-capability.js", () => ({
     ...actualTaskCapability,
     createAppTaskCapability: (options: Parameters<typeof taskCapability.createAppTaskCapability>[0]) => {
       const capability = actualTaskCapability.createAppTaskCapability(options);
@@ -90,7 +90,7 @@ if (workerPublication) {
       };
     },
   }));
-  mock.module("../../src/app/task-attempt-process.js", () => ({
+  mock.module("../../src/app/composition/workers/task-attempt-process.js", () => ({
     ...actualTaskWorkers,
     createTaskAttemptProcessExecutor: (options: Parameters<typeof taskWorkers.createTaskAttemptProcessExecutor>[0]) =>
       actualTaskWorkers.createTaskAttemptProcessExecutor({
@@ -202,7 +202,7 @@ mock.module("../../src/app/transport/telegram.js", () => ({
     return { close() {} };
   },
 }));
-mock.module("../../src/app/app-inbox-runtime.js", () => ({
+mock.module("../../src/app/composition/app-inbox-runtime.js", () => ({
   ...actualInbox,
   startAppInboxRuntime: async (options: Parameters<typeof inbox.startAppInboxRuntime>[0]) => {
     registry = options.registry;

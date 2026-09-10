@@ -11,8 +11,8 @@ import { createLastSessionWriter } from "../lib/session-subscribers.js";
 import { EventBus } from "./core/events/bus.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
-import { closeInstalledAppTaskRuntimes } from "./app-task-runtime.js";
-import { HostCapacity } from "./host-capacity.js";
+import { closeInstalledAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
+import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 
 const roots: string[] = [];

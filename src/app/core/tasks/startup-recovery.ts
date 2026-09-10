@@ -1,7 +1,7 @@
 import type { PersistedSession } from "../../../lib/persistence.js";
 import { getDb } from "../../../lib/requests.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
-import { APP_TASK_RECOVERY_OWNER } from "../../app-task-reconciler.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { APP_TASK_RECOVERY_OWNER } from "./app-task-reconciler.js";
 
 const LEGACY_APP_INBOX_RECOVERY_OWNER = "app-inbox";
 

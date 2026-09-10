@@ -7,7 +7,7 @@ checks. Directory names alone do not indicate test cost or isolation.
 | Contract | Detailed owner | Distinct integration protection |
 | --- | --- | --- |
 | Task claims, waits, completion and stale results | Reconciler and resource-store tests | Real concurrent connections, restart, process workers and cancellation |
-| Task prompt/catalog projection | `app-task-runtime-policy.test.ts`, with no disk setup | Runtime tests verify persisted waits and actual agent inputs |
+| Task prompt/catalog projection | `src/app/core/tasks/app-task-runtime-policy.test.ts`, with no disk setup | Runtime tests verify persisted waits and actual agent inputs |
 | Workflow execution allowances, cancellation and bounded effects | `src/lib/workflow-tool.test.ts` | `test/integration/workflow-tool.test.ts` owns tool dispatch, session reuse and steering; daemon discovery checks persisted runs |
 | Metrics and alert transitions | `test/integration/metrics.test.ts` | E4 proves event ingress, handler registration and persistent alert recovery |
 | Startup and recovery order | `app-runtime.test.ts` and `composition/background-startup.test.ts` call isolated production-code probes; `core/tasks/startup-recovery.test.ts` owns session eligibility | `task-startup-no-schedules.test.ts` runs real daemon/socket/worker restart; registry and Task runtime tests own atomic publication/rollback |

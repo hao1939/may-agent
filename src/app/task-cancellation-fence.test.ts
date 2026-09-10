@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { cancelAppTask, claimObservedAppTask } from "./app-task-reconciler.js";
+import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
+import { cancelAppTask, claimObservedAppTask } from "./core/tasks/app-task-reconciler.js";
 import { HumanTaskService } from "./human-task-service.js";
-import type { AppTaskContext, TaskTree } from "./app-task-store.js";
+import type { AppTaskContext, TaskTree } from "./core/tasks/app-task-store.js";
 
 const roots: string[] = [];
 

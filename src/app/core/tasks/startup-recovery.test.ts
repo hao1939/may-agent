@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 import type { PersistedSession } from "../../../lib/persistence";
 import { shouldResumeStartupSession } from "./startup-recovery.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { closeDb, getDb } from "../../../lib/requests";
 
 function session(appDir: string, source: string, recoveryOwner?: string): PersistedSession {

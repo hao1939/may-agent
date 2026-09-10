@@ -8,10 +8,10 @@ import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentMaintenance, loadAgents, getAgentSessionId, prepareAgentTriggers } from "./agent-loader.js";
-import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./app-task-runtime.js";
+import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./core/tasks/app-task-runtime.js";
 import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
-import type { HostCapacity } from "./host-capacity.js";
+import type { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./codex-goal-executor.js";
 import { getDb } from "../lib/requests.js";
 

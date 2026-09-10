@@ -8,7 +8,7 @@ import {
   recordAppInboxHandling,
   type AppInboxClaim,
   type AppInboxHandling,
-} from "../../app-inbox-store.js";
+} from "./app-inbox-store.js";
 import { createConversationTopic, readConversationTopic } from "./conversations.js";
 import {
   applyConversationRequestUpdates,

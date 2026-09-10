@@ -61,7 +61,7 @@ import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSe
 import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
-import type { AppTaskEvents } from "../app/app-task-emitter.js";
+import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { EventTrace } from "../app/core/events/bus.js";

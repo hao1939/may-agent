@@ -1,7 +1,7 @@
 import { openDatabase } from "../src/lib/db.js";
 import { ensureTaskResourceSchema } from "../src/lib/db/task-resource-schema.js";
 import { HumanTaskService } from "../src/app/human-task-service.js";
-import { indexTaskReference, taskReferenceDigest } from "../src/app/task-reference-index.js";
+import { indexTaskReference, taskReferenceDigest } from "../src/app/core/state/task-reference-index.js";
 
 const db = openDatabase(":memory:");
 ensureTaskResourceSchema(db);

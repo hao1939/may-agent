@@ -4,8 +4,8 @@ import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sd
 import type { TaskAttempt } from "@may-agent/sdk";
 import type { SubagentManager } from "../../../lib/index.js";
 import type { SubagentDefinition } from "../../../lib/types.js";
-import { projectAppTaskChildPromptContext } from "../../app-task-context.js";
-import { APP_TASK_RECOVERY_OWNER } from "../../app-task-reconciler.js";
+import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
+import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/app-task-reconciler.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { childEventTrace, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";

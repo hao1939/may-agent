@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/requests.js";
-import { createAppInboxItem } from "../app-inbox-store.js";
+import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 import { EventBus } from "../core/events/bus.js";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";

@@ -5,21 +5,21 @@ import {
   recordAppInboxHandling,
   wakeAppInboxItemsWaitingOn,
   type AppInboxHandling,
-} from "../../app-inbox-store.js";
+} from "./app-inbox-store.js";
 import { applyConversationRequestUpdates, ConversationRequestConflict } from "./conversation-requests.js";
 import type { AppInputContext, AppTaskAttachment, AppResult } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { getAppInboxItem, waitAppInboxClaim, wakeAppInboxItem, type AppInboxClaim } from "../../app-inbox-store.js";
+import { getAppInboxItem, waitAppInboxClaim, wakeAppInboxItem, type AppInboxClaim } from "./app-inbox-store.js";
 import {
   isAppTaskConverged,
   observeAppTaskIntent,
   readAppTaskIntent,
   readAppTaskTrigger,
   type AppTaskObservationResult,
-} from "../../app-task-reconciler.js";
-import type { AppTaskContext } from "../../app-task-store.js";
-import { isTaskAttentionReadyForReview } from "../../app-task-state.js";
+} from "../tasks/app-task-reconciler.js";
+import type { AppTaskContext } from "../tasks/app-task-store.js";
+import { isTaskAttentionReadyForReview } from "../tasks/app-task-state.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
 

@@ -1,9 +1,9 @@
-import type { AppTaskContext } from "../../app-task-store.js";
+import type { AppTaskContext } from "./app-task-store.js";
 import {
   listHandlerUnavailableAppTasks,
   releaseHandlerUnavailableAppTask,
   type AppTaskHandlerRepairCandidate,
-} from "../../app-task-reconciler.js";
+} from "./app-task-reconciler.js";
 
 /** One bounded recovery pass. Backend inspection cannot mutate Task state. */
 export async function recoverUnavailableTaskHandlers(input: {

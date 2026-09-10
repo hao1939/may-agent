@@ -1,5 +1,5 @@
-import type { AppTaskAttempt } from "../../app-task-state.js";
-import type { AppTaskClaim } from "../../app-task-reconciler.js";
+import type { AppTaskAttempt } from "../../core/tasks/app-task-state.js";
+import type { AppTaskClaim } from "../../core/tasks/app-task-reconciler.js";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../../../lib/index.js";

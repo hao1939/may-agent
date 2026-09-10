@@ -4,16 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "../../app-inbox-store.js";
+import { claimAppInboxItem, completeAppInboxClaim, createAppInboxItem } from "../state/app-inbox-store.js";
 import { createRuntimeAppRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   observeAppTaskIntent,
   appTaskContext,
   claimObservedAppTask,
   completeAppTask,
-} from "../../app-task-reconciler.js";
+} from "../tasks/app-task-reconciler.js";
 
 describe("App read projections", () => {
   let db: SqliteDb;

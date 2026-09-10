@@ -5,7 +5,7 @@ import type {
   AppDependencyObservation,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
-import type { AppInboxItem } from "../app-inbox-store.js";
+import type { AppInboxItem } from "../core/state/app-inbox-store.js";
 import { readAppConversationResource, readConversationMessageTopicId } from "../core/state/conversations.js";
 import {
   observeTaskDependency,

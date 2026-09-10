@@ -2,16 +2,16 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { cancelAppTask } from "./app-task-reconciler.js";
-import type { AppTaskContext } from "./app-task-store.js";
-import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
+import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
+import { cancelAppTask } from "./core/tasks/app-task-reconciler.js";
+import type { AppTaskContext } from "./core/tasks/app-task-store.js";
+import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./core/state/app-inbox-store.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,
   resolveTaskReference,
   taskReferenceDigest,
-} from "./task-reference-index.js";
+} from "./core/state/task-reference-index.js";
 
 const databases: SqliteDb[] = [];
 

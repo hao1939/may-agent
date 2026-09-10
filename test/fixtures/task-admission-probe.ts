@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTaskAdmissionProcess, runTaskAdmissionWorker } from "../../src/app/task-admission-process.js";
+import { createTaskAdmissionProcess, runTaskAdmissionWorker } from "../../src/app/composition/workers/task-admission-process.js";
 import { EVENT_ROW_ID, type AgentEvent } from "../../src/app/core/events/bus.js";
-import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
-import type { AppEventAdmissionCommand } from "../../src/app/app-event-admission-store.js";
+import type { AppEventAdmissionCommand } from "../../src/app/core/state/app-event-admission-store.js";
 import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
 import { parseAppArgs } from "../../src/app/app-args.js";
-import { parseTaskWorkerDefinitionSource } from "../../src/app/task-attempt-process.js";
+import { parseTaskWorkerDefinitionSource } from "../../src/app/composition/workers/task-attempt-process.js";
 
 const scenario = process.env.ADMISSION_TEST_SCENARIO ?? process.argv[2] ?? "healthy";
 if (process.argv.includes("--task-admission-worker")) {

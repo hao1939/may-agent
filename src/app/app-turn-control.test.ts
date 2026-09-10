@@ -10,12 +10,12 @@ import { openDatabase } from "../lib/db.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { EventBus } from "./core/events/bus.js";
 import { createEventInterface } from "./core/events/interface.js";
-import { startAppInboxRuntime } from "./app-inbox-runtime.js";
-import { HostCapacity } from "./host-capacity.js";
+import { startAppInboxRuntime } from "./composition/app-inbox-runtime.js";
+import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { readAppConversationResource } from "./core/state/conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "./core/state/conversation-requests.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
+import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
+import { appTaskContext, observeAppTaskIntent } from "./core/tasks/app-task-reconciler.js";
 
 const app = defineApp({
   id: "sample",

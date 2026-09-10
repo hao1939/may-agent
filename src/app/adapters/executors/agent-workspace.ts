@@ -14,7 +14,7 @@ import {
 } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { TaskAttempt } from "@may-agent/sdk";
-import type { AppTaskExecutionPaths } from "../../app-task-output-paths.js";
+import type { AppTaskExecutionPaths } from "../../core/tasks/app-task-output-paths.js";
 import type { NormalizedTaskHandlerResult } from "../../core/tasks/result.js";
 type ResidueFileSnapshot =
   | { exists: false }

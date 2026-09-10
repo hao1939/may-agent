@@ -1,4 +1,4 @@
-import { AppInboxHost, type AppInboxHostOptions } from "../app-inbox-host.js";
+import { AppInboxHost, type AppInboxHostOptions } from "../core/inbox/app-inbox-host.js";
 import { prepareConversationInput } from "../conversations/context.js";
 import { createConversationTurnHandler, type ConversationHandlerOptions } from "../conversations/turn-handler.js";
 
