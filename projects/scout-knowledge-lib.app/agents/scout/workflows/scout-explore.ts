@@ -150,6 +150,8 @@ Output contract:
 - Durable Scout notes and findings belong under \`${paths.projectDir}/knowledge/\`.
 - Source-level findings belong under \`${paths.projectDir}/knowledge/findings/\`.
 - Run-level drafts may go under \`${paths.appDir}/agents/scout/workspace/findings/\`.
+- A draft or digest alone is not library integration. For a useful new finding, return at least one created or updated knowledge file; preserve unfinished drafts and report partial progress instead of success.
+- A read-only error applies to the exact path checked, not the whole library. Never bypass a protected file. If no suitable existing note is writable, a distinct source-grounded finding under the knowledge root may be appropriate; otherwise retain the draft and report the exact blocker.
 - Append short user-facing highlights to \`${paths.appDir}/agents/scout/workspace/digest/today.md\` when useful.
 - Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
 - Search primary Source:/Repo: URLs case-insensitively before writing. If any search returns a matching file, open it before deciding. Never create a new finding that repeats a primary source already present elsewhere; update the matched file or return an evidence-backed no-op.
@@ -751,6 +753,20 @@ export async function executeScoutExplore(
     return ctx.blocked(
       "Scout exploration returned a missing output or an output outside the allowed roots",
       { outputs: structured.outputs },
+    );
+  }
+  if (
+    outputs.length > 0 &&
+    !outputs.some((output) => output.startsWith(`${knowledgeRoot}${sep}`))
+  ) {
+    return ctx.blocked(
+      "Scout draft preserved; library integration is incomplete",
+      {
+        executionId: result.id,
+        summary: structured.summary,
+        source: observation,
+        outputs,
+      },
     );
   }
   const replacements = replacedExistingOutputs(outputs, existingOutputSources);

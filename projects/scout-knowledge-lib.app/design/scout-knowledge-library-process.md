@@ -211,6 +211,14 @@ A changed result must name files that exist and whose resolved real paths stay
 inside the allowed Scout roots. A no-op has zero outputs and explains why the
 current source evidence did not justify a useful change.
 
+Drafts and digest highlights alone do not satisfy library integration. A
+nonempty exploration result must include a real file under the knowledge root;
+otherwise preserve its outputs and source evidence and return an incomplete
+result on the same Task. This path check does not prove content quality or Git
+integration. An exact read-only file error is not evidence that all knowledge
+paths are read-only: preserve that file, use another appropriate writable
+destination when safe, or retain the draft with its exact blocker.
+
 An explicitly partial agent finish is not a no-op, even when its execution
 status is `done` and its output list is empty. Preserve its finish evidence
 and continuation details on the same source Task, and return a blocked

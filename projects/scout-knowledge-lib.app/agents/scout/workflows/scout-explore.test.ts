@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import {
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -82,6 +83,56 @@ function workflowContext(
 }
 
 describe("scout-explore workflow prompt", () => {
+  it("preserves a draft without accepting it as library integration", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-draft-result-"));
+    temporaryRoots.push(root);
+    mkdirSync(join(root, "knowledge"));
+    const scratch = join(root, "agents/scout/workspace");
+    mkdirSync(join(scratch, "findings"), { recursive: true });
+    mkdirSync(join(scratch, "digest"));
+    const draft = join(scratch, "findings/draft.md");
+    const digest = join(scratch, "digest/today.md");
+    const ctx = workflowContext(async () => {
+      writeFileSync(
+        draft,
+        "Verified source; canonical integration unfinished\n",
+      );
+      writeFileSync(digest, "Draft details: ../findings/draft.md\n");
+      return {
+        status: "done",
+        sessionId: "s_draft",
+        evidence: { status: "success" },
+        structuredResult: {
+          summary: "Finding staged after a protected note rejected the edit",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://hn.algolia.com/api/v1/search",
+            itemIdsOrUrls: ["https://news.ycombinator.com/item?id=1"],
+          },
+          outputs: [draft, digest],
+        },
+      };
+    }, "hn");
+    ctx.workspace = {
+      appRoot: root,
+      projectRoot: root,
+      root,
+      output: join(root, "output"),
+    };
+
+    const result = await executeScoutExplore(ctx);
+
+    expect(result.status).toBe("blocked");
+    expect(result.evidence).toMatchObject({
+      executionId: "s_draft",
+      outputs: [draft, digest],
+      source: { name: "hn" },
+    });
+    expect(result).not.toHaveProperty("output.state", "converged");
+    expect(readFileSync(draft, "utf8")).toContain("integration unfinished");
+    expect(readFileSync(digest, "utf8")).toContain("Draft details");
+  });
+
   it("does not turn an explicitly partial finish into a successful no-op", async () => {
     const root = mkdtempSync(join(tmpdir(), "scout-partial-result-"));
     temporaryRoots.push(root);
@@ -513,6 +564,7 @@ describe("scout-explore workflow prompt", () => {
     const knowledgeDir = join(projectDir, "knowledge");
     const digestDir = join(appDir, "agents", "scout", "workspace", "digest");
     const output = join(digestDir, "today.md");
+    const finding = join(knowledgeDir, "finding.md");
     mkdirSync(knowledgeDir, { recursive: true });
     mkdirSync(digestDir, { recursive: true });
     let prompt = "";
@@ -523,6 +575,7 @@ describe("scout-explore workflow prompt", () => {
       prompt = task;
       runOptions = options;
       writeFileSync(output, "Current XHS finding.\n");
+      writeFileSync(finding, "Source-grounded XHS knowledge note.\n");
       return {
         status: "done",
         sessionId: "s_xhs",
@@ -533,7 +586,7 @@ describe("scout-explore workflow prompt", () => {
             queryOrFeed: "ignored because the workflow owns XHS evidence",
             itemIdsOrUrls: [],
           },
-          outputs: [output],
+          outputs: [finding, output],
         },
       };
     });
@@ -582,6 +635,7 @@ describe("scout-explore workflow prompt", () => {
           "items:1",
           "source-ids:note-1",
           "source-provenance:workflow",
+          `output:${finding}`,
           `output:${output}`,
           "execution:s_xhs",
         ]),

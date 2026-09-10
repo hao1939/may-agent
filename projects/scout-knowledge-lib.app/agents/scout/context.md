@@ -56,6 +56,10 @@ tree beneath the domain workspace.
 - Filename dates and explicit `date` or `last_updated` values cannot be later
   than the actual current date. Use `date -u +%Y-%m-%d` when unsure.
 - Read a file before changing it; make a narrow edit; read it again afterward.
+- A read-only error describes the exact path checked, not the whole library.
+  Do not bypass that protection. Use a suitable writable note or a distinct
+  source-grounded finding when appropriate; otherwise preserve a draft and
+  report the exact blocker. A run-level draft is not library integration.
 - Keep `<ai_context>` preambles where the library already uses them.
 - Do not create legacy KE files under `/app/shared/knowledge/entries/`.
 - Before appending to the digest, check it for the same title or source URL.
