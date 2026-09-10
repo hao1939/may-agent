@@ -8,8 +8,9 @@ merged Conversation/state separation [#129](https://github.com/hao1939/may-agent
 Source review does not identify the deployed release.
 
 Make ordinary conversation and authorized work easier to understand, change and
-operate at acceptable total cost. First remove unnecessary behavior and competing
-continuation paths; then organize the implementation that remains. Follow the
+operate at acceptable total cost. Directory organization now has an explicit
+user goal: make component ownership and execution paths easy to review. Proceed
+with that work independently of conditional behavior reductions. Follow the
 [value/cost rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff).
 One existing proposal owns this review; subsystem contracts and implementation
 plans remain with the owners linked below.
@@ -35,11 +36,15 @@ scoped authorization record. The [September 6 pilot](../archive/reviews/authorit
 records the exercised lifecycle, wait and restart cases. Neither establishes
 the current deployed release or completion of provider-facing delivery work.
 
-## Design choices before code moves
+<a id="design-choices-before-code-moves"></a>
 
-The most promising savings come from removing ways to execute, wait, recover or
-write the same outcome. A directory move alone removes none of those cases.
-These are structural opportunities, not measured bug reductions or line savings.
+## Independent feature reductions
+
+Removing duplicate execution, waiting, recovery or write paths can reduce
+behavioral complexity. Directory organization separately reduces the effort of
+reading and reviewing the code. That value justifies the next layout milestone;
+these conditional deletions are not prerequisites for moving existing modules.
+Neither source moves nor these proposals establish measured bug reductions.
 
 | Choice | Complexity potentially removed | Accepted cost and next decision |
 | --- | --- | --- |
@@ -69,6 +74,52 @@ for new direct Task handoffs, but retains compatibility handling. Its
 `conversations/turn-handler.ts` still creates children and joins their waits.
 The source declaration search found May as the current App declaring agent
 request handling; that does not prove no retained caller or obligation needs it.
+
+The retained protocol means **parent inbox item waiting for child inbox results**.
+Here “request” in names such as `AppRequestDecision` means an input-handling row,
+not the separate accepted human Request resource. Both protocols below already
+use real Tasks for the delegated work.
+
+```text
+retained protocol:
+  human input -> parent inbox P -> agent returns dependencies
+    -> child inbox C1 -> Task T1
+    -> child inbox C2 -> Task T2
+  P waits durably on children:P; no model call or capacity slot stays occupied
+  child completion -> wake P -> read child results -> invoke agent again
+    -> answer and complete P, or retain/add dependencies and wait again
+
+current direct handoff:
+  human input -> agent explains and admits the responsible Task -> complete input P
+  accepted Request stays open when an answer is still owed
+  linked Task facts -> existing conversational follow-through -> later explanation
+```
+
+The old path can send an immediate acknowledgment, and does not inherently
+prevent another human message. Its cost is the extra coordinating lifecycle:
+parent/child correlation, stable child IDs, joined waits, result collection,
+re-entry, duplicate-work checks and restart handling. The newer path still needs
+Task waits, accepted-ask tracking and follow-through; it puts continuation on
+ordinary Tasks rather than keeping the original inbox input as the coordinator.
+May's existing supervision Task can provide that later explanation.
+
+Current source makes the distinction explicit:
+
+- `conversations/turn-handler.ts`: `usesDirectTaskHandoff()` selects the schema;
+  the dependency branch creates stable child IDs and records `children:<id>`.
+- `core/inbox/input-context.ts`: `readInputContext()` collects current child
+  observations before a later invocation of the handler.
+- `core/state/inbox.ts`: `completeInboxInput()` wakes the parent in the same
+  transaction that commits the child result.
+- `app-inbox-host.test.ts`: the retained delegation test runs the conversation
+  agent before delegation and again after the worker result, then completes P.
+
+“Old” identifies a retained protocol, not proven dead code. New direct May
+handoffs use `ConversationTurnResult`, whose schema excludes `dependencies`.
+Inputs with existing child dependencies, and older App request declarations,
+can still select the broader `AppRequestDecision` protocol. Even its
+reconsideration helpers are not all removable: direct handoff also rechecks a
+Task that became terminal while the agent was deciding.
 
 **Recommendation:** With #129 merged, audit the remaining callers and
 make Task handoff the sole supported new conversational delegation path. Then
@@ -152,7 +203,7 @@ Build on its reviewed result. Paths below are relative to the Host checkout.
 | Remove shared inbox assumptions about `may` | Composition selects the foreground App, with May as the shipped default. Shared capacity consumes that selection; conversation status wording and follow-up suppression belong with the frontend/App policy. Test a differently named frontend and an omitted frontend without losing background progress or the interactive reserve. No user-facing scheduler configuration or App-renaming migration is required. |
 | Break the internal barrel-import cycle | `lib/index.ts -> agent-loader.ts -> loader/toolset-loader.ts -> lib/index.ts` becomes direct imports from owning modules. Keep public SDK/control exports. Prefer `lib/db/connection.ts` over the historical `lib/requests.ts` facade in touched code; remove the facade only after its callers are gone. |
 | Make the attempt path readable | In `app-task-runtime.ts`, make claim, prepare/execute, verify, commit and publish easy to follow. Extract a cohesive helper when it reduces shared context; leave atomic mutation and stale-result checks with their owner in the reconciler/state code. Run the existing race/cancellation tests when these boundaries move. |
-| Group retained HTTP/backend implementations | After the feature decisions above, put touched route families under existing `http/` homes and backend files beside their executor family. Use ordinary imports, not a new router/plugin/service framework. |
+| Group retained HTTP/backend implementations | Group existing route families under `http/` and backend files beside their executor family, independently of feature removal. Use ordinary imports, not a new router/plugin/service framework. |
 | Shorten navigation | Give each component its responsibility, contract, implementation/wiring and owning tests. The #138 source map is 102 lines; link detailed contracts rather than growing another design explanation. |
 
 The resulting ownership is straightforward:
@@ -166,11 +217,41 @@ transport/, http/, client packages  input and presentation
 owning App     domain decisions, acceptance and situational repair
 ```
 
-Foundational database primitives stay in `src/lib/db/`. Still-flat Task/inbox
-modules can keep their current paths while their responsibility is clear.
-Folder symmetry is not an acceptance criterion. Use existing ESLint import
-rules to protect boundaries as they are extracted; a dependency-analysis service
-or a repository-wide move is unnecessary.
+Foundational database primitives stay in `src/lib/db/`. Move the remaining flat
+families into their existing component homes so reviewers can find the whole
+responsibility together. Use existing ESLint import rules; no dependency-analysis
+service, service framework or uniform folder template is needed.
+
+### Directory organization for code review
+
+**Priority updated September 11:** This is the next implementation milestone.
+It does not depend on retiring child waits, evaluation controls or workflow resume.
+The intended reading order is composition -> inbox -> Task runtime -> state,
+then the concrete capability involved.
+
+| Existing family | Destination and reason |
+| --- | --- |
+| `app-task-*` runtime/capability, reconciler, recovery, context, emitter, condition, state-type and snapshot helpers (resource store below) | `core/tasks/`: keep the attempt and reconciliation path beside its controller and queue |
+| `app-inbox-host.ts` | `core/inbox/`: generic admission, claims, ordering, Stop and dispatch beside the input-handler contract |
+| `app-inbox-store.ts`, `app-event-admission-store.ts`, `app-task-resource-store.ts`, `task-reference-index.ts` | `core/state/`: persistence implementations beside existing coordinated state operations; preserve one database and the same transactions |
+| `host-capacity.ts` | `core/scheduling/`: one shared capacity mechanism for inbox decisions and Task attempts |
+| `app-inbox-runtime.ts` | `composition/`: this module wires routing, producers and concrete conversation behavior; moving it wholesale into core would hide that dependency |
+| `task-admission-process.ts`, `task-attempt-process.ts` | `composition/workers/`: process entry points construct concrete registries, executors and persistence |
+| `codex-goal-*.ts` | `adapters/executors/codex/`: keep this backend's client, packet, progress, result and executor together |
+| `app-observer-runtime.ts` | `adapters/producers/`: observers beside existing schedule production |
+| Retained HTTP route handlers | Existing `http/`, grouped by route family when extracted from `server.ts`; server setup continues to wire ordinary handlers |
+
+Keep `conversations/` for frontend context, turn handling and presentation;
+`loader/`, transports and client packages already have useful homes. Preserve
+existing exported names in the first moves. Move colocated tests with their
+implementation, update all callers and entry-point paths, and leave no forwarding
+files at the old internal paths. A mixed module gets an honest composition home;
+its size alone is not a reason to invent another interface.
+
+Each component gets a short reading map: responsibility, entry point, important
+state changes and owning tests. Update the central source map and canonical
+source links with each move. Directory cleanup must not silently alter storage
+formats, input/result schemas, recovery behavior or the retained child protocol.
 
 ## Limits that keep the system simple
 
@@ -185,29 +266,25 @@ or a repository-wide move is unnecessary.
 
 ## Recommended next milestone
 
-1. Build on #129, now merged as `0bedd93a`. Keep the feature reductions separate
-   from that completed state/frontend extraction.
-2. Take a small behavior-preserving cleanup: direct internal imports and a shorter
-   source map. Address the shared inbox's App-name assumptions as a separate,
-   focused capability-boundary change.
-3. Review removal of the conversational child-wait path first, and evaluation UI
-   feature reduction separately. Each needs its caller/retained-data decision,
-   owning-contract update and a concrete retained user path before source deletion.
-4. Consider the workflow redo experiment only when an actual workload makes its
-   savings plausible. Defer large Task/HTTP extractions until the remaining paths
-   and a useful change justify them.
+1. Finish human review of #138/#139 under the existing merge policy. Prepare
+   the layout work while review is pending; land overlapping moves afterward.
+2. Reorganize core Task, inbox, state and shared scheduling files in one cohesive
+   move-only slice. Put the mixed inbox orchestration and worker entry points in
+   composition. Move tests, update imports, lint boundaries, worker/build paths
+   and documentation references together.
+3. Group concrete executors and producers in a separate slice. Then extract
+   existing HTTP route families where that makes the server readable. Preserve
+   their behavior; evaluation feature deletion remains a separate decision.
+4. Review child-wait retirement and affordable workflow redo separately, using
+   the caller, retained-obligation and cost evidence above. Neither blocks
+   directory organization.
 
-Steps 3 and 4 are conditional choices, not an automatic implementation queue.
-No live-state inventory, provider trial, deployment or Host merge is performed by this
-document review. The preceding source review ran 36 focused registry/controller,
-reporting and import-boundary tests on `743aa5de`; those tested modules are
-unchanged at the reviewed `main`. It did not measure field failure frequency,
-redo cost, or certify deployment.
-
-For each selected reduction, record the behavior retained, the behavior given up,
-the actual path deleted and the relevant regression evidence. Stop if migration
-or permanent exceptions cost more than the removed feature. Success means less
-coordination and fewer failure cases for useful work, not merely fewer files.
+For every source slice, run the existing affected tests and full Host CI,
+including subprocess and browser coverage where paths change. Do not add a
+parallel framework or rewrite algorithms during file moves. Reviewer acceptance
+is concrete: one obvious home per responsibility, a traceable execution path,
+updated references and no behavior change. A source map alone does not complete
+the directory milestone.
 
 ## Implementation evidence
 
@@ -244,15 +321,17 @@ The three larger reductions were audited but not selected for deletion:
   Keep existing paths until redo cost and effect safety have been measured.
 
 These are explicit deferrals under the proposal's value/cost rule, not evidence
-that every optional reduction has been implemented. Broad Task/HTTP moves remain
-outside the selected milestone.
+that every optional reduction has been implemented. The directory milestone
+above is newly prioritized; its source moves have not yet been implemented.
+Task algorithm rewrites and feature deletions remain separate decisions.
 
 ## Remaining work
 
 | Work | Boundary and next proof |
 | --- | --- |
 | Retire conversational child-request waiting where redundant | Follow [one durable delegation path](#1-one-durable-delegation-path); a dated audit found retained open obligations, so a source search alone cannot justify their deletion. |
-| Review workflow redo and code organization | Use the [design choices](#design-choices-before-code-moves) and [bounded milestone](#recommended-next-milestone); the existing core/storage plans keep ownership of their accepted work. |
+| Reorganize directories for code review | Apply the [layout map](#directory-organization-for-code-review) and [bounded milestone](#recommended-next-milestone), preserving behavior and moving tests with their owners. |
+| Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
 | Prove one App-owned delivery workflow | Select one repository, responsible Task, executor and requested terminal outcome. The recorded read-only PR assessment did not exercise publication, review dispatch or validation effects. |
