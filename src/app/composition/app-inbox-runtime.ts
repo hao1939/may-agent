@@ -61,7 +61,7 @@ import {
   type AppEventAdmissionPlan,
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
-import { createAppObserverRuntime } from "../app-observer-runtime.js";
+import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
 import type { HostCapacity } from "../core/scheduling/host-capacity.js";
 

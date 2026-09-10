@@ -1,7 +1,7 @@
 import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
-import type { LoadedAppDefinition } from "./core/apps/registry.js";
-import type { EventBus } from "./core/events/bus.js";
-import { OwnedTimer } from "./core/scheduling/timer.js";
+import type { LoadedAppDefinition } from "../../core/apps/registry.js";
+import type { EventBus } from "../../core/events/bus.js";
+import { OwnedTimer } from "../../core/scheduling/timer.js";
 
 type ObserverState = {
   appId: string;

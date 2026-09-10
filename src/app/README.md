@@ -48,9 +48,9 @@ cross-component and process boundaries.
 | Task dispatch | `core/tasks/controller.ts`, `core/tasks/queue.ts`; `core/scheduling/host-capacity.ts`; `core/tasks/app-task-recovery.ts` | `core/tasks/app-task-runtime.ts`; controller/queue/recovery tests |
 | Task transitions | `core/tasks/app-task-reconciler.ts`, `core/tasks/app-task-state.ts`, `core/state/app-task-resource-store.ts` | `core/tasks/app-task-runtime.ts`; reconciler/resource-store, cancellation and restart tests |
 | Agent/workflow/session backend | `core/tasks/execution.ts`; `adapters/executors/` | `composition/task-execution.ts`; adapter and Task runtime tests |
-| Named executor | SDK `TaskExecutor` / `TaskAttempt`; `codex-goal-executor.ts` | Executor map in `daemon-agents.ts`; executor and Task runtime tests |
+| Named executor | SDK `TaskExecutor` / `TaskAttempt`; [`Codex goal executor`](adapters/executors/codex/README.md) | Executor map in `daemon-agents.ts`; executor and Task runtime tests |
 | Task workspace | `core/tasks/workspace.ts`; `adapters/workspaces/git.ts` | `composition/task-execution.ts`; workspace and Task runtime tests |
-| Timing and observations | `core/scheduling/timer.ts`; `adapters/producers/app-schedules.ts`, `app-observer-runtime.ts` | `composition/app-inbox-runtime.ts`; timer, schedule and observer tests |
+| Timing and observations | `core/scheduling/timer.ts`; [`App schedules and observers`](adapters/producers/README.md) | `composition/app-inbox-runtime.ts`; timer, schedule and observer tests |
 | Canonical reads and optional reports | `core/reads/app-read.ts`, `core/reads/reporting.ts`; `adapters/reporting/` | `composition/reporting.ts`; read/reporting and runtime tests |
 | Host maintenance | `adapters/maintenance/` | `composition/maintenance*.ts`; [maintenance guide](adapters/maintenance/README.md) and colocated tests |
 | Human interfaces | `transport/`, `http/`; root `packages/control`, `packages/terminal`, `packages/webui` | `interface-startup.ts`; transport and process/browser tests; [control guide](../../packages/control/README.md) |

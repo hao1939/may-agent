@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import { CodexGoalAppServerClient } from "../../src/app/codex-goal-client.js";
-import { admitCodexGoalTaskResult } from "../../src/app/codex-goal-result.js";
+import { CodexGoalAppServerClient } from "../../src/app/adapters/executors/codex/codex-goal-client.js";
+import { admitCodexGoalTaskResult } from "../../src/app/adapters/executors/codex/codex-goal-result.js";
 import { sampleProcessTreeRssKiB } from "./codex-goal-resources.js";
 
 function argument(name: string): string | undefined {
