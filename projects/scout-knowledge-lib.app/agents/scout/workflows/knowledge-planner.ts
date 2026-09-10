@@ -79,6 +79,7 @@ step.
 
 Start by reading:
 - ${appDir}/project.json
+- ${appDir}/tasks/README.md
 - the bounded reconciliation packet below
 - ${projectDir}/README.md
 - ${projectDir}/knowledge/README.md
@@ -137,6 +138,12 @@ Operating rules:
 - The Host is the sole task-state mutation authority. Never edit task JSON,
   call private task mutation commands, or write task state through a database.
   Return proposed task changes only through typed actions in \`finish\`.
+- Current task evidence comes from the reconciliation packet and supported
+  task reads. Retained tasks/state.json and tasks/tree.json files are historical,
+  not current health signals. Do not request a publisher to refresh them or
+  let obsolete projection-repair work block independent library maintenance.
+  Explain obsolete acceptance and request a stop or scope correction; never
+  claim a retired artifact was regenerated.
 - Existing-task actions require the exact generation in the supplied context. Never
   mutate or create task ids beginning with \`runtime/\`.
 - You may edit Scout-owned knowledge and report files, plus the working digest,

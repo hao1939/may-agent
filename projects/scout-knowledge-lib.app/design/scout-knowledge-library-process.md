@@ -351,22 +351,32 @@ Git tracks source:
 - `agents/scout/workflows/*.ts`;
 - `design/*.md`.
 
-`.state/` tracks runtime:
+The Host's SQLite resource store owns task resources, Conditions, attempts,
+triggers, and receipts. Workflows receive bounded reconciliation context;
+agents and operators use supported task reads for current state. Neither an
+App nor an agent reads or writes SQL to manage tasks.
 
-- canonical task resources, Conditions, attempts, triggers, and receipts in
-  `.state/tasks/state.json`;
-- the generated human/agent projection in `.state/tasks/tree.json`;
+The App's `.state/` retains domain runtime artifacts:
+
 - library health packets;
 - project readout;
 - generated runtime journals.
 
-`state.json` is the sole mutable task authority. `tree.json` is disposable and
-must never be read back as mutation or bootstrap input after cutover.
+Old `tasks/state.json`, `tasks/tree.json`, and `tasks/condition-routes.json`
+files are historical evidence only. Their timestamps or paused flags do not
+describe the running App. There is no current requirement to refresh them.
+Do not restore retired Host machinery to satisfy an obsolete projection-repair
+task; record the mismatch and request a truthful stop or scope correction.
 `tasks/seed.json` initializes a new app once and contains only standing desired
 state. It does not preserve completed migration work, incidents, attempts, or
 current observations.
 
 Do not commit runtime packets or current task snapshots as source truth.
+
+The accepted-output source-command metric still reads the historical JSON
+file. Until that collector uses supported live reads, its samples cannot prove
+current research health. Prefer current source-task evidence; this is an open
+implementation gap, not a reason to regenerate the retired file.
 
 ## Metrics And Experience Review
 

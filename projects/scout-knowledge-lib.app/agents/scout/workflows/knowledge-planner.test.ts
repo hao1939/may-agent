@@ -125,16 +125,27 @@ describe("Scout owner reconciliation boundary", () => {
     );
 
     expect(prompt).toContain("Host is the sole task-state mutation authority");
+    expect(prompt).toContain("supported\n  task reads");
+    expect(prompt).toContain("not current health signals");
+    expect(prompt).toContain("block independent library maintenance");
+    expect(prompt).toContain(
+      "never\n  claim a retired artifact was regenerated",
+    );
     expect(prompt).toContain(
       "inline relative link at the omission point to the exact retained heading",
     );
-    expect(prompt).toContain("file-level mention elsewhere is not a substitute");
+    expect(prompt).toContain(
+      "file-level mention elsewhere is not a substitute",
+    );
     const startList = prompt.slice(
       prompt.indexOf("Start by reading:"),
       prompt.indexOf("Valid durable outcomes:"),
     );
     expect(startList).toContain(
       "/app/projects/scout-knowledge-lib/knowledge/README.md",
+    );
+    expect(startList).toContain(
+      "/app/projects/scout-knowledge-lib.app/tasks/README.md",
     );
     expect(startList).not.toContain(
       "- /app/projects/scout-knowledge-lib/knowledge/INDEX.md",

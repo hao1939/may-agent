@@ -21,9 +21,9 @@ The exact source and runtime authorities are:
 | Scout operating and layout rules                      | `projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md` and `design/scout-knowledge-library-layout.md`                          |
 | Initial structural groups                             | `projects/scout-knowledge-lib.app/tasks/seed.json`                                                                                                   |
 | Task-resource explanation                             | `projects/scout-knowledge-lib.app/tasks/README.md`                                                                                                   |
-| Mutable May-agent task authority                      | `projects/scout-knowledge-lib.app/.state/tasks/state.json`                                                                                           |
-| Generated task projection; never mutation input       | `projects/scout-knowledge-lib.app/.state/tasks/tree.json`                                                                                            |
-| Exact external Conditions and reverse routes          | `projects/scout-knowledge-lib.app/.state/tasks/state.json` and `.state/tasks/condition-routes.json`                                                  |
+| Mutable May-agent task authority                      | Host SQLite resource store, exposed through supported task reads; never direct SQL                                                               |
+| Current task inspection                               | Supplied reconciliation context, `tasks.get` / `tasks.list`, or console `/tasks` / `/task <ref>`                                                    |
+| Exact external Conditions and reverse routes          | Host-owned resource state; inspect current waits through task reads                                                                               |
 | Active worker identity and output rules               | `projects/scout-knowledge-lib.app/agents/scout/agent.json`, `AGENTS.md`, and `context.md`                                                            |
 | Research, digest, planning, and health handlers       | `projects/scout-knowledge-lib.app/agents/scout/workflows/scout-explore.ts`, `scout-daily-digest.ts`, `knowledge-planner.ts`, and `library-health.ts` |
 | XHS credential observation                            | `projects/scout-knowledge-lib.app/watchers/xhs-credential.ts` and `agents/scout/tools/xhs-credential.ts`                                             |
@@ -54,8 +54,9 @@ lifecycle as `paused`: six stable tasks were `converged`, `explore-xhs` was
 `waiting` on `credential-ready:xhs`, and `.state/tasks/tree.json` had no active
 task IDs. Those runtime files contain an August checkpoint and may be stale;
 they are evidence about the deployed execution, not source goal definitions.
-Read `state.json` for May-agent runtime truth, but do not copy its attempts,
-phases, or generated projection into a Herdr contract.
+That historical observation does not describe the current Host: those JSON
+files are no longer updated. Read current tasks through the Host instead, and
+do not copy attempts, phases, or old projections into a Herdr contract.
 
 ## Migration classification
 

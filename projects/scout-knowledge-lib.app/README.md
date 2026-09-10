@@ -11,8 +11,8 @@ delivery to the independently runnable Scout knowledge-library project in
   owns Scout's current operating model.
 - [`design/scout-knowledge-library-layout.md`](design/scout-knowledge-library-layout.md)
   owns the current durable library layout.
-- [`tasks/README.md`](tasks/README.md) explains the task resources and their
-  generated read projection.
+- [`tasks/README.md`](tasks/README.md) explains the task resources, supported
+  live reads, and the boundary with retained historical JSON files.
 - [`docs/herdr-supervisor.md`](docs/herdr-supervisor.md) explains which Scout
   responsibilities fit Herdr goals, how to run them, and how to recover them.
 - [`herdr/goals/library-health-pilot.goal.json`](herdr/goals/library-health-pilot.goal.json)

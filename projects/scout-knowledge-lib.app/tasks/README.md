@@ -2,11 +2,22 @@
 
 `tasks/seed.json` declares only the standing desired state used to initialize a
 new Scout app. After initialization,
-`.state/tasks/state.json` is the Host-owned mutable task authority. App code,
-workflows, observers, and agents never edit it directly.
+the Host's SQLite resource store is the mutable task authority. Use the
+supplied reconciliation context and supported task reads, not direct SQL.
+App code, workflows, observers, and agents never edit Host state directly.
 
-`.state/tasks/tree.json` is a generated human/agent read projection. Do not
-edit it and never use it as mutation or bootstrap input after cutover.
+For current work, use `tasks.get` / `tasks.list` with App ID
+`scout-knowledge-lib`; operators can use `/tasks` and `/task <ref>` in the
+console. These reads expose current resources, waits, evidence, and history.
+An unavailable read is not proof that no tasks exist or that work is finished.
+
+Old `.state/tasks/state.json`, `tree.json`, and `condition-routes.json` files
+are retained historical evidence, not live views or bootstrap input. The current
+Host does not maintain a `tree.json` publisher. Do not request regeneration or
+restore a retired publisher because an old file says paused or has an old
+timestamp. Reassess old projection-repair work against current task evidence;
+if its acceptance is obsolete, explain that and request an explicit stop or
+scope correction, without claiming the artifact was regenerated.
 
 The domain workspace is `../scout-knowledge-lib/`. Runtime traces and temporary
 planner notes belong in `.state/` and should not become project understanding.
