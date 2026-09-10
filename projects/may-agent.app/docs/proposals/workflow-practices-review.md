@@ -316,3 +316,21 @@ workflow, source, browser-helper, and observer tests then passed. Live feedback
 demonstrates the guidance helps; it is not proof that every later cycle will
 choose the best research topic. The 09:55 ready observation did not create a
 second concurrent XHS execution.
+
+## Natural source recurrence and queued display — 10:00 UTC
+
+Unchanged schedules emitted HN and GitHub source events 6318428 and 6318429.
+HN started at 6318434, converged at 6318447 with a new source-grounded update,
+and GitHub started at 6318453 as soon as Scout's one execution lane was free.
+May reviewed independently and returned the HN finding at 6318461 without
+reopening the earlier closed Request. It inaccurately called this scheduled
+cycle a retry; result attribution remains a guidance-quality observation.
+
+While GitHub was queued, `/tasks` incorrectly said up to date: the stored row
+had `phase=converged`, `changed=1`, and `ready=1`. Host candidate `ce474d27`
+projects this as pending consistently in exact reads, lists, and status
+filters. It does not alter Task state, admission, timing, or concurrency.
+The regression failed before the change and covers quiet maintained Tasks,
+changed-but-not-ready work, ready work, and terminal receipt precedence.
+Source checks passed along with 63 Task/control and 25 transport/Console tests;
+combined CI and deployment verification remain separate checks.

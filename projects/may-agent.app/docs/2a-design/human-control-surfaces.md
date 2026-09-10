@@ -184,8 +184,11 @@ to rewrite generic Task text.
 Each compact Task row shows the stable reference, owning App, a plain state
 (`queued`, `working`, `waiting`, `needs review`, `up to date`, `done`, or
 `cancelled`), how recently it changed, its goal, and either `needs you` or `no
-action from you`. `up to date` means a live `maintain` Task is converged and
-will wake again; `done` is terminal.
+action from you`. `up to date` means a live `maintain` Task is converged with
+no pending cycle; `done` is terminal. If a new wake makes that Task changed or
+ready, show it as queued even while its last accepted phase remains converged.
+Exact reads, lists, and status filters must agree; this is a projection of
+existing readiness, not a second stored phase or lifecycle.
 `attention` alone means App review or recovery; only an open human-owned
 Condition means `needs you`.
 
