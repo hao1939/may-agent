@@ -49,27 +49,25 @@
     "@earendil-works/pi-ai": "0.81.1",
     "@may-agent/sdk": "workspace:*",
     "@may-agent/control": "workspace:*",
-    "better-sqlite3": "^12.11.1",
     "diff": "^9.0.0",
     "typebox": "1.1.38"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@typescript-eslint/eslint-plugin": "^8.66.0",
-    "@typescript-eslint/parser": "^8.66.0",
-    "brace-expansion": "2.1.4",
-    "eslint": "^10.8.1",
+    "@types/node": "^24.13.4",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6",
-    "puppeteer-core": "24.43.1",
+    "puppeteer-core": "25.10.0",
     "typescript": "^6.0.3"
   },
   "overrides": {
     "@protobufjs/utf8": "1.1.2",
-    "flatted": "3.4.2",
-    "picomatch": "4.0.5",
-    "protobufjs": "7.6.5",
-    "ws": "8.21.1"
+    "flatted": "3.4.4",
+    "picomatch": "4.0.7",
+    "protobufjs": "7.6.6",
+    "ws": "8.21.3"
   },
   "engines": {
     "node": ">=24.0.0"

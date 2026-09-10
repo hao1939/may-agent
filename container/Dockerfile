@@ -1,5 +1,5 @@
-ARG NODE_IMAGE=node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
-ARG DEBIAN_IMAGE=debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
+ARG NODE_IMAGE=node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+ARG DEBIAN_IMAGE=debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171
 
 # ── Builder stage: compile standalone binary ──────────────────────────────
 FROM ${NODE_IMAGE} AS builder
@@ -157,9 +157,9 @@ RUN node /usr/local/share/ttyd/patch-ttyd-index.cjs \
 # Install CLI agent tools (claude-code, codex, pi) used as worker agents. They use
 # the configured model endpoint; keep versions pinned so image rebuilds do not
 # silently change agent behavior.
-ARG CLAUDE_CODE_VERSION=2.1.246
-ARG CODEX_VERSION=0.149.1
-ARG PI_CODING_AGENT_VERSION=0.84.3
+ARG CLAUDE_CODE_VERSION=2.1.267
+ARG CODEX_VERSION=0.154.0
+ARG PI_CODING_AGENT_VERSION=0.85.1
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} @earendil-works/pi-coding-agent@${PI_CODING_AGENT_VERSION} \
     && test "$(claude --version | awk '{print $1}')" = "${CLAUDE_CODE_VERSION}" \
     && test "$(codex --version | awk '{print $2}')" = "${CODEX_VERSION}" \

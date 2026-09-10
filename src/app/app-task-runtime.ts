@@ -2986,10 +2986,35 @@ export function listLoadedAppTaskOutcomeViews(input: {
 }
 
 export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; taskId: string }): TaskDetail | null {
-  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
-    (candidate) => candidate.id === input.appId.trim().replace(/\.app$/, ""),
-  );
-  if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  const appId = input.appId.trim().replace(/\.app$/, "");
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === appId);
+  if (!descriptor) {
+    // A one-App worker installs only its execution runtime, but supervision
+    // still needs exact reads of other Apps in its accepted registry. Reuse
+    // existing resource authority without loading agents, bootstrapping state,
+    // installing controllers, or making disabled Apps available.
+    const opts = appRouterOptionsByBus.get(input.bus);
+    const entry = opts?.taskAppIds
+      ? (opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot())?.entries.find(
+          ({ definition }) => definition.id === appId && definition.tasks,
+        )
+      : undefined;
+    const resourceStore =
+      entry && opts?.persistDir ? AppTaskResourceStore.activeFromDb(getDb(opts.persistDir), appId) : null;
+    if (!entry || !resourceStore) throw new Error(`App ${input.appId} has no loaded Task runtime`);
+    return readRuntimeTaskView(
+      {
+        taskStateConfig: appTaskContext({
+          appDir: entry.appDir,
+          projectDir: entry.appDir,
+          agent: configuredAppAgent(entry.definition, entry.appDir),
+          maxConcurrent: entry.definition.tasks?.maxConcurrent ?? 1,
+          resourceStore,
+        }),
+      },
+      input.taskId,
+    );
+  }
   return readRuntimeTaskView(
     {
       taskStateConfig: appTaskConfig(descriptor),

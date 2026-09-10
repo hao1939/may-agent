@@ -113,6 +113,35 @@ describe("App Task read tool", () => {
     expect(requestedProjection).toEqual({ taskId: "target-task" });
   });
 
+  it("rejects cross-App collections instead of silently returning the current App", async () => {
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      appId: () => "current",
+      reader: {
+        list: () => {
+          throw new Error("wrong App read");
+        },
+        outcomes: () => {
+          throw new Error("wrong App read");
+        },
+        get: () => null,
+      },
+    });
+    for (const action of ["list", "outcomes"]) {
+      expect(
+        text(
+          await tool.execute("wrong-scope", {
+            action,
+            taskId: "one",
+            target: { appId: "other" },
+          }),
+        ),
+      ).toEqual({
+        error: "list and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
+      });
+    }
+  });
+
   it("refuses reads outside an App Task scope", async () => {
     const tool = createAppTaskReadTool({
       bus: new EventBus(),

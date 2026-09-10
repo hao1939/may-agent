@@ -117,6 +117,13 @@ export function createAppTaskReadTool(options: {
             : (await import("./app-task-runtime.js")).publishLoadedAppTaskEvent(publishInput);
           return result({ eventId, type: eventType });
         }
+        const requestedAppId = params.target?.appId?.trim().replace(/\.app$/, "");
+        if (params.action !== "get" && requestedAppId && requestedAppId !== appId.replace(/\.app$/, "")) {
+          return result({
+            error:
+              "list and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
+          });
+        }
         if (params.action === "outcomes") {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for outcomes; use list for bounded discovery" });
