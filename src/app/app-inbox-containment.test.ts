@@ -7,7 +7,7 @@ import { DbWriter } from "../lib/db-writer.js";
 import { getDb, closeDb } from "../lib/requests.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { EventBus, type AgentEvent } from "./core/events/bus.js";
-import { startAppInboxRuntime } from "./app-inbox-runtime.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { HostCapacity } from "./host-capacity.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "./conversations/requests.js";
 
@@ -16,6 +16,160 @@ async function until(predicate: () => boolean) {
   while (!predicate()) {
     if (Date.now() > deadline) throw new Error("Runtime did not recover progress");
     await Bun.sleep(5);
+  }
+}
+
+async function dispatchFixture() {
+  const root = mkdtempSync(join(tmpdir(), "may-inbox-dispatch-"));
+  const db = getDb(root);
+  const apps = ["sample", "may"].map((id) =>
+    defineApp({
+      id,
+      version: 1,
+      agent: `${id}-worker`,
+      inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({}) }),
+      requests: { mode: "agent" },
+    }),
+  );
+  const registry = new AppRegistry(async () => apps.map((definition) => ({ appDir: root, definition })));
+  await registry.reload();
+  const bus = new EventBus();
+  const writer = new DbWriter(root);
+  const failures: AgentEvent[] = [];
+  bus.setPersistenceSubscriber((event) => {
+    const result = writer.handler(event);
+    if (event.type === "handler.failed") failures.push(event);
+    return result;
+  });
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const capacity = new HostCapacity(1);
+  const calls: string[] = [];
+  const runtimes: AppInboxRuntime[] = [];
+  return {
+    db,
+    bus,
+    capacity,
+    calls,
+    failures,
+    async createRuntime() {
+      const runtime = await startAppInboxRuntime({
+        db,
+        bus,
+        registry,
+        hostCapacity: capacity,
+        maxConcurrentRequests: 1,
+        scanIntervalMs: 60_000,
+        deferStart: true,
+        readDependency: async () => null,
+        resolveRequest: async ({ request }) => {
+          calls.push(request.id);
+          return { summary: "Answered", response: "Answer", topic: { kind: "none" } };
+        },
+      });
+      runtimes.push(runtime);
+      return runtime;
+    },
+    admit(appId: string, requestId: string) {
+      bus.emit({
+        type: "app.input.requested",
+        source: "test",
+        owner: `app:${appId}`,
+        data: {
+          appId,
+          requestId,
+          source: { kind: "human", id: requestId },
+          input: { kind: "message", data: {} },
+        },
+      });
+    },
+    async close() {
+      for (const runtime of runtimes) runtime.close();
+      await until(() => capacity.snapshot().running === 0 && capacity.snapshot().waiting === 0);
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    },
+  };
+}
+
+test("persistent claim failures wait for recovery despite new inputs, while unrelated work progresses", async () => {
+  const fixture = await dispatchFixture();
+  const { db, capacity, failures, calls } = fixture;
+  const runtime = await fixture.createRuntime();
+  try {
+    runtime.host.admit({
+      id: "failed",
+      appId: "sample",
+      source: { kind: "human", id: "fixture" },
+      input: { kind: "message", data: {} },
+    });
+    // A real SQLite write failure leaves the input ready and readable.
+    db.exec(`CREATE TEMP TRIGGER fail_claim BEFORE UPDATE ON app_inbox_items
+      WHEN NEW.app_id = 'sample' AND NEW.status = 'handling'
+      BEGIN SELECT RAISE(ABORT, 'persistent claim failure'); END`);
+    await runtime.start();
+    await until(() => failures.length >= 1);
+    fixture.admit("sample", "later");
+    fixture.admit("may", "unrelated");
+    await until(() => runtime.host.get("unrelated")?.status === "done" && capacity.snapshot().running === 0);
+    expect(failures).toHaveLength(1);
+    expect(calls).toEqual(["unrelated"]);
+    expect(runtime.host.get("failed")?.status).toBe("pending");
+    expect(runtime.host.get("later")?.status).toBe("pending");
+    expect(capacity.snapshot().waiting).toBe(0);
+
+    runtime.scanNow();
+    await until(() => failures.length >= 2 && capacity.snapshot().running === 0);
+    fixture.admit("may", "still-unrelated");
+    await until(() => runtime.host.get("still-unrelated")?.status === "done" && capacity.snapshot().running === 0);
+    expect(failures).toHaveLength(2);
+
+    db.exec("DROP TRIGGER fail_claim");
+    runtime.scanNow();
+    await until(() => runtime.host.get("failed")?.status === "done" && runtime.host.get("later")?.status === "done");
+    expect([...calls].sort()).toEqual(["failed", "later", "still-unrelated", "unrelated"]);
+    expect(failures).toHaveLength(2);
+  } finally {
+    await fixture.close();
+  }
+});
+
+for (const appId of ["may", "sample"]) {
+  for (const grantBeforeClose of [false, true]) {
+    test(`closing ${appId} input runtime cancels ${grantBeforeClose ? "granted" : "queued"} capacity and leaves work for restart`, async () => {
+      const fixture = await dispatchFixture();
+      const { capacity, calls } = fixture;
+      const release = capacity.tryAcquire()!;
+      const runtime = await fixture.createRuntime();
+      try {
+        runtime.host.admit({
+          id: "queued",
+          appId,
+          source: { kind: "human", id: "fixture" },
+          input: { kind: "message", data: {} },
+        });
+        await runtime.start();
+        await until(() => capacity.snapshot().waiting === 1);
+        if (grantBeforeClose) release();
+        runtime.close();
+        expect(capacity.snapshot().waiting).toBe(0);
+        release();
+        // Let any already scheduled capacity callback run after shutdown.
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+        expect(calls).toEqual([]);
+        expect(runtime.host.get("queued")?.status).toBe("pending");
+        expect(runtime.host.get("queued")?.lease).toBeUndefined();
+
+        const replacement = await fixture.createRuntime();
+        await replacement.start();
+        await until(() => replacement.host.get("queued")?.status === "done");
+        expect(calls).toEqual(["queued"]);
+      } finally {
+        runtime.close();
+        release();
+        await fixture.close();
+      }
+    });
   }
 }
 
@@ -64,10 +218,10 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
     });
     const diagnostic = spyOn(console, "error").mockImplementation(() => {});
     const capacity = new HostCapacity(1);
-    const run = capacity.run.bind(capacity);
-    const dispatch = spyOn(capacity, "run").mockImplementation((work) => {
+    const acquire = capacity.acquireCancellable.bind(capacity);
+    const dispatch = spyOn(capacity, "acquireCancellable").mockImplementation((work) => {
       if (mode === "dispatch" && injected++ === 0) throw new Error("injected dispatch");
-      return run(work);
+      return acquire(work);
     });
     applyConversationRequestUpdates(db, {
       appId: app.id,
