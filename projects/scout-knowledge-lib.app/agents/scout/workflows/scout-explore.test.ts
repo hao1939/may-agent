@@ -197,6 +197,27 @@ describe("scout-explore workflow prompt", () => {
     ).toBeNull();
   });
 
+  it("admits a knowledge output before optional working directories exist", () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-output-initial-"));
+    temporaryRoots.push(root);
+    const appDir = join(root, "scout.app");
+    const projectDir = join(root, "scout");
+    const knowledgeDir = join(projectDir, "knowledge");
+    mkdirSync(knowledgeDir, { recursive: true });
+    const output = join(knowledgeDir, "finding.md");
+    writeFileSync(output, "Source-grounded finding\n");
+
+    expect(admittedOutputPaths([output], { appDir, projectDir })).toEqual([
+      output,
+    ]);
+    expect(
+      admittedOutputPaths([join(appDir, "agents/scout/workspace/missing.md")], {
+        appDir,
+        projectDir,
+      }),
+    ).toBeNull();
+  });
+
   it("adds an explicit output contract to routine discovery tasks", () => {
     const task = buildExploreTask(
       "Explore Hacker News for AI agent discussions.",

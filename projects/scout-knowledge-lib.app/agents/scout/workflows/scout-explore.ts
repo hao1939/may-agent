@@ -229,7 +229,11 @@ export function admittedOutputPaths(
     resolve(paths.appDir, "agents", "scout", "workspace"),
   ];
   try {
-    const realRoots = roots.map((root) => realpathSync(root));
+    // A valid note does not require the optional scratch root to exist yet.
+    // Every returned file must still resolve inside an existing allowed root.
+    const realRoots = roots
+      .filter((root) => existsSync(root))
+      .map((root) => realpathSync(root));
     const resolved = normalized.map((output) => {
       if (!existsSync(output) || !statSync(output).isFile()) throw new Error();
       return realpathSync(resolve(output));
