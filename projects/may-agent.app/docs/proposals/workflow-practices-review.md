@@ -469,3 +469,23 @@ oversized notes and unsourced backlog), with no new wake signal. Zero new
 wakes does not mean those quality issues were fixed. Neither this inspection
 nor the deployment rewrote the existing research edits. The manual now also
 explains the observed distinction between execution done and partial progress.
+
+## Isolation fixture and continued checks — 10:59–11:12 UTC
+
+A disposable Git fixture exercised the real Host worktree adapter and Scout's
+output-admission function with a nested domain directory. The worktree began
+at committed content and left the canonical human edit intact. Canonical output
+roots rejected the candidate note; candidate-scoped roots accepted it. The Host
+refused acceptance of an unintegrated committed candidate and retained its
+branch. This demonstrates both the existing protection and the missing App
+path/integration boundary. It does not justify enabling Git mode on the live
+dirty library or committing human research as a baseline.
+
+The natural 11:00 May review converged quietly at 6318686, with no repeated
+message or replacement Task. Credential checks through 11:10 remained ready.
+Scout's full existing suite passed 343 tests across 33 files in about 190
+seconds, without failures. Scout typecheck, focused formatting, 108 affected
+May/Scout tests and the design checks also passed. Formatting cleanup touched
+only the recent partial-result checks and regressions, with no behavior change.
+The next all-source recurrence remains a separate live check; these tests do
+not prove it or solve the shared-checkout writes.
