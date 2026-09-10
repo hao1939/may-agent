@@ -262,3 +262,33 @@ The recorder saw one brief socket absence during the deliberate 09:21 container
 recreation, not an unexplained daemon failure. Readiness passed after both
 candidate deployments. Continue watching real scheduled reviews and source runs;
 a background recorder alone does not constitute active review or iteration.
+
+## Follow-up checks and shared-tool packaging — 09:30–09:42 UTC
+
+The natural 09:30 May recovery review completed quietly, without repeating the
+HN result or reopening its closed ask. A separate status-only question about
+XHS produced a direct explanation and the exact browser/sign-in action, closed
+its discussion Request, and created or woke no Task.
+
+May's repeated `ssh-exec` loader warning was a real definition-packaging gap:
+the agent imported `shared/tools/ssh-exec`, but snapshots omitted that directory.
+Host commit `e9670ee2` includes optional shared tools in Git and filesystem
+snapshots, checks their authored changes, and uses a new snapshot identity so
+an older incomplete snapshot is not reused. Three tests failed before the fix;
+loader tests prove the same helper version stays pinned with its agent. No
+dynamic dependency resolver, whole-shared-directory copy, or plugin loader was
+added.
+
+The combined candidate `9b4cb3bd` passed 2,639 tests, three installation-only
+skips, and all CI static checks. After local deployment, reload 6318356 completed
+at 6318357 and the actual daemon logged successful loading of `ssh_exec`.
+The operator tested loading only, not an SSH connection or command. May and
+Scout were the only active Apps throughout.
+
+Review also found that Scout's new note described 26 testing addenda rather
+than 26 prompt conditions including the no-additional-instructions default.
+Exact feedback 6318358 woke the existing `library-maintenance` Task. Scout
+verified the primary source, corrected only the affected note passage, read it
+back and reconciled at 6318369 under generation 1. This was handled by the
+existing agent/workflow, with no new Task or infrastructure. Its research
+and maintenance writes still use the shared checkout; isolation remains open.
