@@ -72,7 +72,7 @@ type ExploreAgentResult = {
 };
 
 export type ScoutExploreDependencies = {
-  inspectXhsCredential(appDir: string): XhsCredentialStatus;
+  inspectXhsCredential(appDir: string): Promise<XhsCredentialStatus>;
   searchXhs(appDir: string, query: string): XhsSearchResult;
 };
 
@@ -636,7 +636,7 @@ export async function executeScoutExplore(
   let sourceEvidence: string[] = [];
 
   if (source === "xhs") {
-    const credential = dependencies.inspectXhsCredential(appDir);
+    const credential = await dependencies.inspectXhsCredential(appDir);
     const waiting = xhsWaitResult(source, credential);
     if (waiting) return ctx.done(waiting.summary, waiting);
 

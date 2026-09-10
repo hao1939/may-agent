@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
 import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
 import {
   inspectXhsCredential,
@@ -9,6 +10,7 @@ import {
 type XhsCredentialWatcherState = {
   state?: XhsCredentialStatus["state"];
   observedAt?: string;
+  probeId?: string;
 };
 
 function readState(path: string): XhsCredentialWatcherState {
@@ -50,10 +52,16 @@ export function xhsCredentialEvents(
 
 export async function observeXhsCredential(
   ctx: ObserverContext,
+  inspect = inspectXhsCredential,
 ): Promise<AppEvent<Record<string, unknown>>[]> {
   const statePath = `${ctx.workspace.appRoot}/.state/watchers/xhs-credential.json`;
   const previous = readState(statePath);
-  const status = inspectXhsCredential(ctx.workspace.appRoot);
+  const probeId = randomUUID();
+  // Use the existing cache: a reloaded bundle has its own module variables.
+  // An abandoned marker is harmless; the next scan replaces it without retry.
+  writeState(statePath, { ...previous, probeId });
+  const status = await inspect(ctx.workspace.appRoot);
+  if (readState(statePath).probeId !== probeId) return [];
   const observedAt = new Date().toISOString();
   writeState(statePath, { state: status.state, observedAt });
   return xhsCredentialEvents(status, previous);

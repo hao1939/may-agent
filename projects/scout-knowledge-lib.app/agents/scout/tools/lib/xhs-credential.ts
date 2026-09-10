@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { join } from "node:path";
 
 export type XhsCredentialStatus = {
@@ -72,20 +72,41 @@ export function parseXhsCredentialOutput(
       );
 }
 
-export function inspectXhsCredential(appDir: string): XhsCredentialStatus {
+export function inspectXhsCredential(
+  appDir: string,
+): Promise<XhsCredentialStatus> {
   const toolPath = join(appDir, "agents", "scout", "tools", "xhs-browse.mjs");
-  const result = spawnSync("node", [toolPath, "status"], {
-    encoding: "utf8",
-    timeout: 30_000,
-  });
-  if (result.error) {
-    return unavailable(
-      `XHS credential preflight could not run: ${result.error.message}`,
+  return new Promise((resolve, reject) => {
+    execFile(
+      "node",
+      [toolPath, "status"],
+      {
+        encoding: "utf8",
+        timeout: 30_000,
+        killSignal: "SIGKILL",
+      },
+      (error, stdout, stderr) => {
+        // A normal nonzero exit still carries the provider's structured failure.
+        if (error && (error.killed || typeof error.code !== "number")) {
+          resolve(
+            unavailable(
+              `XHS credential preflight could not run: ${error.message}`,
+            ),
+          );
+          return;
+        }
+        try {
+          resolve(
+            parseXhsCredentialOutput(
+              stdout,
+              stderr,
+              typeof error?.code === "number" ? error.code : 0,
+            ),
+          );
+        } catch (parseError) {
+          reject(parseError);
+        }
+      },
     );
-  }
-  return parseXhsCredentialOutput(
-    result.stdout ?? "",
-    result.stderr ?? "",
-    result.status ?? 1,
-  );
+  });
 }

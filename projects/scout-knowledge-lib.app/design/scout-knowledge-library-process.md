@@ -269,6 +269,20 @@ from an older credential revision do not start work. A transition back to
 storm. Regression tests cover repeated same-level observations, stale
 revisions, restart, and ready/unavailable transitions.
 
+The credential preflight runs asynchronously with a 30-second subprocess
+deadline, so a pending browser check does not block the Host event loop. Both
+the observer and exploration workflow await its result. A timeout kills the
+probe and reports credential unavailability; it does not claim source access.
+
+The observer puts a temporary probe marker in its existing transition cache.
+Only the latest invocation may replace that cache and return facts, including
+when an App reload creates another module instance. An abandoned marker is
+replaced by the next ordinary scan. This is a local stale-result check, not a
+retry or recovery service. A closed observer's process may continue until its
+deadline; the Host discards facts from the closed generation. Ready facts replay
+on later scans. Unavailable notifications remain transition-only and best
+effort, so a transition lost during shutdown may not be replayed.
+
 ## Library Health
 
 `agents/scout/workflows/library-health.ts` is code-only observation. It

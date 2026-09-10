@@ -463,7 +463,7 @@ describe("scout-explore workflow prompt", () => {
         return {};
       }),
       {
-        inspectXhsCredential: () => ({
+        inspectXhsCredential: async () => ({
           credential: "xhs",
           state: "unavailable",
           reason: "login required",
@@ -495,7 +495,7 @@ describe("scout-explore workflow prompt", () => {
         return {};
       }),
       {
-        inspectXhsCredential: () => ({
+        inspectXhsCredential: async () => ({
           credential: "xhs",
           state: "ready",
           reason: "ready",
@@ -526,7 +526,7 @@ describe("scout-explore workflow prompt", () => {
         return {};
       }),
       {
-        inspectXhsCredential: () => ({
+        inspectXhsCredential: async () => ({
           credential: "xhs",
           state: "ready",
           reason: "ready",
@@ -593,7 +593,7 @@ describe("scout-explore workflow prompt", () => {
     ctx.workspace!.appRoot = appDir;
     ctx.workspace!.projectRoot = projectDir;
     const result = await executeScoutExplore(ctx, {
-      inspectXhsCredential: () => ({
+      inspectXhsCredential: async () => ({
         credential: "xhs",
         state: "ready",
         reason: "ready",
@@ -662,7 +662,7 @@ describe("scout-explore workflow prompt", () => {
         },
       })),
       {
-        inspectXhsCredential: () => ({
+        inspectXhsCredential: async () => ({
           credential: "xhs",
           state: "ready",
           reason: "ready",
