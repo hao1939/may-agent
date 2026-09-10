@@ -1,7 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-08-20"
+last_updated: "2026-09-02"
+current_snapshot: "Hermes Agent 1cb3ab6 and OpenClaw 1212f99 add a direct-mutation versus governed-proposal comparison, including current memory, subagent, recovery, and authority boundaries."
 source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement. GitHub update (2026-08-19): volcengine/OpenViking revision 98a0104 adds implementation-level evidence that tiered memory is becoming an inspectable, crash-aware data plane with hierarchical retrieval, derived indexes, commit-triggered extraction, and memory diffs. GitHub update (2026-08-20): lesliechowsh/dsh-memo revision 86a94dd adds a reproducible session-localization harness and demonstrates why memory retrieval, evidence reading, and answer generation need separate metrics."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
@@ -1075,6 +1076,50 @@ multi-agent gateway vs. multi-surface platform) determines which boundary
 model is adopted, and no single model covers all boundary layers.
 
 Source: arXiv [2604.14228v2], scan #373.
+
+### Hermes Agent and OpenClaw: mutation speed versus state governance (September 2026)
+
+A current primary-source comparison corrects three stale ideas in older Scout
+material: Hermes v0.18 was not documented as a clean-room reset, OpenClaw is no
+longer accurately described as flat Markdown memory without native subagents,
+and Hermes is not the only agent with a built-in learning loop.
+
+Both systems use conventional model/tool loops surrounded by substantial state
+infrastructure. Their useful distinction is the activation boundary for
+persistent change:
+
+- **Hermes Agent** forks its live Python agent for periodic memory/skill review.
+  The feature is enabled by default, fails open on configuration-read errors,
+  can consume up to 600,000 aggregate input tokens over 16 iterations by
+  default, and is prompted that most sessions should produce a skill update.
+  Direct writes are normal; memory and skill approval queues are opt-in.
+- **OpenClaw** uses Skill Workshop proposals, immutable generations, revision
+  and target hashes, scanner gates, ownership classes, and rollback metadata.
+  Autonomous review can update Workshop-owned state, while human-authored
+  skills remain read-only. This is more reviewable but creates a much larger
+  database, migration, and background-job state surface.
+
+Neither project's successful writes demonstrate retained improvement. The
+missing evidence is a controlled review-versus-no-review comparison on held-out
+tasks with paired regression evidence and equal cost. For Scout and long-running
+agents, the defensible synthesis is therefore:
+
+1. keep model-generated changes pending by default;
+2. bind them to source provenance, an expected target revision, and the active
+   writer inside the commit transaction;
+3. retain pre-images and immutable terminal-state history;
+4. promote only against an evaluator outside the proposing loop; and
+5. track abstention, staleness, rollback, cost, and downstream reuse—not write
+   count.
+
+The two security models converge on a second point: agent/workspace/process
+separation is not hostile isolation. Hermes explicitly names OS isolation as
+the only boundary against an adversarial model; OpenClaw explicitly defines one
+trusted-operator boundary per Gateway. Both need sandbox/host separation when
+content or users are adversarial.
+
+Source: [pinned comparative investigation](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md)
+and [concise finding](./findings/2026-09-02-hermes-agent-openclaw-comparison.md).
 
 ### Perception Architecture — The Missing Layer (June 2026)
 

@@ -497,15 +497,15 @@ truthful non-success stop remain separate from this verified retry route.
 
 ## Candidate: stop without claiming success
 
-**Candidate status:** Host [PR #111](https://github.com/hao1939/may-agent/pull/111)
-remains open. Its head observed September 10 is `88a476fa`; that revision was
-not reviewed in the latest core comparison. The evidence below belongs to the
-earlier `fc74eb46` candidate on `feat/app-task-stop`, based on `4afaaafb` with
-#110's proof included. #110 has now merged separately. No stop implementation
-is part of the documented main baseline or claimed deployed here.
-The source guide and regression tests travel with the Host change.
-This proposal remains the canonical design; existing
+**Candidate status:** Host [PR #111](https://github.com/hao1939/may-agent/pull/111),
+candidate `716d33a9` on `feat/app-task-stop`, includes current main `6dcb0fa3`
+(merged #110); #111 is not merged or deployed. The source guide and regression tests travel
+with the Host change. This proposal remains the canonical design; existing
 App policies need no change unless they choose to use this result.
+
+The latest core comparison did not review this stop candidate. Its dated PR
+observation is recorded separately; historical validation below retains the
+revision on which each check ran.
 
 Add `state: "stopped"` to the existing handler result contract, with a non-empty
 reason in `summary`, non-empty evidence, and optional caller response/partial
@@ -535,7 +535,11 @@ introduced. No live App policy is changed by this Host implementation slice.
 Existing App reads retain `attention` with the explicit non-success explanation;
 human reads show terminal cancellation. The cancellation record, not the display
 phase, prevents execution. Re-admitting desired intent for a cancelled identity
-is rejected rather than leaving a permanently pending revision. Referencing it
+is rejected rather than leaving a permanently pending revision. Explicit retry
+also rejects cancellation-backed Tasks, including replay of an earlier retry
+control, without changing their retained state or historical control receipts.
+Snapshot bootstrap must preserve cancellation records and their attribution;
+copying a seed must not turn terminal work back into live work. Referencing it
 for its result remains valid; new work requires a new linked identity. This is
 not automatic parent settlement: a parent with an undelivered required child
 must obtain an appropriate decision, not close that child as successful.

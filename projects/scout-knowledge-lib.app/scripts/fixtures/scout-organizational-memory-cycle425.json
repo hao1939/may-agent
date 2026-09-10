@@ -1,0 +1,216 @@
+{
+  "schema": "scout.organizational-memory-run-scenario/v1",
+  "analysis_kind": "producer-authored post-hoc matched inventory",
+  "inspected_at": "2026-09-08T12:31:01+08:00",
+  "research_source": "5b730b02df83974c3bd33f55755d4278c01f49f0",
+  "canonical_parent_after_reconciliation": "c5f4d3153f066b5abea7346eab5db6fcdeea9c03",
+  "source": {
+    "revision": "11617e3191bf6307eea64476fcb1269b5ca3fb78",
+    "tree": "2ca92ed4b97236f80e48ba177a6642d05e626ba4",
+    "arxiv_v1_sha256": "058b6a6d2d53aaff8846641479a8be45dadf1ff59602c80081d42078db3ef189",
+    "repository_archive_sha256": "7e183ab73192b2ed748723147a544dc509ff1064543f09b5bedb39bbda8f6e7a",
+    "scenarios_sha256": "29a5d26caa1b791c8e54705e2d49c771fbeb91930ea81ba22384138820b0ba51",
+    "evaluator_sha256": "49e2c08cedbc80672836cc2597dfdf1a4a43e653aa9af49a9e4ff5187cf248d9",
+    "metrics_manifest_sha256": "be97df9f73649e324e5fabf8eb7e98176f75f04a1f3ff7905a14779cfd01eb0f"
+  },
+  "design": {
+    "models": 2,
+    "runs_per_model": 4,
+    "scenarios": 10,
+    "matched_cells": 80,
+    "create_scenarios": 3,
+    "refuse_scenarios": 7,
+    "designed_to_differentiate_conditions": true,
+    "s01_declares_memory_pass_rag_fail_expectation": true
+  },
+  "scenario_order": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10"
+  ],
+  "metric_files": [
+    {
+      "id": "gpt_1",
+      "model": "gpt-4.1",
+      "path": "results/results_gpt_1/metrics.json",
+      "sha256": "6230f7c7a65ec5af2792af10b75ade3955e26ed0795985add1d11b96ee4c1259",
+      "rag": [false, true, true, true, true, false, true, false, true, true],
+      "memory": [true, true, true, true, false, true, true, true, true, true]
+    },
+    {
+      "id": "gpt_2",
+      "model": "gpt-4.1",
+      "path": "results/results_gpt_2/metrics.json",
+      "sha256": "a53f779787e6ff814e2c8eddd1c2fa35a49f47522ffcb5db193bb25fdef72614",
+      "rag": [false, true, true, true, true, false, true, false, true, true],
+      "memory": [true, true, true, false, true, true, true, true, true, true]
+    },
+    {
+      "id": "gpt_3",
+      "model": "gpt-4.1",
+      "path": "results/results_gpt_3/metrics.json",
+      "sha256": "6230f7c7a65ec5af2792af10b75ade3955e26ed0795985add1d11b96ee4c1259",
+      "rag": [false, true, true, true, true, false, true, false, true, true],
+      "memory": [true, true, true, true, false, true, true, true, true, true]
+    },
+    {
+      "id": "gpt_4",
+      "model": "gpt-4.1",
+      "path": "results/results_gpt_4/metrics.json",
+      "sha256": "2225718a842d98d4f06170c8d806c14727e0ee60231c1ac96d655142ef67bdcf",
+      "rag": [false, true, true, true, true, false, true, false, true, true],
+      "memory": [true, true, true, false, true, true, true, true, false, true]
+    },
+    {
+      "id": "sonnet_1",
+      "model": "sonnet-4.5",
+      "path": "results/results_sonnet_1/metrics.json",
+      "sha256": "0852a6c37702edcd053af49b19d033781aa8fd7e467a1fd99138082f3357b19a",
+      "rag": [false, true, true, true, true, false, true, true, true, true],
+      "memory": [true, true, true, true, true, true, true, true, true, true]
+    },
+    {
+      "id": "sonnet_2",
+      "model": "sonnet-4.5",
+      "path": "results/results_sonnet_2/metrics.json",
+      "sha256": "0fb88c85a7789ceb249cb6aeba7dc266c78e8ab22d5e4939f244c1a04bdd3274",
+      "rag": [false, true, false, true, true, true, true, true, true, true],
+      "memory": [true, true, true, true, true, true, true, true, true, true]
+    },
+    {
+      "id": "sonnet_3",
+      "model": "sonnet-4.5",
+      "path": "results/results_sonnet_3/metrics.json",
+      "sha256": "ffb85d147db700f7876c147aa71a249469cbcffcb39044f10e4d14c444b44f23",
+      "rag": [false, true, false, true, true, true, true, true, true, true],
+      "memory": [true, true, true, true, true, true, false, true, true, true]
+    },
+    {
+      "id": "sonnet_4",
+      "model": "sonnet-4.5",
+      "path": "results/results_sonnet_4/metrics.json",
+      "sha256": "8505a33674975ab7984427c24984b5f039c9d4ae400719ecda8614a5e1e409b9",
+      "rag": [false, true, false, true, true, true, true, true, true, true],
+      "memory": [true, true, true, true, true, true, true, true, false, true]
+    }
+  ],
+  "runs": [
+    {
+      "id": "gpt_1",
+      "model": "gpt-4.1",
+      "rag_pass": 7,
+      "memory_pass": 9,
+      "wins": 3,
+      "losses": 1,
+      "ties": 6
+    },
+    {
+      "id": "gpt_2",
+      "model": "gpt-4.1",
+      "rag_pass": 7,
+      "memory_pass": 9,
+      "wins": 3,
+      "losses": 1,
+      "ties": 6
+    },
+    {
+      "id": "gpt_3",
+      "model": "gpt-4.1",
+      "rag_pass": 7,
+      "memory_pass": 9,
+      "wins": 3,
+      "losses": 1,
+      "ties": 6
+    },
+    {
+      "id": "gpt_4",
+      "model": "gpt-4.1",
+      "rag_pass": 7,
+      "memory_pass": 8,
+      "wins": 3,
+      "losses": 2,
+      "ties": 5
+    },
+    {
+      "id": "sonnet_1",
+      "model": "sonnet-4.5",
+      "rag_pass": 8,
+      "memory_pass": 10,
+      "wins": 2,
+      "losses": 0,
+      "ties": 8
+    },
+    {
+      "id": "sonnet_2",
+      "model": "sonnet-4.5",
+      "rag_pass": 8,
+      "memory_pass": 10,
+      "wins": 2,
+      "losses": 0,
+      "ties": 8
+    },
+    {
+      "id": "sonnet_3",
+      "model": "sonnet-4.5",
+      "rag_pass": 8,
+      "memory_pass": 9,
+      "wins": 2,
+      "losses": 1,
+      "ties": 7
+    },
+    {
+      "id": "sonnet_4",
+      "model": "sonnet-4.5",
+      "rag_pass": 8,
+      "memory_pass": 9,
+      "wins": 2,
+      "losses": 1,
+      "ties": 7
+    }
+  ],
+  "model_totals": [
+    { "model": "gpt-4.1", "rag_pass": 28, "memory_pass": 35, "net": 7 },
+    { "model": "sonnet-4.5", "rag_pass": 32, "memory_pass": 38, "net": 6 }
+  ],
+  "scenario_pairs": [
+    { "id": "s01", "wins": 8, "losses": 0, "ties": 0, "net": 8 },
+    { "id": "s02", "wins": 0, "losses": 0, "ties": 8, "net": 0 },
+    { "id": "s03", "wins": 3, "losses": 0, "ties": 5, "net": 3 },
+    { "id": "s04", "wins": 0, "losses": 2, "ties": 6, "net": -2 },
+    { "id": "s05", "wins": 0, "losses": 2, "ties": 6, "net": -2 },
+    { "id": "s06", "wins": 5, "losses": 0, "ties": 3, "net": 5 },
+    { "id": "s07", "wins": 0, "losses": 1, "ties": 7, "net": -1 },
+    { "id": "s08", "wins": 4, "losses": 0, "ties": 4, "net": 4 },
+    { "id": "s09", "wins": 0, "losses": 2, "ties": 6, "net": -2 },
+    { "id": "s10", "wins": 0, "losses": 0, "ties": 8, "net": 0 }
+  ],
+  "paired_totals": {
+    "wins": 20,
+    "losses": 7,
+    "ties": 53,
+    "net": 13,
+    "positive_scenarios": 4,
+    "negative_scenarios": 4,
+    "tied_scenarios": 2
+  },
+  "s01_concentration": {
+    "net": 8,
+    "share_of_net": 0.6153846153846154,
+    "without_s01_pairs": 72,
+    "without_s01_wins": 12,
+    "without_s01_losses": 7,
+    "without_s01_ties": 53,
+    "without_s01_net": 5,
+    "without_s01_positive_runs": 5,
+    "without_s01_tied_runs": 3,
+    "without_s01_negative_runs": 0
+  },
+  "decision": "The released fixed suite supports a consistent aggregate memory-over-RAG advantage, but most net gain comes from one fixture-declared differentiating scenario and does not establish broad task generalization."
+}

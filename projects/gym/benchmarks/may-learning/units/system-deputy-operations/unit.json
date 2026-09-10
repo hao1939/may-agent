@@ -17,7 +17,7 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/system-model.md",
-      "section": "The whole flow"
+      "section": "Whole flow"
     },
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",

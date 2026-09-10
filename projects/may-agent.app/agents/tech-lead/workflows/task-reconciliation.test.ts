@@ -1,14 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import app, { resolveMayAgentTask, taskIntentForInput } from "../../../app.ts";
+import app, { resolveHostOperationsTask, taskIntentForInput } from "../../../app.ts";
 import cronEntries from "../cron.json";
 
 describe("may-agent task reconciliation manifest", () => {
   it("keeps standalone host maintenance outside task reconciliation", () => {
     expect(
-      resolveMayAgentTask({ type: "project.ops_digest.tick", data: {} }),
+      resolveHostOperationsTask({ type: "project.ops_digest.tick", data: {} }),
     ).toBeNull();
     expect(
-      resolveMayAgentTask({ type: "project.ops_health.tick", data: {} }),
+      resolveHostOperationsTask({ type: "project.ops_health.tick", data: {} }),
     ).toBeNull();
     expect(
       cronEntries.filter(({ name }) =>
@@ -51,7 +51,7 @@ describe("may-agent task reconciliation manifest", () => {
       "metric.breach",
       "metric.stalled",
     ]);
-    expect(app.tasks?.resolve).toBe(resolveMayAgentTask);
+    expect(app.tasks?.resolve).toBe(resolveHostOperationsTask);
     expect(app).not.toHaveProperty("ownerEntry");
     expect(app).not.toHaveProperty("taskWorkflows");
     expect(app).not.toHaveProperty("taskRoutes");
@@ -60,13 +60,13 @@ describe("may-agent task reconciliation manifest", () => {
 
   it("does not manufacture tasks for unrelated events", () => {
     expect(
-      resolveMayAgentTask({ type: "unrelated.event", data: {} }),
+      resolveHostOperationsTask({ type: "unrelated.event", data: {} }),
     ).toBeNull();
   });
 
   it("does not recreate the retired resource-migration Task route", () => {
     expect(
-      resolveMayAgentTask({
+      resolveHostOperationsTask({
         type: "may-agent.resource-migration.requested",
         data: {},
         target: { appId: "may-agent", project: "may-agent" },

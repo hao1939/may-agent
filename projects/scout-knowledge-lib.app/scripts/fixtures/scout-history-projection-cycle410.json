@@ -1,0 +1,17 @@
+{
+  "schema": "scout.history-projection/v1",
+  "frozen_against_tip": "73088d8c912fadb2fb6b3e6e1e721c854ce70ff9",
+  "range": {
+    "from_exclusive": "3ea02c3c767a77a1fb5fae7b176210edf6156ff6",
+    "through_inclusive": "08f7d1f8984fbb5cedb90b7b4ff1ac69d83add80"
+  },
+  "projected_files": [
+    "projects/scout-knowledge-lib/knowledge/xhs-topic-map.md",
+    "projects/scout-knowledge-lib/reports/research/xhs-seed-first-memory-lanes-2026-09-01.md"
+  ],
+  "navigation_fixtures": [
+    "scout-navigation-heldout-v1.json",
+    "scout-navigation-heldout-v2.json",
+    "scout-navigation-heldout-v3.json"
+  ]
+}

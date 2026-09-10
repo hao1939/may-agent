@@ -22,6 +22,11 @@ Before dispatching ANY recurring or previously-attempted task:
    - Experiment: Does results.md contain CONCLUDED/CLOSED/COMPLETED?
    - Project: Is `project.json` terminal, is the maintain task converged, or
      does a completion receipt already cover the finite work?
+   - Owner review: Does a durable delivery receipt show the same material
+     finding was already delivered, even under a different stable request ID?
+     Compare the desired outcome, evidence, and owner obligation—not only the
+     incoming identity. Unless changed evidence requires updating the existing
+     owner work, treat prior material delivery as completion.
    - One-off task: Does the deliverable file exist?
    → If YES: Skip dispatch. Log "already complete."
 

@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-01"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-02"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current additions include the pinned Hermes Agent/OpenClaw comparison. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -27,6 +27,29 @@ topic. Prefer in-place updates and contradiction notes over duplicate files.
 - [obsidian-second-brain Patterns](./obsidian-second-brain-patterns.md)
 - ~~[Scout Research Ideas](./temp-ideas.md)~~ → archived: ideas covered by existing notes
 
+### Primary-evidence audit routes
+
+These compact routes point to the accepted project-owned entry files for the
+fourteen Cycle 373–386 audits. They are navigation identities, not independent
+evidence or substitutes for the detailed source records.
+
+- [HexStrike-AI client-contrast audit](./findings/2026-07-07-hn-arxiv-github-scan-425.md) — client-associated result; the paper does not isolate a client-only causal effect.
+- [SkillOpt-Lite scale audit](./findings/2026-07-07-hn-arxiv-github-scan-425.md) — matched-method rows retain a model-scale advantage while released artifacts omit the headline results.
+- [Anchored Self-Play transfer audit](./findings/2026-07-07-hn-arxiv-github-scan-425.md) — function-repair gain bundles two interventions and transfers only narrowly without retraining.
+- [GameEngineBench runtime audit](./findings/2026-07-07-arxiv-scan-424.md) — integration failures in 31 environments do not establish runtime impossibility.
+- [AtomicCommitBench replay audit](./findings/2026-07-07-arxiv-scan-424.md) — replay saturation, commit grouping, and released bundle coverage remain distinct claims.
+- [Hidden-computation monitorability audit](./findings/2026-07-07-arxiv-scan-424.md) — filler-token probes recover selected intermediates in constructed tasks, not general monitorability.
+- [Single-prover verification audit](./findings/2026-07-07-arxiv-scan-424.md) — guarantees require bound circuits, robust computation, and shared oracle access.
+- [DSCC compositional-security audit](./findings/2026-07-07-arxiv-scan-424.md) — authored-catalog rejection rates are not violation-recall measurements.
+- [CodeRabbit reply-selection audit](./findings/2026-07-07-arxiv-scan-424.md) — developer replies cover a selected minority and do not measure silent-review validity.
+- [RLSR selective-prediction audit](./findings/2026-07-07-arxiv-scan-424.md) — post-hoc answer ranking is not a learned stop action or finite-sample deployment guarantee.
+- [Agentic test-time-training audit](./findings/2026-07-07-arxiv-scan-424.md) — reported competence and cost comparisons do not isolate token weighting or preservation.
+- [Aggregate policy-repair misranking audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — one simulator supports multi-resolution audit, not general temporal harness evolution.
+- [HASE harness-co-evolution audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — cross-system rows do not isolate harness quality from model and policy changes.
+- [VERITAS replication-bundle audit](./findings/2026-07-08-hn-arxiv-github-scan-452.md) — current public artifacts omit the paper result bundle and changed a grader.
+- [Cycles 373-386 compact provenance replacement design](../reports/review/scout-provenance-replacement-design-cycle412-2026-09-05.md) — exact producer/reviewer lineage, normalized seed receipts, accepted evidence anchors, limitations, and rollback required before any historical compaction.
+- [Cycles 373-386 executable provenance replacement](../reports/review/scout-provenance-replacement-cycle413-2026-09-05.md) — fail-closed source-bound comparison retains six commit identities and 48 decision-bearing timestamps while deletion remains rejected.
+
 Migration and project-operation artifacts live outside `knowledge/`:
 
 - [Initial library inventory](../reports/migration/library-inventory-2026-06-12.md)
@@ -43,8 +66,13 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Agent self-evolution unified lead ledger (2026-09-01)](../reports/research/agent-self-evolution-lead-ledger-2026-09-01.tsv) — provenance, access, research question, value, related work, novelty, credibility, disposition, and stopping condition for every lead in the bounded frontier.
 - [Agent self-evolution Xiaohongshu resolution ledger (2026-09-01)](../reports/research/agent-self-evolution-xhs-ledger-2026-09-01.tsv) — all 908 observed stable card IDs, including metadata-only, unresolved, adjacent, and screened-out records.
 - [Verification-allocation factorial design (2026-09-02)](../reports/research/verification-allocation-factorial-design-2026-09-02.md) — preregistration-ready separation of provisional plan, current temptation, and authenticated supersession state; design only, with explicit no-call gates.
+- [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-09-02
+
+- [Hermes Agent vs OpenClaw: the difference is mutation governance](./findings/2026-09-02-hermes-agent-openclaw-comparison.md) — both now have native learning loops, memory, subagents, and recovery; Hermes favors direct review-driven mutation while OpenClaw favors versioned proposals, writer ownership, staleness checks, and rollback, with no held-out self-improvement proof from either project.
 
 ### 2026-09-01
 

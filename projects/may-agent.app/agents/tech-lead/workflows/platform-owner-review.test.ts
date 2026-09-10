@@ -8,12 +8,17 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Check } from "typebox/value";
 import type {
   ExecutionResult,
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
-import { execute, normalizeOwnerResult } from "./platform-owner-review.ts";
+import {
+  execute,
+  normalizeOwnerResult,
+  platformOwnerResultSchema,
+} from "./platform-owner-review.ts";
 
 type OwnerResult = Omit<TaskReconcileResult, "state"> & {
   state: "converged" | "waiting";
@@ -43,6 +48,10 @@ describe("platform-owner-review", () => {
     const ownerResult: OwnerResult = {
       state: "converged",
       summary: "Current platform evidence is covered by existing work.",
+      result: {
+        directOwnerSignalCount: 0,
+        directOwnerSignals: [],
+      },
       evidence: ["packet:.state/review-packet.json"],
       actions: [],
     };
@@ -190,6 +199,46 @@ describe("platform-owner-review", () => {
     );
   });
 
+  it("always normalizes the direct owner signal disclosure", () => {
+    const noSignalResult = normalizeOwnerResult({
+      state: "converged",
+      summary: "The existing owner lineage already covers the obligation.",
+      evidence: ["receipt:existing-owner-lineage"],
+      actions: [],
+    });
+    expect(noSignalResult.result).toMatchObject({
+      directOwnerSignalCount: 0,
+      directOwnerSignals: [],
+    });
+    expect(Check(platformOwnerResultSchema, noSignalResult)).toBe(true);
+    expect(
+      Check(platformOwnerResultSchema, {
+        state: "converged",
+        summary: "Missing the required disclosure.",
+        evidence: [],
+      }),
+    ).toBe(false);
+
+    const signaledResult = normalizeOwnerResult({
+      state: "converged",
+      summary: "The owner received the new material obligation.",
+      result: {
+        directOwnerSignalCount: 99,
+        directOwnerSignals: [
+          "recipient:dev; purpose:repair; receipt:message-123",
+        ],
+      },
+      evidence: ["message:message-123"],
+      actions: [],
+    });
+    expect(signaledResult.result).toMatchObject({
+      directOwnerSignalCount: 1,
+      directOwnerSignals: [
+        "recipient:dev; purpose:repair; receipt:message-123",
+      ],
+    });
+  });
+
   it("uses only the bounded canonical context and preserves the owner result", async () => {
     const harness = makeHarness();
     const result = await execute(harness.ctx);
@@ -199,10 +248,9 @@ describe("platform-owner-review", () => {
       summary: harness.ownerResult.summary,
       output: harness.ownerResult,
     });
-    expect(harness.observed.schema).toMatchObject({
-      type: "object",
-      required: ["state", "summary", "evidence"],
-    });
+    const resultSchema = JSON.stringify(harness.observed.schema);
+    expect(resultSchema).toContain("directOwnerSignalCount");
+    expect(resultSchema).toContain("directOwnerSignals");
     expect(harness.observed.prompt).toContain(
       "The generic reconciler is the sole task-tree mutation authority.",
     );

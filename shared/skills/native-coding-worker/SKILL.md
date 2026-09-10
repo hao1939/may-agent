@@ -21,7 +21,12 @@ decision. A CLI worker is capacity, not a project owner or completion oracle.
    `worktreePolicy: "require"`. Do not let a worker improvise branch cleanup.
 5. Use `expectedOutput` when a deterministic JSON handoff is useful.
 6. Treat acceptance as asynchronous. Follow `cli.task.completed` or
-   `cli.task.failed`, then inspect the result and evidence paths.
+   `cli.task.failed`, then inspect the result and evidence paths. After a CLI
+   task is durably accepted, do not sleep or repeatedly poll it inside the
+   current attempt. If its terminal event is not already available for bounded
+   review, immediately return an exact `cli-task-terminal` Condition with the
+   accepted task identity and result path; inspect that artifact on the next
+   reconciliation.
 7. Verify patches in the owning checkout before claiming completion.
 
 Prefer TypeScript/JavaScript and Bun for new May-agent helpers. Use another

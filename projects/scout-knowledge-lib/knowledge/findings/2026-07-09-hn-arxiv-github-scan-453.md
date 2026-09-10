@@ -362,6 +362,20 @@ full-matrix and archetype/severity/judge outputs, the promised scale sweep, and
 dependence-aware uncertainty. Human-label and adjudication outputs are an
 additional requirement only for an RQ5 extension.
 
+An exact audit of all ten TeX sources confirms that no such RQ4 decision rule
+is declared in the retained package. Its sole `pre-registered` occurrence
+refers to the deterministic trap predicate and monotone behavioral-gradient
+criterion used for scenario admission. That is a real construction control,
+but it does not preregister an effect-size tolerance, rank criterion,
+archetype-overlap rule, severity/judge tolerance, missingness rule, or combined
+RQ4 decision. The source contains no equivalence or non-inferiority margin,
+statistical-power target, or multiple-comparison plan; every use of “power”
+means scenario discriminative power. RQ4 instead calls RQ1 replicated on every
+Claude Code model, RQ2 retained in three of four frameworks, and RQ3 preserved,
+without one rule saying what result would have failed “survival.” Preserve the
+admission preregistration while treating global invariance as an undeclared,
+post-result interpretation.
+
 The source also overstates what its 20 chi-square tests identify. It defines
 them as four systems times five overeager-vs-axis tests, so `p>=0.139` means no
 marginal outcome association was detected in those samples. Those tests do not

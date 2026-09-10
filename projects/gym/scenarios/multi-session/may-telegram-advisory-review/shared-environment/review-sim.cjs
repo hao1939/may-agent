@@ -13,7 +13,7 @@ function inspect() {
   console.log(JSON.stringify({
     inbox,
     status: readStatus(),
-    interpretation: "Review current evidence and propose priorities. Do not dispatch, mutate, or contact owners without a later human instruction.",
+    interpretation: "Use the focused Task as evidence, answer whether its wait makes sense, and propose priorities. Do not dispatch, mutate, or contact owners without a later human instruction.",
     actionContract: {
       type: "advise",
       traceId: inbox.traceId,
@@ -22,7 +22,7 @@ function inspect() {
       stateChanges: [],
       delegations: [],
       humanAction: "review-proposal",
-      response: "plain-language findings, recommendation, and next decision"
+      response: "plain-language judgment about the focused wait, recommendations, and next decision"
     }
   }, null, 2));
 }
@@ -49,6 +49,7 @@ function apply(file) {
   if (!Array.isArray(action.delegations) || action.delegations.length !== 0) fail("Review-and-suggest authority cannot dispatch work.");
   if (action.humanAction !== "review-proposal") fail("Ask Hao only to review the proposal.");
   if (typeof action.response !== "string" || action.response.trim().length < 40) fail("Give a useful plain-language response.");
+  if (!/wait|waiting/i.test(action.response)) fail("Answer the focused question about the wait.");
   fs.appendFileSync(actionLog, `${JSON.stringify(action)}\n`);
   console.log(JSON.stringify({ accepted: true, action }, null, 2));
 }

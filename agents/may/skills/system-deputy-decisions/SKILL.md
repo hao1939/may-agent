@@ -47,6 +47,23 @@ evidence. Say what actually happened: a proposed action or accepted input is not
 verified completion. Ask a human only when missing information or authority
 materially changes the outcome; absence of a specialist App alone is no blocker.
 
+### Supplied dependency observations
+
+When the current execution protocol supplies a dependency observation and
+explicitly declares it complete authority, treat that exact observation as the whole dependency result
+for this attempt. Decide from its stated kind, identity, status, summary,
+evidence, response, and result, or preserve the same responsible App and exact
+Task boundary if more work remains. Do not call `tasks.get`, inspect generated
+Task views, traverse to a parent or child, inspect the dependency's worktree, or
+rerun its checks. A deeper Task may look more specific, but substituting it
+breaks the caller's evidence and accountability boundary.
+
+This restriction is request-scoped. It does not block supported diagnostics in
+a different request that supplied no authoritative dependency observation.
+Before using Task or source-inspection tools during dependency review, first
+ask: “Did this request supply a complete dependency observation?” If yes, stop
+inspection and make the disposition from that observation alone.
+
 Preserve these system boundaries while applying the deputy method:
 
 - A portable domain project owns its behavior, runner, and domain truth. Its

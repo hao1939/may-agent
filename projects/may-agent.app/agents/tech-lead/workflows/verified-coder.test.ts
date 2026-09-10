@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { parseInput } from "./verified-coder";
+import type { WorkflowContext } from "@may-agent/sdk";
+import { emitStep, parseInput } from "./verified-coder";
 
 const reproducedRunCommand =
   "cd /app/projects/may-agent && bun test src/app/project-app-task-reconciler.test.ts src/app/loader/project-app-loader.test.ts && bun run check && git diff --check -- src/app/project-app-task-reconciler.test.ts src/app/loader/project-app-loader.test.ts src/app/loader/project-app-loader.ts src/app/project-app-task-reconciler.ts";
@@ -32,6 +33,40 @@ function reconciliationInput(outcome: string): string {
 }
 
 describe("verified-coder input contract", () => {
+  test("keeps task-owned progress markers attempt-local", async () => {
+    const logs: string[] = [];
+    let published = false;
+    const ctx = {
+      reconciliation: { taskId: "runtime/source-repair" },
+      log: { info: (message: string) => logs.push(message) },
+      events: {
+        emit: async () => {
+          published = true;
+          throw new Error(
+            "Task-owned workflow events require a stable localKey",
+          );
+        },
+      },
+    } as unknown as WorkflowContext;
+
+    await emitStep(ctx, "init");
+
+    expect(published).toBeFalse();
+    expect(logs).toEqual(["verified-coder step: init"]);
+  });
+
+  test("preserves legacy standalone step markers", async () => {
+    const emitted: unknown[] = [];
+    const ctx = {
+      log: { info: () => {} },
+      events: { emit: async (event: unknown) => void emitted.push(event) },
+    } as unknown as WorkflowContext;
+
+    await emitStep(ctx, "init");
+
+    expect(emitted).toEqual([{ type: "step_start", data: { step: "init" } }]);
+  });
+
   test("parses JSON-escaped verification metadata from reconciliation run wr_1786444540483_ubof", () => {
     const parsed = parseInput(
       reconciliationInput(

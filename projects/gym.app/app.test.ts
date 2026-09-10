@@ -27,6 +27,61 @@ function admitted(input: AppInput, id = "request-1"): AppTaskInput {
   };
 }
 
+function validFinishResultComparisonData(): Record<string, unknown> {
+  return {
+    mode: "finish-result-comparison",
+    requestId: "appdep_9be92f70d1f32757a748438d",
+    priorRequestId: "appdep_a372e40b096b6d63639c3656",
+    outcome: "Compare the exact frozen finish-result baseline and candidate.",
+    baseline: {
+      artifact: "/app/.state/sessions/s_1787238379742_871/result.json",
+      sha256:
+        "e4d47ca876d70d8f24ec5896c33d4d1824acaced93d85b7ae128e92b8e870cff",
+    },
+    candidate: {
+      worktree: "/app/projects/may-agent-finish-result-candidate",
+      commit: "0ff56f626cbfb3646a098deef4042c8b262d1bd3",
+      patchSha256:
+        "c09007f96d991be0714f7c500afb53a125a5560550fda3ca3a965a0dd3c4aab7",
+    },
+    sampleScope: {
+      positive: ["schema-valid result survives canonical readback"],
+      negative: [
+        "malformed",
+        "missing",
+        "null",
+        "failed status",
+        "duplicate completion",
+        "secret safety",
+        "unrelated Gym routing",
+      ],
+    },
+    requiredProof: ["One request-correlated content-hashed terminal artifact."],
+    constraints: ["Do not activate May Runtime."],
+    returnPath:
+      "/app/projects/gym/.state/proofs/finish-result-appdep_9be92f70d1f32757a748438d",
+  };
+}
+
+function validComparisonData(): Record<string, unknown> {
+  return {
+    requestId: "appdep_source",
+    outcome: "Compare the exact frozen artifacts.",
+    scope: {
+      baseline: { path: "evidence/baseline.sql", sha256: "a".repeat(64) },
+      candidate: { path: "evidence/candidate.sql", sha256: "b".repeat(64) },
+      comparisonArtifact: {
+        path: "evidence/comparison.json",
+        sha256: "c".repeat(64),
+      },
+      expectedLifecycleTypes: ["positive"],
+      negativeControls: ["negative"],
+    },
+    acceptanceProof: ["Preserve representative rows."],
+    constraints: ["Do not substitute the standalone benchmark."],
+  };
+}
+
 describe("canonical Gym App", () => {
   test("keeps the operational canary selection aligned with the Gym benchmark", () => {
     expect(mayCanary).toEqual(benchmarkMayCanary);
@@ -306,12 +361,15 @@ describe("Gym task reconciliation", () => {
     });
   });
 
-  test("deduplicates review work and gives explicit recoveries a new identity", () => {
+  test("keeps distinct review evidence and explicit recoveries on distinct identities", () => {
     const original = resolveGymTask(
       event("gym.review.requested", { requestKey: "incident-s_failed" }),
     );
     const duplicate = resolveGymTask(
       event("gym.review.requested", { requestKey: "incident-s_failed" }),
+    );
+    const distinctEvidence = resolveGymTask(
+      event("gym.review.requested", { requestKey: "incident-s_other" }),
     );
     const recovery = resolveGymTask(
       event("gym.review.requested", {
@@ -321,9 +379,14 @@ describe("Gym task reconciliation", () => {
     );
 
     expect(duplicate?.id).toBe(original?.id);
+    expect(distinctEvidence?.id).not.toBe(original?.id);
     expect(original?.input).toEqual({
       kind: "unknown",
       requestKey: "incident-s_failed",
+    });
+    expect(distinctEvidence?.input).toEqual({
+      kind: "unknown",
+      requestKey: "incident-s_other",
     });
     expect(recovery?.id).not.toBe(original?.id);
     expect(recovery?.input).toEqual({
@@ -333,16 +396,18 @@ describe("Gym task reconciliation", () => {
     });
   });
 
-  test("uses explicit request identity for each bounded regression run", () => {
+  test("uses explicit execution request identity for each bounded regression run", () => {
     const first = resolveGymTask(
       event("gym.regression.requested", {
         requestId: "request-201",
+        executionRequestId: "execution-201-a",
         benchmark: "may-alignment",
       }),
     );
     const second = resolveGymTask(
       event("gym.regression.requested", {
-        requestId: "request-202",
+        requestId: "request-201",
+        executionRequestId: "execution-201-b",
         benchmark: "may-alignment",
       }),
     );
@@ -351,7 +416,11 @@ describe("Gym task reconciliation", () => {
       parentId: "regression-assurance",
       mode: "achieve",
       workflow: "regression-run",
-      input: { benchmark: "may-alignment", requestId: "request-201" },
+      input: {
+        benchmark: "may-alignment",
+        executionRequestId: "execution-201-a",
+        requestId: "request-201",
+      },
     });
     expect(
       resolveGymTask(
@@ -403,6 +472,168 @@ describe("Gym task reconciliation", () => {
       throw new Error("run-regression did not produce a defensive task");
     }
     expect(attachment.intent.workflow).toBeUndefined();
+  });
+
+  test("preserves only the explicit finish-result comparison envelope value-for-value", () => {
+    const data = validFinishResultComparisonData();
+    const executionRequestId = "appdep_corrected_finish_result_once";
+    expect(Check(gymApp.inputSchema, { kind: "run-regression", data })).toBe(
+      true,
+    );
+    const attachment = taskForGymInput(
+      admitted({ kind: "run-regression", data }, executionRequestId),
+    );
+    if (attachment.kind !== "desired") {
+      throw new Error("finish-result envelope did not produce a desired task");
+    }
+    expect(attachment.intent).toMatchObject({
+      workflow: "regression-run",
+      outcome: expect.stringContaining("Compare the exact requested frozen"),
+      outputs: [".state/proofs", ".state/runs"],
+    });
+    expect(attachment.intent.input).toEqual({
+      ...data,
+      executionRequestId,
+    });
+
+    for (const field of [
+      "priorRequestId",
+      "baseline",
+      "candidate",
+      "sampleScope",
+      "requiredProof",
+      "constraints",
+      "returnPath",
+    ]) {
+      const malformed = validFinishResultComparisonData();
+      delete malformed[field];
+      const rejected = taskForGymInput(
+        admitted(
+          { kind: "run-regression", data: malformed },
+          `malformed-finish-${field}`,
+        ),
+      );
+      if (rejected.kind !== "desired") throw new Error("missing fallback task");
+      expect(rejected.intent.workflow).toBeUndefined();
+    }
+  });
+
+  test("fails closed at binding for every incomplete or malformed comparison field", () => {
+    const invalid: Record<string, unknown>[] = [];
+    for (const field of [
+      "requestId",
+      "outcome",
+      "acceptanceProof",
+      "constraints",
+      "scope",
+    ]) {
+      const value = validComparisonData();
+      delete value[field];
+      invalid.push(value);
+    }
+    for (const field of [
+      "baseline",
+      "candidate",
+      "comparisonArtifact",
+      "expectedLifecycleTypes",
+      "negativeControls",
+    ]) {
+      const value = validComparisonData();
+      delete (value.scope as Record<string, unknown>)[field];
+      invalid.push(value);
+    }
+    const malformedHash = validComparisonData();
+    (
+      (malformedHash.scope as Record<string, unknown>).baseline as Record<
+        string,
+        unknown
+      >
+    ).sha256 = "not-a-sha";
+    invalid.push(malformedHash);
+    const unsafePath = validComparisonData();
+    (
+      (unsafePath.scope as Record<string, unknown>).candidate as Record<
+        string,
+        unknown
+      >
+    ).path = "../candidate.sql";
+    invalid.push(unsafePath);
+    const emptyProof = validComparisonData();
+    emptyProof.acceptanceProof = [];
+    invalid.push(emptyProof);
+
+    for (const [index, data] of invalid.entries()) {
+      const attachment = taskForGymInput(
+        admitted(
+          { kind: "run-regression", data },
+          `malformed-comparison-${index}`,
+        ),
+      );
+      if (attachment.kind !== "desired") {
+        throw new Error("malformed input did not produce defensive ownership");
+      }
+      expect(attachment.intent.workflow).toBeUndefined();
+      expect(attachment.intent.outcome).toBe(
+        "Interpret and handle admitted Gym input run-regression.",
+      );
+    }
+  });
+
+  test("comparison discrimination is structural across paraphrases and opposite ordinary controls", () => {
+    const paraphrases = [
+      "Please contrast these immutable artifacts.",
+      "Assess whether the proposed taxonomy is safe.",
+      "Run the bounded proof without changing production.",
+    ];
+    for (const [index, outcome] of paraphrases.entries()) {
+      const data = { ...validComparisonData(), outcome };
+      const attachment = taskForGymInput(
+        admitted(
+          { kind: "run-regression", data },
+          `comparison-paraphrase-${index}`,
+        ),
+      );
+      expect(attachment).toMatchObject({
+        kind: "desired",
+        intent: {
+          workflow: "regression-run",
+          outcome: expect.stringContaining(
+            "Compare the exact requested frozen",
+          ),
+          input: {
+            ...data,
+            executionRequestId: `comparison-paraphrase-${index}`,
+          },
+        },
+      });
+    }
+
+    expect(
+      taskForGymInput(
+        admitted(
+          {
+            kind: "run-regression",
+            data: {
+              benchmark: "may-alignment",
+              scenario: "ordinary-scenario",
+              reason: "standalone smoke test",
+              trials: 1,
+            },
+          },
+          "ordinary-opposite-control",
+        ),
+      ),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        workflow: "regression-run",
+        outcome: expect.stringContaining("standalone Gym benchmark"),
+        input: {
+          requestId: "ordinary-opposite-control",
+          benchmark: "may-alignment",
+        },
+      },
+    });
   });
 
   test("preserves the complete exact comparison envelope value-for-value through admission and reconciliation", () => {
@@ -580,6 +811,110 @@ describe("Gym task reconciliation", () => {
     expect(distinct.intent.id).not.toBe(first.intent.id);
   });
 
+  test("reconciles one finding dedupe key while preserving each admitted request", () => {
+    const firstInput: AppInput = {
+      kind: "owner-review",
+      data: {
+        finding: {
+          dedupeKey: " owner-gap/stable-responsibility ",
+          severity: "high",
+          source: { sessionId: "s_first", packet: ["alpha", 1] },
+        },
+        outcome: "Repair the owner responsibility once.",
+        acceptance: ["Preserve the first packet."],
+        constraints: ["Do not discard request correlation."],
+      },
+    };
+    const secondInput: AppInput = {
+      kind: "owner-review",
+      data: {
+        finding: {
+          dedupeKey: "owner-gap/stable-responsibility",
+          severity: "medium",
+          source: { sessionId: "s_second", packet: ["beta", 2] },
+        },
+        outcome: "Repair the owner responsibility once.",
+        acceptance: ["Preserve the second packet."],
+        constraints: ["Keep the complete admitted payload."],
+      },
+    };
+
+    const first = taskForGymInput(admitted(firstInput, "owner-request-first"));
+    const second = taskForGymInput(
+      admitted(secondInput, "owner-request-second"),
+    );
+    if (first.kind !== "desired" || second.kind !== "desired") {
+      throw new Error("finding owner reviews did not produce desired tasks");
+    }
+
+    expect(first.intent.id).toBe(second.intent.id);
+    expect(first.intent.id).toMatch(
+      /^owner-review\/owner-gap-stable-responsibility-[a-f0-9]{16}$/,
+    );
+    expect(first.intent.id.startsWith("runtime/")).toBe(false);
+    expect(first.intent.input).toEqual({
+      requestId: "owner-request-first",
+      admittedInput: firstInput,
+    });
+    expect(second.intent.input).toEqual({
+      requestId: "owner-request-second",
+      admittedInput: secondInput,
+    });
+
+    const differentKey = taskForGymInput(
+      admitted(
+        {
+          ...secondInput,
+          data: {
+            ...secondInput.data,
+            finding: { dedupeKey: "owner-gap/different-responsibility" },
+          },
+        },
+        "owner-request-third",
+      ),
+    );
+    if (differentKey.kind !== "desired") {
+      throw new Error("distinct finding did not produce a desired task");
+    }
+    expect(differentKey.intent.id).not.toBe(first.intent.id);
+  });
+
+  test("falls back to request identity for unusable finding dedupe keys", () => {
+    const malformedFindings: unknown[] = [
+      undefined,
+      null,
+      "owner-gap/not-structured",
+      [],
+      {},
+      { dedupeKey: "   " },
+      { dedupeKey: 42 },
+      { dedupeKey: { nested: "not-a-string" } },
+    ];
+
+    for (const [index, finding] of malformedFindings.entries()) {
+      const input: AppInput = {
+        kind: "owner-review",
+        data: { finding, marker: { index } },
+      };
+      const first = taskForGymInput(admitted(input, `fallback-${index}-a`));
+      const duplicate = taskForGymInput(admitted(input, `fallback-${index}-a`));
+      const distinct = taskForGymInput(admitted(input, `fallback-${index}-b`));
+      if (
+        first.kind !== "desired" ||
+        duplicate.kind !== "desired" ||
+        distinct.kind !== "desired"
+      ) {
+        throw new Error("fallback owner review did not produce desired tasks");
+      }
+      expect(first).toEqual(duplicate);
+      expect(first.intent.id).not.toBe(distinct.intent.id);
+      expect(first.intent.input).toEqual({
+        requestId: `fallback-${index}-a`,
+        admittedInput: input,
+      });
+    }
+  });
+
   test("preserves a structured owner request as the concrete Task goal", () => {
     const input: AppInput = {
       kind: "owner-review",
@@ -607,6 +942,49 @@ describe("Gym task reconciliation", () => {
         input: { requestId: "owner request/structured", admittedInput: input },
       },
     });
+  });
+
+  test("adds the fail-closed convergence rule to artifact-claim owner reviews", () => {
+    const input: AppInput = {
+      kind: "owner-review",
+      data: {
+        outcome:
+          "Verify preservation of one acceptance-critical terminal artifact.",
+        acceptance: ["Preserve HASH_GATE_REJECTED."],
+      },
+    };
+
+    const task = taskForGymInput(admitted(input, "owner request/artifact"));
+    if (task.kind !== "desired")
+      throw new Error("artifact owner review did not produce a Task");
+
+    expect(task.intent.acceptance).toEqual([
+      "Preserve HASH_GATE_REJECTED.",
+      expect.stringMatching(
+        /fresh successful read.*independently computed.*ENOENT.*non-converged/,
+      ),
+    ]);
+  });
+
+  test("adds the same-session receipt rule to hash-fence owner reviews", () => {
+    const input: AppInput = {
+      kind: "owner-review",
+      data: {
+        outcome: "Verify the SHA-256 hash fence before activation.",
+        acceptance: ["Preserve one checksum receipt per candidate."],
+      },
+    };
+
+    const task = taskForGymInput(admitted(input, "owner request/hash-fence"));
+    if (task.kind !== "desired")
+      throw new Error("hash-fence owner review did not produce a Task");
+
+    expect(task.intent.acceptance).toEqual([
+      "Preserve one checksum receipt per candidate.",
+      expect.stringMatching(
+        /executing review session.*every exact current candidate path.*copied cross-session hashes.*nonzero exit.*non-converged/,
+      ),
+    ]);
   });
 
   test("keeps the safe owner-review fallback for an unstructured comment", () => {

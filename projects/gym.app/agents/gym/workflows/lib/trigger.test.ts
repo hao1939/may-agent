@@ -22,15 +22,22 @@ describe("Gym workflow reconciliation details", () => {
     });
   });
 
-  test("prefers a fresh trigger observation when one is present", () => {
+  test("preserves admitted fields while fresh event fields override them", () => {
     const context = {
       input: {},
       reconciliation: {
-        input: { requestKey: "old" },
+        input: {
+          requestKey: "old",
+          scenario: "may-align-proof-before-adopt",
+          trials: 1,
+        },
         events: {
           items: [
             {
-              event: { type: "gym.review.requested", requestKey: "fresh" },
+              event: {
+                type: "app.task.requested",
+                data: { requestKey: "fresh" },
+              },
             },
           ],
         },
@@ -38,8 +45,10 @@ describe("Gym workflow reconciliation details", () => {
     } as never;
 
     expect(triggerDetails(context)).toMatchObject({
-      type: "gym.review.requested",
+      type: "app.task.requested",
       requestKey: "fresh",
+      scenario: "may-align-proof-before-adopt",
+      trials: 1,
     });
   });
 });
