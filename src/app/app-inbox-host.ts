@@ -126,6 +126,7 @@ export type AdmitAppInput = {
 };
 
 export type AppInboxFailure = {
+  agent?: string;
   requestId?: string;
   conversationId?: string;
   claimRevision?: number;
@@ -778,6 +779,8 @@ export class AppInboxHost {
     for (const [appId, taskIds] of taskIdsByApp) {
       for (const taskId of taskIds) {
         const taskDependency = { kind: "task", id: taskId } as const;
+        const app = this.#apps.get(appId);
+        const agent = app?.agent ?? app?.owner;
         try {
           const observed = (await this.#observeDependency(appId, taskDependency)) ?? {
             ...taskDependency,
@@ -814,6 +817,7 @@ export class AppInboxHost {
           outcome.errors.push(`App ${appId} task ${taskDependency.id}: ${errorMessage(error)}`);
           (outcome.failures ??= []).push({
             appId,
+            agent,
             taskId,
             stage: "dependency-recovery",
             error: errorMessage(error),
@@ -851,6 +855,7 @@ export class AppInboxHost {
     } catch (error) {
       outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
       const failure: AppInboxFailure = {
+        agent: app.agent ?? app.owner,
         requestId: claim.item.id,
         conversationId: claim.item.conversationId,
         claimRevision: claim.generation,

@@ -30,12 +30,14 @@ describe("HTTP human Task reads and board", () => {
   let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
   let published: any[];
   let rejectPublish: boolean;
+  let rejectConversationRead: boolean;
   let listeners: Set<(event: ControlEvent) => void>;
 
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
     published = [];
     rejectPublish = false;
+    rejectConversationRead = false;
     listeners = new Set();
     root = mkdtempSync(join(tmpdir(), "may-http-tasks-"));
     db = openStateDb(join(root, "may.db"));
@@ -57,6 +59,7 @@ describe("HTTP human Task reads and board", () => {
       subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
       getAppConversation: (appId, conversationId, options) => {
         if (appId !== "may" || conversationId !== "may:primary" || options?.limit !== 30) throw new Error("Invalid conversation read");
+        if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
         return conversation;
       },
       publishEvent: (event) => {
@@ -191,7 +194,11 @@ describe("HTTP human Task reads and board", () => {
   test("HTTP Conversation reads forward exact identity and bounded options", async () => {
     expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
     await read("/api/conversation?appId=may", 400);
-    await read("/api/conversation?appId=wrong&conversationId=may%3Aprimary", 400);
+    await read("/api/conversation?conversationId=may%3Aprimary", 400);
+    rejectConversationRead = true;
+    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
+    rejectConversationRead = false;
+    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
     expect(published).toHaveLength(0);
     control.close();
     await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503);

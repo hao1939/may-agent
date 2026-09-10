@@ -3161,7 +3161,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!appId || !conversationId) return json({ error: "appId and conversationId required" }, 400);
     try {
       const response = await daemonRead({ type: "app.conversation.get", appId, conversationId, limit: 30 });
-      if (response.type === "error") return json({ error: response.message }, 400);
+      // This endpoint already validates its input and supplies bounded options.
+      // A daemon error also covers unavailable/failed storage reads, not just
+      // validation; do not misclassify an internal read failure as HTTP 400.
+      if (response.type === "error") return json({ error: response.message }, 503);
       if (response.type !== "ok" || !response.conversation) throw new Error("Invalid Conversation response");
       return json(response.conversation);
     } catch (error) {

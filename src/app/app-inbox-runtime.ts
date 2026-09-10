@@ -707,7 +707,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         type: "handler.failed",
         source: "app-inbox",
         owner: failure.appId ? `app:${failure.appId}` : "runtime",
-        data: { handler: "app-inbox", agent: failure.appId ?? "runtime", durationMs: 0, ...failure },
+        data: { handler: "app-inbox", durationMs: 0, ...failure, agent: normalizedAgent(failure.agent) ?? "runtime" },
       });
     } catch (reportError) {
       // Logging is independent of event persistence and contains subscriber errors.
@@ -717,9 +717,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
     for (const failure of outcome.failures ?? []) reportFailure({ appId, ...failure });
   };
-  const reportRuntimeFailure = (stage: string, error: unknown, appId?: string): void => {
+  const reportRuntimeFailure = (
+    stage: string,
+    error: unknown,
+    appId?: string,
+    agent = loaded.find(({ definition }) => definition.id === appId)?.definition.agent,
+  ): void => {
     reportFailure({
       appId,
+      agent,
       stage,
       error: error instanceof Error ? error.message : String(error),
       disposition: "recovery-pending",
@@ -772,6 +778,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       return;
     }
     const appActive = active.get(appId) ?? 0;
+    const agent = loaded.find(({ definition }) => definition.id === appId)?.definition.agent ?? "runtime";
     active.set(appId, appActive + 1);
     dirty.delete(appId);
     // Attach cleanup before any fallible work/read. This also contains a
@@ -790,7 +797,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           notifyConversationUpdated(appId, conversationId);
         }
       })
-      .catch((error) => reportRuntimeFailure("input-dispatch", error, appId))
+      .catch((error) => reportRuntimeFailure("input-dispatch", error, appId, agent))
       .finally(() => {
         const remaining = (active.get(appId) ?? 1) - 1;
         if (remaining > 0) active.set(appId, remaining);

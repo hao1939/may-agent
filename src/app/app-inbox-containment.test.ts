@@ -26,7 +26,7 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
     const app = defineApp({
       id: "sample",
       version: 1,
-      agent: "sample",
+      agent: "sample-worker",
       inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({}) }),
       requests: { mode: "agent" },
     });
@@ -93,7 +93,10 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
       resolveRequest: async ({ request }) => {
         calls.push(request.id);
         if (mode === "cleanup-read") armed = true;
-        if (mode === "report-write" && request.id === "first") throw new Error("model failed once");
+        if (mode === "report-write" && request.id === "first") {
+          await runtime.reload(undefined, async () => [{ appDir: root, definition: { ...app, agent: "replacement-worker" } }]);
+          throw new Error("model failed once");
+        }
         return { summary: "Answered", response: "Answer", topic: { kind: "none" } };
       },
     });
@@ -131,6 +134,7 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
           owner: "app:sample",
           data: {
             appId: "sample",
+            agent: "sample-worker",
             requestId: "first",
             conversationId: "chat",
             claimRevision: 1,
