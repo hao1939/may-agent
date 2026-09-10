@@ -35,10 +35,20 @@ async function resolveReleaseTag(event: string, refType: string, refName: string
 }
 
 describe("portable CI contract", () => {
-  it("uses the same Bun pin for image and CI", () => {
+  it("aligns Bun pins and the supported Node major across types, CI, and image", () => {
     expect(read(".bun-version").trim()).toMatch(/^\d+\.\d+\.\d+$/);
     expect(read("container/Dockerfile")).toContain("COPY .bun-version /tmp/may-bun-version");
     expect(read(".github/workflows/ci.yml")).toContain("bun-version-file: .bun-version");
+
+    const packageJson = JSON.parse(read("package.json"));
+    const nodeMajor = packageJson.engines.node.trim().match(/^>=\s*(\d+)(?:\.\d+){0,2}$/)?.[1];
+    expect(nodeMajor).toBeDefined();
+    // Accept exact, caret, or tilde pins, but not a range spanning Node majors.
+    expect(packageJson.devDependencies["@types/node"].trim()).toMatch(new RegExp(`^[~^]?${nodeMajor}\\.\\d+\\.\\d+$`));
+    expect(read("container/Dockerfile")).toContain(`ARG NODE_IMAGE=node:${nodeMajor}-`);
+    const ci = Bun.YAML.parse(read(".github/workflows/ci.yml")) as any;
+    const setupNode = ci.jobs.quality.steps.find((step: any) => step.uses?.startsWith("actions/setup-node@"));
+    expect(String(setupNode?.with?.["node-version"])).toBe(nodeMajor);
   });
 
   it("includes script regressions but keeps installation checks explicit", () => {

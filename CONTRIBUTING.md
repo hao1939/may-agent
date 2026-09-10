@@ -129,6 +129,11 @@ pre-1.0 minor release can change runtime contracts. Major tooling changes also
 need an explicit compatibility review. Check peer ranges before upgrading
 TypeScript; a newer compiler may not yet be supported by the lint parser.
 
+Keep `@types/node` on the same major as the minimum Node version in
+`engines.node`, CI, and the image. Newer type definitions do not make newer APIs
+available at runtime. Dependabot still proposes minor/patch type updates;
+review major updates together with the Node runtime upgrade.
+
 Keep one supported TypeScript 6 compiler for now. TypeScript 7.0 no longer
 provides the compiler API used by `typescript-eslint`, so Dependabot excludes
 only 7.0.x. The SDK export-contract test uses the public compiler CLI instead.
