@@ -584,3 +584,41 @@ remained readable. Only disposable repositories were modified.
 Scout's complete suite subsequently passed 344 tests across 33 files, zero
 failures, in 157 seconds. This verifies the source revision and fixtures; the
 next automatic source cycle remains the model-backed check.
+
+## Natural recurrence exposed draft-only acceptance — 14:00–14:10 UTC
+
+Scheduled HN/GitHub events 6319084/6319085 retained generation 1. HN ran while
+GitHub read as pending; May's independent review was quiet. GitHub completed
+at 6319129 with a canonical, pinned-revision Agent Control Standard finding.
+
+HN hit the protected security note and correctly received `EROFS`, but then
+overgeneralized the restriction to the library. It left a source-grounded
+GitSpawn draft and a digest link. The workflow accepted this at 6319106, and
+May's message 6319120 incorrectly described library integration. A completed
+source observation and preserved draft did not satisfy that claim.
+
+Commit `704d5871d9` rejects nonempty results containing no actual knowledge
+output, retaining draft paths and current source evidence. Guidance narrows
+read-only errors to the exact path, forbids bypassing protection, and permits
+an appropriate writable finding instead. The regression failed before the
+fix. The old positive XHS fixture wrote only a digest; it now writes a real
+knowledge note as well. All 75 App/workflow tests, 345 full Scout tests,
+typecheck, installed-tool formatting and design checks passed. This is a
+narrow admission guarantee, not proof of content quality or Git integration.
+
+Reload 6319132/6319133 succeeded without restarting. Explicit operator feedback
+6319135 continued the same HN Task from its draft rather than requesting a new
+search. It completed at 6319144 after 18 calls without tool errors, created a
+canonical finding, retained the draft with a canonical link, and changed the
+existing digest link without repeating its highlight. The result explicitly
+distinguishes filesystem integration from Git/PR integration. May quietly
+coalesced the update at 6319151; the prior finding was already reported.
+This correction was coached, not automatic recovery proof. Uncoached source
+calls still tried an unavailable module or executable once; affordable
+recovery does not justify another runtime mechanism.
+
+The operator verified the canonical file, source references, both local links,
+single digest heading and unchanged protected-file hashes. Only Scout's exact
+four-byte `.write-test` artifact was removed after its creation was confirmed
+in the HN session; no research content was deleted or committed. Safe isolated
+editing and reviewed Git integration remain open.
