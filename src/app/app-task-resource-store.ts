@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
+import { stateTransaction as transaction } from "../lib/db/transaction.js";
+import { wakeAppInboxItemsWaitingOnApp } from "./app-inbox-store.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
 import { isTaskExecutionExhausted } from "./app-task-state.js";
@@ -49,22 +51,6 @@ function json(value: unknown): string {
 function parseJson<T>(value: unknown): T {
   if (typeof value !== "string") throw new Error("Task resource store contained non-text JSON");
   return JSON.parse(value) as T;
-}
-
-function transaction<T>(db: SqliteDb, operation: () => T): T {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const result = operation();
-    db.exec("COMMIT");
-    return result;
-  } catch (error) {
-    try {
-      db.exec("ROLLBACK");
-    } catch {
-      // Preserve the original failure.
-    }
-    throw error;
-  }
 }
 
 function eventKey(event: Record<string, unknown>): string {
@@ -148,7 +134,7 @@ export type AppTaskResourceMutation = {
 
 export class AppTaskResourceStore {
   private constructor(
-    private readonly db: SqliteDb,
+    readonly db: SqliteDb,
     readonly appId: string,
     private readonly ownsDb: boolean,
   ) {}
@@ -1391,6 +1377,25 @@ export class AppTaskResourceStore {
             receipt.appliedAt,
             json(receipt),
           );
+      }
+      // Readiness belongs to the accepted transition, not its EventBus hint.
+      const reviewable = new Set(mutation.deleteTaskIds ?? []);
+      for (const write of mutation.tasks ?? []) {
+        if (
+          !write.trigger &&
+          (write.resource.status.phase === "attention" ||
+            (write.resource.status.phase === "converged" &&
+              write.resource.status.observedGeneration === write.resource.metadata.generation))
+        ) {
+          reviewable.add(write.resource.metadata.id);
+        }
+      }
+      for (const receipt of mutation.receipts ?? []) {
+        // A receipt from an older generation must not wake newly revised work.
+        if (!this.readTask(receipt.metadata.id)) reviewable.add(receipt.metadata.id);
+      }
+      for (const taskId of reviewable) {
+        wakeAppInboxItemsWaitingOnApp(this.db, this.appId, { kind: "task", id: taskId });
       }
       this.bumpRevision();
       return true;

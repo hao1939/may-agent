@@ -13,6 +13,8 @@ import type {
 import { appTaskSessionBinding } from "./core/tasks/session-binding.js";
 import { recoverUnavailableTaskHandlers } from "./core/tasks/handler-recovery.js";
 import { getDb } from "../lib/requests.js";
+import { admitTaskRequest, attachRequestToTask } from "./core/state/requests.js";
+import type { AppInboxClaim } from "./app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
@@ -87,7 +89,6 @@ import {
   appTaskQueueEntries,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
-  readAppTaskIntent,
   readAppTaskTrigger,
   readPendingAppTaskTrigger,
   recordAppTaskTrigger,
@@ -2831,6 +2832,9 @@ export function attachLoadedAppTask(input: {
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   request: Readonly<AppRequest>;
+  /** Inbox calls attach atomically; direct Task admission has no request claim. */
+  claim?: AppInboxClaim;
+  now?: number;
 }): { taskId: string; isComplete: () => Promise<boolean> } {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
@@ -2849,46 +2853,12 @@ export function attachLoadedAppTask(input: {
   const loaderOptions = appRouterOptionsByBus.get(input.bus);
   if (!loaderOptions) throw new Error(`App ${descriptor.id} task runtime is not attached`);
 
-  const idempotencyKey = input.idempotencyKey.trim();
-  if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");
   const config = appTaskConfig(descriptor);
   const humanRequested = input.request.source.kind === "human" || input.request.humanRequested === true;
 
-  let intent: AppTaskIntent;
-  if (input.attachment.kind === "existing") {
-    const taskId = input.attachment.taskId.trim();
-    if (!taskId) throw new Error("Existing task id must be non-empty");
-    if (isAppTaskConverged(config, taskId)) {
-      throw new Error(`Task ${taskId} in App ${descriptor.id} is already complete; create distinct follow-up work`);
-    }
-    const existingIntent = readAppTaskIntent(config, taskId);
-    if (!existingIntent) {
-      throw new Error(`Task ${taskId} does not exist in App ${descriptor.id}`);
-    }
-    intent = existingIntent;
-  } else {
-    intent = input.attachment.intent;
-  }
-
-  const observation = observeAppTaskIntent(config, {
-    intent,
-    appAgent: descriptor.agent,
-    admissionKey: idempotencyKey,
-    trigger: {
-      type: "app.task.requested",
-      source: humanRequested ? "human" : `app-inbox:${input.appId}`,
-      owner: `agent:${descriptor.agent}`,
-      target: { project: descriptor.id, taskId: intent.id },
-      idempotencyKey,
-      data: {
-        project: descriptor.id,
-        taskId: intent.id,
-        appId: input.appId,
-        idempotencyKey,
-        request: input.request,
-      },
-    },
-  });
+  const observation = input.claim
+    ? attachRequestToTask(config, { ...input, claim: input.claim })
+    : admitTaskRequest(config, input);
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {

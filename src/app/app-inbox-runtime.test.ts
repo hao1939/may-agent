@@ -1,3 +1,4 @@
+import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -129,11 +130,11 @@ describe("App inbox runtime", () => {
       attached,
       options: {
         hostCapacity: new HostCapacity(4),
-        attachTask: async (input: any) => {
+        attachTask: fakeTaskAttacher(db, async (input: any) => {
           const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
           attached.push(taskId);
           return { taskId };
-        },
+        }),
         readDependency: async (input: any) => observations.get(input.dependency.id) ?? null,
         admitTaskEvent: () => ({ accepted: true, by: "test-task", route: "direct" }),
         previewTaskEvent: () => [],
@@ -209,10 +210,10 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      attachTask: async (input: any) => {
+      attachTask: fakeTaskAttacher(db, async (input: any) => {
         attachments.push(input.attachment);
         return { taskId: input.attachment.taskId };
-      },
+      }),
       scanIntervalMs: 10_000,
     });
 
@@ -698,10 +699,10 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      attachTask: async (input: any) => {
+      attachTask: fakeTaskAttacher(db, async (input: any) => {
         attachments.push(input.attachment);
         return { taskId: input.attachment.taskId };
-      },
+      }),
       scanIntervalMs: 10_000,
     });
 
@@ -942,12 +943,12 @@ describe("App inbox runtime", () => {
       ...task.options,
       hostCapacity: new HostCapacity(3),
       maxConcurrentRequests: 3,
-      attachTask: async (input: any) => {
+      attachTask: fakeTaskAttacher(db, async (input: any) => {
         const taskId = input.attachment.intent.id as string;
         started.push(taskId);
         await new Promise<void>((resolve) => releases.push(resolve));
         return { taskId };
-      },
+      }),
       scanIntervalMs: 10_000,
     });
 
@@ -1043,12 +1044,12 @@ describe("App inbox runtime", () => {
       ...task.options,
       hostCapacity: new HostCapacity(3),
       maxConcurrentRequests: 3,
-      attachTask: async (input: any) => {
+      attachTask: fakeTaskAttacher(db, async (input: any) => {
         const taskId = input.attachment.intent.id as string;
         started.push(taskId);
         await new Promise<void>((resolve) => releases.set(taskId, resolve));
         return { taskId };
-      },
+      }),
       scanIntervalMs: 10_000,
     });
 

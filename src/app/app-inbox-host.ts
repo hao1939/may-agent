@@ -20,6 +20,7 @@ import {
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../lib/db.js";
+import { stateTransaction as withTransaction } from "../lib/db/transaction.js";
 import { assertValidAppDefinition } from "./core/apps/definition-validation.js";
 import {
   associateAppInboxClaimTopic,
@@ -43,7 +44,6 @@ import {
 } from "./app-inbox-store.js";
 import {
   createConversationTopic,
-  linkConversationTopicTask,
   readAppConversationResource,
   readConversationMessageTopicId,
   readConversationTopic,
@@ -63,13 +63,11 @@ export type AppTaskAttacher = (input: {
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   request: Readonly<AppRequest>;
+  /** Inbox attachment commits its wait and Topic too; direct follow-up admission has no claim. */
+  claim?: AppInboxClaim;
+  now?: number;
 }) => Promise<{
   taskId: string;
-  /**
-   * Checked only after the durable wait link exists. This closes the race where
-   * task convergence happens immediately before or while the link is written.
-   */
-  isComplete?: () => Promise<boolean>;
 }>;
 
 export type AppRequestResolver = (input: {
@@ -321,18 +319,6 @@ function validateInput(app: RegisteredApp, input: AppInput): void {
   if (!Check(app.inputSchema, input)) {
     const first = [...Errors(app.inputSchema, input)][0];
     throw new Error(`Invalid input for App ${app.id}: ${first?.message ?? "schema mismatch"}`);
-  }
-}
-
-function withTransaction<T>(db: SqliteDb, operation: () => T): T {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const result = operation();
-    db.exec("COMMIT");
-    return result;
-  } catch (error) {
-    db.exec("ROLLBACK");
-    throw error;
   }
 }
 
@@ -653,7 +639,7 @@ export class AppInboxHost {
     return wakeAppInboxItemsWaitingOn(this.#db, waitingOn, this.#now());
   }
 
-  /** Wake one exact dependency and return only the Apps that gained ready work. */
+  /** Wake an exact dependency, including work already made ready by its state commit. */
   wakeAppIds(waitingOn: { kind: AppInboxWaitKind; id: string }, appId?: string): string[] {
     const appIds: string[] = [];
     const now = this.#now();
@@ -668,17 +654,14 @@ export class AppInboxHost {
              AND waiting_on_kind = ?
              AND waiting_on_id = ?
              ${scope ? "AND app_id = ?" : ""}
-             AND (available_at IS NULL OR available_at > ? OR review_at IS NOT NULL)
            ORDER BY app_id`,
         )
-        .all(waitingOn.kind, requiredText(waitingOn.id, "waitingOn.id"), ...(scope ? [scope] : []), now) as Array<{
+        .all(waitingOn.kind, requiredText(waitingOn.id, "waitingOn.id"), ...(scope ? [scope] : [])) as Array<{
         app_id?: unknown;
       }>;
       if (rows.length === 0) return;
-      const woken = scope
-        ? wakeAppInboxItemsWaitingOnApp(this.#db, scope, waitingOn, now)
-        : wakeAppInboxItemsWaitingOn(this.#db, waitingOn, now);
-      if (woken === 0) return;
+      if (scope) wakeAppInboxItemsWaitingOnApp(this.#db, scope, waitingOn, now);
+      else wakeAppInboxItemsWaitingOn(this.#db, waitingOn, now);
       for (const row of rows) {
         if (typeof row.app_id === "string" && row.app_id.trim()) appIds.push(row.app_id.trim());
       }
@@ -1369,38 +1352,23 @@ export class AppInboxHost {
     if (!attachment || typeof attachment !== "object") {
       throw new Error(`App ${app.id} task resolver returned no Task attachment`);
     }
-    const attachmentIdentity =
-      attachment.kind === "existing"
-        ? `existing:${requiredText(attachment.taskId, "Existing task id")}`
-        : `desired:${requiredText(attachment.intent.id, "Desired task intent id")}`;
     const attached = await this.#attachTask({
       appId: app.id,
       attachment,
-      idempotencyKey: `task:${claim.item.id}:${attachmentIdentity}`,
+      idempotencyKey: repairedAttachment
+        ? `task:${claim.item.id}:replace:${claim.generation}`
+        : `task:${claim.item.id}`,
       request,
+      claim,
+      now: this.#now(),
     });
     const taskId = requiredText(attached.taskId, "Attached task id");
-    const waiting = waitAppInboxClaim(this.#db, claim, { kind: "task", id: taskId }, { now: this.#now() });
-    if (!waiting) throw new Error("claim is stale");
-    if (claim.item.topicId) {
-      linkConversationTopicTask(this.#db, claim.item.topicId, app.id, taskId, this.#now());
-    }
     if (this.#onRequestTaskAttached) {
       try {
         this.#onRequestTaskAttached(claim.item, taskId);
       } catch {
         // The durable Task attachment is authoritative. A failed optional
         // presentation hint must never undo or delay the work.
-      }
-    }
-    if (attached.isComplete) {
-      try {
-        if (await attached.isComplete()) {
-          wakeAppInboxItemsWaitingOnApp(this.#db, claim.item.appId, { kind: "task", id: taskId }, this.#now());
-        }
-      } catch {
-        // The durable completion Event remains authoritative. A failed
-        // completion-before-link check must not undo the exact Task wait.
       }
     }
     return claim.item.conversationId;

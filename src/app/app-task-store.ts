@@ -8,6 +8,7 @@ import type {
 } from "./app-task-state.js";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "./app-task-resource-store.js";
 import type { TaskExecutorName } from "@may-agent/sdk";
+import { inStateTransaction } from "../lib/db/transaction.js";
 
 /** A structural container. It never carries executable Task lifecycle state. */
 export type TaskGroup = {
@@ -223,7 +224,7 @@ export function commitTaskMutation(context: AppTaskContext, tree: TaskTree, opti
   tree.updated_at = new Date().toISOString();
   const resourceCache = taskSnapshotCaches.get(context);
   if (resourceCache) {
-    if (scopedTaskSnapshots.has(tree)) {
+    if (scopedTaskSnapshots.has(tree) || inStateTransaction(context.resourceStore.db)) {
       resourceCache.tree = undefined;
       resourceCache.resourceRevision = undefined;
     } else {

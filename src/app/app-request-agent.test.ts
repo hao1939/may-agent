@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -302,10 +303,10 @@ describe("conversational attempt contract", () => {
     let attachments = 0;
     const capabilities = {
       db,
-      attachTask: async () => {
+      attachTask: fakeTaskAttacher(db, async () => {
         attachments += 1;
         return { taskId: "owner-work" };
-      },
+      }),
       readDependency: async () => ({
         kind: "task" as const,
         id: "owner-work",
