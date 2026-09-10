@@ -22,6 +22,7 @@ import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
+import { inStateTransaction, stateTransaction } from "./db/transaction.js";
 import { persistEventClosure, persistEventTrace } from "./db/event-traces.js";
 import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
@@ -607,8 +608,7 @@ export class DbWriter {
     try {
       withSqliteBusyRetry(`record delivery acceptance for event ${rowId}`, () => {
         const now = Date.now();
-        try {
-          this.db.exec("BEGIN IMMEDIATE");
+        stateTransaction(this.db, () => {
           this.db.run(
             `UPDATE events
              SET delivery_status = 'accepted',
@@ -619,15 +619,7 @@ export class DbWriter {
              WHERE id = ?`,
             [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
           );
-          this.db.exec("COMMIT");
-        } catch (error) {
-          try {
-            this.db.exec("ROLLBACK");
-          } catch {
-            /* preserve the original failure */
-          }
-          throw error;
-        }
+        });
       });
     } catch (error) {
       log(
@@ -647,8 +639,16 @@ export class DbWriter {
     project?: () => void,
   ): number | null {
     const timestamp = Date.now();
+    const nested = inStateTransaction(this.db);
+    const commit = () => this.db.exec(nested ? "RELEASE event_write" : "COMMIT");
+    const rollback = () => {
+      if (nested) {
+        this.db.exec("ROLLBACK TO event_write");
+        this.db.exec("RELEASE event_write");
+      } else this.db.exec("ROLLBACK");
+    };
     withSqliteBusyRetry(`persist event '${event.type}'`, () => {
-      this.db.exec("BEGIN IMMEDIATE");
+      this.db.exec(nested ? "SAVEPOINT event_write" : "BEGIN IMMEDIATE");
     });
     try {
       const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
@@ -725,7 +725,7 @@ export class DbWriter {
             Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
           }
           project?.();
-          this.db.exec("COMMIT");
+          commit();
           return existingId;
         }
       }
@@ -806,7 +806,7 @@ export class DbWriter {
       );
       const rowId = Number(info.lastInsertRowid);
       if (!Number.isFinite(rowId) || rowId <= 0) {
-        this.db.exec("ROLLBACK");
+        rollback();
         return null;
       }
       try {
@@ -823,11 +823,11 @@ export class DbWriter {
       this.closeConventionPairs(event.type, payload, rowId, timestamp);
       this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
       project?.();
-      this.db.exec("COMMIT");
+      commit();
       return rowId;
     } catch (error) {
       try {
-        this.db.exec("ROLLBACK");
+        rollback();
       } catch {
         /* preserve the original persistence error */
       }
