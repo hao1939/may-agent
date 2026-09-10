@@ -3,6 +3,7 @@ import { Type, defineApp } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { AppInboxHost } from "./app-inbox-host.js";
+import { fakeTaskAttacher } from "../../test/fixtures/task-attachment.js";
 
 const app = defineApp({
   id: "sample",
@@ -30,6 +31,27 @@ function admit(host: AppInboxHost, id: string, conversationId = "sample:primary"
     input: { kind: "message", data: {} },
   });
 }
+
+test("the fake attacher fences ownership before calling its admission resolver", async () => {
+  const db = database();
+  let effects = 0;
+  const attach = fakeTaskAttacher(db, async () => {
+    effects++;
+    return { taskId: "work" };
+  });
+  await expect(
+    attach({
+      appId: app.id,
+      attachment: { kind: "existing", taskId: "work" },
+      idempotencyKey: "admission",
+      request: { id: "turn", source: { kind: "human", id: "human" }, input: { kind: "message", data: {} } },
+      authorize: () => {
+        throw new Error("claim is stale");
+      },
+    }),
+  ).rejects.toThrow("claim is stale");
+  expect(effects).toBe(0);
+});
 
 test.each(["renewal write", "lost claim", "cleanup write"])(
   "contains %s failure until the exact execution settles",

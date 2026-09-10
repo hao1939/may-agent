@@ -16,10 +16,15 @@ open/closed with closure reason and message identity. Apps return
 `requestUpdates`; the Host validates versions, persists acceptance before a
 handoff and commits closure with the answer. It never infers fulfillment from
 a Task status. Admission links the actual Task in the same state transaction.
+Request updates add exact Task links; empty or omitted `taskRefs` never erase
+admitted work. Duplicate links are ignored, with at most 32 distinct links per
+Request, including links added by later updates.
 
 The existing `conversation_context` tool pages open asks (`requests`,
 `afterId`) and reads full scope (`request`, `id`). Bounded prompts keep whole
-records; an omitted record must be read before changing it. May's existing
+records; an omitted record must be read before changing it. The Host's
+handoff path can resolve an omitted ask from the scoped store and rechecks its
+open status and recorded revision at Task admission. May's existing
 supervision result can supply `result.conversation.requestUpdates`; stale
 closures fail without losing the accepted scope or accepting a false answer.
 The existing recovery scan also selects terminal linked Tasks with an open
@@ -33,12 +38,16 @@ Already accepted effects are not undone. Cancellation retains capacity until
 the executor settles, and database/reporting failures do not bypass cleanup.
 
 Direct human turns persist a small `handling` record before model execution.
-A failed or interrupted execution finishes input handling with an explicit
-failure response, not fulfillment. It needs new human input to try again.
+A failed or interrupted execution, or a rejected Task control/handoff, finishes
+input handling with an explicit failure response, not fulfillment. It needs
+new human input to try again; already admitted work continues independently.
 A validated decision is saved before applying effects, so recovery can replay
-idempotent admission/publication without rerunning the model. Task callers and
-retained child waits keep their separate handling contract. Row `done` means
-input handling ended; inspect `handling` and the result for its disposition.
+idempotent admission/publication after a crash or failed result write without
+rerunning the model. Rejected decisions or effects end the turn, including
+when recovery finds that a handoff's target App is no longer available.
+Task callers and retained child waits keep their separate handling contract.
+Row `done` means input handling ended; inspect `handling` and the result for
+its disposition.
 
 Console `/stop` reads `activeTurn` and publishes
 `conversation.turn.stop.requested` with that exact ID and revision. The Host

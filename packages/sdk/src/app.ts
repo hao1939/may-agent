@@ -174,6 +174,7 @@ export type AppConversationRequestUpdate = {
   scope: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
   reason?: string;
+  /** Add exact links; omitted/empty lists retain admitted work. At most 32 distinct links in total. */
   taskRefs?: Array<{ appId: string; taskId: string }>;
 };
 
@@ -196,7 +197,11 @@ export const conversationRequestUpdatesSchema = Type.Array(
             { appId: Type.String({ minLength: 1 }), taskId: Type.String({ minLength: 1 }) },
             { additionalProperties: false },
           ),
-          { maxItems: 32 },
+          {
+            maxItems: 32,
+            description:
+              "Add exact Task links. Empty or omitted lists retain existing links; at most 32 distinct links in total.",
+          },
         ),
       ),
     },

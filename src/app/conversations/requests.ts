@@ -94,7 +94,11 @@ export function applyConversationRequestUpdates(
       const closure = closed
         ? { disposition: update.disposition, reason: update.reason!, messageId: input.messageId! }
         : undefined;
-      const refs = update.taskRefs ?? current?.taskRefs ?? [];
+      const refs = [...(current?.taskRefs ?? [])];
+      for (const ref of update.taskRefs ?? []) {
+        if (!refs.some((existing) => existing.appId === ref.appId && existing.taskId === ref.taskId)) refs.push(ref);
+      }
+      if (refs.length > 32) throw new Error("Accepted Request Task link limit reached");
       if (
         row?.update_key === input.updateKey &&
         current?.revision === update.expectedRevision + 1 &&

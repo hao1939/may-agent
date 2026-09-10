@@ -10,7 +10,12 @@ import { AppInboxHost, boundedAppRequestConversation, APP_REQUEST_CONVERSATION_M
 import { AppTaskResourceStore } from "../app-task-resource-store.js";
 import { appTaskContext, claimObservedAppTask, completeAppTask } from "../app-task-reconciler.js";
 import { admitTaskRequest } from "../core/state/requests.js";
-import { createConversationTopic, listStaleConversationTopicTasks, readAppConversationResource } from "./store.js";
+import {
+  createConversationTopic,
+  linkConversationTopicTask,
+  listStaleConversationTopicTasks,
+  readAppConversationResource,
+} from "./store.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "./requests.js";
 import { startAppInboxRuntime } from "../app-inbox-runtime.js";
 import { AppRegistry } from "../core/apps/registry.js";
@@ -170,6 +175,59 @@ test("failed completion rolls back closure; reopen applies the saved decision wi
   }
 });
 
+test("Task links accumulate without duplicates; overflow and unknown links roll back the update batch", () => {
+  const { db } = fixture();
+  createConversationTopic(db, {
+    id: "topic",
+    appId: app.id,
+    conversationId: "chat",
+    title: "Work",
+    openedBy: "human",
+    originMessageId: "first",
+  });
+  const refs = Array.from({ length: 33 }, (_, i) => ({ appId: owner.id, taskId: `work-${i}` }));
+  for (const ref of refs) linkConversationTopicTask(db, "topic", ref.appId, ref.taskId);
+  const update = (updates: AppConversationRequestUpdate[], updateKey: string) =>
+    applyConversationRequestUpdates(db, {
+      appId: app.id,
+      conversationId: "chat",
+      topicId: "topic",
+      updates,
+      updateKey,
+      now: 1,
+    });
+  update([{ ...ask, taskRefs: refs.slice(0, 31) }], "accept");
+  const addition = { ...ask, expectedRevision: 1, taskRefs: [refs[30]!, refs[31]!, refs[31]!] };
+  update([addition], "add");
+  update([addition], "add");
+  expect(readConversationRequest(db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 2,
+    taskRefs: refs.slice(0, 32),
+  });
+  expect(() =>
+    update(
+      [
+        { ...ask, id: "rollback" },
+        { ...ask, expectedRevision: 2, taskRefs: [refs[32]!] },
+      ],
+      "overflow",
+    ),
+  ).toThrow("Task link limit reached");
+  expect(readConversationRequest(db, app.id, "chat", "rollback")).toBeNull();
+  expect(readConversationRequest(db, app.id, "chat", ask.id)?.revision).toBe(2);
+  expect(() =>
+    update(
+      [
+        { ...ask, id: "rollback" },
+        { ...ask, id: "unknown", taskRefs: [{ appId: "elsewhere", taskId: "private" }] },
+      ],
+      "unknown",
+    ),
+  ).toThrow("outside this Conversation");
+  expect(readConversationRequest(db, app.id, "chat", "rollback")).toBeNull();
+  expect(readConversationRequest(db, app.id, "chat", "unknown")).toBeNull();
+});
+
 test("handoff preserves the accepted ask; finished work remains reviewable and closure includes its message atomically", async () => {
   const { db, root } = fixture();
   createConversationTopic(db, {
@@ -297,6 +355,7 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
       expectedRevision: accepted.revision,
       disposition: "fulfilled",
       reason: "The evidence supports the comparison",
+      taskRefs: [],
     };
     const event = () =>
       ({
@@ -342,6 +401,7 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
     bus.emit(event());
     bus.emit(event());
     expect(readConversationRequest(db, app.id, "chat", ask.id)?.closure?.messageId).toBe("result:review-one");
+    expect(readConversationRequest(db, app.id, "chat", ask.id)?.taskRefs).toEqual(accepted.taskRefs);
     expect(
       readAppConversationResource(db, app.id, "chat").messages.filter((message) => message.id === "result:review-one"),
     ).toHaveLength(1);
@@ -351,7 +411,7 @@ test("handoff preserves the accepted ask; finished work remains reviewable and c
   }
 });
 
-test("open asks fit bounded context without truncating the authoritative scope", () => {
+test("open asks fit bounded context; an omitted ask can still be read and handed off by exact identity", async () => {
   const { db } = fixture();
   createConversationTopic(db, {
     id: "topic",
@@ -375,4 +435,85 @@ test("open asks fit bounded context without truncating the authoritative scope",
   expect(bounded.requests!.length).toBeGreaterThan(0);
   expect(bounded.requests!.every((item) => item.scope.length === 2000)).toBe(true);
   expect(readConversationRequest(db, app.id, "chat", "ask-0")?.scope.length).toBe(2000);
+  let handoffs = 0;
+  const host = new AppInboxHost({
+    db,
+    apps: [app, owner],
+    resolveRequest: async ({ request }) => {
+      expect(request.conversation?.requests?.some((item) => item.id === "ask-0")).toBe(false);
+      // The context tool reads the same scoped store when the ask is omitted.
+      expect(readConversationRequest(db, app.id, "chat", "ask-0")?.status).toBe("open");
+      return {
+        ...answer,
+        topic: { kind: "existing", id: "topic" },
+        followUp: {
+          requestId: "ask-0",
+          appId: owner.id,
+          input: { kind: "work", data: {} },
+          outcome: "Research",
+          acceptance: ["Evidence"],
+        },
+      };
+    },
+    onRequestFollowUp: (item, _followUp, _topicId, authorize) => {
+      authorize();
+      expect(item.handling).toMatchObject({ phase: "decided", requestRevisions: { "ask-0": 1 } });
+      handoffs++;
+    },
+  });
+  host.admit({
+    id: "handoff",
+    appId: app.id,
+    conversationId: "chat",
+    conversationSequence: 1,
+    source: { kind: "human", id: "human" },
+    input: { kind: "message", data: { text: "Start the research" } },
+  });
+  expect((await host.reconcileOnce(app.id)).errors).toEqual([]);
+  expect(handoffs).toBe(1);
+  expect(readConversationRequest(db, app.id, "chat", "ask-0")).toMatchObject({ status: "open", revision: 1 });
+});
+
+test.each(["closed", "foreign"])("a %s ask cannot be handed off through the scoped store fallback", async (state) => {
+  const { db } = fixture();
+  applyConversationRequestUpdates(db, {
+    appId: app.id,
+    conversationId: state === "foreign" ? "other" : "chat",
+    updates: [
+      { ...ask, ...(state === "closed" ? { disposition: "fulfilled" as const, reason: "Already answered" } : {}) },
+    ],
+    updateKey: "accept",
+    messageId: "answer",
+    now: 1,
+  });
+  let handoffs = 0;
+  const host = new AppInboxHost({
+    db,
+    apps: [app, owner],
+    resolveRequest: async () => ({
+      ...answer,
+      topic: { kind: "new", title: "Research" },
+      followUp: {
+        requestId: ask.id,
+        appId: owner.id,
+        input: { kind: "work", data: {} },
+        outcome: "Research",
+        acceptance: ["Evidence"],
+      },
+    }),
+    onRequestFollowUp: () => {
+      handoffs++;
+    },
+  });
+  host.admit({
+    id: "handoff",
+    appId: app.id,
+    conversationId: "chat",
+    conversationSequence: 1,
+    source: { kind: "human", id: "human" },
+    input: { kind: "message", data: { text: "Start the research" } },
+  });
+  expect((await host.reconcileOnce(app.id)).errors).toEqual([expect.stringContaining("open accepted Request")]);
+  expect(handoffs).toBe(0);
+  expect(host.get("handoff")?.handling?.phase).toBe("failed");
 });

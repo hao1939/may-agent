@@ -172,6 +172,8 @@ export type AppInboxHostOptions = {
 };
 
 type RegisteredApp = AppDefinition;
+/** Retry an uncommitted result, not a rejected decision or Task operation. */
+class AppRequestCompletionError extends Error {}
 type RegisteredSubscription = {
   app: RegisteredApp;
   subscription: NonNullable<AppDefinition["subscriptions"]>[number];
@@ -831,14 +833,17 @@ export class AppInboxHost {
       try {
         if (this.get(claim.item.id)?.handling?.phase === "stopped") {
           if (claim.item.conversationId) conversationIds.add(claim.item.conversationId);
-        } else if (claim.item.handling?.phase === "executing" || error instanceof ConversationRequestConflict) {
+        } else if (
+          ((claim.item.handling?.phase === "executing" || claim.item.handling?.phase === "decided") &&
+            !(error instanceof AppRequestCompletionError)) ||
+          error instanceof ConversationRequestConflict
+        ) {
           const reason = errorMessage(error).slice(0, 2000);
           const conversationId = this.#completeRequest(
             claim,
             {
               summary: "This conversational turn failed; the ask remains unresolved.",
-              response:
-                "I couldn't finish this turn. Your ask remains unresolved. Send a new message or explicitly ask me to retry. Any work already admitted continues independently.",
+              response: `I couldn't finish this turn: ${reason}\n\nYour ask remains unresolved. Send a new message or explicitly ask me to retry. Any work already admitted continues independently.`,
             },
             { phase: "failed", reason },
           );
@@ -1130,36 +1135,42 @@ export class AppInboxHost {
 
   #completeRequest(claim: AppInboxClaim, result: AppResult, handling?: AppInboxHandling): string | undefined {
     let completed = false;
-    withTransaction(this.#db, () => {
-      this.#assertOwned(claim);
-      if (handling) recordAppInboxHandling(this.#db, claim, handling, this.#now());
-      if (!handling && claim.item.handling?.phase === "decided" && claim.item.conversationId) {
-        const closing = (claim.item.handling.decision.requestUpdates ?? []).filter(
-          (update) => update.disposition !== "open",
-        );
-        if (closing.length)
-          applyConversationRequestUpdates(this.#db, {
-            appId: claim.item.appId,
-            conversationId: claim.item.conversationId,
-            topicId: claim.item.topicId,
-            updates: closing.map((update) => ({ ...update, expectedRevision: update.expectedRevision + 1 })),
-            updateKey: `input:${claim.item.id}:close`,
-            messageId: `result:${claim.item.id}`,
-            now: this.#now(),
-          });
-      }
-      const rowCompleted = completeAppInboxClaim(this.#db, claim, result, this.#now());
-      if (!rowCompleted) throw new Error("claim is stale");
-      completed = true;
-      wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
-      if (claim.item.parentId) {
-        wakeAppInboxItemsWaitingOn(
-          this.#db,
-          { kind: "app", id: appRequestChildrenWaitId(claim.item.parentId) },
-          this.#now(),
-        );
-      }
-    });
+    try {
+      withTransaction(this.#db, () => {
+        this.#assertOwned(claim);
+        if (handling) recordAppInboxHandling(this.#db, claim, handling, this.#now());
+        if (!handling && claim.item.handling?.phase === "decided" && claim.item.conversationId) {
+          const closing = (claim.item.handling.decision.requestUpdates ?? []).filter(
+            (update) => update.disposition !== "open",
+          );
+          if (closing.length)
+            applyConversationRequestUpdates(this.#db, {
+              appId: claim.item.appId,
+              conversationId: claim.item.conversationId,
+              topicId: claim.item.topicId,
+              updates: closing.map((update) => ({ ...update, expectedRevision: update.expectedRevision + 1 })),
+              updateKey: `input:${claim.item.id}:close`,
+              messageId: `result:${claim.item.id}`,
+              now: this.#now(),
+            });
+        }
+        const rowCompleted = completeAppInboxClaim(this.#db, claim, result, this.#now());
+        if (!rowCompleted) throw new Error("claim is stale");
+        completed = true;
+        wakeAppInboxItemsWaitingOn(this.#db, { kind: "app", id: claim.item.id }, this.#now());
+        if (claim.item.parentId) {
+          wakeAppInboxItemsWaitingOn(
+            this.#db,
+            { kind: "app", id: appRequestChildrenWaitId(claim.item.parentId) },
+            this.#now(),
+          );
+        }
+      });
+    } catch (error) {
+      if (!handling && claim.item.handling?.phase === "decided" && !(error instanceof ConversationRequestConflict))
+        throw new AppRequestCompletionError(errorMessage(error), { cause: error });
+      throw error;
+    }
     if (completed && this.#onRequestCompleted) {
       try {
         this.#onRequestCompleted(claim.item, result);
@@ -1378,8 +1389,11 @@ export class AppInboxHost {
           });
         for (const update of requestUpdates) requestRevisions[update.id] = update.expectedRevision + 1;
         if (followUp?.requestId && requestRevisions[followUp.requestId] === undefined) {
-          const observed = request.conversation?.requests?.find((ask) => ask.id === followUp.requestId);
-          if (!observed) throw new Error("Handoff must name an accepted Request from the supplied Conversation");
+          const observed =
+            request.conversation?.requests?.find((ask) => ask.id === followUp.requestId) ??
+            readConversationRequest(this.#db, app.id, claim.item.conversationId!, followUp.requestId);
+          if (!observed || observed.status !== "open")
+            throw new ConversationRequestConflict("Handoff must name an open accepted Request in this Conversation");
           requestRevisions[followUp.requestId] = observed.revision;
         }
         const handling: AppInboxHandling | undefined = dependencies.length
@@ -1415,13 +1429,6 @@ export class AppInboxHost {
             throw new ConversationRequestConflict("Accepted Request changed before handoff");
         }
       });
-      const conversationId = this.#completeRequest(claim, {
-        summary: decision.summary,
-        response: decision.response,
-        evidence: decision.evidence,
-      });
-      this.#publishRequestMessage(claim.item, decision.response, topicId);
-      return conversationId;
     }
     if (dependencies.length === 0) {
       const conversationId = this.#completeRequest(claim, {

@@ -10,8 +10,8 @@ export function fakeTaskAttacher(
   resolve: (input: Parameters<AppTaskAttacher>[0]) => Promise<{ taskId: string; ready?: boolean }>,
 ): AppTaskAttacher {
   return async (input) => {
-    const result = await resolve(input);
     input.authorize?.();
+    const result = await resolve(input);
     if (input.topicId) linkConversationTopicTask(db, input.topicId, input.appId, result.taskId, input.now);
     if (input.requestLink)
       linkConversationRequestTask(db, { ...input.requestLink, taskRef: { appId: input.appId, taskId: result.taskId } });

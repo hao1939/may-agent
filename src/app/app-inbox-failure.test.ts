@@ -6,7 +6,11 @@ import { Type, defineApp, type AppRequestDecision } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { AppInboxHost } from "./app-inbox-host.js";
-import { readAppConversationResource } from "./conversations/store.js";
+import {
+  createConversationTopic,
+  linkConversationTopicTask,
+  readAppConversationResource,
+} from "./conversations/store.js";
 
 const app = defineApp({
   id: "sample",
@@ -14,6 +18,14 @@ const app = defineApp({
   agent: "sample",
   inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
   requests: { mode: "agent" },
+});
+const owner = defineApp({
+  id: "owner",
+  version: 1,
+  agent: "owner",
+  inputSchema: Type.Object({ kind: Type.Literal("work"), data: Type.Object({}) }),
+  tasks: {},
+  task: () => ({ kind: "existing", taskId: "work" }),
 });
 const answer: AppRequestDecision = { summary: "Answered", response: "Verified answer", topic: { kind: "none" } };
 const roots: string[] = [];
@@ -154,3 +166,112 @@ test("replays a saved decision after result persistence fails and ignores failed
     readAppConversationResource(f.db, app.id, "sample:primary").messages.filter((m) => m.id === "result:first"),
   ).toHaveLength(1);
 });
+
+test.each(["control", "handoff"])("a rejected %s ends the turn instead of replaying forever", async (effect) => {
+  const f = fixture();
+  createConversationTopic(f.db, {
+    id: "topic",
+    appId: app.id,
+    conversationId: "sample:primary",
+    title: "Existing work",
+    openedBy: "human",
+    originMessageId: "earlier",
+  });
+  linkConversationTopicTask(f.db, "topic", owner.id, "work");
+  let now = 1000;
+  let calls = 0;
+  let effects = 0;
+  const reject = async () => {
+    effects++;
+    throw new Error("This Task does not accept this operation");
+  };
+  const options = {
+    apps: [app, owner],
+    now: () => now,
+    resolveRequest: async (): Promise<AppRequestDecision> => {
+      calls++;
+      return {
+        ...answer,
+        topic: { kind: "existing", id: "topic" },
+        ...(effect === "control"
+          ? { taskControls: [{ kind: "cancel" as const, appId: owner.id, taskId: "work", reason: "Human requested" }] }
+          : {
+              followUp: {
+                appId: owner.id,
+                input: { kind: "work", data: {} },
+                outcome: "Work",
+                acceptance: ["Verified"],
+              },
+            }),
+      };
+    },
+    controlTask: reject,
+    onRequestFollowUp: reject,
+  };
+  const before = new AppInboxHost({ ...options, db: f.db });
+  admit(before);
+  await before.reconcileOnce(app.id);
+  const after = new AppInboxHost({ ...options, db: f.open() });
+  for (let i = 0; i < 12; i++) {
+    now += 2000;
+    await after.reconcileOnce(app.id);
+  }
+  expect(calls).toBe(1);
+  expect(effects).toBe(1);
+  expect(after.get("first")).toMatchObject({ status: "done", handling: { phase: "failed" } });
+  expect(after.get("first")?.result?.response).toContain("This Task does not accept this operation");
+  const next = new AppInboxHost({ ...options, db: f.db, resolveRequest: async () => answer });
+  admit(next, "second", 2);
+  expect((await next.reconcileOnce(app.id)).admitted).toBe(1);
+});
+
+test.each(["available", "removed"])(
+  "recovers a saved handoff after a failed result write with its App %s",
+  async (availability) => {
+    const f = fixture();
+    let now = 1000;
+    let calls = 0;
+    let effects = 0;
+    f.db.exec(`CREATE TRIGGER reject_result BEFORE UPDATE ON app_inbox_items
+    WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'fixture result write failure'); END;`);
+    const options = {
+      apps: [app, owner],
+      now: () => now,
+      resolveRequest: async (): Promise<AppRequestDecision> => {
+        calls++;
+        return {
+          ...answer,
+          topic: { kind: "new", title: "Work" },
+          followUp: { appId: owner.id, input: { kind: "work", data: {} }, outcome: "Work", acceptance: ["Verified"] },
+        };
+      },
+      onRequestFollowUp: () => {
+        effects++;
+      },
+    };
+    const before = new AppInboxHost({ ...options, db: f.db });
+    admit(before);
+    await before.reconcileOnce(app.id);
+    expect(before.get("first")?.handling?.phase).toBe("decided");
+    expect(effects).toBe(1);
+    f.db.exec("DROP TRIGGER reject_result");
+    const after = new AppInboxHost({
+      ...options,
+      db: f.open(),
+      apps: availability === "available" ? [app, owner] : [app],
+    });
+    for (let i = 0; i < 12; i++) {
+      now += 2000;
+      await after.reconcileOnce(app.id);
+    }
+    expect(calls).toBe(1);
+    expect(after.get("first")?.status).toBe("done");
+    if (availability === "available") {
+      expect(effects).toBe(2);
+      expect(after.get("first")?.result?.response).toBe(answer.response);
+    } else {
+      expect(effects).toBe(1);
+      expect(after.get("first")?.handling?.phase).toBe("failed");
+    }
+  },
+);
