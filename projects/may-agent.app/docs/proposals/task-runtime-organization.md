@@ -38,8 +38,10 @@ focused usage validation, not another execution lifecycle.
 The next ordered implementation work is the
 [seven-step inbox and Conversation plan](storage-state-service.md#implementation-order-and-acceptance):
 names, reads, Turn writes, linked work, frontend separation, turn behavior and
-final review. It starts from Host `743aa5de` and owns slice order and completion
-criteria. The completed fixes below are preserved regression requirements.
+final review. The series starts from Host `0d8c7658`; its
+[candidate review](storage-state-service.md#candidate-review-and-landing-order)
+tracks the three PRs, checks and landing order. The plan owns completion criteria;
+prepared source is not yet merged. The completed fixes below are preserved regression requirements.
 
 ## Implementation order and candidate decisions
 

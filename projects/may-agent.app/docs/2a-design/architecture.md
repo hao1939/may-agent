@@ -7,6 +7,10 @@ Task activation and startup recovery are independent of optional schedules.
 [Open work](../proposals/task-runtime-organization.md) is tracked separately;
 this page does not identify the deployed release.
 
+The [inbox/Conversation candidate review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
+tracks the prepared state/handler extraction and its actual code map. Pending
+PRs do not change this page's merged source baseline.
+
 Read [System Model](system-model.md) for the product vocabulary and a complete
 example. This page owns component boundaries, dependencies and code placement.
 

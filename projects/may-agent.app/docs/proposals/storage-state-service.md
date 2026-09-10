@@ -340,22 +340,82 @@ core state into the frontend defeats the boundary.
 
 ### Implementation order and acceptance
 
-**Plan status:** Ready to execute sequentially; no implementation slice below
-has started. Scope is the agreed inbox, Conversation and shared-state cleanup.
+**Plan status:** Prepared in three ordered PRs; no slice is marked merged yet. Scope is the agreed inbox, Conversation and shared-state cleanup.
 Completed Stop, ownership and containment fixes remain the baseline. Broader
 Task-controller rewrites and the paused metrics/App-merger proposals are outside
 this sequence.
 
-Start each code slice from current Host `main`, including #127. Check affected
+Start the series from current Host `main`, including #127, #126 and #128
+(`0d8c7658`). Check affected
 callers, public names and existing regression coverage before editing. Keep
-`/app` on `main`; use an isolated checkout for each change. One independently
-reviewable PR per slice is the default. Finish its checks and integration before
-starting dependent work; a slice may be smaller if that makes it easier to review.
+`/app` on `main`; use an isolated checkout for each change. Keep each PR independently reviewable. Closely coupled read/write moves may
+share a PR when that avoids temporary wrappers or a core-to-frontend dependency.
+Finish a PR's local checks before preparing its dependent PR; a stacked PR may
+be prepared while its predecessor awaits review. Land in dependency order and
+recheck the integrated candidate against current `main`. Required review remains
+a merge gate, not a reason to stop preparing the authorized work.
 
 ```text
 1 Names -> 2 Reads -> 3 Turn writes -> 4 Linked work
         -> 5 Frontend boundary -> 6 Turn behavior -> 7 Final review
 ```
+
+#### Candidate review and landing order
+
+The seven acceptance steps are grouped into three dependent source PRs. This
+keeps names easy to review and moves the state owners with their callers before
+extracting the frontend. None is a deployment or a source-merge claim.
+
+| PR | Plan steps | Review focus |
+| --- | --- | --- |
+| [#129](https://github.com/hao1939/may-agent/pull/129) | 1 — names | `AppInputContext` plus the old SDK alias; internal `modelStepCount`, unchanged wire fields |
+| [#130](https://github.com/hao1939/may-agent/pull/130) | 2–4 — shared state | Scoped reads, decision/completion transactions, linked Task admission and returned outcomes |
+| [#131](https://github.com/hao1939/may-agent/pull/131) | 5–7 — frontend and verification | Optional handler/context composition, explicit retained dependency path, real scripted tool loop and capability absence |
+
+Land in that order. Each dependent PR targets its predecessor's branch for a
+small review diff; rebase it onto current `main`, retarget and verify after the
+predecessor lands. Source remains in review until that integration happens.
+
+The candidate's actual code map is:
+
+```text
+app-inbox-host.ts               admission, claims, Stop, recovery, generic dispatch
+core/inbox/input-context.ts    input identity and exact dependency observations
+core/inbox/input-handler.ts    selected-handler contract
+core/state/inbox.ts            Task attachment and input completion/Request closure
+core/state/conversations.ts    Conversation/Topic projections and links
+core/state/conversation-requests.ts  accepted asks, revisions and scoped paging
+core/state/conversation-turns.ts     decision + Topic + Request acceptance
+core/state/conversation-outcomes.ts Task outcome + explanation + Request updates
+conversations/context.ts       bounded conversational context selection
+conversations/turn-handler.ts  answer/effect handling; retained child waits explicit
+conversations/turn-agent.ts    selected agent, tools and execution contract
+composition/conversation-inbox.ts   default capability wiring
+```
+
+The existing inbox store retains its schema and claim primitives. Generic
+inbox dispatch remains in its existing file; another directory move adds no
+needed boundary. State operations own their implementations without compatibility
+forwarders. The default composition enriches inputs with conversational context;
+a Task-only Host can omit it and still read retained Conversation state.
+
+Verification: the first two slices each pass `bun run ci` with 2,664
+passing tests and three existing deployment-only skips. The state slice's
+147 focused regressions cover rollback, reopen, competing processes, claim
+loss, stale Request revisions and omitted-ask discovery. Its initial hosted Quality
+and Container checks pass; ancestry updates are rechecked. The final candidate passes `bun run ci` with 2,667 tests and the same three
+intentional skips. Documentation integrity, SDK examples and App-boundary checks
+pass against that candidate. It also runs real scripted model/tool
+steps through a failed check, repair, verification and finish; injected executor
+failure/budget outcomes must leave the accepted ask open. This proves mechanics,
+not live model judgment or production operation.
+
+The first naming PR's hosted Quality run exposed a browser-fixture race: HTTP
+chat readiness can precede the notification subscription. The fix now travels with the first PR and waits for the actual subscription
+before emitting fixture events. The
+initial failure and the same failure on manual rerun remain recorded in the PR. Request paging and
+exact reads use the existing scoped primary-key index; no query, index, timeout,
+finish-threshold or recovery-policy redesign is justified by this extraction.
 
 #### 1. Name inputs, accepted asks and model steps consistently
 

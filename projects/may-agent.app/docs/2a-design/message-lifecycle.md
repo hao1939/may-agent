@@ -633,7 +633,9 @@ The naming direction is `AppInputContext` for admitted input context,
 for internal cycles. Use `inboxId` for input correlation, `turnId` when targeting
 its human execution, and `requestId` for the accepted ask. A Turn can reuse its
 inbox identity; this requires no new record or identity generator. These names
-are a target, not current SDK exports. Separate retained App-to-App dependency
+are implemented in the [candidate PR series](../proposals/storage-state-service.md#candidate-review-and-landing-order),
+with the old public input type retained as an alias; they are not yet a merged
+baseline. Separate retained App-to-App dependency
 handling before renaming its shared result contract as conversational.
 
 Keep durable IDs and existing external compatibility at explicit boundaries;
