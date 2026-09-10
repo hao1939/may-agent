@@ -4,7 +4,7 @@ import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
 import {
   inspectXhsCredential,
   type XhsCredentialStatus,
-} from "../agents/scout/tools/xhs-credential.js";
+} from "../agents/scout/tools/lib/xhs-credential.js";
 
 type XhsCredentialWatcherState = {
   state?: XhsCredentialStatus["state"];

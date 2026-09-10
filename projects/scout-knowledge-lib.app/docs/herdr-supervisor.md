@@ -21,12 +21,12 @@ The exact source and runtime authorities are:
 | Scout operating and layout rules                      | `projects/scout-knowledge-lib.app/design/scout-knowledge-library-process.md` and `design/scout-knowledge-library-layout.md`                          |
 | Initial structural groups                             | `projects/scout-knowledge-lib.app/tasks/seed.json`                                                                                                   |
 | Task-resource explanation                             | `projects/scout-knowledge-lib.app/tasks/README.md`                                                                                                   |
-| Mutable May-agent task authority                      | Host SQLite resource store, exposed through supported task reads; never direct SQL                                                               |
-| Current task inspection                               | Supplied reconciliation context, `tasks.get` / `tasks.list`, or console `/tasks` / `/task <ref>`                                                    |
-| Exact external Conditions and reverse routes          | Host-owned resource state; inspect current waits through task reads                                                                               |
+| Mutable May-agent task authority                      | Host SQLite resource store, exposed through supported task reads; never direct SQL                                                                   |
+| Current task inspection                               | Supplied reconciliation context, `tasks.get` / `tasks.list`, or console `/tasks` / `/task <ref>`                                                     |
+| Exact external Conditions and reverse routes          | Host-owned resource state; inspect current waits through task reads                                                                                  |
 | Active worker identity and output rules               | `projects/scout-knowledge-lib.app/agents/scout/agent.json`, `AGENTS.md`, and `context.md`                                                            |
 | Research, digest, planning, and health handlers       | `projects/scout-knowledge-lib.app/agents/scout/workflows/scout-explore.ts`, `scout-daily-digest.ts`, `knowledge-planner.ts`, and `library-health.ts` |
-| XHS credential observation                            | `projects/scout-knowledge-lib.app/watchers/xhs-credential.ts` and `agents/scout/tools/xhs-credential.ts`                                             |
+| XHS credential observation                            | `projects/scout-knowledge-lib.app/watchers/xhs-credential.ts` and `agents/scout/tools/lib/xhs-credential.ts`                                         |
 | Durable product data                                  | `projects/scout-knowledge-lib/knowledge/` and `projects/scout-knowledge-lib/reports/`                                                                |
 
 `app.ts` currently declares one Scout owner, a concurrency limit of one, eight

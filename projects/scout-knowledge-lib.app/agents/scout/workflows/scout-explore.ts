@@ -22,12 +22,12 @@ import {
 import {
   inspectXhsCredential,
   type XhsCredentialStatus,
-} from "../tools/xhs-credential.js";
+} from "../tools/lib/xhs-credential.js";
 import {
   searchXhs,
   type XhsSearchItem,
   type XhsSearchResult,
-} from "../tools/xhs-source.js";
+} from "../tools/lib/xhs-source.js";
 
 type TaskHandlerResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
