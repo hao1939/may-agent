@@ -334,3 +334,12 @@ The regression failed before the change and covers quiet maintained Tasks,
 changed-but-not-ready work, ready work, and terminal receipt precedence.
 Source checks passed along with 63 Task/control and 25 transport/Console tests;
 combined CI and deployment verification remain separate checks.
+
+Combined local candidate `58a6b61c` subsequently passed 2,640 tests, three
+installation-only skips, and all static checks, and was deployed at 10:07 UTC
+after both source runs ended. Readiness and control checks passed; reopening
+XHS restored readable content without another login. The queued case is covered
+by its reproduced regression, not yet a second natural post-deployment queue.
+The brief missing-tab startup observation produced a maintenance no-op, not
+duplicate research or another human request. This remains a local candidate,
+not a published release or proof of long-duration reliability.
