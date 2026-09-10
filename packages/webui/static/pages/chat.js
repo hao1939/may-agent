@@ -291,8 +291,9 @@ function isSessionPageMode() {
 function renderSessionPicker() {
   const picker = document.getElementById('session-picker');
   if (!picker) return;
-  if (isSessionPageMode()) {
+  if (isMayConversation() || isSessionPageMode()) {
     picker.innerHTML = '';
+    if (isMayConversation()) document.getElementById('chat-input').placeholder = 'Talk with May…';
     return;
   }
   const seen = new Set();
@@ -389,6 +390,10 @@ function connectWs() {
   socket.onopen = () => {
     if (ws !== socket) return socket.close();
     status.textContent = 'Connected';
+    if (isMayConversation()) {
+      subscribeMayConversation();
+      void refreshMayConversation();
+    }
     // Poll for active sessions periodically
     const pollSessions = () => {
       if (ws === socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'status' }));
@@ -400,6 +405,7 @@ function connectWs() {
   socket.onclose = () => {
     if (ws !== socket) return;
     ws = null;
+    updateConversationStop();
     clearInterval(wsPollTimer);
     wsPollTimer = null;
     if (!realtimeEnabled) return;
@@ -428,6 +434,17 @@ function connectWs() {
         if (subs) for (const fn of subs) { try { fn(event); } catch (err) { console.error('bus sub err', err); } }
         const all = window.__busSubs['*'];
         if (all) for (const fn of all) { try { fn(event); } catch (err) { console.error('bus * sub err', err); } }
+      }
+
+      if (isMayConversation()) {
+        if (event.type === 'connected') {
+          subscribeMayConversation();
+          void refreshMayConversation();
+        } else if (event.type === 'conversation.updated' && data.appId === 'may' && data.conversationId === 'may:primary') {
+          void refreshMayConversation();
+        }
+        // This view renders canonical Conversation messages, not session chunks.
+        return;
       }
 
       // The session inspector is a read model. Rebuilding it for every
@@ -533,7 +550,7 @@ function connectWs() {
           scheduleLivenessRefresh();
           break;
         case 'handler_failed':
-          addFeedItem(event.agent || event.handler || 'handler', (event.error || 'handler failed').slice(0, 120), 'end-error');
+          addFeedItem(data.appId || data.agent || data.handler || 'handler', [data.taskId || data.requestId, data.stage, data.error || 'handler failed', data.disposition].filter(Boolean).join(' · ').slice(0, 240), 'end-error');
           scheduleLivenessRefresh();
           break;
         case 'notification': {
@@ -583,6 +600,7 @@ function connectWs() {
 }
 
 function sendChat() {
+  if (isMayConversation()) { void sendMayConversation(); return; }
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
   if (!msg || !ws || ws.readyState !== 1) return;

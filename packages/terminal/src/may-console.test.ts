@@ -349,14 +349,6 @@ describe("May Console", () => {
     });
     expect(output).not.toContain("focused work");
 
-    child.stdin.write("/stop\n");
-    await waitFor(() => output.includes("Stop request accepted"));
-    expect(frames.find(frame => frame.event?.type === "conversation.turn.stop.requested")).toMatchObject({
-      type: "publish", event: { target: { appId: "may" },
-        data: { conversationId: "may:primary", turnId: "turn-current", expectedRevision: 7 } },
-    });
-    expect(humanFrames()).toHaveLength(0);
-
     child.stdin.write("/topics\n");
     await waitFor(
       () =>
@@ -1194,4 +1186,88 @@ describe("May Console", () => {
     expect(code).toBe(0);
     expect(stderr).not.toContain("ERR_USE_AFTER_CLOSE");
   });
+});
+
+test("TTY Esc preserves editing, dismisses completion and stops only the observed turn", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-console-esc-"));
+  const socketDir = join(root, "instances", "test");
+  mkdirSync(socketDir, { recursive: true });
+  let client: Socket | undefined;
+  let turn: { id: string; revision: number } | null = { id: "turn-one", revision: 7 };
+  const frames: any[] = [];
+  const server = createServer((socket) => {
+    client = socket;
+    socket.write(JSON.stringify({ type: "connected", agent: "may", instance: "test" }) + "\n");
+    let buffer = "";
+    socket.on("data", (chunk) => {
+      buffer += chunk;
+      while (buffer.includes("\n")) {
+        const end = buffer.indexOf("\n");
+        const frame = JSON.parse(buffer.slice(0, end));
+        buffer = buffer.slice(end + 1);
+        frames.push(frame);
+        if (frame.type === "app.conversation.get") {
+          socket.write(JSON.stringify({ type: "ok", command: frame.type,
+            conversation: { messages: [], activeTurn: turn } }) + "\n");
+        } else if (frame.type === "publish") {
+          if (frame.event.type === "conversation.turn.stop.requested") {
+            // Completion/new-turn race cannot retarget the observed control.
+            turn = { id: "turn-two", revision: 8 };
+            socket.write(JSON.stringify({ type: "error", command: "publish", message: "Target already ended" }) + "\n");
+          } else socket.write(JSON.stringify({ type: "ok", command: "publish", delivery: "accepted", eventId: frames.length }) + "\n");
+        } else if (frame.type === "apps.list") {
+          socket.write(JSON.stringify({ type: "ok", command: frame.type, apps: [] }) + "\n");
+        } else if (frame.type === "tasks.list") {
+          socket.write(JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } }) + "\n");
+        }
+      }
+    });
+  });
+  server.listen(join(socketDir, "may.sock"));
+  await once(server, "listening");
+  const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
+  // util-linux script supplies a real terminal without requiring a live daemon.
+  const quotedPath = "'" + consolePath.replaceAll("'", "'\\''") + "'";
+  const child = spawn("script", ["-qefc", `node ${quotedPath}`, "/dev/null"], {
+    env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", TERM: "xterm" },
+    stdio: "pipe",
+  });
+  let output = "";
+  child.stdout.on("data", (chunk) => { output += chunk; });
+  child.stderr.on("data", (chunk) => { output += chunk; });
+  cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+  cleanups.push(() => server.close());
+  cleanups.push(() => client?.destroy());
+  cleanups.push(() => child.kill("SIGKILL"));
+  const stops = () => frames.filter((frame) => frame.event?.type === "conversation.turn.stop.requested");
+  await waitFor(() => output.includes("Esc: stop this turn"));
+  child.stdin.write("/");
+  await Bun.sleep(20);
+  child.stdin.write("\t");
+  await Bun.sleep(20);
+  child.stdin.write("\t");
+  await waitFor(() => output.includes("/watch"));
+  child.stdin.write("\x1b");
+  // Readline resolves standalone Escape after its configured key-sequence delay.
+  await Bun.sleep(100);
+  expect(stops()).toHaveLength(0);
+  child.stdin.write("\x15correction\x1b");
+  await waitFor(() => output.includes("Target already ended"));
+  expect(stops()).toHaveLength(1);
+  expect(stops()[0].event.data).toEqual({ conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 });
+  child.stdin.write("\n");
+  await waitFor(() => frames.some((frame) => frame.event?.data?.text === "correction"));
+  expect(frames.some((frame) => frame.type === "task.cancel")).toBe(false);
+  turn = null;
+  client!.write(JSON.stringify({ type: "conversation.updated", data: { conversationId: "may:primary" } }) + "\n");
+  await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length >= 2);
+  child.stdin.write("idle draft\x1b");
+  await Bun.sleep(100);
+  expect(stops()).toHaveLength(1);
+  child.stdin.write("\n/help\n/stop\n");
+  await waitFor(() => output.includes("Host administration (all Apps)"));
+  await waitFor(() => frames.some((frame) => frame.event?.data?.text === "idle draft"));
+  expect(stops()).toHaveLength(1);
+  child.stdin.write("/exit\n");
+  expect((await once(child, "exit"))[0]).toBe(0);
 });

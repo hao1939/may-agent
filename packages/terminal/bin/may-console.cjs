@@ -21,6 +21,8 @@ let reconnectDelayMs = 250;
 let raw = false;
 let debug = false;
 let selectedApp = "may";
+let activeTurn = null;
+let completionVisible = false;
 let selectedTopic = null;
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
@@ -81,7 +83,6 @@ const ordinaryCommands = [
   "/watch",
   "/unwatch",
   "/cancel",
-  "/stop",
   "/help",
   "/reload",
   "/restart",
@@ -96,6 +97,7 @@ function completeInput(line) {
   const parts = input.split(/\s+/);
   if (parts.length === 1) {
     const matches = ordinaryCommands.filter((command) => command.startsWith(parts[0]));
+    completionVisible = matches.length !== 1;
     return [matches.length ? matches : ordinaryCommands, parts[0]];
   }
   const command = parts[0];
@@ -108,13 +110,14 @@ function completeInput(line) {
       : command === "/topic"
         ? ["clear", ...knownTopicRefs]
       : command === "/tasks"
-        ? ["all", "history"]
+        ? ["all", "history", "more"]
         : command === "/todo"
           ? ["all", "more"]
           : command === "/task" || command === "/watch" || command === "/cancel"
             ? [...knownTaskRefs]
             : [];
   const matches = choices.filter((choice) => choice.startsWith(current));
+  completionVisible = (matches.length ? matches : choices).length > 1;
   return [matches.length ? matches : choices, current];
 }
 
@@ -122,6 +125,7 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
   historySize: 1000,
+  escapeCodeTimeout: 50,
   completer: completeInput,
 });
 
@@ -1228,7 +1232,7 @@ function handleEvent(event) {
         rememberRenderedConversationMessage(`event:${event.eventId}`);
       }
       if (receiptKind === "human-turn") {
-        printNotice("[may] Working on your request…");
+        printNotice("[may] Working on your request… Esc stops this turn.");
       }
       if (receiptKind === "stop-turn") {
         printNotice(event.delivery === "accepted" ? "[may] Stop request accepted. Background Tasks continue." : "[may] Stop was not accepted; refresh and try again.");
@@ -1236,6 +1240,13 @@ function handleEvent(event) {
       }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
+        if (pending?.kind === "startup" || pending?.kind === "sync") {
+          const next = event.conversation?.activeTurn ?? null;
+          if (next && (!activeTurn || activeTurn.id !== next.id || activeTurn.revision !== next.revision)) {
+            printNotice("[may] Esc: stop this turn. Background Tasks continue.");
+          }
+          activeTurn = next;
+        }
         if (pending?.kind === "startup") {
           renderConversation(event.conversation?.messages);
         } else if (pending?.kind === "sync") {
@@ -1244,14 +1255,6 @@ function handleEvent(event) {
           renderTopics(event.conversation, pending);
         } else if (pending?.kind === "topic") {
           renderTopic(event.conversation, pending);
-        } else if (pending?.kind === "stop") {
-          const turn = event.conversation?.activeTurn;
-          if (!turn) printNotice("[may] No active conversational turn to stop.");
-          else sendFrame({ type: "publish", event: {
-            type: "conversation.turn.stop.requested", target: { appId: "may" },
-            data: { conversationId, turnId: turn.id, expectedRevision: turn.revision },
-            idempotencyKey: `conversation-stop:may:${conversationId}:${turn.id}:${turn.revision}`,
-          } }, { receiptKind: "stop-turn" });
         }
         if (conversationSyncDirty) requestConversation("sync");
       }
@@ -1501,7 +1504,8 @@ function scheduleReconnect() {
 function printHelp() {
   printLine(
     [
-      "Commands:",
+      "Conversation and Tasks:",
+      "  Esc                        Stop this turn; background Tasks continue",
       "  /apps [app]                 List or select an App",
       "  /topics, /topics more       List Topics",
       "  /topic [ref|clear]          Show, follow, or leave a Topic",
@@ -1510,8 +1514,14 @@ function printHelp() {
       "  /task <ref>",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
-      "  /stop                      Stop this turn; background Tasks continue",
-      "  /reload, /restart, /shell, /exit",
+      "",
+      "Console:",
+      "  /exit (/quit)              Close Console",
+      "  /shell                     Leave Console for a shell",
+      "",
+      "Host administration (all Apps):",
+      "  /reload                    Reload definitions",
+      "  /restart                   Restart the Host",
       "",
       "Bare text goes to May in the selected App context. While watching, that Task is additional context.",
     ].join("\n"),
@@ -1674,10 +1684,6 @@ function handleCommand(input) {
       if (watchedTask) setWatchedTask(null);
       printNotice("[watch] Watch ended. The Task continues.");
       return;
-    case "stop":
-      if (rest) printLine("Usage: /stop");
-      else requestConversation("stop");
-      return;
     case "cancel": {
       if (restParts.length > 1) {
         printLine("Usage: /cancel [ref]");
@@ -1806,6 +1812,31 @@ function closeAndExit(code) {
   if (socket) socket.end();
   rl.close();
   process.exit(code);
+}
+
+// Readline owns editing and completion. Only a standalone Esc requests Stop;
+// arrow keys and other escape sequences keep their normal editing behavior.
+if (process.stdin.isTTY) {
+  process.stdin.on("keypress", (_text, key) => {
+    if (key?.name === "escape" && key.sequence === "\x1b") {
+      if (completionVisible) {
+        completionVisible = false;
+        refreshPrompt();
+        return;
+      }
+      if (!connected) {
+        printNotice("[may] Disconnected; Stop was not confirmed.");
+        return;
+      }
+      const turn = activeTurn;
+      if (!turn) return;
+      sendFrame({ type: "publish", event: {
+        type: "conversation.turn.stop.requested", target: { appId: "may" },
+        data: { conversationId, turnId: turn.id, expectedRevision: turn.revision },
+        idempotencyKey: `conversation-stop:may:${conversationId}:${turn.id}:${turn.revision}`,
+      } }, { receiptKind: "stop-turn" });
+    } else if (key?.name !== "tab") completionVisible = false;
+  });
 }
 
 process.on("SIGINT", () => {

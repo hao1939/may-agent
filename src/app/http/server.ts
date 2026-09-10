@@ -3155,6 +3155,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  async function handleConversationRead(url: URL): Promise<Response> {
+    const appId = url.searchParams.get("appId")?.trim();
+    const conversationId = url.searchParams.get("conversationId")?.trim();
+    if (!appId || !conversationId) return json({ error: "appId and conversationId required" }, 400);
+    try {
+      const response = await daemonRead({ type: "app.conversation.get", appId, conversationId, limit: 30 });
+      if (response.type === "error") return json({ error: response.message }, 400);
+      if (response.type !== "ok" || !response.conversation) throw new Error("Invalid Conversation response");
+      return json(response.conversation);
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
+    }
+  }
+
   async function handleHumanTaskRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
     if (!appId) return json({ error: "appId required" }, 400);
@@ -3755,6 +3769,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (appTasksMatch && req.method === "GET") return handleAppTasks(url, decodeURIComponent(appTasksMatch[1]));
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
+      if (url.pathname === "/api/conversation" && req.method === "GET") return handleConversationRead(url);
       if (url.pathname === "/api/tasks" || url.pathname === "/api/task") {
         return req.method === "GET" ? handleHumanTaskRead(url) : json({ error: "GET required" }, 405);
       }

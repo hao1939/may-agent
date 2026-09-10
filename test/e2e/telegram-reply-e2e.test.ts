@@ -443,10 +443,11 @@ describe("telegram reply e2e", () => {
     bot.close();
   });
 
-  it("keeps Task cancellation local while forwarding runtime slash commands", async () => {
+  it("keeps Task cancellation local, forwards reload and rejects the retired shutdown command", async () => {
     let getUpdatesCount = 0;
+    const replies: string[] = [];
 
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
       const method = String(url).split("/").pop();
 
       if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
@@ -465,7 +466,10 @@ describe("telegram reply e2e", () => {
         await new Promise((resolve) => setTimeout(resolve, 25));
         return jsonResponse([]);
       }
-      if (method === "sendMessage") return jsonResponse({ message_id: 1100 });
+      if (method === "sendMessage") {
+        replies.push(JSON.parse(String(init?.body)).text);
+        return jsonResponse({ message_id: 1100 });
+      }
       throw new Error(`unexpected Telegram method: ${method}`);
     });
 
@@ -490,12 +494,8 @@ describe("telegram reply e2e", () => {
           idempotencyKey: "telegram:12345:1002:reload",
         },
       });
-      expect(events).toContainEqual({
-        type: "runtime.shutdown.requested",
-        source: "telegram",
-        owner: "agent:may",
-        data: { idempotencyKey: "telegram:12345:1003:shutdown" },
-      });
+      expect(replies).toContain("Unknown command: /close. Use /help to see available commands.");
+      expect(events.some((event) => event.type === "runtime.shutdown.requested")).toBe(false);
       expect(events.some((event) => event.type === "session.cancel.requested")).toBe(false);
       expect(events.some((event) => event.type === "input")).toBe(false);
     });

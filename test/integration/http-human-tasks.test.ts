@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
-import { attachControlSocket, type ControlSocket } from "../../packages/control/src/server.js";
+import { attachControlSocket, type ControlSocket, type ControlEvent } from "../../packages/control/src/server.js";
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task-service.js";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
@@ -27,8 +27,16 @@ describe("HTTP human Task reads and board", () => {
   let stopped: Promise<void>;
   let base: string;
   let service: HumanTaskService;
+  let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
+  let published: any[];
+  let rejectPublish: boolean;
+  let listeners: Set<(event: ControlEvent) => void>;
 
   beforeEach(async () => {
+    conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
+    published = [];
+    rejectPublish = false;
+    listeners = new Set();
     root = mkdtempSync(join(tmpdir(), "may-http-tasks-"));
     db = openStateDb(join(root, "may.db"));
     const projects = join(root, "projects");
@@ -46,7 +54,21 @@ describe("HTTP human Task reads and board", () => {
       getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
-      subscribeEvents: () => () => {},
+      subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
+      getAppConversation: (appId, conversationId, options) => {
+        if (appId !== "may" || conversationId !== "may:primary" || options?.limit !== 30) throw new Error("Invalid conversation read");
+        return conversation;
+      },
+      publishEvent: (event) => {
+        published.push(event);
+        if (rejectPublish) throw new Error("fixture persistence unavailable");
+        if (event.type === "conversation.turn.stop.requested") {
+          conversation.activeTurn = { id: "turn-two", revision: 8 };
+        } else if (event.type === "conversation.message.created") {
+          conversation.messages.push({ id: event.idempotencyKey, author: { kind: "human" }, text: event.data.text });
+        }
+        return { eventId: published.length, eventType: event.type, delivery: "accepted" };
+      },
       agentName: "may",
       instance: "task-test",
       listTasks: (options) =>
@@ -164,6 +186,53 @@ describe("HTTP human Task reads and board", () => {
     control.close();
     await read("/api/tasks?appId=alpha", 503);
     await read("/api/task?appId=alpha&taskId=missing", 503);
+  });
+
+  test("HTTP Conversation reads forward exact identity and bounded options", async () => {
+    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
+    await read("/api/conversation?appId=may", 400);
+    await read("/api/conversation?appId=wrong&conversationId=may%3Aprimary", 400);
+    expect(published).toHaveLength(0);
+    control.close();
+    await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503);
+  });
+
+  test.skipIf(skipBrowser)("May browser Stop retains its observed target and draft, then admits a correction to Conversation", async () => {
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
+      await page.type("#chat-input", "Discuss costs before implementing");
+      await page.click("#chat-stop");
+      await page.waitForFunction(() => document.body.textContent!.includes("Stop request accepted"));
+      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "may" },
+        data: { conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 } });
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Discuss costs before implementing");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
+      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "may" },
+        data: { conversationId: "may:primary", text: "Discuss costs before implementing", author: { kind: "human" } } });
+      rejectPublish = true;
+      await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
+      await page.click("#chat-stop");
+      await page.waitForFunction(() => document.body.textContent!.includes("Stop was not confirmed"));
+      expect(published.at(-1).data.turnId).toBe("turn-two");
+      await page.type("#chat-input", "Keep this correction");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent!.includes("Message was not confirmed"));
+      const unconfirmed = published.at(-1);
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this correction");
+      rejectPublish = false;
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
+      expect(published.at(-1)).toEqual(unconfirmed);
+      conversation.activeTurn = undefined;
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
+      expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
+    } finally { await browser.close(); }
   });
 
   test.skipIf(skipBrowser)(

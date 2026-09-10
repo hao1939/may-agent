@@ -16,6 +16,8 @@
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
+import { randomUUID } from "node:crypto";
+import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic } from "@may-agent/sdk";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
@@ -399,6 +401,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   >();
   const selectedApps = new Map<string, string>();
   const selectedTopics = new Map<string, AppConversationTopic>();
+  const turnControls = new Map<string, { token: string; turnId: string; revision: number; messageId: number }>();
   const surfaces = new Map<string, { chatId: string; topicId?: number }>();
   const surfaceMessageHandlers = new Map<string, Promise<void>>();
   const shownTodoActions = new Map<string, Map<string, string>>();
@@ -484,11 +487,77 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     };
   }
 
+  async function clearTurnControl(surface: string): Promise<void> {
+    const control = turnControls.get(surface);
+    const coordinates = surfaces.get(surface);
+    turnControls.delete(surface);
+    if (!control || !coordinates) return;
+    try {
+      await apiCall("editMessageReplyMarkup", {
+        chat_id: coordinates.chatId, message_id: control.messageId,
+        reply_markup: { inline_keyboard: [] },
+      });
+    } catch (error) {
+      // The token is already invalid locally even if Telegram cannot update it.
+      log("warn", `[telegram] Could not clear turn button: ${String(error)}`);
+    }
+  }
+
+  async function syncTurnControls(turn?: { id: string; revision: number }): Promise<void> {
+    for (const [surface, coordinates] of surfaces) {
+      if (!running) return;
+      const previous = turnControls.get(surface);
+      if (previous?.turnId === turn?.id && previous?.revision === turn?.revision) continue;
+      if (previous) await clearTurnControl(surface);
+      if (!turn) continue;
+      const token = `stop:${randomUUID()}`;
+      const messageId = await sendMessage(coordinates.chatId, "May is working on this turn. Background Tasks have separate controls.", undefined, {
+        messageThreadId: coordinates.topicId,
+        replyMarkup: { inline_keyboard: [[{ text: "Stop this turn", callback_data: token }]] },
+      });
+      if (messageId && running) turnControls.set(surface, { token, turnId: turn.id, revision: turn.revision, messageId });
+    }
+  }
+
+  async function handleTurnControl(query: any): Promise<void> {
+    const chatId = query.message?.chat?.id;
+    const surface = surfaceKey(String(chatId), query.message?.message_thread_id);
+    const control = turnControls.get(surface);
+    let text = "This Stop button has expired. Refresh the conversation.";
+    try {
+      if (!isAllowed(chatId)) text = "Unauthorized.";
+      else if (control && query.data === control.token && query.message?.message_id === control.messageId) {
+        const active = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, { limit: 1 }).activeTurn;
+        if (!active || active.id !== control.turnId || active.revision !== control.revision) {
+          text = "That turn already ended. Current work is unchanged.";
+        } else {
+          const receipt = opts.publishEvent({
+            type: "conversation.turn.stop.requested", target: { appId: opts.interfaceAgent },
+            data: { conversationId: sharedConversationId, turnId: control.turnId, expectedRevision: control.revision },
+            idempotencyKey: `telegram-stop:${control.turnId}:${control.revision}`,
+          });
+          if (receipt.delivery !== "accepted") throw new Error("Stop was not accepted; try again");
+          text = "Stop request accepted. Background Tasks continue.";
+        }
+        await clearTurnControl(surface);
+        conversationRefresh.queue(sharedConversationId);
+      }
+    } catch (error) {
+      text = `Stop was not confirmed: ${error instanceof Error ? error.message : String(error)}`;
+    }
+    try {
+      await apiCall("answerCallbackQuery", { callback_query_id: query.id, text: text.slice(0, 200) });
+    } catch (error) {
+      log("warn", `[telegram] Could not acknowledge Stop: ${String(error)}`);
+    }
+  }
+
   async function syncConversation(): Promise<void> {
-    const messages = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
+    const conversation = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, sharedConversationId, {
       limit: 200,
-    }).messages;
-    for (const message of messages) {
+    });
+    await syncTurnControls(conversation.activeTurn);
+    for (const message of conversation.messages) {
       if (!running) return;
       if (renderedConversationMessages.has(message.id)) continue;
       if (message.metadata?.channel === "telegram" && message.author.kind !== "agent") {
@@ -757,6 +826,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const surface = surfaceKey(chatIdStr, topicId);
     surfaces.set(surface, { chatId: chatIdStr, ...(topicId === undefined ? {} : { topicId }) });
     const conversationId = primaryConversationId(opts.interfaceAgent);
+    conversationRefresh.queue(sharedConversationId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
     // Keep the human text authoritative. A reply contributes only its provider
@@ -1156,8 +1226,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           "/watch \[ref\] — Watch or show one Task\n" +
           "/unwatch — Stop watching without changing the Task\n" +
           "/cancel \[ref\] — Cancel a Task\n" +
-          "/reload — Reload agent configs\n" +
-          "/help — Show this message",
+          "/help — Show this message\n\n" +
+          "Use the Stop button to interrupt the current turn.\n\n" +
+          "*Host administration (all Apps):*\n" +
+          "/reload — Reload Host definitions",
         "Markdown",
         { messageThreadId: topicId },
       );
@@ -1176,15 +1248,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         type: "runtime.reload.requested",
         data: { requestId },
         idempotencyKey: requestId,
-      });
-      return true;
-    }
-
-    if (command === "/close") {
-      opts.publishEvent({
-        type: "runtime.shutdown.requested",
-        data: {},
-        idempotencyKey: `telegram:${chatIdStr}:${msg.message_id}:shutdown`,
       });
       return true;
     }
@@ -1223,6 +1286,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         surfaces.set(surface, { chatId });
         todoRefresh.queue(surface);
       }
+      conversationRefresh.queue(sharedConversationId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       bus.emit({ type: "info", message: `[telegram] Failed to connect: ${msg}` });
@@ -1234,12 +1298,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const updates = await apiCall("getUpdates", {
           offset,
           timeout: 30,
-          allowed_updates: ["message"],
+          allowed_updates: ["message", "callback_query"],
         });
 
         if (Array.isArray(updates)) {
           for (const update of updates) {
             offset = update.update_id + 1;
+            if (update.callback_query) {
+              // Control bypasses slow surface delivery and the conversational queue.
+              void handleTurnControl(update.callback_query).catch((error) => log("error", `[telegram] Stop failed: ${String(error)}`));
+            }
             if (update.message) {
               // Surfaces stay independent, while commands and the following
               // human text from one chat/thread retain Telegram update order.
@@ -1268,6 +1336,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
+      turnControls.clear();
       conversationRefresh.close();
       watchRefresh.close();
       todoRefresh.close();
