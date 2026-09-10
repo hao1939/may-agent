@@ -161,6 +161,7 @@ interface ActiveSession {
   sessionId: string;
   agent: AgentRun;
   agentName: string;
+  agentRelativeDir?: string;
   task: string;
   startedAt: number;
   status: "running" | "paused" | "idle" | "interrupted";
@@ -629,6 +630,7 @@ export class SubagentManager {
       sessionId,
       agent,
       agentName: def.name,
+      agentRelativeDir: def.agentRelativeDir,
       task: sessionTask,
       startedAt,
       status: "running",
@@ -1972,6 +1974,7 @@ export class SubagentManager {
         data: {
           sessionId,
           agent: agentName,
+          agentRelativeDir: session.agentRelativeDir,
           outcome: status,
           summary: lastText,
           error: errorText,
@@ -2192,6 +2195,7 @@ export class SubagentManager {
         data: {
           sessionId,
           agent: agentName,
+          agentRelativeDir: session.agentRelativeDir,
           outcome: status,
           summary: lastText,
           durationMs,

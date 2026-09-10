@@ -24,6 +24,8 @@ export interface SubagentDefinition {
   // Caller-managed paths (persisted for resume)
   /** Agent directory containing AGENTS.md, heartbeat.md, knowledge/, workspace/, etc. */
   agentDir?: string;
+  /** Canonical installation-relative folder for completion writes, not the immutable source directory. */
+  agentRelativeDir?: string;
   workspace?: string;
   /** Directory containing agent knowledge files (INDEX.md, etc.). */
   knowledgeDir?: string;

@@ -28,6 +28,7 @@ import { Type } from "@earendil-works/pi-ai";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
 import { fakeModel } from "../fixtures/model.js";
+import { createAgentRun } from "../../src/lib/agent-runner.js";
 
 function registerAgent(manager: SubagentManager, name = "test-agent") {
   manager.register({
@@ -90,7 +91,7 @@ describe("terminal assistant failure classification", () => {
   });
 });
 
-describe("terminal persistence failure", () => {
+describe("session completion publication", () => {
   let persistDir: string;
 
   beforeEach(() => {
@@ -102,6 +103,51 @@ describe("terminal persistence failure", () => {
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
     }
+  });
+
+  it.each(["job", "chat"] as const)("keeps the selected agent folder when a %s ends after registry replacement", async (kind) => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const completion = Promise.withResolvers<void>();
+    const manager = new SubagentManager({
+      persistDir,
+      bus,
+      agentRunFactory: (config) => {
+        const run = createAgentRun(config);
+        // No provider call: hold the real manager at its execution boundary.
+        run.prompt = async () => {
+          await completion.promise;
+          if (kind === "chat") throw new Error("fixture chat failure");
+          run.state.messages.push({
+            role: "assistant",
+            content: [{ type: "text", text: "Fixture completed" }],
+            stopReason: "stop",
+          } as AgentMessage);
+        };
+        return run;
+      },
+    });
+    registerAgent(manager);
+    const original = {
+      ...manager.getAgentDefinition("test-agent")!,
+      agentRelativeDir: "projects/sample.app/agents/local-owner",
+    };
+    manager.register(original);
+    const sessionId = manager.run(original.name, "Finish accepted work", {
+      kind,
+      autoClose: kind === "chat" ? "never" : "immediate",
+    });
+    manager.register({ ...original, agentRelativeDir: "agents/global-owner" });
+    completion.resolve();
+    if (kind === "chat") await expect(manager.waitForIdle(sessionId)).rejects.toThrow("fixture chat failure");
+    else expect((await manager.waitFor(sessionId)).status).toBe("done");
+    expect(events.filter((event) => event.type === "session.end")).toMatchObject([
+      {
+        type: "session.end",
+        data: { sessionId, agentRelativeDir: original.agentRelativeDir, status: kind === "chat" ? "error" : "done" },
+      },
+    ]);
   });
 
   it("surfaces the exact completion failure and releases live session ownership", async () => {

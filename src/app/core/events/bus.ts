@@ -141,6 +141,8 @@ export type SessionEvent =
         sessionId: string;
         agent: string;
         outcome: string;
+        /** Agent folder captured for this session, relative to the canonical installation root. */
+        agentRelativeDir?: string;
         summary: string;
         durationMs: number;
         status?: string;
