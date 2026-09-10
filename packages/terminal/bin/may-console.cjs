@@ -91,14 +91,25 @@ const ordinaryCommands = [
 ];
 const taskPageSize = 10;
 const todoPageSize = 50;
+let lastKeypressWasTab = false;
+
+function completionResult(choices, completeOn) {
+  let prefix = choices[0] || "";
+  for (const choice of choices) {
+    while (!choice.startsWith(prefix)) prefix = prefix.slice(0, -1);
+  }
+  // Readline first extends/replaces a prefix. It only prints choices on a
+  // repeated Tab that leaves the input unchanged.
+  completionVisible = choices.length > 0 && lastKeypressWasTab && prefix === completeOn;
+  return [choices, completeOn];
+}
 
 function completeInput(line) {
   const input = String(line || "");
   const parts = input.split(/\s+/);
   if (parts.length === 1) {
     const matches = ordinaryCommands.filter((command) => command.startsWith(parts[0]));
-    completionVisible = matches.length !== 1;
-    return [matches.length ? matches : ordinaryCommands, parts[0]];
+    return completionResult(matches.length ? matches : ordinaryCommands, parts[0]);
   }
   const command = parts[0];
   const current = parts.at(-1) || "";
@@ -117,8 +128,7 @@ function completeInput(line) {
             ? [...knownTaskRefs]
             : [];
   const matches = choices.filter((choice) => choice.startsWith(current));
-  completionVisible = (matches.length ? matches : choices).length > 1;
-  return [matches.length ? matches : choices, current];
+  return completionResult(matches.length ? matches : choices, current);
 }
 
 const rl = readline.createInterface({
@@ -1352,7 +1362,8 @@ function handleEvent(event) {
         return;
       }
       if (event.command === "app.conversation.get") {
-        const pending = pendingConversationReads.shift();
+        pendingConversationReads.shift();
+        if (conversationSyncDirty) requestConversation("sync");
       }
       if (event.command === "apps.list") {
         const pending = pendingAppReads.shift();
@@ -1822,6 +1833,7 @@ function closeAndExit(code) {
 // arrow keys and other escape sequences keep their normal editing behavior.
 if (process.stdin.isTTY) {
   process.stdin.on("keypress", (_text, key) => {
+    lastKeypressWasTab = key?.name === "tab";
     if (key?.name === "escape" && key.sequence === "\x1b") {
       if (completionVisible) {
         completionVisible = false;

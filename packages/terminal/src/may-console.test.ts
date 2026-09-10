@@ -1195,6 +1195,7 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   let client: Socket | undefined;
   let turn: { id: string; revision: number } | null = { id: "turn-one", revision: 7 };
   const frames: any[] = [];
+  let conversationReads = 0;
   const server = createServer((socket) => {
     client = socket;
     socket.write(JSON.stringify({ type: "connected", agent: "may", instance: "test" }) + "\n");
@@ -1207,7 +1208,10 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
         buffer = buffer.slice(end + 1);
         frames.push(frame);
         if (frame.type === "app.conversation.get") {
-          socket.write(JSON.stringify({ type: "ok", command: frame.type,
+          if (++conversationReads === 2) {
+            socket.write(JSON.stringify({ type: "conversation.updated", data: { conversationId: "may:primary" } }) + "\n");
+            socket.write(JSON.stringify({ type: "error", command: frame.type, message: "Read unavailable" }) + "\n");
+          } else socket.write(JSON.stringify({ type: "ok", command: frame.type,
             conversation: { messages: [], activeTurn: turn } }) + "\n");
         } else if (frame.type === "publish") {
           if (frame.event.type === "conversation.turn.stop.requested") {
@@ -1256,19 +1260,22 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   // Readline resolves standalone Escape after its configured key-sequence delay.
   await Bun.sleep(100);
   expect(stops()).toHaveLength(0);
-  child.stdin.write("\x15correction\x1b");
+  child.stdin.write("\x15/t\t");
+  await Bun.sleep(20);
+  // One Tab has not displayed choices; Esc must still stop immediately.
+  child.stdin.write("\x1b");
   await waitFor(() => output.includes("Target already ended"));
   expect(stops()).toHaveLength(1);
   expect(stops()[0].event.data).toEqual({ conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 });
-  await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length >= 2);
-  child.stdin.write("\x1b");
+  await waitFor(() => conversationReads >= 3);
+  child.stdin.write("\x15correction\x1b");
   await waitFor(() => output.includes("Stop request accepted"));
   expect(stops()).toHaveLength(2);
   expect(stops()[1].event.data).toEqual({ conversationId: "may:primary", turnId: "turn-two", expectedRevision: 8 });
   child.stdin.write("\n");
   await waitFor(() => frames.some((frame) => frame.event?.data?.text === "correction"));
   expect(frames.some((frame) => frame.type === "task.cancel")).toBe(false);
-  await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length >= 3);
+  await waitFor(() => conversationReads >= 4);
   child.stdin.write("idle draft\x1b");
   await Bun.sleep(100);
   expect(stops()).toHaveLength(2);

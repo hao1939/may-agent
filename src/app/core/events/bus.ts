@@ -370,7 +370,7 @@ export type SystemEvent =
     }
   | {
       type: "handler.failed";
-      source: "cron" | "app-task-controller" | "app-inbox";
+      source: "cron" | "app-task-controller" | "app-inbox" | "runtime:restart-recovery";
       owner: string;
       data: {
         handler: string;
