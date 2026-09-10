@@ -286,6 +286,37 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
   expect(service.listTasks({ status: ["pending"] }).items).toHaveLength(2);
 });
 
+test("status-filtered human reads retain the stored-phase index", () => {
+  const db = database();
+  insertTask(db, { appId: "research", taskId: "queued", phase: "converged", updatedAt: 2, changed: true });
+  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1 });
+  const plans: string[] = [];
+  const observed: SqliteDb = {
+    ...db,
+    prepare(sql) {
+      const statement = db.prepare(sql);
+      if (!sql.includes("AS payload, 0 AS terminal")) return statement;
+      return new Proxy(statement, {
+        get(target, key) {
+          if (key === "all") return (...values: Parameters<typeof statement.all>) => {
+            plans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
+            return target.all(...values);
+          };
+          const value = Reflect.get(target, key);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+    },
+  };
+  const service = new HumanTaskService(observed, registry("research"));
+  for (const status of ["pending", "running", "up-to-date"] as const) {
+    service.listTasks({ status: [status], limit: 1 });
+    expect(plans.at(-1)).toContain("idx_app_tasks_global_phase (phase=?)");
+    expect(plans.at(-1)).not.toContain('"SCAN t"');
+  }
+  expect(plans).toHaveLength(3);
+});
+
 function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt: number): void {
   db.prepare(
     `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)

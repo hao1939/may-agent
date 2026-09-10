@@ -847,6 +847,9 @@ export class HumanTaskService {
           status === "done" || status === "cancelled" ? [] : [status === "up-to-date" ? "converged" : status],
         )
       : ["pending", "running", "waiting", "attention", "converged"];
+    // Keep the indexed stored-phase search, then narrow by the display phase.
+    // Pending also includes converged rows with a newly queued cycle.
+    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged"])] : livePhases;
     const appId = normalizeAppId(input.appId);
     const humanOwners = humanActionOnly
       ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
@@ -871,7 +874,8 @@ export class HumanTaskService {
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
-         WHERE (${LIVE_TASK_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
+         WHERE t.phase IN (${storedPhases.map(() => "?").join(", ")})
+           AND (${LIVE_TASK_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
                AND json_extract(r.receipt_json, '$.metadata.generation') >= t.generation
@@ -880,7 +884,7 @@ export class HumanTaskService {
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
            )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${humanOwnerClause}`,
       );
-      values.push(...livePhases, ...(appId && !humanActionOnly ? [appId] : []), ...humanOwnerValues);
+      values.push(...storedPhases, ...livePhases, ...(appId && !humanActionOnly ? [appId] : []), ...humanOwnerValues);
     }
     if (includeDone) {
       parts.push(
