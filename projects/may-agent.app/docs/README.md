@@ -32,8 +32,8 @@ small shared state boundary.
 
 The [external component plan](proposals/external-components-simplification.md)
 prioritizes three small corrections: guard guidance, the blocking credential
-probe, and Telegram I/O. Their source candidates and checks are recorded in the
-plan; review and deployment remain separate. Evaluation feature reduction,
+probe, and Telegram I/O. Scout's fix is on workspace `main`; the Host PRs and
+their checks are recorded in the plan. Review and deployment remain separate. Evaluation feature reduction,
 metric improvements, and code moves remain conditional follow-ups.
 
 The [workflow practices review](proposals/workflow-practices-review.md) applies

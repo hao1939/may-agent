@@ -2,8 +2,9 @@
 
 **Design status:** First milestone accepted for implementation; follow-ups remain
 conditional.
-**Implementation status:** Three source fixes verified on isolated review
-branches, pending review and merge. See [candidate evidence](#candidate-evidence). No deployment or live
+**Implementation status:** The Scout fix and owning documentation are integrated
+into the App workspace's `main`. The two Host fixes are verified PRs awaiting
+merge. See [candidate evidence](#candidate-evidence). No deployment or live
 provider trial has been performed.
 
 ## Goal and stopping point
@@ -149,10 +150,10 @@ accepted display limitation; no layout extraction is required for this fix.
 Implementation started from Host `765ce79c` and App workspace `8cb0e2dc05`.
 The shared checkouts remain on `main`; implementation uses isolated branches.
 
-| Change | Review candidate | Evidence |
+| Change | Source / review | Evidence |
 | --- | --- | --- |
 | Truthful guard guidance | [Host #132](https://github.com/hao1939/may-agent/pull/132), `013b7226` | Existing 8 guard tests and full local CI passed: 2,664 pass, 3 deployment-only skips |
-| Nonblocking credential probe | App workspace branch `fix/external-capability-bounds`, source commit `2e1b713e09` | All 350 App tests passed, including parser-failure containment; syntax, types, changed-file formatting, projection, links and navigation thresholds passed; see the aggregate-check limitation below |
+| Nonblocking credential probe | App workspace `main`, source commit `2e1b713e09` | All 350 App tests passed, including parser-failure containment; syntax, types, changed-file formatting, projection, links and navigation thresholds passed; see the aggregate-check limitation below |
 | Telegram request bounds and close | [Host #133](https://github.com/hao1939/may-agent/pull/133), `280d06ad` | Focused network, input, refresh, multipart, Stop and integration checks passed; full local CI passed: 2,670 pass, 3 deployment-only skips |
 
 Scout retains its 30-second budget and existing ready/unavailable interpretation.
@@ -172,8 +173,11 @@ subscription race. Check the PRs for later revisions and review results.
 
 Tests use synthetic child processes and local network fixtures. No real XHS or
 Telegram call, credential inspection, live App-state operation, restart or deployment
-was used as validation. The App fix and Host fixes can land independently;
-the Telegram contract update accompanies the App workspace review branch.
+was used as validation. The App fix and Host fixes can land independently.
+Workspace integration preserved later `main` documentation changes; the 38
+affected Scout tests and `check:may-design` passed again before landing.
+The Telegram contract is present on workspace `main` and clearly labels its
+Host implementation as awaiting merge.
 
 ## Conditional follow-ups
 
