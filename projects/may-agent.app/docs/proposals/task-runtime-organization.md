@@ -5,8 +5,12 @@ limits and atomic request attachment are implemented at the
 [documented source baseline](../README.md). The latest
 [implementation review](../archive/reviews/core-implementation-alignment-20260910.md)
 found two input-handling failures and confirmed the remaining human-control gaps.
-The sequence below is proposed for review; runtime changes are not implemented.
-This is not a deployment record.
+The four conversational slices below now have source candidates: Host PRs
+[#112](https://github.com/hao1939/may-agent/pull/112),
+[#114](https://github.com/hao1939/may-agent/pull/114), and Request tracking
+[#115](https://github.com/hao1939/may-agent/pull/115). PR #113 was merged into #112's branch,
+not `main`. Merge in that order, followed by the matching May App guidance.
+These are review candidates, not a deployment record.
 
 ## Current focus: simple and robust core
 
@@ -38,7 +42,28 @@ The largest gaps are at the Conversation boundary. Internal `AppRequest` input
 rows are not the accepted human Request defined by the design. Completing an
 input, fulfilling an ask and completing a Task remain separate facts.
 
-## Proposed implementation order
+## Implementation order and candidate decisions
+
+The changes retain the existing controller, event routes, SQLite transactions
+and bounded executor. Full Host CI and file-backed fault/restart fixtures gate
+each slice. No live installation, external service, or model is required by
+these checks; model judgment and deployment still need separate validation.
+
+- **#112:** exact claim/session abort binding, guarded effects, failure outcome
+  in input handling, and accepted-decision replay. An event write joins an
+  enclosing state transaction instead of opening a nested SQL transaction.
+- **#114:** Console `/stop` reads the exact active turn/revision and publishes
+  `conversation.turn.stop.requested`. The Host commits Stop before aborting.
+- **Request tracking:** `conversation_requests` stores the accepted scope,
+  revision, links and closure. `requestUpdates` carries App judgment; direct
+  acceptance/refinement commits before handoff, closure with its explanation.
+  Existing Topic recovery also reviews terminal Tasks with an open linked ask.
+  Discussion-only open asks do not cause background model turns.
+
+The current candidate deliberately leaves steering and a Telegram Stop button
+for a later surface change. It neither reconstructs old asks from transcripts
+nor infers fulfillment from Task status. External tool effects remain outside
+the SQLite transaction and must be inspected before explicit retry.
 
 ### 1. Contain input ownership failures
 
@@ -80,7 +105,8 @@ input result/claim storage; add only the outcome information needed by readers.
 **Accept when:** Persistent resolver failure stops spending after the chosen
 allowance, remains stopped after reopen, exposes the reason, and permits the
 next message. Failure to publish a response or a lost change hint must not rerun the model.
-This default is a decision for review, not a change to the accepted contract yet.
+The candidate selects this no-automatic-model-retry default. Accepted decisions
+can replay their idempotent Host effects without spending another model turn.
 
 ### 3. Make Stop this turn durable, then add steering
 

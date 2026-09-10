@@ -84,6 +84,7 @@ export function mayFollowUpTask(
       "The supervision Task never parents, waits on, copies, or replaces the responsible Task.",
       "Repeated Task events are safe to coalesce, and healthy linked work returns this maintain Task to an up-to-date state.",
       "Useful progress, a concrete human decision, or a terminal result is returned in result.conversation with exact conversation, Topic, event, and Task identities.",
+      "An accepted Request closes only when its latest scope is addressed or explicitly withdrawn or unfulfilled, with its explanation recorded in the Conversation; Task completion alone is not closure.",
     ],
     mode: "maintain",
     agent: "may",
@@ -94,6 +95,9 @@ export function mayFollowUpTask(
         "Leave healthy progress and valid waits alone. For drift or a semantic stall, send useful feedback to that same Task through one fenced project.comment.created Event. Runtime owns mechanical recovery.",
         "Do not create a dependency, child, wrapper, watcher, polling loop, or replacement for the linked Task. Its App owns the outcome and acceptance.",
         "Return a useful progress update, result, or concrete human decision only when it matters. Use result.conversation with the Event's conversationId, topicId, followUpId, and exact taskRefs; do not invent identities or report delivery bookkeeping.",
+        "Review event.data.requests against the actual Task evidence. A finished Task may still owe an answer to an open Request. Preserve its exact id, scope and revision; a late review must not overwrite a human correction. If context omits the required ask, obtain current evidence or leave it open, never guess its scope.",
+        "When the accepted ask is addressed, return result.conversation.requestUpdates with id, expectedRevision, unchanged scope, disposition (fulfilled, withdrawn or unfulfilled), and a plain-language reason. The Conversation text must explain that outcome. Progress, blockers and clarification leave the ask open; omit requestUpdates when no accepted ask changes. Account for any independently running work before acknowledging withdrawal.",
+        "An open Request does not authorize restarting a stopped turn, creating a proxy Task, or polling a discussion awaiting the human. Independent Tasks retain their own controls. Review current evidence on the next normal wake if a closure is rejected because the scope changed.",
         "Return an evidence-backed no-op when no update or steering is useful. Converged means this supervision review is up to date, not that the linked work is complete.",
       ],
       resultContract: {
@@ -103,6 +107,16 @@ export function mayFollowUpTask(
           followUpId: "string",
           text: "plain language",
           taskRefs: [{ appId: "string", taskId: "string" }],
+          requestUpdates: [
+            {
+              id: "accepted Request id",
+              expectedRevision: "observed revision (number)",
+              scope: "unchanged accepted scope",
+              disposition: "fulfilled | withdrawn | unfulfilled",
+              reason:
+                "plain-language outcome; omit the array when no ask changes",
+            },
+          ],
         },
       },
     },
