@@ -3,11 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
 import { getNotificationMessage } from "../../src/lib/db/notifications.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 import { createTelegramClient, splitTelegramMessage } from "../../src/app/transport/telegram-client.js";
 
 function response(ok: boolean, result: unknown, description?: string): Response {
   return {
-    json: async () => ({ ok, result, description }),
+    json: async () => ({ ok, result, description, ...(!ok ? { error_code: 400 } : {}) }),
   } as Response;
 }
 
@@ -25,7 +26,7 @@ describe("telegram client", () => {
     const fetchImpl = async (_url: string | URL, init?: RequestInit): Promise<Response> => {
       const body = init?.body ? JSON.parse(String(init.body)) : {};
       calls.push(body);
-      if (body.parse_mode) return response(false, null, "bad markdown");
+      if (body.parse_mode) return response(false, null, "Bad Request: can't parse entities");
       return response(true, { message_id: nextMessageId++ });
     };
 
@@ -56,6 +57,7 @@ describe("telegram client", () => {
         session_id: "s_1",
       });
     } finally {
+      closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
