@@ -2679,7 +2679,7 @@ function installConventionTaskControllers(
             appId: activeDescriptor.id,
             taskId,
             stage: "task-reconciliation",
-            disposition: willRetry ? "retry-scheduled" : "retry-exhausted",
+            disposition: willRetry ? "retry-scheduled" : "not-retrying",
             willRetry,
             durationMs: 0,
           },
