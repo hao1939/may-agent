@@ -1950,7 +1950,7 @@ async function reconcileTask(input: {
       !agentHandoff &&
       !primaryHandlerResult.resultRejected
     ) {
-      const retry = failAppTaskAttempt(config, primary, primaryHandlerResult.summary);
+      const retry = persistResult(() => failAppTaskAttempt(config, primary, primaryHandlerResult.summary));
       if (retry.status === "superseded") return [];
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,

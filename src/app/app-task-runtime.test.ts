@@ -4202,6 +4202,74 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
   });
 
+  it("counts failed executions once when another connection admits input during failure persistence", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let calls = 0;
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        broken: async () => {
+          calls++;
+          throw new Error("fixture execution failed");
+        },
+      },
+      appRegistrySnapshot: {
+        id: "boot:failure-contention", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/failure-contention";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Bound genuine failures despite new input",
+        acceptance: ["Failures remain counted"], mode: "achieve", executor: "broken" },
+      trigger: { type: "sample.work", eventId: 100 },
+    });
+    const db = openDatabase(join(f.root, "state", "may.db"));
+    const concurrent = appTaskContext({
+      appDir: f.appDir, projectDir: f.appDir, agent: "sample-owner", maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.activeFromDb(db, "sample")!,
+    });
+    const commit = AppTaskResourceStore.prototype.commit;
+    const racedAttempts = new Set<string>();
+    let saves = 0;
+    AppTaskResourceStore.prototype.commit = function (mutation) {
+      const failure = mutation.attempts?.find((attempt) =>
+        attempt.taskId === taskId && attempt.state === "failed" && attempt.failureReason === "HandlerExecutionFailed");
+      if (failure) {
+        saves++;
+        if (!racedAttempts.has(failure.metadata.id)) {
+          racedAttempts.add(failure.metadata.id);
+          recordAppTaskTrigger(concurrent, taskId, { type: "sample.changed", eventId: 100 + racedAttempts.size });
+        }
+      }
+      return commit.call(this, mutation);
+    };
+    try {
+      for (let index = 0; index < 8; index++) {
+        await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        }).catch(() => {});
+      }
+    } finally {
+      AppTaskResourceStore.prototype.commit = commit;
+      db.close();
+    }
+    expect(calls).toBe(4);
+    expect(racedAttempts.size).toBe(4);
+    expect(saves).toBe(8); // Each failed transaction is retried, not the executor.
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "attention", executionFailures: 4 });
+    const tree = readTaskSnapshot(config);
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
+    for (const attempt of Object.values(tree.attempts ?? {})) {
+      expect(attempt).toMatchObject({ state: "failed", failureReason: "HandlerExecutionFailed" });
+    }
+    expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId).sort()).toEqual([100, 101, 102, 103, 104]);
+  });
+
   it("bounds failed executions across independent wakes and a fresh process", async () => {
     const f = fixture();
     const bus = eventBus();
