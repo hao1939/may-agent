@@ -83,6 +83,7 @@ export function mayFollowUpTask(
       "Each changed Topic-linked Task is left healthy, steered by exact identity, exposed for a human decision, or reported usefully in its Conversation.",
       "The supervision Task never parents, waits on, copies, or replaces the responsible Task.",
       "Repeated Task events are safe to coalesce, and healthy linked work returns this maintain Task to an up-to-date state.",
+      "An unchanged recovery review records Task evidence without repeating a Conversation message; new material facts, human questions and Request dispositions still receive useful answers.",
       "Useful progress, a concrete human decision, or a terminal result is returned in result.conversation with exact conversation, Topic, event, and Task identities.",
       "An accepted Request closes only when its latest scope is addressed or explicitly withdrawn or unfulfilled, with its explanation recorded in the Conversation; Task completion alone is not closure.",
     ],
@@ -98,9 +99,12 @@ export function mayFollowUpTask(
         "Review event.data.requests against the actual Task evidence. A finished Task may still owe an answer to an open Request. Preserve its exact id, scope and revision; a late review must not overwrite a human correction. If context omits the required ask, obtain current evidence or leave it open, never guess its scope.",
         "When the accepted ask is addressed, return result.conversation.requestUpdates with id, expectedRevision, unchanged scope, disposition (fulfilled, withdrawn or unfulfilled), and a plain-language reason. The Conversation text must explain that outcome. Progress, blockers and clarification leave the ask open; omit requestUpdates when no accepted ask changes. Account for any independently running work before acknowledging withdrawal.",
         "An open Request does not authorize restarting a stopped turn, creating a proxy Task, or polling a discussion awaiting the human. Independent Tasks retain their own controls. Review current evidence on the next normal wake if a closure is rejected because the scope changed.",
-        "Return an evidence-backed no-op when no update or steering is useful. Converged means this supervision review is up to date, not that the linked work is complete.",
+        "On an automated recovery wake, an unchanged wait or previously reported unavailable App is not a new human-facing result. Preserve the linked Task and record that review in summary and evidence; do not repeat 'no new progress' or 'nothing needed' notices. An intentionally disabled App is not authorization to enable it. Report a new material blocker, changed fact, concrete human decision or accepted Request disposition, and answer an explicit human status question.",
+        "Return an evidence-backed no-op when no update or steering is useful: {state: 'converged', summary: 'Reviewed; no material change', evidence: ['exact observation'], actions: []}. Omit result.conversation entirely for this quiet result. Converged means this supervision review is up to date, not that the linked work is complete.",
       ],
       resultContract: {
+        usage:
+          "The conversation field is optional. Use it only for a useful human-facing change or Request disposition, not to acknowledge every reviewed event.",
         conversation: {
           conversationId: "string",
           topicId: "string",

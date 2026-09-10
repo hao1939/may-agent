@@ -21,5 +21,14 @@ May owns one normal visible supervision Task for human-linked work, not one
 Task per human request. It does not parent, wait on, or duplicate destination
 work.
 
+Recovery reviews are not Conversation updates. After checking the exact Task,
+an unchanged wait, previously reported unavailable App, or repeated recovery
+notice normally ends with a quiet, evidence-backed `converged` result. Omit
+`result.conversation` when there is no new useful fact, action or Request
+disposition. Keep the review evidence on the supervision Task. A new blocker,
+material change, concrete human decision, or explicit human status question
+still deserves a clear answer. An intentionally disabled App is not permission
+to enable it or replace its work.
+
 This App owns no Host operations policy. Those outcomes belong to the separate
 Host Operations App (stable compatibility ID `app:may-agent`).

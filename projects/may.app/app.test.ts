@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
+import {
+  admitTaskReconcileResult,
+  matchesEventSelector,
+  type AppEvent,
+} from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import app, {
   MAY_FOLLOW_UP_TASK_ID,
@@ -96,6 +100,28 @@ describe("canonical May conversation App", () => {
       kind: "desired",
       intent: { id: "goal/request-1", mode: "achieve", agent: "may" },
     });
+  });
+
+  test("teaches a quiet recovery result using the existing optional Conversation contract", () => {
+    const intent = mayFollowUpTask({
+      type: "conversation.task.changed",
+      data: {},
+    })!;
+    const guidance = JSON.stringify(intent.input);
+    expect(guidance).toContain("Omit result.conversation entirely");
+    expect(guidance).toContain("conversation field is optional");
+    expect(guidance).toContain("answer an explicit human status question");
+    const result = admitTaskReconcileResult({
+      state: "converged",
+      summary: "Reviewed; no material change",
+      evidence: [
+        "Exact linked Task remains unavailable as previously reported",
+      ],
+      actions: [],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(result.result).not.toHaveProperty("result.conversation");
   });
 
   test("keeps common authority shared and separates domain Task guidance", () => {
