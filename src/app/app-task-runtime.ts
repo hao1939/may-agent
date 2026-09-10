@@ -1394,6 +1394,15 @@ async function reconcileTask(input: {
   };
   let activeConfig: ReturnType<typeof appTaskConfig> | undefined;
   let activeClaim: AppTaskClaim | undefined;
+  let cleanupFailed = false;
+  const prepareSupersededSessions = (sessionIds: string[]) => {
+    try {
+      interruptSupersededActionSessions(opts, input.taskId, sessionIds);
+    } catch (error) {
+      cleanupFailed = true;
+      throw error;
+    }
+  };
 
   try {
     const config = appTaskConfig(descriptor);
@@ -1815,7 +1824,7 @@ async function reconcileTask(input: {
               actions: primaryHandlerResult.actions,
               acceptanceBasis,
               acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-              prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, intent.id, ids),
+              prepareSupersededSessions,
             }),
           );
           const appliedDisposition = taskCompletionDisposition(
@@ -1848,6 +1857,7 @@ async function reconcileTask(input: {
           if (apply.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, appliedDisposition);
           return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
         } catch (error) {
+          if (cleanupFailed) throw error;
           const stale = recoverStaleTaskActionResult(config, primary, error);
           if (stale) {
             const summary = error instanceof Error ? error.message : String(error);
@@ -1930,7 +1940,7 @@ async function reconcileTask(input: {
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-            prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, intent.id, ids),
+            prepareSupersededSessions,
           }),
         );
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
@@ -1960,6 +1970,7 @@ async function reconcileTask(input: {
         if (apply.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, "waiting");
         return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
       } catch (error) {
+        if (cleanupFailed) throw error;
         const stale = recoverStaleTaskActionResult(config, primary, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
@@ -2059,6 +2070,12 @@ async function reconcileTask(input: {
     });
     return [intent.id];
   } catch (error) {
+    // Cleanup refusal is not a failed execution or rejected result. Preserve
+    // the original claim so recovery can settle its saved result without redo.
+    if (cleanupFailed) {
+      timing.outcome = "failed";
+      throw error;
+    }
     if (activeConfig && activeClaim) {
       const stale = recoverStaleTaskActionResult(activeConfig, activeClaim, error);
       if (stale) {

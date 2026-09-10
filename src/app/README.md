@@ -263,8 +263,10 @@ dispatch and startup. `consumePersistedTerminalAgentResult` reuses normal
 transactional admission; `settlePersistedTerminalAgentResult` handles its shared
 cleanup and publication. Validated actions retire exact superseded sessions
 before the fenced Task commit exposes replacements. A cleanup refusal leaves
-the saved result and original claim available for recovery, rather than
-rejecting the result or losing a post-commit cleanup obligation. Cleanup runs
+the saved result and original claim available for recovery in both ordinary
+dispatch and recovered settlement. It propagates past result-validation and
+execution-failure handling rather than rejecting the result or releasing its
+claim. Cleanup runs
 outside the SQLite transaction; commit still rechecks every resource fence.
 If a concurrent update wins after cleanup, ordinary reconciliation uses the
 current Task, never the stale action. Cleanup may repeat and names only the

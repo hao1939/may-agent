@@ -4682,17 +4682,7 @@ describe("canonical App task runtime", () => {
           taskId,
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         });
-      const saveTerminalSession = (taskId: string) => {
-        const claim = claimObservedAppTask(config, {
-          taskId,
-          appAgent: "sample-owner",
-          handler: "auto",
-          reason: "test",
-        });
-        if (claim.kind !== "claimed") throw new Error("expected agent claim");
-        expect(claim.handler).toBe("agent:sample-owner");
-        const sessionId = `session-${taskId}`;
-        expect(recordAppTaskAttemptSession(config, claim, sessionId)).toBe(true);
+      const writeTerminalSession = (sessionId: string) => {
         writeSessionMeta(persistDir, sessionId, {
           agent: "sample-owner",
           task: "Produce a checked decision",
@@ -4707,9 +4697,23 @@ describe("canonical App task runtime", () => {
             finishParams: { status: "success", result: terminalResult },
           }),
         );
+      };
+      const saveTerminalSession = (taskId: string) => {
+        const claim = claimObservedAppTask(config, {
+          taskId,
+          appAgent: "sample-owner",
+          handler: "auto",
+          reason: "test",
+        });
+        if (claim.kind !== "claimed") throw new Error("expected agent claim");
+        expect(claim.handler).toBe("agent:sample-owner");
+        const sessionId = `session-${taskId}`;
+        expect(recordAppTaskAttemptSession(config, claim, sessionId)).toBe(true);
+        writeTerminalSession(sessionId);
         return claim;
       };
-      return { base, config, payload, terminalResult, observe, run, saveTerminalSession, agentCalls: () => agentCalls };
+      return { base, config, payload, terminalResult, observe, run, saveTerminalSession, writeTerminalSession,
+        agentCalls: () => agentCalls };
     }
 
     for (const route of ["normal", "startup", "busy"] as const) {
@@ -4859,13 +4863,13 @@ describe("canonical App task runtime", () => {
       },
     );
 
-    for (const route of ["startup", "busy"] as const) {
+    for (const route of ["normal", "startup", "busy"] as const) {
       it.each([
         ["converged", "drain"],
         ["waiting", "drain"],
         ["converged", "live owner"],
       ] as const)(
-        `retains a recovered %s result across failed %s cleanup and restart through ${route}`,
+        `retains a saved %s result across failed %s cleanup and restart through ${route}`,
         async (state, failure) => {
           const f = setup();
           let drained = false;
@@ -4899,7 +4903,17 @@ describe("canonical App task runtime", () => {
               },
             ];
           }
-          const claim = f.saveTerminalSession("owner");
+          const claim = route === "normal" ? { taskId: "owner", attemptId: "" } : f.saveTerminalSession("owner");
+          if (route === "normal") {
+            const execute = f.base.agents.execute;
+            f.base.agents.execute = async (input) => {
+              claim.attemptId = input.attempt.attemptId;
+              input.sessionStarted("session-owner");
+              const result = await execute(input);
+              f.writeTerminalSession("session-owner");
+              return result;
+            };
+          }
           const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
           if (other.kind !== "claimed") throw new Error("expected other attempt");
           expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
@@ -4964,7 +4978,7 @@ describe("canonical App task runtime", () => {
           ).toEqual([state === "converged" ? "app.dependency.completed" : "app.dependency.updated"]);
           await recoverInstalledAppTasks(f.base.bus);
           expect(interrupts).toHaveLength(failure === "live owner" ? 1 : 2);
-          expect(f.agentCalls()).toBe(0);
+          expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
         },
       );
     }
