@@ -16,23 +16,24 @@ Apps reconcile tasks. Agents judge and act. Workflows preserve a repeatable
 method after experience justifies one. Infra and Runtime schedule, deliver,
 persist, execute, and recover without deciding domain meaning.
 
-The human boundary has one additional, strict convention:
+May owns conversation; the accountable App owns each durable Task. May may
+investigate, edit, verify, and answer directly within an authorized bounded
+turn. Discussion and joint problem-solving remain in Conversation across turns.
+A Task represents work that can advance independently; discussion length,
+later conversation, and tool use alone do not require one. Background research
+can support a discussion without taking it out of the human's hands.
+May can own that Task; another App is useful when it already owns the work,
+requires its specific authority, or supplies relevant expertise or a workflow.
 
-> **May owns the conversation. The accountable App owns each Task.**
-
-May handles one human turn; an accountable App owns durable execution and
-proof. That App may be May when no more specific App owns the outcome. May
-first makes the request actionable: desired outcome, relevant scope, material
-constraints, acceptance proof, and true authority boundaries. It asks one
-focused question only when ambiguity would materially change that outcome or
-its accountable App. One bounded, audited break-glass attempt is the exception.
-The complete ingress, routing, closure, and recovery contract is in
-[Message Lifecycle](../2a-design/message-lifecycle.md).
-
-One human or caller request identifies one promised result. The Host links it
-to the task the accountable App reconciles. The request is caller correlation;
-the task is the App work identity. A UI may lay related tasks out as a tree,
-but the tree is only a view of task relationships.
+A conversational Request is an accepted ask that May must close the loop on.
+May recognizes or refines the ask, explains the intended action, and returns
+its outcome. A turn can finish while the Request and its linked Task remain
+open. Request tracking references work without owning another execution loop.
+The current Host request row tracks input handling; it does not yet implement
+that complete conversational contract.
+[Message Lifecycle](../2a-design/message-lifecycle.md#requests-acceptance-and-closure)
+owns the policy and implementation gap; [System Model](../2a-design/system-model.md)
+defines the shared vocabulary.
 
 ## Roles
 
@@ -51,77 +52,21 @@ but the tree is only a view of task relationships.
 These records answer different questions. Do not turn an event, workflow run,
 or session result into a second task/project lifecycle.
 
-## Default project loop
-
-```text
-addressed input, semantic fact, Condition observation, or resync
-  -> app resolves or wakes one stable task
-  -> controller queues only the task ID
-  -> worker claims the latest canonical generation
-  -> selected executor works until it returns an accepted result or exact wait
-  -> runtime validates and atomically applies one result
-  -> achieve receipt, maintain convergence, exact Condition wait, or attention
-```
-
-This is the only App work loop. A simple task may converge during its first
-bounded attempt. Agents and Gym may still run independently for direct
-experiments, but once work is owned by an App it uses the App task reconciler.
-
 ## The task loop
 
-A task says what should be true. A wake means "check it now." The selected
-executor reads current facts, compares them with the task outcome, and keeps
-working while safe progress is available. It keeps the same task moving until
-one of these is true:
+An App maps durable input to one Task. The Host persists its events, schedules
+one fenced attempt, and admits a result against current state. Completion
+requires evidence; an external wait names the exact fact needed; attention
+states why safe progress stopped.
 
-1. the outcome is satisfied now;
-2. it must wait for one exact external fact or live direct child; or
-3. it cannot continue safely and needs visible attention.
+A Task owns continuation across attempts. Workflows and sessions are bounded
+execution evidence. New input remains durable until accepted; its effect on an
+in-flight result follows the [Task Resource Engine](../2a-design/task-resource-engine.md),
+not a second rule in project policy.
 
-An executor call may use many internal model turns. Those turns are not Task
-attempts, and useful intermediate progress does not end the call. A process
-failure or restart ends the attempt; Runtime retries the same Task, and a
-resumable executor keeps its working context. An external wait records a
-Condition and releases capacity. The observed fact later wakes the same task.
-No workflow or agent session remains open while waiting.
-
-```text
-timer, event, or observed Condition
-  -> wake one stable task ID
-  -> read the target and current facts
-  -> keep working while safe progress is available
-  -> satisfied: converged
-     exact fact or child needed: waiting
-     execution failed: retry the same task
-     judgment or configuration is required: attention
-```
-
-If a maintain workflow records another wake while it is running, that wake wins
-over the completed attempt: the task stays `pending` and returns to the same
-queue. It must not be published as converged and it does not need another task,
-timer, or open workflow session.
-
-There is one task state. Workflow checkpoints may preserve facts and progress,
-but must not keep a second task phase. Before a workflow returns, its checkpoint
-must agree with the result it returns. A restart may repeat work, so both must
-be safe to read and apply again.
-
-`converged` is a claim that the outcome and acceptance criteria are satisfied by
-current evidence. A failed call, missing artifact, unfinished step, or plan for
-future repair is not converged. `waiting` names the exact fact that will wake the
-task. `attention` names why safe progress stopped. Missing or unknown checkpoint
-state fails closed to attention; absence of a known wait is not completion proof.
-
-Every maintain task must have a way to learn that its facts changed: a domain
-event or watcher, and a scheduled check when events alone are not reliable. The
-controller's bounded resync repairs missed in-memory wakes; it does not replace
-domain observation or run every expensive workflow continuously.
-
-Apps choose outcomes, default agents, workflows, and acceptance. The shared runtime
-persists task state, delivers wakes, prevents overlapping attempts, and rejects
-invalid results. It does not decide domain truth. Apps must not create a second
-scheduler by listening to reconciliation results and emitting private retry
-ticks.
+Every maintained outcome needs an observation route. Use provider events or an
+observer, adding a scheduled check only where needed. Runtime recovery repairs
+lost scheduling from durable state; it does not replace domain observation.
 
 ## App, agent, and workflow
 
