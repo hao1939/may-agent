@@ -190,6 +190,7 @@ function render() {
   }
   if (tab === 'sessions') initChat(params.id || null);
   if (tab !== 'agents' || !inAgentChat) currentAgentChat = null;
+  updateConversationStop();
   if (tab === 'agents') {
     if (params.name) initAgentChat(params.name);
     else loadAgentsTab();
@@ -320,7 +321,7 @@ function toast(msg, kind) {
   if (!host) {
     host = document.createElement('div');
     host.id = 'toast-host';
-    host.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:340px';
+    host.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:340px;pointer-events:none';
     document.body.appendChild(host);
   }
   const el = document.createElement('div');

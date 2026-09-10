@@ -370,9 +370,23 @@ export type SystemEvent =
     }
   | {
       type: "handler.failed";
-      source: "cron";
+      source: "cron" | "app-task-controller" | "app-inbox" | "runtime:restart-recovery";
       owner: string;
-      data: { handler: string; handlerRunId?: string; agent: string; error: string; durationMs: number };
+      data: {
+        handler: string;
+        handlerRunId?: string;
+        agent: string;
+        error: string;
+        durationMs: number;
+        appId?: string;
+        taskId?: string;
+        requestId?: string;
+        conversationId?: string;
+        claimRevision?: number;
+        stage?: string;
+        disposition?: string;
+        willRetry?: boolean;
+      };
     }
   | {
       type: "handler.load-failed";

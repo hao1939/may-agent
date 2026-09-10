@@ -105,7 +105,7 @@ export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: st
         error: "Process restarted before the handler completed",
         durationMs: Number.isFinite(openedAt) ? Math.max(0, Date.now() - openedAt) : 0,
       },
-    } as any);
+    });
   }
 
   return rows.length;

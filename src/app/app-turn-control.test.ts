@@ -96,7 +96,9 @@ test("public Stop persists before abort, rejects late output and cannot affect t
         entered.resolve();
         await finish.promise;
       }
-      return answer;
+      return request.id === "two"
+        ? { ...answer, requestUpdates: [{ id: "ask", expectedRevision: 1, scope: "Discuss costs before implementing", disposition: "open" }] }
+        : answer;
     },
   });
   const events = createEventInterface({
@@ -155,7 +157,7 @@ test("public Stop persists before abort, rejects late output and cannot affect t
       });
       expect((await after.reconcileOnce(app.id)).claimed).toBe(0);
       expect(after.get("one")?.handling?.phase).toBe("stopped");
-      expect(readConversationRequest(reopenedDb, app.id, "chat", "ask")).toMatchObject({ status: "open", revision: 1 });
+      expect(readConversationRequest(reopenedDb, app.id, "chat", "ask")).toMatchObject({ status: "open", revision: 2, scope: "Discuss costs before implementing" });
       expect(calls).toBe(2);
     } finally {
       reopenedDb.close();

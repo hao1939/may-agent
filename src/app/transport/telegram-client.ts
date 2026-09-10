@@ -10,6 +10,7 @@ export interface TelegramSendContext {
   data?: string;
   replyToMessageId?: number;
   messageThreadId?: number;
+  replyMarkup?: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
 }
 
 export interface TelegramClientOptions {
@@ -61,11 +62,13 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         ? { reply_parameters: { message_id: context.replyToMessageId, allow_sending_without_reply: true } }
         : {};
       const threadParams = context?.messageThreadId ? { message_thread_id: context.messageThreadId } : {};
+      const markup = context?.replyMarkup ? { reply_markup: context.replyMarkup } : {};
       try {
         const result = await apiCall("sendMessage", {
           chat_id: chatId,
           text: chunk,
           ...(parseMode ? { parse_mode: parseMode } : {}),
+          ...markup,
           ...threadParams,
           ...replyParams,
         });
@@ -78,6 +81,7 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
             const result = await apiCall("sendMessage", {
               chat_id: chatId,
               text: chunk,
+              ...markup,
               ...threadParams,
               ...replyParams,
             });

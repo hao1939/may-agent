@@ -2038,8 +2038,10 @@ describe("App inbox runtime", () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const observed: string[] = [];
+    const failures: AgentEvent[] = [];
     bus.subscribe((event) => {
       observed.push(event.type);
+      if (event.type === "handler.failed") failures.push(event);
     });
     let now = 1000;
     runtime = await startAppInboxRuntime({
@@ -2052,7 +2054,6 @@ describe("App inbox runtime", () => {
       deferStart: true,
       observerContext: () => ({}) as never,
     });
-    const errors = spyOn(console, "error").mockImplementation(() => {});
     const readiness = spyOn(runtime.host, "readyAppIds").mockImplementation(() => {
       throw new Error("fixture readiness read unavailable");
     });
@@ -2061,12 +2062,17 @@ describe("App inbox runtime", () => {
       await runtime.start();
       await waitUntil(
         () =>
-          errors.mock.calls.length > 0 &&
+          failures.length > 0 &&
           observed.includes("sample.observed") &&
           observed.filter((type) => type === "sample.scheduled").length === 32,
       );
       // Subsequent scans at the same slot cannot multiply publications.
-      await waitUntil(() => errors.mock.calls.length >= 3);
+      await waitUntil(() => failures.length >= 3);
+      expect(failures[0]).toMatchObject({
+        type: "handler.failed",
+        source: "app-inbox",
+        data: { stage: "input-recovery", error: "fixture readiness read unavailable", disposition: "recovery-pending" },
+      });
       expect(observed.filter((type) => type === "sample.scheduled")).toHaveLength(32);
       expect(observed.filter((type) => type === "sample.observed")).toHaveLength(1);
       runtime.close();
@@ -2076,7 +2082,6 @@ describe("App inbox runtime", () => {
       expect(observed).toHaveLength(count);
     } finally {
       readiness.mockRestore();
-      errors.mockRestore();
     }
   });
 

@@ -13,6 +13,7 @@ import {
   type ObserverContext,
   type TaskIntent,
 } from "@may-agent/sdk";
+import { log } from "../lib/log.js";
 import type { SqliteDb } from "../lib/db.js";
 import { stateTransaction } from "../lib/db/transaction.js";
 import { applyConversationRequestUpdates, listConversationRequests } from "./conversations/requests.js";
@@ -20,6 +21,7 @@ import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
   AppInboxHost,
+  type AppInboxFailure,
   type AppInboxReconcileResult,
   type AppRequestResolver,
   type AppRequestTaskController,
@@ -699,19 +701,56 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     enabled: options.schedulesEnabled !== false,
   });
   scheduleProducer.replace(loaded);
+  const reportFailure = (failure: AppInboxFailure): void => {
+    try {
+      options.bus.emit({
+        type: "handler.failed",
+        source: "app-inbox",
+        owner: failure.appId ? `app:${failure.appId}` : "runtime",
+        data: { handler: "app-inbox", durationMs: 0, ...failure, agent: normalizedAgent(failure.agent) ?? "runtime" },
+      });
+    } catch (reportError) {
+      // Logging is independent of event persistence and contains subscriber errors.
+      log("error", `[app-inbox] ${JSON.stringify(failure)}; reporting failed: ${String(reportError)}`);
+    }
+  };
   const report = (appId: string, outcome: AppInboxReconcileResult) => {
-    if (outcome.errors.length === 0) return;
-    options.bus.emit({
-      type: "info",
-      message: `[app-inbox:${appId}] ${outcome.errors.join("; ")}`,
+    for (const failure of outcome.failures ?? []) reportFailure({ appId, ...failure });
+  };
+  const reportRuntimeFailure = (
+    stage: string,
+    error: unknown,
+    appId?: string,
+    agent = loaded.find(({ definition }) => definition.id === appId)?.definition.agent,
+  ): void => {
+    reportFailure({
+      appId,
+      agent,
+      stage,
+      error: error instanceof Error ? error.message : String(error),
+      disposition: "recovery-pending",
     });
+  };
+  const scheduleReady = (appId: string): void => {
+    if (closed) return;
+    try {
+      if (dirty.has(appId) || host.readyCount(appId) > 0) schedule(appId);
+    } catch (error) {
+      // A later admission or bounded recovery scan rediscovers durable readiness.
+      reportRuntimeFailure("input-readiness", error, appId);
+    }
   };
 
   const armPump = (): void => {
     if (closed || !started || pumpHandle) return;
     pumpHandle = setTimeout(() => {
       pumpHandle = null;
-      pump();
+      try {
+        pump();
+      } catch (error) {
+        reportRuntimeFailure("input-dispatch", error);
+        armPump();
+      }
     }, 0);
   };
 
@@ -739,39 +778,36 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       return;
     }
     const appActive = active.get(appId) ?? 0;
+    const agent = loaded.find(({ definition }) => definition.id === appId)?.definition.agent ?? "runtime";
     active.set(appId, appActive + 1);
     dirty.delete(appId);
-    const work =
-      appId === "may"
-        ? options.hostCapacity.runForeground(() => host.reconcileOnce(appId))
-        : options.hostCapacity.run(() => host.reconcileOnce(appId));
-    // Start at most one request claim per event-loop turn. Event publication
-    // has already returned before this pump claims the request and resolves
-    // its Task, and unrelated I/O can run between independent claims.
-    if (host.readyCount(appId) > 0) schedule(appId);
-    void work
+    // Attach cleanup before any fallible work/read. This also contains a
+    // synchronous executor/capacity failure without leaking the active count.
+    void Promise.resolve()
+      .then(() => {
+        if (closed) return;
+        return appId === "may"
+          ? options.hostCapacity.runForeground(() => host.reconcileOnce(appId))
+          : options.hostCapacity.run(() => host.reconcileOnce(appId));
+      })
       .then((outcome) => {
+        if (!outcome) return;
         report(appId, outcome);
         for (const conversationId of outcome.conversationIds ?? []) {
           notifyConversationUpdated(appId, conversationId);
         }
       })
-      .catch((error) => {
-        options.bus.emit({
-          type: "info",
-          message: `[app-inbox:${appId}] ${error instanceof Error ? error.message : String(error)}`,
-        });
-      })
+      .catch((error) => reportRuntimeFailure("input-dispatch", error, appId, agent))
       .finally(() => {
         const remaining = (active.get(appId) ?? 1) - 1;
         if (remaining > 0) active.set(appId, remaining);
         else active.delete(appId);
-        // A later Turn in the same Conversation becomes claimable only after
-        // this handler releases its lease. Recheck here rather than keeping a
-        // fake ready item spinning while the earlier Turn is still active.
-        if (dirty.has(appId) || host.readyCount(appId) > 0) schedule(appId);
+        // Only released claims make the next turn runnable. Never spin on a
+        // Conversation whose current execution still owns the claim.
+        scheduleReady(appId);
         armPump();
       });
+    scheduleReady(appId);
     armPump();
   };
 
@@ -793,13 +829,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       .then(() => (closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies()))
       .then((outcome) => {
         for (const appId of outcome.wokenAppIds) schedule(appId);
-        if (outcome.errors.length > 0) {
-          options.bus.emit({
-            type: "info",
-            message: `[app-inbox:task-recovery] ${outcome.errors.join("; ")}`,
-          });
-        }
+        for (const failure of outcome.failures ?? []) reportFailure(failure);
       })
+      .catch((error) => reportRuntimeFailure("dependency-recovery", error))
       .finally(() => {
         if (taskRecovery === current) taskRecovery = null;
         nextDependencyRecoveryAt = now() + dependencyRecoveryIntervalMs;
@@ -1613,7 +1645,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     } catch (error) {
       // A failed storage read/recovery scan must not escape a timer callback
       // and terminate unrelated work. Durable state is recollected next scan.
-      console.error(`[app-runtime:scan] failed: ${error instanceof Error ? error.message : String(error)}`);
+      reportRuntimeFailure("input-recovery", error);
     }
   };
   const runtime: AppInboxRuntime = {

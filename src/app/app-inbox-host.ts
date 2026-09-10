@@ -125,11 +125,24 @@ export type AdmitAppInput = {
   idempotencyKey?: string;
 };
 
+export type AppInboxFailure = {
+  agent?: string;
+  requestId?: string;
+  conversationId?: string;
+  claimRevision?: number;
+  appId?: string;
+  taskId?: string;
+  stage: string;
+  error: string;
+  disposition: string;
+};
+
 export type AppInboxReconcileResult = {
   claimed: number;
   admitted: number;
   released: number;
   errors: string[];
+  failures?: AppInboxFailure[];
   /** Conversations whose visible messages or active-work projection changed. */
   conversationIds?: string[];
 };
@@ -139,6 +152,7 @@ export type AppInboxTaskRecoveryResult = {
   woken: number;
   wokenAppIds: string[];
   errors: string[];
+  failures?: AppInboxFailure[];
 };
 
 export type AppInboxHostOptions = {
@@ -769,6 +783,8 @@ export class AppInboxHost {
     for (const [appId, taskIds] of taskIdsByApp) {
       for (const taskId of taskIds) {
         const taskDependency = { kind: "task", id: taskId } as const;
+        const app = this.#apps.get(appId);
+        const agent = app?.agent ?? app?.owner;
         try {
           const observed = (await this.#observeDependency(appId, taskDependency)) ?? {
             ...taskDependency,
@@ -803,6 +819,14 @@ export class AppInboxHost {
           }
         } catch (error) {
           outcome.errors.push(`App ${appId} task ${taskDependency.id}: ${errorMessage(error)}`);
+          (outcome.failures ??= []).push({
+            appId,
+            agent,
+            taskId,
+            stage: "dependency-recovery",
+            error: errorMessage(error),
+            disposition: "recovery-pending",
+          });
         } finally {
           // Dependency reads can resolve synchronously. Yield after each one
           // so a large App cannot starve control-socket and human-message I/O.
@@ -834,8 +858,19 @@ export class AppInboxHost {
       outcome.admitted = 1;
     } catch (error) {
       outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
+      const failure: AppInboxFailure = {
+        agent: app.agent ?? app.owner,
+        requestId: claim.item.id,
+        conversationId: claim.item.conversationId,
+        claimRevision: claim.generation,
+        stage: "input-handling",
+        error: errorMessage(error),
+        disposition: "ownership-lost",
+      };
+      outcome.failures = [failure];
       try {
         if (this.get(claim.item.id)?.handling?.phase === "stopped") {
+          failure.disposition = "stopped";
           if (claim.item.conversationId) conversationIds.add(claim.item.conversationId);
         } else if (
           ((claim.item.handling?.phase === "executing" || claim.item.handling?.phase === "decided") &&
@@ -851,6 +886,7 @@ export class AppInboxHost {
             },
             { phase: "failed", reason },
           );
+          failure.disposition = "failed";
           if (conversationId) conversationIds.add(conversationId);
         } else if (
           releaseAppInboxClaim(this.#db, claim, {
@@ -859,12 +895,15 @@ export class AppInboxHost {
           })
         ) {
           outcome.released = 1;
+          failure.disposition = "retry-scheduled";
           if (claim.item.conversationId) {
             conversationIds.add(claim.item.conversationId);
           }
         }
       } catch (cleanupError) {
+        failure.disposition = "recovery-pending";
         outcome.errors.push(`Request ${claim.item.id} cleanup: ${errorMessage(cleanupError)}`);
+        outcome.failures.push({ ...failure, stage: "input-cleanup", error: errorMessage(cleanupError) });
       }
     } finally {
       stopRenewing();

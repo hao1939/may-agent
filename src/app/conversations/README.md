@@ -49,12 +49,20 @@ Task callers and retained child waits keep their separate handling contract.
 Row `done` means input handling ended; inspect `handling` and the result for
 its disposition.
 
-Console `/stop` reads `activeTurn` and publishes
+Console Esc and Telegram/browser Stop buttons observe `activeTurn` and publish
 `conversation.turn.stop.requested` with that exact ID and revision. The Host
 persists `stopped` before aborting, without waiting behind model execution.
 Recovery cannot replay it. Old/duplicate controls never select a newer turn.
 Independent Tasks continue; stopping a turn does not close its accepted ask.
-Steering and other human surfaces remain separate follow-up work.
+Console preserves drafts and dismisses completion first. Browser May chat reads
+the shared Conversation over HTTP; it no longer selects a default session.
+Stopping, then sending a correction can update the same accepted Request;
+seamless current-turn steering remains separate follow-up work.
+
+`app-inbox-runtime.ts` attaches cleanup before dispatch/readiness reads and
+contains detached recovery failures. Structured `handler.failed` diagnostics
+retain known work identity, stage, error and disposition. Failed diagnostic
+persistence falls back to the independent logger, without replaying execution.
 
 Callers pass the existing database connection. This separation creates no new
 database, cache, transaction boundary, or background process. The request

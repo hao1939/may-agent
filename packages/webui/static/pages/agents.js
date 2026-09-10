@@ -16,6 +16,8 @@ function setAgentChatSessionId(sessionId) {
 }
 
 /**
+ * May uses the shared Conversation read/event contract. Other agents retain
+ * direct session chat:
  * Telegram-style chat with a specific agent. Reuses the #chat pane:
  *   1. Fetch /api/agents/:name/default-session to find the agent's persistent
  *      thread (most-recent non-throwaway session, any status).
@@ -32,6 +34,7 @@ async function initAgentChat(name) {
   }
   setSessionPageMode(false);
   currentAgentChat = name;
+  updateConversationStop();
   // Update the chat header to show the agent name.
   const header = document.getElementById('chat-agent-banner');
   if (header) {
@@ -69,7 +72,7 @@ async function renderAgentDetail(name) {
     <span style="color:${dotColor};font-size:14px">●</span>
     <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
     ${summary && summary.model ? `<span class="model-chip">${esc(summary.model)}</span>` : ''}
-    <button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>
+    ${name === 'may' ? '' : `<button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>`}
   </div>`;
   if (summary && summary.description) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${esc(summary.description)}</div>`;
@@ -124,6 +127,12 @@ function switchAgentSubTab(tab) {
 
 async function loadAgentChatThread(name) {
   if (!name) return;
+  if (name === 'may') {
+    currentSessionId = null;
+    renderSessionPicker();
+    subscribeMayConversation();
+    return refreshMayConversation();
+  }
   try {
     const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
     const d = await r.json();

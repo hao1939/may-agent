@@ -2670,12 +2670,17 @@ function installConventionTaskControllers(
         const activeDescriptor = binding.descriptor;
         binding.opts.bus.emit({
           type: "handler.failed",
-          source: "cron",
-          owner: `agent:${activeDescriptor.agent}`,
+          source: "app-task-controller",
+          owner: `app:${activeDescriptor.id}`,
           data: {
             handler: `app-task-controller:${taskId}`,
             agent: activeDescriptor.agent,
-            error: `${error instanceof Error ? error.message : String(error)}; willRetry=${willRetry}`,
+            error: error instanceof Error ? error.message : String(error),
+            appId: activeDescriptor.id,
+            taskId,
+            stage: "task-reconciliation",
+            disposition: willRetry ? "retry-scheduled" : "not-retrying",
+            willRetry,
             durationMs: 0,
           },
         });
