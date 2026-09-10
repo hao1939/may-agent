@@ -9,15 +9,15 @@ window-independent response identity are implemented. The supervision Task no
 longer mediates, parents, or waits on destination work. The shared Task
 projection filters progress and accepted observations by exact attempt
 identity; prior-attempt observations remain history.
-The Request acceptance and closure contract below is agreed, but the current
-Host `AppRequest`/inbox row tracks input handling and can finish at Task admission.
-It does not yet implement the full conversational Request contract; see
-[current implementation and gaps](#current-implementation-and-gaps).
-Explicit current-turn Stop/Steer and durable suppression of stopped-turn retries
-remain implementation gaps; see [turn control](human-control-surfaces.md#current-turn-control).
-The [implementation candidates](../proposals/task-runtime-organization.md#implementation-order-and-candidate-decisions)
-add renewal containment, failed-turn disposition, Console Stop and explicit
-Request records. They are not yet the merged or deployed baseline.
+Host PR #112 implemented accepted Request records and fenced closure, input-lease
+renewal containment, failed-turn disposition, and durable current-turn Stop.
+The Console exposes `/stop`; a stopped turn cannot silently retry, and
+independent Tasks continue. This does not claim every adapter implements the
+complete [Stop/Steer experience](human-control-surfaces.md#current-turn-control).
+The Host `AppRequest`/inbox row still tracks input handling and can finish at
+Task admission; it is not the accepted ask. See
+[current implementation and gaps](#current-implementation-and-gaps) for storage
+and the distinction between implementation tests and live validation.
 
 ## Mental model
 
@@ -55,8 +55,8 @@ The conversation model uses these concepts:
 - **Task** is an executable goal owned by one App.
 - **Event** is a fact or input that wakes the component that can act on it.
 
-These definitions do not imply a separate table or controller for each concept.
-Current Request storage and its remaining gap are described below.
+These definitions do not imply a separate controller for each concept.
+Current Request storage and remaining validation are described below.
 
 Conversation is the default human interaction. Discussion, brainstorming,
 design review, and joint problem-solving stay here for as many turns as useful.
@@ -189,8 +189,8 @@ Turn is already a durable, observable Event while an earlier Turn is being
 handled. It waits only for May's next claim in that Conversation; EventHub can
 continue admitting and fanning out every independent event.
 Explicit [current-turn control](human-control-surfaces.md#current-turn-control)
-must bypass this ordinary turn queue. That accepted behavior is not yet
-implemented by the queued message path.
+must bypass this ordinary turn queue. The public Stop event does so; it commits
+the exact turn disposition before aborting that execution.
 
 Code collects bounded structured context:
 
@@ -198,8 +198,7 @@ Code collects bounded structured context:
 - a focused Task's complete decision view, when supplied;
 - the selected or replied-to Topic and its exact Task links;
 - the previous proposal or question and bounded recent Turns;
-- the relevant accepted Requests, current scope, and closure evidence once
-  Request tracking is implemented;
+- the relevant accepted Requests, current scope, and closure evidence;
 - exact canonical snapshots represented by command or tool views;
 - bounded older Topic candidates when the human refers to earlier work; and
 - installed App responsibilities and typed input contracts.
@@ -318,7 +317,7 @@ Human views render that live state as `up to date`, not terminal `done`.
 Under the Request closure contract, this same supervision Task also checks
 whether a linked Task's outcome leaves an accepted ask outstanding. It can
 return the missing explanation or retain the unresolved Request with its next
-step. This extension is not yet implemented as explicit Request state. A
+step. These are explicit Request records, not inferred inbox statuses. A
 discussion awaiting the human does not need a background Task or periodic model
 turn merely because its Request is open.
 
@@ -502,8 +501,8 @@ Conversation or Topic identity.
   belongs in the conversational fast path.
 - Request closure recovery must also find an open Request whose linked Task
   already finished. Retry the missing explanation/closure, without restarting
-  completed work. Use bounded reads and existing supervision wakes; this
-  requirement remains part of the Request tracking implementation gap.
+  completed work. The existing recovery scan includes those terminal links
+  while the accepted ask remains open; it uses the normal supervision wake.
 
 ## Invariants
 
@@ -524,7 +523,8 @@ Conversation or Topic identity.
 8. Topic carries context and exact links only; it never carries work state.
 9. Existing unfinished work is continued by exact identity when it can still
    fulfill the outcome.
-10. Completed Tasks remain immutable.
+10. Completed one-off Tasks remain immutable. A live maintained Task that is
+    up to date can accept another cycle under the same identity.
 11. The target App chooses its Task shape; Runtime validates rather than
     guessing.
 12. Task progress and results remain authoritative in Task resources.
@@ -542,9 +542,9 @@ Conversation or Topic identity.
 
 ## Current implementation and gaps
 
-### Candidate Request contract
+### Accepted Request storage
 
-The Request-tracking candidate stores one `conversation_requests` row per
+The Host stores one `conversation_requests` row per
 accepted ask, keyed by App, Conversation and App-chosen ID. It holds current
 scope/revision, optional Topic, exact Task links, and open/closed with a closure
 reason and message identity. It owns no execution state.
@@ -572,32 +572,35 @@ open, so losing the first completion wake need not lose the owed explanation.
 An open discussion without linked work waits for human input, not another
 controller. Stopped-turn recovery remains suppressed even when its ask is open.
 
-Host and May App candidates must be reviewed together: the Host validates and
+Host and May App changes must be reviewed together: the Host validates and
 stores the decision; May's supervision guidance supplies meaning and judgment.
 Portable tests prove storage, fencing and context availability, not that a live
 model always recognizes or fulfills every ask. Existing historical messages
 are not automatically converted into accepted Requests.
 
-### Merged baseline
+### Input handling remains separate
 
 The Host currently uses `AppRequest` and `app_inbox_items` for accepted input
 handling. These rows are created before May understands the input. The
 [request handler](../../../may-agent/src/app/app-inbox-host.ts) completes a
 frontend row after a direct answer or durable follow-up admission; Task-based
-caller rows may instead wait for a Task result. Neither rule is a complete
-implementation of the conversational Request defined here. Existing API names,
-row statuses and retained records keep their current meaning until an explicit
-implementation change; do not reinterpret `done` as proof of human fulfillment.
+caller rows may instead wait for a Task result. Neither row's `done` status is
+proof of human fulfillment. The separate accepted Request stores that judgment
+and its Conversation explanation; it adds no execution controller or queue.
 
-Conversation, Topic links, Task reads and one supervision Task already support
-much of the interaction. The remaining work is to persist and address accepted
-Requests across turns, relate corrections and outcomes to the same ask, and
-record closure consistently with its Conversation explanation. Reuse those
-facilities and keep input handling separate from fulfillment; this design does
-not select a new table, API server, or generic promise-management framework.
+### Live validation and remaining checks
 
-Before claiming the contract is implemented, verify: a multi-turn discussion
-creates no Task; acknowledgment needs no redundant approval; corrections keep
+The September 10 local May/Scout trial verified a new ask staying open through
+handoff to the exact existing HN Task, a new source-grounded cycle, and May
+returning its result before closing that ask. The standing Task retained its
+identity and generation. The trial exposed and repaired two handoff gaps:
+converged maintained Tasks were rejected as terminal, and the model needed
+explicit guidance to leave handoff link creation to the Host. See the
+[workflow validation record](../proposals/workflow-practices-review.md).
+
+This is one observed path, not long-run certification. Continue verifying: a
+multi-turn discussion creates no Task; acknowledgment needs no redundant
+approval; corrections keep
 the same Request; handoff leaves an unfulfilled Request open; completed Task
 results still produce the owed explanation after restart; a blocked Task does
 not silently close its Request; and cancellation or scope changes have explicit

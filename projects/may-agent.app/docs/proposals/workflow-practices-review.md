@@ -220,3 +220,45 @@ optional tool-loading warnings.
 Preserve these as gaps rather than calling all workflows
 healthy. Operator event identities and retained evidence are in the local
 bootstrap record under `.state`, not in source snapshots of live Task state.
+
+## Live conversation follow-through — September 10, 09:15–09:28 UTC
+
+An operator-relayed conversation asked May to run and report one next bounded
+HN cycle through Scout's existing `explore-hn` Task, without replacing its
+standing research. Two real failures preceded success:
+
+- The Host treated `done` as terminal without considering `mode: maintain`.
+  May selected the correct Task three times, but no Scout cycle was admitted.
+  Host commit `367df88d` fixes the conversational check, input attachment and
+  state admission. Three regressions failed before the fix; tests cover the
+  same Task generation, no duplicate cycle on replay, and rejection of truly
+  completed one-off work. No second scheduler or Task type was introduced.
+- The next retry failed because May included the focused Task in the accepted
+  ask's links before the Host had linked it into the Conversation. Commit
+  `f7231d69` clarifies the existing model contract: omit handoff `taskRefs` and
+  name `followUp.requestId`; the Host links the actual admitted Task. This is
+  guidance, not relaxed validation or an automatic repair loop.
+
+Local candidate `7edd6d4c` combines those changes with the earlier `.disabled`
+and peer-App-read fixes. The semantic-fix candidate passed 2,636 tests with
+three installation-only skips; the final guidance delta passed 84 focused
+tests and all type, SDK, boundary and lint checks. It is not an official release.
+
+The uncoached retry at event 6318293 accepted an open Request, linked the exact
+Scout Task, and started a real source cycle at generation 1. May's initial
+review left healthy running work alone. Scout updated the existing evaluation
+note and digest, checked primary sources and repaired its own relative-link
+mistake. The operator independently checked the cited article and digest link;
+the article's experiments were not independently reproduced.
+
+Scout reconciled at 6318317. Its change event carried the open ask into May's
+review; May returned the actual finding at 6318326 and closed the same Request
+at revision 2 as fulfilled. A Telegram mirror receipt followed. The same HN
+Task remained maintained, May created no proxy, and both protected file hashes
+were unchanged. This manual next-cycle trial is not natural schedule recurrence
+or proof of worktree isolation: Scout still edited the shared checkout.
+
+The recorder saw one brief socket absence during the deliberate 09:21 container
+recreation, not an unexplained daemon failure. Readiness passed after both
+candidate deployments. Continue watching real scheduled reviews and source runs;
+a background recorder alone does not constitute active review or iteration.
