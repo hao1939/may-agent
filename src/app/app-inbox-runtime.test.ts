@@ -24,7 +24,12 @@ import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js"
 import { createConversationAgentResolver } from "./conversations/turn-agent.js";
 import { HostCapacity } from "./host-capacity.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./app-inbox-store.js";
-import { createConversationTopic, readAppConversationResource, readConversationTopic } from "./core/state/conversations.js";
+import {
+  createConversationTopic,
+  linkConversationTopicTask,
+  readAppConversationResource,
+  readConversationTopic,
+} from "./core/state/conversations.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
   const registry = new AppRegistry(discoverAppDefinitions(projectsRoot));
@@ -130,6 +135,7 @@ describe("App inbox runtime", () => {
       attached,
       options: {
         hostCapacity: new HostCapacity(4),
+        conversationAppId: "may",
         attachTask: fakeTaskAttacher(db, async (input: any) => {
           const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
           attached.push(taskId);
@@ -907,16 +913,16 @@ describe("App inbox runtime", () => {
     expect(task.attached.sort()).toEqual(["probe/live-request", "probe/recovered-request"]);
   });
 
-  it("shares bounded Host capacity while reserving one foreground May decision", async () => {
+  it.each(["may", "assistant"])("reserves foreground capacity for the selected %s App", async (appId) => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const started: string[] = [];
     const releases: Array<() => void> = [];
-    mkdirSync(join(root, "may.app"), { recursive: true });
+    mkdirSync(join(root, `${appId}.app`), { recursive: true });
     writeFileSync(
-      join(root, "may.app", "app.js"),
+      join(root, `${appId}.app`, "app.js"),
       `export default {
-        id: "may", version: 1, agent: "may",
+        id: "${appId}", version: 1, agent: "${appId}",
         inputSchema: {
           type: "object", additionalProperties: false, required: ["kind", "data"],
           properties: {
@@ -929,7 +935,7 @@ describe("App inbox runtime", () => {
         },
         task(input) {
           return { kind: "desired", intent: {
-            id: "conversation/" + input.id, parentId: "may", outcome: "Answer",
+            id: "conversation/" + input.id, parentId: "${appId}", outcome: "Answer",
             acceptance: ["Answered"], mode: "achieve"
           }};
         },
@@ -943,6 +949,7 @@ describe("App inbox runtime", () => {
       ...task.options,
       hostCapacity: new HostCapacity(3),
       maxConcurrentRequests: 3,
+      conversationAppId: appId,
       attachTask: fakeTaskAttacher(db, async (input: any) => {
         const taskId = input.attachment.intent.id as string;
         started.push(taskId);
@@ -974,7 +981,7 @@ describe("App inbox runtime", () => {
       source: "test",
       owner: "human:test",
       data: {
-        appId: "may",
+        appId,
         requestId: "foreground",
         input: { kind: "probe", data: { value: "foreground" } },
         source: { kind: "human", id: "message-1" },
@@ -1003,6 +1010,144 @@ describe("App inbox runtime", () => {
     for (const release of releases) release();
     await waitUntil(() => runtime?.host.get("parallel-3")?.waitingOn?.kind === "task");
   });
+
+  it("keeps bounded background input progressing without a conversational App selection", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const capacity = new HostCapacity(3);
+    const foreground = spyOn(capacity, "acquireForegroundCancellable");
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      conversationAppId: undefined,
+      hostCapacity: capacity,
+      maxConcurrentRequests: 3,
+      scanIntervalMs: 10_000,
+    });
+    try {
+      for (const requestId of ["one", "two", "three"]) {
+        bus.emit({
+          type: "app.input.requested",
+          source: "test",
+          owner: "app:evaluation",
+          data: {
+            appId: "evaluation",
+            requestId,
+            source: { kind: "system", id: "test" },
+            input: { kind: "probe", data: { value: requestId } },
+          },
+        });
+      }
+      await waitUntil(() => task.attached.length === 3 && capacity.snapshot().running === 0);
+      expect(task.attached.sort()).toEqual(["probe/one", "probe/three", "probe/two"]);
+      expect(foreground).not.toHaveBeenCalled();
+      expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+      for (const id of ["one", "two", "three"]) {
+        expect(runtime.host.get(id)?.waitingOn).toEqual({ kind: "task", id: `probe/${id}` });
+      }
+    } finally {
+      foreground.mockRestore();
+    }
+  });
+
+  it.each(["evaluation", "assistant", undefined])(
+    "uses the selected frontend's Task presentation (%s)",
+    async (conversationAppId) => {
+      const bus = persistentBus();
+      const task = capabilities(bus);
+      const messages: Array<Record<string, any>> = [];
+      const changes: Array<Record<string, any>> = [];
+      bus.subscribe((event) => {
+        if (event.type === "conversation.message.created") messages.push(event.data as Record<string, any>);
+        if (event.type === "conversation.task.changed") changes.push(event.data as Record<string, any>);
+      });
+      // The first input owns presentation; a later steering input must not duplicate it.
+      for (const [index, id] of ["original", "steering"].entries()) {
+        createAppInboxItem(db, {
+          id,
+          appId: "evaluation",
+          conversationId: "chat",
+          conversationSequence: index + 1,
+          ...(index ? { targetTaskId: "probe/current" } : {}),
+          channel: "browser",
+          source: { kind: "human", id },
+          input: { kind: "probe", data: { value: id } },
+          now: 1 + index * 3,
+        });
+        const claim = claimNextAppInboxItem(db, "evaluation", "test", 10_000, 2 + index * 3)!;
+        expect(waitAppInboxClaim(db, claim, { kind: "task", id: "probe/current" }, { now: 3 + index * 3 })).toBe(true);
+      }
+      createConversationTopic(db, {
+        id: "topic",
+        appId: "evaluation",
+        conversationId: "chat",
+        title: "Review",
+        openedBy: "human",
+        originMessageId: "original",
+        now: 1,
+      });
+      linkConversationTopicTask(db, "topic", "evaluation", "probe/current");
+      linkConversationTopicTask(db, "topic", "evaluation", "conversation/follow-up");
+      runtime = await startAppInboxRuntime({
+        registry: await loadedRegistry(root),
+        db,
+        bus,
+        ...task.options,
+        conversationAppId,
+        deferStart: true,
+      });
+      const publish = (taskId: string, generation = 1, summary = "") =>
+        bus.emit({
+          type: "project.task.reconciled",
+          source: "test",
+          owner: "app:evaluation",
+          data: { project: "evaluation", taskId, generation, disposition: "waiting", summary },
+        });
+      publish("probe/current");
+      publish("probe/current");
+      publish("probe/current", 2, "Waiting for a source.");
+      expect(changes).toHaveLength(3);
+      if (conversationAppId === "evaluation") {
+        expect(messages).toHaveLength(2);
+        expect(messages[0]).toMatchObject({
+          appId: "evaluation",
+          conversationId: "chat",
+          author: { kind: "agent", id: "evaluation" },
+          text: "I’m continuing this as a Task and it is waiting for new evidence.",
+          metadata: {
+            requestId: "original",
+            channel: "browser",
+            taskRefs: [{ appId: "evaluation", taskId: "probe/current" }],
+          },
+        });
+        expect(messages[1]!.idempotencyKey).not.toBe(messages[0]!.idempotencyKey);
+        expect(messages[1]!.text).toBe("Waiting for a source.");
+      } else {
+        expect(messages).toEqual([]);
+      }
+      // Retained follow-up work cannot wake itself when selection changes or is omitted.
+      // Another App may still observe that Task through its own Conversation.
+      createConversationTopic(db, {
+        id: "other-topic",
+        appId: "other",
+        conversationId: "other-chat",
+        title: "Observe review",
+        openedBy: "human",
+        originMessageId: "other-message",
+        now: 1,
+      });
+      linkConversationTopicTask(db, "other-topic", "evaluation", "conversation/follow-up");
+      publish("conversation/follow-up");
+      expect(changes).toHaveLength(4);
+      expect(changes[3]).toMatchObject({
+        appId: "other",
+        conversationId: "other-chat",
+        taskRef: { appId: "evaluation", taskId: "conversation/follow-up" },
+      });
+    },
+  );
 
   it("serializes May in the message handler per Conversation while running independent Conversations concurrently", async () => {
     mkdirSync(join(root, "may.app"), { recursive: true });

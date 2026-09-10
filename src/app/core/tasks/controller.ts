@@ -150,7 +150,7 @@ export class AppTaskController {
       // Task attempt the interactive frontend: letting every P0/owner-review
       // attempt consume foreground capacity can fill the slot reserved for a
       // live human turn. All Task executions therefore share background Host
-      // capacity; the May inbox alone uses the foreground reservation.
+      // capacity; the selected conversational inbox alone uses the foreground reservation.
       const release = this.options.capacity.tryAcquire();
       if (!release) {
         this.waitForCapacity(lane);

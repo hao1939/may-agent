@@ -58,6 +58,7 @@ async function dispatchFixture() {
         registry,
         hostCapacity: capacity,
         maxConcurrentRequests: 1,
+        conversationAppId: "may",
         scanIntervalMs: 60_000,
         deferStart: true,
         readDependency: async () => null,
