@@ -1,6 +1,19 @@
 import { storeNotificationMessage } from "../../lib/db/notifications.js";
 
 const TELEGRAM_MAX_LENGTH = 4096;
+const REQUEST_TIMEOUT_MS = 15_000;
+// getUpdates asks Telegram to wait up to 30 seconds before replying.
+const POLL_TIMEOUT_MS = 45_000;
+
+class TelegramApiError extends Error {
+  constructor(
+    method: string,
+    readonly code: number,
+    readonly description: string,
+  ) {
+    super(`Telegram API ${method}: ${description}`);
+  }
+}
 
 export interface TelegramSendContext {
   eventType?: string;
@@ -21,6 +34,7 @@ export interface TelegramClientOptions {
 }
 
 export interface TelegramClient {
+  close: () => void;
   apiCall: (method: string, body?: Record<string, unknown>) => Promise<any>;
   sendMessage: (
     chatId: string,
@@ -33,18 +47,36 @@ export interface TelegramClient {
 export function createTelegramClient(opts: TelegramClientOptions): TelegramClient {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const baseUrl = `https://api.telegram.org/bot${opts.token}`;
+  const pending = new Set<AbortController>();
+  let closed = false;
 
   async function apiCall(method: string, body?: Record<string, unknown>): Promise<any> {
-    const resp = await fetchImpl(`${baseUrl}/${method}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = (await resp.json()) as any;
-    if (!data.ok) {
-      throw new Error(`Telegram API ${method}: ${data.description || "unknown error"}`);
+    if (closed) throw new Error("Telegram client is closed");
+    const controller = new AbortController();
+    pending.add(controller);
+    const deadline = setTimeout(
+      () => {
+        controller.abort(new DOMException("Telegram request timed out", "TimeoutError"));
+      },
+      method === "getUpdates" ? POLL_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+    );
+    deadline.unref();
+    try {
+      const resp = await fetchImpl(`${baseUrl}/${method}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+      const data = (await resp.json()) as any;
+      if (!data.ok) {
+        throw new TelegramApiError(method, data.error_code, data.description || "unknown error");
+      }
+      return data.result;
+    } finally {
+      clearTimeout(deadline);
+      pending.delete(controller);
     }
-    return data.result;
   }
 
   async function sendMessage(
@@ -58,6 +90,10 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     const sentMsgIds: number[] = [];
     let complete = true;
     for (const chunk of chunks) {
+      if (closed) {
+        complete = false;
+        break;
+      }
       const replyParams = context?.replyToMessageId
         ? { reply_parameters: { message_id: context.replyToMessageId, allow_sending_without_reply: true } }
         : {};
@@ -76,7 +112,13 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         if (lastMsgId) sentMsgIds.push(lastMsgId);
         else complete = false;
       } catch (err) {
-        if (parseMode) {
+        if (
+          !closed &&
+          parseMode &&
+          err instanceof TelegramApiError &&
+          err.code === 400 &&
+          /can't parse entities|can't find end of the entity|unsupported start tag/i.test(err.description)
+        ) {
           try {
             const result = await apiCall("sendMessage", {
               chat_id: chatId,
@@ -118,7 +160,14 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     return complete && sentMsgIds.length === chunks.length ? lastMsgId : undefined;
   }
 
-  return { apiCall, sendMessage };
+  return {
+    apiCall,
+    sendMessage,
+    close() {
+      closed = true;
+      for (const controller of pending) controller.abort();
+    },
+  };
 }
 
 export function splitTelegramMessage(text: string, maxLen = TELEGRAM_MAX_LENGTH): string[] {
