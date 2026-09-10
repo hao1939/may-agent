@@ -21,6 +21,17 @@ external Telegram/Console effects and indefinite loops. Recovery probes hold
 the real startup caller's recovery dependency pending, then settle it. They do
 not claim live Telegram, model, or deployed-App acceptance.
 
+## SDK export contract
+
+The SDK root test runs the installed compiler CLI and compares its emitted
+`index.d.ts` with `test/fixtures/sdk-root.d.ts.snap`. This checks explicit value
+and type-only exports without importing the compiler API. Compilation errors,
+missing output, and declaration changes fail the test. Review intentional
+export changes before updating the baseline; declaration ordering and compiler
+formatting changes also require review. Keep root exports explicit: a wildcard
+would hide transitive export changes from this check. This is an export-surface
+check, not a snapshot of every referenced type's definition.
+
 ## Retired historical checks
 
 The test audit identified 59 copied or obsolete cases. Their disposition:
