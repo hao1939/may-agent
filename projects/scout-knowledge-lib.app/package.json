@@ -16,7 +16,9 @@
     "navigation-outcomes": "bun ./scripts/scout-navigation-outcomes.ts --minimum-passed 10 && bun ./scripts/scout-navigation-outcomes.ts --fixture scout-navigation-heldout-v2.json --minimum-passed 8 && bun ./scripts/scout-navigation-outcomes.ts --fixture scout-navigation-heldout-v3.json --minimum-passed 14",
     "history-projection": "bun ./scripts/scout-history-projection.ts scout-history-projection-cycle410.json",
     "provenance-replacement": "bun ./scripts/scout-provenance-replacement.ts scout-provenance-replacement-cycle413.json",
-    "overlay-plan": "bun ./scripts/local-main-overlay-plan.ts"
+    "overlay-plan": "bun ./scripts/local-main-overlay-plan.ts",
+    "provenance-reconstruction": "bun ./scripts/scout-provenance-reconstruction.ts",
+    "provenance-retrieval": "bun ./scripts/scout-provenance-retrieval.ts"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"

@@ -483,6 +483,7 @@ export function learningPromptLines(
       ? [
           `Observed guided practice: ${guidedPracticeResultPath}`,
           "Use the real calls, lifecycle evidence, result review, and reflection in that record. Repair the mechanism behind missed practice; do not merely restate the lesson.",
+          "A lifecycle.invalid entry means runtime/evidence could not support an assessment, not an agent behavior failure. Do not train or score the agent against that invalid attempt.",
         ]
       : []),
   ];

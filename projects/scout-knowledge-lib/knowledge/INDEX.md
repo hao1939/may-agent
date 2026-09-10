@@ -1019,3 +1019,7 @@ Known consolidation clusters:
 - [AutoRefine: The Lesson's Execution Boundary Is Part of What Must Be Learned](findings/2026-09-03-arxiv-autorefine-typed-artifact-compilation.md)
 - [Socratic-Zero: Useful Curriculum Distillation, Overstated Co-Evolution](findings/2026-09-03-arxiv-socratic-zero-teacher-guided-curriculum.md)
 - [LoopX: Governed Cross-Harness Work, Not Another Agent Runtime](findings/2026-09-03-github-loopx-governed-cross-harness-control-plane.md)
+
+## Historical provenance checks: cycles 414–419
+
+The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cycle414-2026-09-05.md) and [retrieval audit](../reports/review/scout-provenance-retrieval-cycle415-2026-09-05.md) retain their frozen fixtures and executable checks in the sibling App's `scripts/` directory. The [prompt-overlap audit](../reports/review/scout-provenance-prompt-overlap-cycle419-2026-09-05.md) limits their interpretation: producer-authored prompts are tuning controls, not independent retrieval evidence. These historical results do not change the current review cursor or authorize a production rollout.

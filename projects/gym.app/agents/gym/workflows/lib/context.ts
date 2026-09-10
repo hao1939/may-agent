@@ -13,6 +13,7 @@ export type GymAgentResult<T = unknown> = {
   sessionId: string;
   lastAssistantText: string;
   structuredResult?: T;
+  cliCalls?: ExecutionResult["cliCalls"];
 };
 
 function workspace(
@@ -65,6 +66,7 @@ export async function callGymAgent(
     sessionId: result.id,
     lastAssistantText: result.summary,
     ...(result.output !== undefined ? { structuredResult: result.output } : {}),
+    ...(result.cliCalls !== undefined ? { cliCalls: result.cliCalls } : {}),
   };
 }
 

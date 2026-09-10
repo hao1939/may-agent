@@ -6,7 +6,7 @@ import type {
   LearningUnitContext,
 } from "@may-agent/gym/loop";
 import type { WorkflowContext } from "@may-agent/sdk";
-import { callGymAgent } from "./context";
+import { callGymAgent, type GymAgentResult } from "./context";
 
 const reflectionSchema = Type.Object(
   {
@@ -53,6 +53,8 @@ export interface CliPracticeEvent {
 
 export interface CliPracticeAssessment {
   passed: boolean;
+  /** Evidence/runtime gaps, not demonstrated agent failures. Absent in old records. */
+  invalid?: string[];
   missing: string[];
   taskIds: string[];
   evidence: string[];
@@ -138,7 +140,7 @@ export function assessCliPractice(
   requirements: GuidedPracticeRequirement[],
   requireLifecycleEvents = true,
 ): CliPracticeAssessment {
-  const used = new Set<number>();
+  const used = new Set<string>();
   const missing: string[] = [];
   const evidence: string[] = [];
   const taskIds = [
@@ -147,7 +149,7 @@ export function assessCliPractice(
 
   for (const requirement of requirements) {
     const match = events.find((event) => {
-      if (used.has(event.id)) return false;
+      if (!event.taskId || used.has(event.taskId)) return false;
       if (event.tool !== requirement.tool) return false;
       if (terminalName(event.eventType) !== requirement.terminal) return false;
       return (
@@ -162,7 +164,7 @@ export function assessCliPractice(
       missing.push(label);
       continue;
     }
-    used.add(match.id);
+    used.add(match.taskId);
     if (requireLifecycleEvents) {
       const lifecycle = new Set(
         events
@@ -193,51 +195,91 @@ export function assessCliPractice(
   };
 }
 
-async function observePractice(
-  ctx: WorkflowContext,
-  reflection: unknown,
+export function observePractice(
+  result: GymAgentResult,
   practice: GuidedPracticeCase,
-): Promise<{ events: CliPracticeEvent[]; assessment: CliPracticeAssessment }> {
-  const calls = Array.isArray(record(reflection).calls)
-    ? (record(reflection).calls as unknown[]).map(record)
+): { events: CliPracticeEvent[]; assessment: CliPracticeAssessment } {
+  // The reflection is a claim to compare, never the source of observed outcomes.
+  const claims = Array.isArray(record(result.structuredResult).calls)
+    ? (record(result.structuredResult).calls as unknown[]).map(record)
     : [];
-  const events: CliPracticeEvent[] = [];
-  let eventId = 1;
-  for (const call of calls) {
-    const taskId = String(call.taskId ?? "").trim();
-    const tool =
-      call.tool === "codex" || call.tool === "claude" ? call.tool : null;
-    const outcome = String(call.outcome ?? "");
-    if (
-      !taskId ||
-      !tool ||
-      !["completed", "failed", "orphaned"].includes(outcome)
-    )
-      continue;
-    const execution = await ctx.read.execution(taskId);
-    const terminalStatusMatches =
-      (outcome === "completed" && execution?.status === "done") ||
-      (outcome === "failed" &&
-        ["blocked", "error"].includes(execution?.status ?? "")) ||
-      (outcome === "orphaned" && execution?.status === "interrupted");
-    if (!terminalStatusMatches) continue;
-    const evidence = Array.isArray(call.evidence)
-      ? call.evidence.map(String).filter((path) => existsSync(path))
-      : [];
-    if (evidence.length === 0) continue;
-    events.push({
-      id: eventId++,
-      eventType: `cli.task.${outcome}`,
-      taskId,
-      tool,
-      failureCategory:
-        typeof call.failureCategory === "string" ? call.failureCategory : null,
-      resultPath: evidence[0] ?? null,
-      structuredResultPath: evidence[1] ?? null,
-      eventsPath: evidence[2] ?? null,
-    });
-  }
+  const calls = [
+    ...new Map(
+      (result.cliCalls ?? [])
+        .filter((call) => call.sessionId === result.sessionId)
+        .map((call) => [call.taskId, call] as const),
+    ).values(),
+  ];
+  const events: CliPracticeEvent[] = calls.map((call, index) => ({
+    id: index + 1,
+    eventType: `cli.task.${call.status}`,
+    taskId: call.taskId,
+    tool: call.tool,
+    failureCategory: call.failureCategory ?? null,
+    resultPath: call.resultPath,
+    structuredResultPath: call.structuredResultPath,
+    eventsPath: call.eventsPath,
+  }));
   const assessment = assessCliPractice(events, practice.requirements, false);
+  // A bounded transcript tail can prove presence, not absence. Missing required
+  // outcomes cannot distinguish an omitted call from lost/truncated evidence.
+  const invalid = assessment.missing.map(
+    (item) => `required-cli-evidence-missing:${item}`,
+  );
+  if (result.status !== "done")
+    invalid.push(`agent-execution:${result.status}`);
+  if (result.cliCalls === undefined)
+    invalid.push("cli-evidence-unavailable:requires-updated-host");
+  if (!calls.length && practice.requirements.length)
+    invalid.push("cli-evidence-missing");
+  if (!result.structuredResult)
+    assessment.missing.push("structured-reflection");
+  const claimed = new Set<string>();
+  for (const claim of claims) {
+    const id = String(claim.taskId ?? "");
+    const call = calls.find((item) => item.taskId === id);
+    if (!call) {
+      invalid.push(`cli-evidence-missing:${id}`);
+      continue;
+    }
+    if (claimed.has(id)) assessment.missing.push(`duplicate-claim:${id}`);
+    claimed.add(id);
+    if (
+      claim.tool !== call.tool ||
+      claim.outcome !== call.status ||
+      (claim.failureCategory ?? null) !== (call.failureCategory ?? null)
+    ) {
+      assessment.missing.push(`reflection-outcome:${id}`);
+    }
+    const paths = [call.resultPath, call.structuredResultPath, call.eventsPath];
+    if (
+      !Array.isArray(claim.evidence) ||
+      !claim.evidence.length ||
+      claim.evidence.some((path) => !paths.includes(String(path)))
+    ) {
+      assessment.missing.push(`reflection-evidence:${id}`);
+    }
+  }
+  for (const call of calls) {
+    if (!claimed.has(call.taskId))
+      assessment.missing.push(`unreported-call:${call.taskId}`);
+    if (
+      call.status === "failed" &&
+      !practice.requirements.some(
+        (requirement) =>
+          requirement.tool === call.tool &&
+          requirement.terminal === "failed" &&
+          (!requirement.failure_category ||
+            requirement.failure_category === call.failureCategory),
+      )
+    ) {
+      invalid.push(
+        `unexpected-cli-failure:${call.taskId}:${call.failureCategory ?? "unknown"}`,
+      );
+    }
+  }
+  if (invalid.length) assessment.invalid = [...new Set(invalid)];
+  assessment.passed = !assessment.missing.length && !invalid.length;
   return { events, assessment };
 }
 
@@ -263,7 +305,7 @@ export function guidedPracticePrompt(
     `Accepted sources: ${unit.sourcePaths.join(", ")}`,
     "Use run_cli_agent for every required live worker call. Do not simulate a call or replace it with your own answer.",
     "Use review or investigate mode only. Keep the work read-only and scoped to the named files.",
-    "A task being accepted is only the start. Wait for its terminal lifecycle event, then inspect result.md, result.json, and events.jsonl before deciding.",
+    "Await the tool's terminal return, then inspect its named result.md, result.json, and events.jsonl paths before deciding. The CLI taskId is an evidence correlation key, not a Task or execution resource; do not poll it or return a CLI-terminal Condition.",
     "Treat each worker answer as advice. Resolve disagreement with cited primary evidence, not a vote.",
     "Use a fresh native context for an independent opinion. Resume only when continuing the same worker's unfinished line of work.",
     requirements
@@ -303,11 +345,7 @@ export async function runGuidedPractice(input: {
         );
         const observed =
           practice.type === "live"
-            ? await observePractice(
-                input.ctx,
-                result.structuredResult,
-                practice,
-              )
+            ? observePractice(result, practice)
             : {
                 events: [] as CliPracticeEvent[],
                 assessment: {
@@ -331,6 +369,9 @@ export async function runGuidedPractice(input: {
           lifecycle: observed.assessment,
           events: observed.events,
         });
+        // Missing runtime evidence is not a lesson about the agent. Do not spend
+        // another live attempt trying to repair an unsupported Host/scorer path.
+        if (observed.assessment.invalid?.length) break;
         if (observed.assessment.passed && result.structuredResult) break;
       }
       cases.push({
