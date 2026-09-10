@@ -1346,7 +1346,11 @@ function handleEvent(event) {
       // answer is the human-visible response.
       return;
     case "error":
-      if (event.command === "publish") pendingPublishReceipts.shift();
+      if (event.command === "publish" && pendingPublishReceipts.shift() === "stop-turn") {
+        printNotice(`[may] Stop was not confirmed: ${event.message || "unknown error"}`);
+        requestConversation("sync");
+        return;
+      }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
       }

@@ -1212,8 +1212,13 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
         } else if (frame.type === "publish") {
           if (frame.event.type === "conversation.turn.stop.requested") {
             // Completion/new-turn race cannot retarget the observed control.
-            turn = { id: "turn-two", revision: 8 };
-            socket.write(JSON.stringify({ type: "error", command: "publish", message: "Target already ended" }) + "\n");
+            if (frame.event.data.turnId === "turn-one") {
+              turn = { id: "turn-two", revision: 8 };
+              socket.write(JSON.stringify({ type: "error", command: "publish", message: "Target already ended" }) + "\n");
+            } else {
+              turn = null;
+              socket.write(JSON.stringify({ type: "ok", command: "publish", delivery: "accepted", eventId: frames.length }) + "\n");
+            }
           } else socket.write(JSON.stringify({ type: "ok", command: "publish", delivery: "accepted", eventId: frames.length }) + "\n");
         } else if (frame.type === "apps.list") {
           socket.write(JSON.stringify({ type: "ok", command: frame.type, apps: [] }) + "\n");
@@ -1255,19 +1260,22 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   await waitFor(() => output.includes("Target already ended"));
   expect(stops()).toHaveLength(1);
   expect(stops()[0].event.data).toEqual({ conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 });
+  await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length >= 2);
+  child.stdin.write("\x1b");
+  await waitFor(() => output.includes("Stop request accepted"));
+  expect(stops()).toHaveLength(2);
+  expect(stops()[1].event.data).toEqual({ conversationId: "may:primary", turnId: "turn-two", expectedRevision: 8 });
   child.stdin.write("\n");
   await waitFor(() => frames.some((frame) => frame.event?.data?.text === "correction"));
   expect(frames.some((frame) => frame.type === "task.cancel")).toBe(false);
-  turn = null;
-  client!.write(JSON.stringify({ type: "conversation.updated", data: { conversationId: "may:primary" } }) + "\n");
-  await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length >= 2);
+  await waitFor(() => frames.filter((frame) => frame.type === "app.conversation.get").length >= 3);
   child.stdin.write("idle draft\x1b");
   await Bun.sleep(100);
-  expect(stops()).toHaveLength(1);
+  expect(stops()).toHaveLength(2);
   child.stdin.write("\n/help\n/stop\n");
   await waitFor(() => output.includes("Host administration (all Apps)"));
   await waitFor(() => frames.some((frame) => frame.event?.data?.text === "idle draft"));
-  expect(stops()).toHaveLength(1);
+  expect(stops()).toHaveLength(2);
   child.stdin.write("/exit\n");
   expect((await once(child, "exit"))[0]).toBe(0);
 });
