@@ -13,6 +13,9 @@ import {
   type TaskIntent,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../lib/db.js";
+import { stateTransaction } from "../lib/db/transaction.js";
+import { applyConversationRequestUpdates } from "./conversations/requests.js";
+import type { AppConversationRequestUpdate } from "@may-agent/sdk";
 import { readJsonArtifactWithDescriptor } from "../lib/artifacts.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import {
@@ -407,6 +410,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         ...(change.summary ? { summary: change.summary } : {}),
         ...(change.reason ? { reason: change.reason } : {}),
         topicTitle: topic?.title,
+        requests: conversation.requests,
         messages: conversation.messages
           .filter((message) => message.metadata?.topicId === link.topicId)
           .slice(-12)
@@ -503,6 +507,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         request,
         authorize,
         topicId,
+        ...(followUp.requestId ? { requestLink: {
+          appId: item.appId, conversationId: item.conversationId, id: followUp.requestId,
+          revision: item.handling?.phase === "decided" ? item.handling.requestRevisions?.[followUp.requestId] ?? -1 : -1,
+        } } : {}),
       });
       authorize();
       options.bus.emit({
@@ -1332,6 +1340,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (appId && targetConversationId && targetTopicId && followUpId && text) {
           const topic = readConversationTopic(options.db, appId, targetConversationId, targetTopicId);
           if (topic) {
+            stateTransaction(options.db, () => {
+            if (conversationResult.requestUpdates !== undefined) applyConversationRequestUpdates(options.db, {
+              appId, conversationId: targetConversationId, topicId: targetTopicId,
+              updates: conversationResult.requestUpdates as AppConversationRequestUpdate[],
+              updateKey: `task-result:${appId}:${followUpId}`, messageId: `result:${followUpId}`, now: now(),
+            });
             for (const ref of taskRefs) linkConversationTopicTask(options.db, topic.id, ref.appId, ref.taskId, now());
             options.bus.emit({
               type: "conversation.message.created",
@@ -1354,6 +1368,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                   .digest("hex")
                   .slice(0, 16)}`,
               },
+            });
             });
           } else {
             options.bus.emit({

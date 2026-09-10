@@ -9,7 +9,7 @@ export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 /** Input execution evidence, not fulfillment of the accepted human ask. */
 export type AppInboxHandling =
   | { phase: "executing" }
-  | { phase: "decided"; decision: AppRequestDecision }
+  | { phase: "decided"; decision: AppRequestDecision; requestRevisions?: Record<string, number> }
   | { phase: "failed"; reason: string }
   | { phase: "stopped"; reason: string };
 

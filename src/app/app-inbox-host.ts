@@ -55,6 +55,11 @@ import {
   readConversationMessageTopicId,
   readConversationTopic,
 } from "./conversations/store.js";
+import {
+  applyConversationRequestUpdates,
+  readConversationRequest,
+  ConversationRequestConflict,
+} from "./conversations/requests.js";
 
 export type AppDependencyReader = (input: {
   appId: string;
@@ -76,6 +81,7 @@ export type AppTaskAttacher = (input: {
   /** Revalidate the originating turn inside the Task admission transaction. */
   authorize?: () => void;
   topicId?: string;
+  requestLink?: { appId: string; conversationId: string; id: string; revision: number };
 }) => Promise<{
   taskId: string;
 }>;
@@ -315,7 +321,12 @@ export function boundedAppRequestConversation(
   const result: AppConversationResource = {
     ...conversation,
     messages,
+    requests: [],
   };
+  for (const request of conversation.requests ?? []) {
+    const requests = [...result.requests!, request];
+    if (encodedBytes({ ...result, requests }) <= APP_REQUEST_CONVERSATION_MAX_BYTES) result.requests = requests;
+  }
   if (encodedBytes(result) > APP_REQUEST_CONVERSATION_MAX_BYTES) {
     throw new Error("Bounded Conversation context exceeded its byte contract");
   }
@@ -820,7 +831,7 @@ export class AppInboxHost {
       try {
         if (this.get(claim.item.id)?.handling?.phase === "stopped") {
           if (claim.item.conversationId) conversationIds.add(claim.item.conversationId);
-        } else if (claim.item.handling?.phase === "executing") {
+        } else if (claim.item.handling?.phase === "executing" || error instanceof ConversationRequestConflict) {
           const reason = errorMessage(error).slice(0, 2000);
           const conversationId = this.#completeRequest(
             claim,
@@ -1122,6 +1133,21 @@ export class AppInboxHost {
     withTransaction(this.#db, () => {
       this.#assertOwned(claim);
       if (handling) recordAppInboxHandling(this.#db, claim, handling, this.#now());
+      if (!handling && claim.item.handling?.phase === "decided" && claim.item.conversationId) {
+        const closing = (claim.item.handling.decision.requestUpdates ?? []).filter(
+          (update) => update.disposition !== "open",
+        );
+        if (closing.length)
+          applyConversationRequestUpdates(this.#db, {
+            appId: claim.item.appId,
+            conversationId: claim.item.conversationId,
+            topicId: claim.item.topicId,
+            updates: closing.map((update) => ({ ...update, expectedRevision: update.expectedRevision + 1 })),
+            updateKey: `input:${claim.item.id}:close`,
+            messageId: `result:${claim.item.id}`,
+            now: this.#now(),
+          });
+      }
       const rowCompleted = completeAppInboxClaim(this.#db, claim, result, this.#now());
       if (!rowCompleted) throw new Error("claim is stale");
       completed = true;
@@ -1201,6 +1227,13 @@ export class AppInboxHost {
     const dependencies = decision.dependencies ?? [];
     const taskControls = decision.taskControls ?? [];
     const followUp = decision.followUp;
+    const requestUpdates = decision.requestUpdates ?? [];
+    if (requestUpdates.length && (!directTurn || !decision.response))
+      throw new Error("Accepted Request updates require a conversational answer");
+    if (requestUpdates.some((update) => update.disposition !== "open" && !update.reason?.trim()))
+      throw new Error("Request closure requires an explicit reason");
+    if ((followUp || dependencies.length) && decision.topic.kind === "none" && !claim.item.topicId)
+      throw new Error("Durable handoff requires a Topic");
     if (followUp && (dependencies.length > 0 || taskControls.length > 0)) {
       throw new Error(`App ${app.id} request decision cannot combine follow-up with direct Task effects`);
     }
@@ -1323,12 +1356,40 @@ export class AppInboxHost {
         return this.#resolveDirectRequest(app, claim, freshRequest, reconsiderations + 1);
       }
     }
+    const topicId = this.#applyTopicDecision(app, claim, request, decision);
     if (directTurn && saved?.phase !== "decided") {
-      const handling: AppInboxHandling | undefined = dependencies.length ? undefined : { phase: "decided", decision };
-      recordAppInboxHandling(this.#db, claim, handling ?? null, this.#now());
+      const requestRevisions: Record<string, number> = Object.create(null);
+      const handling = withTransaction(this.#db, () => {
+        this.#assertOwned(claim);
+        for (const update of requestUpdates) {
+          const current = readConversationRequest(this.#db, app.id, claim.item.conversationId!, update.id);
+          if (update.disposition !== "open" && current && current.scope !== update.scope) {
+            throw new ConversationRequestConflict("Closing an accepted Request cannot change its scope");
+          }
+        }
+        if (requestUpdates.length)
+          applyConversationRequestUpdates(this.#db, {
+            appId: app.id,
+            conversationId: claim.item.conversationId!,
+            topicId,
+            updates: requestUpdates.map((update) => ({ ...update, disposition: "open", reason: undefined })),
+            updateKey: `input:${claim.item.id}:accept`,
+            now: this.#now(),
+          });
+        for (const update of requestUpdates) requestRevisions[update.id] = update.expectedRevision + 1;
+        if (followUp?.requestId && requestRevisions[followUp.requestId] === undefined) {
+          const observed = request.conversation?.requests?.find((ask) => ask.id === followUp.requestId);
+          if (!observed) throw new Error("Handoff must name an accepted Request from the supplied Conversation");
+          requestRevisions[followUp.requestId] = observed.revision;
+        }
+        const handling: AppInboxHandling | undefined = dependencies.length
+          ? undefined
+          : { phase: "decided", decision, requestRevisions };
+        recordAppInboxHandling(this.#db, claim, handling ?? null, this.#now());
+        return handling;
+      });
       claim.item.handling = handling;
     }
-    const topicId = this.#applyTopicDecision(app, claim, request, decision);
     if ((dependencies.length > 0 || followUp) && !topicId) {
       throw new Error(`Delegated App request ${request.id} requires a Topic`);
     }
@@ -1342,7 +1403,18 @@ export class AppInboxHost {
     if (followUp) {
       if (!this.#onRequestFollowUp) throw new Error("App follow-up event publication is not configured");
       this.#assertOwned(claim);
-      await this.#onRequestFollowUp(claim.item, followUp, topicId!, () => this.#assertOwned(claim));
+      await this.#onRequestFollowUp(claim.item, followUp, topicId!, () => {
+        this.#assertOwned(claim);
+        if (followUp.requestId) {
+          const current = readConversationRequest(this.#db, app.id, claim.item.conversationId!, followUp.requestId);
+          const revision =
+            claim.item.handling?.phase === "decided"
+              ? claim.item.handling.requestRevisions?.[followUp.requestId]
+              : undefined;
+          if (!current || current.status !== "open" || current.revision !== revision)
+            throw new ConversationRequestConflict("Accepted Request changed before handoff");
+        }
+      });
       const conversationId = this.#completeRequest(claim, {
         summary: decision.summary,
         response: decision.response,

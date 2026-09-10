@@ -1,6 +1,6 @@
 /** Stable authoring contract for App declarations and bounded App-owned work. */
 
-export { Type, defineApp, matchesEventSelector } from "./app.js";
+export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
@@ -29,6 +29,8 @@ export type {
   AppConversationTopicPage,
   AppDependencyObservation,
   AppConversationResource,
+  AppConversationRequest,
+  AppConversationRequestUpdate,
   AppConversationMessage,
   AppEvent,
   AppEventSubscription,

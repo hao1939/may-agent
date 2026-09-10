@@ -2,6 +2,7 @@ import type { AppTaskAttacher } from "../../src/app/app-inbox-host.js";
 import { waitAppInboxClaim, wakeAppInboxItem } from "../../src/app/app-inbox-store.js";
 import { linkConversationTopicTask } from "../../src/app/conversations/store.js";
 import type { SqliteDb } from "../../src/lib/db.js";
+import { linkConversationRequestTask } from "../../src/app/conversations/requests.js";
 
 /** Inbox-only tests fake Task storage; state and runtime tests use the real operation. */
 export function fakeTaskAttacher(
@@ -12,6 +13,7 @@ export function fakeTaskAttacher(
     const result = await resolve(input);
     input.authorize?.();
     if (input.topicId) linkConversationTopicTask(db, input.topicId, input.appId, result.taskId, input.now);
+    if (input.requestLink) linkConversationRequestTask(db, { ...input.requestLink, taskRef: { appId: input.appId, taskId: result.taskId } });
     if (!input.claim) return result;
     if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: result.taskId }, { now: input.now })) {
       throw new Error("claim is stale");

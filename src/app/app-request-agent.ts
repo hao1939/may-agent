@@ -11,6 +11,7 @@ import type { SqliteDb } from "../lib/db.js";
 import type { AppRegistry } from "./core/apps/registry.js";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
 import { findConversationTopics, readAppConversationResource, readConversationTopic } from "./conversations/store.js";
+import { readConversationRequest } from "./conversations/requests.js";
 import type { AppRequestResolver } from "./app-inbox-host.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
@@ -31,6 +32,8 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
     description:
       "Find bounded historical Topic candidates or read one exact Topic in this Conversation. This is read-only retrieval: inspect the evidence and decide its meaning yourself; the tool never selects work or changes context.",
     parameters: Type.Union([
+      Type.Object({ action: Type.Literal("request"), id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+      Type.Object({ action: Type.Literal("requests"), afterId: Type.Optional(Type.String()) }, { additionalProperties: false }),
       Type.Object(
         {
           action: Type.Literal("find"),
@@ -45,7 +48,12 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
       ),
     ]),
     execute: async (_toolCallId, raw) => {
-      const input = raw as { action: "find"; query: string; limit?: number } | { action: "read"; topicId: string };
+      const input = raw as { action: "find"; query: string; limit?: number } | { action: "read"; topicId: string } |
+        { action: "request"; id: string } | { action: "requests"; afterId?: string };
+      if (input.action === "request") return result(readConversationRequest(db, conversation.owner, conversation.id, input.id));
+      if (input.action === "requests") return result(db.prepare(`SELECT id, revision, substr(scope, 1, 160) AS scopePreview, status
+        FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND status = 'open' AND id > ? ORDER BY id LIMIT 12`)
+        .all(conversation.owner, conversation.id, input.afterId ?? ""));
       if (input.action === "find") {
         return result({
           candidates: findConversationTopics(db, conversation.owner, conversation.id, input.query, input.limit ?? 8),
@@ -59,6 +67,7 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppRequest>): A
       });
       return result({
         topic,
+        requests: exact.requests,
         messages: exact.messages.filter((message) => message.metadata?.topicId === topic.id),
       });
     },
@@ -96,12 +105,14 @@ function requestPrompt(
         ]),
     "The owning App reconciles its Task, and Runtime handles scheduling, retry, recovery, and stale mechanical state. May may send human feedback or a semantic challenge to the exact Task, but must not create replacement work merely to revive it or delegate Host repair when the same owner Task can continue.",
     "Resolve short confirmations, corrections, and pronouns against the visible Conversation, especially the immediately preceding proposal or question. Preserve constraints already established in the same Topic.",
+    "Track accepted human asks with requestUpdates. An input handling result is not fulfillment. Accept a new ask with a stable id, expectedRevision: 0, its scope, and disposition: open; revise the same id using the supplied revision when the human corrects it. Use an empty list when no ask changes. A simple question can be accepted and fulfilled in the same answer without creating a Task. Do not close an ask merely because a Task was admitted, blocked or completed: judge whether the accepted scope was addressed and explain fulfillment, withdrawal or unfulfilled disposition with a reason. Closing an existing ask must retain its exact scope. A followUp serving an accepted ask names its requestId; Runtime links the actual Task. Stopping a turn leaves the ask open but is not authority to restart that turn.",
     "If the human naturally refers to an older discussion that is absent from visible context, use conversation_context to find bounded candidates and read the likely exact Topic. Ask only when the remaining candidates would lead to materially different actions.",
     "Use a Topic only for related Conversation context and exact Task links. Select an existing Topic when continuing it, create a short plain-language Topic for a new durable interest or clarification, and use none for a self-contained answer.",
     "Only cancel a Task when the human clearly asks and that exact Task is present in focused, referenced, or current-Topic context. Other feedback is typed input to the existing Task.",
     "When admitting or steering durable work, choose appId and input.kind from Installed Apps and satisfy the selected input contract. Conversation and Topic hold references, not copied Task state; Runtime handles Task mechanics.",
     "Use plain language in every human-facing response. Explain outcomes and needed choices, not Host bookkeeping or delivery mechanics.",
     "Finish exactly once with finish().result matching the supplied schema.",
+    "Accepted asks are bounded context: use conversation_context action requests (afterId for the next page) to list open asks, and action request with id to read the full exact scope before revising or closing an omitted ask. Never close from a truncated preview.",
     "",
     "## Request and context",
     "```json",

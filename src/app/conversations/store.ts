@@ -8,6 +8,7 @@ import type {
 import type { SqliteDb } from "../../lib/db.js";
 import { listAppInboxConversationItems, readActiveAppTurn } from "../app-inbox-store.js";
 import { displayTaskReferences } from "../task-reference-index.js";
+import { listConversationRequests } from "./requests.js";
 
 export type CreateConversationTopic = {
   id: string;
@@ -334,6 +335,7 @@ export function readAppConversationResource(
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
     activeTurn: readActiveAppTurn(db, appId, conversationId),
+    requests: listConversationRequests(db, appId, conversationId, options.topicId),
     topics,
     ...(page.nextCursor ? { nextTopicCursor: page.nextCursor } : {}),
     messages,
@@ -655,18 +657,16 @@ export function listStaleConversationTopicTasks(
               linked.app_id AS task_app_id, linked.task_id
        FROM conversation_topics topic
        JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
-       JOIN app_tasks task ON task.app_id = linked.app_id AND task.task_id = linked.task_id
-       WHERE topic.app_id = ? AND task.updated_at <= ?
-         AND task.phase IN ('pending', 'running', 'waiting', 'attention')
-         AND NOT EXISTS (
-           SELECT 1 FROM app_task_receipts receipt
-           WHERE receipt.app_id = task.app_id AND receipt.receipt_id = task.task_id
-         )
-         AND NOT EXISTS (
-           SELECT 1 FROM app_task_cancellations cancellation
-           WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
-         )
-       ORDER BY task.updated_at, linked.linked_at, linked.app_id, linked.task_id
+       LEFT JOIN app_tasks task ON task.app_id = linked.app_id AND task.task_id = linked.task_id
+       LEFT JOIN app_task_receipts receipt ON receipt.app_id = linked.app_id AND receipt.receipt_id = linked.task_id
+       LEFT JOIN app_task_cancellations cancellation ON cancellation.app_id = linked.app_id AND cancellation.task_id = linked.task_id
+       WHERE topic.app_id = ? AND COALESCE(task.updated_at, receipt.completed_at, cancellation.requested_at, linked.linked_at) <= ?
+         AND ((task.phase IN ('pending', 'running', 'waiting', 'attention') AND receipt.receipt_id IS NULL AND cancellation.task_id IS NULL)
+           OR EXISTS (SELECT 1 FROM conversation_requests ask, json_each(ask.task_refs) ref
+             WHERE ask.app_id = topic.app_id AND ask.conversation_id = topic.conversation_id
+               AND ask.topic_id = topic.id AND ask.status = 'open'
+               AND json_extract(ref.value, '$.appId') = linked.app_id AND json_extract(ref.value, '$.taskId') = linked.task_id))
+       ORDER BY COALESCE(task.updated_at, receipt.completed_at, cancellation.requested_at, linked.linked_at), linked.linked_at, linked.app_id, linked.task_id
        LIMIT ?`,
       )
       .all(requiredText(ownerAppId, "conversation owner appId"), input.updatedBefore, input.limit) as Array<{

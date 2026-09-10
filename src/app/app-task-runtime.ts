@@ -2891,6 +2891,7 @@ export function attachLoadedAppTask(input: {
   now?: number;
   authorize?: () => void;
   topicId?: string;
+  requestLink?: { appId: string; conversationId: string; id: string; revision: number };
 }): { taskId: string; isComplete: () => Promise<boolean> } {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(

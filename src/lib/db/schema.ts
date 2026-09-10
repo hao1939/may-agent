@@ -193,6 +193,23 @@ CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_eve
 CREATE INDEX IF NOT EXISTS idx_event_pair_close_event ON event_pair_runs(close_event_id);
 CREATE INDEX IF NOT EXISTS idx_event_pair_status ON event_pair_runs(status, expected_close_at);
 
+CREATE TABLE IF NOT EXISTS conversation_requests (
+  app_id TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  revision INTEGER NOT NULL,
+  scope TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('open', 'closed')),
+  topic_id TEXT,
+  task_refs TEXT NOT NULL DEFAULT '[]',
+  closure TEXT,
+  update_key TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY(app_id, conversation_id, id)
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_requests_open
+  ON conversation_requests(app_id, conversation_id, status, updated_at);
+
 CREATE TABLE IF NOT EXISTS conversation_topics (
   id                TEXT PRIMARY KEY,
   app_id            TEXT NOT NULL,
