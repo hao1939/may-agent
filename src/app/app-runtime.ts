@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
-import { resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { SubagentManager } from "../lib/index.js";
 import type { AppEvent, AppInput } from "@may-agent/sdk";
 import type { TaskListOptions } from "@may-agent/sdk";
@@ -11,7 +11,7 @@ import type { AppReporting } from "./composition/reporting.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppRegistry } from "./core/apps/registry.js";
-import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
+import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
@@ -193,8 +193,19 @@ export async function runAppRuntime(opts: {
   let appInboxRuntime: AppInboxRuntime | null = null;
   const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir);
   const activeAppSource = appSources.ensureCurrent();
-  const appRegistry = new AppRegistry(discoverAppDefinitions(activeAppSource.projectsRoot, opts.projectsRoot));
+  const activeAppDirectories = listAppDefinitionFiles(activeAppSource.projectsRoot, opts.projectsRoot).map((file) =>
+    basename(dirname(file)),
+  );
+  const appRegistry = new AppRegistry(
+    discoverAppDefinitions(activeAppSource.projectsRoot, opts.projectsRoot, {}, activeAppDirectories),
+  );
   await appRegistry.reload();
+  const workerDefinitionSource = () => {
+    const source = appSources.current();
+    return source
+      ? { ...source, appDirectories: appRegistry.snapshot().entries.map(({ appDir }) => basename(appDir)) }
+      : null;
+  };
   markStartupPhase("apps");
   bus.emit({
     type: "info",
@@ -217,6 +228,7 @@ export async function runAppRuntime(opts: {
     definitionSharedRoot: activeAppSource.sharedRoot,
     projectsRoot: activeAppSource.projectsRoot,
     canonicalProjectsRoot: opts.projectsRoot,
+    appDirectories: activeAppDirectories,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,
@@ -227,8 +239,8 @@ export async function runAppRuntime(opts: {
     appRegistry,
     readOutcomes: opts.reporting?.readOutcomes,
     hostCapacity,
-    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: () => appSources.current() }),
-    executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus }),
+    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
+    executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
   });
   markStartupPhase("agents-and-tasks");
 
@@ -306,7 +318,8 @@ export async function runAppRuntime(opts: {
     },
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
-    createTaskAdmissionWorker: () => createTaskAdmissionProcess(),
+    createTaskAdmissionWorker: () =>
+      createTaskAdmissionProcess({ definitionSource: workerDefinitionSource() ?? undefined }),
     wakeAdmittedTasks: ({ appId, taskIds, supersededSessionIds }) =>
       appTasks.wake({ appId, taskIds, supersededSessionIds }),
     hasTaskTarget: ({ appId, taskId }) => appTasks.has({ appId, taskId }),
@@ -355,7 +368,10 @@ export async function runAppRuntime(opts: {
 
   let telegramBot: { close: () => void } = { close: () => {} };
   let cancelledOnce = false;
-  const preparedSources = new WeakMap<Awaited<ReturnType<typeof prepareAgentGeneration>>, DefinitionSourceRelease>();
+  const preparedSources = new WeakMap<
+    Awaited<ReturnType<typeof prepareAgentGeneration>>,
+    DefinitionSourceRelease & { appDirectories: string[] }
+  >();
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
     bus,
@@ -374,12 +390,19 @@ export async function runAppRuntime(opts: {
       appInboxRuntime?.close();
     },
     prepareAgents: async () => {
-      const candidate = appSources.stage();
+      const source = appSources.stage();
+      const candidate = {
+        ...source,
+        appDirectories: listAppDefinitionFiles(source.projectsRoot, opts.projectsRoot).map((file) =>
+          basename(dirname(file)),
+        ),
+      };
       const generation = await prepareAgentGeneration({
         ...loaderOpts,
         agentsRoot: candidate.agentsRoot,
         projectsRoot: candidate.projectsRoot,
         definitionSharedRoot: candidate.sharedRoot,
+        appDirectories: candidate.appDirectories,
       });
       preparedSources.set(generation, candidate);
       return generation;
@@ -432,7 +455,7 @@ export async function runAppRuntime(opts: {
             throw error;
           }
         },
-        discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot),
+        discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot, {}, candidate.appDirectories),
       );
       refreshReporting();
       return { appIds, taskApps };

@@ -70,7 +70,12 @@ export type TaskAttemptProcessRequest = {
   appId: string;
   taskId: string;
   dispatch: AppTaskDispatch;
-  definitionSource?: Pick<DefinitionSourceRelease, "agentsRoot" | "projectsRoot" | "sharedRoot">;
+  definitionSource?: TaskWorkerDefinitionSource;
+};
+
+export type TaskWorkerDefinitionSource = Pick<DefinitionSourceRelease, "agentsRoot" | "projectsRoot" | "sharedRoot"> & {
+  /** Accepted App folders, not an operator allowlist or a new read of live markers. */
+  appDirectories?: readonly string[];
 };
 
 export type TaskAttemptWorkerRoots = {
@@ -152,7 +157,7 @@ export function createTaskAttemptProcessExecutor(input: {
   bus: EventBus;
   timeoutMs?: number;
   /** Capture the published source before an asynchronous child startup can race reload. */
-  definitionSource?: () => DefinitionSourceRelease | null;
+  definitionSource?: () => TaskWorkerDefinitionSource | null;
   /** Test seam; production always uses the private current-binary worker. */
   spawnWorker?: (request: TaskAttemptProcessRequest) => ChildProcess;
 }): NonNullable<AppTaskRuntimeOptions["executeAttempt"]> {
@@ -166,6 +171,7 @@ export function createTaskAttemptProcessExecutor(input: {
             agentsRoot: source.agentsRoot,
             projectsRoot: source.projectsRoot,
             sharedRoot: source.sharedRoot,
+            ...(source.appDirectories ? { appDirectories: [...source.appDirectories] } : {}),
           },
         }
       : request;
@@ -182,13 +188,20 @@ export function createTaskAttemptProcessExecutor(input: {
 export function createTaskRecoveryProcessExecutor(input: {
   bus: EventBus;
   timeoutMs?: number;
+  definitionSource?: () => TaskWorkerDefinitionSource | null;
   /** Test seam; production always uses the private current-binary worker. */
-  spawnWorker?: () => ChildProcess;
+  spawnWorker?: (source?: TaskWorkerDefinitionSource) => ChildProcess;
 }): NonNullable<AppTaskRuntimeOptions["executeRecovery"]> {
   return async () => {
+    const source = input.definitionSource?.();
+    if (input.definitionSource && !source) throw new Error("No published Task worker definition source");
     await runWorkerProcess(
       input.bus,
-      input.spawnWorker?.() ?? spawnPrivateWorker(["--task-recovery-once"]),
+      input.spawnWorker?.(source ?? undefined) ??
+        spawnPrivateWorker([
+          "--task-recovery-once",
+          ...(source ? ["--task-worker-source", JSON.stringify(source)] : []),
+        ]),
       input.timeoutMs,
     );
   };
@@ -351,6 +364,22 @@ function writeWorkerFrame(frame: WorkerFrame): Promise<void> {
   });
 }
 
+export function parseTaskWorkerDefinitionSource(raw: string): TaskWorkerDefinitionSource {
+  const parsed = JSON.parse(raw) as Partial<TaskWorkerDefinitionSource>;
+  if (
+    parsed.appDirectories !== undefined &&
+    (!Array.isArray(parsed.appDirectories) ||
+      parsed.appDirectories.some((name) => typeof name !== "string" || !/^[^/\\]+\.app$/.test(name)))
+  )
+    throw new Error("Task worker App directories must be App folder names");
+  return {
+    agentsRoot: required(String(parsed.agentsRoot ?? ""), "Task worker agentsRoot"),
+    projectsRoot: required(String(parsed.projectsRoot ?? ""), "Task worker projectsRoot"),
+    sharedRoot: required(String(parsed.sharedRoot ?? ""), "Task worker sharedRoot"),
+    ...(parsed.appDirectories ? { appDirectories: [...parsed.appDirectories] } : {}),
+  };
+}
+
 export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessRequest {
   const parsed = JSON.parse(raw) as Partial<TaskAttemptProcessRequest>;
   const dispatch = parsed.dispatch as Partial<AppTaskDispatch> | undefined;
@@ -369,11 +398,7 @@ export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessR
     dispatch: dispatch as AppTaskDispatch,
     ...(parsed.definitionSource
       ? {
-          definitionSource: {
-            agentsRoot: required(String(parsed.definitionSource.agentsRoot ?? ""), "Task worker agentsRoot"),
-            projectsRoot: required(String(parsed.definitionSource.projectsRoot ?? ""), "Task worker projectsRoot"),
-            sharedRoot: required(String(parsed.definitionSource.sharedRoot ?? ""), "Task worker sharedRoot"),
-          },
+          definitionSource: parseTaskWorkerDefinitionSource(JSON.stringify(parsed.definitionSource)),
         }
       : {}),
   };
@@ -399,6 +424,7 @@ export async function runTaskAttemptWorker(input: {
 export async function runTaskRecoveryWorker(input: {
   roots: TaskAttemptWorkerRoots;
   models: ModelRegistry;
+  definitionSource?: TaskWorkerDefinitionSource;
 }): Promise<void> {
   return runTaskWorker({
     ...input,
@@ -450,7 +476,14 @@ async function runTaskWorker(input: {
   });
   const appSources = new DefinitionSourceReleaseStore(input.roots.projectRoot, input.roots.persistDir);
   const activeSource = input.definitionSource ?? appSources.ensureCurrent();
-  const registry = new AppRegistry(discoverAppDefinitions(activeSource.projectsRoot, input.roots.projectsRoot));
+  const registry = new AppRegistry(
+    discoverAppDefinitions(
+      activeSource.projectsRoot,
+      input.roots.projectsRoot,
+      {},
+      input.definitionSource?.appDirectories,
+    ),
+  );
   await registry.reload();
   const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
   const task = input.task;
@@ -490,6 +523,7 @@ async function runTaskWorker(input: {
       definitionSharedRoot: activeSource.sharedRoot,
       projectsRoot: activeSource.projectsRoot,
       canonicalProjectsRoot: input.roots.projectsRoot,
+      appDirectories: input.definitionSource?.appDirectories,
       projectRoot: input.roots.projectRoot,
       persistDir: input.roots.persistDir,
       models: input.models,

@@ -5,6 +5,7 @@ import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
   parseTaskAttemptProcessRequest,
+  parseTaskWorkerDefinitionSource,
   type TaskAttemptProcessRequest,
 } from "../../../src/app/task-attempt-process.js";
 
@@ -34,12 +35,22 @@ const scenarios: Record<string, () => void | Promise<void>> = {
         agentsRoot: "/fixture/release/agents",
         projectsRoot: "/fixture/release/projects",
         sharedRoot: "/fixture/release/shared",
+        appDirectories: ["sample.app"],
       },
     };
     expect(parseTaskAttemptProcessRequest(JSON.stringify(pinned))).toEqual(pinned);
     expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...pinned, definitionSource: {} }))).toThrow(
       "Task worker agentsRoot must be non-empty",
     );
+    expect(
+      parseTaskWorkerDefinitionSource(JSON.stringify({ ...pinned.definitionSource, appDirectories: [] }))
+        .appDirectories,
+    ).toEqual([]);
+    expect(() =>
+      parseTaskWorkerDefinitionSource(
+        JSON.stringify({ ...pinned.definitionSource, appDirectories: ["../sample.app"] }),
+      ),
+    ).toThrow("App folder names");
     expect(() =>
       parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, lane: "fast" } })),
     ).toThrow("invalid dispatch context");
@@ -52,6 +63,7 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       agentsRoot: "/fixture/release-1/agents",
       projectsRoot: "/fixture/release-1/projects",
       sharedRoot: "/fixture/release-1/shared",
+      appDirectories: ["sample.app"],
     };
     let dispatched: TaskAttemptProcessRequest | undefined;
     const execute = createTaskAttemptProcessExecutor({
@@ -67,7 +79,20 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       agentsRoot: source.agentsRoot,
       projectsRoot: source.projectsRoot,
       sharedRoot: source.sharedRoot,
+      appDirectories: ["sample.app"],
     });
+    source.appDirectories.length = 0;
+    expect(dispatched?.definitionSource?.appDirectories).toEqual(["sample.app"]);
+    let recoverySource;
+    await createTaskRecoveryProcessExecutor({
+      bus: new EventBus(),
+      definitionSource: () => source,
+      spawnWorker: (captured) => {
+        recoverySource = captured;
+        return scriptedWorker('process.send({ kind: "result", dependentTaskIds: [] });');
+      },
+    })();
+    expect(recoverySource?.appDirectories).toEqual([]);
   },
 
   async eventRelay() {

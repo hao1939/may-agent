@@ -41,6 +41,7 @@ export function listAgentDirectories(agentsRoot: string): AgentDirectory[] {
 export function listProjectAgentDirectories(
   projectsRoot: string,
   canonicalProjectsRoot = projectsRoot,
+  appDirectories?: readonly string[],
 ): AgentDirectory[] {
   if (!existsSync(projectsRoot)) return [];
   const agents: AgentDirectory[] = [];
@@ -49,7 +50,12 @@ export function listProjectAgentDirectories(
     if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
 
     if (entry.name.endsWith(".app")) {
-      if (existsSync(resolve(canonicalProjectsRoot, entry.name, ".disabled"))) continue;
+      if (
+        appDirectories
+          ? !appDirectories.includes(entry.name)
+          : existsSync(resolve(canonicalProjectsRoot, entry.name, ".disabled"))
+      )
+        continue;
       const appDir = resolve(projectsRoot, entry.name);
       const projectId = entry.name.slice(0, -".app".length);
       const domainDir = resolve(projectsRoot, projectId);
@@ -82,10 +88,11 @@ export function listRuntimeAgentDirectories(
   agentsRoot: string,
   projectsRoot?: string,
   canonicalProjectsRoot = projectsRoot,
+  appDirectories?: readonly string[],
 ): AgentDirectory[] {
   return [
     ...listAgentDirectories(agentsRoot),
-    ...(projectsRoot ? listProjectAgentDirectories(projectsRoot, canonicalProjectsRoot) : []),
+    ...(projectsRoot ? listProjectAgentDirectories(projectsRoot, canonicalProjectsRoot, appDirectories) : []),
   ];
 }
 
@@ -106,9 +113,10 @@ export function listConfiguredAgentNames(
   agentsRoot: string,
   projectsRoot?: string,
   canonicalProjectsRoot = projectsRoot,
+  appDirectories?: readonly string[],
 ): string[] {
   const names = new Set<string>();
-  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot, canonicalProjectsRoot)) {
+  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot, canonicalProjectsRoot, appDirectories)) {
     const name = configuredNameForDirectory(agentDir);
     if (name) names.add(name);
   }

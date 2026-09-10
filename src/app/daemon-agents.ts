@@ -43,6 +43,7 @@ export async function prepareDaemonAgents(opts: {
   definitionSharedRoot: string;
   projectsRoot: string;
   canonicalProjectsRoot?: string;
+  appDirectories?: readonly string[];
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -70,6 +71,7 @@ export async function prepareDaemonAgents(opts: {
     definitionSharedRoot: opts.definitionSharedRoot,
     projectsRoot: opts.projectsRoot,
     canonicalProjectsRoot: opts.canonicalProjectsRoot,
+    appDirectories: opts.appDirectories,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,

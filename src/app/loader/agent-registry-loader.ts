@@ -24,6 +24,8 @@ export interface AgentLoaderOptions {
   projectsRoot: string;
   /** Live installation folders own .disabled markers, not immutable source snapshots. */
   canonicalProjectsRoot?: string;
+  /** App folders selected for this generation; never re-read live markers in its tools/workers. */
+  appDirectories?: readonly string[];
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -137,7 +139,12 @@ export async function prepareAgents(
     { config: AgentConfig; source: ReturnType<typeof listRuntimeAgentDirectories>[number] }
   >();
 
-  for (const source of listRuntimeAgentDirectories(agentsRoot, projectsRoot, opts.canonicalProjectsRoot)) {
+  for (const source of listRuntimeAgentDirectories(
+    agentsRoot,
+    projectsRoot,
+    opts.canonicalProjectsRoot,
+    opts.appDirectories,
+  )) {
     const config = readCandidate(source.dir, source.name, allErrors);
     if (!config) continue;
     if (requestedNames && !requestedNames.has(config.name)) continue;

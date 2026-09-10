@@ -29,6 +29,7 @@ export interface ToolsetLoaderOptions {
   sharedRoot: string;
   projectsRoot: string;
   canonicalProjectsRoot?: string;
+  appDirectories?: readonly string[];
   projectRoot: string;
   persistDir: string;
   manager: SubagentManager;
@@ -91,7 +92,12 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         // visible. Prevents stale allowedTargets when App-local agents are
         // registered before global agents finish loading.
         const lazyAllowedTargets = () =>
-          listConfiguredAgentNames(messageAgentsRoot, opts.projectsRoot, opts.canonicalProjectsRoot);
+          listConfiguredAgentNames(
+            messageAgentsRoot,
+            opts.projectsRoot,
+            opts.canonicalProjectsRoot,
+            opts.appDirectories,
+          );
         tools.push(
           createMessageTool({
             agentName: config.name,
