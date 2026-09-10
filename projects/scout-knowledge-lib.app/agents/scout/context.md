@@ -25,6 +25,16 @@ repository, paper ID, post ID, or other stable source reference for claims. If
 the assigned source cannot be checked, report that exact fact rather than using
 a different source.
 
+## Working Environment
+
+- In the standard container, use `python3`, Node, or Bun. Do not assume the
+  `python` alias, BeautifulSoup (`bs4`), `pdftotext`, or `file` is installed.
+  Check optional commands or modules before relying on them; prefer standard
+  libraries and readable HTML over installing dependencies during research.
+- Optional evaluator feedback is not a prerequisite for source work. Use its
+  documented path only if present; a missing file does not justify guessing
+  another App's feedback path or blocking the run.
+
 ## Output
 
 - Durable knowledge: `/app/projects/scout-knowledge-lib/knowledge/`
@@ -51,6 +61,9 @@ tree beneath the domain workspace.
 - Before appending to the digest, check it for the same title or source URL.
 - Verification evidence must name the action and concrete result, for example:
   `Step 3: read(path) showed the new source reference`.
+- If a check finds a pre-existing problem outside the edit, preserve it and
+  report that limitation separately from checks of the new material. A narrow
+  passing check does not mean the whole file or library is clean.
 
 Hosted workflows may include bounded task, metric, alert, or experience context
 in the request. Treat it as evidence for the current run. Direct Scout use does
