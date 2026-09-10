@@ -917,13 +917,23 @@ describe("May Console", () => {
       env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
       stdio: "pipe",
     });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
     cleanups.push(() => rmSync(root, { recursive: true, force: true }));
     cleanups.push(() => server.close());
     cleanups.push(() => client?.destroy());
     cleanups.push(() => child.kill("SIGKILL"));
 
     child.stdin.write("/apps gym\n/tasks\nhello\n/reload\n");
-    await Bun.sleep(25);
+    // Establish the offline state before connecting, regardless of child startup speed.
+    await waitFor(
+      () => output.includes("[offline] Message saved") && output.includes("[waiting for daemon; command queued]"),
+    );
     server.listen(socketPath);
     await once(server, "listening");
 
@@ -933,6 +943,16 @@ describe("May Console", () => {
     );
     expect(frames.findIndex((frame) => frame.type === "apps.list")).toBeLessThan(
       frames.findIndex((frame) => frame.type === "tasks.list" && !frame.humanActionOnly),
+    );
+    // Read requests and the buffered human message may arrive in separate socket chunks.
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.author?.kind === "human" &&
+          frame.event?.data?.text === "hello",
+      ),
     );
     expect(
       frames.filter(
