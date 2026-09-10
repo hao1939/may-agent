@@ -15,6 +15,15 @@ Agent registration has two scopes:
 App-local registration is the convention for App-owned work. The App packages,
 not a duplicated design-time roster, are the current inventory.
 
+## Definition sources
+
+Runtime snapshots agent and App definitions with `shared/common-sense.md`,
+`shared/skills/`, and optional `shared/tools/` helpers. An agent-local tool can
+import a helper from that shared source directory; the helper stays pinned to
+the same release as the importing agent. Commit helper changes before reload.
+Reload prepares a new snapshot instead of changing a running attempt's imports.
+This convention does not copy the whole shared corpus or add a plugin loader.
+
 ## Two different relationships
 
 ```text
