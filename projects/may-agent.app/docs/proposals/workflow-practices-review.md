@@ -37,13 +37,20 @@ The separate `.disabled` change is Host PR #116; it does not repair workflows.
    `scout-daily-digest.ts` reads, emits, renames and resets `today.md`; source
    workers append there too. Review loss during concurrent append and retry
    between emission and reset. Do not solve this by putting one shared daily
-   accumulator in independent Git worktrees. Its "sent" wording also needs
-   checking against what event publication actually proves.
+   accumulator in independent Git worktrees. The current Telegram adapter
+   renders shared Conversation messages; it does not consume the workflow's
+   old `message.created` event addressed to `human`. "Sent" is therefore
+   unsupported, and resetting after that publication can hide undelivered
+   findings. Fix the routing and preservation boundary together; changing
+   only the wording is insufficient. No live digest was triggered to test
+   this known broken path.
 5. **Library health should remain an observer.** `library-health.ts` reads the
    canonical library and records packets/metrics; it must not acquire an edit
    worktree just to inspect the library. Revisit the accepted-output metric
    when source work begins returning candidate files and commits: candidate
-   creation is not integration into the canonical library.
+   creation is not integration into the canonical library. The old JSON-based
+   output metric has now been retired (see local validation below); do not
+   replace it unless current Task reads leave a useful measurement unmet.
 6. **Verification must check the editor's checkout and terminal result.**
    `verified-coder.ts` runs its command at `workspace.root`, but does not put
    that explicit path in the coder prompt. It checks only `status === error`
@@ -118,7 +125,7 @@ candidate revision verified, and what finally reached the target branch.
 Preserve dirty/unmerged work on failure. Do not use a blanket auto-merge policy,
 one global PR slot, extra goal per PR, or broad branch cleanup.
 
-## First-step verification
+## Initial guidance-only verification
 
 - 80 tests passed across the May/Scout App contracts, Scout's four workflows,
   and `verified-coder`, using the current Host SDK. The new verification tests
@@ -126,3 +133,47 @@ one global PR slot, extra goal per PR, or broad branch cleanup.
 - Design-document integrity and `git diff --check` passed.
 - No App was enabled, no live Task ran, and no deployment was performed for
   this workflow review. Scout worktree integration remains unproved.
+
+## Local May + Scout validation — September 10
+
+The human subsequently authorized building and starting the local container,
+with only May and Scout enabled. Dashboard work and disabled Apps remain out
+of scope. Source fixes, successful admission, and observed execution are
+recorded separately:
+
+- **Task evidence:** Scout guidance no longer treats retired Task JSON files
+  as live authority. The two existing projection-repair Tasks settled with
+  explicit obsolete-acceptance explanations rather than recreating the old
+  publisher. This is disposition of obsolete work, not regenerated output.
+- **XHS wait:** the source workflow's old Condition omitted the required owner
+  and review interval. The corrected result passes actual SDK admission and
+  was accepted by the same live Task. After restart it remains waiting for
+  the operator to open/sign in to Xiaohongshu in the container browser; the
+  probe reports no XHS tab. No XHS research success is claimed.
+- **May supervision:** Host PR #119 fixes exact peer-App reads from an isolated
+  Task worker using the accepted App registry, without loading peer agents or
+  controllers. The live May worker successfully read Scout's HN, XHS and
+  maintenance Tasks and reconciled without duplicate work. Foreign list calls
+  are rejected instead of silently returning local Tasks. Disabled Apps stay
+  unavailable. The combined local image uses source `3b5ee146`; this is a
+  candidate deployment including PR #116, not a new release.
+- **Research:** GitHub, HN and arXiv produced source-grounded findings. Reddit
+  recorded a grounded no-op, and maintenance added missing navigation links.
+  These were observed results, but edits still used the shared checkout; they
+  are not proof of isolated or reviewed integration.
+- **Metric retirement:** the normal library-health workflow now retires the
+  JSON-based output metric, preserving samples but removing its source command
+  and threshold. A live run confirmed those fields and recorded 26 library
+  facts without a redundant owner wake. The historical-analysis script now
+  requires an explicit snapshot path. No App SQL or replacement collector was
+  added. The 70 Scout tests, including the new regression, passed.
+- **Host checks:** PR #119 Quality and Container checks passed; the combined
+  deployment passed 2,633 tests with three installation-only skips. Only the
+  two enabled Apps appeared in live control reads, which remained responsive
+  during the bounded checks. This is not long-duration reliability proof.
+
+Still open: isolated Scout edits and integration; digest Conversation routing,
+concurrent append and replay; one pre-existing May attention Task; optional
+tool-loading warnings. Preserve these as gaps rather than calling all workflows
+healthy. Operator event identities and retained evidence are in the local
+bootstrap record under `.state`, not in source snapshots of live Task state.
