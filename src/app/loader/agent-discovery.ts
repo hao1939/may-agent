@@ -2,17 +2,19 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 export interface AgentDirectory {
+  /** Directory basename; the configured agent name can be different. */
   name: string;
   dir: string;
   agentsRoot: string;
   projectId?: string;
   projectDir?: string;
-  relativeDir?: string;
+  /** Canonical installation-relative folder, supplied by discovery rather than guessed from the name. */
+  relativeDir: string;
 }
 
 function listAgentDirectoriesInRoot(
   agentsRoot: string,
-  project?: { projectId: string; projectDir: string; relativeAgentsRoot?: string },
+  project?: { projectId: string; projectDir: string; relativeAgentsRoot: string },
 ): AgentDirectory[] {
   if (!existsSync(agentsRoot)) return [];
   const agents: AgentDirectory[] = [];
@@ -28,7 +30,7 @@ function listAgentDirectoriesInRoot(
       agentsRoot: resolve(agentsRoot),
       projectId: project?.projectId,
       projectDir: project?.projectDir,
-      relativeDir: project?.relativeAgentsRoot ? `${project.relativeAgentsRoot}/${entry.name}` : undefined,
+      relativeDir: `${project?.relativeAgentsRoot ?? "agents"}/${entry.name}`,
     });
   }
   return agents;
@@ -79,7 +81,13 @@ export function listProjectAgentDirectories(
     if (!hasProjectFrame) continue;
     const agentsRoot = resolve(projectDir, "agents");
     if (!existsSync(agentsRoot)) continue;
-    agents.push(...listAgentDirectoriesInRoot(agentsRoot, { projectId: entry.name, projectDir }));
+    agents.push(
+      ...listAgentDirectoriesInRoot(agentsRoot, {
+        projectId: entry.name,
+        projectDir,
+        relativeAgentsRoot: `projects/${entry.name}/agents`,
+      }),
+    );
   }
   return agents;
 }
@@ -140,13 +148,6 @@ export function resolveRuntimeAgentDirectory(
 
 export function agentProjectRoot(agentDir: AgentDirectory, fallbackProjectRoot: string): string {
   return agentDir.projectDir ?? fallbackProjectRoot;
-}
-
-export function agentRelativeDir(agentDir: AgentDirectory): string {
-  if (agentDir.relativeDir) return agentDir.relativeDir;
-  return agentDir.projectDir
-    ? "projects/" + agentDir.projectId + "/agents/" + agentDir.name
-    : "agents/" + agentDir.name;
 }
 
 export function agentsRootForAgentDir(agentDir: AgentDirectory): string {

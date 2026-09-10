@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { discoverAgentSkills } from "../../lib/skills.js";
 import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
 import type { AgentConfig } from "./agent-config.js";
-import { agentRelativeDir, type AgentDirectory } from "./agent-discovery.js";
+import type { AgentDirectory } from "./agent-discovery.js";
 
 export type AgentDefinitionOptions = {
   config: AgentConfig;
@@ -37,7 +37,7 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     model: options.model,
     tools: options.tools,
     agentDir: source.dir,
-    agentRelativeDir: agentRelativeDir(source),
+    agentRelativeDir: source.relativeDir,
     knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
     workspace: existsSync(workspace) ? workspace : undefined,
     projectRoot: options.projectRoot,

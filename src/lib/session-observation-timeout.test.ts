@@ -40,6 +40,7 @@ function session(agent: AgentRun, kind: "job" | "call" | "chat" = "job"): any {
     sessionId: "observation-test",
     agent,
     agentName: "test-agent",
+    definition: { name: "test-agent" },
     task: "test observation timeout",
     startedAt: Date.now(),
     status: "running",

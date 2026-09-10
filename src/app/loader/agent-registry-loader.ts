@@ -8,7 +8,6 @@ import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
 import {
   agentProjectRoot,
-  agentRelativeDir,
   agentsRootForAgentDir,
   listRuntimeAgentDirectories,
 } from "./agent-discovery.js";
@@ -160,7 +159,7 @@ export async function prepareAgents(
         allErrors.push({
           agent: config.name,
           field: "name",
-          message: `Duplicate agent name. Already loaded from ${agentRelativeDir(prior.source)}; duplicate at ${agentRelativeDir(source)}`,
+          message: `Duplicate agent name. Already loaded from ${prior.source.relativeDir}; duplicate at ${source.relativeDir}`,
         });
       }
       continue;

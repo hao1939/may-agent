@@ -7,7 +7,7 @@
  * Bug 10: callDepths map never cleaned for completed root sessions
  */
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
@@ -28,7 +28,9 @@ import { Type } from "@earendil-works/pi-ai";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
 import { fakeModel } from "../fixtures/model.js";
-import { createAgentRun } from "../../src/lib/agent-runner.js";
+import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";
+import { discoverAgentSkills } from "../../src/lib/skills.js";
+import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
 
 function registerAgent(manager: SubagentManager, name = "test-agent") {
   manager.register({
@@ -102,6 +104,128 @@ describe("session completion publication", () => {
     closeDb(persistDir);
     if (existsSync(persistDir)) {
       rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a live chat's selected instructions and skills through replacement and removal", async () => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    bus.subscribe(createLastSessionWriter(persistDir));
+    const definitions = [];
+    for (const [folder, text, appLocal] of [
+      ["projects/sample.app/agents/local-owner", "LOCAL_IDENTITY", true],
+      ["agents/global-owner", "GLOBAL_IDENTITY", false],
+    ] as const) {
+      const agentDir = join(persistDir, folder);
+      const skillDir = join(agentDir, "skills/owner-skill");
+      mkdirSync(skillDir, { recursive: true });
+      writeFileSync(
+        join(skillDir, "SKILL.md"),
+        `---\nname: owner-skill\ndescription: Fixture ownership proof\n---\n${text}_SKILL\n`,
+      );
+      definitions.push({
+        name: "arc",
+        description: "Fixture",
+        domain: "test",
+        systemPrompt: text,
+        model: fakeModel(),
+        tools: [],
+        agentDir,
+        agentRelativeDir: folder,
+        appLocal,
+        projectRoot: persistDir,
+        skillCatalog: await discoverAgentSkills({ agentDir, appLocal }),
+      });
+    }
+    const [original, replacement] = definitions;
+    const turns: Array<{ system: string; input: string }> = [];
+    const steers: string[] = [];
+    const listeners: AgentRuntimeListener[] = [];
+    let failTurn = false;
+    const manager = new SubagentManager({
+      persistDir,
+      bus,
+      agentRunFactory: (config) => {
+        const run = createAgentRun(config);
+        // Only the model-loop boundary is synthetic; manager turns and event bridging are real.
+        const subscribe = run.subscribe.bind(run);
+        run.subscribe = (listener) => {
+          listeners.push(listener);
+          return subscribe(listener);
+        };
+        run.prompt = async (input) => {
+          turns.push({ system: run.state.systemPrompt, input: JSON.stringify(input) });
+          if (failTurn) throw new Error("fixture terminal chat failure");
+          run.state.messages.push({
+            role: "assistant",
+            content: [{ type: "text", text: "Fixture response" }],
+            stopReason: "stop",
+          } as AgentMessage);
+        };
+        run.steer = (message) => {
+          steers.push(JSON.stringify(message));
+        };
+        return run;
+      },
+    });
+    manager.register(original);
+    const sid = manager.run("arc", "first turn", { kind: "chat", autoClose: "never" });
+    try {
+      await manager.waitForIdle(sid);
+      manager.register(replacement);
+      const skill = original.skillCatalog.skills.get("owner-skill")!;
+      // A model reading an old session's skill must still be attributed to its old catalog.
+      for (const event of [
+        { type: "tool_execution_start", toolName: "read", toolCallId: "skill-read", args: { path: skill.filePath } },
+        {
+          type: "tool_execution_end",
+          toolName: "read",
+          toolCallId: "skill-read",
+          result: { content: [{ type: "text", text: skill.content }] },
+          isError: false,
+        },
+      ])
+        for (const listener of listeners) listener(event as Parameters<AgentRuntimeListener>[0]);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "skill.loaded",
+          data: expect.objectContaining({ activation: "model", contentHash: skill.contentHash, scope: "app-agent" }),
+        }),
+      );
+      manager.send(sid, "$owner-skill second turn");
+      // The second turn has started but has not yielded back to idle yet.
+      manager.send(sid, "$owner-skill steer running turn");
+      await manager.waitForIdle(sid);
+      expect(turns[1].system).toContain("LOCAL_IDENTITY");
+      expect(turns[1].system).not.toContain("GLOBAL_IDENTITY");
+      expect(turns[1].input).toContain("LOCAL_IDENTITY_SKILL");
+      expect(steers[0]).toContain("LOCAL_IDENTITY_SKILL");
+      manager.unregister("arc");
+      manager.send(sid, "$owner-skill after removal");
+      await manager.waitForIdle(sid);
+      expect(turns[2].system).toContain("LOCAL_IDENTITY");
+      expect(turns[2].input).toContain("LOCAL_IDENTITY_SKILL");
+      expect(readSessionMeta(persistDir, sid)?.agentRelativeDir).toBe(original.agentRelativeDir);
+
+      // Fresh sessions use the new registry, while runDefinition honors an explicitly captured definition.
+      manager.register(replacement);
+      const fresh = manager.run("arc", "$owner-skill fresh session");
+      expect((await manager.waitFor(fresh)).status).toBe("done");
+      expect(turns[3].system).toContain("GLOBAL_IDENTITY");
+      expect(turns[3].input).toContain("GLOBAL_IDENTITY_SKILL");
+      const pinned = manager.runDefinition(original, "pinned chat", { kind: "chat", autoClose: "never" });
+      await manager.waitForIdle(pinned);
+      expect(turns[4].system).toContain("LOCAL_IDENTITY");
+      manager.cancel(pinned);
+      failTurn = true;
+      manager.send(sid, "finish the old chat");
+      await expect(manager.waitForIdle(sid)).rejects.toThrow("fixture terminal chat failure");
+      expect(readFileSync(join(original.agentDir, "last-session.md"), "utf8")).toContain(sid);
+      expect(readFileSync(join(replacement.agentDir, "last-session.md"), "utf8")).toContain(fresh);
+      expect(readFileSync(join(replacement.agentDir, "last-session.md"), "utf8")).not.toContain(sid);
+    } finally {
+      for (const session of manager.status()) manager.cancel(session.sessionId);
     }
   });
 
@@ -213,6 +337,7 @@ describe("persistent chat empty response recovery", () => {
       sessionId,
       agent: fakeAgent,
       agentName: "may",
+      definition: { name: "may" },
       task: "hello",
       startedAt: Date.now(),
       status: "running",
@@ -362,6 +487,7 @@ describe("workflow call empty final turn recovery", () => {
       sessionId,
       agent: fakeAgent,
       agentName: "tech-lead",
+      definition: { name: "tech-lead" },
       task: "review owner message",
       startedAt: Date.now(),
       status: "running",

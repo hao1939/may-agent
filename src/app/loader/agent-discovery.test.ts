@@ -5,7 +5,6 @@ import { join } from "node:path";
 
 import {
   agentProjectRoot,
-  agentRelativeDir,
   listAgentDirectories,
   listConfiguredAgentNames,
   listProjectAgentDirectories,
@@ -57,7 +56,7 @@ describe("project-local agent discovery", () => {
       expect(agents.map((agent) => agent.dir)).toEqual([agentDir]);
       expect(agents[0]?.projectId).toBe("alpha-project");
       expect(agentProjectRoot(agents[0], "fallback")).toBe(domainProject);
-      expect(agentRelativeDir(agents[0])).toBe("projects/alpha-project.app/agents/aks-explorer");
+      expect(agents[0].relativeDir).toBe("projects/alpha-project.app/agents/aks-explorer");
       // The live installation controls discovery even when code is pinned to a release.
       const canonicalRoot = join(root, "installation");
       mkdirSync(join(canonicalRoot, "alpha-project.app"), { recursive: true });
