@@ -207,7 +207,11 @@ it records App/agent/attempt attribution, retains findings, stops execution and
 readies linked requests and the executable parent. It never creates a success
 receipt or satisfies a prerequisite. Cancelled identities cannot be revised or
 closed as successful by subsequent actions or desired-intent admission. New
-work needs a new linked identity. Maintained Tasks and Tasks with live children
+work needs a new linked identity. Explicit retry also rejects cancellation-backed
+Tasks, including replay of an earlier retry control; the original control receipt
+remains historical evidence. Snapshot bootstrap preserves cancellation records
+and their attribution so copying a seed cannot make terminal work runnable again.
+Maintained Tasks and Tasks with live children
 cannot stop. Cancellation-backed terminal children are not live work: bounded
 `children.cancelled` context preserves their non-success evidence separately
 from `children.completed`. Their parent can judge its own acceptance or stop;

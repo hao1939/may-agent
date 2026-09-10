@@ -280,6 +280,46 @@ describe("App-owned non-success stop", () => {
     expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
   });
 
+  it("rejects retry after an exhausted Task is cancelled without relabelling its terminal state", () => {
+    const { config, intent, claim } = setup();
+    let attempt = claim;
+    for (let index = 0; index < 4; index += 1) {
+      failAppTaskAttempt(config, attempt, "Repeated execution failure");
+      if (index < 3) {
+        const next = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
+        if (next.kind !== "claimed") throw new Error("expected bounded retry");
+        attempt = next;
+      }
+    }
+    const failed = config.resourceStore.readTask(intent.id)!;
+    expect(failed.status.executionFailures).toBe(4);
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: intent.id,
+      expectedGeneration: failed.metadata.generation,
+      expectedResourceVersion: failed.metadata.resourceVersion,
+      reason: "Do not pursue this failed work",
+    });
+    const cancelled = config.resourceStore.readTask(intent.id)!;
+    const before = readTaskSnapshot(config);
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: intent.id,
+        expectedGeneration: cancelled.metadata.generation,
+        expectedResourceVersion: cancelled.metadata.resourceVersion,
+        controlKey: "retry-cancelled",
+      }),
+    ).toThrow("cancelled task");
+    expect(readTaskSnapshot(config)).toEqual(before);
+    expect(config.resourceStore.readControlReceipt("retry-cancelled")).toBeNull();
+    expect(readRuntimeTaskView({ taskStateConfig: config }, intent.id)).toMatchObject({
+      status: "attention",
+      summary: expect.stringContaining("Cancelled by human"),
+    });
+    expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(intent.id);
+  });
+
   it.each(["maintain", "children", "evidence", "new-input", "revision"])("refuses an unsafe stop: %s", (reason) => {
     const { config, intent, claim } = setup(reason === "maintain" ? "maintain" : "achieve");
     if (reason === "children")
@@ -5434,6 +5474,26 @@ describe("App task reconciler state", () => {
       type: "project.comment.created",
       eventId: 811,
     });
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: failed.taskId,
+      expectedGeneration: failed.generation,
+      expectedResourceVersion: receipt.resourceVersion,
+      reason: "Cancel after the accepted retry",
+    });
+    const cancelled = readTaskSnapshot(config);
+    const controlKey = `app-task-retry:sample:${failed.taskId}:${failed.generation}:${failedResourceVersion}`;
+    expect(() =>
+      retryFailedAppTask(config, {
+        appId: "sample",
+        taskId: failed.taskId,
+        expectedGeneration: failed.generation,
+        expectedResourceVersion: failedResourceVersion,
+        controlKey,
+      }),
+    ).toThrow("cancelled task");
+    expect(readTaskSnapshot(config)).toEqual(cancelled);
+    expect(config.resourceStore.readControlReceipt(controlKey)?.result).toEqual(receipt);
   });
 
   it("rejects retry controls for non-attention tasks and attention without a failed attempt", () => {

@@ -275,6 +275,22 @@ export class AppTaskResourceStore {
     }
   }
 
+  private putCancellation(cancellation: AppTaskCancellation): void {
+    if (cancellation.appId !== this.appId) throw new Error("Task cancellation belongs to another App");
+    this.db
+      .prepare(
+        `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(
+        cancellation.appId,
+        cancellation.taskId,
+        epoch(cancellation.cancelledAt) ?? 0,
+        cancellation.reason,
+        json(cancellation),
+      );
+  }
+
   /** Atomically establish resource authority for a brand-new App seed. */
   bootstrapSnapshot(
     treeInput: TaskTree,
@@ -298,6 +314,7 @@ export class AppTaskResourceStore {
         "app_task_condition_routes",
         "app_task_conditions",
         "app_task_receipts",
+        "app_task_cancellations",
         "app_task_groups",
         "app_task_admissions",
         "app_tasks",
@@ -305,6 +322,7 @@ export class AppTaskResourceStore {
         this.db.prepare(`DELETE FROM ${table} WHERE app_id = ?`).run(this.appId);
       }
 
+      for (const cancellation of Object.values(tree.cancellations ?? {})) this.putCancellation(cancellation);
       for (const resource of Object.values(tree.resources ?? {})) {
         const trigger = tree.taskTriggers?.[resource.metadata.id];
         this.putTask(resource, trigger, ready.has(resource.metadata.id), null);
@@ -1386,21 +1404,7 @@ export class AppTaskResourceStore {
           )
           .run(this.appId, admission.taskId, json(admission.value));
       }
-      for (const cancellation of mutation.cancellations ?? []) {
-        if (cancellation.appId !== this.appId) throw new Error("Task cancellation belongs to another App");
-        this.db
-          .prepare(
-            `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
-             VALUES (?, ?, ?, ?, ?)`,
-          )
-          .run(
-            cancellation.appId,
-            cancellation.taskId,
-            epoch(cancellation.cancelledAt) ?? 0,
-            cancellation.reason,
-            json(cancellation),
-          );
-      }
+      for (const cancellation of mutation.cancellations ?? []) this.putCancellation(cancellation);
       for (const receipt of mutation.controlReceipts ?? []) {
         if (receipt.appId !== this.appId) throw new Error("Task control receipt belongs to another App");
         this.db

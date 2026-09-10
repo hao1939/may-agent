@@ -26,6 +26,7 @@ import {
   observeAppTaskIntent,
   recordAppTaskTrigger,
   releaseHandlerExecutionFailedAppTask,
+  stopAppTask,
 } from "./app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -357,6 +358,71 @@ describe("AppTaskResourceStore", () => {
     expect(snapshot.groups?.project).not.toHaveProperty("goal");
     expect(snapshot).not.toHaveProperty("satisfied_dependency_ids");
     store.close();
+  });
+
+  it("round-trips human and App cancellations through snapshot bootstrap and reopen", () => {
+    const source = open();
+    const target = open();
+    const path = join(roots.at(-1)!, "host.sqlite");
+    try {
+      const tree = fixture();
+      tree.project_lifecycle = "active";
+      tree.resources = { human: resource("human") };
+      tree.attempts = {};
+      tree.taskTriggers = {};
+      source.bootstrapSnapshot(tree, "source");
+      const config = appTaskContext({
+        appDir: roots.at(-2)!,
+        projectDir: roots.at(-2)!,
+        agent: "owner",
+        maxConcurrent: 1,
+        resourceStore: source,
+      });
+      cancelAppTask(config, {
+        appId: "example",
+        taskId: "human",
+        expectedGeneration: 1,
+        expectedResourceVersion: 1,
+        reason: "Human stopped the work",
+      });
+      observeAppTaskIntent(config, {
+        appAgent: "owner",
+        intent: { id: "optional", ...resource("optional").spec },
+      });
+      const claim = claimObservedAppTask(config, { taskId: "optional", appAgent: "owner", handler: "agent" });
+      if (claim.kind !== "claimed") throw new Error(`expected optional Task claim, got ${JSON.stringify(claim)}`);
+      stopAppTask(config, claim, {
+        summary: "Optional work is not feasible",
+        evidence: ["analysis:feasibility"],
+        result: { partial: "Findings" },
+      });
+      const snapshot = source.readSnapshot();
+      target.bootstrapSnapshot(snapshot, "copied", ["human", "optional"]);
+      expect(target.readSnapshot()).toEqual(snapshot);
+      expect(target.readCancellation("optional")?.result).toEqual({ partial: "Findings" });
+    } finally {
+      source.close();
+      target.close();
+    }
+    const reopened = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      const config = appTaskContext({
+        appDir: roots.at(-1)!,
+        projectDir: roots.at(-1)!,
+        agent: "owner",
+        maxConcurrent: 1,
+        resourceStore: reopened,
+      });
+      for (const taskId of ["human", "optional"]) {
+        expect(reopened.isCancelled(taskId)).toBe(true);
+        expect(reopened.readReceipt(taskId)).toBeNull();
+        expect(claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent" }).kind).toBe("completed");
+      }
+      expect(reopened.listRecoveryCandidates().items).toEqual([]);
+      expect(reopened.readCancelledChildren("project", 8)).toHaveLength(2);
+    } finally {
+      reopened.close();
+    }
   });
 
   it("atomically bootstraps a new active resource authority", () => {

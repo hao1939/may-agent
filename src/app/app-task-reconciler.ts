@@ -2318,6 +2318,9 @@ export function retryFailedAppTask(
     controlKey?: string;
   },
 ): AppTaskRetryReceipt {
+  if (config.resourceStore.isCancelled(input.taskId)) {
+    throw new Error(`Cannot retry cancelled task ${input.appId}/${input.taskId}; create a new linked task`);
+  }
   const priorControl = input.controlKey ? config.resourceStore.readControlReceipt(input.controlKey) : null;
   if (priorControl) {
     if (
