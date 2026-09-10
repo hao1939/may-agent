@@ -199,8 +199,24 @@ September 10 at 08:29 UTC. It records results and failures, not autonomous
 repairs. Scheduled recurrence, restart behavior and sustained resource use
 remain observations to collect, not properties certified by a short run.
 
+The old May routing-decision attention Task was subsequently reconciled through
+exact comment 6318209, with no new infrastructure or manual state rewrite.
+May found and this operator verified a retained Evaluation receipt showing the
+same finding had already reached the declared `may-agent` / `tech-lead` owner.
+Event 6318215 closed only that routing obligation; the underlying workflow
+defect is not proved fixed. Both disabled Apps stayed disabled. May then had
+zero attention Tasks.
+
+Further failure-injection tests found that Scout exploration and maintenance
+could accept structured partial output from a `blocked` agent call. Both tests
+failed before the fix. Commit `a6a1fc2242` changes each gate to require `done`
+before result admission or maintenance-event publication. Valid domain waits
+returned by successful calls remain supported. Eighty-one focused tests and
+the installation design checks passed. This failure was reproduced in tests,
+not induced against live source access.
+
 Still open: isolated Scout edits and integration; long-running digest recovery;
-one pre-existing May attention Task; optional tool-loading warnings.
+optional tool-loading warnings.
 Preserve these as gaps rather than calling all workflows
 healthy. Operator event identities and retained evidence are in the local
 bootstrap record under `.state`, not in source snapshots of live Task state.
