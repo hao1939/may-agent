@@ -349,9 +349,13 @@ accumulator. Worktree isolation for repository content is separate from this
 runtime artifact. May can deduplicate repeated highlights from its Conversation
 context. No exactly-once human display or offline Telegram replay is promised.
 
-**Rollout:** source candidate; require temporary-directory preservation/replay
-tests, real Host message-to-Conversation validation, then one local digest
-handoff before claiming this path is deployed and useful.
+**Rollout:** local candidate `58972f68e7` passed preservation/replay tests and
+a temporary real-Host integration check with fake model/provider endpoints.
+The local two-App trial then exercised the actual model and Conversation
+route: one preserved snapshot, one May digest reply, one recorded Telegram
+mirror receipt, and no duplicate request when the operator action was replayed.
+This verifies the observed handoff, not that the human read it or that offline
+delivery and long-running reliability are guaranteed.
 
 ## Path And Output Boundary
 

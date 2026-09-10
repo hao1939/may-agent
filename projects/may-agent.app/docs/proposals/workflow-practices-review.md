@@ -172,8 +172,35 @@ recorded separately:
   two enabled Apps appeared in live control reads, which remained responsive
   during the bounded checks. This is not long-duration reliability proof.
 
-Still open: isolated Scout edits and integration; digest Conversation routing,
-concurrent append and replay; one pre-existing May attention Task; optional
-tool-loading warnings. Preserve these as gaps rather than calling all workflows
+Digest routing and preservation were subsequently repaired in `58972f68e7`.
+The workflow preserves an immutable content snapshot, emits a retry-stable
+message addressed to May, and clears only an unchanged accumulator. The normal
+`digest-now` action uses the same Task as the schedule. Seventy-eight focused
+tests passed; a temporary real-Host integration test with fake endpoints proved
+replay produces one request/Conversation message. Local event 6318173 then
+refined the existing digest Task (generation 2), and event 6318177 reached May.
+The actual model produced a source-linked digest in about 22 seconds. A
+Telegram mirror receipt was recorded; human receipt is not proven. Replaying
+the operator action returned its original request, with no second handoff.
+
+May's old recovery reviews repeatedly posted unchanged unavailable-App notices.
+`3fc1493cd0` makes the existing quiet result explicit in App guidance and its
+example: keep evidence on the Task, omit `result.conversation` for no material
+change, and still answer human questions and report new blockers/dispositions.
+This is agent guidance, not a new Host suppression rule; scheduled live
+review 6318195 supplied the first live confirmation. It updated the same May
+supervision Task to generation 5, read both exact linked Tasks, and converged
+at 6318202 with no `result.conversation`. The latest Conversation message
+remained the digest and no new Telegram mirror was recorded. Further cycles
+are needed before treating that behavior as reliable over time.
+
+A read-only recorder samples both Apps once a minute for 24 hours starting
+September 10 at 08:29 UTC. It records results and failures, not autonomous
+repairs. Scheduled recurrence, restart behavior and sustained resource use
+remain observations to collect, not properties certified by a short run.
+
+Still open: isolated Scout edits and integration; long-running digest recovery;
+one pre-existing May attention Task; optional tool-loading warnings.
+Preserve these as gaps rather than calling all workflows
 healthy. Operator event identities and retained evidence are in the local
 bootstrap record under `.state`, not in source snapshots of live Task state.
