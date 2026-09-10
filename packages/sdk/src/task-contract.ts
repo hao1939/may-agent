@@ -129,13 +129,22 @@ const resultFields = {
 };
 
 /** Model-output schema for a resolved agent. */
-export const taskAgentResultSchema = Type.Object(
-  {
-    state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
-    ...resultFields,
-  },
-  { additionalProperties: false },
-);
+export const taskAgentResultSchema = Type.Union([
+  Type.Object(
+    { state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]), ...resultFields },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      state: Type.Literal("stopped"),
+      summary: nonEmptyStringSchema,
+      response: Type.Optional(nonEmptyStringSchema),
+      result: Type.Optional(objectSchema),
+      evidence: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 /** @deprecated Use `taskAgentResultSchema`. */
 export const taskOwnerResultSchema = taskAgentResultSchema;
@@ -509,8 +518,14 @@ export function admitTaskReconcileResult(
       result: { state: "needs-agent", summary: output.summary.trim(), evidence },
     };
   }
-  if (output.state !== "converged" && output.state !== "waiting") {
-    return { ok: false, error: "state must be converged, waiting, or needs-agent" };
+  if (output.state !== "converged" && output.state !== "waiting" && output.state !== "stopped") {
+    return { ok: false, error: "state must be converged, waiting, stopped, or needs-agent" };
+  }
+  if (output.state === "stopped") {
+    if (evidence.length === 0) return { ok: false, error: "stopped requires evidence for the decision" };
+    if (output.actions !== undefined || output.conditions !== undefined || output.dependencies !== undefined) {
+      return { ok: false, error: "stopped cannot include actions, Conditions, or dependencies" };
+    }
   }
   const admittedOutput = output as Record<string, unknown>;
   const response = optionalString(admittedOutput, "response");
@@ -600,7 +615,7 @@ export function admitTaskReconcileResult(
       ...(response.value ? { response: response.value } : {}),
       ...(result ? { result: structuredClone(result) } : {}),
       evidence,
-      actions,
+      ...(output.state === "stopped" ? {} : { actions }),
       ...(conditions.length > 0 ? { conditions } : {}),
       ...(dependencies.length > 0 ? { dependencies } : {}),
     },

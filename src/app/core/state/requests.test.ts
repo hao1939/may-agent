@@ -24,6 +24,7 @@ import {
   markAppTaskAttention,
   observeAppTaskIntent,
   retryFailedAppTask,
+  stopAppTask,
 } from "../../app-task-reconciler.js";
 import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
 import { admitTaskRequest, attachRequestToTask } from "./requests.js";
@@ -309,7 +310,7 @@ describe("request-to-Task state operation", () => {
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 
-  it("cannot commit a Task result without its durable request wake", () => {
+  it.each(["complete", "stop"])("cannot commit a Task %s without its durable request wake", (decision) => {
     const { db, config, input } = fixture();
     attachRequestToTask(config, input);
     const claim = claimObservedAppTask(config, {
@@ -318,15 +319,20 @@ describe("request-to-Task state operation", () => {
       handler: "agent:example-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const settle = () =>
+      decision === "stop"
+        ? stopAppTask(config, claim, { summary: "Optional work is not feasible", evidence: ["fixture:feasibility"] })
+        : completeAppTask(config, claim, { summary: "Verified", evidence: [] });
     db.exec(
       "CREATE TRIGGER fail_wake BEFORE UPDATE OF available_at ON app_inbox_items WHEN NEW.available_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'wake failure'); END",
     );
-    expect(() => completeAppTask(config, claim, { summary: "Verified", evidence: [] })).toThrow("wake failure");
+    expect(settle).toThrow("wake failure");
     expect(config.resourceStore.readReceipt("work/one")).toBeNull();
+    expect(config.resourceStore.readCancellation("work/one")).toBeNull();
     expect(config.resourceStore.readTask("work/one")?.status.phase).toBe("running");
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     db.exec("DROP TRIGGER fail_wake");
-    expect(completeAppTask(config, claim, { summary: "Verified", evidence: [] }).status).toBe("applied");
+    expect(settle().status).toBe("applied");
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 

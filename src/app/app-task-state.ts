@@ -113,7 +113,7 @@ export type AppTaskAttempt = {
   workspace?: AppTaskWorkspace;
 };
 
-/** Immutable terminal evidence that an operator cancelled one exact Task generation. */
+/** Immutable non-success terminal evidence for one exact Task generation. */
 export type AppTaskCancellation = {
   appId: string;
   taskId: string;
@@ -123,6 +123,10 @@ export type AppTaskCancellation = {
   reason: string;
   summary: string;
   cancelledAt: string;
+  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string };
+  response?: string;
+  result?: Record<string, unknown>;
+  evidence?: string[];
 };
 
 export type AppTaskTrigger = {

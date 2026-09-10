@@ -40,7 +40,7 @@ function retry(reason: string): Extract<CodexGoalTaskResultAdmission, { kind: "r
       "The previous executor turn ended, but May did not accept its Task result.",
       `Admission finding: ${boundedReason}`,
       "The May Task remains pending. Continue the same Task from current workspace evidence.",
-      'Return exactly one JSON object whose state is "converged" or "waiting" and which passes the supplied Task result schema.',
+      'Return exactly one JSON object whose state is "converged", "waiting", or an App-authorized "stopped", and which passes the supplied Task result schema.',
     ].join("\n"),
   };
 }

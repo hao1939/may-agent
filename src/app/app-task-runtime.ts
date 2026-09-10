@@ -77,6 +77,7 @@ import {
   associateAppTaskSession,
   claimObservedAppTask,
   cancelAppTask,
+  stopAppTask,
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
@@ -413,7 +414,7 @@ function taskCompletionDisposition(
 
 type PersistedTerminalAgentResultConsumption = {
   claim: AppTaskClaim;
-  state: ReturnType<typeof taskCompletionDisposition> | "waiting";
+  state: ReturnType<typeof taskCompletionDisposition> | "waiting" | "stopped";
   summary: string;
   response?: string;
   evidence: string[];
@@ -465,6 +466,19 @@ export function consumePersistedTerminalAgentResult(input: {
         validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
     );
+    if (result.state === "stopped") {
+      const applied = stopAppTask(input.config, claim, result);
+      if (applied.status !== "applied") return null;
+      return {
+        claim,
+        state: "stopped",
+        summary: applied.summary!,
+        response: result.response,
+        evidence: result.evidence,
+        actionsApplied: [],
+        reconcileTaskIds: applied.parentTaskId ? [applied.parentTaskId] : [],
+      };
+    }
     if (result.state === "converged") {
       const applied = completeAppTask(input.config, claim, {
         summary: result.summary,
@@ -1772,6 +1786,44 @@ async function reconcileTask(input: {
         reason: primaryHandlerResult.summary,
       });
     }
+    if (primaryHandlerResult.state === "stopped") {
+      const stale = await fenceWorkspaceFinalization();
+      if (stale) return stale.reconcileTaskIds;
+      // Stopping does not accept or discard workspace output. Retain it using
+      // the existing failed-attempt policy, including any cleanup limitation.
+      const finalized = await finalizeWorkspace("failed");
+      const evidence = [
+        ...primaryHandlerResult.evidence,
+        ...(taskWorkspace ? [taskWorkspace.metadata.path] : []),
+        ...(!finalized.ok && finalized.reason ? [finalized.reason] : []),
+      ];
+      try {
+        const applied = persistResult(() =>
+          stopAppTask(config, primary, {
+            ...primaryHandlerResult,
+            evidence,
+            acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
+          }),
+        );
+        const staleResult = applied.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
+        emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
+          generation: primary.generation,
+          attemptId: primary.attemptId,
+          handler: primary.handler,
+          disposition: applied.status === "applied" ? "stopped" : "stale",
+          summary: applied.summary ?? primaryHandlerResult.summary,
+          evidence,
+        });
+        if (applied.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, "stopped");
+        return staleResult?.reconcileTaskIds ?? (applied.parentTaskId ? [applied.parentTaskId] : []);
+      } catch (error) {
+        const staleResult = rejectStaleEffect(error);
+        if (staleResult) return staleResult.reconcileTaskIds;
+        primaryResult.handlerBlocked = true;
+        primaryHandlerResult.state = "error";
+        primaryHandlerResult.summary = `Stop decision was rejected: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
     if (primaryHandlerResult.state === "converged") {
       const accepted = await establishTaskAcceptance({
         descriptor,
@@ -2768,6 +2820,7 @@ export function cancelLoadedAppTask(input: {
     ...(input.controlKey ? { controlKey: input.controlKey } : {}),
   });
   if (result.applied) {
+    if (result.parentTaskId) wakeLoadedAppTasks({ bus: input.bus, appId, taskIds: [result.parentTaskId] });
     input.bus.emit({
       type: "app.task.cancelled",
       source: "app-task-reconciler",
@@ -2976,7 +3029,7 @@ function emitAppTaskDependencyChange(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
   taskId: string,
-  disposition: ReturnType<typeof taskCompletionDisposition> | "waiting" | "attention",
+  disposition: ReturnType<typeof taskCompletionDisposition> | "waiting" | "attention" | "stopped",
 ): void {
   opts.bus.emit({
     type: disposition === "converged" ? "app.dependency.completed" : "app.dependency.updated",
