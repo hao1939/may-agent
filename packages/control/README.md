@@ -60,6 +60,12 @@ wakes and use canonical Task reads, which retain result/cancellation fences.
 Profiling, handler health, and subscriber-failure events remain observable to
 their diagnostic readers, not promoted into new work APIs.
 
+`handler.failed` identifies its actual source (`cron`, `app-task-controller`,
+or `app-inbox`). Known App, Task, input request, Conversation and claim revision
+are separate fields, alongside stage, error and disposition. `requestId` here
+identifies input handling; it is not an accepted conversational Request ID.
+Reporting remains best effort and cannot decide whether work is fulfilled.
+
 Listeners run after publication with bounded, independent FIFO notification
 buffers. Their async promises preserve per-listener ordering and failures become
 `subscriber.failed` diagnostics. Slow listeners do not block other listeners or
