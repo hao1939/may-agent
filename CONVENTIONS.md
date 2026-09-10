@@ -28,7 +28,18 @@ The canonical convention docs are maintained under the current app layout:
 
 ## Layout Rule
 
-Top-level `/app` should expose only the core namespaces: `agents/`, `shared/`,
-`projects/`, `test/`, runtime `.state/`, and repo metadata. Gym is a project at
-`projects/gym/`. Legacy root content belongs in scoped agent/project/shared
-folders or under `projects/_archive/legacy-root/`.
+`/app` is the shared checkout on `main`. Finish work by merging meaningful,
+verified source changes into `main` and leaving its Git status clean. Coordinate
+the final switch or cleanup while other sessions are editing the checkout.
+
+Keep temporary clones, Git worktrees, scratch and recovery archives outside
+`/app`, for example under `~/workspace-worktrees/` and `~/workspace-archive/`.
+Preserve unique commits, uncommitted files and evidence before removing a
+checkout. Completed research belongs in its project knowledge base; unfinished
+experiments stay in the external archive with a clear disposition.
+
+Source belongs in `agents/`, `shared/`, `projects/` and `scripts/`, with entry
+docs and package/build config at the root. Gym lives at `projects/gym/`.
+Dependencies, runtime `.state/`, local tool configuration and separately managed
+project repositories retain their documented homes and Git ignore rules.
+See the [root layout contract](projects/may-agent.app/docs/2a-design/app-root-layout.md).

@@ -3,12 +3,12 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const allowedTopLevelProjects = new Set([
+  "aks-rp-e2e-app",
   "evaluation.app",
   "gym",
   "gym.app",
   "herdr-supervisor",
   "may-agent",
-  "may-agent-worktrees",
   "may-agent.app",
   "may.app",
   "platform",

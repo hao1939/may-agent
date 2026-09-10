@@ -67,9 +67,13 @@ projects/*/outputs/**
 /projects/aks-rp-e2e/
 /projects/may-agent/
 /projects/herdr-supervisor/
+/projects/aks-rp-e2e-app/
 
-# Temporary Git worktrees live outside the shared repository.
-/worktrees/
+# Generated compatibility UI link, owned by Host deployment.
+/projects/platform/
+
+# Keep temporary checkouts and recovery archives outside /app.
+# Do not ignore /worktrees, /tmp or /archives here: their reappearance is drift.
 
 # UI build artifacts synced from a project's repo (e.g. `ui:sync` in repos/may-agent).
 projects/*/ui/

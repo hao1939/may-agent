@@ -1,8 +1,0 @@
-host: prod-db-cluster.internal
-port: 5432
-database: webapp_prod
-username: prod-user
-password: s3cure-p4ss
-maxConnections: 20
-ssl: true
-timeout: 10000

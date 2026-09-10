@@ -15,8 +15,8 @@ model from the directory name alone; classify by markers.
 - A standalone portable project without an Agent App sibling must be listed
   explicitly in this index; it remains useful through its own CLI/library
   boundary.
-- `/app/archives/` is the **physical archive** for old material moved out of
-  the top-level project list.
+- Physical cleanup archives live outside `/app`, conventionally under
+  `~/workspace-archive/`; curated project history stays with its owner.
 - Folders with no project markers are **ambiguous/stale** until adopted or
   removed.
 
@@ -31,9 +31,8 @@ The top level is intentionally small:
 - active project apps
 - domain workspaces required by those apps
 - explicitly listed standalone projects
-- temporary active worktree containers, only while their work is in progress
 
-Legacy `project.md` workspaces should live under `/app/archives/` unless
+Legacy `project.md` workspaces should live in the external archive unless
 explicitly restored for migration or review.
 
 ## Current Active Project Apps
@@ -61,14 +60,15 @@ explicitly restored for migration or review.
   without `gym.app`; the sibling app automates operation without becoming a
   dependency of the project.
 - `herdr-supervisor/` - standalone Herdr supervisor project and Git repository.
+- `aks-rp-e2e-app/` - standalone AKS RP E2E App project and Git repository.
 
-## Temporary Worktree Containers
+## Local compatibility data
 
-- `may-agent-worktrees/` currently holds the active standalone May-agent
-  authority-boundary worktree. Move it under `/app/worktrees/` when that work
-  finishes; it is not a project.
 - `platform/` is a runtime compatibility path containing the current UI link,
-  not a project.
+  owned by Host deployment and ignored by the workspace repository.
+
+Temporary clones and worktrees belong outside `/app`, for example under
+`~/workspace-worktrees/`. The shared checkout remains on `main`.
 
 ## Legacy Project Workspaces
 
@@ -77,7 +77,7 @@ apps and were moved out of the active project list. Historical layout material
 is under:
 
 ```text
-/app/archives/legacy-project-layout-20260819/
+<external-archive>/legacy-project-layout-20260819/
 ```
 
 Their current state should be read from front matter before use.
@@ -130,7 +130,7 @@ Done or closed milestone/archive folders archived in this batch:
 
 ## Physical Archive
 
-- `/app/archives/` contains verified recovery bundles and historical material.
+- The external archive contains verified recovery bundles and historical material.
   Keep it read-only unless intentionally restoring context.
 
 ## Suggested Cleanup Path
@@ -138,6 +138,6 @@ Done or closed milestone/archive folders archived in this batch:
 1. Keep active v3 apps and domain workspaces at top level.
 2. Keep `may-agent.app/` as the platform project app and `may-agent/` as the
    platform/runtime domain workspace.
-3. Keep legacy folders in `/app/archives/` unless intentionally restoring one
+3. Keep legacy folders in the external archive unless intentionally restoring one
    for migration or review.
 4. Keep ambiguous local scratch out of the top-level project list.

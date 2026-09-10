@@ -1,8 +1,0 @@
-{
-  "name": "app-ops",
-  "description": "Project-local operations agent for aks-rp-e2e.app process health, routing, recovery, and planner judgment",
-  "domain": "aks-rp-e2e.app event routing, task-tree health, watchdog recovery, observability, and process closure",
-  "model": "gpt-5.6-sol",
-  "heartbeat": false,
-  "tools": ["coding", "query_db", "checkpoint", "finish"]
-}

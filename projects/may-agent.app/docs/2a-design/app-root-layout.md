@@ -8,6 +8,11 @@ blurring source, runtime state, project workspaces, and research scratch.
 
 ## Root Contract
 
+`/app` is the shared source checkout on `main`. Integrate verified source work
+and keep its tracked/untracked Git status clean. Use checkouts outside `/app`
+for temporary branches; do not create `/app/worktrees/` or project-level
+worktree containers. Coordinate checkout changes with active writers.
+
 The root should contain only:
 
 - entry documentation: `README.md`, `CONVENTIONS.md`
@@ -16,7 +21,9 @@ The root should contain only:
 - durable top-level source directories listed below
 
 Everything else should have a clear home under a source directory, a project
-workspace, or `.state/`.
+workspace, `.state/`, or an external scratch/archive directory. Dependencies,
+local tool configuration and separately managed project repositories are
+intentional local data; a clean source checkout does not require deleting them.
 
 ## Durable Source Directories
 
@@ -61,6 +68,11 @@ Do not use top-level `docs/` for new paper/doc storage.
 - Project-owned outputs and evidence belong inside the owning project
   workspace.
 - `test-results/` - generated test output.
+- Temporary checkouts, scratch copies and recovery bundles belong outside
+  `/app`, conventionally under `~/workspace-worktrees/` or `~/workspace-archive/`.
+  Preserve unique commits, dirty files and evidence before removing a checkout.
+  Keep a recovery manifest; promote meaningful verified source to `main` and
+  retain unfinished experiments explicitly as candidates in the archive.
 
 ## Runtime And Local State
 
