@@ -427,3 +427,23 @@ against the live library.
 
 The independent natural 10:30 May recovery review converged quietly at
 6318604. It repeated no Conversation message and did not enable disabled Apps.
+
+Reload 6318609/6318610 installed the source fix. Exact feedback 6318612 then
+continued `explore-arxiv` with the retained source paths and a one-candidate
+instruction. It completed at 6318624, generation 1, after 34 tool calls and
+without another bounded-finish prompt. Scout updated the existing
+memory-governance finding and digest, read both back and checked the exact
+diff. The operator confirmed the edited passage, source reference and diff
+check; the paper's experimental results were not independently reproduced.
+This is a coached continuation, not uncoached natural recurrence. Maintenance
+fix reload 6318627/6318628 completed after research ended.
+
+The protected file hashes remained unchanged. The retry exposed another small
+Host error-quality defect: the edit tool catches every access failure and
+reports file not found, hiding the actual read-only boundary. Scout discovered
+the boundary through shell diagnostics and chose a writable existing note;
+no mount protection was relaxed. A separate candidate removes that misleading
+catch and preserves native errors. Tests cover missing files, read-only,
+permission and I/O failures with no downstream writes. A disposable container
+probe of a read-only fixture returned `EROFS` correctly. Deployment remains
+separate from that probe.
