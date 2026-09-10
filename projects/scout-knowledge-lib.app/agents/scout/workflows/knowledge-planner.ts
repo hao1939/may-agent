@@ -173,6 +173,14 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     });
   }
 
+  const finish = result.evidence;
+  if (finish && typeof finish === "object" && "status" in finish && finish.status === "partial") {
+    return ctx.blocked("Scout owner maintenance is incomplete", {
+      executionId: result.id,
+      summary: result.summary,
+      finish,
+    });
+  }
   let agentResult = result.output as unknown as AgentResult;
   if (experienceReview) {
     const admitted = admitExperienceReviewResult(agentResult);

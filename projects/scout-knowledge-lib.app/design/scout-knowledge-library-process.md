@@ -214,7 +214,9 @@ current source evidence did not justify a useful change.
 An explicitly partial agent finish is not a no-op, even when its execution
 status is `done` and its output list is empty. Preserve its finish evidence
 and continuation details on the same source Task, and return a blocked
-workflow result rather than claiming convergence. Source exploration uses the
+workflow result rather than claiming convergence. The maintenance workflow
+uses the same rule before publishing a maintenance fact or accepting actions.
+Source exploration uses the
 existing 48-operation allowance within the ordinary execution time limit:
 select one useful candidate early and leave room for integration and read-back.
 Do not add a workflow-owned retry loop or manufacture a finding to avoid a

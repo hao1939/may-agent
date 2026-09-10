@@ -4,7 +4,10 @@ import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { admitExperienceReviewResult, execute } from "./knowledge-planner";
 
 describe("Scout owner reconciliation boundary", () => {
-  it("does not publish a maintenance fact or actions from a blocked agent call", async () => {
+  it.each([
+    { status: "blocked", evidence: undefined },
+    { status: "done", evidence: { status: "partial", next_steps: "Finish the review" } },
+  ] as const)("does not publish maintenance facts or actions from an incomplete call: %j", async (execution) => {
     const emitted: unknown[] = [];
     const result = await execute(
       createTestAppWorkflowContext({
@@ -31,7 +34,7 @@ describe("Scout owner reconciliation boundary", () => {
         callAgent: (async () => ({
           id: "s_blocked",
           kind: "agent",
-          status: "blocked",
+          ...execution,
           summary: "Review not finished",
           output: {
             state: "converged",
@@ -49,7 +52,7 @@ describe("Scout owner reconciliation boundary", () => {
     expect(result.status).toBe("blocked");
     expect(result.evidence).toMatchObject({
       executionId: "s_blocked",
-      status: "blocked",
+      ...(execution.status === "blocked" ? { status: "blocked" } : { finish: execution.evidence }),
     });
     expect(emitted).toEqual([]);
   });

@@ -418,5 +418,12 @@ default unchanged and adds no workflow retry loop. The partial-admission
 regression failed before the fix; 84 May/Scout tests passed afterward. Live
 completion with the refined call remains to be tested.
 
+The same failure was then reproduced in `knowledge-planner`: a `done`
+execution carrying explicit partial finish evidence could publish a maintenance
+fact. Its matching acceptance check now rejects that result before publication
+or action admission. Eighty-five May/Scout tests pass, including both partial
+regressions. The maintenance failure was tested with a fixture, not induced
+against the live library.
+
 The independent natural 10:30 May recovery review converged quietly at
 6318604. It repeated no Conversation message and did not enable disabled Apps.
