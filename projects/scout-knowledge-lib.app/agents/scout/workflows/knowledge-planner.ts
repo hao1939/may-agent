@@ -165,7 +165,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });
-  if (result.status === "error" || result.status === "interrupted") {
+  if (result.status !== "done") {
     return ctx.blocked("Scout owner maintenance session failed", {
       executionId: result.id,
       status: result.status,

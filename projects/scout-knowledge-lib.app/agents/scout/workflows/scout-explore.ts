@@ -680,7 +680,7 @@ export async function executeScoutExplore(
     schema: ExploreAgentResultSchema,
   });
 
-  if (result.status === "error" || result.status === "interrupted") {
+  if (result.status !== "done") {
     return ctx.blocked("Scout exploration session failed", {
       executionId: result.id,
       status: result.status,

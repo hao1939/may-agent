@@ -62,7 +62,9 @@ function workflowContext(
         unknown
       >;
       const status =
-        result.status === "error" || result.status === "interrupted"
+        result.status === "error" ||
+        result.status === "interrupted" ||
+        result.status === "blocked"
           ? result.status
           : "done";
       return {
@@ -79,6 +81,44 @@ function workflowContext(
 }
 
 describe("scout-explore workflow prompt", () => {
+  it("does not accept structured output from a blocked agent call", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-blocked-result-"));
+    temporaryRoots.push(root);
+    mkdirSync(join(root, "knowledge"));
+    const ctx = workflowContext(
+      async () => ({
+        status: "blocked",
+        sessionId: "s_blocked",
+        lastAssistantText: "Current source evidence is incomplete",
+        structuredResult: {
+          summary: "Partial observation",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://news.ycombinator.com/",
+            itemIdsOrUrls: [],
+          },
+          outputs: [],
+        },
+      }),
+      "hn",
+    );
+    ctx.workspace = {
+      appRoot: root,
+      projectRoot: root,
+      root,
+      output: join(root, "output"),
+    };
+
+    const result = await executeScoutExplore(ctx);
+
+    expect(result.status).toBe("blocked");
+    expect(result.evidence).toMatchObject({
+      executionId: "s_blocked",
+      status: "blocked",
+    });
+    expect(result).not.toHaveProperty("output.state", "converged");
+  });
+
   it("admits only existing files whose real path stays inside an output root", () => {
     const root = mkdtempSync(join(tmpdir(), "scout-output-admission-"));
     temporaryRoots.push(root);

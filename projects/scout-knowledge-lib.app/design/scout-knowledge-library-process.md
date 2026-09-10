@@ -320,6 +320,16 @@ scan free-form task history or treat quoted forecasts as domain truth.
 Scout should either correct the date or record why it is intentionally future
 dated.
 
+## Agent execution and acceptance
+
+Source exploration and maintenance may interpret structured agent output only
+after the call returns `done`. A blocked, interrupted or failed call can retain
+partial data, but that data cannot become an accepted finding, a maintenance
+fact or a proposed Task action. Preserve the execution identity and failure
+status for normal recovery. A successful call returning a valid domain wait
+is different: the workflow may admit that explicit wait under its normal
+result contract. Terminal execution is necessary, not sufficient, evidence.
+
 ## Daily digest handoff
 
 The daily workflow owns compiling and preserving findings, not Telegram
