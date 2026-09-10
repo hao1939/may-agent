@@ -22,10 +22,11 @@ export function readRuntimeTaskView(
   if (!store) return null;
   // Match reconciliation authority: a live generation supersedes historical
   // receipts. Completed duplicate resources are retired by admission/claim.
-  const resource = store.readTask(taskId);
-  if (resource) {
+  const current = store.readTaskForView(taskId);
+  if (current) {
     return resourceTaskDetail(
-      resource,
+      current.resource,
+      current.phase,
       store.readTaskConditions(taskId).map((condition) => ({
         id: condition.metadata.id,
         ...structuredClone(condition.spec),
@@ -49,10 +50,13 @@ function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): Ta
   };
 }
 
-function resourceTaskView(resource: NonNullable<TaskTree["resources"]>[string]): TaskView {
+function resourceTaskView(
+  resource: NonNullable<TaskTree["resources"]>[string],
+  phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
+): TaskView {
   return {
     id: resource.metadata.id,
-    status: resource.status.phase === "converged" ? "done" : resource.status.phase,
+    status: phase === "converged" ? "done" : phase,
     generation: resource.metadata.generation,
     outcome: resource.spec.outcome,
     summary: resource.status.summary,
@@ -79,10 +83,11 @@ function receiptTaskDetail(receipt: NonNullable<TaskTree["receipts"]>[string]): 
 
 function resourceTaskDetail(
   resource: NonNullable<TaskTree["resources"]>[string],
+  phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
   conditions: TaskDetail["conditions"],
 ): TaskDetail {
   return {
-    ...resourceTaskView(resource),
+    ...resourceTaskView(resource, phase),
     parentId: resource.spec.parentId,
     mode: resource.spec.mode,
     acceptance: [...resource.spec.acceptance],
@@ -131,8 +136,8 @@ export function listRuntimeTaskViews(
   const pageIds = ids.slice(0, limit);
   return {
     items: pageIds.flatMap((id) => {
-      const resource = store.readTask(id);
-      if (resource) return [resourceTaskView(resource)];
+      const current = store.readTaskForView(id);
+      if (current) return [resourceTaskView(current.resource, current.phase)];
       const receipt = store.readReceipt(id);
       return receipt ? [receiptTaskView(receipt)] : [];
     }),
