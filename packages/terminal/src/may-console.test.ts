@@ -77,6 +77,7 @@ describe("May Console", () => {
                   id: "may:primary",
                   owner: "may",
                   version: 2,
+                  activeTurn: { id: "turn-current", revision: 7 },
                   topics: [
                     {
                       id: "topic_0df0c0edbf95b5bbc5c87598",
@@ -249,6 +250,8 @@ describe("May Console", () => {
                 },
               })}\n`,
             );
+          } else if (frame.type === "publish" && frame.event?.type === "conversation.turn.stop.requested") {
+            socket.write(`${JSON.stringify({ type: "ok", command: "publish", eventId: 45, delivery: "accepted" })}\n`);
           } else if (frame.type === "publish" && frame.event?.type === "runtime.reload.requested") {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 43 })}\n`);
             socket.write(
@@ -345,6 +348,14 @@ describe("May Console", () => {
       taskApps: ["may"],
     });
     expect(output).not.toContain("focused work");
+
+    child.stdin.write("/stop\n");
+    await waitFor(() => output.includes("Stop request accepted"));
+    expect(frames.find(frame => frame.event?.type === "conversation.turn.stop.requested")).toMatchObject({
+      type: "publish", event: { target: { appId: "may" },
+        data: { conversationId: "may:primary", turnId: "turn-current", expectedRevision: 7 } },
+    });
+    expect(humanFrames()).toHaveLength(0);
 
     child.stdin.write("/topics\n");
     await waitFor(

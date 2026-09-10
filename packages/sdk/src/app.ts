@@ -139,6 +139,8 @@ export type AppConversationResource = {
   owner: string;
   /** Latest durable message sequence represented by this view. */
   version: number;
+  /** Exact observed turn for human control; a stale revision cannot stop its replacement. */
+  activeTurn?: { id: string; revision: number };
   /** Exact incoming message currently being reconciled, when authoring an App request. */
   current?: {
     messageId: string;

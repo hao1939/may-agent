@@ -81,6 +81,7 @@ const ordinaryCommands = [
   "/watch",
   "/unwatch",
   "/cancel",
+  "/stop",
   "/help",
   "/reload",
   "/restart",
@@ -1229,6 +1230,10 @@ function handleEvent(event) {
       if (receiptKind === "human-turn") {
         printNotice("[may] Working on your request…");
       }
+      if (receiptKind === "stop-turn") {
+        printNotice(event.delivery === "accepted" ? "[may] Stop request accepted. Background Tasks continue." : "[may] Stop was not accepted; refresh and try again.");
+        requestConversation("sync");
+      }
       if (event.command === "app.conversation.get") {
         const pending = pendingConversationReads.shift();
         if (pending?.kind === "startup") {
@@ -1239,6 +1244,14 @@ function handleEvent(event) {
           renderTopics(event.conversation, pending);
         } else if (pending?.kind === "topic") {
           renderTopic(event.conversation, pending);
+        } else if (pending?.kind === "stop") {
+          const turn = event.conversation?.activeTurn;
+          if (!turn) printNotice("[may] No active conversational turn to stop.");
+          else sendFrame({ type: "publish", event: {
+            type: "conversation.turn.stop.requested", target: { appId: "may" },
+            data: { conversationId, turnId: turn.id, expectedRevision: turn.revision },
+            idempotencyKey: `conversation-stop:may:${conversationId}:${turn.id}:${turn.revision}`,
+          } }, { receiptKind: "stop-turn" });
         }
         if (conversationSyncDirty) requestConversation("sync");
       }
@@ -1497,6 +1510,7 @@ function printHelp() {
       "  /task <ref>",
       "  /watch [ref], /unwatch",
       "  /cancel [ref]",
+      "  /stop                      Stop this turn; background Tasks continue",
       "  /reload, /restart, /shell, /exit",
       "",
       "Bare text goes to May in the selected App context. While watching, that Task is additional context.",
@@ -1659,6 +1673,10 @@ function handleCommand(input) {
       desiredAutoFollow = null;
       if (watchedTask) setWatchedTask(null);
       printNotice("[watch] Watch ended. The Task continues.");
+      return;
+    case "stop":
+      if (rest) printLine("Usage: /stop");
+      else requestConversation("stop");
       return;
     case "cancel": {
       if (restParts.length > 1) {

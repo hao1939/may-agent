@@ -127,6 +127,18 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, false),
   },
+  "conversation.turn.stop.requested": {
+    delivery: "required",
+    validate: (input, options) => {
+      const appId = requiredTarget(input, "appId");
+      if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
+      requiredText(input.data.conversationId, "conversationId");
+      requiredText(input.data.turnId, "turnId");
+      if (!Number.isSafeInteger(input.data.expectedRevision) || Number(input.data.expectedRevision) < 1) {
+        throw new Error("expectedRevision must be a positive integer");
+      }
+    },
+  },
   "app.task.cancel.requested": {
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, true),
