@@ -52,7 +52,7 @@ cross-component and process boundaries.
 | Timing and observations | `core/scheduling/timer.ts`; `adapters/producers/app-schedules.ts`, `app-observer-runtime.ts` | `app-inbox-runtime.ts`; timer, schedule and observer tests |
 | Canonical reads and optional reports | `core/reads/app-read.ts`, `reporting.ts`; `adapters/reporting/` | `composition/reporting.ts`; read/reporting and runtime tests |
 | Host maintenance | `adapters/maintenance/` | `composition/maintenance*.ts`; [maintenance guide](adapters/maintenance/README.md) and colocated tests |
-| Human interfaces | `transport/`, `http/`; root `packages/control`, `terminal`, `webui` | `interface-startup.ts`; transport and process/browser tests; [control guide](../../packages/control/README.md) |
+| Human interfaces | `transport/`, `http/`; root `packages/control`, `packages/terminal`, `packages/webui` | `interface-startup.ts`; transport and process/browser tests; [control guide](../../packages/control/README.md) |
 | Agent/tool loading | `agent-loader.ts`, `loader/`; bounded execution under `../lib/` | `daemon-agents.ts`; loader and agent-execution tests |
 
 `app-source-release.ts` captures the source used by a generation. Private workers
@@ -71,10 +71,10 @@ The still-flat Task/inbox files retain the responsibilities shown above.
 
 Core imports contracts and foundational helpers; composition selects concrete
 adapters and conversational handlers. ESLint protects this direction. Internal
-loaders import owning modules directly: `lib/index.ts` also exports the loader,
+loaders import owning modules directly: `../lib/index.ts` also exports the loader,
 so importing back through it creates a cycle. The public SDK and control exports
-remain the App/client boundaries. New database callers prefer focused `lib/db/`
-modules over the historical `lib/requests.ts` compatibility facade.
+remain the App/client boundaries. New database callers prefer focused `../lib/db/`
+modules over the historical `../lib/requests.ts` compatibility facade.
 
 Use typed calls for local reads, execution and atomic transitions. Use events
 for meaningful inputs/changes and independent observers. App-owned prompts,
