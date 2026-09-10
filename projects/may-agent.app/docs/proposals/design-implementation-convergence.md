@@ -9,6 +9,7 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
+| Input failure containment and repeated conversational execution | [Core review plan](task-runtime-organization.md#proposed-implementation-order): contain renewal failure, preserve authority, and choose a bounded failure outcome; [reproductions](../archive/reviews/core-implementation-alignment-20260910.md) |
 | Accepted Requests across turns | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps): preserve ask identity, corrections, linked results and closure through restart |
 | Stop/Steer the current turn | [Human controls](../2a-design/human-control-surfaces.md#current-turn-control): stopped turns do not restart; independent Tasks remain separate |
 | App decision when work cannot finish | [Controller proposal](task-controller-pattern.md#candidate-stop-without-claiming-success): review the finite-Task stop candidate and prove authorized owner follow-through |

@@ -7,7 +7,8 @@ the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
 
 **Source baseline:** Current implementation descriptions refer to Host `main`
-at `4afaaafb` (through PR #109, reviewed September 10, 2026).
+at `6dcb0fa3` (through PR #110, reviewed September 10, 2026). PR #110 adds
+parent-owner tests and source guidance; production behavior is unchanged from #109.
 Candidate-branch behavior and its validation stay in the linked proposals until
 merged. This baseline identifies source behavior, not the deployed release.
 
@@ -23,7 +24,8 @@ recognition, acknowledgment, tracking and closure.
 ## Current focus
 
 Keep the core simple and robust. The [core review plan](proposals/task-runtime-organization.md)
-contains remaining work; the [gap index](proposals/design-implementation-convergence.md)
+prioritizes reproduced input-handling failures and remaining interaction work;
+the [gap index](proposals/design-implementation-convergence.md)
 links its owners. Request tracking and current-turn Stop/Steer are accepted
 design with implementation gaps. Controller stop behavior is a source candidate.
 Completed separation and recovery reviews live in the [archive](archive/README.md).

@@ -91,7 +91,7 @@ Do not add a universal outbox merely for replaceable observation notifications.
 
 ## Existing uses that justify the boundary
 
-This inventory comes from Host `350552a4`; it identifies current mechanisms and
+This historical inventory comes from Host `350552a4`; it identifies mechanisms and
 possible consolidation, not newly reproduced defects. Operation names below
 are illustrative Host-internal names, not proposed SDK or event schemas.
 
@@ -118,10 +118,14 @@ pattern rather than replacing it with a generic command engine.
 
 ## First comparison: attach a request to its work
 
-The current `app-inbox-host.ts` attachment path creates/finds the Task, records
-the request wait, links its Topic and then checks whether the Task completed
-before the wait existed. Child-request delegation has a similar final check.
-Those checks handle real ordering concerns; their presence alone is not a bug.
+At the original `350552a4` baseline, the `app-inbox-host.ts` attachment path
+created/found the Task, recorded the request wait, linked its Topic and then
+checked whether the Task completed before the wait existed. Child-request
+delegation had a similar final check.
+Those checks handled real ordering concerns; their presence alone was not a bug.
+The combined operation below has since merged in #108; see
+[implementation evidence](#first-slice-implementation-evidence). This comparison
+explains the extraction, not remaining work.
 
 Compare that caller sequence with one bounded operation:
 

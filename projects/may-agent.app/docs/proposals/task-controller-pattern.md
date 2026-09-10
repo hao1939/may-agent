@@ -7,7 +7,8 @@ mapping and level-based reconciliation. PR #105 hardened the controller's
 failure boundary and clarified core/adapter ownership. Shared settlement merged
 as `edf9112d` in PR #106; durable retries merged as `dd876fc3` in PR #107.
 Atomic request attachment followed in PR #108; exhausted-Task request readiness
-merged in PR #109. Historical candidate evidence below is not the validation
+merged in PR #109. PR #110 merged the parent-owner proof as `6dcb0fa3` without
+changing production behavior. Historical candidate evidence below is not the validation
 result for combined main. The existing parent-owner route has the bounded proof
 below; the narrow non-success stop has a candidate described below. App policy
 and live follow-through remain open. No deployment is claimed.
@@ -460,11 +461,10 @@ when changing either path; these merged fixes do not prove live owner follow-thr
 
 ## Existing parent-owner proof
 
-The next slice uses existing capability, trigger and context rather than adding
-a recovery supervisor. Host [PR #110](https://github.com/hao1939/may-agent/pull/110),
-candidate `f830901d` on `test/parent-owner-decision`, is based on merged Host
-`4afaaafb` and adds runtime coverage and navigation guidance only. No production
-behavior change was needed for this route.
+This route uses existing capability, trigger and context. Host
+[PR #110](https://github.com/hao1939/may-agent/pull/110) merged as `6dcb0fa3` and
+adds runtime coverage and navigation guidance only. No production behavior
+change was needed. The earlier candidate was `f830901d`, based on `4afaaafb`.
 
 Two temporary SQLite/runtime cases exercise a human request mapped to an
 aggregate parent, a parent-created child that fails four times, and the parent's
@@ -484,7 +484,9 @@ installation-dependent skips, zero failures, including the browser fixture.
 The two focused cases passed 52 assertions. The workspace design check passed
 with zero errors and six pre-existing layout warnings. GitHub Quality and
 Container also [passed on that revision](https://github.com/hao1939/may-agent/actions/runs/34438290694).
-Independent review and deployment remain separate; neither is claimed here.
+The two cases also passed on merged `6dcb0fa3` during the
+[latest core review](../archive/reviews/core-implementation-alignment-20260910.md).
+That review ran focused tests, not the full CI above. Deployment remains separate.
 
 Authoring is part of the contract: use a real executable parent for aggregate
 review and `waiting` for its live children. A structural group is display only;
@@ -495,10 +497,14 @@ truthful non-success stop remain separate from this verified retry route.
 
 ## Candidate: stop without claiming success
 
-**Candidate status:** Host [PR #111](https://github.com/hao1939/may-agent/pull/111),
-candidate `fc74eb46` on `feat/app-task-stop`, includes #110's reviewed proof atop
-`4afaaafb`; not merged or deployed. Land #110 before #111. The source guide and regression tests travel
-with the Host change. This proposal remains the canonical design; existing
+**Candidate status:** Host [PR #111](https://github.com/hao1939/may-agent/pull/111)
+remains open. Its head observed September 10 is `88a476fa`; that revision was
+not reviewed in the latest core comparison. The evidence below belongs to the
+earlier `fc74eb46` candidate on `feat/app-task-stop`, based on `4afaaafb` with
+#110's proof included. #110 has now merged separately. No stop implementation
+is part of the documented main baseline or claimed deployed here.
+The source guide and regression tests travel with the Host change.
+This proposal remains the canonical design; existing
 App policies need no change unless they choose to use this result.
 
 Add `state: "stopped"` to the existing handler result contract, with a non-empty

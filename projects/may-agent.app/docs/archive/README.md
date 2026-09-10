@@ -32,8 +32,11 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Refined core design against implementation — 2026-09-10](reviews/core-implementation-alignment-20260910.md)
+  — Host #110 and committed May App comparison; 111 passing focused tests,
+  reproduced input renewal/retry failures, and prioritized implementation slices.
 - [Core simplicity and robustness — 2026-09-10](reviews/core-simplicity-review-20260910.md)
-  — current source review, reproduced controller failure gaps, measured recovery
+  — earlier source review, reproduced controller failure gaps, measured recovery
   query cost, and 172 passing focused tests; completion fix #104 is merged.
 - [Error handling, metrics and responsive conversation — 2026-09-10](reviews/error-handling-and-conversation-discussion-20260910.md)
   — paused discussion: simple error hook, App placement, consolidation and user
