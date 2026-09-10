@@ -10,6 +10,22 @@ Topic-to-Task links. It reads typed request evidence through
 claims, completion, recovery, and claim-to-Topic association remain there.
 Conversation projection has no scheduler or request lifecycle.
 
+`requests.ts` stores the accepted human ask separately from input handling:
+App/Conversation-scoped ID, current scope/revision, exact Task links, and
+open/closed with closure reason and message identity. Apps return
+`requestUpdates`; the Host validates versions, persists acceptance before a
+handoff and commits closure with the answer. It never infers fulfillment from
+a Task status. Admission links the actual Task in the same state transaction.
+
+The existing `conversation_context` tool pages open asks (`requests`,
+`afterId`) and reads full scope (`request`, `id`). Bounded prompts keep whole
+records; an omitted record must be read before changing it. May's existing
+supervision result can supply `result.conversation.requestUpdates`; stale
+closures fail without losing the accepted scope or accepting a false answer.
+The existing recovery scan also selects terminal linked Tasks with an open
+ask. Discussion-only asks do not create periodic work, and no Request owns
+execution, retries or another controller. Historical asks are not backfilled.
+
 The input Host binds each executing claim to its exact session. Losing claim
 ownership aborts that execution locally; it does not crash the daemon. Replies,
 Task controls and admissions revalidate authority at their commit boundary.

@@ -12,6 +12,7 @@ import {
 import type { AppTaskContext } from "../../app-task-store.js";
 import { isTaskAttentionReadyForReview } from "../../app-task-state.js";
 import { linkConversationTopicTask } from "../../conversations/store.js";
+import { linkConversationRequestTask } from "../../conversations/requests.js";
 
 export type TaskRequestInput = {
   appId: string;
@@ -20,15 +21,21 @@ export type TaskRequestInput = {
   request: Readonly<AppRequest>;
   authorize?: () => void;
   topicId?: string;
+  requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
 };
 
-/** Persist resolved Task input and Topic links. No App mapping, execution or notification calls. */
+/** Persist resolved Task input and Conversation links. No App mapping, execution or notification calls. */
 export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
     const observation = admitAuthorizedTaskRequest(config, input);
     if (input.topicId)
       linkConversationTopicTask(config.resourceStore.db, input.topicId, input.appId, observation.taskId);
+    if (input.requestLink)
+      linkConversationRequestTask(config.resourceStore.db, {
+        ...input.requestLink,
+        taskRef: { appId: input.appId, taskId: observation.taskId },
+      });
     return observation;
   });
 }

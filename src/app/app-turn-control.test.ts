@@ -13,6 +13,7 @@ import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 import { HostCapacity } from "./host-capacity.js";
 import { readAppConversationResource } from "./conversations/store.js";
+import { applyConversationRequestUpdates, readConversationRequest } from "./conversations/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
 
@@ -37,13 +38,39 @@ test("public Stop persists before abort, rejects late output and cannot affect t
   roots.push(root);
   const db = getDb(root);
   const tasks = AppTaskResourceStore.fromDb(db, app.id);
-  tasks.bootstrapSnapshot({ version: 1, project: app.id, project_lifecycle: "active", root_task_id: "project",
-    groups: { project: { id: "project", parent_id: null } }, tasks: {} }, "fixture");
-  observeAppTaskIntent(appTaskContext({ appDir: root, projectDir: root, agent: app.id, maxConcurrent: 1, resourceStore: tasks }), {
-    appAgent: app.id, intent: { id: "independent", parentId: "project", mode: "achieve", outcome: "Independent work", acceptance: ["Verified"] },
-    trigger: { type: "fixture.work", data: {} },
-  });
+  tasks.bootstrapSnapshot(
+    {
+      version: 1,
+      project: app.id,
+      project_lifecycle: "active",
+      root_task_id: "project",
+      groups: { project: { id: "project", parent_id: null } },
+      tasks: {},
+    },
+    "fixture",
+  );
+  observeAppTaskIntent(
+    appTaskContext({ appDir: root, projectDir: root, agent: app.id, maxConcurrent: 1, resourceStore: tasks }),
+    {
+      appAgent: app.id,
+      intent: {
+        id: "independent",
+        parentId: "project",
+        mode: "achieve",
+        outcome: "Independent work",
+        acceptance: ["Verified"],
+      },
+      trigger: { type: "fixture.work", data: {} },
+    },
+  );
   const independent = tasks.readTask("independent");
+  applyConversationRequestUpdates(db, {
+    appId: app.id,
+    conversationId: "chat",
+    updateKey: "accepted",
+    now: 1,
+    updates: [{ id: "ask", expectedRevision: 0, scope: "Review the options", disposition: "open" }],
+  });
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
@@ -128,6 +155,7 @@ test("public Stop persists before abort, rejects late output and cannot affect t
       });
       expect((await after.reconcileOnce(app.id)).claimed).toBe(0);
       expect(after.get("one")?.handling?.phase).toBe("stopped");
+      expect(readConversationRequest(reopenedDb, app.id, "chat", "ask")).toMatchObject({ status: "open", revision: 1 });
       expect(calls).toBe(2);
     } finally {
       reopenedDb.close();
