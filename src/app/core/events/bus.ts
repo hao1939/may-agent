@@ -759,6 +759,13 @@ export type SystemEvent =
     }
   | { type: "metric.recovered"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData }
   | {
+      /** Diagnostic fact; not a sample, alert, or automatic request for work. */
+      type: "metric.measurement.failed";
+      source: string;
+      owner: string;
+      data: { metricId: string; reason: string; triggerEventId?: number };
+    }
+  | {
       type: "metric.stalled";
       source?: string;
       owner: string;

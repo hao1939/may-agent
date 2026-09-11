@@ -22,6 +22,7 @@ export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "project.task.executor.progress",
   "handler.routed",
   "metric.breach",
+  "metric.measurement.failed",
   "conversation.updated",
   "gym.review.filtered",
   "project.approval.resolved",
@@ -214,6 +215,19 @@ export async function measureSourceMetrics(options: {
   const failed = (id: string, reason: string) => {
     skipped.push(id);
     failures.push({ id, reason });
+    // The scheduled caller does not consume this return value. Keep the
+    // bounded explanation in the existing Event journal, not a fake sample
+    // or an alert. Diagnostic storage failure must not stop other sources.
+    try {
+      options.bus.emit({
+        type: "metric.measurement.failed",
+        source: "runtime:metric-source-measurement",
+        owner: "agent:may",
+        data: { metricId: id, reason, triggerEventId: options.triggerEventId },
+      });
+    } catch (error) {
+      log("warn", `[metrics:${id}] Could not retain failure diagnostic: ${measurementError(error)}`);
+    }
     log("warn", `[metrics:${id}] ${reason}`);
   };
   const defaultMeasuredAt = options.measuredAt ?? Date.now();

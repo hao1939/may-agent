@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { getDb } from "../lib/requests.js";
+import { closeDb, getDb } from "../lib/requests.js";
+import { createMetricService } from "../lib/metrics.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
@@ -55,7 +56,10 @@ describe("source-query metric measurement", () => {
     measurement = attachMetricSourceMeasurement({ bus, persistDir });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await measurement.idle();
+    closeDb(persistDir);
+    rmSync(persistDir, { recursive: true, force: true });
     if (originalAppRoot === undefined) delete process.env.APP_ROOT;
     else process.env.APP_ROOT = originalAppRoot;
   });
@@ -341,6 +345,102 @@ describe("source-query metric measurement", () => {
     expect(db.prepare("SELECT current FROM metrics WHERE id = 'unsafe.metric'").get()).toEqual({
       current: null,
     });
+  });
+
+  it("retains scheduled source failures after reopening storage without changing the last observation", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({
+      id: "broken.query",
+      name: "Broken query",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT value FROM missing_fixture_table",
+    });
+    metrics.define({
+      id: "broken.command",
+      name: "Broken command",
+      type: "gauge",
+      owner: "fixture",
+      sourceCommand: "echo 'token=synthetic-private-value " + "x".repeat(3_000) + "' >&2; exit 1",
+    });
+    metrics.define({
+      id: "healthy.query",
+      name: "Healthy query",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT 9 AS value",
+    });
+    metrics.record("broken.query", 7, { measuredAt: 123, sampleSize: 4, note: "last real sample" });
+    const previous = metrics.get("broken.query")!.observation;
+    const trigger = bus.emit({
+      type: "trigger.metrics-snapshot",
+      source: "cron",
+      owner: "agent:may",
+      data: {},
+    });
+    await measurement.idle();
+
+    closeDb(persistDir);
+    const reopened = getDb(persistDir);
+    const failures = reopened
+      .prepare("SELECT source, owner, data FROM events WHERE event_type = 'metric.measurement.failed' ORDER BY id")
+      .all() as Array<{ source: string; owner: string; data: string }>;
+    expect(failures).toHaveLength(2);
+    expect(
+      failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "agent:may"),
+    ).toBe(true);
+    const [command, query] = failures.map((row) => JSON.parse(row.data));
+    expect(query).toEqual({
+      metricId: "broken.query",
+      triggerEventId: trigger[EVENT_ROW_ID],
+      reason: expect.stringContaining("missing_fixture_table"),
+    });
+    expect(command).toMatchObject({ metricId: "broken.command", triggerEventId: trigger[EVENT_ROW_ID] });
+    expect(command.reason).toContain("[REDACTED]");
+    expect(command.reason).not.toContain("synthetic-private-value");
+    expect(command.reason.length).toBeLessThanOrEqual(2_000);
+    const retained = createMetricService({ getDb: () => reopened });
+    expect(retained.get("broken.query")!.observation).toEqual(previous);
+    expect(retained.get("broken.command")!.observation).toBeNull();
+    expect(retained.get("healthy.query")!.observation?.value).toBe(9);
+    expect(
+      reopened.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id LIKE 'broken.%'").get(),
+    ).toEqual({ n: 1 });
+    expect(reopened.prepare("SELECT COUNT(*) AS n FROM metric_alerts WHERE metric_id LIKE 'broken.%'").get()).toEqual({
+      n: 0,
+    });
+  });
+
+  it("continues measuring when persisting the failure diagnostic fails", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({
+      id: "broken.query",
+      name: "Broken query",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT value FROM missing_fixture_table",
+    });
+    metrics.define({
+      id: "healthy.query",
+      name: "Healthy query",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT 9 AS value",
+    });
+    let attempts = 0;
+    bus.setPersistenceSubscriber((event) => {
+      if (event.type === "metric.measurement.failed") {
+        attempts++;
+        throw new Error("Synthetic diagnostic storage failure");
+      }
+    });
+    const result = await measureSourceMetrics({ bus, persistDir });
+    expect(attempts).toBe(1);
+    expect(result.failures).toEqual([{ id: "broken.query", reason: expect.stringContaining("missing_fixture_table") }]);
+    expect(result.measured).toContain("healthy.query");
+    expect(metrics.get("healthy.query")!.observation?.value).toBe(9);
   });
 
   it("records real source-command output without blocking the daemon event loop", async () => {

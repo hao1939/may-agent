@@ -165,17 +165,29 @@ export const guard = {
     expect(getWorkflowRun(h.root, h.calls[0].options!.workflowRunId!)?.status).toBe("blocked");
   });
 
-  it("honors steering between completion repairs without starting another step", async () => {
+  it("retains the exact steering reason after reopening storage without starting another repair", async () => {
     const repair = Promise.withResolvers<TaskResult>();
     const h = setup({ pending: repair.promise, secondRepair: true });
     const running = h.runner.run("bounded", "test");
     try {
       await h.started;
-      expect(h.runner.steer("Review the new requirement first")).toBe(true);
+      const reason = "Review the new requirement first.\nDo not start another repair.";
+      expect(h.runner.steer(reason)).toBe(true);
       repair.resolve(success());
-      expect(await running).toMatchObject({ type: "interrupted", steeringMessage: "Review the new requirement first" });
+      const result = await running;
+      expect(result).toMatchObject({
+        type: "interrupted",
+        workflowRunId: h.calls[0].options!.workflowRunId!,
+        steeringMessage: reason,
+      });
       expect(h.calls.map((call) => call.agent)).toEqual(["worker", "repairer"]);
-      expect(getWorkflowRun(h.root, h.calls[0].options!.workflowRunId!)?.status).toBe("interrupted");
+      if (result.type !== "interrupted") throw new Error("Expected steered run");
+      closeDb(h.root);
+      expect(getWorkflowRun(h.root, result.workflowRunId)).toMatchObject({
+        status: "interrupted",
+        result_reason: reason,
+        endedAt: expect.any(Number),
+      });
     } finally {
       repair.resolve(success());
       await running;
