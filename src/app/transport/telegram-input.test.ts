@@ -515,7 +515,7 @@ describe("Telegram durable input and natural follow-up", () => {
     } finally { await f.close(); }
   });
 
-  it("preserves progress-card Topic context across a stalled send, replies, Details, and Follow", async () => {
+  it("preserves late-linked Topic context across watch, a stalled progress send, replies, Details, and Follow", async () => {
     const f = durableTelegramFixture();
     const held = Promise.withResolvers<void>();
     try {
@@ -524,11 +524,16 @@ describe("Telegram durable input and natural follow-up", () => {
           id: `topic_${suffix}`, appId: "may", conversationId: "may:primary", title: `Subject ${suffix}`,
           openedBy: "human", originMessageId: `original-${suffix}`, now: 1,
         });
-        linkConversationTopicTask(f.db, `topic_${suffix}`, "may", taskId);
+        if (taskId !== "first") linkConversationTopicTask(f.db, `topic_${suffix}`, "may", taskId);
       }
       f.message(100, "/topic aaaaaaaa", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic aaaaaaaa"));
+      // Task admission can append its link after the person selected the Topic.
+      linkConversationTopicTask(f.db, "topic_aaaaaaaa", "may", "first");
       f.message(101, "/watch first", { message_thread_id: 7 });
       await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch first"));
+      expect(f.published.find((e) => e.data.metadata?.command === "/watch first")!.data.metadata.topicId)
+        .toBe("topic_aaaaaaaa");
       let sendStarted = false;
       f.hold(async (body) => {
         if (body.text.includes("Progress while sending")) { sendStarted = true; await held.promise; }

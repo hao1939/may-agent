@@ -732,7 +732,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   function selectedTaskTopicId(surface: string, task: { appId: string; taskId: string }): string | undefined {
-    const topic = selectedTopics.get(surface);
+    const selected = selectedTopics.get(surface);
+    if (!selected) return undefined;
+    // Admission can append Task links after selection. Read the current Topic
+    // before deciding whether this Task belongs to it.
+    const topic = readConversationTopic(getDb(persistDir), opts.interfaceAgent, sharedConversationId, selected.id);
+    if (topic) selectedTopics.set(surface, topic);
+    else selectedTopics.delete(surface);
     return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId)
       ? topic.id
       : undefined;
