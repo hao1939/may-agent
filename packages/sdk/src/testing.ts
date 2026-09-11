@@ -66,12 +66,14 @@ export function createTestAppLogger(overrides: Partial<Logger> = {}): Logger {
 
 export function createTestObserverContext(
   options: {
+    previousObservation?: ObserverContext["previousObservation"];
     read?: AppRead;
     log?: Logger;
     workspace?: ObserverContext["workspace"];
   } = {},
 ): ObserverContext {
   return {
+    previousObservation: structuredClone(options.previousObservation),
     read: options.read ?? createTestAppRead(),
     log: options.log ?? createTestAppLogger(),
     workspace: options.workspace ?? {
