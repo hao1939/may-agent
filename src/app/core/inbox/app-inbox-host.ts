@@ -381,9 +381,15 @@ export class AppInboxHost {
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
     const app = this.#requiredApp(input.appId);
     validateInput(app, input.input);
+    const conversationInput = Boolean(
+      app.requests && (!app.requests.inputKinds || app.requests.inputKinds.includes(input.input.kind)),
+    );
     const defaultConversationId = app.requests?.conversationId?.trim();
     const useDefaultConversation =
-      input.conversationId === undefined && defaultConversationId !== undefined && input.originEventId !== undefined;
+      conversationInput &&
+      input.conversationId === undefined &&
+      defaultConversationId !== undefined &&
+      input.originEventId !== undefined;
     const prepared = {
       ...input,
       ...(useDefaultConversation
@@ -391,10 +397,7 @@ export class AppInboxHost {
         : {}),
       now: this.#now(),
     };
-    if (
-      app.requests &&
-      (!app.requests.inputKinds || app.requests.inputKinds.includes(input.input.kind))
-    ) {
+    if (conversationInput) {
       if (!this.#admitConversation) throw new Error("Conversation Task admission is not configured");
       return this.#admitConversation({
         ...prepared,

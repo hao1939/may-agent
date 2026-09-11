@@ -130,7 +130,7 @@ describe("conversational attempt contract", () => {
       },
     } as unknown as SubagentManager;
     const registry = {
-      snapshot: () => ({ entries: [may, owner].map((definition) => ({ appDir: definition.id, definition })) }),
+      snapshot: () => ({ entries: [app, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
     const resolve = createConversationAgentResolver({ manager, registry, db });
     expect(await resolve({ app, request: current, execution })).toEqual(answer);

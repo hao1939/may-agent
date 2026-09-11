@@ -163,7 +163,10 @@ export function appDependencyCatalog(
       appId: definition.id,
       description: definition.description?.trim() || "No description declared.",
       inputs: appInputContracts(definition.inputSchema).filter(
-        (input) => definition.id !== sourceAppId || !definition.requests?.inputKinds?.includes(input.kind),
+        (input) =>
+          definition.id !== sourceAppId ||
+          !definition.requests ||
+          Boolean(definition.requests.inputKinds && !definition.requests.inputKinds.includes(input.kind)),
       ),
     }))
     .filter((entry) => entry.inputs.length > 0)

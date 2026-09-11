@@ -246,7 +246,8 @@ async function delegation(nested = false) {
       await ctx.events.emit({ localKey: "started", type: "measurement.started", data: {} });
       const result = await (await response).json();
       return ctx.done("Measured the sample", {
-        state: "converged", summary: "The measurement is 17", evidence: ["sample:17"], result
+        state: "converged", summary: "The measurement is 17", evidence: ["sample:17"],
+        response: "Raw sample: 17", result
       });
     }
   `,
@@ -402,6 +403,12 @@ async function delegation(nested = false) {
             assert.equal(f.store.readReceipt(id), null);
             assert.equal(f.store.readTask(id)?.status.executionFailures ?? 0, 0);
           }
+          assert.equal(
+            readAppConversationResource(f.db, "sample", "primary").messages.some(
+              (message) => message.text === "Raw sample: 17",
+            ),
+            false,
+          );
           runtime!.close();
           await closeInstalledAppTaskRuntimes(f.bus);
           closeDb(f.persistDir);

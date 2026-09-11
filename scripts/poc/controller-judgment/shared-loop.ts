@@ -284,7 +284,11 @@ try {
         assert.equal(exact?.attemptId, measurementOutcome!.metadata.id);
         assert.deepEqual(measurementInput?.result?.result, exact?.result);
       }
-      const resultInput = listAppInboxItems(db, { appId: "may" }).find((item) => item.input.kind === "task-outcome");
+      const resultInput = listAppInboxItems(db, { appId: "may" }).find(
+        (item) =>
+          item.input.kind === "task-outcome" &&
+          (item.input.data as { attemptId?: string }).attemptId === childOutcome.metadata.id,
+      );
       assert.equal((resultInput?.input.data as { attemptId?: string })?.attemptId, childOutcome.metadata.id);
       assert.equal(listPendingConversationTaskChanges(db, "may").length, 0);
       ingress!.close();
@@ -293,9 +297,21 @@ try {
       db = getDb(paths.persistDir);
       bus = new EventBus();
       await start();
-      const resumed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers + 2);
+      const beforeReopenReply = answerCount();
+      const resumed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > beforeReopenReply);
       publish("reopen", "Remind me of the sample result and the limitation we discussed.");
       await resumed;
+      const reopenedInput = listAppInboxItems(db, { appId: "may" }).find(
+        (item) =>
+          item.source.kind === "human" &&
+          (item.input.data as { message?: string }).message ===
+            "Remind me of the sample result and the limitation we discussed.",
+      );
+      assert.equal(reopenedInput?.status, "done", "Reopen must execute and settle the new input");
+      assert(
+        reopenedInput?.result?.response?.includes(String(value)),
+        "The reopened reply must recall the observed value",
+      );
       assert.deepEqual(Object.keys(store().readSnapshot().resources!).sort(), expectedTaskIds);
       report = {
         taskA,

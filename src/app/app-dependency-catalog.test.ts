@@ -57,6 +57,12 @@ describe("App dependency catalog", () => {
         inputs: [{ kind: "goal", requiredData: [], dataTypes: {}, fixedData: {} }],
       },
     ]);
+    expect(
+      appDependencyCatalog(
+        [{ appDir: "/fixtures/may.app", definition: { ...source, requests: { mode: "agent" } } }],
+        "may",
+      ),
+    ).toEqual([]);
   });
 
   it("summarizes required paths, field shapes, and fixed data without copying the full schema", () => {
