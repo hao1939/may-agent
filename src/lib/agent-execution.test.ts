@@ -650,4 +650,37 @@ describe("direct structured judgment execution", () => {
     expect(result.status).toBe("interrupted");
     expect(result.structuredResult).toBeUndefined();
   });
+
+  test.each([true, false])("retains a committed finish when timeout races with turn cleanup (structured=%s)", async (structured) => {
+    const prepared = prepare(structured);
+    let calls = 0;
+    let receipts = 0;
+    let timedOutAfterReceipt = false;
+    prepared.runner.streamFn = () => {
+      calls++;
+      return finishStream(finishArgs);
+    };
+
+    const result = await executePreparedAgent(prepared, {
+      timeoutMs: 1_000,
+      async onObservation(event, signal) {
+        if (event.type !== "message_end" || event.message.role !== "toolResult" || event.message.toolName !== "finish") return;
+        expect(event.message.isError).toBe(false);
+        expect(signal.aborted).toBe(false);
+        receipts++;
+        // Hold actual turn cleanup after the receipt until the real deadline fires.
+        await new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve(), { once: true }));
+        timedOutAfterReceipt = true;
+        throw new Error("Turn cleanup interrupted after committed finish");
+      },
+    });
+
+    expect(timedOutAfterReceipt).toBe(true);
+    expect(receipts).toBe(1);
+    expect(calls).toBe(1);
+    expect(result.status).toBe(structured ? "done" : "error");
+    expect(result.error).toBeUndefined();
+    expect(result.finishResult?.status).toBe("failure");
+    expect(result.structuredResult).toEqual(judgment);
+  });
 });

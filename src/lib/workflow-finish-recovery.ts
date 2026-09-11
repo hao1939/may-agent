@@ -54,6 +54,7 @@ export function workflowFinishRecoveryPrompt(outputSchema?: TSchema, reason?: st
   return (
     prefix +
     "Continue the original bounded assignment within its scope and remaining budget. " +
+    "Do not repeat successful work or committed effects. " +
     "Use the App's instructions and current evidence to choose the next step; inspect current state before repeating an uncertain effect. " +
     "When the evidence supports an outcome, call finish() with all required fields" +
     (outputSchema
