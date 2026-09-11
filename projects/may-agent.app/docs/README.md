@@ -35,8 +35,11 @@ tracks the merged removal of conversational child waits in Host #140, with
 visible retirement of old waits and preservation of accepted Requests and Task
 work. Import/navigation and foreground-App selection landed in #138/#139.
 Core/composition directory organization landed in Host #141 (`48254267`).
-Codex executor/observer grouping remains in #142, rebased onto that merge, with
-an aligned documentation companion. HTTP handler extraction remains separate.
+Codex executor/observer grouping landed in #142 (`427d4ea1`). The
+[core policy cleanup](proposals/authority-boundary-simplification.md#core-policy-cleanup)
+removes obsolete recovery escalation and keeps conversational selection in
+composition. Its candidate evidence is separate from the merged directory work.
+HTTP handler extraction remains separate.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
 

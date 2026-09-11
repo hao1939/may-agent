@@ -2,8 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** The four responsibilities below are implemented at
-the [source baseline](../README.md). The source map below identifies the newer
-directory-layout candidates separately.
+the [source baseline](../README.md). The source map follows the directory moves
+merged in Host #141/#142. The [boundary cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
+tracks subsequent candidate changes separately.
 Task activation and startup recovery are independent of optional schedules.
 [Open work](../proposals/task-runtime-organization.md) is tracked separately;
 this page does not identify the deployed release.
@@ -155,8 +156,8 @@ configuration or unavailable authoritative store an acceptable silent skip.
 
 Paths are relative to `projects/may-agent`. This map follows the directory-layout
 merge [#141](https://github.com/hao1939/may-agent/pull/141) (`48254267`) and
-its remaining adapter candidate [#142](https://github.com/hao1939/may-agent/pull/142),
-rebased onto that merge as `b8297fad`. The move preserves existing transitions and transaction boundaries;
+the adapter merge [#142](https://github.com/hao1939/may-agent/pull/142) (`427d4ea1`).
+The moves preserve existing transitions and transaction boundaries;
 its review and validation are tracked in the
 [simplification proposal](../proposals/authority-boundary-simplification.md#directory-organization-for-code-review).
 
@@ -206,6 +207,11 @@ handling. ESLint prevents core imports of concrete conversational handlers.
 | Adapter | Uses existing public contracts and narrowly supplied capabilities; does not own private Task stores or queues |
 | Composition | Imports both sides and wires them; contains no domain decisions or duplicate transition logic |
 | App | Imports the SDK and its own domain modules; never Host-private implementation |
+
+Composition supplies the same conversational App identity to event admission
+and inbox dispatch. Core enforces durable input handling without naming May.
+Executors share persisted session identities through the small session-binding
+contract; importing a lifecycle type does not grant state mutation authority.
 
 Put an extension beside its existing capability family, use its typed contract,
 and attach it through composition or an App declaration. Keep activation and

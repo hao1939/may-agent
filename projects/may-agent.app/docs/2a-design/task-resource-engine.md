@@ -541,6 +541,14 @@ ownership. Attention must carry a concrete reason. Whether each failure reaches
 an existing authorized owner/parent route remains an explicit proof obligation in the
 [controller proposal](../proposals/task-controller-pattern.md).
 
+Retained legacy attention marked `previous-runtime-attempt-not-recoverable`
+is repaired into eligibility for the same Task and generation. This known
+mechanical repair does not require an App `owner-review` input or an LLM
+instruction. Other attention reasons retain their existing handling. The
+[core policy cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
+removes the obsolete fallback that followed this repair; old notification
+metadata needs no migration.
+
 The [durable retry slice](../proposals/task-controller-pattern.md#durable-retries)
 merged in Host PR #107: a Task-local consecutive
 failure count is checked at shared admission, with the initial execution plus

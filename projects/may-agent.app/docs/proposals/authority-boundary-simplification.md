@@ -214,13 +214,50 @@ families into their existing component homes so reviewers can find the whole
 responsibility together. Use existing ESLint import rules; no dependency-analysis
 service, service framework or uniform folder template is needed.
 
+### Core policy cleanup
+
+**Status:** Candidate `72c2b206` on Host branch `fix/core-policy-boundaries`,
+based on `427d4ea1`; human review and deployment remain separate.
+
+The core/external review found two small policy leaks and unnecessary imports.
+Use the existing boundaries instead of adding another extension mechanism:
+
+- Composition supplies one conversational App identity to both event admission
+  and inbox dispatch. Core enforces durable admission for that selection without
+  naming May; unrelated direct-agent input remains available.
+- Remove the obsolete recovery owner-review fallback and notification helpers.
+  Its selector followed a synchronous repair pass that already requeued every
+  matching legacy attention record. Keep that repair, exact Task/generation,
+  prior evidence and its existing observational event. Other blockers retain
+  attention. No new App input, event type or recovery decision is introduced.
+- Put the unchanged persisted recovery-owner constant beside the session-binding
+  contract. Executor adapters import it without loading the reconciler. Core
+  database callers use the connection module directly.
+- Extend existing import restrictions to prevent core from regaining App-input
+  helpers or the database compatibility facade, and prevent executor adapters
+  from importing lifecycle/state mutation implementations. Type-only imports
+  remain allowed; they confer no execution authority.
+
+Regression coverage reopens legacy state with and without old notification
+metadata, runs startup recovery twice, preserves an unrelated domain blocker,
+and completes the same repaired Tasks without an owner-review input. Admission
+coverage selects a differently named conversational App and omits it entirely.
+This is a source cleanup; no App schema migration or new runtime service is needed.
+Larger runtime/reconciler and HTTP file splits remain separate work.
+
+Validation at `72c2b206`: full local CI passed with 2,685 tests passed, three
+installation-only skips and zero failures; browser coverage ran. Six ESLint
+probes verified forbidden value imports and allowed contract/type imports.
+Canonical design integrity, examples and App checks passed against this source.
+Hosted checks are tracked on the PR. No installation or model-backed test ran.
+
 ### Directory organization for code review
 
 **Status September 11:** Core/composition moves merged in
 [Host #141](https://github.com/hao1939/may-agent/pull/141) as `48254267`.
 Concrete Codex/observer grouping in [#142](https://github.com/hao1939/may-agent/pull/142)
-is rebased onto that merge as `b8297fad` and awaits human review.
-The rebase preserves the previously tested tree exactly.
+merged as `427d4ea1` from candidate `b8297fad`.
+The rebase and merge preserve the previously tested tree exactly.
 It does not depend on retiring child waits, evaluation controls or workflow resume.
 The intended reading order is composition -> inbox -> Task runtime -> state,
 then the concrete capability involved.
@@ -336,7 +373,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Retire conversational child waits | Merged in #140; unfinished legacy waits fail visibly while admitted work and accepted asks remain. Deployment is separate. |
-| Reorganize directories for code review | Core/composition (#141) is merged; concrete capabilities (#142) await review. HTTP extraction remains a separate slice of the [layout map](#directory-organization-for-code-review). |
+| Reorganize directories for code review | Core/composition (#141) and concrete capabilities (#142) are merged. HTTP extraction remains a separate slice of the [layout map](#directory-organization-for-code-review). |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
@@ -435,13 +472,17 @@ required by this proposal.
 
 ### Directory companion and landing order
 
-The workspace branch `docs/core-directory-layout` updates the canonical source
+The workspace directory companion updates the canonical source
 map, local source links and the design-example checker's two internal Host imports.
-Validate it against #142, which includes merged #141. Integrate it after #142
-lands and the source checkout advances; its new imports deliberately
+Host #141/#142 are merged. Integrate the companion after the source checkout
+advances to that layout; its new imports deliberately
 do not add fallbacks or forwarding modules for older layouts. Historical source
 links remain pinned evidence. Source organization does not change the deployed
 installation.
+
+Workspace branch `docs/core-policy-boundaries` includes that companion and the
+candidate cleanup notes above. Validate it against the matching Host candidate;
+land the Host change before describing its implementation as current.
 
 The core PR also includes a separate test-harness commit: compiled status checks
 use bounded asynchronous subprocesses. During validation, the existing synchronous

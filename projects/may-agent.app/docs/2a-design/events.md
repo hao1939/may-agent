@@ -263,6 +263,11 @@ app.input.requested target.appId=<app>
 An unknown App address is rejected before a receipt exists. It does not fall
 back to a generic owner inbox or May.
 
+Composition selects the conversational App. Its input must use durable App or
+Conversation admission; `chat.start.requested` cannot bypass that boundary.
+This rule follows the selected capability rather than a name hardcoded in core.
+See the [candidate cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup).
+
 The request persists caller correlation, dependency links, result, and restart
 recovery. It does not execute App policy. The App sees the
 typed task context and returns only reconciliation evidence and desired task
