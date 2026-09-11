@@ -35,6 +35,8 @@ import { loadProjectReadModel } from "../core/tasks/app-task-runtime-state.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { readWorkflowEvidence } from "../../lib/workflow-evidence.js";
+import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
+import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
@@ -868,29 +870,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     );
 
     const metricOrder = new Map(LIVE_VITAL_METRIC_IDS.map((id, idx) => [id, idx]));
-    const vitalPlaceholders = LIVE_VITAL_METRIC_IDS.map(() => "?").join(", ");
     const openAlertMetricIds = new Set(openAlerts.map((alert) => alert.metricId));
-    const vitals = db
-      .prepare(
-        `SELECT id, name, owner, current, target, threshold, unit, priority, alert_op, updated_at as updatedAt
-       FROM metrics
-       WHERE id IN (${vitalPlaceholders}) AND status = 'active'`,
-      )
-      .all(...LIVE_VITAL_METRIC_IDS) as any[];
+    const vitals = readMetricObservations(db, now, LIVE_VITAL_METRIC_IDS).metrics;
     const vitalMetrics = vitals
       .map((m) => {
-        const current = typeof m.current === "number" ? m.current : null;
-        const threshold = typeof m.threshold === "number" ? m.threshold : null;
-        const breached =
-          current != null && threshold != null
-            ? m.alert_op === ">" || m.alert_op === "above"
-              ? current > threshold
-              : current < threshold
-            : false;
         return {
           ...m,
           owner: m.owner || "may",
-          breached,
+          updatedAt: m.observation?.measuredAt ?? null,
+          breached: m.thresholdBreached,
           alertOpen: openAlertMetricIds.has(m.id),
         };
       })
@@ -1786,24 +1774,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── Knowledge API ──────────────────────────────────────────────────
 
   // ── Browse API: generic file/directory browser for knowledge base ──
-  function handleMetrics(_url: URL): Response {
+  function handleMetrics(url: URL): Response {
     const db = _db();
-    const metrics = db
-      .prepare(
-        `
-      SELECT m.id, m.name, m.type,
-             COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
-             m.owner as explicitOwner, m.project, m.current, m.target, m.threshold,
-             m.unit, m.priority, m.status, m.speed, m.alert_op,
-             m.source, m.updated_at
-      FROM metrics m
-      LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-        AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-      WHERE m.status = 'active'
-      ORDER BY owner, m.priority, m.name
-    `,
-      )
-      .all() as any[];
+    const observations = readMetricObservations(db, Date.now(), url.searchParams.has("id") ? [url.searchParams.get("id")!] : undefined);
+    const metrics = observations.metrics;
 
     const openAlerts = enrichOpenAlerts(
       db,
@@ -1824,6 +1798,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       WHERE ma.resolved_at IS NULL
         AND m.status = 'active'
       ORDER BY ma.created_at DESC
+      LIMIT ${METRIC_LIST_LIMIT + 1}
     `,
         )
         .all() as any[],
@@ -1844,19 +1819,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         : { ...metric, alertOpen: false };
     });
 
-    const snapshots = db
-      .prepare(
-        `
-      SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.note
-      FROM metric_snapshots ms
-      INNER JOIN (
-        SELECT metric_id, MAX(measured_at) as max_at
-        FROM metric_snapshots GROUP BY metric_id
-      ) latest ON ms.metric_id = latest.metric_id AND ms.measured_at = latest.max_at
-      ORDER BY ms.measured_at DESC
-    `,
-      )
-      .all() as any[];
+    const snapshots = metrics.filter((m) => m.observation).map((m) => ({
+      metric_id: m.id, value: m.current, sample_size: m.sample_size,
+      measured_at: m.measured_at, measured_by: m.measured_by, note: m.note,
+    }));
 
     const recentSnapshots = db
       .prepare(
@@ -1870,9 +1836,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return new Response(
       JSON.stringify({
         metrics: metricsWithAlertState,
+        generatedAt: observations.generatedAt,
+        truncated: observations.truncated,
         latestSnapshots: snapshots,
         recentSnapshots,
-        alerts: openAlerts,
+        alerts: openAlerts.slice(0, METRIC_LIST_LIMIT),
+        alertsTruncated: openAlerts.length > METRIC_LIST_LIMIT,
       }),
       {
         headers: { "Content-Type": "application/json" },
@@ -3178,8 +3147,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleHumanTaskRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
-    if (!appId) return json({ error: "appId required" }, 400);
     const detail = url.pathname === "/api/task";
+    if (!appId && (detail || url.searchParams.get("allApps") !== "true")) return json({ error: "appId required (or allApps=true for a list)" }, 400);
     const taskId = url.searchParams.get("taskId")?.trim();
     if (detail && !taskId) return json({ error: "taskId required" }, 400);
     const includeDone = url.searchParams.get("includeDone");
@@ -3192,7 +3161,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           ? { type: "task.get", appId, taskId }
           : {
               type: "tasks.list",
-              appId,
+              ...(appId ? { appId } : {}),
               includeDone: includeDone === "true",
               ...(url.searchParams.has("status") ? { status: url.searchParams.getAll("status") } : {}),
               ...(url.searchParams.has("limit") ? { limit: Number(url.searchParams.get("limit")) } : {}),
@@ -3767,6 +3736,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
+      if (url.pathname === "/api/workflow-health") {
+        let query: ReturnType<typeof workflowHealthQuery>;
+        try { query = workflowHealthQuery(url.searchParams); }
+        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid workflow filter" }, 400); }
+        return json(readWorkflowHealth(_db(), query));
+      }
       if (url.pathname === "/api/projects") return handleProjects();
       const appTaskMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks\/(.+)$/);
       if (appTaskMatch && req.method === "GET") {
@@ -3815,14 +3790,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);
-        const days = parseInt(url.searchParams.get("days") || "7", 10);
-        const since = Date.now() - days * 86400000;
-        const rows = _db()
-          .prepare(
-            `SELECT value, sample_size, measured_at, measured_by, note FROM metric_snapshots WHERE metric_id = ? AND measured_at > ? ORDER BY measured_at ASC`,
-          )
-          .all(metricId, since);
-        return json({ metricId, days, snapshots: rows });
+        let window: ReturnType<typeof healthWindow>;
+        try { window = healthWindow(url.searchParams); }
+        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid history window" }, 400); }
+        return json(readMetricHistory(_db(), metricId, window));
       }
       const agentDetailMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/detail$/);
       if (agentDetailMatch) return handleAgentDetail(agentDetailMatch[1]);

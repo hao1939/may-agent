@@ -1,234 +1,216 @@
-// ── Metrics Tab ───────────────────────────────────────────────────────
-const PINNED_METRICS = ['runtime.daemon-heartbeat-stale', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count'];
-const HEALTH_METRICS = ['runtime.daemon-heartbeat-stale', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count'];
+// SQLite-backed observations. No browser-owned metric formulas or health score.
+let metricsLoadGeneration = 0;
+let overviewLoadGeneration = 0;
+let overviewTasksGeneration = 0;
+const WORKFLOW_OUTCOMES = ['done', 'error', 'blocked', 'interrupted'];
+
+async function readHealthJson(url) {
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || `Read failed (${response.status})`);
+  return data;
+}
+
+function healthTime(value) {
+  return Number.isFinite(value) ? new Date(value).toLocaleString() : 'unknown';
+}
+
+function healthDuration(value) {
+  if (!Number.isFinite(value)) return 'unknown';
+  if (value < 1000) return `${Math.round(value)} ms`;
+  if (value < 60000) return `${(value / 1000).toFixed(1)} s`;
+  return `${(value / 60000).toFixed(1)} min`;
+}
+
+function workflowHealthLink(data, changes = {}) {
+  const params = new URLSearchParams({ start: data.window.start, end: data.window.end, scope: data.scope, runs: 'true', ...data.identity });
+  for (const [key, value] of Object.entries(changes)) {
+    if (value !== null) params.set(key, String(value));
+  }
+  return '/metrics?' + params;
+}
+
+function workflowRunLink(id) {
+  return '/events?workflowRunId=' + encodeURIComponent(id) + '#loop-trace';
+}
+
+function workflowOutcomeCards(data) {
+  const t = data.totals;
+  return `<div class="health-summary" data-workflow-outcomes>
+    <div class="health-card"><div class="health-label">Finished executions</div><div class="health-value">${t.finished}</div><div class="health-sub">${t.successRate === null ? 'No finished executions' : (100 * t.successRate).toFixed(1) + '% successful execution'}</div></div>
+    ${WORKFLOW_OUTCOMES.map(status => `<a class="health-card" href="${esc(workflowHealthLink(data, { outcome: status }))}"><div class="health-label">${esc(status)}</div><div class="health-value">${t[status]}</div><div class="health-sub">of ${t.finished} finished</div></a>`).join('')}
+  </div>`;
+}
+
+function workflowCoverage(data) {
+  return `<p class="health-note">${esc(healthTime(data.window.start))} – ${esc(healthTime(data.window.end))} (end excluded).
+    ${data.scope === 'top-level' ? 'Top-level runs only; children remain in run evidence.' : 'All runs, including children; not independent Task outcomes.'}
+    Retained records only; older coverage is not guaranteed. Later settlement or retention can change this selection.</p>
+    ${data.totals.unknownOutcomes || data.coverage.undatedFinishedStartedInWindow ? `<p class="health-warning">Coverage gap: ${data.totals.unknownOutcomes} unrecognized outcomes in the window; ${data.coverage.undatedFinishedStartedInWindow} finished runs started in the window without an end time.</p>` : ''}`;
+}
+
+function workflowRunTable(data) {
+  if (!data.runs.length) return '<p>No matching retained executions.</p>';
+  return `<div class="health-scroll"><table class="health-table"><thead><tr><th>Run / workflow</th><th>Outcome</th><th>Finished</th><th>Duration</th><th>Reason (preview)</th></tr></thead><tbody>
+    ${data.runs.map(run => `<tr><td><a href="${esc(workflowRunLink(run.runId))}">${esc(run.runId)}</a><div class="health-note">${esc(run.workflow)}</div></td>
+    <td>${esc(run.status)}</td><td>${esc(healthTime(run.endedAt))}</td><td>${esc(healthDuration(run.durationMs))}</td><td class="health-text">${esc(run.reason || '—')}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+async function loadWorkflowOverview() {
+  const generation = ++overviewLoadGeneration;
+  const el = document.getElementById('workflow-overview');
+  if (!el) return;
+  try {
+    const data = await readHealthJson('/api/workflow-health');
+    if (generation !== overviewLoadGeneration || currentTab !== 'live') return;
+    el.innerHTML = `<h2>Workflow execution · last 24 hours</h2>${workflowOutcomeCards(data)}${workflowCoverage(data)}
+      <p>${data.running} running now (separate from finished outcomes). <a href="${esc(workflowHealthLink(data))}">Compare workflows and inspect runs</a></p>
+      <h3>Recent execution errors</h3>${workflowRunTable(data)}`;
+  } catch (error) { if (generation === overviewLoadGeneration) el.innerHTML = `<h2>Workflow execution</h2><p class="health-warning">Unable to read execution evidence: ${esc(error.message)}</p>`; }
+}
+
+async function loadOverviewTasks() {
+  const generation = ++overviewTasksGeneration;
+  const el = document.getElementById('overview-tasks');
+  if (!el) return;
+  try {
+    const data = await readHealthJson('/api/tasks?allApps=true&status=pending&status=running&status=waiting&status=attention&limit=8');
+    if (generation !== overviewTasksGeneration || currentTab !== 'live') return;
+    el.innerHTML = `<h3>Current Tasks</h3><p class="health-note">Current work, not workflow outcomes. Showing up to 8 recent Tasks; pending does not necessarily mean eligible to run.</p>
+      ${data.items.length ? data.items.map(task => `<div class="health-task">${esc(task.outcome)} · ${esc(task.status)} · ${esc(task.appId)} · ${esc(task.ref)}</div>`).join('') : '<p>No current Tasks in this selection.</p>'}
+      <p><a href="/projects">Inspect Tasks in Projects</a>${data.nextCursor ? ' · more Tasks available' : ''}</p>`;
+  } catch (error) { if (generation === overviewTasksGeneration) el.innerHTML = `<h3>Current Tasks</h3><p class="health-warning">Task read unavailable: ${esc(error.message)}</p>`; }
+}
+
+function metricObservationLabel(metric) {
+  const observation = metric.observation;
+  let label = observation ? `${metric.freshness} · measured ${healthTime(observation.measuredAt)}` : 'No retained observation';
+  if (metric.collectionFailure?.afterLastSample) label += ' · collection failed after last sample';
+  return label;
+}
+
+function metricRuleLabel(metric) {
+  if (metric.alertsDisabled) return 'Alerts disabled';
+  if (metric.threshold === null) return 'No threshold rule';
+  return `${metric.thresholdBreached === null ? 'Not evaluated' : metric.thresholdBreached ? 'Last value outside threshold' : 'Last value within threshold'} (${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${metric.threshold} ${metric.unit || ''})`;
+}
+
+function renderObservationList(data) {
+  return `<h2>Recorded measurements</h2><p class="health-note">${data.metrics.length} definitions${data.truncated ? ' (list limited; use an exact metric link for other definitions)' : ''}. Freshness, collection failure and warning rules are separate facts.</p>
+    <label>Find a metric <input id="metric-search" type="search" placeholder="Name, ID or owner" oninput="filterMetricRows(this.value)"></label>
+    <div class="health-scroll"><table class="health-table"><thead><tr><th>Metric / owner</th><th>Last value</th><th>Observation</th><th>Rule</th></tr></thead><tbody>
+    ${data.metrics.map(m => `<tr data-metric-search="${attrEsc([m.name, m.id, m.owner].join(' ').toLowerCase())}"><td><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a><div class="health-note">${esc(m.id)} · ${esc(m.owner || 'unknown owner')} · ${esc(m.type || 'unspecified type')}</div></td>
+      <td>${esc(m.observation ? String(m.observation.value) : 'unknown')} ${esc(m.unit || '')}</td><td>${esc(metricObservationLabel(m))}${m.observation?.sampleSize != null ? `<div>Sample size: ${m.observation.sampleSize}</div>` : ''}</td><td>${esc(metricRuleLabel(m))}${m.alertOpen ? ' · open alert' : ''}</td></tr>`).join('')}
+    </tbody></table></div>${data.metrics.length ? '' : '<p>No measurements installed. This is not a healthy verdict.</p>'}`;
+}
+
+function filterMetricRows(value) {
+  for (const row of document.querySelectorAll('[data-metric-search]')) row.hidden = !row.dataset.metricSearch.includes(value.toLowerCase());
+}
+
+function applyWorkflowFilters(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const params = new URLSearchParams(location.search);
+  for (const key of ['before', 'beforeId', 'sourcePath', 'sourceScope']) params.delete(key);
+  for (const key of ['appId', 'workflow', 'outcome']) {
+    const value = form.elements[key].value;
+    if (value) params.set(key, value); else params.delete(key);
+  }
+  params.set('scope', form.elements.scope.value);
+  params.set('runs', 'true');
+  routeTo('/metrics?' + params);
+}
+
+function selectHealthDays(days) { routeTo('/metrics?days=' + days + '&runs=true'); }
+function selectMetricDays(id, days) { routeTo('/metrics/' + encodeURIComponent(id) + '?days=' + days); }
+
+function renderWorkflowComparison(data) {
+  const q = new URLSearchParams(location.search);
+  return `<h2>Workflow comparison</h2><div class="health-actions"><button onclick="selectHealthDays(1)">Last 24 hours</button><button onclick="selectHealthDays(7)">Last 7 days</button><button onclick="selectHealthDays(30)">Last 30 days</button></div>
+    <form class="health-actions" onsubmit="applyWorkflowFilters(event)">
+      <label>App ID <input name="appId" value="${attrEsc(data.identity.appId || '')}" placeholder="All Apps"></label>
+      <label>Workflow <input name="workflow" value="${attrEsc(data.identity.workflow || '')}" placeholder="All workflows"></label>
+      <label>Scope <select name="scope"><option value="top-level" ${data.scope === 'top-level' ? 'selected' : ''}>Top-level</option><option value="all" ${data.scope === 'all' ? 'selected' : ''}>Including children</option></select></label>
+      <label>Run list outcome <select name="outcome"><option value="">All outcomes</option>${WORKFLOW_OUTCOMES.map(s => `<option ${q.get('outcome') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label><button>Apply</button>
+    </form>${workflowOutcomeCards(data)}${workflowCoverage(data)}
+    ${data.identity.sourcePath !== undefined ? `<p class="health-note">Selected recorded source: ${esc(data.identity.sourcePath || 'unknown')}</p>` : ''}
+    <p>${data.running} executions running now. Durations below include all finished outcomes, not CPU or financial cost; inspect successful runs separately when comparing speed.</p>
+    <div class="health-scroll"><table class="health-table"><thead><tr><th>Workflow / App / source</th><th>Finished</th><th>Done / success share</th><th>Error</th><th>Blocked</th><th>Interrupted</th><th>Mean duration</th><th>Slowest duration</th><th>Timed runs</th></tr></thead><tbody>
+      ${data.groups.map(g => `<tr><td><a href="${esc(workflowHealthLink(data, { appId: g.appId, workflow: g.workflow, sourcePath: g.sourcePath, sourceScope: g.sourceScope || '' }))}">${esc(g.workflow)}</a><div class="health-note">${esc(g.appId || 'No App binding')} · ${esc(g.sourcePath || 'Unknown source')}</div></td><td>${g.finished}</td><td>${g.done} / ${g.successRate === null ? '—' : (g.successRate * 100).toFixed(1) + '%'}</td><td>${g.error}</td><td>${g.blocked}</td><td>${g.interrupted}</td><td>${esc(healthDuration(g.meanDurationMs))}</td><td>${esc(healthDuration(g.maxDurationMs))}</td><td>${g.durationCount}/${g.finished}</td></tr>`).join('')}
+    </tbody></table></div>${data.groupsTruncated ? '<p class="health-warning">Showing the first 100 workflow groups. Narrow the filters to see others; totals still cover the full selected population.</p>' : ''}
+    <h3>Matching runs · ${data.matchingRuns}</h3><p class="health-note">Run-list outcome filtering does not change the overall outcome denominator. Counts are refreshed from the same retained population as these results.</p>
+    ${workflowRunTable(data)}${data.next ? `<a href="${esc(workflowHealthLink(data, { ...data.next, outcome: q.get('outcome') }))}">Next runs</a>` : ''}`;
+}
 
 async function loadMetricsTab() {
+  const generation = ++metricsLoadGeneration;
+  const el = document.getElementById('metrics-by-owner');
+  const workflows = document.getElementById('metrics-workflows');
+  const detail = document.getElementById('metrics-recent');
+  document.getElementById('metrics-alerts').textContent = '';
+  el.innerHTML = '<p>Loading measurements…</p>';
+  workflows.innerHTML = '';
+  detail.innerHTML = '';
+  const id = currentRouteParams.id;
+  // Independent surfaces: an unavailable metric collector cannot hide run facts.
+  if (!id) {
+    workflows.innerHTML = '<p>Loading workflow evidence…</p>';
+    const query = new URLSearchParams(location.search);
+    query.set('runs', 'true');
+    void readHealthJson('/api/workflow-health?' + query).then(data => {
+      if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
+      query.set('start', data.window.start); query.set('end', data.window.end); query.delete('days');
+      history.replaceState({}, '', '/metrics?' + query);
+      workflows.innerHTML = renderWorkflowComparison(data);
+    }).catch(error => {
+      if (generation === metricsLoadGeneration) workflows.innerHTML = `<p class="health-warning">Workflow read failed: ${esc(error.message)}</p>`;
+    });
+  }
   try {
-    const res = await fetch('/api/metrics');
-    const data = await res.json();
-    const container = document.getElementById('metrics-by-owner');
-    const alertsEl = document.getElementById('metrics-alerts');
-    const recentEl = document.getElementById('metrics-recent');
-    function metricSurface(m) {
-      if (m.type === 'health') return 'health';
-      if (m.priority === 'P3') return 'watch';
-      return m.type || 'gauge';
-    }
-    function metricSurfaceBadge(m) {
-      const surface = metricSurface(m);
-      const color = surface === 'health' ? 'var(--red)' : surface === 'watch' ? 'var(--fg2)' : 'var(--accent)';
-      return `<span title="${surface === 'watch' ? 'Watch-only signal' : surface + ' metric'}" style="display:inline-block;border:1px solid ${color};color:${color};border-radius:10px;padding:1px 7px;font-size:10px">${esc(surface)}</span>`;
-    }
-    const hardAlerts = (data.alerts || []).filter(m => metricSurface(m) !== 'watch');
-    const watchSignals = (data.alerts || []).filter(m => metricSurface(m) === 'watch');
-    function alertCard(a, tone) {
-      var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : '');
-      var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below';
-      var color = tone === 'watch' ? 'var(--fg2)' : 'var(--red)';
-      var bg = tone === 'watch' ? 'var(--bg2)' : 'rgba(244,67,54,0.1)';
-      var border = tone === 'watch' ? 'var(--border)' : 'rgba(244,67,54,0.3)';
-      return '<div style="padding:8px 12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;margin-bottom:6px;font-size:13px;color:' + color + '">'
-        + (tone === 'watch' ? '' : '\u26a0 ')
-        + '<b>' + esc(a.name || a.metricId) + '</b> (' + esc(a.owner || 'may') + '): '
-        + esc(a.current) + esc(u) + ' — ' + esc(desc) + ' threshold ' + esc(a.threshold) + esc(u)
-        + renderAlertJudgment(a)
-        + '</div>';
-    }
-
-    // Alerts
-    if (hardAlerts.length === 0) {
-      alertsEl.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ No health/gauge alerts</div>';
+    const data = await readHealthJson('/api/metrics' + (id ? '?id=' + encodeURIComponent(id) : ''));
+    if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
+    if (id) {
+      const metric = data.metrics.find(m => m.id === id);
+      el.innerHTML = '<p><a href="/metrics">All measurements</a></p>';
+      if (!metric) { detail.textContent = 'Metric definition not found or retired.'; return; }
+      await showMetricHistory(id, metric, generation);
     } else {
-      alertsEl.innerHTML = hardAlerts.map(function(a) { return alertCard(a, 'hard'); }).join('');
+      el.innerHTML = renderObservationList(data);
+      const failures = data.metrics.filter(m => m.collectionFailure?.afterLastSample);
+      document.getElementById('metrics-alerts').innerHTML = `<p>${data.alerts.length} open alerts${data.alertsTruncated ? ' (limited)' : ''}; ${failures.length} measurements with a failure after the last sample. No alerts is not proof of health.</p>
+        ${data.alerts.slice(0, 20).map(a => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(a.metricId)}">${esc(a.name || a.metricId)}</a>: ${esc(a.message)} · opened ${esc(healthTime(a.createdAt))}</div>`).join('')}${data.alerts.length > 20 ? '<p>Showing newest 20 alerts; use metric detail for a selected definition.</p>' : ''}
+        ${failures.map(m => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a>: ${esc(m.collectionFailure.reason)} · <a href="/events/${m.collectionFailure.eventId}">event</a></div>`).join('')}`;
     }
-    if (watchSignals.length > 0) {
-      alertsEl.innerHTML += '<div style="margin-top:6px">' + watchSignals.map(function(a) { return alertCard(a, 'watch'); }).join('') + '</div>';
-    }
-
-    const snapMap = {};
-    for (const s of (data.latestSnapshots || [])) snapMap[s.metric_id] = s;
-
-    let html = '';
-
-    // ── Health Metrics Section (with larger graphs) ──
-    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">`;
-    html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Runtime Self-Drive</h3>`;
-    html += `<div id="runtime-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:16px"></div>`;
-    html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Handler Health</h3>`;
-    html += `<div id="handler-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:16px"></div>`;
-    html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Project Health</h3>`;
-    html += `<div id="project-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px"></div>`;
-    html += `</div>`;
-
-    // System overview cards
-    const healthy = data.metrics.filter(m => m.threshold != null && m.current != null && ((m.alert_op === 'above' || m.alert_op === '>') ? m.current <= m.threshold : m.current >= m.threshold)).length;
-    const alerting = hardAlerts.length;
-    const watchCount = data.metrics.filter(m => metricSurface(m) === 'watch').length;
-    html += `<div style="display:flex;gap:12px;margin-bottom:16px">`;
-    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--green)">${healthy}</div><div style="font-size:11px;color:var(--fg2)">Healthy</div></div>`;
-    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--red)">${alerting}</div><div style="font-size:11px;color:var(--fg2)">Alerting</div></div>`;
-    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--fg2)">${watchCount}</div><div style="font-size:11px;color:var(--fg2)">Watch</div></div>`;
-    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold">${data.metrics.length}</div><div style="font-size:11px;color:var(--fg2)">Total Active</div></div>`;
-    html += `</div>`;
-
-    // Group by operator-facing axis, not by owner. Three buckets per webui.md /system mock:
-    //   AGENCY — are agents being agents?
-    //   INFRASTRUCTURE — is the runtime healthy?
-    //   OUTPUT — is work actually getting done?
-    // Mapping is a cheap prefix rule. Anything unmatched falls into 'Other'.
-    function axisOf(id) {
-      if (id.startsWith('agent.') || id.startsWith('capability.')) return 'Agency';
-      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('message.') || id.startsWith('metric.') || id.startsWith('runtime.') || id.startsWith('escalation.') || id.startsWith('v2.')) return 'Infrastructure';
-      if (id.startsWith('project.') || id.startsWith('system.')) return 'Output';
-      return 'Other';
-    }
-    const AXIS_ORDER = ['Agency', 'Infrastructure', 'Output', 'Other'];
-    const AXIS_BLURB = {
-      Agency: 'Are agents being agents? (heartbeats, self-direction, idle rate)',
-      Infrastructure: 'Is the runtime healthy? (handlers, sessions, evaluators)',
-      Output: 'Is work getting done? (projects, deliverables)',
-      Other: 'Uncategorised — ID prefix not recognised by axis rule.',
-    };
-    const byAxis = {Agency: [], Infrastructure: [], Output: [], Other: []};
-    for (const m of data.metrics) byAxis[axisOf(m.id)].push(m);
-    // Within axis: alerting first, then by ID alpha.
-    for (const axis of AXIS_ORDER) {
-      byAxis[axis].sort((a, b) => {
-        const aa = (a.threshold != null && a.current != null && ((a.alert_op === 'above' || a.alert_op === '>') ? a.current > a.threshold : a.current < a.threshold)) ? 0 : 1;
-        const bb = (b.threshold != null && b.current != null && ((b.alert_op === 'above' || b.alert_op === '>') ? b.current > b.threshold : b.current < b.threshold)) ? 0 : 1;
-        return aa - bb || a.id.localeCompare(b.id);
-      });
-    }
-    for (const axis of AXIS_ORDER) {
-      const ms = byAxis[axis];
-      if (ms.length === 0) continue;
-      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">`;
-      html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">${axis} <span style="color:var(--fg2);font-weight:normal;font-size:12px">(${ms.length})</span></h3>`;
-      html += `<div style="font-size:11px;color:var(--fg2);margin-bottom:10px">${AXIS_BLURB[axis]}</div>`;
-      html += `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
-      html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Owner</th><th style="padding:4px 8px;color:var(--fg2)">Current</th><th style="padding:4px 8px;color:var(--fg2)">Target</th><th style="padding:4px 8px;color:var(--fg2)">Type</th><th style="padding:4px 8px;color:var(--fg2)">Updated</th></tr>`;
-      for (const m of ms) {
-        const snap = snapMap[m.id]; const val = m.current != null ? m.current : '—';
-        const isAlert = m.threshold != null && m.current != null && ((m.alert_op === 'above' || m.alert_op === '>') ? m.current > m.threshold : m.current < m.threshold);
-        html += `<tr style="border-bottom:1px solid var(--bg3,#333);cursor:pointer" onclick="showMetricHistory('${m.id}')">`;
-        html += `<td style="padding:4px 8px">${m.name}<br><span style="color:var(--fg2);font-size:11px">${m.id}</span></td>`;
-        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${m.owner||''}</td>`;
-        html += `<td style="padding:4px 8px;text-align:center;${isAlert?'color:var(--red);font-weight:bold':''}">${val}${m.unit||''}</td>`;
-        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''} <button title="Edit threshold (current: ${m.threshold ?? '—'})" onclick="verbEditThreshold('${m.id}', ${m.threshold ?? 'null'}, event)" style="background:none;border:none;color:var(--fg2);cursor:pointer;padding:0 2px">✎</button></td>`;
-        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${metricSurfaceBadge(m)}</td>`;
-        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${snap ? timeAgo(snap.measured_at) : '—'}</td></tr>`;
-      }
-      html += `</table></div>`;
-    }
-    container.innerHTML = html;
-
-    // Load health metric graphs
-    loadHealthMetricGraphs();
-    renderRecentSnapshots(data.recentSnapshots);
-  } catch (e) { document.getElementById('metrics-by-owner').innerHTML = `<p style="color:var(--red)">Failed: ${e.message}</p>`; }
+  } catch (error) { if (generation === metricsLoadGeneration) el.innerHTML = `<p class="health-warning">Metric read failed: ${esc(error.message)}</p>`; }
 }
 
-var RUNTIME_METRICS = ['runtime.daemon-heartbeat-stale', 'escalation.pending-count', 'session.planner-timeout-rate-6h'];
-var HANDLER_METRICS = ['handler.completed-count', 'handler.failed-count', 'handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour'];
-var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count'];
-
-async function loadHealthMetricGraphs() {
-  var metricsRes = await fetch('/api/metrics');
-  var metricsData = await metricsRes.json();
-
-  await renderMetricGroup('runtime-metrics-graphs', RUNTIME_METRICS, metricsData);
-  await renderMetricGroup('handler-metrics-graphs', HANDLER_METRICS, metricsData);
-  await renderMetricGroup('project-metrics-graphs', PROJECT_METRICS, metricsData);
-}
-
-async function renderMetricGroup(containerId, metricIds, metricsData) {
-  var el = document.getElementById(containerId);
-  if (!el) return;
-  var html = '';
-  for (var i = 0; i < metricIds.length; i++) {
-    var metricId = metricIds[i];
-    try {
-      var res = await fetch('/api/metrics/' + encodeURIComponent(metricId) + '/history?days=1');
-      var histData = await res.json();
-      var snaps = histData.snapshots || [];
-
-      var metricInfo = metricsData.metrics.find(function(m) { return m.id === metricId; });
-      var threshold = metricInfo ? metricInfo.threshold : null;
-      var name = metricInfo ? metricInfo.name : metricId.split('.').pop();
-      var unit = metricInfo ? (metricInfo.unit || '') : '';
-      var current = metricInfo ? metricInfo.current : null;
-      var alertOp = metricInfo ? metricInfo.alert_op : null;
-      var breaches = current != null && threshold != null && ((alertOp === 'above' || alertOp === '>') ? current > threshold : current < threshold);
-
-      var currentStr = current != null ? Number(current).toFixed(2) + unit : '—';
-      var color = current == null ? 'var(--fg2)' : (threshold == null || !breaches) ? 'var(--green)' : 'var(--red)';
-
-      html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;cursor:pointer" onclick="showMetricHistory(\'' + metricId + '\')">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">';
-      html += '<span style="font-size:12px;color:var(--fg2)">' + esc(name) + '</span>';
-      html += '<span style="font-size:16px;font-weight:700;color:' + color + '">' + currentStr + '</span>';
-      html += '</div>';
-      html += renderSparklineWithValues(snaps, threshold, 300, 60, alertOp);
-      html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--fg2);opacity:0.7">';
-      html += '<span>24h ago</span>';
-      if (threshold != null) html += '<span>' + ((alertOp === 'above' || alertOp === '>') ? 'max: ' : 'min: ') + threshold + unit + '</span>';
-      html += '<span>now</span>';
-      html += '</div></div>';
-    } catch (e) {
-      html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--fg2);font-size:12px">' + esc(metricId.split('.').pop()) + ': no data yet</div>';
-    }
-  }
-  el.innerHTML = html;
-}
-
-async function loadSparkline(metricId) {
+async function showMetricHistory(id, metric, generation) {
+  if (!metric) { routeTo('/metrics/' + encodeURIComponent(id)); return; }
+  const el = document.getElementById('metrics-recent');
+  el.innerHTML = '<p>Loading history…</p>';
   try {
-    const res = await fetch(`/api/metrics/${encodeURIComponent(metricId)}/history?days=7`);
-    const data = await res.json();
-    const el = document.getElementById('spark-' + metricId.replace(/\./g, '-'));
-    if (!el || !data.snapshots || data.snapshots.length < 2) return;
-    const values = data.snapshots.map(s => s.value);
-    const min = Math.min(...values); const max = Math.max(...values); const range = max - min || 1;
-    const w = el.offsetWidth || 250; const h = 30;
-    const step = w / (values.length - 1);
-    const pts = values.map((v, i) => `${i*step},${h-((v-min)/range)*(h-4)-2}`).join(' ');
-    el.innerHTML = `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5"/></svg>`;
-  } catch {}
+    const days = new URLSearchParams(location.search).get('days') || '1';
+    const data = await readHealthJson('/api/metrics/' + encodeURIComponent(id) + '/history?days=' + encodeURIComponent(days));
+    if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
+    el.innerHTML = `<h2>${esc(metric.name || id)}</h2><p>${esc(id)} · ${esc(metric.type || 'unspecified')} · ${esc(metric.unit || 'no unit')}</p>
+      <p>${esc(metric.description || metric.source || 'No source description recorded.')}</p><p>${esc(metricObservationLabel(metric))}</p><p>${esc(metricRuleLabel(metric))}</p>
+      ${metric.workflowSelection ? `<p><a href="/metrics?${attrEsc(new URLSearchParams({ ...metric.workflowSelection, runs: 'true' }).toString())}">Inspect retained runs for this observation's window</a> · Counts are recalculated; retention or later settlement can change the available evidence.</p>` : '<p class="health-note">This definition does not supply a known workflow-run selection.</p>'}
+      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)} · <a href="/api/loop-trace?alertId=${metric.alertId}">retained alert evidence (JSON)</a></p>` : ''}
+      <p class="health-note">${metric.staleAfterMs ? 'Stale after ' + esc(healthDuration(metric.staleAfterMs)) + ' (two declared sampling intervals).' : 'No sampling cadence: freshness is unknown.'} Measurement freshness is not system health.</p>
+      ${metric.collectionFailure ? `<p class="health-warning">Last retained collection failure: ${esc(healthTime(metric.collectionFailure.at))} · ${esc(metric.collectionFailure.reason)} · <a href="/events/${metric.collectionFailure.eventId}">event</a></p>` : ''}
+      <h3>Recorded sample history</h3><div class="health-actions">${[1, 7, 14].map(d => `<button onclick="selectMetricDays(${jsStringAttr(id)}, ${d})">Last ${d === 1 ? '24 hours' : d + ' days'}</button>`).join('')}</div>${renderSparklineWithValues(data.snapshots, metric.threshold, 700, 160, metric.alert_op, { ...data.window, gapMs: metric.staleAfterMs, failures: data.failures })}
+      <p class="health-note">${esc(healthTime(data.window.start))} – ${esc(healthTime(data.window.end))}. ${data.snapshots.length} observations${data.truncated ? '; limited to newest 2,000 samples / failures' : ''}. Points are observations, not continuous availability. Rolling-window counts must not be summed.</p>
+      <div class="health-scroll"><table class="health-table"><thead><tr><th>Measured</th><th>Value</th><th>Sample size</th><th>Source</th><th>Note</th></tr></thead><tbody>${data.snapshots.slice(-50).reverse().map(s => `<tr><td>${esc(healthTime(s.measured_at))}</td><td>${esc(s.value)}</td><td>${esc(s.sample_size ?? 'unknown')}</td><td>${esc(s.measured_by || 'unknown')}</td><td class="health-text">${esc(s.note || '')}</td></tr>`).join('')}</tbody></table></div><p class="health-note">Table shows the latest 50 retained observations in this window.</p>`;
+  } catch (error) { if (generation === metricsLoadGeneration) el.innerHTML = `<p class="health-warning">History read failed: ${esc(error.message)}</p>`; }
 }
 
-async function showMetricHistory(metricId) {
+// Existing project/agent cards can request a single history after selection.
+async function loadSparkline(id) {
   try {
-    const res = await fetch(`/api/metrics/${encodeURIComponent(metricId)}/history?days=14`);
-    const data = await res.json();
-    const el = document.getElementById('metrics-recent');
-    let html = `<div style="background:var(--bg2);border:1px solid var(--accent);border-radius:8px;padding:16px">`;
-    html += `<h3 style="margin:0 0 12px;font-size:14px;color:var(--fg)">📈 ${metricId} — 14d history <button onclick="loadMetricsTab()" style="float:right;background:var(--bg3,#333);border:1px solid var(--border);color:var(--fg);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:11px">Back</button></h3>`;
-    if (!data.snapshots || data.snapshots.length === 0) { html += `<p style="color:var(--fg2)">No snapshots</p>`; }
-    else {
-      const values = data.snapshots.map(s => s.value);
-      const min = Math.min(...values); const max = Math.max(...values); const range = max-min||1;
-      const w=600; const h=120; const step=w/Math.max(values.length-1,1);
-      const pts = values.map((v,i) => `${i*step},${h-((v-min)/range)*(h-10)-5}`).join(' ');
-      html += `<svg width="100%" viewBox="0 0 ${w} ${h}" style="margin-bottom:12px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`;
-      html += `<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--fg2);margin-bottom:12px"><span>min: ${min.toFixed(2)}</span><span>max: ${max.toFixed(2)}</span><span>latest: ${values[values.length-1].toFixed(2)}</span><span>${data.snapshots.length} points</span></div>`;
-      html += `<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Value</th><th style="padding:4px 8px;color:var(--fg2)">When</th><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Note</th></tr>`;
-      for (const s of data.snapshots.slice().reverse().slice(0,20)) {
-        html += `<tr style="border-bottom:1px solid var(--bg3,#333)"><td style="padding:4px 8px">${s.value}</td><td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${timeAgo(s.measured_at)}</td><td style="padding:4px 8px;color:var(--fg2);font-size:11px">${s.note||''}</td></tr>`;
-      }
-      html += `</table>`;
-    }
-    html += `</div>`;
-    el.innerHTML = html;
-  } catch (e) { document.getElementById('metrics-recent').innerHTML = `<p style="color:var(--red)">Failed: ${e.message}</p>`; }
-}
-
-function renderRecentSnapshots(snapshots) {
-  let html = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px">`;
-  html += `<h3 style="margin:0 0 10px;font-size:14px;color:var(--fg)">Recent Snapshots</h3>`;
-  html += `<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Metric</th><th style="padding:4px 8px;color:var(--fg2)">Value</th><th style="padding:4px 8px;color:var(--fg2)">When</th><th style="text-align:left;padding:4px 8px;color:var(--fg2)">Note</th></tr>`;
-  for (const s of (snapshots||[]).slice(0,30)) {
-    html += `<tr style="border-bottom:1px solid var(--bg3,#333);cursor:pointer" onclick="showMetricHistory('${s.metric_id}')"><td style="padding:4px 8px">${s.metric_id}</td><td style="padding:4px 8px;text-align:center">${s.value}</td><td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${timeAgo(s.measured_at)}</td><td style="padding:4px 8px;color:var(--fg2);font-size:11px">${s.note||''}</td></tr>`;
-  }
-  html += `</table></div>`;
-  document.getElementById('metrics-recent').innerHTML = html;
+    const data = await readHealthJson('/api/metrics/' + encodeURIComponent(id) + '/history?days=7');
+    const el = document.getElementById('spark-' + id.replace(/\./g, '-'));
+    if (el) el.innerHTML = renderSparklineWithValues(data.snapshots, null, 250, 40, null, data.window);
+  } catch { /* The owning page shows its read state. */ }
 }

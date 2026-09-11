@@ -186,6 +186,8 @@ function render() {
   if (tab === 'live' && (!liveInitialized || previousTab !== 'live')) {
     liveInitialized = true;
     loadLiveness();
+    loadWorkflowOverview();
+    loadOverviewTasks();
     if (document.getElementById('legacy-dashboard')?.open) initializeLegacyDashboard();
   }
   if (tab === 'sessions') initChat(params.id || null);
@@ -213,6 +215,8 @@ function render() {
   if (tab === 'terminal') initTerminalPage();
   if (tab === 'system') {
     loadEvents();
+    const workflowRunId = new URLSearchParams(location.search).get('workflowRunId');
+    if (workflowRunId) loadLoopTrace({ workflowRunId });
     if (params.eventId) {
       setTimeout(() => {
         const anchor = currentAnchorId();
