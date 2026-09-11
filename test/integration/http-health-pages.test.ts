@@ -175,11 +175,26 @@ describe("served workflow and metric health pages", () => {
   test("alert list limits do not claim an unlisted metric has no alert or hide its exact detail", async () => {
     const db = getDb(root);
     const insert = db.prepare("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES (?, ?, ?)");
-    const target = "workflow.error-count-24h";
+    const target = "runtime.daemon-heartbeat-stale";
+    async function liveAlerts(count: number, truncated: boolean) {
+      const response = await fetch(base + "/api/liveness", { signal: AbortSignal.timeout(5000) });
+      expect(response.status).toBe(200);
+      const live = await response.json();
+      expect(live.summary).toMatchObject({ openAlerts: count, openAlertsTruncated: truncated });
+      expect(live.alerts).toHaveLength(count);
+      return live;
+    }
     try {
+      await liveAlerts(0, false);
       insert.run(target, "synthetic oldest alert", now - 3000);
       insert.run(target, "synthetic latest alert", now - 2000);
-      for (let i = 0; i < 501; i++) insert.run("runtime.daemon-heartbeat-stale", "synthetic alert flood", now - 1000 + i);
+      for (let i = 0; i < 501; i++) {
+        insert.run("workflow.error-count-24h", "synthetic alert flood", now - 1000 + i);
+        if (i === 17) await liveAlerts(20, false);
+        if (i === 18) await liveAlerts(20, true);
+      }
+      const cappedLive = await liveAlerts(20, true);
+      expect(cappedLive.vitals.find((m: { id: string }) => m.id === target).alertOpen).toBeNull();
       const listResponse = await fetch(base + "/api/metrics", { signal: AbortSignal.timeout(5000) });
       expect(listResponse.status).toBe(200);
       const list = await listResponse.json();
@@ -235,6 +250,18 @@ describe("served workflow and metric health pages", () => {
           document.querySelector("#liveness-measurement-problems")?.textContent?.includes("source unavailable"),
         );
         expect(await page.$eval("#liveness-panel", (el) => el.textContent)).not.toContain("✓ healthy");
+        expect(await page.$eval("#liveness-panel .breach-badge", (el) => el.textContent)).toBe("No open alerts");
+        const db = getDb(root);
+        const alert = db.prepare("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES ('workflow.error-count-24h', 'synthetic browser alert boundary', ?)");
+        for (let i = 0; i < 21; i++) {
+          alert.run(now + i);
+          if (i < 19) continue;
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#liveness-panel .breach-badge");
+          expect(await page.$eval("#liveness-panel .breach-badge", (el) => el.textContent))
+            .toBe(i === 19 ? "20 open alerts" : "More than 20 open alerts (newest 20 shown)");
+        }
+        await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
         await page.waitForFunction(() =>
           document.querySelector("#overview-tasks")?.textContent?.includes("Task read unavailable"),
         );
@@ -300,6 +327,7 @@ describe("served workflow and metric health pages", () => {
         await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
         expect(await page.$eval("#metrics-workflows", (el) => el.textContent)).toContain("60.0% successful execution");
       } finally {
+        getDb(root).prepare("DELETE FROM metric_alerts WHERE message = 'synthetic browser alert boundary'").run();
         await browser.close();
       }
     },

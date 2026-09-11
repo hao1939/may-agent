@@ -60,6 +60,7 @@ const LIVE_VITAL_METRIC_IDS = [
   "eval.llm-coverage-lag-h",
 ];
 const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
+const DASHBOARD_ALERT_ROW_LIMIT = 20;
 // New heartbeat sessions carry source='heartbeat'. The remaining clauses are
 // read-only compatibility for sessions persisted before typed classification.
 const HEARTBEAT_SESSION_PREDICATE = `(
@@ -851,7 +852,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     const activeSessions =
       (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
-    const openAlerts = enrichOpenAlerts(
+    const openAlertCandidates = enrichOpenAlerts(
       db,
       db
         .prepare(
@@ -863,12 +864,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
        LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
          AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
        WHERE ma.resolved_at IS NULL
-       ORDER BY ma.created_at DESC
-       LIMIT 20`,
+       ORDER BY ma.created_at DESC, ma.id DESC
+       LIMIT ${DASHBOARD_ALERT_ROW_LIMIT + 1}`,
         )
         .all() as any[],
     );
 
+    const openAlerts = openAlertCandidates.slice(0, DASHBOARD_ALERT_ROW_LIMIT);
+    const openAlertsTruncated = openAlertCandidates.length > DASHBOARD_ALERT_ROW_LIMIT;
     const metricOrder = new Map(LIVE_VITAL_METRIC_IDS.map((id, idx) => [id, idx]));
     const openAlertMetricIds = new Set(openAlerts.map((alert) => alert.metricId));
     const vitals = readMetricObservations(db, now, LIVE_VITAL_METRIC_IDS).metrics;
@@ -879,7 +882,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           owner: m.owner || "may",
           updatedAt: m.observation?.measuredAt ?? null,
           breached: m.thresholdBreached,
-          alertOpen: openAlertMetricIds.has(m.id),
+          alertOpen: openAlertMetricIds.has(m.id) ? true : openAlertsTruncated ? null : false,
         };
       })
       .sort((a, b) => (metricOrder.get(a.id) ?? 999) - (metricOrder.get(b.id) ?? 999));
@@ -950,6 +953,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
         activeSessions,
         openAlerts: openAlerts.length,
+        openAlertsTruncated,
         staleAgents: staleAgents.length,
       },
       agents: agentRows,

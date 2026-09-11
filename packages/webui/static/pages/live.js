@@ -223,7 +223,7 @@ async function loadLiveness() {
     let html = `<h2>
       <span>System liveness</span>
       <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
-      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${(summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts (up to 20 shown)' : 'No open alerts'}</span>
+      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts (newest ' + summary.openAlerts + ' shown)' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}</span>
     </h2>`;
     html += '<div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>';
 
@@ -237,7 +237,7 @@ async function loadLiveness() {
         html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'may') + ' · ' + threshold)}">
           <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'may')}</span></div>
           <div class="vital-value">${esc(value)}</div>
-          <div class="vital-sub">${esc(threshold)}</div><div class="health-note">${esc(metricObservationLabel(metric))}</div>
+          <div class="vital-sub">${esc(threshold)}</div><div class="health-note">${esc(metricObservationLabel(metric))}${metric.alertOpen === null ? ' · alert list limited; open metric detail' : ''}</div>
         </div>`;
       }
       html += `</div></div>`;

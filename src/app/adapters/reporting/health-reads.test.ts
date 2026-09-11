@@ -173,4 +173,28 @@ describe("SQLite health observations", () => {
       ).toBeTrue();
     }
   });
+
+  test("open-alert ordering uses partial indexes globally and for an exact metric", () => {
+    // Schema access-path contract; HTTP tests exercise the actual joined readers.
+    // Many resolved alerts must not require a table scan or a temporary sort.
+    db.exec(`WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i + 1 FROM n WHERE i < 10000)
+      INSERT INTO metric_alerts(metric_id, created_at, resolved_at)
+      SELECT 'sample', i, i FROM n`);
+    db.exec("INSERT INTO metric_alerts(metric_id, created_at) VALUES ('sample', 1), ('other', 2)");
+    // Simulate an existing store upgrading, then opening again; rows stay intact.
+    db.exec("DROP INDEX IF EXISTS idx_ma_open_created; DROP INDEX IF EXISTS idx_ma_open_metric_created");
+    applyDbSchema(db);
+    applyDbSchema(db);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM metric_alerts").get()).toEqual({ count: 10002 });
+    for (const [filter, args, index] of [
+      ["", [], "idx_ma_open_created"],
+      ["AND metric_id = ?", ["sample"], "idx_ma_open_metric_created"],
+    ] as const) {
+      const plan = db.prepare(`EXPLAIN QUERY PLAN SELECT id, metric_id, message, created_at
+        FROM metric_alerts WHERE resolved_at IS NULL ${filter}
+        ORDER BY created_at DESC, id DESC LIMIT ?`).all(...args, 21) as Array<{ detail: string }>;
+      expect(plan.some((row) => row.detail.includes(index))).toBeTrue();
+      expect(plan.some((row) => /TEMP B-TREE|SCAN metric_alerts$/.test(row.detail))).toBeFalse();
+    }
+  });
 });

@@ -371,6 +371,9 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
   resolved_at INTEGER,
   created_at INTEGER
 );
+-- Interactive reads skip resolved history and stream the newest open alerts.
+CREATE INDEX IF NOT EXISTS idx_ma_open_created ON metric_alerts(created_at DESC, id DESC) WHERE resolved_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_ma_open_metric_created ON metric_alerts(metric_id, created_at DESC, id DESC) WHERE resolved_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS notification_messages (
   telegram_msg_id INTEGER PRIMARY KEY,
