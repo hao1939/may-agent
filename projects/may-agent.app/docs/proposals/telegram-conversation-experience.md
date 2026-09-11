@@ -3,7 +3,7 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `6d3ec44e`, with
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `c85f4f8b`, with
 review refinements following the verified `5527df51` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
@@ -411,3 +411,9 @@ boundary; it is not a live process-kill trial. All 64 focused Telegram/router
 tests pass, including result-write failure and existing completed-success/failure
 cases. Current full local, hosted and requested Copilot review evidence is tracked
 on the PR. No live reload, model call or deployment was performed.
+
+The verification follow-up at `c85f4f8b` uses a monotonic clock for the existing
+Stop test's eight-second wait after observing an early wall-clock timeout.
+The timeout and assertions are unchanged; its focused tests pass. The known
+separate controller-retry instability and all full-run outcomes remain disclosed
+on the PR rather than being hidden by test retries or skipped coverage.
