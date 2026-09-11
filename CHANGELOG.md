@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.0.0](https://github.com/hao1939/may-agent/compare/v0.3.0...v1.0.0) (2026-09-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **conversations:** retire child-result waits ([#140](https://github.com/hao1939/may-agent/issues/140))
+
+### Features
+
+* **workflows:** retain run evidence and report execution outcomes ([#143](https://github.com/hao1939/may-agent/issues/143)) ([939698a](https://github.com/hao1939/may-agent/commit/939698ad6719d7b2bebffc4983cb1102690cf39e))
+
+
+### Bug Fixes
+
+* **guards:** remove unsupported file-content claim ([#132](https://github.com/hao1939/may-agent/issues/132)) ([23968ac](https://github.com/hao1939/may-agent/commit/23968acd6364cc2247fb4c95503ca48b041ecb07))
+* **loader:** preserve shared tools in App definition snapshots ([#134](https://github.com/hao1939/may-agent/issues/134)) ([9320136](https://github.com/hao1939/may-agent/commit/9320136db34a4069726c7ede093ef282261d24b0))
+* **tasks:** show queued maintained cycles consistently ([#136](https://github.com/hao1939/may-agent/issues/136)) ([6716221](https://github.com/hao1939/may-agent/commit/671622102cac3fe1c1e3983fb3053f04e28c1e18))
+* **telegram:** bound requests and cancel I/O on close ([#133](https://github.com/hao1939/may-agent/issues/133)) ([39a23f2](https://github.com/hao1939/may-agent/commit/39a23f221e1c9b104468147a45b72b901754ee2d))
+
+
+### Code Refactoring
+
+* **conversations:** retire child-result waits ([#140](https://github.com/hao1939/may-agent/issues/140)) ([335bf17](https://github.com/hao1939/may-agent/commit/335bf1782cd09372df2c70a42c495f9166d0a2f7))
+
 ## [0.3.0](https://github.com/hao1939/may-agent/compare/v0.2.0...v0.3.0) (2026-09-10)
 
 
