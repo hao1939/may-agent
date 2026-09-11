@@ -21,11 +21,11 @@ import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
-import { EVENT_DELIVERY_RESULT, type EventBus } from "../core/events/bus.js";
+import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/requests.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
-import { readAppConversationResource } from "../core/state/conversations.js";
+import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
 import { TaskReferenceError } from "../core/state/task-reference-index.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
@@ -638,7 +638,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } catch {
         /* legacy evidence */
       }
-      const target = singleTaskReference(data?.taskRefs);
+      const target = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
       if (target && opts.humanTasks.getTask(target)) {
         handleTelegramCommand(
           query.data === "task:follow" ? "/watch linked" : "/task linked",
@@ -646,7 +646,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           query.message,
           sharedConversationId,
           query.message?.message_thread_id,
-          target,
+          { task: target, topicId: typeof data?.topicId === "string" ? data.topicId : undefined },
         );
         text =
           query.data === "task:follow" ? "Showing this Task. Other work is unchanged." : "Showing current details.";
@@ -832,29 +832,35 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const watchRefresh = createRefreshQueue("Watch refresh", refreshWatch);
   const todoRefresh = createRefreshQueue("Todo refresh", refreshTodos);
 
+  function showReloadResult(requestId: string, summary: string): void {
+    const pending = pendingReloads.get(requestId);
+    if (!pending) return;
+    pendingReloads.delete(requestId);
+    void sendMessage(pending.chatId, summary, undefined, {
+      eventType: "runtime.reload.finished",
+      agent: opts.interfaceAgent,
+      messageThreadId: pending.topicId,
+    })
+      .then((messageId) => {
+        if (!messageId || !running) return;
+        recordConversationMessage({
+          conversationId: pending.conversationId,
+          text: summary,
+          command: pending.command,
+          messageId,
+          chatId: pending.chatId,
+          topicId: pending.topicId,
+        });
+      })
+      .catch((error) => log("warn", `[telegram] Reload result view failed: ${String(error)}`));
+  }
+
   const unsubscribeConversation = bus.listen(
     (event: any) => {
       const data = event && typeof event.data === "object" && event.data ? event.data : {};
       if (event.type === "runtime.reload.finished") {
         const requestId = typeof data.requestId === "string" ? data.requestId : "";
-        const pending = pendingReloads.get(requestId);
-        if (!pending) return;
-        pendingReloads.delete(requestId);
-        void sendMessage(pending.chatId, String(data.summary || "[reload] Finished"), undefined, {
-          eventType: "runtime.reload.finished",
-          agent: opts.interfaceAgent,
-          messageThreadId: pending.topicId,
-        }).then((messageId) => {
-          if (!messageId) return;
-          recordConversationMessage({
-            conversationId: pending.conversationId,
-            text: String(data.summary || "[reload] Finished"),
-            command: pending.command,
-            messageId,
-            chatId: pending.chatId,
-            topicId: pending.topicId,
-          });
-        });
+        showReloadResult(requestId, String(data.summary || "[reload] Finished"));
         return;
       }
       if (event.type === "conversation.updated") {
@@ -890,6 +896,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     chatId: string;
     transient?: boolean;
     taskRefs?: Array<{ appId: string; taskId: string }>;
+    followTask?: { appId: string; taskId: string };
     conversationTopicId?: string;
     idempotencyKey?: string;
   }): void {
@@ -910,6 +917,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           command: input.command,
           ...(input.conversationTopicId ? { topicId: input.conversationTopicId } : {}),
           ...(input.taskRefs?.length ? { taskRefs: input.taskRefs } : {}),
+          ...(input.followTask ? { followTask: input.followTask } : {}),
         },
       },
       idempotencyKey:
@@ -978,7 +986,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return allowedChatIds.includes(String(chatId));
   }
 
-  function resumeRecordedInput(type: string, key: string): boolean {
+  function resumeRecordedInput(type: string, key: string): number | undefined {
     // Provider redelivery may follow restart or a lost publication receipt.
     // Do not rebuild an accepted input using today's focus and cause a hash
     // conflict. The existing event journal/recovery owns its original payload.
@@ -986,14 +994,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const row = db.prepare(
       "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
     ).get(type, key);
-    if (!row) return false;
+    if (!row) return undefined;
     if (row.delivery_status !== "accepted") {
       const event = loadPersistedEvent(db, Number(row.id), persistDir);
       if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
       const retried = bus.redeliverPersisted(event, Number(row.id));
       if (!retried[EVENT_DELIVERY_RESULT]?.accepted) throw new Error("Telegram input is recorded but not yet admitted");
     }
-    return true;
+    return Number(row.id);
   }
 
   function requireAdmission(receipt: EventReceipt): void {
@@ -1057,7 +1065,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       try {
         const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
         const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
-        replyTask = singleTaskReference(data?.taskRefs);
+        replyTask = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
         replyTopicId = typeof data?.topicId === "string" ? data.topicId : undefined;
         replyToSourceId =
           typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
@@ -1142,7 +1150,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     msg: any,
     conversationId: string,
     topicId?: number,
-    taskTarget?: { appId: string; taskId: string },
+    linked?: { task: { appId: string; taskId: string }; topicId?: string },
   ): boolean {
     if (!text.startsWith("/")) return false;
 
@@ -1150,12 +1158,22 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const command = cmd.split("@")[0];
     const surface = surfaceKey(chatIdStr, topicId);
 
+    const taskTopicId = (task: { appId: string; taskId: string }): string | undefined => {
+      // A clicked message supplies its own context, never today's selection.
+      if (linked) return linked.topicId;
+      const topic = selectedTopics.get(surface);
+      return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId)
+        ? topic.id
+        : undefined;
+    };
+
     const deliverCommandView = (
       rendered: string,
       taskRefs: Array<{ appId: string; taskId: string }> = [],
       onDelivered?: () => void,
+      followTask?: { appId: string; taskId: string },
     ): void => {
-      const conversationTopicId = selectedTopics.get(surface)?.id;
+      const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
       const prior = commandDeliveries.get(surface) ?? Promise.resolve();
       const next = prior
         .then(() =>
@@ -1168,11 +1186,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                   conversationId,
                   command: text,
                   taskRefs,
+                  followTask,
                   topicId: conversationTopicId,
                 }),
                 replyToMessageId: msg.message_id,
                 messageThreadId: topicId,
-                replyMarkup: taskButtons(taskRefs),
+                replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
               })
             : undefined,
         )
@@ -1186,6 +1205,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             chatId: chatIdStr,
             topicId,
             taskRefs,
+            followTask,
             conversationTopicId,
           });
           onDelivered?.();
@@ -1371,10 +1391,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         deliverCommandView("Use: /task <ref>");
         return true;
       }
-      const task = opts.humanTasks.getTask(taskTarget ?? { ref: rest[0] });
+      const task = opts.humanTasks.getTask(linked?.task ?? { ref: rest[0] });
       deliverCommandView(
         task ? renderTelegramTask(task) : `Task ${rest[0]} was not found.`,
         task ? representedTaskIdentities(task) : [],
+        undefined,
+        task ? { appId: task.appId, taskId: task.taskId } : undefined,
       );
       return true;
     }
@@ -1396,6 +1418,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               if (task && watchedTasks.get(surface) === watched)
                 shownWatchRevisions.set(surface, taskPresentationRevision(task));
             },
+            task ? { appId: task.appId, taskId: task.taskId } : undefined,
           );
           if (!task || task.terminal) {
             stopWatching(surface);
@@ -1403,15 +1426,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         }
         return true;
       }
-      const task = opts.humanTasks.getTask(taskTarget ?? { ref: rest[0] });
+      const task = opts.humanTasks.getTask(linked?.task ?? { ref: rest[0] });
       if (!task) {
         deliverCommandView(`Task ${rest[0]} was not found.`);
       } else if (task.terminal) {
         stopWatching(surface);
-        deliverCommandView(`${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched.`, [
-          ...representedTaskIdentities(task),
-        ]);
+        deliverCommandView(
+          `${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched.`,
+          representedTaskIdentities(task),
+          undefined,
+          { appId: task.appId, taskId: task.taskId },
+        );
       } else {
+        const topicRef = taskTopicId(task);
+        const topic = topicRef
+          ? readConversationTopic(getDb(persistDir), opts.interfaceAgent, conversationId, topicRef)
+          : null;
+        if (topic) selectedTopics.set(surface, topic);
+        else selectedTopics.delete(surface);
+        lastRenderedMayMessageBySurface.delete(surface);
+        selectedApps.set(surface, task.appId);
         watchedTasks.set(surface, {
           appId: task.appId,
           taskId: task.taskId,
@@ -1422,10 +1456,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const watched = watchedTasks.get(surface);
         deliverCommandView(
           `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. Reply here to discuss this work. Other Tasks continue unchanged.`,
-          representedTaskIdentities(task),
+          [{ appId: task.appId, taskId: task.taskId }],
           () => {
             if (watchedTasks.get(surface) === watched) shownWatchRevisions.set(surface, taskPresentationRevision(task));
           },
+          { appId: task.appId, taskId: task.taskId },
         );
       }
       return true;
@@ -1474,7 +1509,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const task = opts.humanTasks.getTask({ appId: selected.appId, taskId: selected.taskId });
         if (!task) throw new Error("Task disappeared after cancellation");
         stopWatching(surface);
-        deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task));
+        deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task), undefined, {
+          appId: task.appId, taskId: task.taskId,
+        });
       } catch (error) {
         deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -1510,13 +1547,27 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/reload") {
       const requestId = `telegram:${chatIdStr}:${msg.message_id}:reload`;
-      if (resumeRecordedInput("runtime.reload.requested", requestId)) return true;
       pendingReloads.set(requestId, {
         chatId: chatIdStr,
         ...(topicId === undefined ? {} : { topicId }),
         conversationId,
         command: text,
       });
+      const resumedEventId = resumeRecordedInput("runtime.reload.requested", requestId);
+      if (resumedEventId) {
+        const db = getDb(persistDir);
+        const completion = db.prepare(`
+          SELECT e.id FROM event_traces t JOIN events e ON e.id = t.event_id
+          WHERE t.parent_event_id = ? AND e.event_type = 'runtime.reload.finished'
+          ORDER BY e.id DESC LIMIT 1
+        `).get(resumedEventId);
+        if (completion) {
+          const event = loadPersistedEvent(db, Number(completion.id), persistDir);
+          if (!event) throw new Error("Saved reload result is unavailable");
+          showReloadResult(requestId, String(eventData(event).summary || "[reload] Finished"));
+        }
+        return true;
+      }
       const receipt = opts.publishEvent({
         type: "runtime.reload.requested",
         data: { requestId },

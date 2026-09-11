@@ -1,5 +1,5 @@
 import type { SqliteDb } from "../../../lib/db.js";
-import { readJsonArtifactWithDescriptor } from "../../../lib/artifacts.js";
+import { describeText, readJsonArtifactWithDescriptor } from "../../../lib/artifacts.js";
 import { EVENT_ROW_ID, type AgentEvent } from "./bus.js";
 
 function parseStoredEventData(value: unknown): Record<string, unknown> | null {
@@ -24,21 +24,33 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
     .get(eventId);
   if (!row || typeof row.event_type !== "string") return null;
 
-  let data = parseStoredEventData(row.data) ?? {};
+  let data: unknown;
   if (typeof row.body_ref === "string" && row.body_ref.trim()) {
     if (!persistDir) return null;
     const artifact = readJsonArtifactWithDescriptor<Record<string, unknown>>(persistDir, row.body_ref);
     if (
       artifact &&
-      (!row.body_sha256 || artifact.descriptor.sha256 === row.body_sha256) &&
-      (!row.body_bytes || artifact.descriptor.bytes === Number(row.body_bytes))
+      (row.body_sha256 == null || artifact.descriptor.sha256 === row.body_sha256) &&
+      (row.body_bytes == null || artifact.descriptor.bytes === Number(row.body_bytes))
     ) {
       data = artifact.value;
     } else return null; // Never replay a truncated projection as the original input.
+  } else {
+    if (typeof row.data !== "string") return null;
+    // DbWriter describes inline JSON with a trailing newline, like artifacts.
+    const descriptor = describeText("", `${row.data}\n`);
+    if (
+      (row.body_sha256 != null && descriptor.sha256 !== row.body_sha256) ||
+      (row.body_bytes != null && descriptor.bytes !== Number(row.body_bytes))
+    )
+      return null;
+    data = parseStoredEventData(row.data);
   }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const payload = data as Record<string, unknown>;
   const appId =
-    typeof data.appId === "string" && data.appId.trim()
-      ? data.appId.trim()
+    typeof payload.appId === "string" && payload.appId.trim()
+      ? payload.appId.trim()
       : typeof row.project_id === "string" && row.project_id.trim()
         ? row.project_id.trim()
         : undefined;
@@ -50,7 +62,7 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
     ...(typeof row.source === "string" ? { source: row.source } : {}),
     ...(typeof row.owner === "string" ? { owner: row.owner } : {}),
     ...(Object.keys(target).length > 0 ? { target } : {}),
-    data,
+    data: payload,
     ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
     ...(row.urgency === "low" || row.urgency === "normal" || row.urgency === "high" || row.urgency === "immediate"
       ? { urgency: row.urgency }

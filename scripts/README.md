@@ -12,7 +12,7 @@ Current design and operating procedures live in `may-agent.app/docs`, not here.
 | Diagnostics | `sample-runtime-quiet.ts`, `event-graph-check.ts`, `log-viewer.html` | Select the intended installation; do not confuse source fixtures with live evidence. |
 | Installed-App operations | `deploy.sh`, `deploy-receipt.ts` | Read each tool's usage and the operating manual. State changes require explicit task/owner authority. |
 | Gym compatibility | `gym-run.sh`, `gym-baseline.sh`, `gym-batch.sh`, `gym-record.ts` | Existing sibling consumers remain. Scenario execution calls models; baseline/recording writes `.state/may.db`. Only `gym-run.sh --list` and `gym-batch.sh --help` are read-only discovery. |
-| Manual diagnostics and experiments | `poc/`, `benchmark-human-task-interface.ts`, `telegram-reply-smoke.ts`, `smoke-steering.ts` | May call models, send messages, or change state. Not part of PR CI; use an authorized disposable installation. |
+| Manual diagnostics and experiments | `poc/`, `benchmark-human-task-interface.ts`, `smoke-steering.ts` | May call models, send messages, or change state. Not part of PR CI; use an authorized disposable installation. |
 
 App-specific evaluation and reporting tools belong to their owning App or
 project, not this generic Host. For current daemon status, use its `--status`
@@ -35,3 +35,7 @@ retired repository layout. Old `seed-metrics.ts` and
 `backfill-metric-thresholds.ts` duplicated schema and App policy; metric
 definitions belong to their owning Apps and use the existing metric service.
 Their history remains available in Git; no installed data was removed.
+
+`telegram-reply-smoke.ts` was retired because it inspected legacy session-routing
+events, not current Conversation admission. Use the Telegram input/reply tests
+for portable source checks; a live experience trial needs separate authorization.

@@ -6,6 +6,7 @@ import { closeDb, getDb } from "../../lib/requests.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { storeNotificationMessage } from "../../lib/db/notifications.js";
 import { createEventInterface } from "../core/events/interface.js";
+import { attachCommandRouter } from "../command-router.js";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";
 import {
@@ -87,6 +88,7 @@ function durableTelegramFixture() {
   let admissionBlocked = false;
   const admitted: string[] = [];
   const unsubscribeAdmission = bus.subscribeDurableRoute((event) => {
+    if (event.type === "runtime.reload.requested") return; // Exercise the actual command route in reload tests.
     const data = event.data as Record<string, any>;
     if (event.type === "conversation.message.created" && data.author?.kind === "human") {
       if (admissionBlocked) throw new Error("fixture admission unavailable after event recording");
@@ -369,6 +371,101 @@ describe("Telegram durable input and natural follow-up", () => {
       expect(f.polls()).toContain(102);
     } finally { await f.close(); }
   });
+
+  it("keeps the clicked task and Topic through Details, Follow, and replies despite an unrelated selection", async () => {
+    const f = durableTelegramFixture();
+    try {
+      for (const id of ["aaaaaaaa", "bbbbbbbb"]) createConversationTopic(f.db, {
+        id: `topic_${id}`, appId: "may", conversationId: "may:primary", title: `Subject ${id}`,
+        openedBy: "human", originMessageId: `original-${id}`, now: 1,
+      });
+      f.tasks.set("second", { ...f.tasks.get("second")!, appId: "sample", requestedBy: {
+        appId: "may", taskId: "first", ref: "first", outcome: "Review first",
+      } });
+      f.message(100, "/topic aaaaaaaa");
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic aaaaaaaa"));
+      storeNotificationMessage(f.root, { chat_id: "123", telegram_msg_id: 55, event_type: "conversation.mirror",
+        agent: "may", session_id: null, project_id: null,
+        data: JSON.stringify({ topicId: "topic_bbbbbbbb", conversationMessageId: "old-answer",
+          taskRefs: [{ appId: "sample", taskId: "second" }] }),
+      });
+      f.send([{ update_id: 101, callback_query: { id: "details", data: "task:details",
+        message: { message_id: 55, chat: { id: 123 } } } }]);
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/task linked"));
+      const details = f.published.find((e) => e.data.metadata?.command === "/task linked")!;
+      expect(details.data.metadata).toMatchObject({ topicId: "topic_bbbbbbbb",
+        followTask: { appId: "sample", taskId: "second" } });
+      expect(details.data.metadata.taskRefs).toHaveLength(2); // Related work remains discoverable in Details.
+      f.message(102, "Continue the previous topic");
+      await waitFor(() => f.inputs().length === 1);
+      expect(f.inputs()[0].data.metadata.topicId).toBe("topic_aaaaaaaa"); // Details does not change selection.
+      f.send([{ update_id: 103, callback_query: { id: "follow", data: "task:follow",
+        message: { message_id: details.data.metadata.channelMessageId, chat: { id: 123 } } } }]);
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch linked"));
+      const followed = f.published.find((e) => e.data.metadata?.command === "/watch linked")!;
+      expect(followed.data.metadata).toMatchObject({ topicId: "topic_bbbbbbbb",
+        taskRefs: [{ appId: "sample", taskId: "second" }] });
+      f.message(104, "What's next?");
+      f.message(105, "Yes, continue", { reply_to_message: {
+        message_id: details.data.metadata.channelMessageId, text: details.data.text,
+      } });
+      await waitFor(() => f.inputs().length === 3);
+      for (const input of f.inputs().slice(1)) expect(input.data).toMatchObject({
+        metadata: { topicId: "topic_bbbbbbbb" },
+        context: { focusedApp: "sample", focusedTask: { appId: "sample", taskId: "second" } },
+      });
+      // A manual selection without a matching Topic must not retain the old Topic.
+      f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
+        conversationId: "may:primary", author: { kind: "agent", id: "may" }, text: "Earlier subject update",
+        metadata: { channel: "telegram", channelTargetId: "123", topicId: "topic_bbbbbbbb" },
+      } });
+      await waitFor(() => f.sends().some((c) => c.body.text === "Earlier subject update"));
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      f.message(106, "/watch first");
+      f.message(107, "Continue");
+      await waitFor(() => f.inputs().length === 4);
+      expect(f.inputs()[3].data.metadata.topicId).toBeUndefined();
+      expect(f.inputs()[3].data.replyTo).toBeUndefined();
+      expect(f.inputs()[3].data.context).toMatchObject({ focusedApp: "may", focusedTask: { taskId: "first" } });
+    } finally { await f.close(); }
+  });
+
+  for (const completedBeforeRestart of [false, true]) {
+    it(`returns the exact reload result after restart (${completedBeforeRestart ? "already completed" : "not yet admitted"})`, async () => {
+      const f = durableTelegramFixture();
+      let router: ReturnType<typeof attachCommandRouter> | undefined;
+      let reloads = 0;
+      const attach = () => attachCommandRouter({ bus: f.bus, manager: {} as never, projectRoot: f.root,
+        reload: () => { reloads++; return { ok: true, summary: "Fixture definitions reloaded" }; },
+        restart() {}, shutdown() {},
+      });
+      try {
+        if (completedBeforeRestart) router = attach();
+        f.afterRecord((input) => {
+          if (input.type === "runtime.reload.requested") throw new Error("fixture lost receipt");
+        });
+        f.message(100, "/reload", { chat: { id: 456 }, message_thread_id: 7 });
+        await waitFor(() => f.published.some((e) => e.type === "runtime.reload.requested"));
+        if (completedBeforeRestart) {
+          await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/reload"));
+        } else {
+          expect(f.db.prepare("SELECT delivery_status FROM events WHERE event_type = 'runtime.reload.requested'").get())
+            .toEqual({ delivery_status: "pending" });
+          router = attach();
+        }
+        const priorSends = f.sends().length;
+        await f.restart();
+        await waitFor(() => f.polls().includes(101));
+        await waitFor(() => f.sends().slice(priorSends).some((c) => c.body.text === "Fixture definitions reloaded"));
+        expect(reloads).toBe(1);
+        const replies = f.sends().slice(priorSends).filter((c) => c.body.text === "Fixture definitions reloaded");
+        expect(replies).toHaveLength(1);
+        expect(replies[0].body).toMatchObject({ chat_id: "456", message_thread_id: 7 });
+        expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.requested'").get())
+          .toEqual({ count: 1 });
+      } finally { router?.close(); await f.close(); }
+    });
+  }
 
   it("shows the exact canonical result without a duplicate terminal card and ends that watch", async () => {
     const f = durableTelegramFixture();
