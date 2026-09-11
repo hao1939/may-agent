@@ -145,8 +145,11 @@ models and a synthetic App. They use normal prior-attempt context.
 The [shared-loop worker trial](controller-poc-recovery-review.md#critical-path-through-real-workers)
 now passes A delegating to B, A answering while B runs, B's outcome waking A,
 Request fulfillment and runtime/storage reopen. Both use the normal Task worker;
-the model responses in this trial are scripted. Operational old-owner cutover
-and current-source live-model child-chain follow-through remain unproved.
+the model responses in this trial are scripted. The subsequent
+[live May trials](controller-poc-recovery-review.md#live-may-on-the-shared-loop)
+pass that two-Task path with the actual App declaration and role instructions,
+including an unchanged below-threshold variant. They use a reduced tool catalog;
+three-Task live follow-through and operational old-owner cutover remain unproved.
 The old execution paths have been removed from the candidate source;
 [current CI and migration evidence](controller-poc-recovery-review.md) still leave
 whole-system simplification unproved.
@@ -161,8 +164,8 @@ decisions, rollback and interruption of the exact running Task.
 
 Prioritize the critical path before additional corner cases: human input to A,
 delegation to B, continued discussion with A, B's accepted outcome returning to A,
-and a useful reply. Then exercise the same path with actual App guidance and
-model decisions. Keep the basic reopen check; defer further fault injection and
+and a useful reply. The live trials now support that path with actual App guidance
+and model decisions. Keep the basic reopen check; defer further fault injection and
 unusual migration combinations until this shared loop earns the design's cost.
 The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 also exercises human replies beside running background work and inside a paused

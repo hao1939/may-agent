@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`4bff7813` has 138 unresolved failures. New human input now permits a fresh attempt
+`1be08130` has 136 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -18,11 +18,12 @@ cutover and runtime checks.
 The [critical-path trial](#critical-path-through-real-workers) now also passes
 through real Task workers with a local scripted provider. Task A handles human
 input and delegates to B; these are roles within one lifecycle.
+The [live May trials](#live-may-on-the-shared-loop) also pass this path using the
+paired App declaration and instructions unchanged, including a below-threshold
+case held back from the first run. No production fix was needed for these trials.
 The branch adds 632 net production lines against baseline main `a8f65188`
-(counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Prove the shared loop with actual App guidance and model decisions, then resolve
-regression and operational-cutover gaps before expanding the design.
-The latest live evidence is
-[below](#managed-conversation-recovery).
+(counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
+Resolve the remaining regression and integration gaps before expanding the design.
 
 The worker decides **how to do the assigned work**. The assigning App, parent
 agent or human decides **whether to keep assigning it**, revise its scope or
@@ -1042,6 +1043,69 @@ Full `bun run ci` passes Host/SDK types, the App boundary and lint, then reports
 (157.9 seconds). Both new trials pass in the full suite; failure names are
 unchanged from `26dce52f`. Net production growth remains 632 lines against
 `a8f65188`. Design integrity, examples and all 44 changed-document links pass.
+
+## Live May on the shared loop
+
+Host `4e216338` and paired App `0823556a` pass two live trials with
+`gpt-5.6-sol`, using the same App declaration, seed, May role instructions and
+shared common sense. Both source checkouts were clean. The
+[shared-loop script](../../../may-agent/scripts/poc/controller-judgment/shared-loop.ts)
+records their revisions and copied-file hashes. The second run changes only
+the measurement; its instructions were not tuned after the first result.
+
+The ordinary ask requests a background sample check against a 0.90 minimum.
+The model selects a May-owned goal through the actual App mapping. While B's
+HTTP read waits, A explains why one sample may be insufficient for a broader
+decision. The model neither polls Task state nor manages subscriptions or
+retries. When code accepts B's outcome, its event becomes input to A, which
+reports the finding and fulfills the original Request. Both Tasks stay open.
+After runtime/SQLite reopen, a new human input receives the earlier result and
+the discussion's limitation from retained context.
+
+| Trial | Result judgment, inspected in final and reopened replies | Task attempts | Model responses | Measurement reads | Tool errors | Elapsed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Development: 0.92 | Meets 0.90 by 0.02; one sample does not establish long-term reliability | 5 | 6 | 1 | 0 | 51.6 s |
+| Held-back value: 0.78 | Does not meet 0.90; preserves the same single-sample limitation | 5 | 7 | 1 | 0 | 63.1 s |
+
+Elapsed time includes holding the observation until the intervening discussion
+finishes; it is not a provider-speed benchmark.
+
+Both pass the mechanical checks for exact accepted-attempt correlation, one
+linked background Task, an open Request during discussion, later fulfillment,
+unchanged intervening response and retained Task identities. Neither emitted
+`handler.failed`. Local reports retain attempted tools, model usage metadata,
+events and transcripts. The endpoint reported 2,484 and 2,943 output tokens;
+those counters are telemetry, not independently verified billing.
+
+The trial limits tool presets to coding and finish, uses a local HTTP source,
+and omits optional skills and other installed Apps. It bounds itself to eight
+worker dispatches and six minutes; those are experiment limits, not Task
+lifetime rules. It proves two Tasks on the same App with actual model judgment,
+not the complete installed tool catalog, a three-Task chain, all failure cases,
+transport delivery or operational cutover. Basic reopen is not a full daemon
+restart. The paired App's later README-only commit `71e2af6b` removes stale
+supervisor documentation without changing the tested declaration or prompts.
+
+At Host `4e216338`, full CI still reports **2,729 passed, 3 skipped and 138
+failed** (2,870 tests, 289 files, 145.5 seconds); Host/SDK types, the App boundary
+and lint pass. The live results justify continuing with the shared loop.
+They do not clear the regression, migration or overall complexity gates.
+
+The next checkpoint, `1be08130`, restores the two existing cross-App result
+checks to the active lifecycle. Their old setup paused the App and then claimed
+work manually, which the current storage boundary correctly rejects. The tests
+now use active policy and the existing startup gate to control execution; they
+release that gate after closing the controller during cleanup. They also wait
+for committed attachment rather than recording success before the operation.
+Both pass all 59 assertions: the original caller receives its exact accepted
+0.92 result after a later input has produced 0.1 on the same Task, through either
+an event or recovery. No production behavior changed.
+
+Full CI at `1be08130` passes types, the App boundary and lint, then reports
+**2,731 passed, 3 skipped and 136 failed** (2,870 tests, 289 files, 150.3 seconds).
+Those two correlation tests are the only changed failure names versus `4e216338`.
+Design checks and all 46 changed-document links pass. The remaining failures
+still require individual review; they are not all assumed to be outdated tests.
 
 ## Verification and cost
 
