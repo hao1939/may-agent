@@ -216,15 +216,16 @@ service, service framework or uniform folder template is needed.
 
 ### Core policy cleanup
 
-**Status:** Candidate `72c2b206` on Host branch `fix/core-policy-boundaries`,
-based on `427d4ea1`; human review and deployment remain separate.
+**Status:** Candidate `7d80cc45` in [Host #144](https://github.com/hao1939/may-agent/pull/144)
+on `fix/core-policy-boundaries`, based on `427d4ea1`; human review and deployment remain separate.
 
 The core/external review found two small policy leaks and unnecessary imports.
 Use the existing boundaries instead of adding another extension mechanism:
 
 - Composition supplies one conversational App identity to both event admission
   and inbox dispatch. Core enforces durable admission for that selection without
-  naming May; unrelated direct-agent input remains available.
+  naming May. The comparison includes the canonical `.app` alias; unrelated
+  direct-agent input remains available.
 - Remove the obsolete recovery owner-review fallback and notification helpers.
   Its selector followed a synchronous repair pass that already requeued every
   matching legacy attention record. Keep that repair, exact Task/generation,
@@ -245,9 +246,11 @@ coverage selects a differently named conversational App and omits it entirely.
 This is a source cleanup; no App schema migration or new runtime service is needed.
 Larger runtime/reconciler and HTTP file splits remain separate work.
 
-Validation at `72c2b206`: full local CI passed with 2,685 tests passed, three
-installation-only skips and zero failures; browser coverage ran. Six ESLint
-probes verified forbidden value imports and allowed contract/type imports.
+Validation at `7d80cc45`: full local CI passed with 2,687 tests passed, three
+installation-only skips and zero failures; browser coverage ran. Committed ESLint
+tests verify forbidden value imports, allowed contract/type imports, focused
+database imports and composition/test exemptions. The alias regression
+reproduced a bypass before the fix; the focused admission/lint suite passes all 21 tests.
 Canonical design integrity, examples and App checks passed against this source.
 Hosted checks are tracked on the PR. No installation or model-backed test ran.
 
