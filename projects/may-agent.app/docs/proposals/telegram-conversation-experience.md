@@ -3,8 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `676162ad`, with
-review refinements following the verified `c0b98c12` checkpoint.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `fea62dee`, with
+review refinements following the verified `676162ad` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -361,3 +361,12 @@ changed selection, replies, Details and Follow; the lookup test inspects the
 actual production query plan before and after storage reopen. Existing schema
 tests verify index creation on old databases. Full current-revision checks and
 hosted results are tracked on the PR; live interaction validation remains pending.
+
+At `fea62dee`, validation errors, help and unknown-command replies join the
+existing immediate-command delivery chain. A held-send probe reproduced their
+previous overtaking behavior. The change shares the same ordering helper without
+adding state or changing which views enter Conversation. Input admission, Stop
+and asynchronous updates stay independent. Three regression cases cover send
+success, failure and shutdown, including independent chats/topics and preserved
+presentation-only feedback. All 42 targeted Telegram tests passed; full local
+and hosted verification is tracked on the PR.

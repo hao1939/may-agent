@@ -102,8 +102,11 @@ Provider retention bounds the retry window for unadmitted updates; accepted
 Tasks do not depend on that retention. Host recovery remains responsible for
 accepted work and saved admission plans, not arbitrary unadmitted journal rows.
 
-Commands change local selection in provider order. Their outbound views retain
-per-surface ordering separately, so a stalled send cannot block input or Stop.
+Commands change local selection in provider order. Immediate command replies,
+including help and invalid/unknown-command feedback, share one per-surface send
+chain. This does not turn presentation-only notices into saved Conversation
+views. Input admission, Stop, progress and asynchronous results remain independent;
+this is not a total ordering of all outbound messages.
 Unsupported attachments in authorized chats receive a best-effort explanation
 asking for text; captions are not treated as proof that the media was understood.
 Media processing remains unsupported. Service updates without user content may
