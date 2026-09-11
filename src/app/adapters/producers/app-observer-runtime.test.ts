@@ -6,7 +6,7 @@ import {
   type AppObserverResult,
   type ObserverSnapshot,
 } from "@may-agent/sdk";
-import { EventBus } from "../../core/events/bus.js";
+import { EVENT_ROW_ID, EventBus } from "../../core/events/bus.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 
 function entry(definition: AppDefinition) {
@@ -173,6 +173,12 @@ describe("publication-coupled observation memory", () => {
   function fixture(run: AppObserver["run"]) {
     let now = 1;
     const bus = new EventBus();
+    let eventId = 0;
+    const persist = (event: object) =>
+      Object.defineProperty(event, EVENT_ROW_ID, { value: ++eventId, configurable: true });
+    bus.setPersistenceSubscriber((event) => {
+      persist(event);
+    });
     const definition: AppDefinition = {
       id: "sample",
       version: 1,
@@ -194,6 +200,7 @@ describe("publication-coupled observation memory", () => {
       bus,
       runtime,
       definition,
+      persist,
       async scan() {
         runtime.scanNow();
         // The fixtures return already resolved promises: this continuation is
@@ -217,6 +224,7 @@ describe("publication-coupled observation memory", () => {
         if (fail) throw new Error("publication unavailable");
         seen.push((event.data as { state: string }).state);
       }
+      f.persist(event);
     });
     try {
       await f.scan();
@@ -256,6 +264,7 @@ describe("publication-coupled observation memory", () => {
     f.bus.setPersistenceSubscriber((event) => {
       if (event.type === "second.fact" && fail) throw new Error("second append failed");
       if (event.type.endsWith(".fact")) published.push(event.type);
+      f.persist(event);
     });
     try {
       await f.scan();
@@ -275,6 +284,22 @@ describe("publication-coupled observation memory", () => {
         "first.fact",
         "second.fact",
       ]);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("does not remember a fact when publication returns without a durable receipt", async () => {
+    const seen: (ObserverSnapshot | undefined)[] = [];
+    const f = fixture(async (ctx) => {
+      seen.push(ctx.previousObservation);
+      return { events: [{ type: "transient", data: {} }], nextObservation: "observed" };
+    });
+    f.bus.setPersistenceSubscriber(() => {});
+    try {
+      await f.scan();
+      await f.scan();
+      expect(seen).toEqual([undefined, undefined]);
     } finally {
       f.runtime.close();
     }

@@ -6,7 +6,7 @@ import {
   type ObserverSnapshot,
 } from "@may-agent/sdk";
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
-import type { EventBus } from "../../core/events/bus.js";
+import { EVENT_ROW_ID, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";
 
 type ObserverState = {
@@ -123,11 +123,17 @@ export function createAppObserverRuntime(options: {
       const observation = Array.isArray(result) ? undefined : copySnapshot(result.nextObservation);
       for (const fact of facts) {
         if (closed || states.get(key) !== state) return;
-        options.bus.emit({
+        const published = options.bus.emit({
           ...fact,
           source: fact.source ?? `app:${state.appId}:observer:${state.observer.id}`,
           owner: fact.owner ?? `app:${state.appId}`,
         } as never);
+        // emit can also carry transient/non-journaled notifications. Such a
+        // result cannot justify suppressing future stateful observations.
+        const eventId = published[EVENT_ROW_ID] ?? 0;
+        if (!Array.isArray(result) && (!Number.isSafeInteger(eventId) || eventId <= 0)) {
+          throw new Error("stateful observer fact has no durable event receipt");
+        }
       }
       if (!closed && states.get(key) === state) state.observation = observation;
     } catch (error) {
