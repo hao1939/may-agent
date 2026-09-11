@@ -4,7 +4,7 @@ import { stateTransaction as transaction } from "../../../lib/db/transaction.js"
 import { wakeAppInboxItemsWaitingOnApp } from "./app-inbox-store.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { isTaskAttentionReadyForReview, isTaskExecutionExhausted } from "../tasks/app-task-state.js";
+import { isTaskAttentionReadyForReview, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -200,9 +200,8 @@ export class AppTaskResourceStore {
     ready: boolean,
     nextCheckAt: number | null,
   ): void {
-    // Input remains durable while execution is stopped; it must not leave a
-    // permanently ready/due recovery hint that bypasses or spins on the guard.
-    const executionStopped = isTaskExecutionExhausted(resource);
+    // Retain pending input without a ready hint that bypasses its cooldown.
+    const retryAt = pendingTaskExecutionRetryAt(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -233,9 +232,9 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !executionStopped && taskChanged(resource, trigger) ? 1 : 0,
-        !executionStopped && ready ? 1 : 0,
-        executionStopped ? null : nextCheckAt,
+        !retryAt && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && ready ? 1 : 0,
+        retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
         epoch(resource.status.updatedAt) ?? Date.now(),
@@ -1472,53 +1471,58 @@ export class AppTaskResourceStore {
     taskId: string,
     input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null; expectedRevision?: number },
   ): boolean {
-    const assignments: string[] = [];
-    const assignmentValues: unknown[] = [];
-    const changedPredicates: string[] = [];
-    const expectedValues: unknown[] = [];
-    if (input.ready !== undefined) {
-      assignments.push("ready = ?");
-      assignmentValues.push(input.ready ? 1 : 0);
-      changedPredicates.push("ready IS NOT ?");
-      expectedValues.push(input.ready ? 1 : 0);
-    }
-    if (input.changed !== undefined) {
-      assignments.push("changed = ?");
-      assignmentValues.push(input.changed ? 1 : 0);
-      changedPredicates.push("changed IS NOT ?");
-      expectedValues.push(input.changed ? 1 : 0);
-    }
-    if (input.nextCheckAt !== undefined) {
-      assignments.push("next_check_at = ?");
-      assignmentValues.push(input.nextCheckAt);
-      changedPredicates.push("next_check_at IS NOT ?");
-      expectedValues.push(input.nextCheckAt);
-    }
-    if (!assignments.length) return false;
-    const changed =
-      this.db
-        .prepare(
-          `UPDATE app_tasks SET ${assignments.join(", ")}
-           WHERE app_id = ? AND task_id = ?
-             AND (${changedPredicates.join(" OR ")})
-             AND (? IS NULL OR ? = (
-               SELECT CAST(value AS INTEGER) FROM app_task_store_meta
-               WHERE app_id = app_tasks.app_id AND key = 'revision'
-             ))
-             AND NOT EXISTS (
-               SELECT 1 FROM app_task_cancellations cancelled
-               WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
-             )`,
-        )
-        .run(
-          ...assignmentValues,
-          this.appId,
-          taskId,
-          ...expectedValues,
-          input.expectedRevision ?? null,
-          input.expectedRevision ?? null,
-        ).changes > 0;
-    return changed;
+    return transaction(this.db, () => {
+      const resource = this.readTask(taskId);
+      const retryAt = resource && pendingTaskExecutionRetryAt(resource);
+      if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
+      const assignments: string[] = [];
+      const assignmentValues: unknown[] = [];
+      const changedPredicates: string[] = [];
+      const expectedValues: unknown[] = [];
+      if (input.ready !== undefined) {
+        assignments.push("ready = ?");
+        assignmentValues.push(input.ready ? 1 : 0);
+        changedPredicates.push("ready IS NOT ?");
+        expectedValues.push(input.ready ? 1 : 0);
+      }
+      if (input.changed !== undefined) {
+        assignments.push("changed = ?");
+        assignmentValues.push(input.changed ? 1 : 0);
+        changedPredicates.push("changed IS NOT ?");
+        expectedValues.push(input.changed ? 1 : 0);
+      }
+      if (input.nextCheckAt !== undefined) {
+        assignments.push("next_check_at = ?");
+        assignmentValues.push(input.nextCheckAt);
+        changedPredicates.push("next_check_at IS NOT ?");
+        expectedValues.push(input.nextCheckAt);
+      }
+      if (!assignments.length) return false;
+      const changed =
+        this.db
+          .prepare(
+            `UPDATE app_tasks SET ${assignments.join(", ")}
+             WHERE app_id = ? AND task_id = ?
+               AND (${changedPredicates.join(" OR ")})
+               AND (? IS NULL OR ? = (
+                 SELECT CAST(value AS INTEGER) FROM app_task_store_meta
+                 WHERE app_id = app_tasks.app_id AND key = 'revision'
+               ))
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancelled
+                 WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+               )`,
+          )
+          .run(
+            ...assignmentValues,
+            this.appId,
+            taskId,
+            ...expectedValues,
+            input.expectedRevision ?? null,
+            input.expectedRevision ?? null,
+          ).changes > 0;
+      return changed;
+    });
   }
 
 }

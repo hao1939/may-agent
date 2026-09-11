@@ -69,7 +69,6 @@ import {
   type DeliveryResult,
   type EventBus,
 } from "../events/bus.js";
-import { MAX_TASK_EXECUTION_FAILURES } from "./app-task-state.js";
 import {
   assertAppTaskEffectFresh,
   assertAppTaskClaimCurrent,
@@ -1984,11 +1983,9 @@ async function reconcileTask(input: {
         input: intent.input ?? {},
         summary: retry.summary,
       });
-      if (retry.status === "attention") {
-        emitAppTaskDependencyChange(opts, descriptor, intent.id, "attention");
-        return retry.parentTaskId ? [retry.parentTaskId] : [];
-      }
-      throw new Error(primaryHandlerResult.summary);
+      emitAppTaskDependencyChange(opts, descriptor, intent.id, "attention");
+      // The persisted deadline and existing recovery scheduler own the retry.
+      return retry.parentTaskId ? [retry.parentTaskId] : [];
     }
     let attention: ReturnType<typeof markAppTaskAttention>;
     try {
@@ -2098,10 +2095,8 @@ async function reconcileTask(input: {
               summary: retry.summary,
             },
           );
-          if (retry.status === "attention") {
-            emitAppTaskDependencyChange(opts, descriptor, failedClaim.taskId, "attention");
-            return retry.parentTaskId ? [retry.parentTaskId] : [];
-          }
+          emitAppTaskDependencyChange(opts, descriptor, failedClaim.taskId, "attention");
+          return retry.parentTaskId ? [retry.parentTaskId] : [];
         }
       } catch {
         // Preserve the original failure. Recovery still fences attempts whose
@@ -2530,33 +2525,37 @@ function installConventionTaskControllers(
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
       startAfter: opts.startAfter,
-      maxRetries: MAX_TASK_EXECUTION_FAILURES - 1,
+      // Dispatch/storage failures have no persisted Task retry yet.
+      maxRetries: Number.POSITIVE_INFINITY,
       reconcile: async (taskId, dispatch) => {
         const activeDescriptor = binding.descriptor;
         const activeOpts = binding.opts;
         const config = appTaskConfig(activeDescriptor);
-        const dependentTaskIds = activeOpts.executeAttempt
-          ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
-          : await reconcileTask({
-              opts: activeOpts,
-              descriptor: activeDescriptor,
-              taskId,
-              dispatch,
-              reason: "task-controller",
+        try {
+          const dependentTaskIds = activeOpts.executeAttempt
+            ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
+            : await reconcileTask({
+                opts: activeOpts,
+                descriptor: activeDescriptor,
+                taskId,
+                dispatch,
+                reason: "task-controller",
+              });
+          const dependentEntries = new Map(
+            appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
+          );
+          for (const dependentTaskId of dependentTaskIds) {
+            // A same-task result is an immediate continuation, such as a
+            // workflow-to-agent handoff. Other children/dependents enter the
+            // priority-ordered ordinary lane so continuation bursts stay bounded.
+            controller.enqueue(dependentTaskId, {
+              promote: dependentTaskId === taskId,
+              priority: dependentEntries.get(dependentTaskId)?.options.priority,
             });
-        const dependentEntries = new Map(
-          appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
-        );
-        for (const dependentTaskId of dependentTaskIds) {
-          // A same-task result is an immediate continuation, such as a
-          // workflow-to-agent handoff. Other children/dependents enter the
-          // priority-ordered ordinary lane so continuation bursts stay bounded.
-          controller.enqueue(dependentTaskId, {
-            promote: dependentTaskId === taskId,
-            priority: dependentEntries.get(dependentTaskId)?.options.priority,
-          });
+          }
+        } finally {
+          binding.recoveryScheduler?.stateChanged();
         }
-        binding.recoveryScheduler?.stateChanged();
       },
       onError: (taskId, error, willRetry) => {
         const activeDescriptor = binding.descriptor;

@@ -1,7 +1,7 @@
 import { createConversationInbox } from "../../composition/conversation-inbox.js";
 import { APP_REQUEST_CONVERSATION_MAX_BYTES } from "../../conversations/context.js";
 import { boundedAppRequestConversation } from "../../conversations/context.js";
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, test, setSystemTime } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -18,7 +18,6 @@ import {
   failAppTaskAttempt,
   stopAppTask,
 } from "../tasks/app-task-reconciler.js";
-import { MAX_TASK_EXECUTION_FAILURES } from "../tasks/app-task-state.js";
 import { admitTaskRequest } from "./inbox.js";
 import {
   createConversationTopic,
@@ -242,7 +241,7 @@ test("Task links accumulate without duplicates; overflow and unknown links roll 
 test.each([
   ["preserve", "done"],
   ["add", "done"],
-  ["preserve", "exhausted"],
+  ["preserve", "retrying"],
   ["preserve", "human-cancel"],
   ["preserve", "app-stop"],
 ] as const)("handoff and closure stay atomic (%s Task links, %s outcome)", async (links, taskOutcome) => {
@@ -339,12 +338,15 @@ test.each([
     if (claim.kind !== "claimed") throw new Error("fixture claim");
     if (taskOutcome === "done") {
       completeAppTask(config, claim, { summary: "Evidence collected" });
-    } else if (taskOutcome === "exhausted") {
-      for (let i = 0; i < MAX_TASK_EXECUTION_FAILURES; i++) {
+    } else if (taskOutcome === "retrying") {
+      for (let i = 0; i < 6; i++) {
         if (claim.kind !== "claimed") throw new Error("fixture retry claim");
         const failure = failAppTaskAttempt(config, claim, "Evidence source unavailable");
-        if (i === MAX_TASK_EXECUTION_FAILURES - 1) expect(failure.status).toBe("attention");
-        else claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
+        expect(failure.status).toBe("retrying");
+        if (i < 5) {
+          setSystemTime(new Date(store.readTask("work")!.status.executionRetryAt!));
+          claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
+        }
       }
     } else if (taskOutcome === "human-cancel") {
       const task = store.readTask("work")!;
@@ -473,9 +475,10 @@ test.each([
     // Closing the ask cannot complete, retry or cancel its independent Task.
     expect(store.readTaskContext({ taskIds: ["work"] })).toEqual(settledTask);
     const quietLinks = listStaleConversationTopicTasks(db, app.id, { updatedBefore: Date.now() + 1, limit: 10 });
-    if (taskOutcome === "exhausted") expect(quietLinks).toContainEqual(expect.objectContaining({ taskId: "work" }));
+    if (taskOutcome === "retrying") expect(quietLinks).toContainEqual(expect.objectContaining({ taskId: "work" }));
     else expect(quietLinks).toEqual([]);
   } finally {
+    setSystemTime();
     runtime.close();
   }
 });

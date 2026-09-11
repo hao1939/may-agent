@@ -1,8 +1,5 @@
 import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
 
-/** Initial execution plus three retries; successful progress is not capped. */
-export const MAX_TASK_EXECUTION_FAILURES = 4;
-
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
   observedAt: string;
@@ -62,8 +59,10 @@ export type AppTaskResource = {
     currentAttemptId?: string;
     /** Exact attempt that produced the accepted summary/result observation. */
     observedAttemptId?: string;
-    /** Consecutive execution failures in this generation, cleared by progress or explicit retry. */
+    /** Consecutive unsuccessful attempts in this generation, cleared by progress or owner retry. */
     executionFailures?: number;
+    /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
+    executionRetryAt?: number;
     summary?: string;
     response?: string;
     result?: Record<string, unknown>;
@@ -74,13 +73,20 @@ export type AppTaskResource = {
   };
 };
 
-export function isTaskExecutionExhausted(resource: AppTaskResource): boolean {
-  return (resource.status.executionFailures ?? 0) >= MAX_TASK_EXECUTION_FAILURES;
+/** Bound retry frequency independently of Task lifetime and execution budgets. */
+export function taskExecutionRetryDelay(failures: number): number {
+  return Math.min(30_000, 250 * 2 ** Math.min(10, Math.max(0, failures - 1)));
 }
 
-/** Exhausted input is retained for an owner decision, not eligible execution. */
+export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {
+  const at = resource.status.executionRetryAt;
+  return typeof at === "number" && Number.isFinite(at) && at > now
+    ? at : undefined;
+}
+
+/** Attention is visible evidence, independently of retry scheduling. */
 export function isTaskAttentionReadyForReview(resource: AppTaskResource | null, hasPendingInput: boolean): boolean {
-  return resource?.status.phase === "attention" && (!hasPendingInput || isTaskExecutionExhausted(resource));
+  return resource?.status.phase === "attention" && (!hasPendingInput || resource.status.executionRetryAt !== undefined);
 }
 
 export type AppTaskAttemptLease = {

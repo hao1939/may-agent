@@ -23,7 +23,7 @@ This mode changes instructions and result admission; it still uses the direct
 executor, fixture evidence and restricted tools. It does not test the full
 managed adapter, installed App or cross-App dependency calls. A valid `stopped`
 judgment must survive `finish(status: "failure")` as completed execution and
-be accepted without automatic retry. Check `settlementPass` as well as
+be accepted as evidence; the continuing-Task design also requires a later attempt for unfinished work. Check `settlementPass` as well as
 `decisionPass`; either failing makes the experiment exit nonzero. The harness
 does not score source settlement for its judgment-only ask/wait cases.
 
@@ -51,7 +51,7 @@ all lifecycle gates. No response-to-user delivery or deployed May agent is used.
 
 `ask` and `wait` are judgment-only cases in this harness; their interface and
 wait transitions are not exercised. `give-up` records an accepted non-success
-outcome without closing the Task or retrying it automatically. Delegation admits a real child
+outcome without closing the Task. Its unfinished input now retains a retry deadline; this one-decision harness does not run that retry. Delegation admits a real child
 but does not run that child or route its result in this harness. Likewise,
 discussion cases test the agent's choice, not concurrent inbox availability.
 Each `run.ts` case stops after one decision. Controller callbacks have no automatic
@@ -109,13 +109,39 @@ can bypass the controller's retry delay. It uses the real controller and real
 timers without a model or database. It exits nonzero if either the ordinary
 retry or the wake-during-cooldown case runs early. The current source fails the
 second case: a timer schedules a retry, but does not fence earlier queue input.
-This is a known acceptance gap, not a passing reliability claim. Restart-safe
-cooldown still needs a separate durable-state test and implementation.
+This controller-only dispatch probe still exposes that early callback. The Task
+state boundary now enforces a durable retry deadline before claiming an actual
+attempt, so an early callback cannot execute a cooling Task. Dispatch failures
+that cannot persist Task state remain a separate retry-timer gap; this script
+is retained unchanged and still exits nonzero. Do not count it as passing.
 
-The common-lifecycle source tests now also exercise 24 retry-safe failed Tasks
-under the controller without an agent-generated action batch, and confirm that
-exhausting the current retry budget leaves the Task open across reopen. Those
-tests do not endorse the current four-failure policy as the target policy, or
-prove that every real failure is safely retryable. PRs #153, #154 and #155 inform
-the review: valid non-success judgment, oversized semantic action batches and
-execution continuation are different boundaries.
+`app-task-retry.test.ts` exercises file-backed SQLite reopen and the actual due
+scheduler/controller, including an early wake, no capacity held while waiting,
+accepted failure followed by success on the original input, owner revision and
+closure, and rollback of the failure transition. Common-lifecycle tests cover
+24 failed Tasks without unblock batches and seven consecutive failures without
+a failure-count stop. An overdue-deadline case in that 24-Task test exposed and
+fixed the existing scheduler's deferral to its long safety scan.
+
+The `stopped` result label remains a legacy SDK spelling in this experiment.
+It now means an accepted unsuccessful attempt report; it does not answer the
+original ask or withdraw the assignment. Recovery keeps the input and earlier
+waits, records its next eligible time and notifies the parent. Domain judgment
+remains with App instructions; owner closure is separate.
+
+For a real-model continuation trial:
+
+```sh
+bun scripts/poc/controller-judgment/continuing-failure.ts --live --model MODEL --out /tmp/may-continuing-failure
+```
+
+This requires model credentials and spends tokens. The worker uses the actual
+Task protocol/schema and a read-only tool to inspect a synthetic observation.
+It first reports an unavailable source. The fixture repairs the source and
+reopens SQLite; the ordinary recovery scheduler invokes a fresh model attempt
+without a new ask or unblock. The second attempt must read the current file
+and answer the original question. `--value 0.78` varies the outcome against the
+same 0.90 minimum. Reports include source revision/dirty state, attempted tools,
+provider usage and correlation checks. This is direct-agent execution under
+the controller, not the full installed managed Conversation runtime. Model
+compliance must be measured separately from deterministic storage tests.

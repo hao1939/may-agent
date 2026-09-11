@@ -19,7 +19,7 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
-import { isTaskExecutionExhausted, MAX_TASK_EXECUTION_FAILURES } from "./app-task-state.js";
+import { pendingTaskExecutionRetryAt, taskExecutionRetryDelay } from "./app-task-state.js";
 import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
@@ -83,6 +83,7 @@ export type AppTaskClaimResult =
       conditionIds: string[];
       dependencyIds?: string[];
       childIds?: string[];
+      retryAt?: number;
     }
   | { kind: "attention"; taskId: string; generation: number; summary: string; parentTaskId?: string }
   | { kind: "completed"; taskId: string; generation: number };
@@ -594,7 +595,10 @@ function finishAttempt(
     attempt.state = state;
     attempt.finishedAt = now;
     attempt.summary = summary;
-    if (state === "completed") resource.status.executionFailures = undefined;
+    if (state === "completed") {
+      resource.status.executionFailures = undefined;
+      resource.status.executionRetryAt = undefined;
+    }
   }
   resource.status.currentAttemptId = undefined;
 }
@@ -1984,13 +1988,14 @@ export function recordAppTaskTrigger(
   config: AppTaskContext,
   taskId: string,
   event: Record<string, unknown>,
-): { kind: "recorded" | "missing" } {
+): { kind: "recorded" | "missing" | "closed" } {
   // A wake updates one existing Task. Its children and attempt history do
   // not participate in trigger selection, so keep this interface-path read
   // proportional to the exact Task rather than its whole subtree.
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] }, { includeHistory: false, childLimit: 0 });
   const resource = tree.resources?.[taskId];
   if (!resource) return { kind: "missing" };
+  if (config.resourceStore.isCancelled(taskId)) return { kind: "closed" };
   const previous = tree.taskTriggers?.[taskId];
   const resourceVersion = resource.metadata.resourceVersion;
   // Input shares the Task row; invalidate writers that read before this wake.
@@ -2039,7 +2044,7 @@ function dependenciesSatisfied(tree: TaskTree, intent: AppTaskIntent): boolean {
 
 function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): boolean {
   if (tree.cancellations?.[resource.metadata.id]) return false;
-  if (isTaskExecutionExhausted(resource)) return false;
+  if (pendingTaskExecutionRetryAt(resource)) return false;
   const taskId = resource.metadata.id;
   const intent = resourceIntent(resource);
   if (!dependenciesSatisfied(tree, intent)) return false;
@@ -2406,6 +2411,7 @@ export function retryFailedAppTask(
   touchResource(resource, {
     phase: "pending",
     executionFailures: undefined,
+    executionRetryAt: undefined,
     observedGeneration: Math.max(0, resource.metadata.generation - 1),
     currentAttemptId: undefined,
   });
@@ -2562,7 +2568,7 @@ function closeTask(
   });
 }
 
-/** Accept a non-success judgment for this input; the owner separately decides closure. */
+/** Retain an honest failure report and the unfinished assignment for a later attempt. */
 export function stopAppTask(
   config: AppTaskContext,
   claim: AppTaskClaim,
@@ -2587,24 +2593,20 @@ export function stopAppTask(
   }
   requireNonEmptyString(input.summary, "Stop decision summary");
   requireStringList(input.evidence, "Stop decision evidence");
-  const summary = `Stopped by App ${config.resourceStore.appId}; outcome not achieved: ${input.summary.trim()}`;
+  const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
-  const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
-  const stoppedConditionIds = new Set(inputKeys.flatMap((key) =>
-    resource.status.inputWaits?.[key]?.conditions.map(({ id }) => id) ?? []));
-  const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds);
-  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
-  const remainingWaits = new Set(Object.values(resource.status.inputWaits ?? {}).flatMap((wait) => wait.conditions.map(({ id }) => id)));
-  const conditionIds = inputKeys.length
-    ? (resource.status.conditionIds ?? []).filter((id) => !stoppedConditionIds.has(id) || remainingWaits.has(id)) : [];
-  resource.status.conditionIds = conditionIds;
-  pruneUnlinkedConditions(tree);
+  const failures = (resource.status.executionFailures ?? 0) + 1;
+  // Accepted evidence is not a final answer to the original assignment.
+  // Preserve input, including accepted live feedback and earlier linked waits.
+  restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "completed", summary, now);
   touchResource(resource, {
-    phase: conditionIds.length || Object.keys(resource.status.inputWaits ?? {}).length ? "waiting" : "attention",
+    phase: "pending",
+    executionFailures: failures,
+    executionRetryAt: Date.parse(now) + taskExecutionRetryDelay(failures),
     observedGeneration: claim.generation,
     observedAttemptId: claim.attemptId,
     currentAttemptId: undefined,
@@ -2612,11 +2614,10 @@ export function stopAppTask(
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
     evidence: [...input.evidence],
-    conditionIds,
   });
   const parentTaskId = recordExecutableParentTrigger(tree, claim.taskId, "attention", summary, input.evidence, now, claim.attemptId);
   trackResourceMutationTask(mutationScope, tree, parentTaskId);
-  commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
+  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
   return { status: "applied", summary, ...(parentTaskId ? { parentTaskId } : {}) };
 }
 
@@ -2806,6 +2807,11 @@ export function claimObservedAppTask(
       generation: tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
     };
   }
+  const retryAt = pendingTaskExecutionRetryAt(resource);
+  if (retryAt !== undefined) {
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, retryAt);
+    return { kind: "waiting", taskId: input.taskId, conditionIds: [], retryAt };
+  }
   const resourceFence = {
     taskId: resource.metadata.id,
     resourceVersion: resource.metadata.resourceVersion,
@@ -2850,16 +2856,16 @@ export function claimObservedAppTask(
     if (resource.status.currentAttemptId) {
       finishAttempt(tree, resource, "interrupted", summary, new Date().toISOString());
     }
-    // This wake was evaluated and produced a durable attention result. Keeping
-    // it pending would make passive resync immediately retry the same invalid
-    // task forever; a later external wake can record a fresh trigger.
-    if (tree.taskTriggers) delete tree.taskTriggers[input.taskId];
+    // Capability/admission failure does not withdraw the assignment. Recheck
+    // current state after backoff; an owner revision may repair it sooner.
+    const failures = (resource.status.executionFailures ?? 0) + 1;
     touchResource(resource, {
-      phase: "attention",
+      phase: "pending",
+      executionFailures: failures,
+      executionRetryAt: Date.now() + taskExecutionRetryDelay(failures),
       observedGeneration: resource.metadata.generation,
       currentAttemptId: undefined,
       summary,
-      conditionIds: [],
     });
     commitTaskMutation(config, tree, {
       resourceMutation: finishResourceMutationScope(mutationScope, tree),
@@ -2946,39 +2952,6 @@ export function claimObservedAppTask(
   }
   if (resource.status.phase === "running" && previousAttempt && !canRecoverPreviousRuntime) {
     return { kind: "busy", taskId: input.taskId, attemptId: previousAttempt.metadata.id };
-  }
-  // Wake source is not retry authority. Keep input intact even when an event,
-  // recovery pass or fresh process asks to run an exhausted generation.
-  if (isTaskExecutionExhausted(resource)) {
-    let parentTaskId: string | undefined;
-    if (resource.status.phase !== "attention") {
-      const summary = executionRetryLimitSummary(resource.status.summary ?? "Execution failed");
-      touchResource(resource, {
-        phase: "attention",
-        observedGeneration: resource.metadata.generation,
-        currentAttemptId: undefined,
-        summary,
-      });
-      parentTaskId = recordExecutableParentTrigger(
-        tree,
-        input.taskId,
-        "attention",
-        summary,
-        undefined,
-        new Date().toISOString(),
-      );
-      trackResourceMutationTask(mutationScope, tree, parentTaskId);
-      commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
-    } else {
-      acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision);
-    }
-    return {
-      kind: "attention",
-      taskId: input.taskId,
-      generation: resource.metadata.generation,
-      summary: resource.status.summary ?? executionRetryLimitSummary("Execution failed"),
-      ...(parentTaskId ? { parentTaskId } : {}),
-    };
   }
   if (
     resource.status.phase === "converged" &&
@@ -3140,6 +3113,7 @@ export function claimObservedAppTask(
   touchResource(resource, {
     phase: "running",
     currentAttemptId: attemptId,
+    executionRetryAt: undefined,
   });
   const currentConditionIds = new Set(resource.status.conditionIds ?? []);
   const relevantConditionIds = new Set([...initialConditionIds, ...currentConditionIds]);
@@ -3214,16 +3188,12 @@ function matchingTaskAttempt(
   return matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
 }
 
-function executionRetryLimitSummary(summary: string): string {
-  return `${summary}; stopped after ${MAX_TASK_EXECUTION_FAILURES} consecutive execution failures. Explicitly retry or revise this Task after reviewing the failure.`;
-}
-
 /** Record an execution failure, not a stale-result rejection. Preserve all unaccepted input. */
 export function failAppTaskAttempt(
   config: AppTaskContext,
   claim: AppTaskClaim,
   failure: string,
-): { status: "retrying" | "attention" | "superseded"; summary: string; parentTaskId?: string } {
+): { status: "retrying" | "superseded"; summary: string; parentTaskId?: string } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
   // New input may have changed the resource version. Fence the freshly read
@@ -3232,25 +3202,22 @@ export function failAppTaskAttempt(
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const failures = (resource.status.executionFailures ?? 0) + 1;
-  const exhausted = failures >= MAX_TASK_EXECUTION_FAILURES;
-  const summary = exhausted ? executionRetryLimitSummary(failure) : `${failure}; retrying the same Task`;
+  const summary = `${failure}; retrying the same Task after backoff`;
   const now = new Date().toISOString();
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "failed", failure, now);
   attempt.failureReason = "HandlerExecutionFailed";
   touchResource(resource, {
-    phase: exhausted ? "attention" : "pending",
+    phase: "pending",
     executionFailures: failures,
+    executionRetryAt: Date.parse(now) + taskExecutionRetryDelay(failures),
     currentAttemptId: undefined,
     summary,
-    ...(exhausted ? { observedGeneration: claim.generation } : {}),
   });
-  const parentTaskId = exhausted
-    ? recordExecutableParentTrigger(tree, claim.taskId, "attention", summary, undefined, now)
-    : undefined;
+  const parentTaskId = recordExecutableParentTrigger(tree, claim.taskId, "attention", summary, undefined, now);
   trackResourceMutationTask(mutationScope, tree, parentTaskId);
   commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
-  return { status: exhausted ? "attention" : "retrying", summary, ...(parentTaskId ? { parentTaskId } : {}) };
+  return { status: "retrying", summary, ...(parentTaskId ? { parentTaskId } : {}) };
 }
 
 export function releaseStaleAppTaskResult(
@@ -3840,6 +3807,7 @@ function applyTaskActions(
         touchResource(resource, {
           phase: "pending",
           executionFailures: undefined,
+          executionRetryAt: undefined,
           observedGeneration: Math.max(0, resource.metadata.generation - 1),
           currentAttemptId: undefined,
           summary: action.reason.trim(),
@@ -4369,36 +4337,25 @@ export function markAppTaskAttention(
   const match = matchingTaskAttempt(tree, claim);
   if (!match) return { status: "stale" };
   const { resource, attempt } = match;
-  if (input.reason === "HandlerExecutionFailed") {
-    resource.status.executionFailures = (resource.status.executionFailures ?? 0) + 1;
-    if (resource.status.executionFailures >= MAX_TASK_EXECUTION_FAILURES) {
-      input = { ...input, summary: executionRetryLimitSummary(input.summary) };
-    }
-  }
-  const executionExhausted = isTaskExecutionExhausted(resource);
-  if (!executionExhausted && hasUnacceptedLiveTaskEvents(tree, claim.taskId, input.acceptedLiveEventIds)) {
-    if (input.reason === "HandlerExecutionFailed") {
-      restoreAttemptEvents(tree, claim.taskId, resource, attempt, new Date().toISOString());
-    }
-    recordPendingAppTaskResult(config, tree, claim, input);
-    return { status: "applied", taskContinues: true };
-  }
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
-  if (executionExhausted) restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
-  else consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  const handoff = isAgentHandoffReason(input.reason);
+  restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "failed", input.summary, now);
   attempt.metadata.resourceVersion += 1;
   attempt.failureReason = input.reason;
-  unlinkTaskConditions(tree, claim.taskId);
+  const failures = (resource.status.executionFailures ?? 0) + 1;
   touchResource(resource, {
-    phase: "attention",
+    phase: handoff ? "attention" : "pending",
+    ...(handoff ? {} : {
+      executionFailures: failures,
+      executionRetryAt: Date.parse(now) + taskExecutionRetryDelay(failures),
+    }),
     observedGeneration: claim.generation,
     currentAttemptId: undefined,
     summary: input.summary,
     evidence: [...(input.evidence ?? [])],
     ...(input.result ? { result: structuredClone(input.result) } : {}),
-    conditionIds: [],
   });
   const parentTaskId =
     input.wakeParent === false

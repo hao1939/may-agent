@@ -41,7 +41,7 @@ export type Condition = {
   reviewAfterMs?: number;
 };
 
-/** `stopped` records non-success for the considered work; owner closure is separate. */
+/** `stopped` reports an unsuccessful attempt; unfinished work remains pending until owner closure. */
 export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "stopped";
 
 /** One child App outcome required by the current task. */

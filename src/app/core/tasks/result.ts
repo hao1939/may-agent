@@ -14,7 +14,7 @@ export type TaskCapabilityRun = {
   verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
-  /** The workflow deliberately stopped; repeating it is not transport recovery. */
+  /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
 };

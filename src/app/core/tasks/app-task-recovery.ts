@@ -72,13 +72,15 @@ export class AppTaskRecoveryScheduler {
 
   private armNearestDue(force = false): void {
     const next = this.options.source.nextDueAt();
-    if (next === null || next <= this.now()) {
-      if (force || next === null) {
-        this.dueTimer.cancel();
-        this.dueAt = undefined;
-      }
+    if (next === null) {
+      this.dueTimer.cancel();
+      this.dueAt = undefined;
       return;
     }
+    // A synchronous transition may finish after another Task's deadline.
+    // Query that overdue work once; do not defer it to the long safety scan.
+    // The callback does not re-arm itself against unchanged due rows.
+    if (next <= this.now() && !force) return;
     if (!force && this.dueTimer.armed && this.dueAt === next) return;
     this.dueAt = next;
     this.dueTimer.after(Math.max(1, next - this.now()), () => {
