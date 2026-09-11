@@ -39,7 +39,7 @@ before allowing cleanup to remove them; do not promise indefinite free storage.
 
 ## Real agent judgment trials
 
-The [opt-in experiment](../../../may-agent/scripts/poc/controller-judgment/README.md)
+The [opt-in experiment](https://github.com/hao1939/may-agent/blob/072901fc/scripts/poc/controller-judgment/README.md)
 uses the actual direct-agent executor, production Task controller and temporary
 SQLite. It supplies synthetic asks/evidence to a fresh fixture agent. Code owns
 identity, claims, result persistence and child admission. The fixture agent is
