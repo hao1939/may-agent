@@ -10,7 +10,7 @@ App-subscriber alternative are [archived](../archive/reviews/error-handling-and-
 The narrower [workflow tracing and health metrics proposal](../proposals/workflow-tracing-and-health-metrics.md)
 is now under review; it does not change the accepted contract or activation.
 Its [first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
-at Host `15b88dbd` adds optional workflow outcome observations and richer metric
+at Host `b071e651` adds optional workflow outcome observations and richer metric
 reads. It is not deployed; the existing contract below remains the baseline.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation

@@ -392,7 +392,7 @@ tracing backend or automatic repair.
 
 ## First implementation candidate
 
-Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `15b88dbd`,
+Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `b071e651`,
 keeps this first PR independently useful:
 
 - Workflow errors return the attempted run ID. Run inspection includes stored
@@ -425,8 +425,9 @@ crash or write failure. Existing secret patterns are not a general PII guarantee
 authors must still avoid logging secrets or personal configuration. No live data
 was used for validation.
 
-Local `bun run ci` passed at the initial `676b3692` revision: 2,688 passed, three installation-only
-skips and zero failures, including browser tests. Hosted checks and review remain
+Local `bun run ci` passed at that revision: 2,690 passed, three installation-only
+skips and zero failures, including browser tests (114 seconds for the test phase).
+Hosted checks and review remain
 the PR's gate. Regression tests fail if diagnostic persistence and failed-run
 identity are removed; no killed live worker or deployed installation was used.
 
