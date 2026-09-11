@@ -1,6 +1,6 @@
 # Recovery against the continuing-Task design
 
-**Status:** Source investigation, September 11, 2026. The common-lifecycle PoC
+**Status:** Source investigation, September 12, 2026. The common-lifecycle PoC
 remains incomplete and unmerged. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
@@ -9,8 +9,9 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 **Current assessment:** Focused lifecycle and managed-model recovery checks
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
-Adoption remains unproved: retained work still needs cutover and full CI at
-`ae83b416` has 11 unresolved failures. New human input now permits a fresh attempt
+Adoption remains unproved: retained work still needs operational cutover. Full
+local CI at `bf402899` passes **2,859 tests**, with **3 skipped and zero failures**.
+New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -26,11 +27,13 @@ also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
 The branch adds 648 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
-Resolve the remaining regression and integration gaps before expanding the design.
+Resolve the remaining cutover and integration gaps before expanding the design.
 The [runtime/input checks](#runtime-outcomes-and-input-continuation) now pass,
 as do [isolated daemon restarts](#daemon-restart-with-retained-outcomes).
 The [Stop/admission checks](#public-stop-and-admission-ownership) now pass.
-The remaining failures concern retired inbox saved-decision/failure fixtures.
+The [last failure fixtures](#failure-handling-uses-the-shared-task-lifecycle)
+now exercise the shared runtime. The [current inventory](#current-simplification-inventory)
+separates removed execution owners, ongoing code and offline migration cost.
 
 The worker decides **how to do the assigned work**. The assigning App, parent
 agent or human decides **whether to keep assigning it**, revise its scope or
@@ -1391,6 +1394,69 @@ checks; no new failure name appeared against `a9252e96`. The original two Stop
 cases were moved, so the total test count is unchanged. The source remains
 unmerged; cutover and overall simplification are still unproved.
 
+## Failure handling uses the shared Task lifecycle
+
+Host `bf402899` retires the eleven `app-inbox-failure.test.ts` cases that still
+called the removed executor. Their old promise was one model call followed by
+terminal input failure or saved-decision replay. The accepted contract permits
+redo of an unaccepted attempt; input and accepted evidence must survive.
+`test/README.md` maps each former guarantee to current executable coverage.
+
+The existing Task runtime and settlement fixtures now cover:
+
+- thrown execution, invalid output and missing follow-up Topic: input and
+  attributed failure evidence reach a corrected attempt through the real
+  backoff timer, including after runtime/storage reopen;
+- a failed reply commit: no child admission, Topic, Request or answer escapes;
+  retry succeeds after reopen when the target App is available, or retains
+  unfinished work until that App returns;
+- rejected guessed control or handoff: the target stays unchanged, input
+  remains pending, and a corrected attempt receives the failure evidence;
+- a failed interface notification after acceptance: one reply remains readable
+  after reopen without another model call; and
+- failed new/existing Topic settlement: reopening SQLite confirms atomic
+  rollback of the reply, Request, Topic and accepted attempt.
+
+The existing input-state test owns failure-evidence/retry-write rollback. The
+real worker-loss scenario owns process recovery: it retains original input,
+fences the exited worker and checks a committed measurement before safe redo.
+An in-process database reopen is not substituted for that process proof.
+
+All **88 checks across the three affected runtime/storage suites pass**.
+No production code changes in this checkpoint. Six additional parameter cases
+replace the eleven obsolete fixtures; the lower test count does not skip their
+useful guarantees or preserve their superseded no-redo promise.
+
+Full local CI at `bf402899` passes Host/SDK types, the App boundary and lint,
+then reports **2,859 passed, 3 skipped and zero failures** (2,862 tests across
+287 files, 140.66 seconds). The three skips require separately installed App
+or agent configuration. The draft remains unmerged and undeployed; passing
+portable CI does not certify old-version cutover or the whole installation.
+
+## Current simplification inventory
+
+At `bf402899`, compared with baseline `a8f65188`, non-test files under `src/`
+and `packages/` add **2,830** lines and remove **2,182**: **648 net added lines**.
+This excludes tests, fixtures, scripts and Markdown. The three offline cutover
+modules account for **517** added lines; ongoing code has **131 net added lines**.
+Migration remains a real review and maintenance cost until it can be retired.
+
+| Responsibility | Candidate path and removed authority |
+| --- | --- |
+| Execute a bounded attempt | `core/tasks/app-task-runtime.ts` claims once and runs the App-selected handler through `runTaskExecutorAttempt`; the independently executing inbox callbacks and `conversations/turn-handler.ts` are gone |
+| Accept an outcome and human-facing effects | Fenced Task settlement composes typed message, Request, Topic, delegation and control writes; separate supervisor reply projection and `core/state/conversation-outcomes.ts` are gone |
+| Return delegated evidence | Saved return links and exact outcomes wake the caller through durable input; the paired App removes its supervisor declaration, and saved waits do not create supervisory attempts |
+| Retry unfinished work | Existing Task backoff and recovery own execution; input coordination retains admission/attachment only, with no model callback or saved execution decision |
+| End an assignment | Authorized owner closure is separate from accepted outcomes; both retained mode spellings use the same lifecycle rather than choosing automatic completion or reopening |
+
+Handler-specific context and reply settlement remain necessary: messages,
+Topics and Requests have product meaning. They do not introduce another claim,
+retry counter or lifetime policy. This is evidence of fewer execution owners,
+not a claim of fewer production lines or proven operational reliability.
+Old-version cutover, historical reader retirement and the final integration
+audit remain. Keep the next work on those gaps instead of adding a framework
+to eliminate ordinary handler-specific code.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -1421,6 +1487,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `c2b00c29` | 2,834 / 3 / 30 | 2,867 / 289 | 151.82 | Runtime outcomes, input continuation and exact structured-result reads |
 | `a9252e96` | 2,837 / 3 / 27 | 2,867 / 289 | 159.50 | Real daemon restart and scheduled workflow checks read accepted attempts on retained Tasks |
 | `ae83b416` | 2,853 / 3 / 11 | 2,867 / 288 | 124.99 | Public Stop uses Task attempts; admission checks retain containment and fence revoked ownership |
+| `bf402899` | 2,859 / 3 / 0 | 2,862 / 287 | 140.66 | Retires the last independent inbox failure fixtures; retained input, atomic settlement and affordable redo run through the shared lifecycle |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
@@ -1429,10 +1496,10 @@ At `ef0b9554`, no failure entries were added. The obsolete maintenance-cancellat
 prohibition is replaced by passing owner-control checks for both retained mode
 spellings. All 128 other failures remained unresolved at that checkpoint.
 
-The remaining failures cover retired inbox saved-decision/failure assumptions.
-These are unresolved migration and runtime checks, not evidence that only
-assertions need changing. Review each behavior; do not skip checks or
-replace expectations merely to make CI pass.
+The eleven remaining failures at `ae83b416` are resolved at `bf402899` through
+the coverage mapping above. The no-redo and terminal-failure assumptions are
+intentionally superseded; retained input, exact effects and accepted evidence
+remain required. No tests were skipped to clear this gate.
 
 Earlier Conversation checks had 86 passes and 3 failures; the previous broader
 Task [audit](controller-poc-input-continuation.md#evidence) also remained red.

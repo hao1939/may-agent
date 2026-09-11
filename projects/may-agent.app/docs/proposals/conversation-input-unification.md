@@ -1,12 +1,12 @@
 # One Task lifecycle
 
-**Status:** Accepted design baseline, refined September 11, 2026. A source PoC
+**Status:** Accepted design baseline, refined September 12, 2026. A source PoC
 is under review in [draft Host PR #158](https://github.com/hao1939/may-agent/pull/158);
 it is unmerged and undeployed. Use one Task model, controller and lifecycle:
 explicit outcomes, rest between inputs, owner-controlled closure. Human
 conversation, delegated work and maintenance describe roles and inputs within
-that model. Regression convergence, operational cutover and the expected
-simplification remain unproved. This supersedes the earlier recommendation to
+that model. The candidate's full local CI passes; operational cutover and the
+overall simplification remain unproved. This supersedes the earlier recommendation to
 share only scheduling while keeping two execution lifecycles.
 
 May should discuss and work with the human while delegated work progresses,
@@ -302,7 +302,9 @@ to retain, revise or close the assignment.
 
 ## What the source actually requires
 
-The current implementation is not this baseline:
+The installed Host predates this baseline. This table records the source
+boundaries the PoC changes; the [evidence record](controller-poc-recovery-review.md)
+tracks what the candidate has implemented and verified.
 
 | Source boundary | Change to prove |
 | --- | --- |
@@ -348,15 +350,20 @@ Apply the [value/cost rules](../1-principles/design-philosophy.md#how-to-decide-
 ## Delegation uses the same return loop
 
 ```text
-Conversation's Task delegates A
-  -> A delegates B
-  -> B accepts an outcome -> event wakes A (B can remain open)
-  -> A checks it and accepts its own outcome -> event wakes Conversation's Task
-  -> handler explains it and closes the appropriate Request
-  -> Conversation's Task rests, available for more input
+Human input wakes Task A
+  -> A delegates to B; A remains available for discussion
+  -> B delegates to C
+  -> C commits an outcome -> event wakes B
+  -> B judges C's evidence and commits its outcome -> event wakes A
+  -> A explains the result and resolves the appropriate Request
+  -> A, B and C rest, available for relevant input
 
-Each caller/App may close its delegated Task after consuming the needed result.
+An authorized assigning owner may close its delegated Task independently.
 ```
+
+Conversation is the human interaction with A. It adds messages, Topics and
+Requests to A's context, with no separate controller or work category. B and C
+use the same input, attempt, outcome, retry and closure rules.
 
 A child result is evidence, not automatic parent success. Failure, closure
 without success and a need for human input return through exact saved links too.
