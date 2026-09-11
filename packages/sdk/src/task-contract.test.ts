@@ -28,6 +28,24 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("admits independent recovery actions without treating their count as execution concurrency", () => {
+    const actions = Array.from({ length: 24 }, (_, i) => ({
+      kind: "unblock-task" as const,
+      taskId: `repair/${i}`,
+      expectedGeneration: 1,
+      reason: "The shared prerequisite is repaired; reconcile retained facts",
+    }));
+    const output = { state: "waiting", summary: "Recover affected owners", evidence: [], actions };
+    expect(Check(taskAgentResultSchema, output)).toBe(true);
+    expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({ ok: true, result: output });
+    const malformed = { ...output, actions: [...actions, { ...actions[0], expectedGeneration: 0 }] };
+    expect(Check(taskAgentResultSchema, malformed)).toBe(false);
+    expect(admitTaskReconcileResult(malformed, workflowOptions)).toEqual({
+      ok: false,
+      error: "actions[24].expectedGeneration must be a positive integer",
+    });
+  });
+
   it("preserves a caller response separately from task summary", () => {
     expect(
       admitTaskReconcileResult(

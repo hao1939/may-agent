@@ -3348,7 +3348,6 @@ function validateTaskActions(
   actions: AppTaskAction[],
   paths: { appDir: string; projectDir: string },
 ): void {
-  if (actions.length > 16) throw new Error(`Handler result exceeds the 16-action reconciliation budget`);
   const identities = new Set<string>();
   const validationTree = structuredClone(tree);
   for (const rawAction of actions as unknown[]) {

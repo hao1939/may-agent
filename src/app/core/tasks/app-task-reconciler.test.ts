@@ -5538,7 +5538,7 @@ describe("App task reconciler state", () => {
     ).toThrow("no completed failed attempt");
   });
 
-  it("lets a controller retry a known transient attention task without changing its generation", () => {
+  it.each([1, 24])("lets a controller recover %i attention tasks without changing their generations", (count) => {
     const state = fixture();
     const { config } = state;
     const retryIntent = {
@@ -5549,18 +5549,21 @@ describe("App task reconciler state", () => {
       mode: "achieve",
       workflow: "known-workflow",
     } as const;
-    const failed = declareAndClaimTask(config, {
-      intent: retryIntent,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (failed.kind !== "claimed") throw new Error("expected failed claim");
-    expect(
-      markAppTaskAttention(config, failed, {
-        summary: "integration base changed",
-        reason: "transient-base-race",
-      }),
-    ).toMatchObject({ status: "applied" });
+    const taskIds = Array.from({ length: count }, (_, i) => `${retryIntent.id}-${i}`);
+    for (const id of taskIds) {
+      const failed = declareAndClaimTask(config, {
+        intent: { ...retryIntent, id },
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+      });
+      if (failed.kind !== "claimed") throw new Error("expected failed claim");
+      expect(
+        markAppTaskAttention(config, failed, {
+          summary: "integration base changed",
+          reason: "transient-base-race",
+        }),
+      ).toMatchObject({ status: "applied" });
+    }
 
     const controller = declareAndClaimTask(config, {
       intent: intent("maintain"),
@@ -5572,23 +5575,23 @@ describe("App task reconciler state", () => {
       completeAppTask(config, controller, {
         summary: "retry transient attention",
         evidence: ["the integration base has stabilized"],
-        actions: [
-          {
-            kind: "unblock-task",
-            taskId: retryIntent.id,
-            expectedGeneration: 1,
-            reason: "Retry the same review against current origin/dev",
-          },
-        ],
+        actions: taskIds.map((taskId) => ({
+          kind: "unblock-task" as const,
+          taskId,
+          expectedGeneration: 1,
+          reason: "Retry the same review against current origin/dev",
+        })),
       }),
     ).toMatchObject({
       status: "applied",
-      actionsApplied: ["unblocked retry-after-base-race"],
+      actionsApplied: taskIds.map((id) => `unblocked ${id}`),
     });
-    expect(readTaskSnapshot(config).resources?.[retryIntent.id]).toMatchObject({
-      metadata: { generation: 1 },
-      status: { phase: "pending", observedGeneration: 0 },
-    });
+    for (const id of taskIds) {
+      expect(readTaskSnapshot(config).resources?.[id]).toMatchObject({
+        metadata: { generation: 1 },
+        status: { phase: "pending", observedGeneration: 0 },
+      });
+    }
   });
 
   it("treats an unblock action whose target already advanced as stale", () => {
@@ -5858,15 +5861,15 @@ describe("App task reconciler state", () => {
         summary: "invalid batch",
         evidence: ["batch validation test"],
         actions: [
-          {
-            kind: "create-task",
-            id: "must-roll-back",
+          ...Array.from({ length: 24 }, (_, i) => ({
+            kind: "create-task" as const,
+            id: `must-roll-back-${i}`,
             parentId: "operations",
             outcome: "Must not be persisted",
-            mode: "achieve",
+            mode: "achieve" as const,
             outputs: ["proof.md"],
             acceptance: ["No partial apply"],
-          },
+          })),
           {
             kind: "close-task",
             taskId: "missing-task",
@@ -5877,7 +5880,7 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("Handler action task not found: missing-task");
     const tree = readTaskSnapshot(config);
-    expect(tree.resources?.["must-roll-back"]).toBeUndefined();
+    for (let i = 0; i < 24; i++) expect(tree.resources?.[`must-roll-back-${i}`]).toBeUndefined();
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("running");
   });
 

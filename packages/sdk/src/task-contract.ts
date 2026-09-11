@@ -110,7 +110,8 @@ const resultFields = {
   response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
   evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
-  actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
+  // Actions admit desired work; the runtime separately bounds its execution.
+  actions: Type.Optional(Type.Array(taskActionSchema)),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
   dependencies: Type.Optional(
     Type.Array(
@@ -548,7 +549,6 @@ export function admitTaskReconcileResult(
 
   const rawActions = admittedOutput.actions ?? [];
   if (!Array.isArray(rawActions)) return { ok: false, error: "actions must be an array" };
-  if (rawActions.length > 16) return { ok: false, error: "actions exceed the 16-entry limit" };
   const actions: TaskAction[] = [];
   for (let index = 0; index < rawActions.length; index += 1) {
     const normalized = normalizeAction(rawActions[index], options, index);
