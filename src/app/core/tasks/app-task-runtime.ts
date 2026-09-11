@@ -3395,6 +3395,9 @@ export async function installAppTaskRuntimes(
         includeFreshLeases: false,
         deferred: false,
       });
+      // No accepted runtime existed: leave the process-scoped listener inert
+      // and prevent later recovery from using the rejected candidate's options.
+      if (!previousOptions) appRouterOptionsByBus.delete(opts.bus);
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],

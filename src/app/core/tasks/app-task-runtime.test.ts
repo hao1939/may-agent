@@ -3907,6 +3907,72 @@ describe("canonical App task runtime", () => {
     },
   );
 
+  it("leaves rejected initial publication inactive and allows a later installation", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const calls: string[] = [];
+    const publications: number[] = [];
+    const install = (generation: number) => installCoreTaskRuntimes({
+      ...options(f, bus),
+      sessions: {
+        handoff: () => undefined,
+        isLive: () => false,
+        lastActivityAt: () => null,
+        result: () => undefined,
+        workflowInterrupted: () => false,
+        interrupt: () => {},
+        read: (sessionId) => {
+          calls.push(`${generation}:read:${sessionId}`);
+          return null;
+        },
+      },
+      executeRecovery: async () => { calls.push(`${generation}:recover`); },
+      afterCommit: () => {
+        publications.push(generation);
+        if (generation === 1) throw new Error("Rejected initial publication");
+      },
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: `initial-publication:${generation}`,
+        generation,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    }, { deferRecovery: true });
+    const endSession = async (sessionId: string) => {
+      const observed = Promise.withResolvers<void>();
+      // Registered after the synchronous Task listener: observing this exact
+      // event lets us check absence of adapter calls without a fixed sleep.
+      const stop = bus.listen(() => observed.resolve(), { types: ["session.end"] });
+      try {
+        bus.emit({
+          type: "session.end",
+          owner: "agent:sample-owner",
+          data: {
+            sessionId, agent: "sample-owner", status: "done",
+            outcome: "done", summary: "finished", durationMs: 1,
+          },
+        });
+        await observed.promise;
+      } finally {
+        stop();
+      }
+    };
+
+    await expect(install(1)).rejects.toThrow("Rejected initial publication");
+    const listeners = bus.listenerCount;
+    await endSession("after-rejection");
+    await recoverInstalledAppTasks(bus);
+    expect(calls).toEqual([]);
+    expect(publications).toEqual([1]);
+
+    expect((await install(2)).installed).toHaveLength(1);
+    expect(bus.listenerCount).toBe(listeners);
+    await endSession("after-installation");
+    await recoverInstalledAppTasks(bus);
+    expect(calls).toEqual(["2:read:after-installation", "2:recover"]);
+    expect(publications).toEqual([1, 2]);
+  });
+
   it("starts new work from a reloaded definition while an old attempt is still running", async () => {
     const f = fixture();
     const bus = eventBus();
