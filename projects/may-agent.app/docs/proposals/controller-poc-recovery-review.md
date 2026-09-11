@@ -405,6 +405,71 @@ events still prevent final acceptance, and retained inputs can enlarge later
 context. The checkpoint fixes which input receives the opportunity and reply;
 per-input acceptance and pacing remain migration work.
 
+## Returning linked outcomes through Conversation input
+
+Source [checkpoint `faba34f7`](https://github.com/hao1939/may-agent/commit/faba34f7)
+routes `conversation.task.changed` to the stable
+Conversation Task. The notification supplies an exact App, Task and attempt
+reference; storage checks the Topic link and reads the accepted result. Event
+summary text cannot substitute another answer. Success, waits and honest
+non-success reports use the same system-input boundary. The worker judges
+their meaning with current Conversation and Request context; the controller
+owns execution and follow-through.
+
+A declared old supervisor subscription is bypassed for Task-owned Conversations,
+including summary-only notifications without an accepted outcome. A self-link
+cannot turn the Conversation's own reply into fresh input. Existing legacy
+Conversations still need a cutover; this checkpoint does not retire their
+separate result projection or the App's old follow-up declaration.
+
+The existing `conversation.supervision.review` timer event selects up to 100
+accepted linked outcomes lacking a Conversation input. It emits the same
+`conversation.task.changed` notification. Admission removes each selected
+reference from that query, so later pages progress across restart without a
+separate cursor or delivery table. Pending, failed, handled and stopped inputs
+already belong to their Task and are not re-created by discovery. Closed
+Conversations and self-links are excluded. New notification identities allow
+a later timer to retry a failed admission; the input's stable outcome identity
+still prevents duplicates.
+
+Five added checks use actual storage and installed runtime paths with supplied
+decisions:
+
+- Live delegated success returns to the Conversation and closes its accepted
+  Request while both Tasks remain open. The old supervisor subscription stays
+  present in the fixture and creates no Task.
+- A result committed with ingress stopped is discovered after SQLite reopen
+  through a timer event and returns through that same controller.
+- Failed result-input admission, including a failed discovery tick, preserves
+  the child's accepted evidence. A later tick admits it once after storage is
+  repaired. Replayed notifications and quiet ticks make no further model call.
+- An honest child failure returns to the Conversation without fulfilling the
+  Request or closing the assignment. The normal backoff timer runs the child
+  again; successful evidence then returns and resolves the ask.
+- One-item discovery pages progress across two Conversations and multiple
+  Tasks. Stop survives reopen, late links are discovered, and owner closure
+  prevents future Conversation input. Self-links cannot cause a reply loop.
+
+The runtime tests also exposed a deferred timing report writing after runtime
+drain and database close. The callback now checks that its runtime is still
+installed; it needs no new timer registry. The Conversation suites pass **31
+tests**. These are supplied-decision tests, not live-model or managed-process
+Conversation trials.
+
+A temporary query fixture with 2,001 accepted attempts and 1,980 handled
+references found 21 pending outcomes. Twenty selections averaged **8.6 ms**.
+SQLite uses existing Topic, Task-attempt, Conversation-input and primary-key
+indexes; no new index is added. The 100-item limit bounds returned work, not
+historical rows examined. The query remains scoped to one App's links but its
+cost grows with their retained history. This local measurement is acceptable
+for the existing infrequent discovery tick; it is not a scale or latency guarantee.
+
+Owner closure without an accepted attempt still needs its own factual return
+through the common route. Per-input pacing, retry failure/effect context,
+Conversation Task controls, the actual managed-model trial, and retirement of
+the old execution and follow-up owners remain required. No installed state or
+Host main changed.
+
 ## Verification and cost
 
 At `3d3f5a73`, Host/SDK types, App-boundary checks and lint passed. Focused
@@ -456,6 +521,12 @@ tests in 282 files (131.2 seconds). It adds two passing regressions relative to
 `ebb98a14`, with no new or removed failure names. The full migration gate remains
 red. No live model or managed Conversation subprocess trial ran for this fix.
 
+At `faba34f7`, Host/SDK types, App-boundary checks and lint pass. The two
+Conversation suites pass **31 tests**. Full CI finishes with **2,660 passes,
+3 skips and 129 failures**, across 2,792 tests in 282 files (135.8 seconds).
+Five added checks pass, with no new or removed failure names relative to
+`86455d13`. The full migration gate remains red; no live model trial ran.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -499,6 +570,12 @@ removed), excluding tests. It changes selection and reply placement inside
 existing claims and settlement; it adds no queue, storage schema or model
 decision. The PoC as a whole still adds production code until the old
 execution and follow-up owners are removed.
+The outcome-route checkpoint adds **130 net production lines** (131 added, one
+removed), excluding tests. It adds one capability operation and one bounded
+query over existing records. It reuses the Conversation input transaction,
+Task controller, source event and optional review timer. The old supervisor
+is bypassed for Task-owned Conversations, but its code and declaration still
+need retirement; total code reduction is not established.
 
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting

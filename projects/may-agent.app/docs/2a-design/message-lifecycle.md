@@ -590,7 +590,8 @@ this split and absence behavior. It does not create a fifth core component.
 8. Closure uses the latest accepted Request scope and commits its explanation
    consistently. Adapter acknowledgements do not gate closure.
 9. Event and timer reviews use the same admission, decision and commit path.
-   Duplicate, stopped and exhausted reviews cannot become infinite new work.
+   Duplicate or stopped input cannot become fresh work; failed input retains
+   its paced retry under the continuing-Task baseline.
 10. Code enforces identity, authority and consistency; the App/LLM judges
     usefulness, fulfillment and any authorized next step.
 
@@ -604,6 +605,13 @@ inbox, while `conversation.task.linked` / `conversation.task.changed` resolve
 `result.conversation` is projected back into the discussion. The App's
 15-minute recovery schedule uses that same Task and can revisit quiet unchanged
 work. It does not yet implement the selective scan described above.
+
+The unmerged [source PoC](../proposals/controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
+now routes accepted Task outcomes and timer-discovered results into the stable
+Conversation Task. Its checks include failed admission, honest non-success,
+duplicate notifications, quiet ticks, late links and restart. Closure without
+an accepted attempt, retained-state cutover and retirement of the old consumer
+remain gaps; the installation is unchanged.
 
 Unification requires typed system-input admission, source-aware context and
 authority, a quiet result, pending-human priority and capacity selection, and

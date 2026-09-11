@@ -127,8 +127,10 @@ executor decisions. It admits follow-up work with the acknowledgment and brings
 back an exact accepted attempt as system input. The later
 [ingress and Stop checkpoint](controller-poc-recovery-review.md#normal-ingress-and-turn-stop)
 routes human messages through that Task and stops only the observed Turn.
-Result-event routing and old-owner retirement remain to
-migrate; live model use of this actual Conversation path is still unproved.
+The [result-route checkpoint](controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
+also returns accepted outcomes through live events and missed-result discovery.
+Closure without an accepted attempt and old-owner retirement remain to migrate;
+live model use of this actual Conversation path is still unproved.
 The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 also exercises human replies beside running background work and inside a paused
 App, including restart and the storage claim fence.
@@ -468,7 +470,9 @@ executes Conversation input through normal Task attempts. The
 also exercise normal human events, interface notifications and exact Turn
 control. The [capacity and pause checks](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 preserve the human reserve and enforce pause at the claim transaction.
-Result routing, retained-state cutover and retirement
+The [outcome-route checks](controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
+cover live delivery, missed notifications, failed admission, honest failure and
+bounded discovery. Closure facts, retained-state cutover and retirement
 of the old execution paths remain required before accepting the whole-system
 simplification.
 
