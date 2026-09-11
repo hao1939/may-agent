@@ -405,6 +405,7 @@ async function renderLivenessProjects() {
     if (!projectsRes.ok || !metricsRes.ok) throw new Error('Project or metric read unavailable');
     if (!Array.isArray(all)) { el.innerHTML = ''; return; }
     const allMetrics = Array.isArray(metricData.metrics) ? metricData.metrics : [];
+    const metricsIncomplete = metricData.truncated === true;
     const problems = allMetrics.filter(m => m.freshness !== 'fresh' || m.collectionFailure?.afterLastSample);
     if (coverage) coverage.innerHTML = `<h3>Measurement coverage</h3><p class="health-note">${problems.length} missing, stale or uncertain observations among ${allMetrics.length} definitions${metricData.truncated ? ' (list limited)' : ''}. No alerts is not proof of health.</p>
       ${problems.slice(0, 5).map(m => `<div class="health-note"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a> · ${esc(metricObservationLabel(m))}${m.collectionFailure?.afterLastSample ? ' · ' + esc(m.collectionFailure.reason) : ''}</div>`).join('')}
@@ -451,10 +452,12 @@ async function renderLivenessProjects() {
       }).join('');
       const moreCount = Math.max(0, item.metrics.length - 5);
       const alertLabel = item.alertCount > 0
-        ? `<span class="project-health-alert">${item.alertCount} alert${item.alertCount === 1 ? '' : 's'}</span>`
-        : item.metrics.length > 0
-          ? `<span class="project-health-muted">${item.metrics.filter(m => m.freshness !== 'fresh' || m.collectionFailure?.afterLastSample).length} missing/stale/uncertain measurements · no threshold breaches</span>`
-          : `<span class="project-health-muted">no project metrics</span>`;
+        ? `<span class="project-health-alert">${item.alertCount} alert${item.alertCount === 1 ? '' : 's'}${metricsIncomplete ? ' shown' : ''}</span>`
+        : metricsIncomplete
+          ? `<span class="project-health-muted">${item.metrics.length} metrics shown · overall metric health unknown</span>`
+          : item.metrics.length > 0
+            ? `<span class="project-health-muted">${item.metrics.filter(m => m.freshness !== 'fresh' || m.collectionFailure?.afterLastSample).length} missing/stale/uncertain measurements · no threshold breaches</span>`
+            : `<span class="project-health-muted">no project metrics</span>`;
 
       html += `<div class="liveness-item project-health-item" onclick="routeTo(${jsStringAttr('/projects/' + encodeURIComponent(routeId))})">
         <div class="project-health-main">
@@ -464,7 +467,8 @@ async function renderLivenessProjects() {
           <span class="meta" style="font-size:11px">${formatAgo(p.updatedAt)}</span>
           ${alertLabel}
         </div>
-        <div class="project-health-metrics">${metricChips || '<span class="meta">No registered project metrics yet.</span>'}${moreCount ? `<span class="project-health-muted">+${moreCount}</span>` : ''}</div>
+        ${metricsIncomplete ? '<p class="health-warning">Partial metric data: other metrics may be missing.</p>' : ''}
+        <div class="project-health-metrics">${metricChips || `<span class="meta">${metricsIncomplete ? 'No matching definitions in this partial list.' : 'No registered project metrics yet.'}</span>`}${moreCount ? `<span class="project-health-muted">+${moreCount}${metricsIncomplete ? ' shown' : ''}</span>` : ''}</div>
       </div>`;
     }
     el.innerHTML = html;

@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import puppeteer, { type HTTPRequest } from "puppeteer-core";
 import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { insertWorkflowRun } from "../../src/lib/db/workflows.js";
+import { stateTransaction } from "../../src/lib/db/transaction.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
 import { createMetricService } from "../../src/lib/metrics.js";
 
@@ -210,6 +211,96 @@ describe("served workflow and metric health pages", () => {
       db.prepare("DELETE FROM metric_alerts WHERE message IN ('synthetic oldest alert', 'synthetic latest alert', 'synthetic alert flood')").run();
     }
   });
+
+  test.skipIf(skipBrowser)(
+    "agent and project health stay incomplete when metric definitions exceed the global cap",
+    async () => {
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      const db = getDb(root);
+      const metrics = createMetricService({ getDb: () => db });
+      const project = join(root, "projects", "cap-fixture");
+      const visible = { id: "metric-cap.visible", owner: "aa-cap-visible", threshold: 1, alertOp: ">" as const };
+      const hidden = { id: "metric-cap.hidden", owner: "zz-cap-hidden", project: "cap-fixture", threshold: 1, alertOp: ">" as const };
+      const ids = [visible.id, hidden.id];
+      try {
+        mkdirSync(project, { recursive: true });
+        writeFileSync(join(project, "project.md"), "---\nid: cap-fixture\nowner: zz-cap-hidden\nstatus: active\n---\n# Synthetic cap fixture\n");
+        metrics.define(visible);
+        metrics.record(visible.id, 0);
+        const existing = (db.prepare("SELECT COUNT(*) AS count FROM metrics WHERE status = 'active'").get() as { count: number }).count;
+        stateTransaction(db, () => {
+          for (let i = existing; i < 500; i++) {
+            const id = `metric-cap.fill.${i}`;
+            ids.push(id);
+            metrics.define({ id, owner: "cap-filler" });
+          }
+        });
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", (request) => void (request.url().startsWith(base) ? request.continue() : request.abort()));
+        async function readSurfaces(owner: string) {
+          await page.goto(base, { waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#liveness-projects .project-health-item");
+          const projectText = await page.$eval("#liveness-projects", (el) => el.textContent || "");
+          await page.goto(base + "/agents/" + owner, { waitUntil: "domcontentloaded" });
+          const overview = `#agents-content button[onclick="switchAgentSubTab('overview')"]`;
+          await page.waitForSelector(overview);
+          await page.click(overview);
+          await page.waitForSelector("#agent-subtab-body h3");
+          return { projectText, agentText: await page.$eval("#agent-subtab-body", (el) => el.textContent || "") };
+        }
+        async function readMetrics(query = "") {
+          const response = await fetch(base + "/api/metrics" + query, { signal: AbortSignal.timeout(5000) });
+          expect(response.status).toBe(200);
+          return response.json();
+        }
+        // Exactly 500 is complete; an empty owner/project can still be reported honestly.
+        const complete = await readMetrics();
+        expect(complete.metrics).toHaveLength(500);
+        expect(complete.truncated).toBe(false);
+        const empty = await readSurfaces(hidden.owner);
+        expect(empty.agentText).toContain("No metrics owned.");
+        expect(empty.projectText).toContain("no project metrics");
+        expect(empty.agentText + empty.projectText).not.toContain("Partial metric data");
+
+        metrics.define(hidden);
+        metrics.record(hidden.id, 2);
+        const capped = await readMetrics();
+        expect(capped.metrics).toHaveLength(500);
+        expect(capped.truncated).toBe(true);
+        expect(capped.metrics.some((metric: { id: string }) => metric.id === hidden.id)).toBe(false);
+        expect((await readMetrics("?id=" + hidden.id)).metrics[0]).toMatchObject({ id: hidden.id, thresholdBreached: true });
+        for (const [owner, visibleValue] of [[hidden.owner, null], [visible.owner, 0], [visible.owner, 2]] as const) {
+          if (visibleValue !== null) {
+            metrics.define({ ...visible, project: "cap-fixture" });
+            metrics.record(visible.id, visibleValue);
+          }
+          const { projectText, agentText } = await readSurfaces(owner);
+          for (const text of [projectText, agentText]) {
+            expect(text).toContain("Partial metric data");
+            expect(text).not.toContain("No metrics owned.");
+            expect(text).not.toContain("no project metrics");
+            expect(text).not.toContain("No registered project metrics yet.");
+            expect(text).not.toContain("no threshold breaches");
+          }
+          expect(agentText).toContain(`${visibleValue === null ? 0 : 1} shown`);
+          if (visibleValue === 2) {
+            expect(projectText).toContain("1 alert shown");
+            expect(agentText).toContain("1 breached shown");
+          }
+        }
+      } finally {
+        stateTransaction(db, () => {
+          for (const id of ids) {
+            db.prepare("DELETE FROM metric_snapshots WHERE metric_id = ?").run(id);
+            db.prepare("DELETE FROM metrics WHERE id = ?").run(id);
+          }
+        });
+        rmSync(project, { recursive: true, force: true });
+        await browser.close();
+      }
+    }, 30000,
+  );
 
   test.skipIf(skipBrowser)(
     "disabled rules suppress only derived warnings, not retained alerts, across HTTP and project/vital cards",
