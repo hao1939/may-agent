@@ -10,10 +10,11 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`47638e0e` has 138 unresolved failures. New human input now permits a fresh attempt
+`26dce52f` has 138 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
-mixed ordinary/Conversation input also passes source cutover and runtime checks.
+mixed ordinary/Conversation input and supervisor retirement also pass source
+cutover and runtime checks.
 The branch adds 632 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Finish cutover and examine those
 failures before expanding the design.
@@ -950,6 +951,54 @@ checked examples and the canonical App boundary also pass.
 This establishes the mixed-input source boundary, not an operational cutover.
 Retained supervisor retirement, complete process shutdown/activation, broader
 regression convergence and current-source model trials remain required.
+
+## Retiring the old supervisor
+
+At `26dce52f`, the retirement proof reuses standalone Task event admission, the normal
+owner-close operation and Conversation input migration. It adds no production
+mechanism. A pending frozen command can still name the old supervisor even
+after the new App removes its subscription. Closing first would cause replay of
+that command to fail against the closed Task.
+
+The tested order, with execution stopped, is:
+
+1. Apply the supervisor's already-resolved command to storage through standalone
+   Task admission. Record its admission with the original event identity.
+2. Convert the retained Conversation input and close the supervisor by exact
+   generation and resource version. Keep these changes in one SQLite transaction.
+3. Reopen storage and activate the App without its old supervisor declaration.
+   The ordinary review event discovers any unreported linked result and admits
+   it to the Conversation Task.
+
+The source test starts with an obsolete inbox claim, a running supervisor claim,
+an accepted Request, a Topic-linked worker result and a frozen supervisor command.
+It injects a closure-write failure: command admission and Conversation conversion
+roll back, and both original claims remain valid. The successful transaction
+preserves the worker, Topic and Request, and rejects both obsolete owners.
+After reopen, the common Conversation runtime reports the exact measurement
+and closes the Request. The supervisor never executes; the worker and Conversation
+Tasks remain open, with no remaining missing-result or runnable-work entries.
+The two cutover suites pass **eight tests**.
+
+The old-source storage trial also writes an unfinished maintained supervisor
+with Host `a8f65188`, converts it with the candidate and closes it through normal
+owner control. Obsolete output is rejected and other maintained/unfinished work
+continues. Its report adds `retiredSupervisor: true`.
+
+Full `bun run ci` passes types, the App boundary and lint, then reports
+**2,727 passed, 3 skipped and 138 failed** across 2,868 tests in 289 files
+(147.0 seconds). No failure names changed versus `47638e0e`. This checkpoint
+adds only a test and PoC-script coverage; net production growth remains 632
+lines against `a8f65188`. Design integrity, examples and changed-document links
+also pass.
+
+These are supplied-decision source trials. The integrated test covers one App,
+one Conversation and a frozen Task-resolver command. It does not operate real
+old Host processes, exhaust every queued route form, validate installed May
+guidance or provide an upgrade runner. The operator must account for relevant
+pending commands before retirement; failure is an incomplete cutover, not
+permission to delete a command or its accepted work. Complete process
+shutdown/activation and full regression convergence remain required.
 
 ## Verification and cost
 

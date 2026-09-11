@@ -443,9 +443,13 @@ No new metric service, transport or user acknowledgment protocol is required.
 These are checkpoints, not four mandatory PRs. The proof is a source experiment,
 not production dual running. A schema/table merger is unnecessary; durable
 execution authority must be singular regardless of record layout. Deployment is
-separate. The current maintained supervisor has no generic cancellation API:
-implementation must supply a verified scoped drain/fence/retirement procedure.
-Any rollback must preserve evidence and the same single-owner property.
+separate. The candidate's normal owner-close operation can retire a maintained
+supervisor; it needs no separate retirement lifecycle. The
+[source retirement proof](controller-poc-recovery-review.md#retiring-the-old-supervisor)
+drains its frozen admission command into storage before closing it, then proves
+result return through Conversation after storage reopen. Actual process shutdown
+and activation remain unverified. Any rollback must preserve evidence and the
+same single-owner property.
 
 For the first Conversation cutover, accept planned downtime: stop the old Host
 and all workers, preserve prior execution evidence, and admit unfinished input
@@ -470,8 +474,10 @@ aborts the conversion rather than assigning an unrelated answer. The
 uses the existing `requests.inputKinds` declaration to distinguish Conversation
 input from ordinary Task input sharing its Conversation. Source tests now cover
 their admission, execution, result return and storage reopen without mutual
-blocking. Supervisor retirement and operational activation still need proof;
-these source helpers are not an operational upgrade procedure.
+blocking. Supervisor retirement also has a source proof using existing admission
+and owner-close operations. These helpers and tests are not an operational
+upgrade procedure; stopping every old process and activating the new Host/App
+still require verification.
 
 ## Acceptance and cost evidence
 
