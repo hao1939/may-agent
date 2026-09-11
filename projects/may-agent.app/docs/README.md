@@ -6,9 +6,10 @@ for the intended outcome and [System Model](2a-design/system-model.md) for how
 the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
 
-**Source baseline:** The consolidated Host checkout is `main` at `8e242c11`
+**Source baseline:** The consolidated Host checkout is `main` at `e1a0005e`
 (September 11, 2026), including directory organization, core policy cleanup and
-workflow failure evidence. Dated reviews retain the revision they examined;
+workflow failure evidence and Task definition preparation (#146). Dated reviews
+retain the revision they examined;
 this baseline does not imply a fresh review of every subsystem or identify the
 deployed release. Candidate behavior and validation stay in linked proposals
 until merged.
@@ -39,8 +40,8 @@ Codex executor/observer grouping landed in #142 (`427d4ea1`). The
 merged in #144 (`8e242c11`): it removes obsolete recovery escalation and keeps
 conversational selection in composition.
 The [Task lifecycle review](proposals/task-runtime-organization.md#task-lifecycle-review)
-traces admission through restart and tracks a focused reload fix and definition
-preparation extraction. HTTP handler extraction remains separate.
+traces admission through restart and tracks the focused reload fix in #145.
+Definition preparation merged in #146 (`e1a0005e`). HTTP handler extraction remains separate.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
 

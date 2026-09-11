@@ -54,7 +54,7 @@ App accepts an input
 | Who can say the outcome is done? | The executor proposes; `establishTaskAcceptance()` checks any verifier; `completeAppTask()` rechecks identity and newer evidence before committing output/actions. A successful executor call alone is insufficient. |
 | Can failure loop forever? | `failAppTaskAttempt()` retains unaccepted input and a durable failure count. Invalid results or rejected acceptance need attention/new evidence; cancellation and App stop remain distinct from success. Controller retries are scheduling, not a second durable retry allowance. |
 | Does restart need another controller? | No. `recoverInstalledAppTasks()` repairs known interrupted state and queues the same Task. Retained terminal direct-agent output uses existing admission; task-bound sessions bypass generic session resumption. Indexed safety/due recovery restores lost queue hints. |
-| Is reload internally consistent? | Attempts pin execution definitions and installation publishes one generation. The session-event listener nevertheless captured the first runtime's adapters while reading current descriptors. A focused regression reproduced stale adapter use after both reload and close/reinstall. |
+| Is reload internally consistent? | Attempts pin execution definitions and installation publishes one generation. The session-event listener nevertheless captured the first runtime's adapters while reading current descriptors. Regressions reproduced stale adapter use after reload/close-and-reinstall and rejected candidate options surviving completed rollback. |
 
 ### Small source changes from this review
 
@@ -63,6 +63,9 @@ App accepts an input
    Do not register another listener or change how an already running attempt
    retains its execution definitions. The regression checks both session start
    cleanup and terminal-session inspection, with no duplicate subscriber.
+   Review also found that failed publication restored previous descriptors using
+   rejected candidate options. Save and restore the accepted options with those
+   descriptors; keep the previous publication callback disabled during rollback.
 2. **Separate definition preparation from attempt orchestration.** Move existing
    descriptor construction, seed-authority discovery and project read-model
    projection into `core/tasks/runtime-definition.ts`. The admission worker
@@ -70,20 +73,21 @@ App accepts an input
    controllers and all reconciliation transitions with their existing owners.
    Add a short Task lifecycle reading table beside the code.
 
-These are separate source candidates based on `8e242c11`, so either can be
-reviewed and merged independently. No SDK, persisted format or App declaration
-changes are needed. Both await human review; deployment remains separate.
+Definition preparation merged in #146 as `e1a0005e` on September 11. The #145
+review fix incorporates that main revision and remains open for human review.
+No SDK, persisted format or App declaration changes are needed; deployment
+remains separate.
 
-| Source candidate | Local verification |
+| Source slice | Local verification |
 | --- | --- |
-| [Host #145](https://github.com/hao1939/may-agent/pull/145), `5989a608`: current session adapters | Full CI: 2,700 pass, three installation-only skips, no failures; both new regressions fail before the fix and pass after it |
-| [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
+| [Host #145](https://github.com/hao1939/may-agent/pull/145), `ec609863`: current session adapters and rejected-reload rollback | Full CI: 2,701 pass, three installation-only skips, no failures; reload, close/reinstall and rejected-reload regressions pass. The added rejection case fails on the preceding implementation |
+| [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`, merged as `e1a0005e`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
 
-Browser coverage ran in both suites. Hosted Quality and Container checks passed
-on both listed source revisions. A temporary merge of both candidates passed all 128 Task
-runtime/admission-worker tests; canonical design integrity, examples and App
-checks also passed against that combined source. No installation or model-backed
-tests ran.
+Browser coverage ran in both suites. #145's complete local CI includes merged
+#146 and the rejected-publication regression. Its new hosted checks are pending;
+#146's Quality and Container checks passed on its reviewed revision. Canonical
+design integrity, examples and App checks passed against #145's updated source.
+No installation or model-backed tests ran.
 
 **Value/cost decision:** Fix the observable adapter mismatch with one current
 runtime lookup. Extract the preparation code because it is a cohesive concern

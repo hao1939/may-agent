@@ -83,6 +83,8 @@ App reload publishes one selected runtime generation. A running attempt retains
 its execution definitions; a later session event uses the currently published
 adapters and descriptors together, subject to exact Task ownership checks. A
 process-scoped subscription must not retain a second, obsolete runtime selection.
+If replacement publication is rejected, rollback reinstalls the accepted runtime
+options with its descriptors and does not invoke the previous publication callback.
 The [lifecycle review](../proposals/task-runtime-organization.md#task-lifecycle-review)
 records the reproduced listener gap and its source fix separately from this contract.
 
