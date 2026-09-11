@@ -12,7 +12,7 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
-| Shared reconciliation model and conversation input handling | [Controller comparison](conversation-input-unification.md): prove common scheduling with separate resource claims/settlement; compare maintained-Task costs; verify Task/timer follow-up, priority, Stop, quiet completion and old-consumer retirement |
+| One Task lifecycle and Conversation execution | [Accepted baseline](conversation-input-unification.md): explicit outcomes and owner closure, one execution Task per Conversation; replace mode rules and duplicate inbox execution; prove result correlation, scoped controls, routes and retained-state migration |
 | Current-turn redirection | [Request follow-through review](task-runtime-organization.md#request-follow-through-review): Stop then correction survives SQLite reopen in fixtures; add immediate steering only when its value is demonstrated |
 | Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [Request follow-through review](task-runtime-organization.md#request-follow-through-review): core correction, non-success and closure boundaries pass deterministic checks; live recognition, scope and truthful closure still need usage evidence |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |

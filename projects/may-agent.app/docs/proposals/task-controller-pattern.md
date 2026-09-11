@@ -18,12 +18,12 @@ Authoring examples use the existing SDK, not a new schema.
 The [September 10 core review](../archive/reviews/core-simplicity-review-20260910.md)
 used the earlier `d9e7597e` baseline. Neither identifies a deployed release.
 
-The [Conversation/Task controller comparison](conversation-input-unification.md)
-now examines reuse of this scheduling implementation by the conversation inbox.
-Its recommended proof retains Task claims, retries and settlement while removing
-duplicated dispatch mechanics; representing Conversation execution as a
-maintained Task remains a larger alternative. This does not change the historical
-implementation evidence or the current Task contract below.
+The accepted [one-lifecycle baseline](conversation-input-unification.md) supersedes
+this proposal's `achieve`/`maintain` lifetime distinction. Tasks record explicit
+outcomes and remain available until an App, parent agent or human closes them;
+Conversation uses the same Task execution authority. The current protocol and
+historical implementation evidence below remain useful migration references.
+They do not implement the new outcome/closure and scoped-control semantics.
 
 ## Recommendation and expected value
 

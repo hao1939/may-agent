@@ -341,7 +341,12 @@ instead completes after its direct result or durable follow-up admission.
 Topics retain the responsible Task links, and semantic changes may wake May's
 supervision Task. The accepted [shared-input design](message-lifecycle.md#one-conversation-input-path)
 will route those Task facts and timer-discovered reviews into the conversation
-inbox instead; that change is not implemented yet. System origin, exact saved
+input path instead. Under the accepted [one-lifecycle baseline](task-resource-engine.md#one-lifecycle-baseline),
+that input wakes the Conversation's execution Task. These changes are pending.
+An accepted child outcome can wake a caller while the child remains open;
+correlate the exact assignment/result, not resource closure or an old success.
+Closure is an authorized state operation whose consequences may publish facts;
+a late fact cannot reopen the closed Task. System origin, exact saved
 links and change identity must survive admission. Reuse the meaningful Task
 event rather than wrapping it in a generic wake event. These are input-handling
 completion rules, not proof that the conversational Request's accepted ask has

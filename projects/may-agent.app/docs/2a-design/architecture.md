@@ -10,9 +10,10 @@ Task activation and startup recovery are independent of optional schedules.
 this page does not identify the deployed release. The accepted
 [unified conversation-input design](../proposals/conversation-input-unification.md)
 is pending implementation; current follow-up still uses a separate May Task.
-A shared Conversation/Task scheduling controller is now a recommended source
-experiment. Resource unification remains a separate alternative, not an
-implemented boundary.
+The accepted baseline now puts Conversation, ordinary work and maintenance
+through one Task execution lifecycle, with explicit outcomes and owner-controlled
+closure. Separate Conversation execution and mode-dependent Task lifetime rules
+remain in current source; the new baseline is not yet implemented.
 
 The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 records the state/handler extraction, merged in #129 as `0bedd93a`, and its
@@ -28,7 +29,7 @@ example. This page owns component boundaries, dependencies and code placement.
 | App registration and input admission | Keep one validated App generation and its declared routes; validate addressed input and apply the App's pure mapping | Definitions and typed input become published routes and an accepted handling/Task identity, or a rejection |
 | Events | Record meaningful input and changes; route admitted events and expose observations | Publication becomes a durable receipt, exact routed work, and passive notifications |
 | State and storage | Keep authoritative records and enforce consistent, version-checked changes | Typed reads and atomic operations return canonical state and committed dispositions |
-| Work runtime | Coordinate input handling and bounded execution; maintain Task attempts, waits, cancellation and recovery | Admitted work or an identity wake leads to a claimed attempt, accepted progress/result, wait or visible failure |
+| Work runtime | Run bounded Task attempts, including Conversation Turns; enforce waits, scoped Stop, explicit closure and recovery | Durable input or an identity wake leads to a fenced attempt and accepted outcome; an authorized close prevents further execution |
 
 The boundaries cooperate: admission uses event and state transactions; runtime
 uses the stored identities and registered execution contracts. Storage enforces
@@ -74,30 +75,41 @@ can run from admitted input, a relevant event or recovery with schedules disable
 
 ## One reconciliation model
 
-Conversation and Task use the same control-loop model:
+The accepted target uses one Task execution lifecycle:
 
 ```text
-persist input or change -> wake exact owner -> read and claim current state
-  -> perform bounded work -> commit outcome -> rest or reconsider when justified
+persist input -> wake exact Task -> read and claim current state
+  -> bounded attempt -> commit outcome -> rest or handle eligible pending input
+
+owner closes Task -> prevent new claims and fence late output
 ```
 
-A child result can wake a parent Task just as a delegated Task result can wake
-its Conversation. A timer can recover a missed wake. The receiving owner judges
-what the evidence means; the event is not automatic completion or retry authority.
+One stable Task executes a Conversation; each Turn is its bounded attempt.
+Messages, Topics and Requests remain separate product records, with no execution
+lifecycle of their own. An independent assignment gets another Task and returns
+its result through the same event loop. No Task per message, second executing
+inbox owner or separate conversation supervisor is needed.
 
-The [controller comparison](../proposals/conversation-input-unification.md#options-and-their-cost)
-recommends proving one scheduling implementation for both resources. Share
-ready-key ordering, capacity waits, wake-during-run and drain behavior. Preserve
-resource-specific eligibility, durable claims, Stop/retry rules and settlement
-transactions behind narrow reconciliation functions. A shared controller is
-Work-runtime machinery, not a fifth core component or a public plugin system.
+An accepted result describes the work considered. It can satisfy a caller while
+the Task remains open. The App, parent agent or human decides when to close the
+Task; the core enforces that authorized decision. Ordinary Apps can close after
+accepting a result by convention. Maintenance and Conversation normally stay
+available, with timers used only where useful. This removes `achieve`/`maintain`
+from the target lifecycle without asking the core to infer responsibility lifetime.
 
-Current source still has the Task controller and the separate inbox pump. A
-shared implementation need not merge their records, create one Task per message,
-or serialize all work through one global worker. A maintained Task could also
-represent conversation execution, but that larger alternative must demonstrate
-per-input Stop, ordered handling and Request closure with less total machinery.
-The source map below remains the current layout, not the proposed extraction.
+Core owns one claim, execution, outcome and recovery path. Typed conversation
+operations join its settlement transaction when needed; generic Tasks do not
+require conversation records. Source and purpose choose human/background
+capacity. Stop remains scoped to the current execution; closing its Task has
+wider effect. Required child outcomes constrain the work that depends on them,
+while unrelated input remains handleable.
+
+The [implementation comparison](../proposals/conversation-input-unification.md#options-and-their-cost)
+now treats shared scheduling alone as an optional migration step. The source
+still has separate Task and inbox execution. Prove reduced code and failure
+paths by replacing that authority, not by adding a Task around it. The source
+map below describes current layout; the [target layout](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
+keeps existing module homes and deletes replaced mechanics.
 
 ## Composition and lifecycle
 
@@ -116,13 +128,14 @@ Composition selects executor adapters and supplies narrow functions to the
 runtime. Each expensive Task attempt runs in an isolated worker; the worker
 rereads and claims current state, executes, and admits its fenced result.
 Worker Events are persisted once and relayed by identity to the parent.
-Conversational turns reuse bounded execution without creating a Task.
+Current conversational turns reuse bounded execution without creating a Task.
+The target moves their execution authority into one stable Task per Conversation.
 
 One `HostCapacity` limit governs execution with App limits and an interactive
 reserve. Unified system reviews must use the existing background lane;
 source-aware selection is a pending change described in [Runtime](runtime.md#capacity).
-Reads and admission need no execution slot. Conversation ordering
-belongs to input handling; Task ordering belongs to its controller.
+Reads and admission need no execution slot. Durable input ordering remains
+necessary when the common Task controller replaces conversation scheduling.
 
 Reload publishes one validated definition generation. A rejected reload retains
 the previous generation; running attempts keep their captured definitions.
@@ -167,9 +180,11 @@ and [Message Lifecycle](message-lifecycle.md) owns interactive behavior.
 In the accepted shared-input design, composition maps saved Task links to
 system inputs; the same conversation handler handles human messages and those
 facts. A scheduled signal performs a bounded pending-follow-up query before
-admitting review. Reuse the existing inbox and state operations; no dedicated
-adapter service, supervisor lifecycle or database is needed. Task controllers
-remain independent of Conversation. The [unification review](../proposals/conversation-input-unification.md)
+admitting review. Inputs wake the Conversation's execution Task; reuse durable
+input and state evidence while replacing the separate execution authority.
+No dedicated adapter service, supervisor lifecycle or database is needed.
+Generic Task mechanics remain independent of conversational policy. The
+[unification review](../proposals/conversation-input-unification.md)
 records the code changes and retirement of the current separate consumer.
 
 ## Behavior when a capability is absent

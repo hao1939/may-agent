@@ -10,8 +10,9 @@ guarantees; #129 extracted their shared state operations. The focused source rev
 The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 records the state/handler extraction, merged in #129 as `0bedd93a`, and its
 actual code map. This updates the source boundary; deployment remains separate.
-The [unified conversation-input change](../proposals/conversation-input-unification.md)
-needs the extensions identified below; they are not yet source guarantees.
+The [one-lifecycle baseline](../proposals/conversation-input-unification.md)
+moves Conversation execution authority into Task claims and settlement. It needs
+the changes identified below; they are not yet source guarantees.
 
 ## Decision
 
@@ -151,12 +152,21 @@ decisions; they do not receive the database or the Host-private state API.
 Adapters use their existing read/control protocols. No new server, database,
 resource controller, generic repository or per-write event protocol is required.
 
-A [shared scheduling controller](../proposals/conversation-input-unification.md)
-does not require one resource table or settlement API. Input/Request/message
-atomicity and Task generation/attempt/result atomicity remain separately typed
-operations in the recommended candidate. A Task-backed Conversation could move
-execution claims later, but still needs retained input and Request evidence;
-that resource migration is an open comparison, not this storage contract.
+The accepted [one-lifecycle baseline](../proposals/conversation-input-unification.md)
+uses a Task claim as the single authority for Conversation execution. Ordered
+input and caller correlation remain; an inbox row must not hold a second
+independent execution claim. Fenced Task settlement composes typed conversation
+operations so the input outcome, explanation and Request closure commit together.
+This does not require one table or a generic CRUD/settlement API. The current
+inbox-claim operations below describe the source that must migrate.
+
+Task reads will distinguish accepted outcomes, pending work and explicit closure.
+A caller waits for its exact assignment's outcome, not resource closure; stored
+input/generation/result references prevent an old result satisfying a new ask.
+Owner closure prevents claims and stale settlement while preserving evidence and
+visible non-success for unresolved work. It must not imply Request fulfillment.
+These storage changes are pending; current receipts and mode semantics remain
+readable until the coordinated migration.
 
 Group the API by what the caller needs to accomplish:
 
@@ -165,7 +175,7 @@ Group the API by what the caller needs to accomplish:
 | Read Conversation | Return bounded messages, active Turn with its human/system origin, and related context; paging must use stable identities |
 | Read/list accepted Requests | Scope by App/Conversation; page open asks and read an exact full scope, revision, links and closure |
 | Find/read Topics | Return bounded context and exact Task references; Topic has no work status |
-| Accept a Turn decision | Check the current inbox claim; save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
+| Accept a Turn decision | Check the current inbox claim (target: the conversation Task attempt fence); save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
 | Admit Task with conversation links | Commit Task admission and supplied Topic/Request links together, checking current authority and Request revision |
 | Complete a Turn | Commit input result, completion and any Request closure with durable answer evidence; failure/Stop never implies fulfillment |
 | Admit a linked Task review (pending) | Validate saved links and source; reuse identity for the same Task change and Conversation/Topic, distinguishing a newly linked or revised Request |
@@ -179,16 +189,17 @@ still commits the supervision Task's explanation and Request updates together;
 its exclusive projection path retires only when the unified consumer replaces
 it. Retain any shared transaction helpers used by ordinary completion.
 
-Stop uses the existing exact-turn operation. Topic creation and Request updates
-join their enclosing operation; callers must not sequence independent saves to
+Stop keeps its exact-turn meaning; the target enforces it through the common
+Task attempt/input fence instead of a separate inbox execution authority. Topic
+creation and Request updates join their enclosing operation; callers must not sequence independent saves to
 manufacture atomicity.
 Task admission remains valid without conversation links. App mapping, model/tool
 execution and judgment run outside short transactions; state rechecks their
 authority and expected versions at commit.
 
-Closure requires a durable explanation with stable message identity. For a
-direct Turn, the inbox result can supply that evidence and its Conversation
-projection; a separately published message uses the same identity. This does
+Request closure requires a durable explanation with stable message identity.
+In current source, a direct Turn's inbox result can supply that evidence and its
+Conversation projection; a separately published message uses the same identity. This does
 not require a new messages table or an independently successful adapter send.
 Repeated accepted operations reuse existing identity/version checks. Retain one
 writer for each fact, and never reconstruct accepted asks by guessing from chat.

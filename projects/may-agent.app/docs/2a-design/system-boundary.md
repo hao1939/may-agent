@@ -10,8 +10,8 @@ inputs remain a convergence gap rather than an alternate accepted boundary.
 The responsibility split is:
 
 ```text
-Host = persist, schedule, run, recover, expose results
-App  = define meaning, policy, desired outcomes, acceptance
+Host = persist, schedule, run, recover, validate controls, expose results
+App  = define meaning, policy, desired outcomes, acceptance and closure convention
 ```
 
 Infrastructure and runtime are both part of the Host. Infrastructure is what
@@ -44,7 +44,7 @@ core mechanics and optional adapters can live in Host code. See
 These record names are useful:
 
 - **Request** — an accepted ask whose outcome must be returned to the caller;
-- **task** — the App-owned outcome, whether it needs one attempt or several;
+- **task** — the App-owned execution identity that records outcomes and remains available until explicitly closed;
 - **fact** — something observed or reported; and
 - **attempt** — one bounded agent or workflow run.
 
@@ -109,15 +109,20 @@ inbox item -> Task owned by the App -> accepted result
 A conversational frontend may finish authorized work directly or admit durable
 intent/feedback. [Message Lifecycle](message-lifecycle.md) owns May's policy and
 Topic-linked follow-up through the same conversation handler; it does not add
-another Task lifecycle. This shared-input route is accepted but
-[not yet implemented](../proposals/conversation-input-unification.md).
+another Task lifecycle. The accepted [baseline](../proposals/conversation-input-unification.md)
+makes one stable Task the Conversation's actual execution owner, with no second
+executing inbox handler. Outcomes can be accepted while the Task stays open;
+an App, parent agent or human decides when to close it. The Host enforces that
+decision and preserves evidence without inferring responsibility lifetime.
+This lifecycle and the shared-input route are not yet implemented.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:
 
 ```text
 Task -> check current state -> run one bounded attempt
-     -> done, wait for an exact fact, require attention, or try again
+     -> record outcome, wait for an exact fact, require attention, or try again
+     -> owner may close the Task independently of accepting an outcome
 ```
 
 The inbox item retains caller correlation and the Task owns execution.

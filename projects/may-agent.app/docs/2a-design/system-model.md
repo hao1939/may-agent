@@ -3,10 +3,10 @@
 **Design status:** Accepted.
 **Implementation status:** App Tasks, bounded conversational work, shared reads,
 and event-driven follow-through are implemented at the [source baseline](../README.md).
-The accepted shared conversation-input path below replaces the separate
-supervision Task; that routing change is [not yet implemented](../proposals/conversation-input-unification.md).
-Sharing controller code is a recommended proof; merging resource state remains
-an alternative under review.
+The accepted baseline below uses one Task execution lifecycle for Conversation,
+ordinary work and maintenance, with explicit outcomes and owner-controlled
+closure. It replaces separate conversation execution and supervision;
+these changes are [not yet implemented](../proposals/conversation-input-unification.md).
 The focused Conversation review at Host `99bc1a31` confirms accepted Request
 storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
 [open](human-control-surfaces.md#current-turn-control); App judgment
@@ -17,8 +17,10 @@ responsibility and decides what a useful outcome means. The Host records work,
 runs bounded execution, and preserves truthful state through waits and failures.
 An agent, workflow or native executor performs the work within that boundary.
 
-**Discuss in Conversation. Track accepted asks as Requests. Use Tasks when
-work needs independent execution.**
+**Discuss in Conversation. Track accepted asks as Requests. Delegate Tasks when
+work needs independent execution.** Underneath, the Conversation itself uses
+one stable Task to handle its inputs; the human need not manage that execution
+identity to chat.
 
 ## The records
 
@@ -26,15 +28,15 @@ work needs independent execution.**
 | --- | --- |
 | Conversation | The shared discussion: human, May, command and tool messages |
 | Request | An accepted ask that May must close the loop on |
-| Turn | One bounded conversation execution for admitted human or system input, including model calls, tool use and verification |
-| Task | An App-owned outcome that can progress independently across attempts |
+| Turn | One bounded attempt handling Conversation input, including model calls, tool use and verification |
+| Task | An App-owned execution identity that accepts input, records outcomes and remains available until explicitly closed |
 | Attempt | One bounded execution of a Task, returning evidence and a proposed result |
 | Event | Input or a reported change; declared routes determine what wakes |
 | Topic | Related discussion and exact Task references, with no execution lifecycle |
 
 These concepts do not each require a service or controller. Task results are
-accepted state. Sessions, queues, leases, traces and metrics support execution
-or explain it; they do not own additional work.
+accepted evidence for the exact work considered. Sessions, queues, leases, traces
+and metrics support execution or explain it; they do not own additional work.
 An inbox item tracks admitted input handling; a model step is one internal
 cycle. [Message Lifecycle](message-lifecycle.md#mental-model) owns the detailed
 vocabulary and its current code-name mismatches.
@@ -48,34 +50,51 @@ the Host checks revisions and persists closure with its explanation.
 
 ## One reconciliation model
 
-Both Conversation and Task follow the same loop: persist input, wake, read
-current state, perform bounded work, and commit an outcome. Further execution
-needs relevant input or justified recovery. An owner can delegate smaller work
-and reconcile again when its result arrives; the owner keeps no execution
-running just to wait for it.
+```text
+input or change -> wake Task -> read current state -> bounded attempt
+  -> validate and record outcome -> release execution
+  -> rest, or handle relevant pending input
 
-The difference is what the outcome establishes. Answering an input may leave a
-Request open; accepting a Task result may finish a finite outcome or leave a
-maintained responsibility up to date. A maintained Task is already long-lived,
-so lifetime alone is not a reason for a separate engine. Required dependencies
-and result-follow-up links have different effects on readiness and completion.
+App / parent agent / human -> close Task -> prevent further execution
+```
 
-[Architecture](architecture.md#one-reconciliation-model) defines the shared
-model and the candidate controller boundary. It does not require a merged
-Conversation/Task resource or a new generic work object.
+Use this loop for ordinary work, maintenance and Conversation. The controller
+never needs to judge whether a responsibility should last forever. A Task stays
+available until an authorized owner closes it. A quiet Task needs no running
+agent or model polling. Timers are optional inputs, not a separate Task mode.
+
+Producing a result and closing its Task are distinct. A parent can consume a
+child's accepted result while the child stays open for follow-up. Ordinary Apps
+usually close work after its result is accepted; Conversation and maintenance
+usually remain available. This is App convention, with no extra human approval
+or lifecycle-manager service.
+
+A Turn can end while a Request remains open. A Request can close while the
+Conversation's Task remains available. Closing a Task prevents future execution
+and retains evidence; it never implies success or silently cancels its children.
+Esc/Stop ends only the current Turn, so later discussion remains possible.
+
+[Architecture](architecture.md#one-reconciliation-model) defines the execution
+boundary. The [proposal](../proposals/conversation-input-unification.md) records
+controls, exact-result correlation, migration and the code deletion to prove.
+These are accepted target semantics; current source still uses separate inbox
+execution and `achieve`/`maintain` Task rules.
 
 ## A turn or a Task?
 
+Here “Task” means delegated work visible to the user; the common underlying
+execution mechanism does not turn discussion into a background assignment.
+
 Conversation is the default for discussion and joint work, across as many turns
 as useful. May can investigate, edit, verify and answer directly within the
-human's authorization. Length, complexity and tool use do not require a Task.
+human's authorization. Length, complexity and tool use do not require delegation.
 A Turn can repeat work, checks and repairs until it produces an appropriate
 answer or reaches an explicit stopping point. "Bounded" limits execution cost;
 it does not restrict the Turn to one model response or imply fulfillment when
 time runs out. [Turn behavior](message-lifecycle.md#frontend-one-bounded-turn)
 defines the stopping points.
 
-Use a Task for an authorized outcome that can advance independently and needs
+Delegate a Task for an authorized outcome that can advance independently and needs
 background continuation, later work control or restart-safe execution. Its
 findings return to the discussion, which stays interactive. May can own an
 ordinary Task; another App fits when it owns the responsibility, has the needed
@@ -97,6 +116,7 @@ Human: "Help me compare these two approaches."
   -> executor works, checks evidence and repairs within its budget
   -> executor returns a proposed result
   -> Host validates and commits the result under the App's acceptance rules
+  -> the benchmark owner may close its Task; the result remains readable
   -> Task event routes through its saved Conversation link into the inbox
   -> the conversation handler explains the comparison and closes the Request
 ```
@@ -128,8 +148,9 @@ The accepted design uses one conversation handler for human messages and
 linked Task facts. An ordinary timer signal first runs a bounded database check
 for missed follow-up; qualifying reviews enter the same inbox. The handler
 reads current Task evidence and Request scope, then responds or completes
-quietly. It owns no waiting parent or separate supervision Task. Human input
-has priority over pending system reviews; an active review remains bounded.
+quietly. Its stable conversation Task runs the handler; it needs no separate
+supervisor or waiting execution. Human input has priority over pending system
+reviews; an active review remains bounded.
 [Message Lifecycle](message-lifecycle.md#one-conversation-input-path) owns the
 routing, authority and replay rules.
 Stopping a conversational turn, cancelling a Task and ending a watch have

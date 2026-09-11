@@ -51,15 +51,25 @@ The ordinary human objects are:
 An inbox item correlates one input with its handling result.
 It may finish while a conversational Request remains unresolved. Host row IDs
 and replaceable execution sessions remain diagnostic details.
-May does not create a wrapper Task for a Conversation or human request. The
-Conversation, Topic-to-Task link, actual responsible Task, and event log
-preserve the evidence used for Request tracking. In the accepted design,
-linked Task facts and timer-discovered follow-up enter the same conversation
+In the accepted [one-lifecycle baseline](task-resource-engine.md#one-lifecycle-baseline),
+one stable Task actually executes the Conversation's Turns. It is not a wrapper
+around another running inbox handler, a Task per message or a background handoff.
+The Conversation, Topic-to-Task links, responsible Tasks and event log preserve
+Request evidence. Users still chat normally and manage delegated work explicitly.
+In the accepted design, linked Task facts and timer-discovered follow-up enter the same conversation
 handler as human input. The active Turn exposes its source and the same Stop
 control; users need no supervisor or subscription command. May may own ordinary
 goal Tasks when it owns the responsibility.
 The Host Operations App (`may-agent`) owns platform Tasks. An agent run named
 `may` is only a bounded turn decision or an attempt selected by an App.
+
+The target distinguishes an accepted outcome from Task closure in reads and
+controls. Esc/Stop ends the current Turn; Request closure resolves an ask; Task
+closure ends future execution. Background pause must leave conversation handling
+available. Ordinary Apps can close work after accepting its result; no extra
+user action is needed for that convention. The command/view details below still
+describe current source, including `maintain`/`done`; their migration is pending.
+No new slash command is specified by this design.
 
 ## Shared resource interface
 
@@ -448,9 +458,12 @@ separate control service, or new work lifecycle is required.
    workflow, Codex turn, or CLI process tree; and
 5. retains a cancellation result distinct from accepted achievement.
 
-An in-flight stale result cannot cross the new resource fence. A maintained
-responsibility may refuse generic cancellation and name its App-specific
-control instead. `/unwatch` is never cancellation.
+An in-flight stale result cannot cross the new resource fence. Current source
+may refuse generic cancellation of a maintained Task and name an App-specific
+control instead. The pending common lifecycle removes that mode exception:
+an authorized owner can close any Task, with non-success retained for unfinished
+work and no implicit cancellation of independent children. `/unwatch` is never
+cancellation.
 Use `/cancel <ref>` when the target is not already watched. Bare `/cancel`
 resolves only the currently watched Task and fails when there is none. Render
 the exact Task reference and summary in its acknowledgment so the target is

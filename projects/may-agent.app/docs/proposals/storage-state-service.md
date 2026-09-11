@@ -20,6 +20,12 @@ item and caller correlation. An accepted human ask is a separate **Request**.
 [Message Lifecycle](../2a-design/message-lifecycle.md#mental-model) owns the terms;
 the next slice removes that ambiguity from active APIs without rewriting history.
 
+The later [one-lifecycle baseline](conversation-input-unification.md) moves
+Conversation execution into a stable Task claim and settlement path. Keep the
+typed state operations established here; compose them under that common fence.
+The inbox execution claim described in this implementation record is current
+source, not a requirement to retain two execution owners in the target.
+
 ## Goal and recommendation
 
 Make shared-state changes easy to use correctly and cheaper to maintain. Give

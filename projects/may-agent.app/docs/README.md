@@ -31,15 +31,15 @@ small shared state boundary.
 
 ## Current focus
 
-The [Conversation/Task reconciliation review](proposals/conversation-input-unification.md)
-uses one event-driven mental model and recommends proving a shared scheduling
-controller. It distinguishes necessary completion/Stop/relationship semantics
-from incidental implementation differences and compares the cost of representing
-conversation execution as a maintained Task. Human/Task/timer conversation
-inputs remain the accepted direction, replacing the separate supervision Task;
-the timer first checks stored pending work. The [owning contract](2a-design/message-lifecycle.md#one-conversation-input-path)
-is updated; controller reuse, input routing and old-consumer retirement remain
-pending implementation.
+The [Conversation/Task reconciliation design](proposals/conversation-input-unification.md)
+now accepts one Task execution lifecycle: handle durable input, record an explicit
+outcome, rest, and run again when needed. The App, parent agent or human decides
+when to close the Task. Conversation uses one stable execution Task while keeping
+messages, Topics and accepted Requests. Ordinary work, maintenance and discussion
+need no separate lifetime mode. This replaces the earlier scheduler-only candidate;
+result/closure semantics, unified execution, Task/timer routes and migration are
+pending implementation. The proposal identifies what code should disappear and
+how to prove the simplification.
 
 The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
 tracks the merged removal of conversational child waits in Host #140, with

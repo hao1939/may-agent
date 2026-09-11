@@ -203,9 +203,15 @@ missing. Delegate when domain context, independent judgment, isolation, or
 parallel execution justifies it. Encode predictable mechanics in tools and
 workflows; keep contextual decisions with the responsible agent or App.
 
-An ongoing App commitment becomes or wakes a Task. A bounded conversational
-turn may finish authorized work directly. Neither tool use nor frequency alone
-requires a workflow or a new work mechanism.
+Use the same event-driven Task lifecycle for ordinary work, maintenance and
+Conversation. A bounded Turn can finish authorized work directly; its stable
+conversation Task remains available. An accepted outcome does not require the
+Task to close. The App, parent agent or human decides when to close it, and the
+Host enforces that decision without judging responsibility lifetime. Timers are
+optional input; quiet Tasks need no running agent. The accepted
+[baseline](../2a-design/task-resource-engine.md#one-lifecycle-baseline) is pending
+implementation. Neither tool use nor frequency alone requires a workflow or a
+new work mechanism.
 
 An App becomes more powerful by adding domain policy, acceptance checks,
 learned workflows, and bounded capabilities available during reconciliation.

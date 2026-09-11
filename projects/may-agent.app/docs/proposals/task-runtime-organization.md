@@ -28,13 +28,13 @@ to decide which execution/recovery paths should remain. It also records the
 September 11 source-layout findings and small import/composition improvements;
 it does not replace the accepted inbox/state sequence below.
 
-The [conversation input unification review](conversation-input-unification.md)
-now owns the accepted replacement of the separate follow-up Task with typed
-system inputs and the recommended proof of shared Conversation/Task scheduling.
-It compares the real semantic differences and the costs of a maintained-Task
-alternative. Existing core claims and Request closure mechanics below remain
-proven independently; the shared controller/route, selective timer query and
-old-consumer retirement are pending implementation.
+The [one-lifecycle design](conversation-input-unification.md) now owns the
+accepted common Task lifecycle: explicit outcomes, rest between inputs and
+owner-controlled closure. Conversation uses a stable execution Task, retaining
+message/Request records and replacing separate inbox execution and supervision.
+The design removes mode-dependent lifetime rules; implementation and migration
+are pending. Existing claims and Request closure evidence below proves only the
+current source, not the new lifecycle.
 
 ## Task lifecycle review
 

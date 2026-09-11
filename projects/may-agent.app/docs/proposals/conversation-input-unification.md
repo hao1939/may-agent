@@ -1,287 +1,312 @@
 # Conversation and Task: one reconciliation model
 
-**Status:** Unified conversation inputs are accepted; implementation is pending.
-A shared scheduling controller is the recommended next proof, not a demonstrated
-code reduction. Representing Conversation execution as a maintained Task remains
-an alternative for comparison. Reviewed September 11, 2026 against Host
-`5857529e` and the current `may.app` declaration; no deployment is claimed.
+**Status:** Accepted design baseline, refined September 11, 2026; implementation
+is pending. Use one Task execution lifecycle for ordinary work, maintenance and
+Conversation: explicit outcomes, rest between inputs, owner-controlled closure.
+This supersedes the earlier recommendation to share only scheduling while
+keeping two execution lifecycles. The expected simplification must still be
+proved in source. Reviewed against Host `5857529e` and the current `may.app`
+declaration; no runtime change or deployment is claimed.
 
-The user should receive delegated work's outcome without repeatedly asking.
-The same expectation applies when a Task delegates smaller Tasks. Both owners
-retain the relationship, rest while independent work runs, and reconsider on
-new input or a result. [Message Lifecycle](../2a-design/message-lifecycle.md#one-conversation-input-path)
-owns conversational behavior; [Task Resource Engine](../2a-design/task-resource-engine.md)
-owns Task state. This proposal compares how much of their implementation to share.
+May should discuss and work with the human while delegated work progresses,
+then return useful outcomes without repeated reminders. The same loop should
+serve a Task that delegates smaller Tasks. The goal is fewer execution,
+settlement and recovery paths, with understandable controls and acceptable cost.
+[Message Lifecycle](../2a-design/message-lifecycle.md) owns the user experience;
+[Task Resource Engine](../2a-design/task-resource-engine.md#one-lifecycle-baseline)
+owns the target lifecycle and distinguishes it from the implemented protocol.
 
 ## Recommendation and value
 
-Use one mental model: **persist input, wake the owner, read current state,
-perform bounded work, commit the outcome, and rest or continue when justified.**
-A timer restores a missed opportunity to reconsider; it does not supply another
-business-logic path or authorization to retry stopped work.
+**Persist input, wake its Task, reconcile current state, commit an outcome, and
+release execution. Run again for relevant pending input or justified recovery.
+An authorized owner decides when to close the Task.**
 
 ```text
-Human input / linked result / timer discovery
-                       |
-              persist input or trigger
-                       |
-                       v
-            shared scheduling controller
-            priority, capacity, one pass per key
-                       |
-              +--------+--------+
-              v                 v
-      reconcile Conversation   reconcile Task
-              |                 |
-              +--------+--------+
-                       |
-         resource-specific claim and outcome rules
-                       |
-              durable change -> event
-                       |
-             interested Conversation or parent Task
+Human input / child result / relevant fact / optional timer
+                            |
+                   durable input + exact Task
+                            |
+                            v
+                   one Task controller
+                  claim a bounded attempt
+                            |
+                            v
+                selected conversation / agent /
+                   workflow / other handler
+                            |
+                            v
+             validate and commit outcome + evidence
+                            |
+                +-----------+------------+
+                |                        |
+          notify interested owner     release execution
+                |                        |
+          same input loop          rest or handle pending input
+
+App / parent agent / human -> explicit close -> fence execution and future wakes
 ```
 
-The candidate shares scheduling machinery while keeping existing Conversation,
-Request and Task records and their atomic operations. It also routes Task and
-timer follow-up through the conversation handler, replacing the separate May
-`conversation/follow-up` Task. These are two related reductions: one response
-path for Conversation, and one scheduling implementation for both consumers.
-Neither requires one universal result schema or one merged resource table.
+Conversation retains messages, Topics and accepted Requests. One stable Task
+owns its execution; a Turn is a conversation-facing name for a bounded attempt.
+Do not create a Task per message or per Request. Independent delegated work
+gets its own Task, so it can progress while the Conversation handles more input.
+The conversation Task is the actual execution owner, with one claim and retry
+authority; it does not wrap an independently executing inbox handler.
 
-The earlier proposal stopped at sharing conversation inputs. This review extends
-the candidate to controller reuse and removes the assumption that a maintained
-Task could never represent conversation execution. Keep that larger alternative
-open, but require it to remove more complexity than it introduces.
+An App, parent agent or human already managing work can be its closing owner.
+"External" means outside the controller's judgment, not a new service or role
+registry. The executor may recommend stopping; the accountable caller or App
+applies an authorized closure decision through the existing control boundary.
+
+## One lifecycle, explicit outcomes
+
+| Fact | Meaning |
+| --- | --- |
+| Attempt ended | Bounded execution returned or stopped; this alone establishes no success |
+| Accepted outcome | Evidence establishes progress, an answer, a completed assignment, a wait or a non-success disposition for the exact work considered |
+| Task is quiet | No eligible work is pending; the Task remains available for later input |
+| Task is closed | An authorized owner ended further execution; history and accepted outcomes remain readable |
+| Request is closed | May resolved the accepted human ask and recorded its explanation; this does not close the conversation Task |
+
+These are meanings, not a proposed five-state enum or new public result schema.
+Keep bounded execution, exact waits and visible failure evidence. Remove the
+core's need to infer whether being caught up means the responsibility has ended.
+A result never silently closes its Task, and closure never manufactures success.
+
+Ordinary work uses a simple App convention: accept the assignment's result,
+make it available to its caller, then request closure when no further input
+needs handling. This needs no extra human approval or model call. The Host
+checks the current version and pending input before applying that request, so
+an old result cannot close over a newer correction. Maintenance and Conversation
+usually stay open; their owners close them when appropriate. Timers are optional
+for any Task and do not define a separate mode.
+
+Parent readiness follows the accepted outcome of the exact delegated work,
+not whether the child's resource is closed. Reuse current admission IDs,
+generations and result references: an old successful result must not satisfy a
+new assignment to the same open Task. A useful child result can wake its parent
+while the child remains open for follow-up. Progress may prompt review but cannot
+satisfy a request for completed work. The parent judges its own outcome.
+
+Closure durably prevents new claims and fences late output before attempting
+to abort active execution. It retains unresolved work with a visible non-success
+disposition and makes that disposition discoverable to existing linked callers.
+It does not delete evidence, declare Requests fulfilled, undo external effects,
+or recursively cancel independent children. Owners explicitly decide which
+children to close; their results remain readable if the parent is already closed.
+A duplicate close is harmless. Old events and timer ticks cannot reopen a closed
+Task. Start with a new linked Task for genuinely new work after closure; omit a
+general reopen protocol.
+
+An open but quiet Task consumes stored state, not a worker or recurring model
+call. Safety queries select pending work, due declared waits and interrupted
+claims; open status alone is not eligibility. Forgotten quiet Tasks can remain
+stored initially. Optional retention policy may later close or archive them,
+with unresolved asks accounted for; it is not required for execution correctness.
 
 ## Which differences are real?
 
-These similarities do not justify separate controllers:
-
-| Apparent difference | What the current design already supports |
-| --- | --- |
-| Conversation is long-lived; Task ends | A `maintain` Task is also long-lived and accepts later cycles. A new message need not become a new Task or spec generation. |
-| Conversation reacts to people; Task executes a plan | Tasks accept new input and exact feedback. Both can use an agent or other bounded execution. Source determines authority, not resource spelling. |
-| Conversation delegates; Tasks execute | Tasks already create children and typed cross-App dependencies, then receive results later. Both are execution owners and result consumers. |
-| Conversation stays available while work runs | A maintained Task can finish its current review with live children and remain waiting. Follow-up does not require a live waiting session. Hard prerequisite dependencies still constrain eligibility. |
-| Conversation has many asks | A maintained Task can coordinate several pieces of work. Explicit Request records remain useful for tracking human promises, whichever engine runs the owner. |
-
-The distinctions below protect concrete behavior. They need explicit semantics,
-but do not each require a different scheduler or class.
-
-| Distinction to preserve | Why it matters | Cost of erasing it or moving it into a single Task resource |
+| Use | Inputs and handling | Usual closure convention |
 | --- | --- | --- |
-| Handling an input versus fulfilling an outcome | A reply can finish a Turn while several Requests or delegated Tasks remain open. `maintain` already separates an up-to-date cycle from permanent completion. | Task-backed Conversation needs per-input acknowledgment and Request closure evidence; a single Task phase cannot replace them. Some existing input records or equivalent bookkeeping remain. |
-| Stop this execution versus pause/cancel its owner | Esc stops one exact Turn; future conversation and independent Tasks remain available. Pausing Task attempts also need not suspend discussion. These are generally useful scopes, not inherently conversation-only concepts. | Current Task controls do not provide the same operation for a maintained owner. Full unification needs durable input/attempt Stop, scoped pause, stale-output fences and rules for subsequent input. |
-| Required dependency versus subscribed result | Some child work prevents the owner's outcome from finishing; other work only owes a later update. A result can wake either owner without satisfying its ask. | Treating every link as a prerequisite can make discussion unavailable. Treating every link as observation can falsely complete a parent. Keep the meaning of the relationship. |
-| Ordered input versus a coalesced wake | Human corrections and multiple child results must survive even when many wake signals collapse into one queue key. Both resources need retained evidence. | Full unification must demonstrate ordered input consumption and preserve each unhandled outcome; one dirty bit or latest event cannot be the input record. |
-| Failure of one input versus failure of an ongoing owner | An unsuccessful Turn must leave the ask visible and future discussion usable. Task retries are currently counted against the executing Task generation. | A maintained Conversation Task needs a clear per-input failure disposition so one exhausted input does not disable every later message. The exact retry policy is negotiable; silently broadening its scope is not. |
-| Different facts committed together | Conversation completion checks the input claim, Request revision and explanation. Task settlement checks generation/attempt, acceptance, actions, Conditions and dependent results. | One generic settlement API must still express both sets of facts. A large mode switch or optional-field schema can cost more than two clear typed operations. |
-| Interactive priority versus background work | The human should retain execution capacity while automated follow-up waits. Either resource can receive human input. | Reuse existing lanes with trusted source and execution purpose. App identity or P0 priority alone must not grant the human reserve. This change is needed even without a resource merger. |
+| Ordinary work | Assignment, corrections, relevant facts and child results | Caller/App closes after the relevant accepted outcome |
+| Maintenance | Relevant facts, optionally timer input | App or human ends the ongoing work |
+| Conversation | Ordered human input and linked Task facts; handler discusses, acts and explains | Human/App ends the Conversation; Request completion leaves it available |
 
-Message history, Topic grouping and Request records are product information;
-leases, queue keys, worker processes and the current folder names are implementation
-choices. Retaining the former does not prove separate engines are necessary.
-Likewise, sharing an engine does not make those records redundant.
+Long lifetime, delegation, waiting, several asks and timer input do not require
+separate controllers or an `achieve`/`maintain` switch. The remaining differences
+belong to input, outcome and control semantics within the same engine:
+
+| Needed distinction | Smallest sufficient treatment |
+| --- | --- |
+| Input handling and human fulfillment | Retain input correlation and Request revisions; closing an ask needs its explanation, not just an ended attempt |
+| Stop one execution and close its Task | Esc/Stop fences the exact Turn/input; later human input remains possible. Explicit Task closure ends future execution |
+| Background pause and interactive work | Keep pause scoped to background work; a shared Task engine must not disable human discussion when background attempts are paused |
+| Required result and subscribed update | Check prerequisites for the action/result they constrain; a follow-up link must not block unrelated input or the next human Turn |
+| Ordered input and coalesced wake | Retain input identities and all unhandled outcomes; a queue key is only a hint |
+| Failure of work and availability of its owner | Bound retries for the failing work; fresh authorized input can be considered without erasing failure evidence or blindly repeating the failed operation |
+| Human execution and automated review | Select existing capacity lanes from trusted input origin and execution purpose; Task identity, App name and priority do not grant the human reserve |
+
+Messages, Topics and Requests remain product records. They need no private
+scheduler, lease or retry loop. One Task result envelope can reference typed
+conversation decisions without flattening every record into a universal schema.
+Code validates revisions, identity, acceptance and closure authority; the
+App/LLM judges whether work is useful, sufficient or worth continuing.
 
 ## What the source actually requires
 
-| Source boundary | Finding and consequence |
-| --- | --- |
-| [`core/tasks/controller.ts`](../../../may-agent/src/app/core/tasks/controller.ts) and [`queue.ts`](../../../may-agent/src/app/core/tasks/queue.ts) | Already accept a reconciliation callback, coalesce keys, keep a new wake during execution, manage capacity and drain. Candidate shared machinery exists. Task-specific priority defaults, background capacity and dispatch retry pacing must be separated deliberately. |
-| [`composition/app-inbox-runtime.ts`](../../../may-agent/src/app/composition/app-inbox-runtime.ts) | Has another pump/capacity-wait/cleanup path, also serving non-conversational App inputs. It schedules by App identity and currently makes every selected conversation-App input foreground. Count its removal only if all retained input routes use the replacement; sharing Conversation alone may leave the pump in place. |
-| [`core/state/app-inbox-store.ts`](../../../may-agent/src/app/core/state/app-inbox-store.ts) | Claims the next eligible input for an App and excludes an executing Conversation. A queue keyed by Conversation needs matching claim selection; simply renaming Task keys could serialize an entire App or claim the wrong conversation. |
-| [`core/inbox/app-inbox-host.ts`](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) | Owns durable input claims, Stop and failure disposition. Failed executed Turns can remain failed pending fresh human input; this must not inherit Task execution retry semantics accidentally. |
-| [`core/tasks/app-task-reconciler.ts`](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts) | An `achieve` Task cannot converge with live children. A `maintain` review may complete and leave the owner waiting. Generic cancellation rejects maintained Tasks, and handler `stopped` is restricted to finite leaf Tasks. Do not describe these as an existing exact-Turn Stop API. |
-| [`core/state/conversation-outcomes.ts`](../../../may-agent/src/app/core/state/conversation-outcomes.ts) | The old supervision response commits an explanation and Request updates. Reuse its integrity rules through normal conversation completion before retiring its exclusive projection path. |
+The current implementation is not this baseline:
 
-Fresh Task input can request reconsideration of a wait, but an unsatisfied
-explicit `dependsOn` still prevents an attempt. Wake, eligibility and completion
-are separate checks. A Conversation that is merely following independent work
-must not acquire such a hard prerequisite.
+| Source boundary | Change to prove |
+| --- | --- |
+| [`core/tasks/controller.ts`](../../../may-agent/src/app/core/tasks/controller.ts) and [`queue.ts`](../../../may-agent/src/app/core/tasks/queue.ts) | Reuse queue, capacity wait, wake-during-run and drain; extend execution controls without a parallel Conversation controller |
+| [`composition/app-inbox-runtime.ts`](../../../may-agent/src/app/composition/app-inbox-runtime.ts) | Remove conversation execution pump/capacity/recovery after Task admission replaces it. It also serves ordinary App inputs: retain necessary admission/correlation or move those callers before deleting the whole pump |
+| [`core/state/app-inbox-store.ts`](../../../may-agent/src/app/core/state/app-inbox-store.ts) and [`core/inbox/app-inbox-host.ts`](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) | Current claims select input by App and exclude busy Conversations. Move execution authority to the exact conversation Task; retain ordered input, caller correlation and durable Stop evidence without a second executing claim |
+| [`core/tasks/app-task-reconciler.ts`](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts) | Remove mode-dependent completion/reopening/stop rules after explicit outcome and closure behavior works. Today `achieve` cannot converge with live children, generic cancellation rejects `maintain`, and handler `stopped` is restricted to finite leaf Tasks |
+| [`core/state/conversation-outcomes.ts`](../../../may-agent/src/app/core/state/conversation-outcomes.ts) | Reuse Request revision and explanation checks inside fenced Task settlement; retire the supervisor's separate projection/response path |
+| SDK types, readers, cleanup and App removal | Audit consumers of `done`, `converged`, receipts and mode. Accepted result, pending work and closed resource must stay distinguishable; an idle owner must not pin capacity or an execution workspace forever |
+
+Current `dependsOn` blocks attempts while unsatisfied. The target needs result
+waiting that leaves the owner available for other eligible input. Existing child
+and Topic/Task links provide the starting point; do not preserve a whole-owner
+execution block merely to reuse its current code. Account for the action whose
+prerequisite is missing and reject unsupported success claims.
+
+Current retry counters are Task-generation scoped, while conversational Stop
+and failures attach to an input. Define the smallest common handling rule using
+retained input/attempt identities. Do not rename `maintain` or add a hidden
+conversation mode to retain the same lifecycle branches.
 
 ## Options and their cost
 
-| Option | Value | Short-term cost | Long-term cost and risk |
-| --- | --- | --- | --- |
-| Keep separate controllers; unify conversation inputs only | Removes the supervisor response path with the smallest scheduling change | System-input context, quiet completion, priority and follow-up recovery | Retains two pumps and their capacity/shutdown behavior; lowest immediate migration risk |
-| Share scheduling controller; keep resource reconcilers **(recommended proof)** | Removes repeated dispatch mechanics and gives both the same wake/concurrency model | Extract existing queue/controller mechanics; align inbox claim key and capacity origin; exercise both consumers | Keeps distinct state operations but avoids forcing their contracts together. Worth doing only if old scheduling paths are deleted and the boundary stays small |
-| Run Conversation through a maintained Task | Could share Task claims, attempts, triggers and recovery as well as scheduling | Move conversation execution authority into Task state; provide per-input Stop/ordering, closure commits, presentation and retained-state cutover | Potentially largest deletion, but input correlation, Requests and messages still exist. Risk of many conversation-specific branches and wider changes to ordinary Tasks |
+| Choice | Assessment under the accepted baseline |
+| --- | --- |
+| One Task execution lifecycle, explicit outcomes and owner closure | Target: remove duplicate execution authority and mode-specific lifetime rules; requires settlement, control and retained-state changes |
+| Share only scheduling | Possible implementation step if it is cheaply reusable; no longer the destination or an extra mandatory extraction |
+| Unify only Conversation's human/Task/timer inputs | Useful narrow slice, but leaves duplicate claims/recovery and mode-dependent Task lifetimes |
 
-In the third option, the maintained Task would be the conversation's actual
-execution owner, not a second watcher or a Task wrapping an inbox execution.
-Conversation would retain its message/context view; Requests would still record
-accepted asks. Do not create one Task per message. `maintain` and the existing
-input event log make this plausible; the unresolved cost is the missing control
-and commit semantics, not the fact that discussion is open-ended.
+For this frequently used foundation, reduced long-term maintenance and fewer
+failure paths can justify a coordinated migration. The accepted tradeoffs are
+quiet retained Tasks, bounded response delay, affordable safe redo, and fewer
+unsolicited progress or drift investigations. We do not need automatic lifetime
+judgment, automatic reopen, precise resumption or a preemption engine.
 
-Keeping both an executing inbox row and an independently executing maintained
-Task for the same Turn would defeat that option. Conversely, not every inbox
-row can be counted as removable: addressed App inputs and cross-App caller
-correlation still need durable identities and outcomes.
-
-For this frequently used foundation, compare the long-term cost of paths,
-transactions, exceptional cases, recovery and operational understanding. There
-is no measured latency, model-cost or code-size win yet. Avoid choosing a larger
-migration because its diagram has fewer boxes. The [tradeoff rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
-require a better total cost for the actual goal.
-
-Contract differences are not automatically sacred. We already accept bounded
-response delay, affordable safe redo, fewer unsolicited progress reports and
-no automatic model investigation of quiet work. A common failure/retry policy
-could also be considered where repeated effects are safe and its cost is
-acceptable. Record that behavioral change explicitly. Do not pay to preserve
-an incidental mode distinction, but do preserve the user's ability to stop,
-correct and receive a truthful outcome.
+A large code or reliability improvement is a hypothesis until a source slice
+removes old paths and passes the checks below. If the implementation grows mode
+switches or callbacks at every phase, reconsider the expensive contract and
+narrow the slice. Do not add a universal controller framework for symmetry.
+Apply the [value/cost rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff).
 
 ## Delegation uses the same return loop
 
 ```text
-Conversation delegates Task A
-  -> Task A delegates Task B
-  -> B commits a result -> event wakes A
-  -> A judges that result and commits its outcome -> event wakes Conversation
-  -> Conversation explains it and closes the appropriate Request
+Conversation's Task delegates A
+  -> A delegates B
+  -> B accepts an outcome -> event wakes A (B can remain open)
+  -> A checks it and accepts its own outcome -> event wakes Conversation's Task
+  -> handler explains it and closes the appropriate Request
+  -> Conversation's Task rests, available for more input
+
+Each caller/App may close its delegated Task after consuming the needed result.
 ```
 
-At every level, the receiving owner rereads current evidence and decides what
-it means. Child completion is not automatic parent success. Failure, cancellation
-and a need for human input also return through exact retained relationships.
-Waiting releases execution capacity; no caller waits synchronously in event
-publication and no extra watcher Task is needed.
-
-A parent link, an execution prerequisite and a result subscription are related
-but not interchangeable. Reuse current child/dependency and Topic/Task links.
-A shared controller does not require replacing them with a universal dependency
-graph or adding a configurable link-policy framework. If a Task later needs an
-additional nonblocking subscription, add only the demonstrated relation.
+A child result is evidence, not automatic parent success. Failure, closure
+without success and a need for human input return through exact saved links too.
+No owner keeps an execution slot merely to wait. A saved result subscription
+is enough for follow-up; no per-Task watcher or generic dependency graph is added.
 
 ## Proposed controller boundary and code layout
 
-The shared portion schedules keys and invokes a supplied bounded reconciliation
-function. One implementation can serve many independent keys and preserve App
-limits; it is not one serial global worker. Existing scoped Conversation/Task
-identities are sufficient. Queue keys remain disposable hints, not a new stored
-resource.
+Keep existing homes and move authority, then delete replaced code:
 
-| Home | Responsibility in the candidate |
+| Home | Target responsibility |
 | --- | --- |
-| `core/scheduling/` | Reuse/extract the common ready queue, capacity wait, wake-during-run and drain mechanics from the Task controller; no public registry or base-class framework |
-| `core/tasks/` | Task readiness, fenced claims, attempts, acceptance, Conditions, durable retries and settlement remain here using `core/state/` |
-| `core/inbox/` and `core/state/` | Retain ordered input claims, exact Turn Stop, consistent conversation completion and handled-evidence reads; support exact selection required by the shared scheduler |
-| `conversations/` | Shared human/system context and conversation judgment, including quiet completion; no private queue or database authority |
-| `composition/` | Wire both reconcilers, exact Task-link routing, source-aware capacity and the bounded timer query; remove replaced pump/wait/cleanup code |
-| `packages/sdk/` and workspace `projects/may.app/` / `agents/may/` | Minimal typed system-input/quiet-result support and retained App follow-up policy; retire supervisor-specific declaration and prompt |
+| `core/tasks/` | One Task controller and bounded attempt lifecycle, readiness, result admission, scoped Stop, explicit close and recovery; no Conversation-specific queue |
+| `core/scheduling/` | Existing capacity and timing mechanics; no new scheduling framework |
+| `core/events/` and `core/inbox/` | Durable admission, input identities/order and caller correlation; inbox records no longer execute conversation work independently |
+| `core/state/` | SQLite Task claims/results/closure and typed message/Request/Topic operations; compose related writes inside one fenced settlement transaction |
+| `conversations/` | Replaceable context construction, conversation handler and presentation; returns typed decisions through the Task attempt contract |
+| `adapters/` | Existing execution, producer and interface capabilities; none owns an extra work lifecycle |
+| `composition/` | Wire capabilities, Task-link routes and bounded timer discovery; no domain judgment or duplicate execution pump |
+| `packages/sdk/`, `projects/may.app/` and `agents/may/` | Minimal public contract changes and App conventions; remove the separate follow-up Task declaration and prompt |
 
-Keep the callback boundary narrow. Resource code decides eligibility, claims,
-leases, failure disposition and atomic settlement. The shared controller cannot
-infer fulfillment, consume a Request, reset retry budgets or make a stopped
-input runnable. Its dispatch-error pacing is not permission to rerun domain work;
-recheck the durable eligibility after every wake. Do not replace two clear
-reconcilers with a callback for every phase of a generic state machine.
-
-Human priority is a property of the pending input and permitted execution, not
-an App name or a lane left over from an earlier wake. Readiness, capacity choice
-and the eventual claim must agree on which input is being run. Preserve
-per-Conversation order and independent-conversation concurrency. Tasks remain
-background execution even when a human originally requested them.
-Keep Task-pause eligibility scoped to its work; reusing the controller must not
-turn a pause of Task attempts into an unintended pause of human discussion.
+One controller implementation can serve independent Task keys concurrently.
+Do not serialize the Host globally or require generic Tasks to carry Conversation,
+Topic or Request data. The conversation handler is optional; absent capability
+leaves its retained work visible and unrelated Tasks executable.
 
 ## Whole-system fit and deliberate limits
 
 The four core responsibilities remain App admission, Events, State/storage and
-Work runtime. The shared controller is ordinary Work-runtime machinery. Apps
-still judge meaning; concrete conversation handling remains replaceable. Task
-execution must work without any conversation capability installed.
+Work runtime. Closure is a typed authorized state operation; it needs no event
+request/reply server. Events announce meaningful committed changes and wake
+interested owners. SQLite transactions enforce local consistency.
 
-A persisted fact or passive listener is not durable follow-up acceptance. Keep
-explicit routes, exact links and the existing admission/recovery evidence.
-`conversation.task.changed` is sufficient; a universal wake event is unnecessary.
-Presentation updates remain observations and cannot recursively start execution.
+Route human input and linked Task facts to the same conversation Task and
+handler. Saved Topic/Task links select recipients. Reuse `conversation.task.changed`;
+no universal `conversation.wake` wrapper is needed. System facts cannot create
+human authority, new Requests or unsolicited scope. Read current Task evidence
+and Request revisions; a quiet system outcome needs no chat message.
 
-The conversation timer first queries unhandled results or decisions. It uses
-normal admission, honors handled/stopped/exhausted input dispositions and
-preserves progress across bounded pages. It does not poll unchanged discussions
-with the model. Required Task/inbox recovery stays Host-owned. Removing the
-optional timer removes fallback discovery while retaining ordinary event handling.
+The optional timer first queries unhandled outcomes or decisions. Start from
+the existing 15-minute / 100-link bounds, preserve progress across pages, and
+measure actual query cost; these are not a response-latency guarantee. Handle
+missed notifications, late links, multiple Tasks/Conversations and new Request
+revisions. Preserve handled, stopped and exhausted evidence; a timer must not
+reset a retry budget or revive closed work. Required claim/restart recovery
+remains Host-owned and independent of the optional timer.
 
-Retain result explanations, human decisions and authorized exact-Task feedback.
-Reduce default age-based drift investigation and proactive progress commentary;
-Task views still expose progress. A running system review can delay its
-Conversation's next human turn: start with bounded execution and Stop, not a
-new preemption engine. Repeated safe computation after interruption is an
-acceptable cost; false closure or replaying stopped work is not.
+Pending human input has priority over automated reviews; active reviews stay
+bounded and stoppable. Background pause leaves conversation handling available.
+No new preemption engine is needed. Stop fences recorded output but cannot undo
+an external action already performed; inspect evidence before safe redo.
 
-Use existing execution/error evidence and metrics to inspect follow-up latency,
-idle model calls and failures. A controller merger adds no metric service, new
-transport or requirement that a user acknowledge delivered text. Message/Request
-closure remains atomic and independent of adapter delivery.
+Persist explanation and Request closure with the attempt outcome, independently
+of adapter delivery. Accepted Task results must remain discoverable if the Host
+stops before publishing a notification. Existing failure evidence and metrics
+are sufficient to investigate latency, repeated errors and idle model calls.
+No new metric service, transport or user acknowledgment protocol is required.
 
 ## Implementation order
 
-1. **Prove one end-to-end chain through a candidate shared controller.** Use
-   Conversation -> Task A -> Task B, with supplied decisions and temporary
-   SQLite. Route result return into the conversation handler. Reuse the existing
-   Task controller mechanics while retaining resource-specific claims and
-   commits. This is a bounded source experiment, not production dual running.
-2. **Evaluate deletion and compatibility before adopting the extraction.** Show
-   which pump, capacity-wait and shutdown paths disappear and which rules remain.
-   Account for ordinary App-input attachment/caller handling as well as chat;
-   do not claim the inbox pump is removed while those callers still need it.
-   Verify exact input/claim selection, Stop, failure budgets and human capacity.
-   If sharing requires a mode switch at every phase, retain the smaller input
-   unification or compare the maintained-Task alternative; do not grow a framework
-   merely to claim one class.
-3. **Finish Task/timer routing and selective recovery.** Cover missed admission,
-   quiet completion, multiple links and new Request revisions using existing
-   inbox/result evidence. Keep the timer cheap and independently removable.
-4. **Retire the old follow-up consumer in a coordinated Host/App change.** Link
-   source revisions and integration order, run normal CI and obtain human review.
-   Remove the old supervision declaration, exclusive projection and replaced
-   scheduling paths only after callers and retained behavior are accounted for.
+1. **Prove the revised Task lifecycle.** Using supplied decisions and temporary
+   SQLite, cover a result while the Task stays open, later input, exact-result
+   correlation, owner closure during execution, and duplicate wakes after
+   closure. Remove mode-based decisions in the exercised path. Inventory readers,
+   receipts, workspaces and caller dependencies that currently equate completion
+   with closure; settle their small replacement contracts before wider migration.
+2. **Run Conversation -> A -> B through that same lifecycle.** One stable Task
+   executes Conversation; its Turn consumes retained ordered input and commits
+   message/Request changes with the fenced outcome. Prove human input while
+   children wait, exact Stop, bounded failures and source-aware capacity. Delete
+   replaced conversation execution/claim/retry code; retain input correlation.
+3. **Finish result routes, fallback discovery and App conventions.** Route Task
+   facts and timer-selected reviews into the same handler, with quiet handling.
+   Ordinary Apps close completed work by convention; Conversation and maintenance
+   keep receiving input. Remove the old follow-up declaration and response path.
+4. **Migrate retained state and remove compatibility branches.** Link Host/SDK/App
+   revisions and integration order in reviewed PRs. Map completed finite work to
+   a closed Task with its original accepted result; map quiet maintained work to
+   an open Task with its accepted cycle; preserve waits, failures and all accepted
+   asks. Map each existing Conversation to one execution Task and fence obsolete
+   claims before activating it. Update reads, controls, cleanup and removal checks
+   together; do not keep both execution owners active.
 
-These are checkpoints, not four mandatory PRs. Deployment is separately
-controlled. Drain/fence the exact old `may/conversation/follow-up` execution
-before switching response ownership; generic maintained-Task cancellation is
-not currently available. Choose a supported scoped retirement procedure during
-implementation rather than assuming that API exists. Preserve all history,
-Requests, links and results, and recover pending responses through one consumer.
-Any rollback must retain that same single-owner property.
-
-The maintained-Task alternative earns reconsideration if the candidate still
-leaves substantial duplicate claim/recovery logic and a small source experiment
-can remove it while passing the same behavioral checks. Until then the existing
-records remain authoritative; this proposal authorizes no resource migration.
+These are checkpoints, not four mandatory PRs. The proof is a source experiment,
+not production dual running. A schema/table merger is unnecessary; durable
+execution authority must be singular regardless of record layout. Deployment is
+separate. The current maintained supervisor has no generic cancellation API:
+implementation must supply a verified scoped drain/fence/retirement procedure.
+Any rollback must preserve evidence and the same single-owner property.
 
 ## Acceptance and cost evidence
 
 Reuse [PR #149's follow-through fixtures](task-runtime-organization.md#request-follow-through-review)
-and existing Task dependency/controller tests. They prove current mechanics,
-not the candidate merger. Verify these distinct boundaries:
+and existing controller/dependency tests. Those prove current mechanics, not
+this lifecycle. Verify the target at its actual boundaries:
 
 | Scenario | Required evidence |
 | --- | --- |
-| Conversation -> A -> B, success and non-success | Each exact owner wakes, checks accepted evidence and handles its own obligation; no extra watcher or waiting session |
-| Fresh human input while delegated work waits | Conversation responds without waiting for the child; required Task dependencies retain their eligibility/completion rules |
-| Stop/pause, a late result and later input | Stop fences only its intended execution; no timer revives it, no unrelated Task is cancelled, and pausing Task attempts leaves discussion usable |
-| Duplicate/during-run wakes and multiple outcomes | One active pass per key, a fresh pass when needed, and no lost ordered message or child result |
-| Reopen before/after admission or result commit | Retain exact claims/obligations, one durable explanation and current Request scope; safe redo does not repeat accepted effects blindly |
-| Quiet review or exhausted failure | Unchanged ticks cause no model work and reset no budget; genuinely new authorized evidence remains reviewable |
-| Busy App and multiple Conversations | System work preserves the human reserve, claims the selected input and does not serialize unrelated Conversations |
-| Ordinary App input and cross-App caller handling | Preserve Task attachment, caller correlation and claim ownership; no retained input route is stranded by removing the old pump |
-| Removed conversation capability or optional timer | Task correctness and retained asks survive; degradation is visible without false completion |
-| Reload, shutdown and old-consumer retirement | Cancel pending capacity waits, fence stale output and leave one response owner |
+| Result accepted while child remains open | Caller proceeds using the exact result; a new assignment cannot consume an old success |
+| Close while idle/running, repeated close, late event/result | No new execution or stale settlement; history remains and unresolved work is visibly non-success |
+| Conversation -> A -> B, success and failure | One execution owner per Task; each owner judges its own outcome and returns it through saved links |
+| Human input while children wait | The Conversation handles it without waiting for a child or falsely accepting unfinished work |
+| Stop, later input, pause and exhausted failure | Scope is preserved; later work remains possible without replaying stopped work or erasing failure evidence |
+| Duplicate/during-run wakes and multiple outcomes | One current attempt per Task, no lost message/outcome, another pass only when eligible |
+| Reopen storage before/after result or explanation commit | Retain accepted evidence, current Request scope and one durable explanation; discover missed notifications |
+| Quiet Task, timer and removed timer | No model work just because a Task is open; removing optional discovery preserves ordinary execution correctness |
+| Mixed human/system input and multiple Conversations | Correct claim and capacity origin, human reserve preserved, independent keys can run concurrently |
+| Ordinary App input and cross-App callers | Input-to-Task admission, caller correlation and accepted-result readiness still work after pump removal |
+| Migration, cleanup, capability removal and shutdown | One execution owner, retained asks/results, no capacity/workspace pinned solely by an idle Task, visible unavailable capability |
 
-Report the actual scheduling/recovery paths removed, new hooks/branches/state,
-retained compatibility cost and behavior sacrificed. Measure model calls on idle
-ticks, queue/claim delay under mixed input and bounded scan/query cost. The goal
-is lower total complexity and reliable follow-through, not fewer class names.
-Run full Host CI for implementation PRs; model judgment and live latency require
-separate authorized evidence.
+Report deleted paths and branches, added state/hooks, migration burden and any
+behavior given up. Measure idle model calls, mixed-input delay and bounded scan
+cost. Run full Host CI for implementation PRs and obtain human review; live
+judgment and deployment require their own evidence. A smaller diagram alone
+does not establish a smaller or more reliable system.
 
 ## Documentation verification
 
-This revision changes design only. Validation passes `bun run check:may-design`,
-local Markdown links/anchors and `git diff --check`. No shared controller, system-input
-route, migration or model-backed behavior is implemented or activated here.
+This revision changes design only. Check documentation integrity, executable
+examples, local Markdown links/anchors and whitespace. It does not implement
+or activate the new lifecycle, unified Conversation execution or migration.

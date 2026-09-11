@@ -1,37 +1,37 @@
 # Message Lifecycle
 
-**Design status:** Accepted; unified conversation inputs refined September 11, 2026.
+**Design status:** Accepted; one Task lifecycle baseline refined September 11, 2026.
 **Implementation status:** The [source baseline](../README.md) implements human
 Turns, direct Task handoff, accepted Requests and atomic closure. Task follow-up
 still runs through May's separate supervision Task. Routing Task and timer
 reviews through the conversation inbox is accepted design, **not implemented**.
 The [unification review](../proposals/conversation-input-unification.md) records
 the whole-system fit, scope reduction, code changes and acceptance checks.
-It now compares shared controller code with representing conversation execution
-as a maintained Task; neither alternative is implemented by this document.
+The baseline now makes one stable Task the Conversation's execution owner,
+with explicit outcomes and owner-controlled closure. That lifecycle replaces
+`achieve`/`maintain` and the separate inbox execution path; it is not implemented.
 Current-turn steering remains separate work. Conversational child waits were
 retired in Host #140; retained-state behavior is described below.
 
 ## Mental model
 
 > Discuss and work together in Conversation. A Request is an accepted ask
-> that May must close the loop on. Use a Task for independent execution.
+> that May must close the loop on. Delegate a Task for independent execution.
 
 ```text
 Human message -----------------------------------+
                                                  |
-Task change -> route by saved Conversation link --+--> Conversation inbox
+Task change -> route by saved Conversation link --+--> durable input
                                                  |          |
 Timer tick -> find missed follow-up --------------+          v
-                                                     One bounded handler
-                                                      |- read current state
-                                                      |- discuss / act / explain
-                                                      |- update Request
-                                                      `- admit or steer Task
+                                                   Conversation's Task
+                                                   one bounded attempt
+                                                     |- discuss / act / explain
+                                                     |- update Request
+                                                     `- delegate independent Task
                                                                   |
-                                                                  v
-                                                        Independent Task
-                                                        -> accepted change
+                                                      accepted outcome returns
+                                                       through the same loop
 ```
 
 The timer does a bounded database check first; a quiet Conversation needs no
@@ -40,18 +40,19 @@ handling path while retaining their source and authority. An Event requests
 reconsideration; current stored state determines the response.
 
 The product model is: **discuss in Conversation, track accepted asks as
-Requests, and use Tasks for independent execution.** Topics organize context.
-The implementation vocabulary distinguishes the smaller execution units:
+Requests, and delegate Tasks for independent execution.** Topics organize context.
+The Conversation's stable Task is its execution mechanism, not a background
+handoff or an extra object the human must manage. The vocabulary is:
 
 | Term | Meaning |
 | --- | --- |
 | Message | Something a human, agent or tool said |
 | Conversation | The shared append-only message stream and related context |
 | Inbox item | A durably admitted input and its handling/caller correlation |
-| Turn | One bounded conversation execution handling admitted human input or a routed system fact, including repeated model calls and tool use |
+| Turn | One bounded attempt of the Conversation's Task handling human input or a routed system fact, including repeated model calls and tool use |
 | Request | An accepted ask May owes an outcome to; it can span Turns and link Tasks |
 | Topic | Related discussion and exact Task links, with no execution lifecycle |
-| Task | An App-owned outcome with independent execution and lifecycle |
+| Task | An App-owned execution identity that handles inputs, records outcomes and stays available until its owner closes it |
 | Model step | One internal model/tool cycle inside a Turn or Task attempt |
 | Event | Input or a fact; an explicit route determines what acts on it |
 
@@ -75,17 +76,19 @@ a Task's goal or relationship, never a different resource or lifecycle. An App
 owns and reconciles Tasks; an agent, workflow, Codex, or Claude is only a
 replaceable way to perform one attempt.
 
-Conversation and Task are separate responsibilities, not separate execution
-engines. The same bounded executor serves conversation Turns and ordinary
-App-owned Task attempts. A Task result can start a new conversation Turn after
-the original human Turn ended; the original Turn never waits for that Task.
+Conversation provides discussion, context and Request tracking; its Task owns
+execution through the common controller. A linked Task result can start a new
+Turn after the original human Turn ended. The original execution does not stay
+alive while the child works. Conversation and maintenance usually remain open;
+ordinary work is usually closed by its caller/App after accepting its outcome.
+These are conventions around the same lifecycle, with no core mode switch.
 
 Follow-through belongs to the conversation handler. It reads the exact linked
 Task, explains a useful result or human decision, and updates the accepted
-Request. It adds no supervision Task, per-Conversation controller or copied
-Task lifecycle. Requests and Topic links preserve the obligation and context;
-the inbox preserves pending handling. The owning App keeps responsibility for
-Task execution and mechanical recovery stays with the Host.
+Request. The conversation Task actually runs this handler; there is no separate
+supervisor or independently executing inbox owner. Requests and Topic links
+preserve the obligation and context; input records preserve pending handling.
+The owning App keeps responsibility for Task execution and mechanical recovery stays with the Host.
 
 ## Requests: acceptance and closure
 
@@ -118,13 +121,15 @@ the [background authorization policy](#authorization-for-background-work).
 | --- | --- |
 | Turn | May records an answer or quiet system outcome, or execution ends through Stop, failure or its bound. |
 | Request | The accepted ask is addressed and its outcome communicated, or it is explicitly cancelled or otherwise resolved. |
-| Task | A goal Task reaches accepted completion or another terminal disposition; a maintain Task can remain live while converged. |
+| Task outcome | Accepted evidence addresses the exact work considered; its caller can proceed while the Task remains open. |
+| Task lifetime | An authorized App, parent agent or human closes it; closure prevents future execution and does not imply success. |
 
 “The benchmark is running” can finish a turn while leaving the Request to
 compare implementations open. Even after the benchmark Task finishes, May
 still owes the comparison and explanation. A discussion-only Request can close
-with a useful answer and no Task. If the ask was only to start a benchmark,
-confirmed admission may itself fulfill it; closure follows the accepted ask.
+with a useful answer and no delegated Task; the Conversation remains available.
+If the ask was only to start a benchmark, confirmed admission may itself fulfill
+it; closure follows the accepted ask.
 
 An open Request carries the current accepted ask, relevant Conversation/Topic
 references, exact Task references when present, and an eventual closure message
@@ -308,7 +313,7 @@ and correlation aid, not another work state.
 | Human situation                                 | May's decision                                                                       |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
 | “Let's discuss the controller design.”          | Work through it together in Conversation, across as many turns as useful.            |
-| “This needs a deeper discussion.”               | Continue the discussion; length or difficulty alone does not create a Task.          |
+| “This needs a deeper discussion.”               | Continue the discussion; length or difficulty alone does not justify delegation.          |
 | “Run the comparison in the background while we discuss the tradeoffs.” | Admit the authorized comparison as a Task; keep the discussion interactive. |
 | “Any result from that comparison?”             | Read the Request's exact Task and explain what is complete and what remains.         |
 | “Actually, compare memory use too.”             | Refine the same Request and send authorized feedback to its exact unfinished Task.   |
@@ -320,7 +325,7 @@ and correlation aid, not another work state.
 | “Also include pending benchmarks.”              | Refine the existing Task when its owner and goal still fit.                          |
 | “Do this across every App.”                     | Start distinct work only when the accountable scope truly changed.                   |
 | “Continue the cleanup we discussed last month.” | Resolve the older Topic with bounded read-only lookup, then continue its exact work. |
-| The referenced Task already finished            | Keep it immutable; create a follow-up only for a genuinely new outcome.              |
+| The referenced Task already has an accepted result | Keep that evidence immutable; send authorized follow-up to the open Task, or create new linked work if it is closed. |
 | Task finished but the requested explanation is missing | Return the explanation; close the Request only when its accepted ask is addressed. |
 | Meaning remains materially ambiguous            | State the likely interpretation and ask the smallest concrete question.              |
 
@@ -331,14 +336,12 @@ delegates the choice back to May.
 
 ## One conversation input path
 
-This is the same [reconciliation model](architecture.md#one-reconciliation-model)
-as Task execution: a durable input wakes its owner, which reads state, performs
-bounded work and commits an outcome. When a Task delegates a child, the child's
-result wakes that Task through the same pattern. The candidate
-[shared controller](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
-would reuse scheduling mechanics while retaining each resource's claim and
-settlement rules. It does not turn every linked Task into a prerequisite for
-answering the next human input.
+The Conversation's stable Task uses the same [reconciliation model](architecture.md#one-reconciliation-model)
+as every other Task. Durable input wakes it, one bounded attempt handles the
+input, and fenced settlement records the outcome and any conversation decisions.
+When a child returns a result, that result enters the same loop. This replaces
+separate conversation execution and recovery; it does not make every linked
+Task a prerequisite for answering the next human input.
 
 Every admitted input names its Conversation and retains its source. A linked
 Task input also carries the exact App/Task and Topic references and originating
@@ -368,8 +371,8 @@ the link was saved. Multiple linked Conversations retain separate input and
 response identities.
 
 Start with accepted results, cancellation, and states needing a human decision,
-including an explicit wait or exhausted failure. A maintained Task can report
-a useful accepted cycle without becoming terminal. Routine progress remains
+including an explicit wait or exhausted failure. Any open Task can report
+a useful accepted outcome without closing. Routine progress remains
 available in Task views; do not invoke the model for heartbeats or every attempt
 update. Any later proactive progress trigger must justify its recurring cost.
 
@@ -385,7 +388,7 @@ events, but they are not interchangeable. Discussion remains available while
 linked work runs. Keep existing Topic/Task and Task dependency relations rather
 than introducing a universal relationship resource.
 
-A closed Request does not suppress a new useful result from a maintained Task.
+A closed Request does not suppress a new useful result from an open Task.
 Report the new finding on its evidence without claiming another fulfillment of
 the old ask or inventing a new human request.
 
@@ -404,8 +407,8 @@ checks effects; May judges what matters. The same result contract can:
 A system review is a bounded follow-up, not authority to carry out an extended
 repair in the interactive lane. Independent further work follows ordinary Task
 admission and the existing authorization rules. The target App decides whether
-that input maps to existing or new work. Completed one-off Tasks remain
-immutable; a maintained Task may accept another authorized cycle.
+that input maps to existing or new work. Accepted results remain immutable;
+open Tasks may accept follow-up input. Closed Tasks require new linked work.
 
 Result return and human decisions are retained from the old supervision policy.
 Automatic model investigation of every quiet Task is removed from the default.
@@ -415,9 +418,9 @@ new Task, a repair strategy or a model turn.
 
 ### Ordering and Stop
 
-Use the existing inbox, claim fences and execution limits. At most one Turn
-executes for a Conversation. Pending human messages have priority over system
-reviews; there is no new preemption mechanism or mid-turn event injection.
+Retain durable ordered input and use the conversation Task's claim fence and
+execution limits. At most one Turn executes for a Conversation. Pending human
+messages have priority over system reviews; there is no new preemption mechanism or mid-turn event injection.
 An active system review can therefore delay a human answer until it finishes
 or the human stops it. Reads, admission and Stop remain responsive.
 
@@ -453,14 +456,15 @@ already handled one. A new meaningful Task result is likewise reviewable.
 
 Events and timer discovery both enter the same durable admission path. Event
 publication is not proof of follow-up acceptance, and a passive subscriber is
-not the queue. Recover admitted unfinished inputs using existing inbox recovery.
+not the queue. Recover admitted unfinished handling through the common Task
+claim/recovery path; retain admission recovery for inputs not yet attached.
 If a notification was missed before admission, the database check can discover
 the outstanding outcome later. There is no guaranteed 15-minute response
 latency: capacity, paging, failures and deliberate Stop can delay or prevent it.
 
 This optional App schedule improves eventual follow-through. Removing it leaves
 normal event-driven responses and accepted state intact, but removes this
-fallback discovery. Required Task/inbox recovery timing remains Host-owned and
+fallback discovery. Required Task/admission recovery timing remains Host-owned and
 independent of the App schedule.
 
 ### May-owned durable work
@@ -704,7 +708,7 @@ explicit guidance to leave handoff link creation to the Host. See the
 [workflow validation record](../proposals/workflow-practices-review.md).
 
 This is one observed path, not long-run certification. Continue verifying: a
-multi-turn discussion creates no Task; acknowledgment needs no redundant
+multi-turn discussion creates no delegated Task; acknowledgment needs no redundant
 approval; corrections keep
 the same Request; handoff leaves an unfulfilled Request open; completed Task
 results still produce the owed explanation after restart; a blocked Task does

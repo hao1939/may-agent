@@ -9,6 +9,12 @@ The owner/disposition worker, analysis attachment, delegation publisher, and
 request delivery gate have been removed. Scoped Task list/get reads share one
 Runtime implementation across SDK, agent tool, control socket, and HTTP.
 
+The accepted [one-lifecycle baseline](../proposals/conversation-input-unification.md)
+will move Conversation execution into a stable Task, use explicit accepted
+outcomes and owner-controlled closure, and remove separate execution recovery.
+That change is pending; startup and protocol descriptions below reflect current
+source unless marked as target behavior.
+
 The runtime is the Host code. It is not a third layer between Host and App.
 
 The [System Model](system-model.md) defines ownership and replaceability;
@@ -129,11 +135,12 @@ cooldown elapsed, and uses the `(status, updated_at)` index. A route that
 remains invalid therefore stays visible without continuously consuming CPU or
 rewriting its error row.
 
-The [shared-controller review](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
-compares the current Task controller with the inbox pump. A common scheduling
-implementation is a pending candidate; both continue to use their existing
-durable eligibility, claim and outcome rules. Neither the shared mental model
-nor a discarded in-memory key permits replay of a stopped or exhausted input.
+The [one-lifecycle target](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
+replaces Conversation execution in the inbox pump with Task admission and one
+common claim/attempt/settlement path. Retain caller correlation and admission
+recovery; do not put a Task around an independently executing inbox handler.
+Current source still has both paths. Closed Tasks and stopped/exhausted input
+are not made eligible by a queue hint or a timer tick.
 
 ## Capacity
 
@@ -149,9 +156,11 @@ requires a refinement: choose these existing lanes by admitted input origin so
 linked Task/timer reviews use background capacity even when May handles them.
 Current dispatch selects foreground by conversational App identity; changing
 the subscription alone would give all such reviews foreground treatment.
-This source-aware selection is pending implementation. It adds no capacity
-service and does not promise preemption; a single-slot Host cannot reserve a
-second slot for human execution.
+In the one-lifecycle target, a conversation Task handling human input may use
+the reserve; its automated review and independently delegated work use background
+capacity. Current Task attempts all acquire background capacity, so both input
+selection and Task dispatch need alignment. This adds no capacity service or
+preemption; a single-slot Host cannot reserve a second slot for human execution.
 
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
@@ -165,6 +174,11 @@ Pause has one meaning:
 - resume queues retained work from durable state.
 
 The Host does not reject task intent merely because the App is paused.
+
+Under the pending common lifecycle, this existing background-work pause must
+leave human conversation handling available. It cannot become an indiscriminate
+pause of every Task just because Conversation now uses Task execution. Exact
+Turn Stop and explicit Task closure remain separate controls.
 
 ## Bounded execution
 

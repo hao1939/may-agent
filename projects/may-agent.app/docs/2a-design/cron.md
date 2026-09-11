@@ -13,6 +13,12 @@ samples App-defined sources on that event and applies each source's cadence.
 Time is a wake source, not a work authority. The shared runtime owns timer
 mechanics; each App declares what a due slot means.
 
+Under the accepted [one-lifecycle baseline](task-resource-engine.md#one-lifecycle-baseline),
+ordinary work, maintenance and Conversation use the same Task engine. Any may
+receive timer input; none needs it merely to remain open. Quiet Tasks do not
+trigger model work. An owner closes a Task explicitly, and later timer input
+cannot reopen it. Those lifecycle changes are pending implementation.
+
 ```text
 due slot -> publish required App-input event
          -> publish record-only fact

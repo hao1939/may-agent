@@ -2,7 +2,9 @@
 
 **Implementation note:** This README describes the current separate supervision
 Task in `app.ts`. The accepted [shared conversation-input design](../may-agent.app/docs/2a-design/message-lifecycle.md#one-conversation-input-path)
-will handle linked Task and timer reviews through the conversation inbox.
+will handle human input and linked Task/timer reviews through one stable
+conversation execution Task. Explicit outcomes and owner-controlled closure
+replace separate conversation execution and the supervision Task.
 That change is [pending implementation](../may-agent.app/docs/proposals/conversation-input-unification.md);
 this documentation update does not change the running App.
 

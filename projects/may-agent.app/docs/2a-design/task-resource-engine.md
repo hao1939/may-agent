@@ -12,12 +12,42 @@ Parent-owned repair and finite Task stop are implemented through PRs #110–#111
 App judgment and live follow-through need separate evidence; see the
 [controller proposal](../proposals/task-controller-pattern.md).
 
-This page owns the durable Task contract. Bounded conversational work is covered
-by [Message Lifecycle](message-lifecycle.md); declaration and input mapping are
-covered by [App Contract](agent-app.md).
+This page owns the durable Task contract. The accepted target below supersedes
+mode-dependent lifetime rules and separate Conversation execution. Its
+implementation is pending. Sections after that baseline document the current
+SDK/storage protocol, including `achieve`/`maintain`, `converged` and finite stop;
+keep using those APIs until a coordinated Host/SDK/App change lands.
+[Message Lifecycle](message-lifecycle.md) owns conversational behavior;
+[App Contract](agent-app.md) owns declaration and input mapping.
 
 Read the lifecycle below first. Use [the executor contract](#one-attempt-interface)
 and [resource reads](#resource-read-interface) as references when implementing an adapter.
+
+## One lifecycle baseline
+
+**Accepted target; not implemented.** Ordinary work, maintenance and Conversation
+share one Task execution lifecycle.
+
+A Task remains available after producing a result. Ordinary Apps usually close
+completed work by convention; maintenance and Conversation usually stay open.
+Core does not judge responsibility lifetime or need an `achieve`/`maintain` mode.
+Timers are optional input. Quiet Tasks need no worker or recurring model call.
+
+A caller consumes its exact assignment's accepted outcome, not child closure.
+Existing input/generation/result references distinguish it from an old success.
+One stable Task executes a Conversation; its Turns use the common attempt fence.
+Messages, Topics and Requests remain typed records, with no separate executor.
+Request closure needs its current scope and explanation and leaves chat available.
+
+Stop fences one execution/input. Owner closure prevents new claims and late
+settlement, preserves evidence and leaves unresolved work visibly non-success.
+It does not fulfill Requests or implicitly cancel children. Old events cannot
+reopen it; new work after closure uses a new linked Task. A conventional close
+after a result rechecks current version and pending input before applying.
+
+The [proposal](../proposals/conversation-input-unification.md) owns prerequisite
+handling, control scopes, code deletion and migration. The protocol below is the
+current implementation, not evidence that these target semantics already work.
 
 ## One App work path
 
@@ -149,11 +179,12 @@ eligibility, claim an attempt, validate and apply a result, reject stale effects
 and preserve the evidence needed by recovery. These are distinct responsibilities
 within the same runtime; scheduling does not own a second Task state machine.
 
-Conversation follows the same [reconciliation model](architecture.md#one-reconciliation-model).
-The [shared-controller candidate](../proposals/conversation-input-unification.md)
-would reuse scheduling code while preserving the Task-specific readiness,
-claim, result and recovery rules here. It is not implemented. It requires no
-Task dependency on Conversation and no merged resource schema.
+The [one-lifecycle baseline](#one-lifecycle-baseline) makes Conversation use this
+Task execution authority as well. It requires result/closure and control changes
+beyond scheduler reuse; those changes are pending. The current readiness,
+claim, result and recovery rules below describe the source being replaced.
+A common engine requires no Task dependency on conversational policy or merged
+product-record schema.
 
 The controller must not interpret task prose, choose project strategy, infer
 external truth from time, contain App-specific policy, or use `tree.json` as
@@ -189,7 +220,7 @@ current evidence. A parent relation, an explicit `dependsOn` prerequisite and a
 Conversation follow-up link retain their different meanings. Child completion
 does not itself fulfill a parent Task or a human Request. The
 [comparison](../proposals/conversation-input-unification.md#which-differences-are-real)
-explains why this affects settlement, not the choice of scheduling machinery.
+explains how the target separates accepted outcomes, availability and closure.
 
 ## Selecting the attempt mechanism
 
@@ -672,8 +703,9 @@ Tests and audits must prove:
    binding supplied by Runtime; readers never recover ownership from prompts.
 10. A task-owned emitted event is visible only after durable acceptance, and a
     retry with the same local key cannot duplicate it.
-11. Every App-owned execution uses this engine; only direct non-App execution
-    such as CLI experiments and Gym may run without an App task.
+11. Every durable App Task uses this engine. Current conversational inbox
+    execution is a separate path; the accepted baseline removes that exception.
+    Direct non-App execution such as CLI experiments and Gym stays independent.
 12. Resource-backed Task contention never uses a synchronous filesystem wait,
     and slow Task I/O cannot delay event admission or resource reads.
 

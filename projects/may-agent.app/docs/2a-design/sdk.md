@@ -15,6 +15,12 @@ See [App Contract](agent-app.md) for declaration and mapping,
 [Task Resource Engine](task-resource-engine.md) for result admission, and the
 [SDK Quickstart](../2b-manual/sdk-quickstart.md) for checked source.
 
+The accepted [one-lifecycle target](task-resource-engine.md#one-lifecycle-baseline)
+will remove mode-dependent lifetime rules and put Conversation execution through
+Task attempts. Explicit accepted outcomes and owner closure replace the coupling
+between result completion and Task lifetime. The SDK migration is pending;
+examples and type references below intentionally describe current usable APIs.
+
 ## Executable type references
 
 | Contract | Source |

@@ -16,7 +16,7 @@ archive.
 | How do lifetime, usage, and the cost of being wrong change a decision? | [Match the horizon and risk](1-principles/design-philosophy.md#match-the-horizon-and-risk) |
 | What wins when design preferences conflict? | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff) |
 | What is the whole mental model? | [system-model.md](2a-design/system-model.md) |
-| Can Conversation and Task share one reconciliation controller? | [Reconciliation model](2a-design/architecture.md#one-reconciliation-model) and [options/cost comparison](proposals/conversation-input-unification.md#options-and-their-cost) |
+| How do Conversation, ordinary work and maintenance share execution? | [One lifecycle](2a-design/architecture.md#one-reconciliation-model), [outcomes and closure](2a-design/task-resource-engine.md#one-lifecycle-baseline), and [implementation costs](proposals/conversation-input-unification.md#options-and-their-cost) |
 | What are the four core components, their dependencies and code homes? | [architecture.md](2a-design/architecture.md) |
 | How do human messages, Task results and timer reviews enter Conversation? | [One conversation input path](2a-design/message-lifecycle.md#one-conversation-input-path) |
 | How does May track and close an accepted ask? | [message-lifecycle.md](2a-design/message-lifecycle.md#requests-acceptance-and-closure) |
@@ -131,8 +131,8 @@ current-design list.
 Active reviews are:
 
 - [Conversation and Task: one reconciliation model](proposals/conversation-input-unification.md)
-  — accepted conversation input unification, recommended shared-controller proof,
-  necessary semantic differences, maintained-Task alternative and cost comparison;
+  — accepted common Task lifecycle, explicit outcomes and owner-controlled closure;
+  Conversation execution, code deletion, migration and cost evidence pending;
 
 - [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md)
   — first source slice under review: run diagnostics, replaceable outcome

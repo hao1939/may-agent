@@ -17,6 +17,13 @@ See [System Model](system-model.md) for the whole model,
 [Task Resource Engine](task-resource-engine.md) for reconciliation, and
 [SDK Quickstart](../2b-manual/sdk-quickstart.md) for the checked example.
 
+The accepted [one-lifecycle target](task-resource-engine.md#one-lifecycle-baseline)
+uses a stable Task for Conversation execution too. Tasks record outcomes and
+remain available until an authorized owner closes them; ordinary Apps can close
+after accepting the requested result by convention. The controller need not
+classify finite and maintained responsibilities. Implementation is pending:
+declarations and `requests` behavior below describe the current SDK, not new APIs.
+
 ## Choosing the stored record
 
 This document's Host request APIs track addressed input handling and caller
