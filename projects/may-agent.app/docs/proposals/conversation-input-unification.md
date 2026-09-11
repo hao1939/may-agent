@@ -88,6 +88,12 @@ invent a scope change, judge uncertain evidence or declare a human ask satisfied
 If a model trial needs procedural coaching to complete the loop, simplify the
 contract/context or fix the missing controller behavior before adding prompts.
 
+A valid judgment to give up is an outcome, not an execution error. Preserve it
+and return it to the caller. A provider failure, interrupted attempt or rejected
+result is a different fact, handled through bounded execution failure rules.
+The distinction must survive storage and restart; agents should not have to
+learn a special success label to make code accept a non-success decision.
+
 ## One lifecycle, explicit outcomes
 
 | Fact | Meaning |

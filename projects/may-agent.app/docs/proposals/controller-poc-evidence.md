@@ -6,6 +6,11 @@ implementation and simplification are not yet proved. No production state or
 deployment changed. This work runs in the current development session, without
 Herdr goals or delegated development workers. Models below are test subjects.
 
+This page records the first slice. The
+[common-outcome source experiment](controller-poc-outcomes-and-closure.md) now
+exercises retained Tasks, explicit closure, unchanged waits and exact executor
+context. Its broader migration is not yet passing; #150 remains independent.
+
 ## What has been exercised
 
 Host base: `3037c4b9` (including #149). Candidate branch:
@@ -104,7 +109,7 @@ comparison point for the next slice: retained waits should survive by default;
 the agent judges an intentional change, while code resolves its correlation.
 Prove that behavior before removing the current instructions.
 
-**Next gate:** separate accepted assignment outcome from resource closure and
+**Gate taken into the second experiment:** separate accepted assignment outcome from resource closure and
 make one real caller consume that exact outcome while the child stays open.
 Then execute Conversation -> A -> B with human input during the wait, using
 one authority for execution and settlement. Required result checks must follow
