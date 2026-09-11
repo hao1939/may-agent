@@ -39,6 +39,14 @@ import { taskCancelRequestedEvent } from "../task-control-events.js";
 const TASK_PAGE_SIZE = 10;
 const TODO_PAGE_SIZE = 50;
 
+// Stored channel coordinates are transport-neutral text. Use the same
+// no-thread fallback for delivery, controls and watch bookkeeping.
+function telegramThreadId(value?: string): number | undefined {
+  if (!value || !/^[1-9]\d*$/.test(value)) return undefined;
+  const id = Number(value);
+  return Number.isSafeInteger(id) ? id : undefined;
+}
+
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
 try {
@@ -548,21 +556,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   async function syncTurnControls(turn?: AppConversationResource["activeTurn"]): Promise<void> {
-    if (turn?.channel === "telegram" && turn.channelTargetId && allowedChatIds.includes(turn.channelTargetId)) {
-      const topicId = turn.channelThreadId ? Number(turn.channelThreadId) : undefined;
-      surfaces.set(surfaceKey(turn.channelTargetId, topicId), {
-        chatId: turn.channelTargetId,
+    const sourceChatId = turn?.channel === "telegram" ? turn.channelTargetId : undefined;
+    const topicId = telegramThreadId(turn?.channelThreadId);
+    const sourceSurface = sourceChatId ? surfaceKey(sourceChatId, topicId) : undefined;
+    if (sourceChatId && sourceSurface && allowedChatIds.includes(sourceChatId)) {
+      surfaces.set(sourceSurface, {
+        chatId: sourceChatId,
         ...(topicId === undefined ? {} : { topicId }),
       });
     }
     for (const [surface, coordinates] of surfaces) {
       if (!running) return;
       const previous = turnControls.get(surface);
-      const relevant =
-        turn?.channel === "telegram" && turn.channelTargetId
-          ? surface ===
-            surfaceKey(turn.channelTargetId, turn.channelThreadId ? Number(turn.channelThreadId) : undefined)
-          : true;
+      const relevant = sourceSurface === undefined || surface === sourceSurface;
       if (!relevant) {
         if (previous) await clearTurnControl(surface);
         continue;
@@ -573,13 +579,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const token = `stop:${randomUUID()}`;
       const messageId = await sendMessage(
         coordinates.chatId,
-        turn.channel === "telegram" && turn.channelTargetId
+        sourceChatId
           ? "May is working on this message."
           : "May is working in the shared conversation.",
         undefined,
         {
           messageThreadId: coordinates.topicId,
-          ...(turn.channel === "telegram" && turn.channelTargetId ? { replyToMessageId: turn.channelMessageId } : {}),
+          ...(sourceChatId ? { replyToMessageId: turn.channelMessageId } : {}),
           replyMarkup: { inline_keyboard: [[{ text: "Stop this turn", callback_data: token }]] },
         },
       );
@@ -686,11 +692,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
       const targetChatId = message.metadata?.channelTargetId ?? pendingChatId;
       if (!targetChatId) return;
-      const threadId = message.metadata?.channelThreadId;
+      const topicId = telegramThreadId(message.metadata?.channelThreadId);
+      const surface = surfaceKey(targetChatId, topicId);
       const delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
         eventType: "conversation.mirror",
         agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
-        ...(threadId && /^[1-9]\d*$/.test(threadId) ? { messageThreadId: Number(threadId) } : {}),
+        messageThreadId: topicId,
         ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
         replyMarkup: taskButtons(
           message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
@@ -707,13 +714,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       });
       if (!delivered || !running) return;
       if (message.author.kind === "agent") {
-        lastRenderedMayMessageBySurface.set(
-          surfaceKey(targetChatId, threadId && /^[1-9]\d*$/.test(threadId) ? Number(threadId) : undefined),
-          message.id,
-        );
+        lastRenderedMayMessageBySurface.set(surface, message.id);
       }
       rememberRenderedConversationMessage(message.id);
-      const surface = surfaceKey(targetChatId, threadId ? Number(threadId) : undefined);
       const watched = watchedTasks.get(surface);
       if (
         watched && message.author.kind === "agent" && message.metadata?.taskRefs?.some(
@@ -761,7 +764,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             message.text.trim() === result &&
             surfaceKey(
               message.metadata?.channelTargetId ?? pendingChatId ?? "",
-              message.metadata?.channelThreadId ? Number(message.metadata.channelThreadId) : undefined,
+              telegramThreadId(message.metadata?.channelThreadId),
             ) === surface &&
             message.metadata?.taskRefs?.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId),
         );

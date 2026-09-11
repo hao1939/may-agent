@@ -378,23 +378,29 @@ describe("Telegram durable input and natural follow-up", () => {
     } finally { await f.close(); }
   });
 
-  it("targets the active message, labels queued input honestly, and admits Stop during a stalled command send", async () => {
+  it.each([
+    [undefined, undefined],
+    ["7", 7],
+    ["topic:7", undefined],
+    ["9007199254740993", undefined],
+  ] as const)("targets the active message with stored thread %s and admits Stop during a stalled command send", async (storedThreadId, providerThreadId) => {
     const f = durableTelegramFixture();
     const blocked = Promise.withResolvers<void>();
     try {
       f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
         conversationId: "may:primary", author: { kind: "human", id: "active" }, text: "Review changes",
-        metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 42 },
+        metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: storedThreadId, channelMessageId: 42 },
       } });
       claimNextAppInboxItem(f.db, "may", "fixture", 60_000);
       f.hold((body) => body.text.startsWith("Task first") ? blocked.promise : Promise.resolve());
-      f.message(100, "/task first", { message_thread_id: 7 });
+      f.message(100, "/task first", { message_thread_id: providerThreadId });
       await waitFor(() => f.sends().some((c) => c.body.text === "May is working on this message."));
       const controls = f.sends().filter((c) => c.body.text.startsWith("May is working"));
       expect(controls).toHaveLength(1);
       const control = controls[0];
-      expect(control.body).toMatchObject({ chat_id: "123", message_thread_id: 7, reply_parameters: { message_id: 42 } });
-      f.message(101, "Only review networking", { message_thread_id: 7 });
+      expect(control.body).toMatchObject({ chat_id: "123", reply_parameters: { message_id: 42 } });
+      expect(control.body.message_thread_id).toBe(providerThreadId);
+      f.message(101, "Only review networking", { message_thread_id: providerThreadId });
       await waitFor(() => f.inputs().length === 1);
       await waitFor(() => f.sends().some((c) => c.body.text.includes("hasn't changed running work")));
       f.afterRecord((input) => {
@@ -403,7 +409,7 @@ describe("Telegram durable input and natural follow-up", () => {
         }
       });
       f.send([{ update_id: 102, callback_query: { id: "stop", data: control.body.reply_markup.inline_keyboard[0][0].callback_data,
-        message: { message_id: control.messageId, chat: { id: 123 }, message_thread_id: 7 } } }]);
+        message: { message_id: control.messageId, chat: { id: 123 }, message_thread_id: providerThreadId } } }]);
       await waitFor(() => getAppInboxItem(f.db, "active")?.status === "done");
       expect(f.tasks.get("first")?.status).toBe("running");
       expect(f.polls()).toContain(103);
@@ -608,23 +614,31 @@ describe("Telegram durable input and natural follow-up", () => {
     });
   }
 
-  it("shows the exact canonical result without a duplicate terminal card and ends that watch", async () => {
+  it.each([
+    [undefined, undefined, true],
+    ["7", 7, true],
+    ["topic:7", undefined, true],
+    ["9007199254740993", undefined, true],
+    ["topic:7", undefined, false],
+  ] as const)("shows one canonical result and ends the watch with stored thread %s, provider thread %s, Task wake %s", async (storedThreadId, providerThreadId, taskWake) => {
     const f = durableTelegramFixture();
     try {
-      f.message(100, "/watch first");
+      f.message(100, "/watch first", { message_thread_id: providerThreadId });
       await waitFor(() => f.published.some((input) => input.data.metadata?.command === "/watch first"));
       f.tasks.set("first", { ...f.tasks.get("first")!, status: "done", terminal: true,
         resourceVersion: 2, response: "Review complete: no blocking issues." });
       f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
         conversationId: "may:primary", author: { kind: "agent", id: "may" }, text: "Review complete: no blocking issues.",
-        metadata: { channel: "telegram", channelTargetId: "123", taskRefs: [{ appId: "may", taskId: "first" }] },
+        metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: storedThreadId,
+          taskRefs: [{ appId: "may", taskId: "first" }] },
       } });
-      f.bus.emit({ type: "project.task.reconciled", source: "fixture", owner: "app:may", data: { appId: "may", taskId: "first" } });
+      if (taskWake) f.bus.emit({ type: "project.task.reconciled", source: "fixture", owner: "app:may", data: { appId: "may", taskId: "first" } });
       await waitFor(() => f.sends().some((call) => call.body.text.includes("Review complete")));
       await waitFor(() => f.taskReads.filter((id) => id === "first").length >= 2);
-      f.message(101, "/watch");
+      f.message(101, "/watch", { message_thread_id: providerThreadId });
       await waitFor(() => f.sends().some((call) => call.body.text === "No Task is watched. Use /watch <ref>."));
       expect(f.sends().filter((call) => call.body.text.includes("Review complete"))).toHaveLength(1);
+      expect(f.sends().find((call) => call.body.text.includes("Review complete"))!.body.message_thread_id).toBe(providerThreadId);
       expect(f.tasks.get("second")?.status).toBe("running");
     } finally { await f.close(); }
   });
