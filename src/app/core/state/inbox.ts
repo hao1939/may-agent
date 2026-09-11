@@ -61,7 +61,7 @@ function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestIn
       .appTaskAdmissions?.[idempotencyKey];
     if (admission) {
       if (admission.taskId !== taskId) throw new Error("Task request identity was reused for different work");
-      if (!config.resourceStore.readTask(taskId) && !config.resourceStore.readReceipt(taskId)) {
+      if (!config.resourceStore.readTask(taskId)) {
         throw new Error(`Admitted Task ${taskId} is missing`);
       }
       return { kind: "observed", taskId, generation: admission.taskGeneration, changed: false };
@@ -149,10 +149,7 @@ export function attachRequestToTask(
     // Rechecks of accepted work retain its admission identity; App-selected
     // replacement has a separate key and is fenced by this request claim.
     const continuing = input.attachment.kind === "existing" && previous?.kind === "task" && previous.id === taskId;
-    const generation = continuing
-      ? (config.resourceStore.readTask(taskId)?.metadata.generation ??
-        config.resourceStore.readReceipt(taskId)?.metadata.generation)
-      : undefined;
+    const generation = continuing ? config.resourceStore.readTask(taskId)?.metadata.generation : undefined;
     if (continuing && generation === undefined) throw new Error(`Attached Task ${taskId} is missing`);
     const observation: AppTaskObservationResult = continuing
       ? { kind: "observed", taskId, generation: generation!, changed: false }

@@ -97,8 +97,12 @@ Tasks. Owner closure rejects later admission, preserves accepted evidence and
 leaves independent children executable. The parent-result suite checks an
 explicit wait for child evidence; lifetime modes cannot infer that decision.
 Historical receipt-reader checks seed the old stored shape explicitly instead
-of calling current completion to fabricate it. They retain duplicate pruning,
-child identity and recovery-generation coverage until cutover permits retirement.
+of calling current completion to fabricate it. Offline conversion checks retain
+parent/child identity and fence obsolete claims without deleting Task resources.
+`runtime-definition.test.ts` rejects unconverted history before admission or
+execution; the reconciler regression proves archived success cannot satisfy a
+dependency on newer unfinished work. Conflicting same-generation receipt imports
+remain covered by `task-receipt-cutover.test.ts`.
 The Task runtime suite now exercises those same outcomes through installed
 executors, startup recovery and existing session evidence. Coverage includes
 parent-led prerequisite repair without an unblock action, continued failure

@@ -312,7 +312,6 @@ function satisfiedDependencyIds(tree: TaskTree): string[] {
       Object.values(tree.resources ?? {})
         .flatMap((resource) => resource.spec.dependsOn ?? [])
         .filter((dependencyId) => {
-          if (tree.receipts?.[dependencyId]) return true;
           const dependency = tree.resources?.[dependencyId];
           return Boolean(
             dependency &&

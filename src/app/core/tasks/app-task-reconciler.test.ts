@@ -10,6 +10,7 @@ import {
   type TaskCompletionReceipt,
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
+import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
@@ -2702,7 +2703,7 @@ describe("App task reconciler state", () => {
     ).toThrow("cancelled task");
   });
 
-  it("legacy receipt compatibility: prunes a stale live duplicate when a matching achieve receipt already exists", () => {
+  it("offline receipt conversion retains the closed Task instead of pruning its resource during admission", () => {
     const { config } = fixture();
     const taskIntent = intent();
     const claim = declareAndClaimTask(config, {
@@ -2722,6 +2723,7 @@ describe("App task reconciler state", () => {
         mode: taskIntent.mode,
         owner: "branch-owner",
         workflow: taskIntent.workflow,
+        input: taskIntent.input,
         outputs: [...(taskIntent.outputs ?? [])],
       },
       status: {
@@ -2740,19 +2742,23 @@ describe("App task reconciler state", () => {
       }),
     ).toBe(true);
 
-    expect(
+    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).closed).toBe(1);
+    const beforeAdmission = readTaskSnapshot(config);
+    expect(() =>
       observeAppTaskIntent(config, {
         intent: taskIntent,
         appAgent: "app-owner",
       }),
-    ).toMatchObject({ kind: "completed", taskId: taskIntent.id, generation: claim.generation });
+    ).toThrow("cancelled task");
 
     const repaired = readTaskSnapshot(config);
-    expect(repaired.resources?.[taskIntent.id]).toBeUndefined();
+    expect(repaired).toEqual(beforeAdmission);
+    expect(repaired.resources?.[taskIntent.id]).toBeDefined();
+    expect(repaired.cancellations?.[taskIntent.id]?.kind).toBe("closed");
     expect(repaired.receipts?.[taskIntent.id]).toBeDefined();
   });
 
-  it("legacy receipt compatibility: does not orphan live children while pruning a stale receipt duplicate", () => {
+  it("offline receipt conversion preserves the parent and its still-open children", () => {
     const { config } = fixture();
     const taskIntent = intent();
     const claim = declareAndClaimTask(config, {
@@ -2772,6 +2778,7 @@ describe("App task reconciler state", () => {
         mode: taskIntent.mode,
         owner: "branch-owner",
         workflow: taskIntent.workflow,
+        input: taskIntent.input,
         outputs: [...(taskIntent.outputs ?? [])],
       },
       status: {
@@ -2811,24 +2818,22 @@ describe("App task reconciler state", () => {
       }),
     ).toBe(true);
 
-    expect(() =>
-      observeAppTaskIntent(config, {
-        intent: taskIntent,
-        appAgent: "app-owner",
-      }),
-    ).toThrow("cannot be pruned while it has live children: work/live-child");
+    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).closed).toBe(1);
 
     const preserved = readTaskSnapshot(config);
     expect(preserved.resources?.[taskIntent.id]).toBeDefined();
     expect(preserved.resources?.["work/live-child"]?.spec.parentId).toBe(taskIntent.id);
+    expect(config.resourceStore.isCancelled(taskIntent.id)).toBe(true);
+    expect(config.resourceStore.isCancelled("work/live-child")).toBe(false);
   });
 
-  it("allows cancellation of revised work while retaining the historical receipt", () => {
+  it("allows cancellation of revised work while retaining the earlier accepted outcome", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, { intent: intent(), appAgent: "app-owner", handler: "agent" });
     if (first.kind !== "claimed") throw new Error("expected claim");
     completeAppTask(config, first, { summary: "original work completed" });
-    const receipt = config.resourceStore.readReceipt(first.taskId);
+    const outcome = config.resourceStore.readAttempt(first.attemptId);
+    expect(outcome?.acceptedResult?.summary).toBe("original work completed");
     observeAppTaskIntent(config, {
       intent: { ...intent(), outcome: "Newly requested work" },
       appAgent: "app-owner",
@@ -2844,7 +2849,7 @@ describe("App task reconciler state", () => {
         reason: "No longer needed",
       }).applied,
     ).toBeTrue();
-    expect(config.resourceStore.readReceipt(first.taskId)).toEqual(receipt);
+    expect(config.resourceStore.readAttempt(first.attemptId)).toEqual(outcome);
     expect(config.resourceStore.readCancellation(first.taskId)?.generation).toBe(2);
     expect(listRunnableAppTaskIds(config)).not.toContain(first.taskId);
   });
@@ -3181,7 +3186,7 @@ describe("App task reconciler state", () => {
     );
   });
 
-  it("legacy receipt compatibility: consumes the exact completing child through its matching receipt without retrying the stale parent", () => {
+  it("offline receipt conversion fences every obsolete claim before recovery reads the retained Task", () => {
     const state = fixture();
     const { config } = state;
     const taskIntent = intent();
@@ -3251,92 +3256,70 @@ describe("App task reconciler state", () => {
     ).toBe(true);
     const resourceConfig = state.config;
 
+    expect(migrateTaskCompletionReceipts(resourceConfig, { oldRuntimeStopped: true }).closed).toBe(1);
+    const beforeRecovery = resourceConfig.resourceStore.readSnapshot();
     expect(recoverableAppTaskAttempts(resourceConfig, Date.now(), false, [taskIntent.id])).toEqual([]);
 
     const retired = resourceConfig.resourceStore.readSnapshot();
+    expect(retired).toEqual(beforeRecovery);
     expect(retired.receipts?.[taskIntent.id]).toEqual(receipt);
     expect(Object.keys(retired.attempts ?? {})).toEqual(expect.arrayContaining(attemptIdsBefore));
-    expect(Object.keys(retired.attempts ?? {})).toHaveLength(attemptIdsBefore.length);
+    expect(Object.keys(retired.attempts ?? {})).toHaveLength(attemptIdsBefore.length + 1);
     for (const [attemptId, sessionId] of [
       ["r_duplicate_current", "s_1786376881309_240"],
       ["r_duplicate_lineage", "s_1786376766268_235"],
     ]) {
       expect(retired.attempts?.[attemptId]).toMatchObject({
         state: "interrupted",
-        failureReason: "matching-completion-receipt",
+        failureReason: "completion-receipt-cutover",
         sessionId,
       });
     }
-    expect(retired.resources?.[taskIntent.id]).toBeUndefined();
+    expect(retired.resources?.[taskIntent.id]).toBeDefined();
+    expect(retired.cancellations?.[taskIntent.id]?.kind).toBe("closed");
   });
 
-  it("legacy receipt compatibility: keeps changed completion generations and specifications recoverable", () => {
-    for (const variant of ["generation", "specification"] as const) {
-      const state = fixture();
-      const { config } = state;
-      const taskIntent = intent();
-      const completedClaim = declareAndClaimTask(config, {
-        intent: taskIntent,
-        appAgent: "app-owner",
-        handler: "workflow:known-workflow",
-      });
-      if (completedClaim.kind !== "claimed") throw new Error("expected claim");
-      seedHistoricalCompletion(config, completedClaim, "session evaluated");
+  it("an archived success cannot satisfy a dependency on newer unfinished work", () => {
+    const { config } = fixture();
+    const assignment = intent();
+    const old = declareAndClaimTask(config, {
+      intent: assignment,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (old.kind !== "claimed") throw new Error("expected old claim");
+    const revised = config.resourceStore.readTask(old.taskId)!;
+    const receipt = seedHistoricalCompletion(config, old, "Original measurement accepted");
+    revised.metadata = { id: old.taskId, generation: 2, resourceVersion: 1 };
+    revised.spec.outcome = "Repeat the measurement for the changed sample";
+    revised.status = { phase: "pending", observedGeneration: 1, updatedAt: new Date().toISOString() };
+    expect(config.resourceStore.commit({
+      fences: [],
+      expectMissingTaskIds: [old.taskId],
+      tasks: [{ resource: revised, ready: true }],
+    })).toBe(true);
+    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true })).toMatchObject({ imported: 1, closed: 0 });
+    config.resourceStore.assertCompletionReceiptsImported();
+    const dependent = { ...assignment, id: "work/assess-new-sample", dependsOn: [old.taskId] };
+    observeAppTaskIntent(config, { intent: dependent, appAgent: "app-owner" });
+    expect(isAppTaskConverged(config, old.taskId)).toBe(false);
+    expect(listRunnableAppTaskIds(config)).not.toContain(dependent.id);
+    expect(claimObservedAppTask(config, {
+      taskId: dependent.id, appAgent: "app-owner", handler: "agent",
+    })).toMatchObject({ kind: "waiting", dependencyIds: [old.taskId] });
 
-      const tree = readTaskSnapshot(config);
-      const receipt = tree.receipts?.[taskIntent.id];
-      if (!receipt) throw new Error("expected completion receipt");
-      const generation = variant === "generation" ? receipt.metadata.generation + 1 : receipt.metadata.generation;
-      tree.resources = {
-        ...(tree.resources ?? {}),
-        [taskIntent.id]: {
-          metadata: { id: taskIntent.id, generation, resourceVersion: 1 },
-          spec: {
-            parentId: taskIntent.parentId,
-            outcome: variant === "specification" ? `${taskIntent.outcome} revised` : taskIntent.outcome,
-            acceptance: [...taskIntent.acceptance],
-            mode: "achieve",
-            owner: receipt.owner,
-            workflow: taskIntent.workflow,
-            outputs: [...(taskIntent.outputs ?? [])],
-          },
-          status: {
-            observedGeneration: generation,
-            phase: "running",
-            currentAttemptId: `r_changed_${variant}`,
-            updatedAt: "2026-07-20T00:00:00.000Z",
-            conditionIds: [],
-          },
-        },
-      };
-      tree.attempts = {
-        ...(tree.attempts ?? {}),
-        [`r_changed_${variant}`]: {
-          metadata: { id: `r_changed_${variant}`, resourceVersion: 1 },
-          taskId: taskIntent.id,
-          taskGeneration: generation,
-          specHash: variant,
-          owner: receipt.owner,
-          handler: receipt.handler,
-          runtimeId: "previous-runtime",
-          state: "running",
-          startedAt: "2026-07-20T00:00:00.000Z",
-        },
-      };
-      expect(
-        config.resourceStore.commit({
-          fences: [],
-          expectMissingTaskIds: [taskIntent.id],
-          tasks: [{ resource: tree.resources![taskIntent.id], ready: false }],
-          attempts: [tree.attempts![`r_changed_${variant}`]],
-        }),
-      ).toBe(true);
-      const resourceConfig = state.config;
-
-      expect(recoverableAppTaskAttempts(resourceConfig, Date.now(), false, [taskIntent.id])).toEqual([
-        expect.objectContaining({ taskId: taskIntent.id, intent: expect.objectContaining({ id: taskIntent.id }) }),
-      ]);
-    }
+    const current = claimObservedAppTask(config, {
+      taskId: old.taskId, appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (current.kind !== "claimed") throw new Error("expected revised claim");
+    expect(current.generation).toBe(2);
+    completeAppTask(config, current, { summary: "New measurement accepted", evidence: ["new-sample.json"] });
+    expect(isAppTaskConverged(config, old.taskId)).toBe(true);
+    expect(config.resourceStore.isCancelled(old.taskId)).toBe(false);
+    expect(claimObservedAppTask(config, {
+      taskId: dependent.id, appAgent: "app-owner", handler: "agent",
+    })).toMatchObject({ kind: "claimed", taskId: dependent.id });
+    expect(config.resourceStore.readReceipt(old.taskId)).toEqual(receipt);
   });
 
   it("recovers a receipted checkpoint from an interrupted session transcript when checkpoint JSONL is absent", () => {

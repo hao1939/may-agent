@@ -36,7 +36,13 @@ and paces unfinished work with the existing retry deadline. Historical worker
 self-stops become failure evidence on the same Task; human closure and Turn
 Stop remain effective. Missing original input or conflicting accepted-attempt
 identity aborts import rather than inventing an answer. Supervisor retirement
-and an operational upgrade runner still need their own cutover work.
+uses ordinary owner closure; an operational upgrade runner remains separate.
+
+App runtime preparation rejects unconverted completion receipts before admitting
+or executing work. Run the offline conversion first. Admission, claims, recovery
+and dependency readiness use retained Tasks; an archived receipt cannot delete
+a Task or satisfy a newer assignment. Read-only history views still support old
+receipts, and the original archive remains available to conversion and inspection.
 
 Colocated store tests cover claims, revisions, transactions and reopen behavior.
 `inbox.test.ts` covers cross-resource attachment; `conversation-requests.test.ts`

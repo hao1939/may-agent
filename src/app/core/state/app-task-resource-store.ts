@@ -545,6 +545,26 @@ export class AppTaskResourceStore {
     return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
   }
 
+  /** Activation precondition, not a migration or a per-claim repair loop. */
+  assertCompletionReceiptsImported(): void {
+    const missing = this.db.prepare(`
+      SELECT r.receipt_id FROM app_task_receipts r
+      WHERE r.app_id = ? AND NOT EXISTS (
+        SELECT 1 FROM app_task_attempts a
+        WHERE a.app_id = r.app_id AND a.task_id = r.receipt_id
+          AND a.task_generation = json_extract(r.receipt_json, '$.metadata.generation')
+          AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
+          AND json_extract(a.attempt_json, '$.specHash') = json_extract(r.receipt_json, '$.specHash')
+      ) LIMIT 1
+    `).get(this.appId) as { receipt_id: string } | null;
+    if (missing) {
+      throw new Error(
+        `App ${this.appId} has unconverted completion history for Task ${missing.receipt_id}; ` +
+        "stop the old Host and workers and run the offline Task state cutover before activation",
+      );
+    }
+  }
+
   readControlReceipt(controlKey: string): AppTaskControlReceipt | null {
     const row = this.db
       .prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = ? AND app_id = ?")

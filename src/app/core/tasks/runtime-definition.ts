@@ -102,6 +102,7 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
   }
+  descriptor.resourceStore.assertCompletionReceiptsImported();
 }
 
 function discoverAppTaskResourceStore(

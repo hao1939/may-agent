@@ -712,57 +712,6 @@ export function readAppTaskAdmissionOutcome(config: AppTaskContext, taskId: stri
   return { attemptId: attempt.metadata.id, generation: attempt.taskGeneration, ...attempt.acceptedResult };
 }
 
-function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, appAgent: string) {
-  const receipt = tree.receipts?.[resource.metadata.id];
-  if (
-    !receipt ||
-    receipt.metadata.id !== resource.metadata.id ||
-    receipt.metadata.generation !== resource.metadata.generation
-  ) {
-    return undefined;
-  }
-  // A maintain task normally stays live when up to date. A receipt means it
-  // was explicitly closed, so it is terminal just like achieved work.
-  const intent = resourceIntent(resource);
-  const agent = resolvedAgent(tree, intent, appAgent);
-  return receipt.specHash === appTaskSpecHash(intent, agent) ? receipt : undefined;
-}
-
-function retireCompletedTaskDuplicate(tree: TaskTree, resource: AppTaskResource, summary: string): string[] {
-  const taskId = resource.metadata.id;
-  const liveChildren = liveChildTaskIds(tree, taskId);
-  if (liveChildren.length > 0) {
-    throw new Error(
-      `Task ${taskId} has a matching completion receipt but its stale live duplicate cannot be pruned while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
-        liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
-      }`,
-    );
-  }
-
-  const now = new Date().toISOString();
-  const sessionIds = new Set<string>();
-  for (const attempt of Object.values(tree.attempts ?? {})) {
-    if (
-      attempt.taskId !== taskId ||
-      attempt.taskGeneration !== resource.metadata.generation ||
-      attempt.state !== "running"
-    ) {
-      continue;
-    }
-    if (attempt.sessionId) sessionIds.add(attempt.sessionId);
-    attempt.metadata.resourceVersion += 1;
-    attempt.state = "interrupted";
-    attempt.finishedAt = now;
-    attempt.summary = summary;
-    attempt.failureReason = "matching-completion-receipt";
-  }
-  resource.status.currentAttemptId = undefined;
-  unlinkTaskConditions(tree, taskId);
-  delete tree.resources?.[taskId];
-  delete tree.taskTriggers?.[taskId];
-  return [...sessionIds];
-}
-
 type AppTaskContextInput = {
   appDir: string;
   projectDir: string;
@@ -1002,20 +951,8 @@ export function recoverableAppTaskAttempts(
   const candidates = [...candidateTaskIds];
   if (candidates.length === 0) return [];
   const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
-  let changed = false;
-  const mutationScope = emptyResourceMutationScope(tree);
-  const recoveries = Object.values(tree.resources ?? {}).flatMap((resource) => {
+  return Object.values(tree.resources ?? {}).flatMap((resource) => {
     if (resource.status.phase !== "running") return [];
-    if (matchingCompletionReceipt(tree, resource, config.agent)) {
-      trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
-      retireCompletedTaskDuplicate(
-        tree,
-        resource,
-        "Matching completion receipt already exists; retiring stale recovery state",
-      );
-      changed = true;
-      return [];
-    }
     const attempt = currentResourceAttempt(tree, resource);
     if (!attempt || attempt.runtimeId === reconcilerRuntimeId || (!includeFreshLeases && leaseIsFresh(attempt, nowMs)))
       return [];
@@ -1037,12 +974,6 @@ export function recoverableAppTaskAttempts(
       },
     ];
   });
-  if (changed) {
-    commitTaskMutation(config, tree, {
-      resourceMutation: finishResourceMutationScope(mutationScope, tree),
-    });
-  }
-  return recoveries;
 }
 
 export function terminalAgentSessionAppTaskClaim(
@@ -1482,14 +1413,6 @@ export function observeAppTaskIntent(
         changed: false,
       };
     }
-    const completed = tree.receipts?.[previousAdmission.taskId];
-    if (completed) {
-      return {
-        kind: "completed",
-        taskId: completed.metadata.id,
-        generation: completed.metadata.generation,
-      };
-    }
     delete tree.appTaskAdmissions?.[admissionKey!];
   }
 
@@ -1506,7 +1429,6 @@ export function observeAppTaskIntent(
       },
     };
   };
-  const receipt = tree.receipts?.[input.intent.id];
   const existingResource = tree.resources?.[input.intent.id];
   const existingFence = existingResource
     ? {
@@ -1518,52 +1440,7 @@ export function observeAppTaskIntent(
     : undefined;
   const initialConditionIds = new Set(existingResource?.status.conditionIds ?? []);
   const existingAttempt = existingResource ? currentResourceAttempt(tree, existingResource) : null;
-  const receiptMatchesDesiredIdentity =
-    receipt?.metadata.id === input.intent.id &&
-    receipt.specHash === specHash &&
-    (!existingResource || receipt.metadata.generation === existingResource.metadata.generation);
-  if (receiptMatchesDesiredIdentity) {
-    const mutationScope = beginResourceMutationScopeForTasks(
-      tree,
-      existingResource ? [existingResource.metadata.id] : [],
-    );
-    if (!existingResource) mutationScope.createdTaskIds.add(input.intent.id);
-    recordAdmission(input.intent.id, receipt.metadata.generation);
-    if (existingResource) {
-      for (const sessionId of retireCompletedTaskDuplicate(
-        tree,
-        existingResource,
-        "Matching completion receipt already exists; pruning stale live duplicate",
-      )) {
-        supersededSessionIds.add(sessionId);
-      }
-    }
-    if (existingResource || admissionKey) {
-      const resourceMutation = finishResourceMutationScope(mutationScope, tree);
-      commitTaskMutation(config, tree, {
-        resourceMutation: {
-          ...resourceMutation,
-          ...(admissionKey && tree.appTaskAdmissions?.[admissionKey]
-            ? {
-                admissions: [{ taskId: admissionKey, value: tree.appTaskAdmissions[admissionKey] }],
-              }
-            : {}),
-        },
-      });
-    }
-    return {
-      kind: "completed",
-      taskId: input.intent.id,
-      generation: receipt.metadata.generation,
-      ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
-    };
-  }
-
-  const previousGeneration = existingResource
-    ? existingResource.metadata.generation
-    : receipt && Number.isInteger(receipt.metadata.generation)
-      ? receipt.metadata.generation
-      : 0;
+  const previousGeneration = existingResource?.metadata.generation ?? 0;
   const existingIntent = existingResource ? resourceIntent(existingResource) : null;
   const existingAgent = existingIntent ? resolvedAgent(tree, existingIntent, input.appAgent) : null;
   const sameSpec = existingIntent ? appTaskSpecHash(existingIntent, existingAgent ?? undefined) === specHash : false;
@@ -1702,8 +1579,7 @@ export function readAppTaskAgent(config: AppTaskContext, taskId: string): string
 
 /**
  * Return whether the requested task generation has produced a converged fact.
- * A live resource takes precedence over an older immutable receipt with the
- * same task id, so a newly revised generation cannot look complete by accident.
+ * Historical completion receipts never satisfy a revised assignment.
  */
 export function isAppTaskConverged(config: AppTaskContext, taskId: string, generation?: number): boolean {
   const resource = config.resourceStore.readTask(taskId);
@@ -1714,8 +1590,7 @@ export function isAppTaskConverged(config: AppTaskContext, taskId: string, gener
       resource.status.observedGeneration === resource.metadata.generation
     );
   }
-  const receipt = config.resourceStore.readReceipt(taskId);
-  return Boolean(receipt && (generation === undefined || receipt.metadata.generation === generation));
+  return false;
 }
 
 export type AppTaskChildContext = {
@@ -2073,7 +1948,6 @@ export function recordAppTaskTrigger(
 
 function dependenciesSatisfied(tree: TaskTree, intent: AppTaskIntent): boolean {
   return [...(intent.dependsOn ?? [])].every((id) => {
-    if (tree.receipts?.[id]) return true;
     const dependency = tree.resources?.[id];
     return Boolean(
       dependency?.status.phase === "converged" &&
@@ -2447,10 +2321,6 @@ function closeTask(
       `Task ${input.appId}/${input.taskId} resource version changed: expected ${input.expectedResourceVersion}, current ${resource.metadata.resourceVersion}`,
     );
   }
-  if (tree.receipts?.[input.taskId]?.metadata.generation === resource.metadata.generation) {
-    throw new Error(`Task ${input.appId}/${input.taskId} is already terminal`);
-  }
-
   if (input.afterResult) {
     const accepted = config.resourceStore.readAttempt(input.afterResult);
     if (
@@ -2648,14 +2518,14 @@ export function claimObservedAppTask(
     return {
       kind: "completed",
       taskId: input.taskId,
-      generation: resource?.metadata.generation ?? tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
+      generation: resource?.metadata.generation ?? 0,
     };
   }
   if (!resource) {
     return {
       kind: "completed",
       taskId: input.taskId,
-      generation: tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
+      generation: 0,
     };
   }
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
@@ -2675,22 +2545,6 @@ export function claimObservedAppTask(
   const mutationScope = beginResourceMutationScopeForTasks(tree, [resource.metadata.id]);
   const initialConditionIds = new Set(resource.status.conditionIds ?? []);
   const changedAttempts = new Set<AppTaskAttempt>();
-  const completedReceipt = matchingCompletionReceipt(tree, resource, input.appAgent);
-  if (completedReceipt) {
-    retireCompletedTaskDuplicate(
-      tree,
-      resource,
-      "Matching completion receipt already exists; retiring stale claim state",
-    );
-    commitTaskMutation(config, tree, {
-      resourceMutation: finishResourceMutationScope(mutationScope, tree),
-    });
-    return {
-      kind: "completed",
-      taskId: input.taskId,
-      generation: completedReceipt.metadata.generation,
-    };
-  }
   const intent = resourceIntent(resource);
   const agent = resolvedAgent(tree, intent, input.appAgent);
   let declaredOutputPaths: string[] = [];
@@ -2845,7 +2699,6 @@ export function claimObservedAppTask(
     };
   }
   const dependencyIds = [...(intent.dependsOn ?? [])].filter((id) => {
-    if (tree.receipts?.[id]) return false;
     const dependency = tree.resources?.[id];
     return !(
       dependency?.status.phase === "converged" &&
@@ -3365,13 +3218,6 @@ function mutableActionResource(
   return resource;
 }
 
-function actionTargetAlreadyReceipted(
-  tree: TaskTree,
-  action: Exclude<AppTaskAction, { kind: "create-task" }>,
-): boolean {
-  return Boolean(!tree.resources?.[action.taskId] && tree.receipts?.[action.taskId]);
-}
-
 function validateTaskActions(
   tree: TaskTree,
   actions: AppTaskAction[],
@@ -3421,9 +3267,6 @@ function validateTaskActions(
           !action.dependsOn.every((entry) => typeof entry === "string" && entry.trim()))
       ) {
         throw new Error(`Handler create action ${action.id} dependsOn must contain non-empty strings`);
-      }
-      if (tree.receipts?.[action.id]) {
-        throw new Error(`Handler action task already exists or completed: ${action.id}`);
       }
       if (tree.resources?.[action.id] || tree.groups?.[action.id]) {
         if (createActionMatchesLiveTask(tree, action)) continue;
@@ -3497,11 +3340,6 @@ function validateTaskActions(
     }
     if (action.kind === "unblock-task") {
       requireNonEmptyString(action.reason, `Handler unblock for ${action.taskId} reason`);
-    }
-    if (actionTargetAlreadyReceipted(validationTree, action)) {
-      throw new Error(
-        `Handler ${action.kind} action cannot mutate completed task ${action.taskId}; create a new linked task`,
-      );
     }
     const resource = mutableActionResource(validationTree, action);
     if (
@@ -3799,7 +3637,6 @@ type ResourceMutationScope = {
   conditionIds: Set<string>;
   originalConditionVersions: Map<string, number>;
   originalAttemptVersions: Map<string, number>;
-  originalReceiptGenerations: Map<string, number>;
   fences: Array<{
     taskId: string;
     resourceVersion: number;
@@ -3821,9 +3658,6 @@ function emptyResourceMutationScope(tree: TaskTree): ResourceMutationScope {
     ),
     originalAttemptVersions: new Map(
       Object.values(tree.attempts ?? {}).map((attempt) => [attempt.metadata.id, attempt.metadata.resourceVersion]),
-    ),
-    originalReceiptGenerations: new Map(
-      Object.values(tree.receipts ?? {}).map((receipt) => [receipt.metadata.id, receipt.metadata.generation]),
     ),
     fences: [],
   };
@@ -3847,7 +3681,7 @@ function beginResourceMutationScope(
   fence(tree.resources?.[claim.taskId]?.spec.parentId);
   for (const action of actions) {
     if (action.kind === "create-task") {
-      if (!tree.resources?.[action.id] && !tree.receipts?.[action.id]) scope.createdTaskIds.add(action.id);
+      if (!tree.resources?.[action.id]) scope.createdTaskIds.add(action.id);
       track(action.id);
       fence(action.parentId);
     } else {
@@ -3888,15 +3722,10 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
     const resource = tree.resources?.[taskId];
     return resource ? [resourceWrite(tree, resource, isRunnableOnPassiveResync(tree, resource))] : [];
   });
-  const receipts = [...scope.writeTaskIds].flatMap((taskId) => {
-    const receipt = tree.receipts?.[taskId];
-    return receipt && scope.originalReceiptGenerations.get(taskId) !== receipt.metadata.generation ? [receipt] : [];
-  });
   return {
     fences: scope.fences,
     expectMissingTaskIds: [...scope.createdTaskIds].filter((taskId) => !scope.fencedTaskIds.has(taskId)),
     tasks,
-    deleteTaskIds: [...scope.fencedTaskIds].filter((taskId) => !tree.resources?.[taskId]),
     attempts: Object.values(tree.attempts ?? {}).filter(
       (attempt) =>
         scope.writeTaskIds.has(attempt.taskId) &&
@@ -3910,7 +3739,6 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
         : [];
     }),
     deleteConditionIds: [...scope.conditionIds].filter((id) => !tree.conditions?.[id]),
-    receipts,
   };
 }
 

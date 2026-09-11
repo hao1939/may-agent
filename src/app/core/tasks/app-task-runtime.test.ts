@@ -89,6 +89,7 @@ import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskTestContext as createTaskContext } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { HumanTaskService } from "../../human-task-service.js";
@@ -2472,6 +2473,7 @@ describe("canonical App task runtime", () => {
     });
     const config = activateTaskResources(sourceConfig, join(f.root, "state"));
 
+    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
     let readinessTurnObserved = false;
     let ownerObservedReadinessTurn: boolean | undefined;
     let ownerCalls = 0;

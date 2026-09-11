@@ -20,8 +20,8 @@ export function readRuntimeTaskView(
 ): TaskDetail | null {
   const store = opts.taskStateConfig?.resourceStore;
   if (!store) return null;
-  // Match reconciliation authority: a live generation supersedes historical
-  // receipts. Completed duplicate resources are retired by admission/claim.
+  // Retained Task state owns current decisions. The fallback below only
+  // exposes pre-cutover history when no retained resource exists.
   const current = store.readTaskForView(taskId);
   if (current) {
     return resourceTaskDetail(
