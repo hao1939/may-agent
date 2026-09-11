@@ -223,16 +223,34 @@ export function readActiveAppTurn(
   db: SqliteDb,
   appId: string,
   conversationId: string,
-): { id: string; revision: number } | undefined {
+):
+  | {
+      id: string;
+      revision: number;
+      channel?: string;
+      channelTargetId?: string;
+      channelThreadId?: string;
+      channelMessageId?: number;
+    }
+  | undefined {
   const row = db
     .prepare(
-      `SELECT id, lease_generation FROM app_inbox_items
+      `SELECT id, lease_generation, channel, channel_target_id, channel_thread_id, channel_message_id FROM app_inbox_items
     WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
       AND status = 'handling' AND lease_owner IS NOT NULL
     ORDER BY conversation_seq, created_at LIMIT 1`,
     )
     .get(appId, conversationId);
-  return row ? { id: String(row.id), revision: Number(row.lease_generation) } : undefined;
+  return row
+    ? {
+        id: String(row.id),
+        revision: Number(row.lease_generation),
+        ...(row.channel ? { channel: String(row.channel) } : {}),
+        ...(row.channel_target_id ? { channelTargetId: String(row.channel_target_id) } : {}),
+        ...(row.channel_thread_id ? { channelThreadId: String(row.channel_thread_id) } : {}),
+        ...(row.channel_message_id ? { channelMessageId: Number(row.channel_message_id) } : {}),
+      }
+    : undefined;
 }
 
 /** Called inside the Host's stop transaction; terminal input cannot restart. */

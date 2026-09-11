@@ -8,7 +8,8 @@ import { EventBus } from "../core/events/bus.js";
 import { attachTelegramBot } from "./telegram.js";
 
 async function until(predicate: () => boolean) {
-  const end = Date.now() + 3000;
+  // A failed durable publication uses the adapter's real 5-second poll backoff.
+  const end = Date.now() + 8000;
   while (!predicate()) {
     if (Date.now() > end) throw new Error("Telegram control did not progress");
     await Bun.sleep(5);
@@ -74,7 +75,7 @@ test("closing the bot aborts its active network poll", async () => {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
   }
-});
+}, 15000);
 
 test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls and survive rejected publication", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-telegram-stop-"));
@@ -195,4 +196,4 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
   }
-});
+}, 15000);

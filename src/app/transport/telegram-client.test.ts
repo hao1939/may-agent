@@ -100,7 +100,7 @@ describe("telegram client", () => {
       await expect(pending).resolves.toBeUndefined();
       expect(fixture.calls()).toBe(2);
       const { getNotificationMessage } = await import("../../lib/db/notifications.js");
-      expect(getNotificationMessage(fixture.persistDir, 888)?.event_type).toBe("telegram.reply");
+      expect(getNotificationMessage(fixture.persistDir, "chat-1", 888)?.event_type).toBe("telegram.reply");
     } finally {
       secondResponse.resolve(Response.json({ ok: true, result: {} }));
       fixture.close();
@@ -228,7 +228,7 @@ describe("telegram client", () => {
       });
 
       const { getNotificationMessage } = await import("../../lib/db/notifications.js");
-      const row = getNotificationMessage(persistDir, 654);
+      const row = getNotificationMessage(persistDir, "chat-1", 654);
       expect(row).toMatchObject({
         event_type: "message.created",
         agent: "aks-explorer",
@@ -279,10 +279,10 @@ describe("telegram client", () => {
       });
 
       const { getNotificationMessage } = await import("../../lib/db/notifications.js");
-      expect(JSON.parse(String(getNotificationMessage(persistDir, 700)?.data))).toMatchObject({
+      expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 700)?.data))).toMatchObject({
         conversationId: "approval:chunked",
       });
-      expect(JSON.parse(String(getNotificationMessage(persistDir, 701)?.data))).toMatchObject({
+      expect(JSON.parse(String(getNotificationMessage(persistDir, "chat-1", 701)?.data))).toMatchObject({
         conversationId: "approval:chunked",
       });
     } finally {

@@ -3,8 +3,18 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/requests.js";
-import { createAppInboxItem } from "../core/state/app-inbox-store.js";
-import { createConversationTopic } from "../core/state/conversations.js";
+import { DbWriter } from "../../lib/db-writer.js";
+import { storeNotificationMessage } from "../../lib/db/notifications.js";
+import { createEventInterface } from "../core/events/interface.js";
+import type { EventInput } from "@may-agent/control/events";
+import type { HumanTaskView } from "../human-task-service.js";
+import {
+  createAppInboxItem,
+  claimNextAppInboxItem,
+  stopAppInboxTurn,
+  getAppInboxItem,
+} from "../core/state/app-inbox-store.js";
+import { createConversationTopic, readAppConversationResource } from "../core/state/conversations.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import {
   attachTelegramBot as attachTelegramBotRuntime,
@@ -53,6 +63,308 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<voi
     await Bun.sleep(10);
   }
 }
+
+/** Fake Telegram transport with the real journal and public event boundary. */
+function durableTelegramFixture() {
+  const root = mkdtempSync(join(tmpdir(), "telegram-durable-input-"));
+  const priorFetch = globalThis.fetch;
+  const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+  const priorChat = process.env.TELEGRAM_CHAT_ID;
+  const bus = new EventBus();
+  const published: EventInput[] = [];
+  const taskReads: string[] = [];
+  const calls: Array<{ method: string; body: any; messageId: number }> = [];
+  const updates: any[] = [];
+  const tasks = new Map<string, HumanTaskView>(["first", "second"].map((id) => [id, {
+    appId: "may", taskId: id, ref: id, outcome: `Review ${id}`, status: "running",
+    generation: 1, resourceVersion: 1, summary: `Inspecting ${id}`, updatedAt: 1, terminal: false, cancellable: true,
+  }]));
+  let releasePoll: (() => void) | undefined;
+  let rejectInput = false;
+  let rejectedRecordings = 0;
+  let afterRecord: ((input: EventInput) => void) | undefined;
+  let holdSend: ((body: any) => Promise<void>) | undefined;
+  globalThis.fetch = (async (url, init) => {
+    const method = String(url).split("/").at(-1)!;
+    const body = JSON.parse(String(init?.body ?? "{}"));
+    const call = { method, body, messageId: 900 + calls.length };
+    calls.push(call);
+    if (method === "getMe") return Response.json({ ok: true, result: { username: "fixture" } });
+    if (method === "getUpdates") {
+      while (updates.length && updates[0].update_id < body.offset) updates.shift();
+      if (!updates.length) await new Promise<void>((resolve) => {
+        releasePoll = resolve;
+        init?.signal?.addEventListener("abort", resolve, { once: true });
+      });
+      releasePoll = undefined;
+      return Response.json({ ok: true, result: [...updates] });
+    }
+    if (method === "sendMessage") await holdSend?.(body);
+    return Response.json({ ok: true, result: { message_id: call.messageId } });
+  }) as typeof fetch;
+  process.env.TELEGRAM_BOT_TOKEN = "fixture-token";
+  process.env.TELEGRAM_CHAT_ID = "123,456";
+  let publish: (input: EventInput) => ReturnType<ReturnType<typeof createEventInterface>["publish"]>;
+  const start = () => {
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const events = createEventInterface({ bus, db: getDb(root), acceptsAppInput: () => true,
+      hasApp: () => true, hasAgent: () => true, hasSession: () => false });
+    publish = (input) => events.publish(input, { source: "telegram" });
+    return attachTelegramBotRuntime({
+      persistDir: root, bus, interfaceAgent: "may",
+      humanTasks: {
+        listApps: (id) => [{ id: id ?? "may", activeTasks: 2, attentionTasks: 0, runningTasks: 2, waitingTasks: 0 }],
+        listTasks: () => ({ items: [], total: 0 }),
+        getTask: ({ taskId, ref }) => {
+          const id = taskId ?? ref ?? "";
+          taskReads.push(id);
+          return tasks.get(id) ?? null;
+        },
+      },
+      publishEvent(input) {
+        if (rejectInput && input.data.author?.kind === "human") {
+          rejectedRecordings++;
+          throw new Error("fixture input storage unavailable");
+        }
+        const receipt = publish(input);
+        published.push(input);
+        afterRecord?.(input);
+        return receipt;
+      },
+    });
+  };
+  let bot = start();
+  return {
+    root, bus, published, calls, tasks, taskReads,
+    get db() { return getDb(root); },
+    reject(value: boolean) { rejectInput = value; },
+    rejections: () => rejectedRecordings,
+    afterRecord(fn: (input: EventInput) => void) { afterRecord = fn; },
+    hold(fn: (body: any) => Promise<void>) { holdSend = fn; },
+    send(batch: any[]) { updates.push(...batch); releasePoll?.(); },
+    polls: () => calls.filter((c) => c.method === "getUpdates").map((c) => c.body.offset),
+    sends: () => calls.filter((c) => c.method === "sendMessage"),
+    inputs: () => published.filter((e) => e.data.author?.kind === "human"),
+    message(id: number, text: string, extra: Record<string, unknown> = {}) {
+      this.send([{ update_id: id, message: { message_id: id, chat: { id: 123 }, text, ...extra } }]);
+    },
+    activity(input: EventInput) {
+      publish(input);
+      bus.emit({ type: "conversation.updated", source: "fixture", owner: "app:may", data: { appId: "may", conversationId: "may:primary" } });
+    },
+    async restart() {
+      bot.close();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      closeDb(root);
+      bot = start();
+    },
+    async close() {
+      bot.close();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    },
+  };
+}
+
+describe("Telegram durable input and natural follow-up", () => {
+  it("keeps the failed update and its suffix unacknowledged, then records each input once", async () => {
+    const f = durableTelegramFixture();
+    try {
+      f.reject(true);
+      f.message(100, "Review first");
+      f.message(101, "Review second", { chat: { id: 456 } });
+      // Observe the actual publication failure, not a timed guess about handling.
+      await waitFor(() => f.rejections() === 1);
+      expect(f.polls()).toEqual([0]);
+      expect(f.inputs()).toHaveLength(0);
+      f.reject(false);
+      await waitFor(() => f.polls().includes(102), 8_000);
+      expect(f.inputs().map((input) => input.data.text)).toEqual(["Review first", "Review second"]);
+      expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'conversation.message.created'").get()).toEqual({ count: 2 });
+    } finally { await f.close(); }
+  }, 10_000);
+
+  it("uses recorded input after a lost receipt and restart instead of rebuilding it from new focus", async () => {
+    const f = durableTelegramFixture();
+    let lostReceipt = false;
+    try {
+      f.afterRecord((input) => {
+        if (input.data.author?.kind === "human" && !lostReceipt) { lostReceipt = true; throw new Error("fixture receipt lost after persistence"); }
+      });
+      f.message(100, "Review this");
+      await waitFor(() => lostReceipt);
+      f.tasks.delete("first");
+      await f.restart();
+      await waitFor(() => f.polls().includes(101));
+      expect(f.inputs()).toHaveLength(1);
+      expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE idempotency_key = 'telegram:123:100'").get()).toEqual({ count: 1 });
+      // No route is installed: the durable event remains available to Host recovery.
+      expect(f.db.prepare("SELECT delivery_status FROM events WHERE idempotency_key = 'telegram:123:100'").get()).not.toEqual({ delivery_status: "accepted" });
+    } finally { await f.close(); }
+  });
+
+  it("admits following text and another chat while a command send is stalled", async () => {
+    const f = durableTelegramFixture();
+    const blocked = Promise.withResolvers<void>();
+    try {
+      f.hold((body) => body.text.includes("Selected App") ? blocked.promise : Promise.resolve());
+      f.send([
+        { update_id: 100, message: { message_id: 100, chat: { id: 123 }, text: "/apps sample" } },
+        { update_id: 101, message: { message_id: 101, chat: { id: 123 }, text: "Review this" } },
+        { update_id: 102, message: { message_id: 102, chat: { id: 456 }, text: "Hello" } },
+      ]);
+      await waitFor(() => f.polls().includes(103));
+      expect(f.inputs()).toHaveLength(2);
+      expect(f.inputs()[0].data.context).toMatchObject({ focusedApp: "sample" });
+      expect(f.inputs()[1].data.metadata).toMatchObject({ channelTargetId: "456" });
+    } finally { blocked.resolve(); await f.close(); }
+  });
+
+  it("scopes reply links and command views by chat, and explicit replies override a different watch after reopen", async () => {
+    const f = durableTelegramFixture();
+    try {
+      for (const chatId of ["123", "456"]) storeNotificationMessage(f.root, {
+        chat_id: chatId, telegram_msg_id: 55, event_type: "conversation.mirror", agent: "may",
+        session_id: null, project_id: null,
+        data: JSON.stringify({ conversationMessageId: `answer-${chatId}`, topicId: `topic-${chatId}`,
+          taskRefs: [{ appId: "may", taskId: "first" }] }),
+      });
+      await f.restart();
+      f.message(100, "/watch second", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch second"));
+      f.message(101, "Yes, do that", { reply_to_message: { message_id: 55, text: "Proposal A" }, message_thread_id: 7 });
+      await waitFor(() => f.inputs().length === 1);
+      expect(f.inputs()[0].data).toMatchObject({ replyTo: "answer-123", metadata: { topicId: "topic-123", channelThreadId: "7" },
+        context: { focusedTask: { appId: "may", taskId: "first" } } });
+      f.message(102, "/tasks");
+      f.message(103, "/tasks", { chat: { id: 456 } });
+      await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/tasks").length === 2);
+      const views = readAppConversationResource(f.db, "may", "may:primary").messages.filter((m) => m.metadata?.command === "/tasks");
+      expect(views.map((m) => m.metadata?.channelTargetId).sort()).toEqual(["123", "456"]);
+    } finally { await f.close(); }
+  });
+
+  it("retains one cancellation after a lost receipt even when the Task revision changes", async () => {
+    const f = durableTelegramFixture();
+    let recorded = false;
+    try {
+      f.afterRecord((input) => {
+        if (input.type === "app.task.cancel.requested") {
+          recorded = true;
+          f.tasks.set("first", { ...f.tasks.get("first")!, resourceVersion: 2 });
+          throw new Error("fixture cancellation receipt lost");
+        }
+      });
+      f.message(100, "/cancel first");
+      await waitFor(() => recorded);
+      await f.restart();
+      await waitFor(() => f.polls().includes(101));
+      expect(f.published.filter((input) => input.type === "app.task.cancel.requested")).toHaveLength(1);
+      expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE idempotency_key = 'telegram:123:100:cancel'").get()).toEqual({ count: 1 });
+    } finally { await f.close(); }
+  });
+
+  it("targets the active message, labels queued input honestly, and admits Stop during a stalled command send", async () => {
+    const f = durableTelegramFixture();
+    const blocked = Promise.withResolvers<void>();
+    try {
+      createAppInboxItem(f.db, { id: "active", appId: "may", conversationId: "may:primary", conversationSequence: 1,
+        channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 42,
+        source: { kind: "human", id: "telegram:123:42" }, input: { kind: "message", data: { message: "Review changes" } } });
+      claimNextAppInboxItem(f.db, "may", "fixture", 60_000);
+      f.hold((body) => body.text.startsWith("Task first") ? blocked.promise : Promise.resolve());
+      f.message(100, "/task first", { message_thread_id: 7 });
+      await waitFor(() => f.sends().some((c) => c.body.text === "May is working on this message."));
+      const controls = f.sends().filter((c) => c.body.text.startsWith("May is working"));
+      expect(controls).toHaveLength(1);
+      const control = controls[0];
+      expect(control.body).toMatchObject({ chat_id: "123", message_thread_id: 7, reply_parameters: { message_id: 42 } });
+      f.message(101, "Only review networking", { message_thread_id: 7 });
+      await waitFor(() => f.inputs().length === 1);
+      await waitFor(() => f.sends().some((c) => c.body.text.includes("hasn't changed running work")));
+      f.afterRecord((input) => {
+        if (input.type === "conversation.turn.stop.requested") {
+          stopAppInboxTurn(f.db, { appId: "may", ...input.data } as Parameters<typeof stopAppInboxTurn>[1]);
+        }
+      });
+      f.send([{ update_id: 102, callback_query: { id: "stop", data: control.body.reply_markup.inline_keyboard[0][0].callback_data,
+        message: { message_id: control.messageId, chat: { id: 123 }, message_thread_id: 7 } } }]);
+      await waitFor(() => getAppInboxItem(f.db, "active")?.status === "done");
+      expect(f.tasks.get("first")?.status).toBe("running");
+      expect(f.polls()).toContain(103);
+    } finally { blocked.resolve(); await f.close(); }
+  });
+
+  it("shows Telegram-origin admission once and offers exact, restart-safe task navigation", async () => {
+    const f = durableTelegramFixture();
+    try {
+      await waitFor(() => f.polls().length === 1);
+      f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
+        conversationId: "may:primary", author: { kind: "tool", id: "runtime" }, text: "Accepted durable work: Review first",
+        metadata: { command: "task-admitted", channel: "telegram", channelTargetId: "123", channelThreadId: "7",
+          taskRefs: [{ appId: "may", taskId: "first" }], followTask: { appId: "may", taskId: "first" } },
+      } });
+      await waitFor(() => f.sends().some((c) => c.body.text.startsWith("Background work accepted")));
+      const notice = f.sends().find((c) => c.body.text.startsWith("Background work accepted"))!;
+      await waitFor(() => Boolean(f.db.prepare("SELECT 1 FROM notification_messages WHERE chat_id = '123' AND telegram_msg_id = ?").get(notice.messageId)));
+      expect(notice.body).toMatchObject({ chat_id: "123", message_thread_id: 7,
+        reply_markup: { inline_keyboard: [[{ text: "Details", callback_data: "task:details" }, { text: "Follow updates", callback_data: "task:follow" }]] } });
+      await f.restart();
+      const callback = { id: "follow", data: "task:follow", message: { message_id: notice.messageId, chat: { id: 123 }, message_thread_id: 7 } };
+      f.send([{ update_id: 100, callback_query: { ...callback, message: { ...callback.message, chat: { id: 999 } } } }]);
+      await waitFor(() => f.calls.some((c) => c.method === "answerCallbackQuery" && c.body.text === "Unauthorized."));
+      f.send([{ update_id: 101, callback_query: callback }]);
+      await waitFor(() => f.sends().some((c) => c.body.text.includes("Following updates")));
+      f.message(102, "What's the status?", { message_thread_id: 7 });
+      await waitFor(() => f.inputs().length === 1);
+      expect(f.inputs()[0].data.context).toMatchObject({ focusedTask: { appId: "may", taskId: "first" } });
+      expect(f.sends().filter((c) => c.body.text.startsWith("Background work accepted"))).toHaveLength(1);
+      expect(f.tasks.get("second")?.status).toBe("running");
+    } finally { await f.close(); }
+  });
+
+  it("explains unsupported media and offers conversation-first help without creating work", async () => {
+    const f = durableTelegramFixture();
+    try {
+      f.message(100, "", { photo: [{ file_id: "fixture" }], caption: "What is this error?" });
+      f.message(101, "/help");
+      await waitFor(() => f.sends().length === 2);
+      expect(f.inputs()).toHaveLength(0);
+      expect(f.sends()[0].body.text).toContain("can't read this attachment");
+      expect(f.sends()[1].body.text).toContain("Reply to an update to follow up");
+      expect(f.polls()).toContain(102);
+    } finally { await f.close(); }
+  });
+
+  it("shows the exact canonical result without a duplicate terminal card and ends that watch", async () => {
+    const f = durableTelegramFixture();
+    try {
+      f.message(100, "/watch first");
+      await waitFor(() => f.published.some((input) => input.data.metadata?.command === "/watch first"));
+      f.tasks.set("first", { ...f.tasks.get("first")!, status: "done", terminal: true,
+        resourceVersion: 2, response: "Review complete: no blocking issues." });
+      f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
+        conversationId: "may:primary", author: { kind: "agent", id: "may" }, text: "Review complete: no blocking issues.",
+        metadata: { channel: "telegram", channelTargetId: "123", taskRefs: [{ appId: "may", taskId: "first" }] },
+      } });
+      f.bus.emit({ type: "project.task.reconciled", source: "fixture", owner: "app:may", data: { appId: "may", taskId: "first" } });
+      await waitFor(() => f.sends().some((call) => call.body.text.includes("Review complete")));
+      await waitFor(() => f.taskReads.filter((id) => id === "first").length >= 2);
+      f.message(101, "/watch");
+      await waitFor(() => f.sends().some((call) => call.body.text === "No Task is watched. Use /watch <ref>."));
+      expect(f.sends().filter((call) => call.body.text.includes("Review complete"))).toHaveLength(1);
+      expect(f.tasks.get("second")?.status).toBe("running");
+    } finally { await f.close(); }
+  });
+});
 
 describe("Telegram May input", () => {
   it("maps one Telegram turn to one durable May request with exact reply identity", () => {
@@ -728,7 +1040,7 @@ describe("Telegram May input", () => {
       );
       expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 active"));
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
-      expect(sent).toContainEqual(expect.stringContaining("Watching 8f12ac90"));
+      expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply here"));
 
       const unchangedCards = sent.filter((text) => text.startsWith("Task 8f12ac90")).length;
       bus.emit({
@@ -764,7 +1076,7 @@ describe("Telegram May input", () => {
         owner: "app:evaluation",
         data: { appId: "evaluation", taskId: "review/docs" },
       } as any);
-      await waitFor(() => sent.some((text) => text.includes("Current\nThe review is complete.")));
+      await waitFor(() => sent.some((text) => text.includes("done\n\nThe review is complete.")));
 
       releaseFollowup();
       await waitFor(() => sent.some((text) => text.includes("No Task is watched")));
@@ -780,7 +1092,7 @@ describe("Telegram May input", () => {
           expectedGeneration: 1,
           expectedResourceVersion: 3,
           reason: "human requested cancellation from Telegram",
-          idempotencyKey: "app-task-cancel:evaluation:review/docs:1:3",
+          idempotencyKey: expect.stringMatching(/^telegram:123:\d+:cancel$/),
         },
       });
       expect(sent).toContain("No Task is watched.");
@@ -968,7 +1280,7 @@ describe("Telegram May input", () => {
 
       await waitFor(() => sent.length === 2);
       expect(sent[0]).toBe("Console · You\nMessage sent from Console");
-      expect(sent[1]).toStartWith("Task activity\nAccepted durable work: Review the docs");
+      expect(sent[1]).toBe("Background work accepted\nReview the docs");
     } finally {
       bot.close();
       closeDb(root);
