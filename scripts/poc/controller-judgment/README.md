@@ -54,11 +54,41 @@ wait transitions are not exercised. `give-up` records an accepted non-success
 outcome without closing the Task or retrying it automatically. Delegation admits a real child
 but does not run that child or route its result in this harness. Likewise,
 discussion cases test the agent's choice, not concurrent inbox availability.
-Every case stops after one decision. Controller callbacks have no automatic
+Each `run.ts` case stops after one decision. Controller callbacks have no automatic
 retry here, so invalid output is visible. The underlying agent executor retains
 its normal bounded finish/provider handling; inspect all calls in the transcript.
 Private artifacts and temporary SQLite remain outside the checkout for review;
 do not publish raw transcripts or endpoint errors.
+
+## Follow-through across attempts
+
+The separate `follow-through.ts` trial uses three fresh model executions under
+one production Task controller: request independent measurement, explain a
+threshold while measurement waits, then assess the returned value. Between the
+explanation and result, it closes/reopens SQLite and replaces the controller.
+Code creates the child identity, runs a deterministic measurement fixture,
+routes the accepted result and supplies the original ask through `continuedInputs`.
+The model does not copy admission keys, poll, subscribe or redeclare a wait.
+
+```sh
+bun scripts/poc/controller-judgment/follow-through.ts --live --model MODEL --out /tmp/follow-through-development --value 0.92
+bun scripts/poc/controller-judgment/follow-through.ts --live --model MODEL --out /tmp/follow-through-transfer --value 0.78
+```
+
+Run the second case without changing the contract or instructions. Both use a
+0.90 minimum, so the assessment must differ. The gate checks an exact original
+caller answer, an unchanged intervening answer, three model decisions and no
+ready recovery work. An explanation must use a null assessment; delegation and
+give-up cannot include an assessment. A loose optional-field schema previously
+allowed unsupported placeholder scores despite correct prose, so the fixture
+now validates distinct decision shapes and tests intermediate outcomes too.
+
+This is an experimental App judgment schema mapped to real Task state
+operations. It is not the installed App or the full managed Task adapter. The
+measurement executor is deterministic fixture code, not another model. There
+are no real Conversation, Topic or Request records in this trial, and no
+transport delivery or inbox cutover. Passing it proves the exercised Task
+follow-through and model judgment, not the complete unified lifecycle.
 
 The first trial required exact evidence IDs in model output. Models sometimes
 returned useful citations with extra text, failing that bookkeeping rule. The
