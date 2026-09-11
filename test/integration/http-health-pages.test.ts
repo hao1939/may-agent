@@ -452,11 +452,13 @@ describe("served workflow and metric health pages", () => {
         const alert = db.prepare("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES ('workflow.error-count-24h', 'synthetic browser alert boundary', ?)");
         for (let i = 0; i < 21; i++) {
           alert.run(now + i);
-          if (i < 19) continue;
+          if (![3, 4, 19, 20].includes(i)) continue;
           await page.reload({ waitUntil: "domcontentloaded" });
           await page.waitForSelector("#liveness-panel .breach-badge");
           expect(await page.$eval("#liveness-panel .breach-badge", (el) => el.textContent))
-            .toBe(i === 19 ? "20 open alerts" : "More than 20 open alerts (newest 20 shown)");
+            .toBe(i === 20 ? "More than 20 open alerts · showing newest 4"
+              : `${i + 1} open alerts${i > 3 ? " · showing newest 4" : ""}`);
+          expect(await page.$$("#liveness-panel .liveness-alert")).toHaveLength(4);
         }
         await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
         await page.waitForFunction(() =>
@@ -476,6 +478,23 @@ describe("served workflow and metric health pages", () => {
         expect(actualWindow.get("start")).toBe(expectedWindow.get("start"));
         expect(actualWindow.get("end")).toBe(expectedWindow.get("end"));
         expect(await page.$eval("#metrics-workflows", (el) => el.textContent)).toContain("60.0% successful execution");
+        stateTransaction(db, () => {
+          for (let i = 21; i < 500; i++) alert.run(now + i);
+        });
+        for (const count of [500, 501]) {
+          if (count === 501) alert.run(now + 500);
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#metrics-alerts p");
+          expect(await page.$eval("#metrics-alerts p", (el) => el.textContent))
+            .toStartWith(count === 500 ? "500 open alerts;" : "More than 500 open alerts;");
+          expect(await page.$$eval("#metrics-alerts .health-warning", (rows) =>
+            rows.filter((row) => row.textContent?.includes("synthetic browser alert boundary")).length,
+          )).toBe(20);
+          expect(await page.$eval("#metrics-alerts", (el) => el.textContent)).toContain("Showing newest 20 alerts");
+        }
+        await page.waitForFunction(() =>
+          document.querySelector("#metrics-workflows")?.textContent?.includes("Matching runs · 2"),
+        );
         await page.waitForSelector("#metric-search");
         expect(requests.filter((path) => path.endsWith("/history"))).toHaveLength(0);
         await page.type("#metric-search", "workflow.error");

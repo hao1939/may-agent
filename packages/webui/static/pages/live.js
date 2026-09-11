@@ -213,6 +213,7 @@ async function loadLiveness() {
     const since = Number(summary.windowSince) || (Date.now() - windowHours * 60 * 60 * 1000);
     const span = Date.now() - since;
     const alerts = data.alerts || [];
+    const visibleAlerts = alerts.slice(0, 4);
     const vitals = data.vitals || [];
     const decisions = data.recentDecisions || [];
     const messages = data.messages || [];
@@ -224,7 +225,7 @@ async function loadLiveness() {
     let html = `<h2>
       <span>System liveness</span>
       <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
-      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts (newest ' + summary.openAlerts + ' shown)' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}</span>
+      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}${summary.openAlertsTruncated || summary.openAlerts > visibleAlerts.length ? ' · showing newest ' + visibleAlerts.length : ''}</span>
     </h2>`;
     html += '<div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>';
 
@@ -352,7 +353,7 @@ async function loadLiveness() {
     if (alerts.length === 0) {
       html += `<div class="liveness-item">No open metric alerts.</div>`;
     } else {
-      for (const alert of alerts.slice(0, 4)) {
+      for (const alert of visibleAlerts) {
         const resolveBtn = alert.alertId
           ? `<button title="Resolve" onclick="verbResolveAlert(${Number(alert.alertId)}, event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;float:right">resolve</button>`
           : '';
