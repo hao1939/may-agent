@@ -45,6 +45,7 @@ cross-component and process boundaries.
 | Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
 | Atomic Task attachment | `core/state/inbox.ts`: `attachRequestToTask()` | `core/tasks/app-task-capability.ts`; `core/state/inbox.test.ts` |
 | Atomic input completion | `core/state/inbox.ts`: `completeInboxInput()` commits the input result, accepted-Request closure and dependent wakes | `core/inbox/app-inbox-host.ts`; `core/state/conversation-requests.test.ts` and `core/inbox/app-inbox-host.test.ts` |
+| Task definition preparation | `core/tasks/runtime-definition.ts`: descriptors, seed authority and project read models | Publication/rollback stay in `core/tasks/app-task-runtime.ts`; [Task lifecycle reading path](core/tasks/README.md#trace-one-task) |
 | Task dispatch | `core/tasks/controller.ts`, `core/tasks/queue.ts`; `core/scheduling/host-capacity.ts`; `core/tasks/app-task-recovery.ts` | `core/tasks/app-task-runtime.ts`; controller/queue/recovery tests |
 | Task transitions | `core/tasks/app-task-reconciler.ts`, `core/tasks/app-task-state.ts`, `core/state/app-task-resource-store.ts` | `core/tasks/app-task-runtime.ts`; reconciler/resource-store, cancellation and restart tests |
 | Agent/workflow/session backend | `core/tasks/execution.ts`; `adapters/executors/` | `composition/task-execution.ts`; adapter and Task runtime tests |
