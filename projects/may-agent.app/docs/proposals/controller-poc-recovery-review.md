@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`a9252e96` has 27 unresolved failures. New human input now permits a fresh attempt
+`ae83b416` has 11 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -24,12 +24,13 @@ case held back from the first run. No production fix was needed for these trials
 The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
 also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
-The branch adds 646 net production lines against baseline main `a8f65188`
+The branch adds 648 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
 Resolve the remaining regression and integration gaps before expanding the design.
 The [runtime/input checks](#runtime-outcomes-and-input-continuation) now pass,
 as do [isolated daemon restarts](#daemon-restart-with-retained-outcomes).
-The remaining failures concern retired inbox execution/control fixtures.
+The [Stop/admission checks](#public-stop-and-admission-ownership) now pass.
+The remaining failures concern retired inbox saved-decision/failure fixtures.
 
 The worker decides **how to do the assigned work**. The assigning App, parent
 agent or human decides **whether to keep assigning it**, revise its scope or
@@ -1349,6 +1350,47 @@ Only these three failure names disappear against `c2b00c29`; no new failure
 name appears. The remaining failures concern the retired inbox execution and
 control fixtures. The production delta stays at **646 net added lines**.
 
+## Public Stop and admission ownership
+
+Host `e908ff94` moves the remaining admission containment and ownership checks
+off the removed model callback. Input coordination still owns typed attachment,
+claim renewal, capacity release and dependency reads; it does not execute an
+agent. The ten containment checks use fake Task storage to isolate those
+boundaries. Four ownership checks exercise real Task attachment transactions.
+They preserve unrelated progress while a delayed attachment loses ownership,
+and reject expired input before creating work.
+
+The renewal test exposed a real gap: the Host revoked local authority after a
+renewal write failed, but did not pass its existing authorization callback to
+Task attachment. Work could still be created while the last stored lease was
+fresh. The fix checks that authority inside the attachment transaction before
+new effects. An exact committed replay needs no new authorization and cannot
+change the accepted input or desired work. The regression holds the logical
+clock before lease expiry, so execution delay cannot hide the missing check.
+This adds **two net production lines**, bringing the branch to **648** against
+`a8f65188`. It adds no state, scheduler or recovery policy.
+
+Host `ae83b416` moves the two old public Stop cases into the Task runtime suite.
+They call real Task attempts and the public event interface: Stop commits
+before aborting, preserves independent work and the accepted Request, rejects
+late output, and handles queued corrective input after runtime/storage reopen.
+The corrected input runs on the same Task. A failed Stop transaction leaves
+execution live; a stale control cannot alter an accepted result. A repeated
+committed Stop remains an idempotent read. The separate existing controller
+check still verifies newer input execution after Stop through normal scheduling.
+
+The four affected suites pass **76 checks**. There is no added model-execution
+fixture or restored inbox executor. The eleven old saved-decision/failure cases
+still need review against retained input and affordable redo; this checkpoint
+does not preserve their old promise to end failed input after one model call.
+
+Full CI at `ae83b416` passes types, the App boundary and lint, then reports
+**2,853 passed, 3 skipped and 11 failed** (2,867 tests across 288 files,
+124.99 seconds). All sixteen resolved failure names belong to these migrated
+checks; no new failure name appeared against `a9252e96`. The original two Stop
+cases were moved, so the total test count is unchanged. The source remains
+unmerged; cutover and overall simplification are still unproved.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -1378,6 +1420,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `55e51193` | 2,784 / 3 / 80 | 2,867 / 289 | 148.0 | Reconciler outcomes and owner closure migrated; intermediate checkpoints are recorded in the sections above |
 | `c2b00c29` | 2,834 / 3 / 30 | 2,867 / 289 | 151.82 | Runtime outcomes, input continuation and exact structured-result reads |
 | `a9252e96` | 2,837 / 3 / 27 | 2,867 / 289 | 159.50 | Real daemon restart and scheduled workflow checks read accepted attempts on retained Tasks |
+| `ae83b416` | 2,853 / 3 / 11 | 2,867 / 288 | 124.99 | Public Stop uses Task attempts; admission checks retain containment and fence revoked ownership |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
@@ -1386,7 +1429,7 @@ At `ef0b9554`, no failure entries were added. The obsolete maintenance-cancellat
 prohibition is replaced by passing owner-control checks for both retained mode
 spellings. All 128 other failures remained unresolved at that checkpoint.
 
-The remaining failures cover retired inbox execution/control assumptions.
+The remaining failures cover retired inbox saved-decision/failure assumptions.
 These are unresolved migration and runtime checks, not evidence that only
 assertions need changing. Review each behavior; do not skip checks or
 replace expectations merely to make CI pass.

@@ -107,6 +107,16 @@ admission records have their own durable coordination boundaries; see
 Claimed request attachment commits Task input, request wait/claim release and
 Topic correlation together. Settlement persists linked request readiness in
 the same transaction; an event notification only accelerates discovery.
+The shared-lifecycle PoC also checks the admission owner's current authority
+inside that transaction: a failed lease renewal can revoke local ownership
+before the stored lease expires. A replay of an already committed attachment
+returns its exact outcome without authorizing new work. The
+[ownership evidence](../proposals/controller-poc-recovery-review.md#public-stop-and-admission-ownership)
+records the fix and its limits.
+
+The following retry-exhaustion rule describes the merged source baseline;
+the continuing-Task proposal replaces that gate with backoff and explicit owner
+closure, preserving unfinished input until it receives its exact answer.
 Retained input is not necessarily runnable work: retry-exhausted attention
 must ready linked requests for review without permitting another execution.
 Ordinary attention with new eligible input must wait for a fresh result.

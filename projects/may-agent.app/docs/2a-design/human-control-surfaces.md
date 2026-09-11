@@ -411,8 +411,10 @@ Ordinary messages still wait for the active Conversation claim. Stop followed
 by a new message provides the first simple redirection path: Esc, then the
 correction. The later steering capability
 below must retain the correction durably. Existing low-level session controls
-alone do not establish that contract. Failed conversational execution already
-has a durable failed outcome and does not automatically rerun the model.
+alone do not establish that contract. At that reviewed revision, failed
+conversational execution had a durable failed outcome without automatic model
+retry. The shared Task PoC retains unfinished input for paced retry; an explicit
+Stop still prevents replay of the stopped input.
 
 Human adapters expose distinct meanings:
 
@@ -429,13 +431,16 @@ the model or the ordinary turn queue. A delayed control for an older turn must
 never silently target a newer execution. Natural-language Task feedback still
 goes through May's interpretation; Task controls do not target a guessed session.
 
-Stop first records the decision durably against the turn's Host handling record,
-then signals its execution to abort. That stopped handling cannot be retried by
-recovery, and late callbacks cannot append a successful reply or admit new
-background Tasks on its behalf. Already admitted Tasks remain addressable and
+In the shared Task lifecycle, Stop first commits the attempt fence and the
+disposition of its exact inputs, then signals execution to abort. Those inputs
+cannot be retried by recovery, and late callbacks cannot append a successful
+reply or admit new work on the stopped attempt's behalf. Already admitted Tasks remain addressable and
 continue unless separately cancelled. Stopping does not undo earlier messages
 or completed effects, or guarantee that an external operation aborts instantly.
 Later human input can start a new turn in the same discussion.
+Failed Stop persistence leaves execution unchanged. A repeated committed Stop
+is idempotent; a stale control for an already completed attempt is rejected
+without changing its accepted result.
 The conversational Request remains unresolved unless the human also withdraws
 the ask. Its presence must not automatically restart the stopped turn. Cancelling
 the ask and cancelling a linked Task are explicit, related decisions; closing
