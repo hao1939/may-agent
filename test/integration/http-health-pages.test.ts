@@ -172,6 +172,30 @@ describe("served workflow and metric health pages", () => {
     await read("/api/metrics/example/history?days=NaN", 400);
   });
 
+  test("alert list limits do not claim an unlisted metric has no alert or hide its exact detail", async () => {
+    const db = getDb(root);
+    const insert = db.prepare("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES (?, ?, ?)");
+    const target = "workflow.error-count-24h";
+    try {
+      insert.run(target, "synthetic oldest alert", now - 3000);
+      insert.run(target, "synthetic latest alert", now - 2000);
+      for (let i = 0; i < 501; i++) insert.run("runtime.daemon-heartbeat-stale", "synthetic alert flood", now - 1000 + i);
+      const listResponse = await fetch(base + "/api/metrics", { signal: AbortSignal.timeout(5000) });
+      expect(listResponse.status).toBe(200);
+      const list = await listResponse.json();
+      expect(list.alertsTruncated).toBe(true);
+      expect(list.metrics.find((m: { id: string }) => m.id === target).alertOpen).toBeNull();
+      const detailResponse = await fetch(base + "/api/metrics?id=" + target, { signal: AbortSignal.timeout(5000) });
+      expect(detailResponse.status).toBe(200);
+      const detail = await detailResponse.json();
+      expect(detail.metrics[0]).toMatchObject({ alertOpen: true, alertMessage: "synthetic latest alert" });
+      expect(detail.alertsTruncated).toBe(false);
+      expect(detail.alerts).toHaveLength(2);
+    } finally {
+      db.prepare("DELETE FROM metric_alerts WHERE message IN ('synthetic oldest alert', 'synthetic latest alert', 'synthetic alert flood')").run();
+    }
+  });
+
   test.skipIf(skipBrowser)(
     "browser reconciles a selected outcome with exact runs and shows real-time history and safe diagnostics",
     async () => {

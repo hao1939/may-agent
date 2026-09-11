@@ -1776,7 +1776,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── Browse API: generic file/directory browser for knowledge base ──
   function handleMetrics(url: URL): Response {
     const db = _db();
-    const observations = readMetricObservations(db, Date.now(), url.searchParams.has("id") ? [url.searchParams.get("id")!] : undefined);
+    const metricId = url.searchParams.get("id");
+    const observations = readMetricObservations(db, Date.now(), metricId === null ? undefined : [metricId]);
     const metrics = observations.metrics;
 
     const openAlerts = enrichOpenAlerts(
@@ -1797,14 +1798,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
       WHERE ma.resolved_at IS NULL
         AND m.status = 'active'
-      ORDER BY ma.created_at DESC
+        ${metricId === null ? "" : "AND ma.metric_id = ?"}
+      ORDER BY ma.created_at DESC, ma.id DESC
       LIMIT ${METRIC_LIST_LIMIT + 1}
     `,
         )
-        .all() as any[],
+        .all(...(metricId === null ? [] : [metricId])) as any[],
     );
 
-    const openAlertByMetric = new Map(openAlerts.map((alert) => [alert.metricId, alert]));
+    const alertsTruncated = openAlerts.length > METRIC_LIST_LIMIT;
+    // Keep the latest alert, and never infer absence from a truncated global list.
+    const openAlertByMetric = new Map([...openAlerts].reverse().map((alert) => [alert.metricId, alert]));
     const metricsWithAlertState = metrics.map((metric) => {
       const alert = openAlertByMetric.get(metric.id);
       return alert
@@ -1816,7 +1820,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             alertType: alert.alertType,
             latestJudgment: alert.latestJudgment,
           }
-        : { ...metric, alertOpen: false };
+        : { ...metric, alertOpen: alertsTruncated ? null : false };
     });
 
     const snapshots = metrics.filter((m) => m.observation).map((m) => ({
@@ -1841,7 +1845,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         latestSnapshots: snapshots,
         recentSnapshots,
         alerts: openAlerts.slice(0, METRIC_LIST_LIMIT),
-        alertsTruncated: openAlerts.length > METRIC_LIST_LIMIT,
+        alertsTruncated,
       }),
       {
         headers: { "Content-Type": "application/json" },

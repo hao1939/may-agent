@@ -101,7 +101,7 @@ function renderObservationList(data) {
     <label>Find a metric <input id="metric-search" type="search" placeholder="Name, ID or owner" oninput="filterMetricRows(this.value)"></label>
     <div class="health-scroll"><table class="health-table"><thead><tr><th>Metric / owner</th><th>Last value</th><th>Observation</th><th>Rule</th></tr></thead><tbody>
     ${data.metrics.map(m => `<tr data-metric-search="${attrEsc([m.name, m.id, m.owner].join(' ').toLowerCase())}"><td><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a><div class="health-note">${esc(m.id)} · ${esc(m.owner || 'unknown owner')} · ${esc(m.type || 'unspecified type')}</div></td>
-      <td>${esc(m.observation ? String(m.observation.value) : 'unknown')} ${esc(m.unit || '')}</td><td>${esc(metricObservationLabel(m))}${m.observation?.sampleSize != null ? `<div>Sample size: ${m.observation.sampleSize}</div>` : ''}</td><td>${esc(metricRuleLabel(m))}${m.alertOpen ? ' · open alert' : ''}</td></tr>`).join('')}
+      <td>${esc(m.observation ? String(m.observation.value) : 'unknown')} ${esc(m.unit || '')}</td><td>${esc(metricObservationLabel(m))}${m.observation?.sampleSize != null ? `<div>Sample size: ${m.observation.sampleSize}</div>` : ''}</td><td>${esc(metricRuleLabel(m))}${m.alertOpen ? ' · open alert' : m.alertOpen === null ? ' · alert list limited; open metric detail' : ''}</td></tr>`).join('')}
     </tbody></table></div>${data.metrics.length ? '' : '<p>No measurements installed. This is not a healthy verdict.</p>'}`;
 }
 
