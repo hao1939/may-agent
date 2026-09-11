@@ -77,7 +77,7 @@ reopens the discussion with a narrower direction: keep evidence with each run
 and derive balanced health summaries through replaceable components, with a
 stronger path for investigating failures. The bounded first source slice merged
 in #143 (`939698ad`). The [page refinement candidate](proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
-is Host #147 (`24fffb42`): it keeps SQLite history and adds shared workflow
+is Host #147 (`1b25e8ff`): it keeps SQLite history and adds shared workflow
 summaries, truthful observations and run-evidence inspection to the existing
 pages. Standard metric semantics apply; a Prometheus client remains an optional
 recording/export helper, not a history store or new core dependency. The

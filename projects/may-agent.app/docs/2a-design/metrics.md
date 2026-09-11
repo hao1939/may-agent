@@ -14,7 +14,7 @@ merged in Host #143 as `939698ad`, adding optional workflow outcome observations
 richer SDK reads and retained source errors. Deployment is unverified. The
 SQLite-first reporting reads and browser presentation are implemented in the
 [page candidate](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate),
-Host #147 (`24fffb42`), not yet merged or deployed. No new metric types, client
+Host #147 (`1b25e8ff`), not yet merged or deployed. No new metric types, client
 integration or monitoring service is included.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation
@@ -249,6 +249,9 @@ HTTP and browser consumers share them. Apps still use `MetricService`.
   collection error remain distinct. P3 priority alone does not mean watch-only.
   A newer sample shows recovery from the prior collection failure without
   deleting its Event evidence; retention still limits that evidence.
+- Disabling an alert rule suppresses its derived warning, not its raw threshold
+  observation or a retained open alert. Editing the definition does not resolve
+  an alert; project and Host cards must keep that recorded alert visible.
 - A capped global alert list cannot establish that an unlisted metric has no
   alert. Its alert state is unknown until the exact metric read, which filters
   alerts by that ID before applying the limit and selects the newest one.

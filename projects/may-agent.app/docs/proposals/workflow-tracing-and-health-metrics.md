@@ -6,7 +6,7 @@ remaining expansion below is for review, September 11, 2026.
 `939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
 [first candidate](#first-implementation-candidate) records that evidence. The
-page refinement is implemented in Host #147 (`24fffb42`), not yet merged or
+page refinement is implemented in Host #147 (`1b25e8ff`), not yet merged or
 deployed; [page candidate](#page-refinement-candidate) records its verification
 and remaining scope.
 
@@ -371,7 +371,7 @@ does not claim a proven performance budget or retention duration.
 ## Existing implementation and focused gaps
 
 Source baseline is Host `e1a0005e`, including merged #143. Page candidate
-`24fffb42` fills the reporting/UI gaps as follows:
+`1b25e8ff` fills the reporting/UI gaps as follows:
 
 | Existing home | Present capability / remaining gap |
 | --- | --- |
@@ -411,7 +411,7 @@ remain rollout gates, not a reason to implement every future metric now.
 
 ## Page refinement candidate
 
-Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `24fffb42`,
+Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `1b25e8ff`,
 implements the bounded page scope above. It is not merged or deployed.
 
 - Overview exposes balanced finished outcomes, current running executions,
@@ -433,8 +433,8 @@ No metric client, service,
 new sampler or lifecycle is introduced. The unchanged scalar metric API does
 not gain monotonic counters or histograms merely because those types are useful.
 
-Local `bun run ci` passed on exact head `24fffb42`: 2,709 tests passed, three
-installation-only checks skipped and zero failed (105.52 seconds for tests),
+Local `bun run ci` passed on exact head `1b25e8ff`: 2,711 tests passed, three
+installation-only checks skipped and zero failed (142.90 seconds for tests),
 plus type, boundary and lint checks. The browser test exercises served code
 against a synthetic file-backed HTTP installation, including Overview to
 selected errors to exact run evidence, irregular history, safe text rendering,
@@ -444,20 +444,31 @@ raw records, cover equal-time pagination and exercise the real Task socket read.
 Final review fixed alert truncation at `a481ea32`: an older alert was hidden
 when the global list hit its cap. The 503-alert regression fails before the
 fix; exact detail now selects that metric's latest alert, while a truncated
-list leaves unobserved alert state unknown. All three HTTP/browser checks pass.
-Hosted Quality and Container passed on the same head in
-[run 34560590572](https://github.com/hao1939/may-agent/actions/runs/34560590572),
+list leaves unobserved alert state unknown. That revision passed its three
+HTTP/browser checks. Hosted Quality and Container passed on current head
+`1b25e8ff` in
+[run 34562277732](https://github.com/hao1939/may-agent/actions/runs/34562277732),
 including the actual image build and isolated smoke execution. Design integrity,
-checked examples and canonical App-boundary checks also passed. Merge and
-deployment remain separate.
+checked examples and canonical App-boundary checks passed. Merge and deployment
+remain separate.
 
 Review follow-up `24fffb42` fixes the separate Overview 20-alert cap and missing
 alert-query indexes. HTTP and browser tests distinguish no alerts, exactly 20
 and more than 20; the 503-alert case keeps unseen alert state unknown. A schema
 test verifies both ordered partial indexes, no temporary sort, and repeatable
 upgrade of retained rows. The regressions failed before the fixes; all 11
-affected checks and the full current-head local/hosted gates pass. Both review
-comments are addressed; source is ready for review, not merged or deployed.
+affected checks and the full local/hosted gates passed on that revision.
+
+Review follow-up `1b25e8ff` keeps raw threshold observations, disabled-rule policy
+and retained alerts separate. Project, agent and Host cards reuse one warning
+rule; disabling future evaluation no longer hides existing alerts or presents a
+raw comparison as an effective breach. Route changes also clear trace evidence
+and invalidate delayed success/error responses, reusing the existing generation
+check and removing deferred trace loads. The real-browser regressions failed
+before the fixes. All 15 affected HTTP/browser/asset checks pass, covering six
+policy/alert/value combinations, generic Events, other tabs, newer run selection
+and event trace links. Full current-head local and hosted checks passed. The
+source is ready for review, not merged or deployed.
 
 A local probe extracted the actual joined alert queries from the HTTP source.
 With 200,000 resolved and 1,000 open synthetic alerts, median query times before
