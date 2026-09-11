@@ -112,6 +112,12 @@ Unsupported attachments in authorized chats receive a best-effort explanation
 asking for text; captions are not treated as proof that the media was understood.
 Media processing remains unsupported. Service updates without user content may
 be ignored deliberately; a failed explanatory send does not cause endless replay.
+One adapter-local list identifies the current Bot API's non-text content,
+including games, paid media, stories and checklists, plus explicit user shares
+and Web App data. The same feedback handles all of them without inspecting or
+executing the payload. Passive service notices such as joins and pins stay quiet.
+This list follows the provider contract and needs review when Telegram adds
+content variants; no automatic support for future formats is promised.
 
 The admission receipt means only “validated and durably admitted.” May's
 persisted result completes semantic work and enters Conversation. Telegram may

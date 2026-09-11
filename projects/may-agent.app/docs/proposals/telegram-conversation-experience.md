@@ -3,7 +3,7 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `cc8d967f`, with
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `ed1192c1`, with
 the simplicity correction below following the verified `7bfb7f08` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
@@ -298,6 +298,16 @@ same timeout and assertions. The subsequent full local run had 2,763 passes,
 three existing installation-only skips and one early timeout in an unchanged
 controller test; its 24-test owning suite passes in isolation. Hosted checks and
 review status remain on the PR. This is not a clean local full-suite claim.
+
+At `eb937c1e`, the unsupported-content check covers the current documented
+Telegram content variants, including the review's games and paid media, through
+one adapter-local list. The existing test now checks those variants, exact
+chat/thread reply coordinates, unauthorized input and quiet service notices.
+At `ed1192c1`, the controller test wait also uses monotonic elapsed time. The
+existing 40-handoff test reproduces a wall-clock jump during execution; it failed
+before the helper change and passes afterward, preserving its timeout and yield
+assertion. Production scheduling is unchanged. Full validation is tracked on
+the PR; these corrections introduce no new migration or recovery behavior.
 
 ### Existing candidate evidence
 
