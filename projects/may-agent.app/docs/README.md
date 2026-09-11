@@ -31,6 +31,12 @@ small shared state boundary.
 
 ## Current focus
 
+The [Telegram experience proposal](proposals/telegram-conversation-experience.md)
+tracks candidate fixes for five reproduced reliability defects alongside
+conversation-first presentation and guidance. It reuses existing context and
+Task controls, keeps commands optional, and separates source verification from
+the pending live experience trial.
+
 The [Conversation/Task reconciliation design](proposals/conversation-input-unification.md)
 now accepts one Task execution lifecycle: handle durable input, record an explicit
 outcome, rest, and run again when needed. The App, parent agent or human decides

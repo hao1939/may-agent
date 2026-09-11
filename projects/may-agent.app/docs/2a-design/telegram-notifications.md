@@ -13,6 +13,10 @@ is implemented; Task cancellation and ending a watch have separate effects.
 Request deadlines and close cancellation merged in Host
 [PR #133](https://github.com/hao1939/may-agent/pull/133) as `39a23f22`.
 Source checks and merge state are not a deployment claim.
+The [conversation experience candidate](../proposals/telegram-conversation-experience.md)
+adds admission-before-acknowledgment, chat-scoped links, admission visibility,
+contextual buttons and compact updates. These source changes are not yet merged
+or verified against a live bot.
 
 ## Purpose
 
@@ -39,14 +43,14 @@ Telegram transport owns:
 
 It also watches `Conversation may:primary`. On `conversation.updated`, it reads
 the resource and presents unseen non-Telegram messages using Telegram-native
-layout. It marks Telegram-origin messages as already rendered, so the adapter
-does not echo its own input or May reply. A mirrored Console message remains the
+layout. It marks Telegram-origin human input and already-delivered command views
+as rendered, without suppressing new Runtime activity. A mirrored Console message remains the
 same Conversation message; Telegram does not append a copy.
 
-A Runtime-authored Task admission activity is rendered as `Task activity`, not
-as May's speech. It includes the exact Task reference and proves that durable
-work was accepted. Telegram may keep its native watch interaction rather than
-copy Console's prompt behavior; subsequent watch updates still re-read the same
+A Runtime-authored Task admission activity is rendered as `Background work
+accepted`, not as May's speech or a completion claim. Its exact Task links support
+Details and Follow updates buttons without exposing IDs in the default message.
+Subsequent watch updates still re-read the same
 canonical Task and suppress low-level event noise.
 
 It does not:
@@ -84,6 +88,26 @@ publishes one human `conversation.message.created` event for
 `may` App. Provider redelivery returns the same event/request receipt and cannot
 create another May item.
 
+The poll offset advances only after synchronous durable admission or deliberate
+rejection, never while an earlier actionable update remains unadmitted. Failed
+recording or admission keeps that update and its suffix eligible for provider
+redelivery. May execution and outbound delivery do not gate the offset. A
+redelivered recorded input loads its original journal event and retries only the
+existing idempotent admission route, without rebuilding context from today's
+focus or replaying ordinary side-effect listeners. Cancellation and reload
+use stable provider-message keys so a lost receipt cannot repeat a mutation with
+new state. This is not a new Telegram queue.
+Provider retention bounds the retry window for unadmitted updates; accepted
+Tasks do not depend on that retention. Host recovery remains responsible for
+accepted work and saved admission plans, not arbitrary unadmitted journal rows.
+
+Commands change local selection in provider order. Their outbound views retain
+per-surface ordering separately, so a stalled send cannot block input or Stop.
+Unsupported attachments in authorized chats receive a best-effort explanation
+asking for text; captions are not treated as proof that the media was understood.
+Media processing remains unsupported. Service updates without user content may
+be ignored deliberately; a failed explanatory send does not cause endless replay.
+
 The admission receipt means only “validated and durably admitted.” May's
 persisted result completes semantic work and enters Conversation. Telegram may
 render that result when it observes the Conversation update; its transport
@@ -93,11 +117,13 @@ state does not change the request result.
 
 Every ordinary inbound Telegram message creates its own bounded May frontend request. A
 Telegram reply anchor does not reopen, steer, or replace another request. The
-adapter attaches only the provider message ID and at most 2,000 characters of
-quoted text. It does not reopen notification rows, reconstruct a session or
-trace, or choose a project from old metadata. May understands the reply from
-that bounded quote, the shared Conversation, and an exact focused Task when one
-is being watched.
+adapter attaches the provider message ID and at most 2,000 characters of quoted
+text. The stored `(chatId, messageId)` link may also supply its exact canonical
+message, Topic and single represented Task. An explicit reply takes precedence
+over a different selected Topic or watch. A multi-Task view supplies no automatic
+single-Task focus. These links are context, not approval or routing authority;
+May still judges intention and uses validated controls. The adapter never
+reconstructs a worker session or trace from a reply.
 
 May reads the same bounded Conversation available to Console, including the
 latest command view each surface actually showed. Task views carry exact Task
@@ -124,6 +150,10 @@ type ChannelMessageLink = {
 
 Legacy context fields remain read-only history. New admission uses the shared
 Conversation and canonical message/request identity.
+Message numbers are unique within a chat, not across chats. Legacy rows lacking
+an unambiguous chat remain historical evidence and are excluded from reply lookup.
+Command views carry chat and topic coordinates so the shared projection retains
+each surface's latest view separately.
 
 ## May Execution And Session Loss
 
@@ -228,6 +258,13 @@ trace or conversation.
 
 Telegram exposes the same small Task meanings as Console:
 
+Ordinary help starts with conversation and replying to updates. The commands
+below are optional shortcuts, not prerequisites. Task-specific messages offer
+Details and Follow updates using the same reads and local watch selection.
+Buttons resolve the stored link for that exact chat/message, re-read the Task
+and enforce the existing authorization boundary. They do not create approval
+state or a subscription. Missing links explain that current status is needed.
+
 - `/apps [app]`;
 - `/topics` and `/topic [ref|clear]`;
 - `/tasks [all] [history]`;
@@ -252,7 +289,8 @@ later ordinary messages; the Telegram chat thread remains only a provider
 coordinate. Topic selection does not create or control a Task.
 While watched, ordinary text remains a May Conversation turn with exact
 `context.focusedApp` and `context.focusedTask`; focus supplies context and does
-not force feedback or mutation. Text is never sent directly to an execution
+not force feedback or mutation. An explicit reply can provide a different exact
+subject. Text is never sent directly to an execution
 session. Semantic Task events wake one coalesced exact
 read. Passive Conversation synchronization reads bounded messages only. Idle
 watch has no poller, timer, workflow, session, or model call.
@@ -270,6 +308,19 @@ Conversation after it is shown. Surfaces do not coordinate or promise global
 exactly-once delivery. Configured base chats are active after startup without
 waiting for a new inbound message. Provider delivery status remains
 observational.
+Single-decision notices invite a direct reply and link only the decision shown.
+Multi-decision summaries invite a list/read rather than suggesting that “yes”
+approves them all. Watch updates show the purpose, current state and useful
+progress or decision; the full technical card remains under Details or `/task`.
+An equivalent canonical answer for the exact Task/surface takes precedence over
+its supporting terminal watch card.
+
+The active-turn view carries optional source coordinates. Telegram-origin turn
+controls appear beside that source message, not as work on every chat's latest
+input. Other/legacy turns are labelled as shared Conversation activity. When a
+new message arrives during an earlier turn, a best-effort notice says it is saved
+but has not changed running work. Ordinary text remains queued, not immediate
+steering. Stop this turn, cancel a Task and stop following have distinct effects.
 
 The adapter validates the exact target and records the control result. A
 human-requested read result that may shape the next turn is appended as a
@@ -324,9 +375,15 @@ missing human closeout.
 
 ## Test Contract
 
-Telegram integration tests prove:
+Source acceptance includes the following contracts. Agent judgment and natural
+conversation quality additionally need the separate experience trial in the
+proposal; fixtures alone cannot prove them:
 
 - provider redelivery admits exactly one May request;
+- a pre-recording failure leaves the provider offset behind the failed update;
+- lost receipts and restart preserve the original recorded context and controls;
+- chat/message collisions and ambiguous legacy links never select another chat;
+- Telegram-origin admission activity is visible and unsupported media is explained;
 - ordinary input and Console input use `Conversation may:primary`;
 - native command output becomes cross-channel context without creating work;
 - transient presentation creates neither context nor work;

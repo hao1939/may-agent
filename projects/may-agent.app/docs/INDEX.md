@@ -132,6 +132,9 @@ current-design list.
 
 Active reviews are:
 
+- [Telegram: a natural conversation with reliable follow-through](proposals/telegram-conversation-experience.md)
+  — candidate fixes for five reproduced defects, contextual follow-up and
+  compact progress; source verification and separate live experience trial;
 - [Conversation and Task: one reconciliation model](proposals/conversation-input-unification.md)
   — accepted common Task lifecycle, explicit outcomes and owner-controlled closure;
   Conversation execution, code deletion, migration and cost evidence pending;

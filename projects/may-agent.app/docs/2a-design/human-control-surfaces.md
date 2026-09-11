@@ -23,6 +23,12 @@ steering remains open. App judgment needs separate
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
 and [telegram-notifications.md](telegram-notifications.md).
 
+The [Telegram experience candidate](../proposals/telegram-conversation-experience.md)
+implements optional contextual Task buttons, compact progress and source-aware
+turn display. The shared active-turn read adds only optional source coordinates;
+exact control identity and revision checks remain unchanged. This candidate is
+not yet a merged or deployed experience claim.
+
 ## Mental model
 
 Console and Telegram are adapters over the same May Conversation and the same
