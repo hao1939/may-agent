@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   GITHUB_COPILOT_IDE_TOKEN_EXPIRED,
+  executePreparedAgent,
   prepareAgentExecution,
   withGithubCopilotIdeTokenRecovery,
 } from "./agent-execution.js";
@@ -532,5 +533,121 @@ describe("shared agent execution preparation", () => {
     } as never);
     expect(JSON.stringify(result)).not.toContain("Deliverables not found on disk");
     expect(JSON.stringify(result)).toContain("SUCCESS");
+  });
+});
+
+describe("direct structured judgment execution", () => {
+  const judgment = { state: "stopped", summary: "Further recovery exceeds the authorized budget." };
+  const finishArgs = {
+    status: "failure",
+    summary: judgment.summary,
+    blockers: [{ reason: "Recovery costs too much", context: "Four hours for a five-minute task" }],
+    result: judgment,
+  };
+
+  function prepare(structured = true) {
+    const root = mkdtempSync(join(tmpdir(), "agent-judgment-"));
+    roots.push(root);
+    return prepareAgentExecution({
+      definition: {
+        name: "judge",
+        description: "Synthetic judgment fixture",
+        domain: "tests",
+        systemPrompt: "Judge the supplied evidence.",
+        model: streamTestModel,
+        tools: [createFinishTool({ agentName: "judge", projectRoot: root })],
+      },
+      projectRoot: root,
+      sessionId: "judgment-fixture",
+      task: "Decide whether recovery is worthwhile.",
+      requireFinish: true,
+      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("stopped"), summary: Type.String() }) } : {}),
+    });
+  }
+
+  function finishStream(args: Record<string, unknown>) {
+    const stream = createAssistantMessageEventStream();
+    stream.push({
+      type: "done",
+      reason: "toolUse",
+      message: {
+        ...assistantMessage("stop"),
+        stopReason: "toolUse",
+        content: [{ type: "toolCall", id: "judgment-finish", name: "finish", arguments: args }],
+      },
+    });
+    return stream;
+  }
+
+  test.each([true, false])("preserves non-success output with structured=%s", async (structured) => {
+    const prepared = prepare(structured);
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      calls++;
+      return finishStream(finishArgs);
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe(structured ? "done" : "error");
+    expect(result.error).toBeUndefined();
+    expect(result.finishResult?.status).toBe("failure");
+    expect(result.structuredResult).toEqual(judgment);
+    expect(calls).toBe(1);
+  });
+
+  test.each([
+    { ...finishArgs, result: { state: "unsupported" } },
+    { ...finishArgs, result: undefined },
+    { ...finishArgs, blockers: [] },
+  ])("rejects an invalid or uncommitted judgment %#", async (args) => {
+    const prepared = prepare();
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      if (++calls === 1) return finishStream(args);
+      return terminalStream({
+        ...assistantMessage("stop"),
+        content: [{ type: "text", text: "No valid judgment returned." }],
+      });
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("without calling finish()");
+    expect(result.finishResult).toBeUndefined();
+    expect(result.structuredResult).toBeUndefined();
+    expect(calls).toBe(3); // Rejected tool, final text, one corrective prompt.
+  });
+
+  test("keeps a provider failure as an execution error", async () => {
+    const prepared = prepare();
+    prepared.runner.streamFn = () => terminalStream(assistantMessage("error", "HTTP 401 Unauthorized"));
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("HTTP 401 Unauthorized");
+    expect(result.structuredResult).toBeUndefined();
+  });
+
+  test("keeps timeout before any committed judgment interrupted", async () => {
+    const prepared = prepare();
+    prepared.runner.streamFn = (_model, _context, options) => {
+      const stream = createAssistantMessageEventStream();
+      const aborted = () => stream.push({
+        type: "error",
+        reason: "aborted",
+        error: { ...assistantMessage("error", "Aborted"), stopReason: "aborted" },
+      });
+      if (options?.signal?.aborted) aborted();
+      else options?.signal?.addEventListener("abort", aborted, { once: true });
+      return stream;
+    };
+
+    const result = await executePreparedAgent(prepared, { timeoutMs: 10 });
+
+    expect(result.status).toBe("interrupted");
+    expect(result.structuredResult).toBeUndefined();
   });
 });

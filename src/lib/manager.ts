@@ -1963,8 +1963,10 @@ export class SubagentManager {
     } else if (!finishParams && session.status === "interrupted" && session.lastError) {
       errorText = session.lastError;
     }
+    // Structured non-success is a caller judgment, not a failed execution.
+    const legacyFailure = !session.outputSchema && finishParams?.status === "failure";
     const status: "done" | "error" | "interrupted" =
-      finishParams?.status === "failure"
+      legacyFailure || (finishParams && errorText)
         ? "error"
         : finishParams
           ? "done"
