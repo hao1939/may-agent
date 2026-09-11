@@ -308,6 +308,24 @@ export type TaskAttempt = {
     instructions: string;
   };
   task: TaskDetail;
+  /** Latest earlier attempt of this Task. Evidence to inspect, not authority to repeat its effects. */
+  previousAttempt?: {
+    attemptId: string;
+    generation: number;
+    state: "running" | "completed" | "failed" | "interrupted";
+    summary?: string;
+    failureReason?: string;
+    sessionId?: string;
+    workspacePath?: string;
+    /** Exact admitted report, when one exists. An execution error need not have one. */
+    acceptedResult?: {
+      state: "converged" | "waiting" | "stopped";
+      summary: string;
+      response?: string;
+      result?: Record<string, unknown>;
+      evidence: string[];
+    };
+  };
   /** Attempt-scoped working directory selected by Runtime. */
   cwd: string;
   /** App-declared paths this attempt may intentionally produce. */
@@ -375,6 +393,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   acceptance: string[];
   input: TInput;
   children: TaskAttempt["children"];
+  previousAttempt?: TaskAttempt["previousAttempt"];
   /**
    * Bounded projection of the App's other live tasks for workflows that review
    * frontier health. The current reconciliation task is intentionally omitted.

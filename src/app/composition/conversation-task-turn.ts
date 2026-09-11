@@ -29,6 +29,7 @@ export async function prepareConversationTaskTurn(input: {
     input.readDependency,
   );
   request.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
+  if (claim.previousAttempt) request.previousAttempt = structuredClone(claim.previousAttempt);
   const decision = await input.resolveRequest({
     app,
     request: freezeInputContext(request),

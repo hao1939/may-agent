@@ -63,6 +63,7 @@ export type AppTaskClaim = {
   events: AppTaskTriggerEvent[];
   eventsTruncated: boolean;
   continuedInputKeys?: string[];
+  previousAttempt?: TaskAttempt["previousAttempt"];
   /** Compatibility projection of the most relevant event in events. */
   trigger?: Record<string, unknown>;
   declaredOutputPaths: string[];
@@ -560,6 +561,30 @@ function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number):
       (attempt) => attempt.taskId === taskId && (generation === undefined || attempt.taskGeneration === generation),
     )
     .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
+}
+
+function previousAttemptEvidence(attempt: AppTaskAttempt): NonNullable<TaskAttempt["previousAttempt"]> {
+  const result = attempt.acceptedResult;
+  return {
+    attemptId: attempt.metadata.id,
+    generation: attempt.taskGeneration,
+    state: attempt.state,
+    ...(attempt.summary ? { summary: attempt.summary } : {}),
+    ...(attempt.failureReason ? { failureReason: attempt.failureReason } : {}),
+    ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
+    ...(attempt.workspace ? { workspacePath: attempt.workspace.path } : {}),
+    ...(result
+      ? {
+          acceptedResult: {
+            state: result.state,
+            summary: result.summary,
+            ...(result.response ? { response: result.response } : {}),
+            ...(result.result ? { result: structuredClone(result.result) } : {}),
+            evidence: [...result.evidence],
+          },
+        }
+      : {}),
+  };
 }
 
 function isAgentHandoffReason(reason: string | undefined): boolean {
@@ -2705,6 +2730,7 @@ export function claimObservedAppTask(
         : input.handler;
   const agentHandoff = needsAgentHandoff(tree, resource) && isManagedAgentHandler(handler, agent);
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+  const priorEvidence = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
   const handoffAttempt = agentHandoff ? latestAttempt : undefined;
   const recoveredSessionHandoff = !agentHandoff ? input.recoverSessionHandoff?.(latestAttempt) : undefined;
   const previousAttempt = currentResourceAttempt(tree, resource);
@@ -2972,6 +2998,7 @@ export function claimObservedAppTask(
     events: structuredClone(claimedEvents),
     eventsTruncated: remainingEvents.length > 0,
     ...(continuedInputKeys.length ? { continuedInputKeys: [...continuedInputKeys] } : {}),
+    ...(priorEvidence ? { previousAttempt: previousAttemptEvidence(priorEvidence) } : {}),
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
     ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),

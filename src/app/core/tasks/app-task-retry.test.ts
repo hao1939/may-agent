@@ -195,6 +195,19 @@ it("accepts failure evidence without resolving the ask, then succeeds on the sam
   expect(next.taskId).toBe(first.taskId);
   expect(next.generation).toBe(first.generation);
   expect(next.events).toEqual(first.events);
+  expect(next.previousAttempt).toMatchObject({
+    attemptId: first.attemptId,
+    generation: first.generation,
+    state: "completed",
+    acceptedResult: {
+      state: "stopped",
+      summary: "Could not read this measurement",
+      result: { problem: "source offline" },
+      evidence: ["source:offline"],
+    },
+  });
+  next.previousAttempt!.acceptedResult!.evidence.push("untrusted consumer edit");
+  expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult?.evidence).toEqual(["source:offline"]);
   expect(f.config.resourceStore.readTask("work")?.status.evidence).toEqual(["source:offline"]);
   completeAppTask(f.config, next, { summary: "Source repaired; measurement read", result: { value: 17 } });
   f.reopen();
@@ -229,6 +242,13 @@ it("applies owner revision during cooldown and fences retry plus late failure on
   observeAppTaskIntent(f.config, { intent: { ...f.intent, outcome: "Read the cheaper replacement measurement" }, appAgent: "owner" });
   const revised = f.claim();
   expect(revised.generation).toBeGreaterThan(first.generation);
+  expect(revised.previousAttempt).toMatchObject({
+    attemptId: first.attemptId,
+    generation: first.generation,
+    state: "failed",
+    summary: "Provider unavailable",
+  });
+  expect(revised.intent.outcome).toBe("Read the cheaper replacement measurement");
   const resource = f.config.resourceStore.readTask("work")!;
   closeAppTask(f.config, { appId: "sample", taskId: "work", reason: "Owner withdrew this assignment",
     expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion });

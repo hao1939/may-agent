@@ -163,12 +163,14 @@ async function fixture(
 
 test("Conversation-only App uses normal runtime claims, paced failure and reply settlement", async () => {
   const calls: CallOptions[] = [];
+  const contexts: AppInputContext[] = [];
   const f = await fixture(async (_definition, prompt, options) => {
     expect(prompt).toContain("Compare A and B");
     expect(options.recoveryOwner).toBe(APP_TASK_RECOVERY_OWNER);
     expect(options.taskBinding?.appId).toBe(app.id);
     expect(claimAppInboxItem(f.db, "ask", "old-inbox", 1_000)).toBeNull();
     calls.push(options);
+    contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
     if (calls.length === 1) throw new Error("Model temporarily unavailable");
     return { status: "done", structuredResult: answer };
   });
@@ -186,6 +188,14 @@ test("Conversation-only App uses normal runtime claims, paced failure and reply 
   const completed = settled(f.bus, admitted.taskId);
   await completed; // The real recovery timer performs the retry; the fixture does not.
   expect(calls).toHaveLength(2);
+  expect(contexts[1]).toMatchObject({
+    previousAttempt: {
+      attemptId: calls[0]!.taskBinding!.attemptId,
+      generation: calls[0]!.taskBinding!.generation,
+      state: "failed",
+      summary: expect.stringContaining("Model temporarily unavailable"),
+    },
+  });
   expect(new Set(calls.map((call) => call.taskBinding?.taskId))).toEqual(new Set([admitted.taskId]));
   expect(new Set(calls.map((call) => call.taskBinding?.attemptId)).size).toBe(2);
   expect(getAppInboxItem(f.db, admitted.item.id)).toMatchObject({ status: "done" });
@@ -692,6 +702,7 @@ test.each(["live", "restart", "admission-write-failure"])(
 test("a failed child report returns to Conversation without closing its assignment or human Request", async () => {
   const repair = Promise.withResolvers<void>();
   let runs = 0;
+  const priorAttempts: TaskAttempt["previousAttempt"][] = [];
   const f = await fixture(
     async (_definition, prompt) => {
       const context = JSON.parse(
@@ -705,7 +716,8 @@ test("a failed child report returns to Conversation without closing its assignme
     (root, appDir) => ({
       ...withBackground(root, appDir),
       executors: {
-        measure: async () => {
+        measure: async (attempt) => {
+          priorAttempts.push(attempt.previousAttempt);
           if (++runs === 1)
             return {
               state: "stopped",
@@ -743,6 +755,15 @@ test("a failed child report returns to Conversation without closing its assignme
     repair.resolve();
     await finished;
     expect(runs).toBe(2);
+    expect(priorAttempts[0]).toBeUndefined();
+    expect(priorAttempts[1]).toMatchObject({
+      state: "completed",
+      acceptedResult: {
+        state: "stopped",
+        summary: "Could not obtain measurement: source offline",
+        evidence: ["measurement source: unavailable"],
+      },
+    });
     expect(ingress.oldExecutions).toBe(0);
     expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(2);
     expect(child.isCancelled("sample")).toBe(false);

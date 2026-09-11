@@ -614,6 +614,7 @@ function runtimeTaskAttempt(input: {
         instructions: `Act as the selected May agent ${claim.agent}.`,
       },
       task: structuredClone(task),
+      ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
       cwd: input.cwd,
       declaredOutputPaths: [...input.declaredOutputPaths],
       children: {

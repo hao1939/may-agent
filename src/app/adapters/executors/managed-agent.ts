@@ -154,6 +154,7 @@ async function executeTaskAgent(
         paths: input.executionPaths,
         declaredOutputs: attempt.declaredOutputPaths,
         fallbackReason: input.fallbackReason ?? null,
+        ...(attempt.previousAttempt ? { previousAttempt: attempt.previousAttempt } : {}),
       },
       null,
       2,

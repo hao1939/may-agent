@@ -1,7 +1,7 @@
 import { Type, type Static, type TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
-import type { MetricDefinition, ObserverContext, TaskDetail } from "./workflow.js";
+import type { MetricDefinition, ObserverContext, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
@@ -205,6 +205,8 @@ export type AppInputContext<TData = unknown> = {
   input: AppInput<TData>;
   /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
   inputs?: ReadonlyArray<AppTaskInput>;
+  /** Evidence from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
+  previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;
   /** Exact bounded observation for the human's focused Task, when supplied. */
   focusedTask?: {
