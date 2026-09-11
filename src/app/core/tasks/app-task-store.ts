@@ -469,7 +469,9 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       ...(status.evidence ? { evidence: [...status.evidence] } : {}),
       condition_ids: [...(status.conditionIds ?? [])],
       status_updated_at: status.updatedAt,
-      attempt_count: attemptsByTask.get(taskId)?.length ?? 0,
+      // A receipt import is accepted historical evidence, not another execution.
+      attempt_count:
+        attemptsByTask.get(taskId)?.filter((attempt) => attempt.runtimeId !== "retired:task-receipt").length ?? 0,
       ...(activeAttempt
         ? {
             active_attempt: {

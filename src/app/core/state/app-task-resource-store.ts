@@ -1247,7 +1247,22 @@ export class AppTaskResourceStore {
       }
       for (const { resource } of mutation.tasks ?? []) {
         const previous = this.readTask(resource.metadata.id);
-        if (previous?.spec.parentId !== resource.spec.parentId && this.isCancelled(resource.spec.parentId)) {
+        // Offline receipt import may restore an already closed child beneath a
+        // closed parent. It adds history, never new executable responsibility.
+        const restoredClosure =
+          !previous &&
+          mutation.cancellations?.some(
+            (closure) =>
+              closure.taskId === resource.metadata.id &&
+              closure.kind === "closed" &&
+              closure.generation === resource.metadata.generation &&
+              this.readReceipt(resource.metadata.id)?.metadata.generation === closure.generation,
+          );
+        if (
+          previous?.spec.parentId !== resource.spec.parentId &&
+          this.isCancelled(resource.spec.parentId) &&
+          !restoredClosure
+        ) {
           return false;
         }
       }

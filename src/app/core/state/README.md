@@ -13,13 +13,20 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | `inbox.ts` | Atomic Task attachment and input completion with Request closure |
 | `conversations.ts` | Conversation reads and Topic links |
 | `conversation-requests.ts` | Accepted asks and scoped revision checks |
-| `conversation-turns.ts` | Decision acceptance with Topics and Request updates |
-| `conversation-outcomes.ts` | Supervised outcomes with links, explanation and Request updates |
+| `conversation-turns.ts`, `conversation-task-turns.ts` | Task-owned Turn admission, fenced decision acceptance and scoped Stop |
+| `conversation-cutover.ts`, `task-receipt-cutover.ts` | Offline import of prior Conversation execution and Task completion evidence |
 | `task-reference-index.ts` | Lookup/display of exact Task references |
 
 The Task runtime decides transitions; these operations enforce their storage
 boundaries. Events announce meaningful changes and accelerate discovery, while
 durable state remains authoritative. There is no extra server or storage queue.
+
+Cutover helpers require the old Host and every worker to be stopped, after the
+normal database schema upgrade. They are source operations, not an operational
+upgrade runner. Receipt import preserves original historical receipts and links
+their exact generation/specification to accepted outcomes on closed Tasks;
+newer Task generations and existing human closure remain unchanged. Migration
+of old failures, maintained outcomes and input waits remains separate work.
 
 Colocated store tests cover claims, revisions, transactions and reopen behavior.
 `inbox.test.ts` covers cross-resource attachment; `conversation-requests.test.ts`
