@@ -79,8 +79,8 @@ changes are needed. Both await human review; deployment remains separate.
 | [Host #145](https://github.com/hao1939/may-agent/pull/145), `5989a608`: current session adapters | Full CI: 2,700 pass, three installation-only skips, no failures; both new regressions fail before the fix and pass after it |
 | [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
 
-Browser coverage ran in both suites. Hosted Quality and Container checks are
-pending on each PR. A temporary merge of both candidates passed all 128 Task
+Browser coverage ran in both suites. Hosted Quality and Container checks passed
+on both listed source revisions. A temporary merge of both candidates passed all 128 Task
 runtime/admission-worker tests; canonical design integrity, examples and App
 checks also passed against that combined source. No installation or model-backed
 tests ran.
