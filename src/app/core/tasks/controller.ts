@@ -51,6 +51,9 @@ export type AppTaskDispatch = {
 export class AppTaskController {
   private readonly queue: AppTaskQueue;
   private readonly failures = new Map<string, number>();
+  // Dispatch failures may precede any durable Task write. Keep their timer
+  // authoritative across ordinary wakes; settled Task failures use stored due work.
+  private readonly retryTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly readySince = new Map<string, number>();
   private scheduled = false;
   private closed = false;
@@ -62,7 +65,7 @@ export class AppTaskController {
   private readonly drainWaiters = new Set<() => void>();
 
   constructor(private readonly options: AppTaskControllerOptions) {
-    this.queue = new AppTaskQueue(options.maxConcurrent);
+    this.queue = new AppTaskQueue(options.maxConcurrent, (taskId) => !this.retryTimers.has(taskId));
     this.startReady = !options.startAfter;
     if (options.startAfter) {
       void Promise.resolve(options.startAfter).then(
@@ -111,6 +114,8 @@ export class AppTaskController {
 
   close(): void {
     this.closed = true;
+    for (const timer of this.retryTimers.values()) clearTimeout(timer);
+    this.retryTimers.clear();
     cancelHostPumps(this);
     this.cancelCapacityWait?.();
     this.cancelCapacityWait = undefined;
@@ -219,7 +224,11 @@ export class AppTaskController {
         this.failures.set(taskId, attempt);
         if (willRetry) {
           const delay = Math.max(0, this.options.retryDelayMs?.(attempt) ?? Math.min(30_000, 250 * 2 ** (attempt - 1)));
-          setTimeout(() => this.enqueue(taskId, { lane }), delay);
+          const timer = setTimeout(() => {
+            this.retryTimers.delete(taskId);
+            this.enqueue(taskId, { lane });
+          }, delay);
+          this.retryTimers.set(taskId, timer);
         }
         const reportFailure = (reportError: unknown) => {
           console.error(`Task ${taskId} failure reporter failed; willRetry=${willRetry}`, { error, reportError });

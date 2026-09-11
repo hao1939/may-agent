@@ -17,7 +17,10 @@ export class AppTaskQueue {
   private readonly lanes = new Map<string, AppTaskLane>();
   private readonly dirtyLanes = new Map<string, AppTaskLane>();
 
-  constructor(private concurrency: number) {
+  constructor(
+    private concurrency: number,
+    private readonly isReady: (taskId: string) => boolean = () => true,
+  ) {
     this.validateMaxConcurrent(concurrency);
   }
 
@@ -79,7 +82,9 @@ export class AppTaskQueue {
   take(): string | null {
     if (this.running.size >= this.maxConcurrent) return null;
     const lane = this.nextLane();
-    const takeIndex = this.nextIndex(lane ?? "normal");
+    if (!lane) return null;
+    const takeIndex = this.nextIndex(lane);
+    if (takeIndex < 0) return null;
     const [taskId] = this.pending.splice(takeIndex, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
@@ -107,7 +112,13 @@ export class AppTaskQueue {
 
   nextLane(): AppTaskLane | null {
     if (this.running.size >= this.maxConcurrent || this.pending.length === 0) return null;
-    return this.pending.some((taskId) => this.lanes.get(taskId) === "human") ? "human" : "normal";
+    let lane: AppTaskLane | null = null;
+    for (const taskId of this.pending) {
+      if (!this.isReady(taskId)) continue;
+      if (this.lanes.get(taskId) === "human") return "human";
+      lane = "normal";
+    }
+    return lane;
   }
 
   get pendingCount(): number {
@@ -136,7 +147,7 @@ export class AppTaskQueue {
     let selectedPromoted = false;
     for (let index = 0; index < this.pending.length; index++) {
       const taskId = this.pending[index];
-      if (!taskId || this.lanes.get(taskId) !== lane) continue;
+      if (!taskId || !this.isReady(taskId) || this.lanes.get(taskId) !== lane) continue;
       const rank = priorityRank(this.priorities.get(taskId) ?? "P2");
       const promoted = this.promotedQueued.has(taskId);
       if (rank < selectedRank || (rank === selectedRank && promoted && !selectedPromoted)) {

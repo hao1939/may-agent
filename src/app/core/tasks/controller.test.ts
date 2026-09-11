@@ -489,6 +489,81 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it.each([false, true])("preserves dispatch backoff across wakes without holding other work (capacity: %s)", async (shared) => {
+    const delay = 80;
+    const capacity = shared ? new HostCapacity(1) : undefined;
+    const starts: Array<{ taskId: string; at: number; lane: string }> = [];
+    let failedAt = 0;
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      retryDelayMs: () => delay,
+      async reconcile(taskId, dispatch) {
+        starts.push({ taskId, at: Date.now(), lane: dispatch.lane });
+        if (taskId === "bad" && !failedAt) {
+          failedAt = Date.now();
+          controller.enqueue(taskId);
+          throw new Error("Storage unavailable before claim");
+        }
+      },
+      onError(taskId) {
+        for (let i = 0; i < 10; i++) controller.enqueue(taskId, { lane: "human", promote: true });
+        controller.enqueue("good");
+      },
+    });
+    try {
+      controller.enqueue("bad");
+      await waitUntil(() => starts.some(({ taskId }) => taskId === "good"));
+      expect(starts.map(({ taskId }) => taskId)).toEqual(["bad", "good"]);
+      await waitUntil(() => controller.snapshot().running.length === 0);
+      expect(capacity?.snapshot().running ?? 0).toBe(0);
+      controller.enqueue("bad");
+      await waitUntil(() => starts.length === 3);
+      expect(starts[2]).toMatchObject({ taskId: "bad", lane: "human" });
+      expect(starts[2]!.at - failedAt).toBeGreaterThanOrEqual(delay);
+      await waitUntil(() => controller.snapshot().running.length === 0);
+      // Allow the original timer interval to pass again: an early wake must
+      // not leave behind a delayed, duplicate successful reconciliation.
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      expect(starts).toHaveLength(3);
+      expect(controller.snapshot()).toEqual({ pending: [], running: [], dirty: [] });
+    } finally {
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
+  it.each(["pause", "close"])("respects %s while a dispatch retry timer expires", async (control) => {
+    let runs = 0;
+    let reported = false;
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      retryDelayMs: () => 30,
+      async reconcile() {
+        if (++runs === 1) throw new Error("Storage unavailable");
+      },
+      onError(taskId) {
+        controller.enqueue(taskId);
+        if (control === "close") controller.close();
+        else controller.setEnabled(false);
+        reported = true;
+      },
+    });
+    try {
+      controller.enqueue("bad");
+      await waitUntil(() => reported && controller.snapshot().running.length === 0);
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(runs).toBe(1);
+      if (control === "pause") {
+        controller.setEnabled(true);
+        await waitUntil(() => runs === 2);
+      }
+    } finally {
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
   it.each([
     { execution: "throw", reporter: "absent" },
     { execution: "reject", reporter: "throw" },
