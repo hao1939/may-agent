@@ -5,6 +5,9 @@ undeployed. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
 The current review artifact is [Host PR #158](https://github.com/hao1939/may-agent/pull/158).
+The subsequent [deeper review](controller-poc-deeper-review.md) records natural
+delegation, owner withdrawal, corrected acceptance, additive waits and revised
+retry pacing. The evidence below retains its original revisions and defaults.
 
 **Recommendation:** Proceed with human review of one Task model, controller and
 lifecycle. A can take human input, delegate to B, and B can delegate to C:

@@ -9,6 +9,9 @@ that model. Full local CI, live nested delegation and an isolated old-to-new
 daemon cutover pass. The [critical-path acceptance audit](controller-poc-recovery-review.md#critical-path-acceptance-audit)
 supports the shared model and records retained compatibility costs and deferred
 usage checks. Human review and installation adoption remain separate.
+The [deeper review](controller-poc-deeper-review.md) tests natural delegation,
+owner withdrawal and changed acceptance during execution. It also simplifies
+additive delegation and examines the recurring cost of retries.
 This supersedes the earlier recommendation to
 share only scheduling while keeping two execution lifecycles.
 
@@ -179,6 +182,14 @@ forever. Persist that deadline and check it before claiming, so duplicate wakes
 and restart cannot shorten it. Reuse existing due queries and the recovery timer.
 Counters inform pacing and diagnostics, not the controller's decision to give up.
 Ordinary failure must not end in "four attempts, now require manual unblock."
+
+The refined candidate starts at 250 ms and doubles to a **15-minute ceiling**
+for Task attempt failures. The earlier 30-second ceiling could sustain 120
+attempts per hour for one quickly failing Task. Dispatch/storage failures before
+an attempt has been durably settled keep their separate local 250 ms–30 second
+pacing. Neither path has a failure-count stop. This accepts slower unattended
+recovery after a long outage in exchange for lower recurring cost; an owner
+retry or fresh human input can act sooner. See the [cost calculation](controller-poc-deeper-review.md#retry-cost).
 
 **New human input permits a fresh attempt.** A newly admitted human message
 waives the current cooldown. If it arrives during execution, the next claim
@@ -387,6 +398,13 @@ A child result is evidence, not automatic parent success. Failure, closure
 without success and a need for human input return through exact saved links too.
 No owner keeps an execution slot merely to wait. A saved result subscription
 is enough for follow-up; no per-Task watcher or generic dependency graph is added.
+
+New delegation **adds work**. Omitted saved waits remain attached, so adding
+another request to the same App does not require the worker to repeat earlier
+requests. Exact reuse, duplicate checks and stale-effect fences remain. A new
+request does not implicitly replace or cancel an old one; the worker must reuse
+an existing assignment when that is what it means. Different wording alone is
+not enough for the Host to infer replacement.
 
 ## Proposed controller boundary and code layout
 

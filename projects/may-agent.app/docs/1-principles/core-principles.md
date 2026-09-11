@@ -77,7 +77,9 @@ assigning owner judges scope and whether more work is worthwhile. A worker
 can report failure honestly; abandoning the assignment belongs to its owner.
 The [continuing-Task baseline](../proposals/conversation-input-unification.md#recovery-keeps-the-same-task)
 uses backoff to pace unfinished work without a fixed failure-count stop;
-implementation of that lifecycle remains pending.
+the source candidate in Host #158 implements it and awaits human review and
+separate adoption. Its [deeper PoC review](../proposals/controller-poc-deeper-review.md)
+examines continuing-retry cost and owner decisions in use.
 
 Useful default error handling and metrics remain product goals. Being provided
 by default does not by itself put a capability in core. The expanded core-metrics
