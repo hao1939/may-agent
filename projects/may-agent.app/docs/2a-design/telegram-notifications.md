@@ -257,6 +257,13 @@ The durable return address is the request's opaque `channelTargetId`
 to the App. With several allowed chats, a response always uses the exact
 originating target rather than the first configured chat.
 
+The Telegram adapter interprets the optional stored thread as a positive decimal
+integer that JavaScript can represent exactly. Missing or invalid values use
+the existing no-thread fallback within that chat. Delivery, Stop controls and
+watch bookkeeping use this same normalized coordinate; they must not disagree
+about where a message was sent. Stored metadata and the shared event schema
+stay transport-neutral. This provider thread is not a Conversation Topic ID.
+
 Never fall forward to a newer human message merely because it is on the same
 trace or conversation.
 

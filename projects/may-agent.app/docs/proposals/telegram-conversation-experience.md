@@ -3,8 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `fea62dee`, with
-review refinements following the verified `676162ad` checkpoint.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `b49233c2`, with
+review refinements following the verified `fea62dee` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -370,3 +370,19 @@ and asynchronous updates stay independent. Three regression cases cover send
 success, failure and shutdown, including independent chats/topics and preserved
 presentation-only feedback. All 42 targeted Telegram tests passed; full local
 and hosted verification is tracked on the PR.
+
+At `b49233c2`, one adapter-local conversion interprets stored Telegram thread
+coordinates for delivery, Stop controls and watch bookkeeping. The shared event
+schema deliberately accepts transport-neutral text: malformed values previously
+sent without a thread but registered controls and watches under a different key.
+This made Stop appear expired and could duplicate a terminal result. Unsafe
+numeric strings also rounded to another identity. Missing or invalid values now
+share the existing no-thread fallback without rewriting stored data or adding
+state. Conversation Topic identity and exact Stop authorization are unchanged.
+
+Five regression cases failed before this fix. All 54 focused Telegram tests
+now pass, including valid/missing/invalid/unsafe stored coordinates, a terminal
+result with and without a Task wake, and existing stale/unauthorized Stop checks.
+Canonical design integrity, examples and App checks passed. Full current-head
+local and hosted verification is tracked on the PR; no live Telegram/model
+trial or deployment was performed.
