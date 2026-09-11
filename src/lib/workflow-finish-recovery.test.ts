@@ -56,6 +56,7 @@ describe("workflow finish recovery", () => {
       const prompt = workflowFinishRecoveryPrompt(Type.Object({ state: Type.String() }), reason);
       expect(prompt).toContain("Continue the original bounded assignment");
       expect(prompt).toContain("remaining budget");
+      expect(prompt).toContain("Do not repeat successful work or committed effects");
       expect(prompt).toContain("If no work has been done, begin the assigned work");
       expect(prompt).toContain("not itself a domain blocker");
       expect(prompt).toContain("inspect current state before repeating an uncertain effect");

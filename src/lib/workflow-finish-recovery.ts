@@ -54,6 +54,7 @@ export function workflowFinishRecoveryPrompt(outputSchema?: TSchema, reason?: st
   return (
     prefix +
     "Continue the original bounded assignment within its scope and remaining budget. " +
+    "Do not repeat successful work or committed effects. " +
     "Do not repeat prior reads unless they are strictly needed; inspect current state before repeating an uncertain effect. " +
     "If no work has been done, begin the assigned work rather than assuming prior results are missing. " +
     "The runtime interruption is not itself a domain blocker. When the evidence supports an outcome, call finish() with all required fields" +

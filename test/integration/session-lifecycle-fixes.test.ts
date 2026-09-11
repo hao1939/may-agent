@@ -541,23 +541,30 @@ describe("workflow call empty final turn recovery", () => {
     expect(events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toHaveLength(1);
   });
 
-  it("preserves tool evidence and recovers structured finish after the final prompt throws 429", async () => {
+  it.each(["read", "write"])("preserves successful %s evidence after final synthesis throws 429", async (toolName) => {
+    const evidence = toolName === "write" ? "Committed proof.txt successfully" : "29 tests passed; replay tree matched";
     const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
       if (promptText === "review owner message") {
         transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
         transcript.push({
           role: "assistant",
-          content: [{ type: "toolCall", id: "read-1", name: "read", arguments: { path: "proof.txt" } }],
+          content: [{ type: "toolCall", id: "work-1", name: toolName, arguments: { path: "proof.txt" } }],
         } as any);
         transcript.push({
           role: "toolResult",
-          toolCallId: "read-1",
-          toolName: "read",
-          content: [{ type: "text", text: "29 tests passed; replay tree matched" }],
+          toolCallId: "work-1",
+          toolName,
+          content: [{ type: "text", text: evidence }],
           isError: false,
         } as any);
         throw new Error("OpenAI API error (429): No deployments available for selected model, Try again in 5 seconds.");
       }
+      expect(promptText).toContain("Do not repeat successful work or committed effects");
+      expect(promptText).toContain("inspect current state before repeating an uncertain effect");
+      expect(transcript).toContainEqual(expect.objectContaining({
+        role: "toolResult", toolCallId: "work-1", isError: false,
+        content: [{ type: "text", text: evidence }],
+      }));
       transcript.push(
         finishCall("finish-1", {
           status: "success",
@@ -565,7 +572,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "Recovered from transient final synthesis failure.",
-            evidence: ["29 tests passed; replay tree matched"],
+            evidence: [evidence],
           },
         }),
       );
@@ -579,15 +586,16 @@ describe("workflow call empty final turn recovery", () => {
     expect(result.structuredResult).toEqual({
       state: "converged",
       summary: "Recovered from transient final synthesis failure.",
-      evidence: ["29 tests passed; replay tree matched"],
+      evidence: [evidence],
     });
     expect(prompts).toHaveLength(2);
     expect(prompts[1]).toContain("transient runtime/provider failure or no visible answer");
     expect(prompts[1]).toContain("schema-validated result payload");
     expect(messages).toContainEqual(expect.objectContaining({
       role: "toolResult",
-      content: [{ type: "text", text: "29 tests passed; replay tree matched" }],
+      content: [{ type: "text", text: evidence }],
     }));
+    expect(messages.filter((message: any) => message.toolCallId === "work-1")).toHaveLength(1);
 
     const end = events.find((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId);
     expect(end).toMatchObject({
@@ -600,7 +608,7 @@ describe("workflow call empty final turn recovery", () => {
           status: "success",
           result: {
             state: "converged",
-            evidence: ["29 tests passed; replay tree matched"],
+            evidence: [evidence],
           },
         },
       },
