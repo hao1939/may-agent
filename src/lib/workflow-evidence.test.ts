@@ -51,6 +51,10 @@ describe("workflow evidence without reporting", () => {
     const boundary = "x".repeat(MAX_WORKFLOW_PAYLOAD_BYTES - 2);
     expect(retainWorkflowPayload("output", boundary)).toMatchObject({ state: "available", value: boundary });
     expect(retainWorkflowPayload("output", boundary + "x")).toMatchObject({ state: "unavailable", reason: "too-large" });
+    const longSecret = "token=" + "x".repeat(16_000);
+    expect(retainWorkflowPayload("output", Array(10).fill(longSecret))).toMatchObject({ state: "unavailable", reason: "too-large" });
+    const secretKey = "ghp_" + "x".repeat(36);
+    expect(retainWorkflowPayload("output", { [secretKey]: "data" })).toEqual({ kind: "output", state: "unavailable", reason: "sensitive-key" });
   });
   it.each(["done", "blocked"] as const)(
     "retains %s output with redaction and integrity checks after storage reopen",

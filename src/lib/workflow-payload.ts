@@ -6,17 +6,19 @@ import { types } from "node:util";
 export const MAX_WORKFLOW_PAYLOAD_BYTES = 64 * 1024;
 // Deep structures are not small inspection packets even when their leaves are tiny.
 const MAX_WORKFLOW_PAYLOAD_DEPTH = 32;
+type UnavailableReason = "too-large" | "not-json" | "sensitive-key";
 
 export type WorkflowPayload = { kind: "output" | "evidence" } & (
-  { state: "available"; value: unknown; redacted: boolean } | { state: "unavailable"; reason: "too-large" | "not-json" }
+  { state: "available"; value: unknown; redacted: boolean } | { state: "unavailable"; reason: UnavailableReason }
 );
 
 /** Plain JSON inspection copy, without authored hooks; unsupported data never fails completed work. */
 export function retainWorkflowPayload(kind: WorkflowPayload["kind"], value: unknown): WorkflowPayload | undefined {
   if (value === undefined) return undefined;
   let redacted = false;
-  let reason: "too-large" | "not-json" = "not-json";
+  let reason: UnavailableReason = "not-json";
   let remaining = MAX_WORKFLOW_PAYLOAD_BYTES;
+  let sourceRemaining = MAX_WORKFLOW_PAYLOAD_BYTES;
   const chunks: string[] = [];
   const ancestors = new WeakSet<object>();
   const rejectSize = (): never => {
@@ -30,11 +32,16 @@ export function retainWorkflowPayload(kind: WorkflowPayload["kind"], value: unkn
     chunks.push(text);
   };
   const string = (text: string) => {
-    // Bound both escaping and redaction work before allocating their output.
-    if (text.length > remaining) rejectSize();
-    const safe = redactTranscriptSecrets(text);
+    const safe = inspectText(text);
     redacted ||= safe !== text;
     append(JSON.stringify(safe));
+  };
+  const inspectText = (text: string): string => {
+    // Redacted output can be tiny; account for cumulative inspected input too.
+    if (text.length > sourceRemaining) rejectSize();
+    sourceRemaining -= Buffer.byteLength(text);
+    if (sourceRemaining < 0) rejectSize();
+    return redactTranscriptSecrets(text);
   };
   const visit = (item: unknown, depth: number): void => {
     if (depth > MAX_WORKFLOW_PAYLOAD_DEPTH) rejectSize();
@@ -68,7 +75,11 @@ export function retainWorkflowPayload(kind: WorkflowPayload["kind"], value: unkn
       for (const key in item) {
         if (!Object.hasOwn(item, key)) continue;
         if (count++) append(",");
-        if (key.length > remaining) rejectSize();
+        if (inspectText(key) !== key) {
+          // Renaming could collapse distinct keys and misrepresent evidence.
+          reason = "sensitive-key";
+          throw new Error("Sensitive property name");
+        }
         append(JSON.stringify(key));
         append(":");
         field(key);
