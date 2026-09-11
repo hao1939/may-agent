@@ -117,10 +117,12 @@ attempt, answer an unrelated question, restart, then return the measurement to
 its original caller. The explanation must not fulfill the measurement ask, and
 the eventual measurement must not overwrite the explanation. The
 [source and model follow-through trials](controller-poc-input-continuation.md)
-now pass this Task check. Actual Conversation execution and Request settlement
-now have a [direct-turn source slice](controller-poc-recovery-review.md#conversation-checkpoint);
-the complete handler and runtime cutover remain to migrate. Isolated correct
-decisions alone do not prove that boundary.
+now pass this Task check. A [Conversation source check](controller-poc-recovery-review.md#conversation-checkpoint)
+also passes that sequence with actual messages, Topics, Requests and supplied
+executor decisions. It admits follow-up work with the acknowledgment and brings
+back an exact accepted attempt as system input. Normal ingress, event/recovery
+wiring and execution controls remain to migrate; live model use of this actual
+Conversation path is still unproved.
 
 ### Recovery keeps the same Task
 

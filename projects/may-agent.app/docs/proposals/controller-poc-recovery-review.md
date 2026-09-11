@@ -206,12 +206,43 @@ input even with an expired lease. This prevents dual execution; it does not
 yet convert a production ingress path. Unconverted input remains visible and
 pending rather than being processed by an obsolete executor.
 
-This is deliberately an incomplete source slice: one fresh human input per
-attempt, direct answers only. Batched input, child/Condition returns, follow-up,
-Task controls and normal runtime wiring are not enabled here. The old inbox
-pump and follow-up owner have not been removed. Task capacity lanes, scoped
-Stop, failure pacing, active-Turn projection and live Conversation-model
-execution still need integration. Do not describe it as a completed cutover.
+[Checkpoint `895c75c6`](https://github.com/hao1939/may-agent/commit/895c75c6)
+extends that same entry to batched input and delegated results:
+
+- The executor receives the claimed input batch with each source preserved.
+  An unaccepted answer's retained input can be considered with newer feedback.
+  Settlement handles the batch and publishes one response; typed Request
+  decisions still determine which accepted asks were fulfilled.
+- The App maps a follow-up to its Task. Admission, Topic/Request linking,
+  acknowledgment and the Conversation Task result commit together in SQLite.
+  Failure to save the explanation leaves no admitted child or partial Request.
+- An accepted attempt of a linked Task can become a new system input for the
+  same Conversation Task. The state operation checks its exact App, Task,
+  attempt and Topic link. Repeated delivery is idempotent; a later Task cycle
+  cannot replace the saved earlier outcome.
+- A system turn may retain an internal summary without publishing a chat
+  message. Returning Task evidence does not itself close a Request.
+
+The supplied-decision test now uses real Conversation messages, Topics and
+Requests through **Conversation -> A -> B -> A -> Conversation**. B waits on an
+actual Condition while the Conversation answers an unrelated question. After
+SQLite reopen, a matching fact releases B, the normal child-result context
+returns its evidence to A, and A's exact accepted outcome becomes Conversation
+input. The final answer closes the original Request and preserves both earlier
+replies. A separate cross-App check verifies exact result identity and rejects
+unlinked or unaccepted results. Conversation state, projection and resolver
+checks passed **30 tests**. The final [scenario fixture at `a6beb497`](https://github.com/hao1939/may-agent/blob/a6beb497/src/app/core/state/conversation-task-turns.test.ts)
+uses the measurement ask followed by the threshold question; all **12
+Conversation Task tests** pass at that test-only follow-up.
+
+This remains a source PoC with supplied decisions, not a live-model Conversation
+or a completed runtime cutover. The test calls the new outcome-admission state
+operation at the result boundary; production event subscription and recovery
+discovery are not wired to it yet. Normal human ingress, Task controls, scoped
+Stop, foreground capacity/background pause, failure pacing per input and
+active-Turn projection still need integration. The old inbox pump and separate
+follow-up owner remain; both must retire before one execution owner is proved
+for the installed runtime.
 
 ## Verification and cost
 
@@ -230,6 +261,12 @@ targeted checks. No new full-suite total is claimed for that follow-up. The
 three skips require the separately installed agent/App fleet. **Full CI remains
 red**, and the common-lifecycle migration remains incomplete.
 
+At `895c75c6`, static checks passed and the full portable run finished with
+**2,637 passes, 3 skips and 129 failures**, across 2,769 tests in 281 files
+(130.6 seconds). The new Conversation checks pass, but the full migration gate
+is still red. The subsequent test-only follow-up above has focused verification,
+not a new full-suite total.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -245,6 +282,11 @@ The Conversation slice adds an execution link on retained inputs, a state
 operation composing existing transactions, and a composition entry. There is
 no new table, scheduler, model role or inbox execution lease. It adds code
 without yet deleting the old runtime path, so net simplification is unproven.
+The follow-up checkpoint adds **136 net production lines** (181 added, 45
+removed), excluding tests. It reuses Task admission, accepted attempts, Topic
+links and Request updates; it adds no table or scheduler. This extra code must
+replace the old input execution and follow-up paths during cutover, rather than
+remain alongside them as another permanent authority.
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting
 dispatch timers adds 20, and removing self-revision deletes another 21. Combined,
