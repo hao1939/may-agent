@@ -34,6 +34,7 @@ import {
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
+  readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
   retryLoadedFailedAppTask,
@@ -3739,90 +3740,66 @@ describe("canonical App task runtime", () => {
     });
   });
 
-  it("recovers a restored named executor without retrying missing work or blocking other Tasks", async () => {
+  it("retries a restored executor through durable eligibility while independent Tasks keep working", async () => {
     const f = fixture();
     const bus = eventBus();
     const calls: string[] = [];
-    const recovered: string[] = [];
-    bus.subscribe((event) => {
-      if (event.type === "project.task.handler.recovered") recovered.push(String(event.data?.taskId));
-    });
+    const startedAt = new Map<string, number>();
     const execute: TaskExecutor = async (attempt) => {
       calls.push(attempt.task.id);
+      startedAt.set(attempt.task.id, Date.now());
       return { state: "converged", summary: "Verified by fixture executor", evidence: ["test:executor-restored"] };
     };
     const runtimeOptions = options(f, bus);
     let generation = 0;
-    const install = (available: boolean) =>
-      installAppTaskRuntimes({
-        ...runtimeOptions,
-        executors: { other: execute, ...(available ? { reviewer: execute } : {}) },
-        appRegistrySnapshot: {
-          id: `boot:executor-recovery:${++generation}`,
-          generation,
-          entries: [{ appDir: f.appDir, definition: definition() }],
-        },
-      });
-    const attach = (id: string, executor = "reviewer") =>
-      attachLoadedAppTask({
-        bus,
-        appDir: f.appDir,
-        appId: "sample",
-        attachment: {
-          kind: "desired",
-          intent: {
-            id,
-            parentId: "operations",
-            outcome: `Verify ${id}`,
-            acceptance: ["Verified"],
-            mode: "achieve",
-            agent: "sample-owner",
-            executor,
-          },
-        },
-        idempotencyKey: `attach:${id}`,
-        request: { id: `request:${id}`, source: { kind: "human", id: "operator" }, input: { kind: "test", data: {} } },
-      });
+    const install = (available: boolean) => installAppTaskRuntimes({
+      ...runtimeOptions, executors: { other: execute, ...(available ? { reviewer: execute } : {}) },
+      appRegistrySnapshot: { id: `boot:executor-recovery:${++generation}`, generation,
+        entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const attach = (id: string, executor = "reviewer") => attachLoadedAppTask({
+      bus, appDir: f.appDir, appId: "sample",
+      attachment: { kind: "desired", intent: { id, parentId: "operations", outcome: `Verify ${id}`,
+        acceptance: ["Verified"], mode: "achieve", executor } },
+      idempotencyKey: `attach:${id}`, request: { id: `request:${id}`, source: { kind: "human", id: "operator" },
+        input: { kind: "test", data: {} } },
+    });
+    const accepted = (taskId: string) => readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey: `attach:${taskId}` });
     const until = async (condition: () => boolean) => {
-      const deadline = Date.now() + 2_000;
+      const deadline = Date.now() + 3_000;
       while (!condition() && Date.now() < deadline) await Bun.sleep(5);
       expect(condition()).toBeTrue();
     };
 
     await install(true);
-    const config = loadedTaskConfig(f);
-    const store = config.resourceStore;
-    await attach("work/completed");
-    await until(() => Boolean(store.readReceipt("work/completed")));
-    const completed = store.readReceipt("work/completed");
+    const store = loadedTaskConfig(f).resourceStore;
+    attach("work/completed");
+    await until(() => accepted("work/completed")?.state === "converged");
+    const completed = accepted("work/completed");
 
     await install(false);
-    await attach("work/missing");
-    await until(() => store.readTask("work/missing")?.status.phase === "attention");
-    const missing = store.readTask("work/missing")!;
-    const failedAttempts = store.readTaskContext({ taskIds: ["work/missing"] }).attempts;
-    expect(Object.values(failedAttempts ?? {})).toEqual([
-      expect.objectContaining({ handler: "executor:reviewer", failureReason: "HandlerUnavailable" }),
-    ]);
-    await attach("work/independent", "other");
-    await until(() => Boolean(store.readReceipt("work/independent")));
-    await recoverInstalledAppTasks(bus);
-    await install(false);
-    expect(store.readTaskContext({ taskIds: ["work/missing"] }).attempts).toEqual(failedAttempts);
-    expect(store.readTask("work/missing")?.status.phase).toBe("attention");
-    expect(recovered).toEqual([]);
-
+    attach("work/missing");
+    await until(() => Boolean(store.readTask("work/missing")?.status.executionRetryAt));
+    const failure = Object.values(store.readTaskContext({ taskIds: ["work/missing"] }).attempts ?? {})
+      .find((attempt) => attempt.failureReason === "HandlerUnavailable")!;
+    expect(failure).toMatchObject({ handler: "executor:reviewer", state: "failed" });
+    expect(accepted("work/missing")).toBeNull();
+    attach("work/independent", "other");
+    await until(() => accepted("work/independent")?.state === "converged");
+    expect(calls).not.toContain("work/missing");
+    const retryAt = store.readTask("work/missing")!.status.executionRetryAt!;
     await install(true);
-    await until(() => Boolean(store.readReceipt("work/missing")));
+    await until(() => accepted("work/missing")?.state === "converged");
+    expect(startedAt.get("work/missing")).toBeGreaterThanOrEqual(retryAt);
+    expect(store.readAttempt(failure.metadata.id)).toEqual(failure);
+    expect(store.readTask("work/missing")?.metadata.generation).toBe(failure.taskGeneration);
+    expect(store.readCancellation("work/missing")).toBeNull();
+    expect(store.nextDueAt()).toBeNull();
+    expect(store.listRecoveryCandidates().items).toEqual([]);
     await recoverInstalledAppTasks(bus);
     await install(true);
     expect(calls).toEqual(["work/completed", "work/independent", "work/missing"]);
-    expect(recovered).toEqual(["work/missing"]);
-    expect(store.readReceipt("work/missing")).toMatchObject({
-      metadata: { id: missing.metadata.id, generation: missing.metadata.generation },
-      handler: "executor:reviewer",
-    });
-    expect(store.readReceipt("work/completed")).toEqual(completed);
+    expect(accepted("work/completed")).toEqual(completed);
   });
 
   it.each(["reload", "close and reinstall", "rejected reload"] as const)(

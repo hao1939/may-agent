@@ -1,4 +1,4 @@
-import { afterEach, expect, it, setSystemTime } from "bun:test";
+import { afterEach, expect, it, setSystemTime, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,7 +10,7 @@ import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import {
   appTaskContext, claimObservedAppTask, closeAppTask, completeAppTask, failAppTaskAttempt,
-  observeAppTaskIntent, readAppTaskAdmissionOutcome, recordAppTaskTrigger, stopAppTask,
+  observeAppTaskIntent, readAppTaskAdmissionOutcome, recordAppTaskTrigger, retryFailedAppTask, stopAppTask,
 } from "./app-task-reconciler.js";
 
 const cleanup: Array<() => void> = [];
@@ -31,7 +31,7 @@ function fixture() {
     idempotencyKey: "ask:measure", request: { id: "measure", source: { kind: "app", id: "caller" },
       input: { kind: "measure", data: { sample: "one" } } } });
   return {
-    get config() { return config; }, intent,
+    get config() { return config; }, intent, databasePath,
     claim() {
       const claim = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
       if (claim.kind !== "claimed") throw new Error(`Expected claim, got ${claim.kind}`);
@@ -116,6 +116,68 @@ it("uses the real due timer after restart, preserves cooldown under early wakes,
     controller.close();
     await controller.whenDrained();
   }
+});
+
+it("fences a due retry when another connection pauses the project immediately before claiming", () => {
+  const f = fixture();
+  failAppTaskAttempt(f.config, f.claim(), "Provider unavailable");
+  setSystemTime(new Date(f.config.resourceStore.nextDueAt()!));
+  const store = f.config.resourceStore;
+  const other = AppTaskResourceStore.openStandalone(f.databasePath, "sample");
+  const before = store.readTaskContext({ taskIds: ["work"] });
+  const commit = store.commit.bind(store);
+  const interleave = spyOn(store, "commit").mockImplementationOnce((mutation) => {
+    other.setProjectLifecycle("paused");
+    return commit(mutation);
+  });
+  try {
+    expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+    expect(interleave).toHaveBeenCalledTimes(1);
+    expect(store.readTaskContext({ taskIds: ["work"] }).resources).toEqual(before.resources);
+    expect(store.readTaskContext({ taskIds: ["work"] }).attempts).toEqual(before.attempts);
+    interleave.mockRestore();
+    expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+    other.setProjectLifecycle("active");
+    expect(f.claim().generation).toBe(before.resources!.work!.metadata.generation);
+  } finally {
+    interleave.mockRestore();
+    other.close();
+  }
+});
+
+it("retains ordered failure input and newer human steering through a paced retry", () => {
+  const f = fixture();
+  const first = f.claim();
+  const steering = { type: "project.comment.created", source: "human", eventId: 81,
+    data: { text: "Use the corrected sample location" } };
+  recordAppTaskTrigger(f.config, "work", steering);
+  failAppTaskAttempt(f.config, first, "Provider unavailable");
+  f.reopen();
+  expect(() => f.claim()).toThrow("waiting");
+  setSystemTime(new Date(f.config.resourceStore.nextDueAt()!));
+  const next = f.claim();
+  expect(next.events.map(({ event }) => event)).toEqual([...first.events.map(({ event }) => event), steering]);
+  expect(next.generation).toBe(first.generation);
+  expect(f.config.resourceStore.readAttempt(first.attemptId)?.state).toBe("failed");
+});
+
+it.each(["execution error", "failure report"])("allows an explicit owner retry during cooldown after %s", (kind) => {
+  const f = fixture();
+  const first = f.claim();
+  if (kind === "execution error") failAppTaskAttempt(f.config, first, "Provider unavailable");
+  else stopAppTask(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
+  const evidence = f.config.resourceStore.readAttempt(first.attemptId);
+  const resource = f.config.resourceStore.readTask("work")!;
+  const instruction = { appId: "sample", taskId: "work", controlKey: "owner-retry",
+    expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion };
+  const receipt = retryFailedAppTask(f.config, instruction);
+  expect(retryFailedAppTask(f.config, instruction)).toEqual(receipt);
+  expect(f.config.resourceStore.nextDueAt()).toBeNull();
+  expect(f.config.resourceStore.readAttempt(first.attemptId)).toEqual(evidence);
+  const next = f.claim();
+  expect(next.events).toEqual(first.events);
+  expect(next.generation).toBe(first.generation);
+  expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBeUndefined();
 });
 
 it("accepts failure evidence without resolving the ask, then succeeds on the same assignment", () => {

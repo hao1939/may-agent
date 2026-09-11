@@ -2195,142 +2195,6 @@ export function appTaskQueueEntries(config: AppTaskContext, taskIds: Iterable<st
   });
 }
 
-export type AppTaskHandlerRepairCandidate = Pick<
-  AppTaskClaim,
-  "taskId" | "generation" | "resourceVersion" | "attemptId" | "agent" | "handler"
->;
-
-export type AppTaskExecutionRepairCandidate = {
-  taskId: string;
-  agent: string;
-  failedAt: string;
-  failureReason: "HandlerExecutionFailed" | "handler-blocked";
-  sessionId?: string;
-};
-
-/** Exact unavailable attempts to recheck against the installed backend bindings. */
-export function listHandlerUnavailableAppTasks(
-  config: AppTaskContext,
-  appAgent: string,
-  candidateTaskIds: Iterable<string>,
-): AppTaskHandlerRepairCandidate[] {
-  const candidates = [...candidateTaskIds];
-  if (candidates.length === 0) return [];
-  const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
-  return Object.values(tree.resources ?? {})
-    .flatMap((resource): AppTaskHandlerRepairCandidate[] => {
-      if (resource.status.phase !== "attention") return [];
-      const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-      if (attempt?.failureReason !== "HandlerUnavailable") return [];
-      return [
-        {
-          taskId: resource.metadata.id,
-          generation: resource.metadata.generation,
-          resourceVersion: resource.metadata.resourceVersion,
-          attemptId: attempt.metadata.id,
-          agent: resolvedAgent(tree, resourceIntent(resource), appAgent),
-          handler: attempt.handler,
-        },
-      ];
-    })
-    .sort((left, right) => left.taskId.localeCompare(right.taskId));
-}
-
-/** A slow availability check cannot release a different generation or attempt. */
-export function releaseHandlerUnavailableAppTask(
-  config: AppTaskContext,
-  candidate: AppTaskHandlerRepairCandidate,
-): boolean {
-  const { taskId } = candidate;
-  if (config.resourceStore.projectLifecycle() === "paused") return false;
-  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const resource = tree.resources?.[taskId];
-  if (
-    !resource ||
-    resource.status.phase !== "attention" ||
-    resource.metadata.generation !== candidate.generation ||
-    resource.metadata.resourceVersion !== candidate.resourceVersion ||
-    config.resourceStore.readCancellation(taskId)?.generation === candidate.generation ||
-    resolvedAgent(tree, resourceIntent(resource), config.agent) !== candidate.agent
-  )
-    return false;
-  const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
-  if (
-    attempt?.metadata.id !== candidate.attemptId ||
-    attempt.handler !== candidate.handler ||
-    attempt.failureReason !== "HandlerUnavailable"
-  )
-    return false;
-  const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
-  const summary = `Handler binding ${attempt.handler} is available again; retrying current task generation`;
-  touchResource(resource, {
-    phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
-    currentAttemptId: undefined,
-    summary,
-    conditionIds: [],
-  });
-  try {
-    commitTaskMutation(config, tree, {
-      resourceMutation: {
-        ...finishResourceMutationScope(mutationScope, tree),
-        requireActiveProject: true,
-      },
-    });
-  } catch (error) {
-    if (error instanceof ResourceTaskMutationStaleError) return false;
-    throw error;
-  }
-  return true;
-}
-
-/** Executions to retry only after a later successful session proves their selected agent is runnable again. */
-export function listHandlerExecutionFailedAppTasks(
-  config: AppTaskContext,
-  candidateTaskIds: Iterable<string>,
-): AppTaskExecutionRepairCandidate[] {
-  const candidates = [...candidateTaskIds];
-  if (candidates.length === 0) return [];
-  const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
-  return Object.values(tree.resources ?? {})
-    .flatMap((resource): AppTaskExecutionRepairCandidate[] => {
-      if (resource.status.phase !== "attention") return [];
-      const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-      if (!attempt?.finishedAt) return [];
-      if (attempt.failureReason === "HandlerExecutionFailed") {
-        return [
-          {
-            taskId: resource.metadata.id,
-            agent: attempt.owner,
-            failedAt: attempt.finishedAt,
-            failureReason: "HandlerExecutionFailed",
-            ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
-          },
-        ];
-      }
-      // Compatibility for direct-agent failures recorded before execution
-      // failures received their own structured reason. The loader must prove
-      // the referenced session itself ended in error before releasing it.
-      if (
-        attempt.failureReason === "handler-blocked" &&
-        isManagedAgentHandler(attempt.handler, attempt.owner) &&
-        attempt.sessionId
-      ) {
-        return [
-          {
-            taskId: resource.metadata.id,
-            agent: attempt.owner,
-            failedAt: attempt.finishedAt,
-            failureReason: "handler-blocked",
-            sessionId: attempt.sessionId,
-          },
-        ];
-      }
-      return [];
-    })
-    .sort((left, right) => left.failedAt.localeCompare(right.failedAt) || left.taskId.localeCompare(right.taskId));
-}
-
 export type AppTaskRetryReceipt = {
   receiptId: string;
   action: "app.task.retry";
@@ -2392,13 +2256,16 @@ export function retryFailedAppTask(
       `Task ${input.appId}/${input.taskId} resource version changed: expected ${input.expectedResourceVersion}, current ${resource.metadata.resourceVersion}`,
     );
   }
-  if (resource.status.phase !== "attention") {
+  const cooling = resource.status.phase === "pending" && resource.status.executionRetryAt !== undefined;
+  if (resource.status.phase !== "attention" && !cooling) {
     throw new Error(
-      `Task ${input.appId}/${input.taskId} is not eligible for retry: phase is ${resource.status.phase}, expected attention`,
+      `Task ${input.appId}/${input.taskId} is not eligible for retry: phase is ${resource.status.phase}, expected a failed attempt awaiting retry`,
     );
   }
   const attempt = latestTaskAttempt(tree, input.taskId, input.expectedGeneration);
-  if (!attempt || attempt.state !== "failed" || resource.status.currentAttemptId) {
+  const unsuccessful = attempt?.state === "failed" ||
+    (attempt?.state === "completed" && attempt.acceptedResult?.state === "stopped");
+  if (!attempt || !unsuccessful || resource.status.currentAttemptId) {
     throw new Error(
       `Task ${input.appId}/${input.taskId} is not eligible for retry: its current generation has no completed failed attempt`,
     );
@@ -2723,62 +2590,6 @@ function commitTaskCancellation(
   };
 }
 
-/** Release one execution failure after structured evidence from a newer successful agent session. */
-export function releaseHandlerExecutionFailedAppTask(
-  config: AppTaskContext,
-  taskId: string,
-  evidence: {
-    agent: string;
-    sessionId: string;
-    observedAt: string;
-    allowLegacyHandlerBlocked?: boolean;
-  },
-): boolean {
-  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const resource = tree.resources?.[taskId];
-  if (!resource || resource.status.phase !== "attention") return false;
-  const attempt = latestTaskAttempt(tree, taskId, resource.metadata.generation);
-  if (!attempt?.finishedAt || attempt.owner !== evidence.agent) return false;
-  const executionFailed = attempt.failureReason === "HandlerExecutionFailed";
-  const legacyExecutionFailed =
-    evidence.allowLegacyHandlerBlocked === true &&
-    attempt.failureReason === "handler-blocked" &&
-    isManagedAgentHandler(attempt.handler, attempt.owner) &&
-    Boolean(attempt.sessionId);
-  if (!executionFailed && !legacyExecutionFailed) return false;
-  const repeatedExecutionFailure =
-    executionFailed &&
-    Object.values(tree.attempts ?? {}).filter(
-      (candidate) =>
-        candidate.taskId === taskId &&
-        candidate.taskGeneration === resource.metadata.generation &&
-        candidate.failureReason === "HandlerExecutionFailed",
-    ).length > 1;
-  // One later agent success is enough to prove that a transient agent/runtime
-  // failure may be retried. Repeated task-specific failures require fresh
-  // task input instead of being revived by unrelated successful agent work.
-  if (repeatedExecutionFailure) return false;
-  const observedAt = Date.parse(evidence.observedAt);
-  const failedAt = Date.parse(attempt.finishedAt);
-  if (!Number.isFinite(observedAt) || !Number.isFinite(failedAt) || observedAt <= failedAt) return false;
-  const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
-  const summary = `Agent ${evidence.agent} completed session ${evidence.sessionId} after the failed execution; retrying current task generation`;
-  touchResource(resource, {
-    phase: "pending",
-    observedGeneration: Math.max(0, resource.metadata.generation - 1),
-    currentAttemptId: undefined,
-    summary,
-    conditionIds: [],
-  });
-  // Replay the unaccepted attempt batch before any newer event that arrived
-  // after the failed attempt; neither source may erase the other.
-  restoreAttemptEvents(tree, taskId, resource, attempt, evidence.observedAt);
-  commitTaskMutation(config, tree, {
-    resourceMutation: finishResourceMutationScope(mutationScope, tree),
-  });
-  return true;
-}
-
 export function claimObservedAppTask(
   config: AppTaskContext,
   input: {
@@ -2806,6 +2617,9 @@ export function claimObservedAppTask(
       taskId: input.taskId,
       generation: tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
     };
+  }
+  if (config.resourceStore.projectLifecycle() === "paused") {
+    return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
   const retryAt = pendingTaskExecutionRetryAt(resource);
   if (retryAt !== undefined) {
@@ -3117,15 +2931,23 @@ export function claimObservedAppTask(
   });
   const currentConditionIds = new Set(resource.status.conditionIds ?? []);
   const relevantConditionIds = new Set([...initialConditionIds, ...currentConditionIds]);
-  commitTaskMutation(config, tree, {
-    resourceMutation: {
-      fences: [resourceFence],
-      tasks: [resourceWrite(tree, resource, false)],
-      attempts: [...changedAttempts],
-      conditions: [...relevantConditionIds].flatMap((id) => (tree.conditions?.[id] ? [tree.conditions[id]] : [])),
-      deleteConditionIds: [...relevantConditionIds].filter((id) => !tree.conditions?.[id]),
-    },
-  });
+  try {
+    commitTaskMutation(config, tree, {
+      resourceMutation: {
+        requireActiveProject: true,
+        fences: [resourceFence],
+        tasks: [resourceWrite(tree, resource, false)],
+        attempts: [...changedAttempts],
+        conditions: [...relevantConditionIds].flatMap((id) => (tree.conditions?.[id] ? [tree.conditions[id]] : [])),
+        deleteConditionIds: [...relevantConditionIds].filter((id) => !tree.conditions?.[id]),
+      },
+    });
+  } catch (error) {
+    if (error instanceof ResourceTaskMutationStaleError && config.resourceStore.projectLifecycle() === "paused") {
+      return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
+    }
+    throw error;
+  }
   return {
     kind: "claimed",
     taskId: input.taskId,

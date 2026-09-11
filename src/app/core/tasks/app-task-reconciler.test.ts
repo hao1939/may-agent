@@ -18,8 +18,6 @@ import {
   completeAppTask,
   deferAppTask as deferCanonicalAppTask,
   failAppTaskAttempt,
-  listHandlerExecutionFailedAppTasks,
-  listHandlerUnavailableAppTasks,
   markAppTaskAttention,
   observeAppTaskIntent,
   listRunnableAppTaskQueueEntries,
@@ -39,8 +37,6 @@ import {
   recoverableAppTaskAttempts,
   expiredAgentSessionAppTaskAttempt,
   terminalAgentSessionAppTaskClaim,
-  releaseHandlerExecutionFailedAppTask,
-  releaseHandlerUnavailableAppTask,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
@@ -1383,7 +1379,7 @@ describe("App task reconciler state", () => {
     ).toThrow("cannot configure both workflow and executor");
   });
 
-  it("lists pending and explicit agent handoff tasks but keeps unavailable workflows asleep", () => {
+  it("prioritizes retained handoff input while unavailable workflows wait for backoff", () => {
     const state = fixture();
     const { config } = state;
     const attentionIntent = {
@@ -1464,13 +1460,8 @@ describe("App task reconciler state", () => {
     if (maintainClaim.kind !== "claimed") throw new Error("expected maintain claim");
     completeAppTask(config, maintainClaim, { summary: "monitor converged" });
 
-    expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/attention", "work/pending"]);
-    expect(listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id])).toEqual([
-      expect.objectContaining({
-        taskId: "work/unavailable", agent: "branch-owner", handler: "workflow:missing-workflow",
-        generation: unavailableClaim.generation, attemptId: unavailableClaim.attemptId,
-      }),
-    ]);
+    expect(listRunnableAppTaskIds(config)).toEqual(["work/attention", "categorized-task", "work/pending"]);
+
 
     observeAppTaskIntent(config, {
       intent: attentionIntent,
@@ -1491,13 +1482,8 @@ describe("App task reconciler state", () => {
       "work/pending",
     ]);
 
-    const [candidate] = listHandlerUnavailableAppTasks(config, "app-owner", [unavailableIntent.id]);
-    expect(candidate).toBeDefined();
-    expect(releaseHandlerUnavailableAppTask(config, candidate!)).toBe(true);
-    expect(
-      config.resourceStore.readTaskContext({ taskIds: ["work/unavailable"] }).resources?.["work/unavailable"]?.status
-        .phase,
-    ).toBe("pending");
+    expect(config.resourceStore.readTask("work/unavailable")?.status.executionRetryAt).toBeGreaterThan(Date.now());
+
   });
 
   it("separates desired-state observation from attempt claiming", () => {
@@ -4915,216 +4901,6 @@ describe("App task reconciler state", () => {
     const persistedAttempt = readTaskSnapshot(config).attempts?.[next.attemptId];
     expect(persistedAttempt).toMatchObject({ events: [{ event: { type: "project.problem.resolved" } }] });
     expect(persistedAttempt?.trigger).toBeUndefined();
-  });
-
-  it("releases execution failure only after newer success from the same agent", () => {
-    const state = fixture();
-    const { config } = state;
-    const claim = declareAndClaimTask(config, {
-      intent: intent(),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      trigger: {
-        type: "project.task.child-transitioned",
-        childTaskId: "work/recovered-evidence",
-      },
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "failed-agent-session");
-    markAppTaskAttention(config, claim, {
-      summary: "agent execution ended without a decision",
-      reason: "HandlerExecutionFailed",
-    });
-
-    const [candidate] = listHandlerExecutionFailedAppTasks(config, [claim.taskId]);
-    expect(candidate).toMatchObject({
-      taskId: claim.taskId,
-      agent: "branch-owner",
-      failureReason: "HandlerExecutionFailed",
-      sessionId: "failed-agent-session",
-    });
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        agent: "other-owner",
-        sessionId: "unrelated-success",
-        observedAt: "2099-01-01T00:00:00.000Z",
-      }),
-    ).toBe(false);
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        agent: "branch-owner",
-        sessionId: "new-success",
-        observedAt: "invalid",
-      }),
-    ).toBe(false);
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        agent: "branch-owner",
-        sessionId: "new-success",
-        observedAt: "2000-01-01T00:00:00.000Z",
-      }),
-    ).toBe(false);
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        agent: "branch-owner",
-        sessionId: "new-success",
-        observedAt: "2099-01-01T00:00:00.000Z",
-      }),
-    ).toBe(true);
-    expect(
-      config.resourceStore.readTaskContext({ taskIds: [claim.taskId] }).resources?.[claim.taskId].status.phase,
-    ).toBe("pending");
-    expect(readAppTaskTrigger(config, claim.taskId)).toEqual({
-      type: "project.task.child-transitioned",
-      childTaskId: "work/recovered-evidence",
-    });
-  });
-
-  it("preserves newer human steering while releasing one execution failure", () => {
-    const state = fixture();
-    const { config } = state;
-    const claim = declareAndClaimTask(config, {
-      intent: intent(),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      trigger: { type: "project.task.tick", data: { reason: "initial" } },
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    recordAppTaskAttemptSession(config, claim, "failed-agent-session");
-    markAppTaskAttention(config, claim, {
-      summary: "agent execution ended without a decision",
-      reason: "HandlerExecutionFailed",
-    });
-    expect(
-      recordAppTaskTrigger(config, claim.taskId, {
-        type: "project.comment.created",
-        data: { project: "sample", comment: "Use the exact evidence paths" },
-      }),
-    ).toEqual({ kind: "recorded" });
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        agent: "branch-owner",
-        sessionId: "new-success",
-        observedAt: "2099-01-01T00:00:00.000Z",
-      }),
-    ).toBe(true);
-    expect(readAppTaskTrigger(config, claim.taskId)).toEqual({
-      type: "project.comment.created",
-      data: { project: "sample", comment: "Use the exact evidence paths" },
-    });
-
-    const recovered = claimObservedAppTask(config, {
-      taskId: claim.taskId,
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      reason: "execution-recovered",
-    });
-    if (recovered.kind !== "claimed") throw new Error("expected recovered claim");
-    expect(recovered.events.map(({ event }) => event)).toEqual([
-      { type: "project.task.tick", data: { reason: "initial" } },
-      {
-        type: "project.comment.created",
-        data: { project: "sample", comment: "Use the exact evidence paths" },
-      },
-    ]);
-  });
-
-  it("replays a failed attempt batch before every newer pending event", () => {
-    const state = fixture();
-    const { config } = state;
-    observeAppTaskIntent(config, {
-      intent: intent("maintain"),
-      appAgent: "app-owner",
-      trigger: { type: "sample.first", eventId: 701 },
-    });
-    expect(
-      recordAppTaskTrigger(config, "pipeline-monitor", {
-        type: "sample.second",
-        eventId: 702,
-      }),
-    ).toEqual({ kind: "recorded" });
-    const claim = claimObservedAppTask(config, {
-      taskId: "pipeline-monitor",
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      reason: "event",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    expect(claim.events.map(({ event }) => event.eventId)).toEqual([701, 702]);
-    recordAppTaskAttemptSession(config, claim, "failed-batch-session");
-    markAppTaskAttention(config, claim, {
-      summary: "agent execution ended without a decision",
-      reason: "HandlerExecutionFailed",
-    });
-    expect(
-      recordAppTaskTrigger(config, claim.taskId, {
-        type: "sample.third",
-        eventId: 703,
-      }),
-    ).toEqual({ kind: "recorded" });
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, claim.taskId, {
-        agent: "branch-owner",
-        sessionId: "new-success",
-        observedAt: "2099-01-01T00:00:00.000Z",
-      }),
-    ).toBe(true);
-    const replay = claimObservedAppTask(config, {
-      taskId: claim.taskId,
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      reason: "execution-recovered",
-    });
-    if (replay.kind !== "claimed") throw new Error("expected replay claim");
-    expect(replay.events.map(({ event }) => event.eventId)).toEqual([701, 702, 703]);
-  });
-
-  it("does not revive repeated execution failures from unrelated agent success", () => {
-    const state = fixture();
-    const { config } = state;
-    const first = declareAndClaimTask(config, {
-      intent: intent(),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      trigger: { type: "project.task.tick", data: { reason: "initial" } },
-    });
-    if (first.kind !== "claimed") throw new Error("expected first claim");
-    recordAppTaskAttemptSession(config, first, "first-failed-session");
-    markAppTaskAttention(config, first, {
-      summary: "first agent execution failure",
-      reason: "HandlerExecutionFailed",
-    });
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, first.taskId, {
-        agent: "branch-owner",
-        sessionId: "first-health-proof",
-        observedAt: "2099-01-01T00:00:00.000Z",
-      }),
-    ).toBe(true);
-
-    const second = declareAndClaimTask(config, {
-      intent: intent(),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      trigger: { type: "project.task.tick", data: { reason: "automatic-retry" } },
-    });
-    if (second.kind !== "claimed") throw new Error("expected second claim");
-    recordAppTaskAttemptSession(config, second, "second-failed-session");
-    markAppTaskAttention(config, second, {
-      summary: "second agent execution failure",
-      reason: "HandlerExecutionFailed",
-    });
-
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, second.taskId, {
-        agent: "branch-owner",
-        sessionId: "unrelated-success",
-        observedAt: "2100-01-01T00:00:00.000Z",
-      }),
-    ).toBe(false);
-    expect(
-      config.resourceStore.readTaskContext({ taskIds: [second.taskId] }).resources?.[second.taskId].status.phase,
-    ).toBe("attention");
   });
 
   it("accepts the current attempt after a status-only resource version change", () => {

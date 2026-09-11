@@ -7,7 +7,7 @@ import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "../tasks/app-task-recovery.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
-import type { AppTaskAttempt, AppTaskResource } from "../tasks/app-task-state.js";
+import type { AppTaskResource } from "../tasks/app-task-state.js";
 import {
   cacheTaskSnapshots,
   readTaskSnapshot,
@@ -19,13 +19,12 @@ import {
 import {
   claimObservedAppTask,
   cancelAppTask,
+  closeAppTask,
   appTaskContext,
   completeAppTask,
   deferAppTask,
-  listHandlerExecutionFailedAppTasks,
   observeAppTaskIntent,
   recordAppTaskTrigger,
-  releaseHandlerExecutionFailedAppTask,
   stopAppTask,
 } from "../tasks/app-task-reconciler.js";
 
@@ -60,7 +59,7 @@ function fixture(): TaskTree {
   return {
     version: 1,
     project: "example",
-    project_lifecycle: "paused",
+    project_lifecycle: "active",
     root_task_id: "project",
     groups: { project: { id: "project", parent_id: null } },
     resources: { human: resource("human"), normal: resource("normal", "waiting"), active },
@@ -360,7 +359,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("round-trips human and App cancellations through snapshot bootstrap and reopen", () => {
+  it("round-trips human cancellation and explicit App closure through snapshot bootstrap and reopen", () => {
     const source = open();
     const target = open();
     const path = join(roots.at(-1)!, "host.sqlite");
@@ -396,6 +395,10 @@ describe("AppTaskResourceStore", () => {
         evidence: ["analysis:feasibility"],
         result: { partial: "Findings" },
       });
+      expect(source.readCancellation("optional")).toBeNull();
+      const optional = source.readTask("optional")!;
+      closeAppTask(config, { appId: "example", taskId: "optional", reason: "Owner withdrew optional work",
+        expectedGeneration: optional.metadata.generation, expectedResourceVersion: optional.metadata.resourceVersion });
       const snapshot = source.readSnapshot();
       target.bootstrapSnapshot(snapshot, "copied", ["human", "optional"]);
       expect(target.readSnapshot()).toEqual(snapshot);
@@ -520,31 +523,6 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("shares bounded handler-recovery pages without changing canonical Task state", () => {
-    const root = mkdtempSync(join(tmpdir(), "may-handler-recovery-cursor-"));
-    roots.push(root);
-    const path = join(root, "host.sqlite");
-    const first = AppTaskResourceStore.openStandalone(path, "example");
-    const second = AppTaskResourceStore.openStandalone(path, "example");
-    try {
-      const tree = fixture();
-      tree.resources = Object.fromEntries(["one", "two", "three"].map((id) => [id, resource(id, "attention")]));
-      tree.attempts = {};
-      tree.taskTriggers = {};
-      first.bootstrapSnapshot(tree, "fixture");
-      const revision = first.revision();
-      const before = first.readTaskContext({ taskIds: ["one", "two", "three"] });
-      expect(first.takeHandlerRecoveryTaskIds(2)).toEqual(["one", "three"]);
-      expect(second.takeHandlerRecoveryTaskIds(2)).toEqual(["two"]);
-      expect(first.takeHandlerRecoveryTaskIds(2)).toEqual(["one", "three"]);
-      expect(first.revision()).toBe(revision);
-      expect(first.readTaskContext({ taskIds: ["one", "two", "three"] })).toEqual(before);
-    } finally {
-      first.close();
-      second.close();
-    }
-  });
-
   it("reads a bounded task context without pulling unrelated App history", () => {
     const store = open();
     const tree = fixture();
@@ -575,142 +553,6 @@ describe("AppTaskResourceStore", () => {
     const currentOnly = store.readTaskContext({ taskIds: ["active"] }, { includeHistory: false });
     expect(Object.keys(currentOnly.attempts ?? {})).toEqual([]);
     expect(currentOnly.resources?.active?.status.currentAttemptId).toBe("attempt-1");
-    store.close();
-  });
-
-  it("finds only exact agent execution-recovery candidates in a large attention cohort", () => {
-    const store = open();
-    const tree = fixture();
-    tree.resources = {};
-    tree.attempts = {};
-    tree.taskTriggers = {};
-    const attempt = (
-      taskId: string,
-      attemptId: string,
-      startedAt: string,
-      options: {
-        owner?: string;
-        handler?: string;
-        failureReason?: string;
-        sessionId?: string;
-        state?: AppTaskAttempt["state"];
-      } = {},
-    ): AppTaskAttempt => ({
-      metadata: { id: attemptId, resourceVersion: 1 },
-      taskId,
-      taskGeneration: 1,
-      specHash: `hash-${taskId}`,
-      owner: options.owner ?? "target-owner",
-      handler: options.handler ?? `owner:${options.owner ?? "target-owner"}`,
-      runtimeId: "runtime",
-      state: options.state ?? "failed",
-      reason: "test",
-      startedAt,
-      ...(options.state === "completed"
-        ? { finishedAt: startedAt }
-        : {
-            finishedAt: startedAt,
-            failureReason: options.failureReason ?? "needs-agent",
-            ...(options.sessionId === undefined ? {} : { sessionId: options.sessionId }),
-          }),
-    });
-    const add = (taskId: string, candidate: AppTaskAttempt) => {
-      tree.resources![taskId] = resource(taskId, "attention");
-      tree.attempts![candidate.metadata.id] = candidate;
-    };
-    for (let index = 0; index < 2_000; index += 1) {
-      const id = `unrelated-${index.toString().padStart(4, "0")}`;
-      add(
-        id,
-        attempt(id, `attempt-${id}`, new Date(Date.parse("2026-08-21T00:00:00.000Z") + index).toISOString(), {
-          failureReason: "needs-agent",
-          sessionId: `session-${id}`,
-        }),
-      );
-    }
-    add(
-      "execution-failed",
-      attempt("execution-failed", "attempt-execution", "2026-08-21T01:00:00.000Z", {
-        failureReason: "HandlerExecutionFailed",
-        sessionId: "failed-execution-session",
-      }),
-    );
-    add(
-      "legacy-failed",
-      attempt("legacy-failed", "attempt-legacy", "2026-08-21T01:00:01.000Z", {
-        failureReason: "handler-blocked",
-        sessionId: "failed-legacy-session",
-      }),
-    );
-    add(
-      "other-owner",
-      attempt("other-owner", "attempt-other-owner", "2026-08-21T01:00:02.000Z", {
-        owner: "other-owner",
-        failureReason: "HandlerExecutionFailed",
-        sessionId: "failed-other-agent-session",
-      }),
-    );
-    add(
-      "legacy-not-direct",
-      attempt("legacy-not-direct", "attempt-legacy-not-direct", "2026-08-21T01:00:03.000Z", {
-        handler: "workflow:legacy",
-        failureReason: "handler-blocked",
-        sessionId: "failed-indirect-session",
-      }),
-    );
-    add(
-      "failure-without-session",
-      attempt("failure-without-session", "attempt-without-session", "2026-08-21T01:00:04.000Z", {
-        failureReason: "HandlerExecutionFailed",
-      }),
-    );
-    add(
-      "superseded-failure",
-      attempt("superseded-failure", "attempt-old-failure", "2026-08-21T01:00:05.000Z", {
-        failureReason: "HandlerExecutionFailed",
-        sessionId: "old-failed-session",
-      }),
-    );
-    tree.attempts!["attempt-new-success"] = attempt(
-      "superseded-failure",
-      "attempt-new-success",
-      "2026-08-21T01:00:06.000Z",
-      { state: "completed" },
-    );
-    store.bootstrapSnapshot(tree, "revision-1");
-
-    const taskIds = store.listHandlerExecutionRecoveryTaskIds("target-owner");
-    expect(taskIds).toEqual(["execution-failed", "legacy-failed"]);
-
-    const readScopes: string[][] = [];
-    const readTaskContext = store.readTaskContext.bind(store);
-    store.readTaskContext = (input) => {
-      readScopes.push([...input.taskIds]);
-      return readTaskContext(input);
-    };
-    const configRoot = mkdtempSync(join(tmpdir(), "may-task-recovery-config-"));
-    roots.push(configRoot);
-    const appDir = join(configRoot, "example.app");
-    mkdirSync(appDir, { recursive: true });
-    const config: AppTaskContext = {
-      appDir,
-      projectDir: configRoot,
-      agent: "test",
-      maxConcurrent: 2,
-      resourceStore: store,
-    };
-    expect(listHandlerExecutionFailedAppTasks(config, taskIds).map((candidate) => candidate.taskId)).toEqual(taskIds);
-    expect(readScopes).toEqual([taskIds]);
-    expect(listHandlerExecutionFailedAppTasks(config, [])).toEqual([]);
-    expect(readScopes).toEqual([taskIds]);
-    expect(
-      releaseHandlerExecutionFailedAppTask(config, "execution-failed", {
-        agent: "target-owner",
-        sessionId: "later-successful-session",
-        observedAt: "2099-01-01T00:00:00.000Z",
-      }),
-    ).toBeTrue();
-    expect(store.readTask("execution-failed")?.status.phase).toBe("pending");
     store.close();
   });
 
@@ -1056,9 +898,11 @@ describe("AppTaskResourceStore", () => {
     expect(completeAppTask(config, claim, { summary: "resource task complete", evidence: ["test"] }).status).toBe(
       "applied",
     );
-    expect(store.readTask("normal")).toBeNull();
+    expect(store.readTask("normal")?.status.phase).toBe("converged");
     expect(store.readAttempt(claim.attemptId)?.state).toBe("completed");
-    expect(store.readSnapshot().receipts?.normal?.summary).toBe("resource task complete");
+    expect(store.readAttempt(claim.attemptId)?.acceptedResult?.summary).toBe("resource task complete");
+    expect(store.readReceipt("normal")).toBeNull();
+    expect(store.readCancellation("normal")).toBeNull();
     expect(
       observeAppTaskIntent(config, {
         appAgent: "may",

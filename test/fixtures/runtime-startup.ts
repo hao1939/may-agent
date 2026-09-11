@@ -24,6 +24,7 @@ import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../src/app/adapters/discovery/app-definitions.js";
 import {
   attachLoadedAppTask,
+  readLoadedAppTaskInputResult,
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
 } from "../../src/app/core/tasks/app-task-runtime.js";
@@ -499,6 +500,9 @@ export async function execute(ctx) {
   }
   if (taskExecution) {
     const { bus, manager } = preparedOptions!;
+    const acceptedState = (taskId: string) => readLoadedAppTaskInputResult({
+      bus, appDir: join(root, "projects/fixture.app"), taskId, admissionKey: taskId,
+    })?.state;
     const runTask = async (taskId: string) => {
       attemptFinished = Promise.withResolvers<void>();
       const profiled = Promise.withResolvers<void>();
@@ -527,7 +531,7 @@ export async function execute(ctx) {
       });
       await Promise.all([attemptFinished.promise, profiled.promise]);
       detach();
-      assert.equal(await task.isComplete(), true);
+      assert.equal(acceptedState(task.taskId), "converged");
       return task;
     };
     const previousTask = await runTask("work/before");
@@ -538,7 +542,7 @@ export async function execute(ctx) {
       await new Promise<void>((resolve) => setImmediate(resolve));
       if (reportingFailure) assert.ok(reportingCalls > before, "the failing report must actually execute");
       assert.equal(registry!.entries()[0]?.definition.description, "reporting failure cannot reject this");
-      assert.equal(await previousTask.isComplete(), true);
+      assert.equal(acceptedState(previousTask.taskId), "converged");
       await runTask("work/after");
     } else {
       const previousCrons = new Map(getAgentMaintenance());
@@ -579,7 +583,7 @@ export async function execute(ctx) {
       detach();
       assert.deepEqual(seen.sort(), [...agentNames, ...agentNames].sort());
       assert.equal(seen.length, 4, "only the two old producers handle each event, exactly once");
-      assert.equal(await previousTask.isComplete(), true, "accepted work survives rollback");
+      assert.equal(acceptedState(previousTask.taskId), "converged", "accepted work survives rollback");
       await runTask("work/after");
     }
   }

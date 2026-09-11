@@ -1124,41 +1124,6 @@ export class AppTaskResourceStore {
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
-  /**
-   * Advance a recovery hint, not Task state, before asynchronous inspection.
-   * The durable cursor lets later startup/reload passes reach the rest of the
-   * attention cohort even if this worker exits or a binding stays unavailable.
-   */
-  takeHandlerRecoveryTaskIds(limit = 512): string[] {
-    const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
-    return transaction(this.db, () => {
-      type Cursor = { updated_at: number; task_id: string };
-      const raw = this.meta("handler_recovery_cursor");
-      const cursor = raw ? parseJson<Cursor | null>(raw) : null;
-      const query = this.db.prepare(
-        `SELECT task_id, updated_at FROM app_tasks
-         WHERE app_id = ? AND phase = 'attention'
-           AND (updated_at, task_id) > (?, ?)
-           AND NOT EXISTS (
-             SELECT 1 FROM app_task_cancellations c
-             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
-           )
-         ORDER BY updated_at, task_id LIMIT ?`,
-      );
-      const read = (after: Cursor | null) =>
-        query.all(
-          this.appId,
-          after?.updated_at ?? Number.MIN_SAFE_INTEGER,
-          after?.task_id ?? "",
-          boundedLimit,
-        ) as Cursor[];
-      let rows = read(cursor);
-      if (rows.length === 0 && cursor) rows = read(null);
-      this.setMeta("handler_recovery_cursor", json(rows.length === boundedLimit ? rows.at(-1) : null));
-      return rows.map((row) => row.task_id);
-    });
-  }
-
   hasUnfinishedTasks(): boolean {
     return Boolean(
       this.db
@@ -1173,53 +1138,6 @@ export class AppTaskResourceStore {
         )
         .get(this.appId),
     );
-  }
-
-  /** Exact failed attempts that one later successful agent session may repair. */
-  listHandlerExecutionRecoveryTaskIds(agent: string, limit = 256): string[] {
-    const normalizedAgent = agent.trim();
-    if (!normalizedAgent) return [];
-    const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
-    return (
-      this.db
-        .prepare(
-          `SELECT failed.task_id
-           FROM app_task_attempts failed INDEXED BY idx_app_task_attempts_execution_failure
-           JOIN app_tasks task
-             ON task.app_id = failed.app_id AND task.task_id = failed.task_id
-           WHERE failed.app_id = ?
-             AND json_extract(failed.attempt_json, '$.owner') = ?
-             AND json_extract(failed.attempt_json, '$.failureReason')
-               IN ('HandlerExecutionFailed', 'handler-blocked')
-             AND task.phase = 'attention'
-             AND failed.task_generation = task.generation
-             AND typeof(json_extract(failed.attempt_json, '$.finishedAt')) = 'text'
-             AND json_extract(failed.attempt_json, '$.finishedAt') <> ''
-             AND typeof(json_extract(failed.attempt_json, '$.sessionId')) = 'text'
-             AND json_extract(failed.attempt_json, '$.sessionId') <> ''
-             AND (
-               json_extract(failed.attempt_json, '$.failureReason') = 'HandlerExecutionFailed'
-               OR json_extract(failed.attempt_json, '$.handler') =
-                 'owner:' || json_extract(failed.attempt_json, '$.owner')
-             )
-             AND failed.attempt_id = (
-               SELECT latest.attempt_id
-               FROM app_task_attempts latest INDEXED BY idx_app_task_attempts_task
-               WHERE latest.app_id = failed.app_id
-                 AND latest.task_id = failed.task_id
-                 AND latest.task_generation = failed.task_generation
-               ORDER BY latest.started_at DESC, latest.attempt_id DESC
-               LIMIT 1
-             )
-             AND NOT EXISTS (
-               SELECT 1 FROM app_task_cancellations cancelled
-               WHERE cancelled.app_id = task.app_id AND cancelled.task_id = task.task_id
-             )
-           ORDER BY failed.started_at, failed.task_id
-           LIMIT ?`,
-        )
-        .all(this.appId, normalizedAgent, boundedLimit) as Array<{ task_id?: string }>
-    ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
   listLiveTaskIds(excludeTaskId: string, limit = 64): string[] {

@@ -3,14 +3,12 @@ import { isDeepStrictEqual } from "node:util";
 import { basename, join, resolve } from "node:path";
 import { Check } from "typebox/value";
 import type { EventEnvelope } from "../events/bus.js";
-import { createTaskHandlerAvailability } from "./handler-availability.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import type {
   TaskAgentRunner, TaskAgentInput, TaskSessionRecovery,
   TaskWorkflowRunner, TaskWorkflowInput, AppTaskExecutionObserver,
 } from "./execution.js";
 import { appTaskSessionBinding } from "./session-binding.js";
-import { recoverUnavailableTaskHandlers } from "./handler-recovery.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
 import type { AppInboxClaim } from "../state/app-inbox-store.js";
@@ -80,7 +78,6 @@ import {
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
-  listHandlerExecutionFailedAppTasks,
   markAppTaskAttention,
   isAppTaskActionStaleError,
   observeAppTaskIntent,
@@ -90,7 +87,6 @@ import {
   readAppTaskAdmissionOutcome,
   readPendingAppTaskTrigger,
   recordAppTaskTrigger,
-  releaseHandlerExecutionFailedAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairUnadmittedAppDependencyWaits,
   repairRunningAppTasksWithoutAttempt,
@@ -262,27 +258,6 @@ function readAppTaskSessionScope(sessions: TaskSessionRecovery | undefined, sess
     binding: appTaskSessionBinding(meta.taskBinding),
     workflowRunId: firstNonEmptyString(meta.workflowRunId),
   };
-}
-
-function taskRecoverySessionScopesMatch(
-  appId: string,
-  sessions: TaskSessionRecovery | undefined,
-  failedSessionId: string | undefined,
-  successfulSession: AppTaskSessionScope,
-): boolean {
-  if (!failedSessionId) return false;
-  const failed = readAppTaskSessionScope(sessions, failedSessionId);
-  if (failed.binding && successfulSession.binding) {
-    return (
-      failed.binding.appId === appId &&
-      successfulSession.binding.appId === appId &&
-      failed.binding.taskId === successfulSession.binding.taskId &&
-      failed.binding.generation === successfulSession.binding.generation
-    );
-  }
-  return Boolean(
-    failed.workflowRunId && successfulSession.workflowRunId && failed.workflowRunId === successfulSession.workflowRunId,
-  );
 }
 
 function flattenEvent(event: AgentEvent): Record<string, unknown> {
@@ -3089,77 +3064,19 @@ export async function recoverInstalledAppTasks(
   bus: EventBus,
   isDefinitionCurrent: () => boolean = () => true,
 ): Promise<void> {
+  if (!isDefinitionCurrent()) return;
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
   if (opts.executeRecovery) {
     await opts.executeRecovery();
+    if (!isDefinitionCurrent()) return;
     for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
     return;
   }
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);
-  await requeueAvailableAppTaskHandlers(opts, descriptors, controllers, isDefinitionCurrent);
-}
-
-async function requeueAvailableAppTaskHandlers(
-  opts: AppTaskRuntimeOptions,
-  descriptors: AppTaskRuntimeDescriptor[],
-  controllers: Map<string, AppTaskController>,
-  isDefinitionCurrent: () => boolean = () => true,
-): Promise<void> {
-  for (const descriptor of descriptors) {
-    const controller = controllers.get(descriptor.id);
-    if (!descriptor.app.tasks || descriptor.reconciliationPaused) continue;
-    const config = appTaskConfig(descriptor);
-    const available = createTaskHandlerAvailability({
-      executors: opts.executors,
-      agentAvailable: (agent) => opts.agents?.available(agent) ?? false,
-      inspectWorkflow: opts.workflows
-        ? async (agent, workflow) =>
-            (await opts.workflows!.inspect({ source: opts, appDir: descriptor.appDir, agent, workflow })).available
-        : undefined,
-    });
-    await recoverUnavailableTaskHandlers({
-      config,
-      isAvailable: async (candidate) => {
-        if (!(await available(candidate))) return false;
-        // An agent handoff still requires its originating workflow verifier.
-        // Missing verification must not become agent-only completion on reload.
-        if (candidate.handler.startsWith("agent:") || candidate.handler.startsWith("owner:")) {
-          const workflow = config.resourceStore.readTask(candidate.taskId)?.spec.workflow;
-          if (workflow) {
-            const inspected = await opts.workflows?.inspect({
-              source: opts,
-              appDir: descriptor.appDir,
-              agent: candidate.agent,
-              workflow,
-            });
-            return Boolean(inspected?.available && inspected.verifier);
-          }
-        }
-        return true;
-      },
-      isCurrent: () => appRouterOptionsByBus.get(opts.bus) === opts && isDefinitionCurrent(),
-      onRecovered: (candidate) => {
-        // Isolated recovery repairs readiness without installing controllers;
-        // the parent discovers the pending Task through its normal recovery pass.
-        if (controller) enqueueAppTask(controller, config, candidate.taskId);
-        opts.bus.emit({
-          type: "project.task.handler.recovered",
-          source: `app-task:${descriptor.id}:task-recovery`,
-          owner: `agent:${candidate.agent}`,
-          target: { appId: descriptor.id },
-          data: {
-            project: descriptor.id,
-            taskId: candidate.taskId,
-            handler: candidate.handler,
-            reason: "handler-binding-available",
-          },
-        } as unknown as AgentEvent);
-      },
-    });
-  }
+  for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
 }
 
 function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskRuntimeDescriptor[]): void {
@@ -3234,11 +3151,8 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
         if (descriptor.reconciliationPaused) continue;
         const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
         if (successfulAgent && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
-          // A terminal task session can repair only attempts in its own App.
-          // Avoid synchronously loading every unrelated App's task tree on each
-          // session.end; large canonical trees otherwise block control traffic.
-          // Legacy sessions with no binding or project identity keep the
-          // conservative all-App scan used before project scoping existed.
+          // A terminal session wakes only its bound Task. Task retries use
+          // durable eligibility, never another session's success as permission.
           if (successfulAgent.appId && successfulAgent.appId !== descriptor.id) continue;
           const config = appTaskConfig(descriptor);
           if (
@@ -3267,49 +3181,6 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
                 },
               } as unknown as AgentEvent);
             }
-          }
-          for (const candidate of listHandlerExecutionFailedAppTasks(
-            config,
-            config.resourceStore.listHandlerExecutionRecoveryTaskIds(successfulAgent.agent, 512),
-          )) {
-            if (candidate.agent !== successfulAgent.agent) continue;
-            if (
-              !taskRecoverySessionScopesMatch(descriptor.id, opts.sessions, candidate.sessionId, {
-                binding: successfulAgent.binding,
-                workflowRunId: successfulAgent.workflowRunId,
-              })
-            ) {
-              continue;
-            }
-            const legacySession = candidate.failureReason === "handler-blocked" ? candidate.sessionId : undefined;
-            const allowLegacyHandlerBlocked = Boolean(
-              legacySession && opts.persistDir && opts.sessions?.read(legacySession)?.status === "error",
-            );
-            if (
-              !releaseHandlerExecutionFailedAppTask(config, candidate.taskId, {
-                agent: successfulAgent.agent,
-                sessionId: successfulAgent.sessionId,
-                observedAt: successfulAgent.observedAt,
-                allowLegacyHandlerBlocked,
-              })
-            ) {
-              continue;
-            }
-            enqueueAppTask(taskController, config, candidate.taskId);
-            opts.bus.emit({
-              type: "project.task.handler.recovered",
-              source: `app-task:${descriptor.id}:task-recovery`,
-              owner: `agent:${candidate.agent}`,
-              target: { appId: descriptor.id },
-              data: {
-                project: descriptor.id,
-                taskId: candidate.taskId,
-                handler: "agent-execution",
-                reason: "agent-session-succeeded-after-handler-execution-failure",
-                evidenceSessionId: successfulAgent.sessionId,
-                ...(successfulAgent.workflowRunId ? { evidenceWorkflowRunId: successfulAgent.workflowRunId } : {}),
-              },
-            } as unknown as AgentEvent);
           }
           if (successfulAgent.binding?.appId === descriptor.id) {
             enqueueAppTask(taskController, config, successfulAgent.binding.taskId, { promote: true });
@@ -3359,7 +3230,6 @@ async function commitAppTaskRuntimeDescriptors(
   }
   if (!recovery.deferred) {
     recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
-    await requeueAvailableAppTaskHandlers(opts, installed, controllers);
   }
 
   return { installed };
