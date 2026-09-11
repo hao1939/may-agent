@@ -72,13 +72,13 @@ function fixture() {
   );
   const context = () =>
     appTaskContext({ appDir: root, projectDir: root, agent: app.id, maxConcurrent: 1, resourceStore: store });
-  const input = (id = "first", sequence = 1) => ({
+  const input = (id = "first", sequence = 1, text = "Compare A and B") => ({
     id,
     appId: app.id,
     conversationId: "chat",
     conversationSequence: sequence,
     source: { kind: "human" as const, id },
-    input: { kind: "message", data: { text: "Compare A and B" } },
+    input: { kind: "message", data: { text } },
     intent: {
       parentId: "root",
       mode: "maintain" as const,
@@ -87,7 +87,8 @@ function fixture() {
       executor: "conversation",
     },
   });
-  const admit = (id?: string, sequence?: number) => admitConversationTaskInput(context(), input(id, sequence));
+  const admit = (id?: string, sequence?: number, text?: string) =>
+    admitConversationTaskInput(context(), input(id, sequence, text));
   const claim = (taskId: string) => {
     const claimed = claimObservedAppTask(context(), { taskId, appAgent: app.id, handler: "executor:conversation" });
     if (claimed.kind !== "claimed") throw new Error(`Expected claim, got ${claimed.kind}`);
@@ -340,7 +341,7 @@ test("a system turn can stay quiet without hiding the accepted Task evidence", a
 
 test("one controller returns B through A to the real Conversation after intervening input and restart", async () => {
   const f = fixture();
-  const first = f.admit();
+  const first = f.admit("first", 1, "Get the sample measurement in the background and report it here.");
   const workerApp = defineApp({
     ...app,
     tasks: {},
@@ -516,7 +517,7 @@ test("one controller returns B through A to the real Conversation after interven
   try {
     controller.enqueue(first.taskId);
     await until(() => f.store.readTask("B")?.status.phase === "waiting" && !controller.snapshot().running.length);
-    f.admit("explanation", 2);
+    f.admit("explanation", 2, "Meanwhile, what is a threshold?");
     controller.enqueue(first.taskId);
     await until(() => getAppInboxItem(f.db, "explanation")?.status === "done" && !controller.snapshot().running.length);
     expect(readConversationRequest(f.db, app.id, "chat", "measurement")?.status).toBe("open");
