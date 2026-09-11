@@ -7,6 +7,8 @@ still runs through May's separate supervision Task. Routing Task and timer
 reviews through the conversation inbox is accepted design, **not implemented**.
 The [unification review](../proposals/conversation-input-unification.md) records
 the whole-system fit, scope reduction, code changes and acceptance checks.
+It now compares shared controller code with representing conversation execution
+as a maintained Task; neither alternative is implemented by this document.
 Current-turn steering remains separate work. Conversational child waits were
 retired in Host #140; retained-state behavior is described below.
 
@@ -329,6 +331,15 @@ delegates the choice back to May.
 
 ## One conversation input path
 
+This is the same [reconciliation model](architecture.md#one-reconciliation-model)
+as Task execution: a durable input wakes its owner, which reads state, performs
+bounded work and commits an outcome. When a Task delegates a child, the child's
+result wakes that Task through the same pattern. The candidate
+[shared controller](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
+would reuse scheduling mechanics while retaining each resource's claim and
+settlement rules. It does not turn every linked Task into a prerequisite for
+answering the next human input.
+
 Every admitted input names its Conversation and retains its source. A linked
 Task input also carries the exact App/Task and Topic references and originating
 change identity. Request scope and Task evidence are reread at handling time;
@@ -359,15 +370,20 @@ response identities.
 Start with accepted results, cancellation, and states needing a human decision,
 including an explicit wait or exhausted failure. A maintained Task can report
 a useful accepted cycle without becoming terminal. Routine progress remains
-available in Task views; do not
-invoke the model for heartbeats or every attempt update. Any later proactive
-progress trigger must justify its recurring cost.
+available in Task views; do not invoke the model for heartbeats or every attempt
+update. Any later proactive progress trigger must justify its recurring cost.
 
 A system input is evidence about existing work, not a new human ask. It does
 not automatically create a Request, expand authority, enable an App or restart
 stopped work. The handler checks current links and Request revisions before
 applying a decision. An exact link permits the bounded cross-App read already
 needed for follow-up, not a scan of another App's Tasks.
+
+A result subscription asks for a later review; a required dependency can also
+prevent an owner's execution or completion. Both use exact retained links and
+events, but they are not interchangeable. Discussion remains available while
+linked work runs. Keep existing Topic/Task and Task dependency relations rather
+than introducing a universal relationship resource.
 
 A closed Request does not suppress a new useful result from a maintained Task.
 Report the new finding on its evidence without claiming another fulfillment of
@@ -701,9 +717,12 @@ The current supervision identity is `may/conversation/follow-up`. Its retirement
 must preserve messages, exact Topic/Task links, Requests, accepted results and
 audit Events. Drain or fence its active execution before switching to the new
 consumer; do not run both response writers for the same work. Retire that exact
-Task through supported controls and retain its history rather than deleting
-it or minting a successor supervisor. Reconstruct eligible pending follow-up
-from canonical linked evidence through the normal new admission path, honoring
+Task through a verified scoped retirement procedure and retain its history
+rather than deleting it or minting a successor supervisor. Current generic Task
+cancellation rejects maintained Tasks; do not assume it can perform this
+retirement. The implementation must establish the supported procedure before
+cutover. Reconstruct eligible pending follow-up from canonical linked evidence
+through the normal new admission path, honoring
 handled and stopped dispositions. The [unification review](../proposals/conversation-input-unification.md#implementation-order)
 owns the source/cutover sequence; [Operations and Recovery](../2b-manual/app-operations-recovery.md)
 owns separately authorized operating procedures.

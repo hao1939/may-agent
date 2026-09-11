@@ -10,6 +10,9 @@ Task activation and startup recovery are independent of optional schedules.
 this page does not identify the deployed release. The accepted
 [unified conversation-input design](../proposals/conversation-input-unification.md)
 is pending implementation; current follow-up still uses a separate May Task.
+A shared Conversation/Task scheduling controller is now a recommended source
+experiment. Resource unification remains a separate alternative, not an
+implemented boundary.
 
 The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 records the state/handler extraction, merged in #129 as `0bedd93a`, and its
@@ -68,6 +71,33 @@ Event persistence is the Events boundary's use of storage, not another database.
 A schedule only produces due input or facts. The work runtime decides when an
 eligible Task attempt runs. The executor performs that bounded attempt. A Task
 can run from admitted input, a relevant event or recovery with schedules disabled.
+
+## One reconciliation model
+
+Conversation and Task use the same control-loop model:
+
+```text
+persist input or change -> wake exact owner -> read and claim current state
+  -> perform bounded work -> commit outcome -> rest or reconsider when justified
+```
+
+A child result can wake a parent Task just as a delegated Task result can wake
+its Conversation. A timer can recover a missed wake. The receiving owner judges
+what the evidence means; the event is not automatic completion or retry authority.
+
+The [controller comparison](../proposals/conversation-input-unification.md#options-and-their-cost)
+recommends proving one scheduling implementation for both resources. Share
+ready-key ordering, capacity waits, wake-during-run and drain behavior. Preserve
+resource-specific eligibility, durable claims, Stop/retry rules and settlement
+transactions behind narrow reconciliation functions. A shared controller is
+Work-runtime machinery, not a fifth core component or a public plugin system.
+
+Current source still has the Task controller and the separate inbox pump. A
+shared implementation need not merge their records, create one Task per message,
+or serialize all work through one global worker. A maintained Task could also
+represent conversation execution, but that larger alternative must demonstrate
+per-input Stop, ordered handling and Request closure with less total machinery.
+The source map below remains the current layout, not the proposed extraction.
 
 ## Composition and lifecycle
 

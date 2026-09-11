@@ -5,6 +5,8 @@
 and event-driven follow-through are implemented at the [source baseline](../README.md).
 The accepted shared conversation-input path below replaces the separate
 supervision Task; that routing change is [not yet implemented](../proposals/conversation-input-unification.md).
+Sharing controller code is a recommended proof; merging resource state remains
+an alternative under review.
 The focused Conversation review at Host `99bc1a31` confirms accepted Request
 storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
 [open](human-control-surfaces.md#current-turn-control); App judgment
@@ -43,6 +45,24 @@ track input handling, which can finish at handoff. Separate `conversation_reques
 records retain the accepted scope, revision, exact Task links and closure.
 The App judges [acceptance and closure](message-lifecycle.md#requests-acceptance-and-closure);
 the Host checks revisions and persists closure with its explanation.
+
+## One reconciliation model
+
+Both Conversation and Task follow the same loop: persist input, wake, read
+current state, perform bounded work, and commit an outcome. Further execution
+needs relevant input or justified recovery. An owner can delegate smaller work
+and reconcile again when its result arrives; the owner keeps no execution
+running just to wait for it.
+
+The difference is what the outcome establishes. Answering an input may leave a
+Request open; accepting a Task result may finish a finite outcome or leave a
+maintained responsibility up to date. A maintained Task is already long-lived,
+so lifetime alone is not a reason for a separate engine. Required dependencies
+and result-follow-up links have different effects on readiness and completion.
+
+[Architecture](architecture.md#one-reconciliation-model) defines the shared
+model and the candidate controller boundary. It does not require a merged
+Conversation/Task resource or a new generic work object.
 
 ## A turn or a Task?
 

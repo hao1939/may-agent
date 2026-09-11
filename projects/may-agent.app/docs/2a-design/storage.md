@@ -151,6 +151,13 @@ decisions; they do not receive the database or the Host-private state API.
 Adapters use their existing read/control protocols. No new server, database,
 resource controller, generic repository or per-write event protocol is required.
 
+A [shared scheduling controller](../proposals/conversation-input-unification.md)
+does not require one resource table or settlement API. Input/Request/message
+atomicity and Task generation/attempt/result atomicity remain separately typed
+operations in the recommended candidate. A Task-backed Conversation could move
+execution claims later, but still needs retained input and Request evidence;
+that resource migration is an open comparison, not this storage contract.
+
 Group the API by what the caller needs to accomplish:
 
 | Operation | Required contract |

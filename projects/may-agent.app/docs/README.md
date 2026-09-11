@@ -31,12 +31,15 @@ small shared state boundary.
 
 ## Current focus
 
-The [conversation input unification review](proposals/conversation-input-unification.md)
-accepts one handler for human messages, linked Task facts and timer-discovered
-follow-up. The timer first checks stored pending work; it does not poll every
-Conversation with the model. This replaces the separate supervision Task and
-reduces default age-based investigation. The [owning contract](2a-design/message-lifecycle.md#one-conversation-input-path)
-is updated; source implementation and old-consumer retirement remain pending.
+The [Conversation/Task reconciliation review](proposals/conversation-input-unification.md)
+uses one event-driven mental model and recommends proving a shared scheduling
+controller. It distinguishes necessary completion/Stop/relationship semantics
+from incidental implementation differences and compares the cost of representing
+conversation execution as a maintained Task. Human/Task/timer conversation
+inputs remain the accepted direction, replacing the separate supervision Task;
+the timer first checks stored pending work. The [owning contract](2a-design/message-lifecycle.md#one-conversation-input-path)
+is updated; controller reuse, input routing and old-consumer retirement remain
+pending implementation.
 
 The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
 tracks the merged removal of conversational child waits in Host #140, with

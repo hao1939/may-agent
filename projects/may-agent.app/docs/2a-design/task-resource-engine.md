@@ -142,25 +142,31 @@ uses one admission path for all task IDs.
 
 ## Controller
 
-Each App has one logical controller and one deduplicating in-memory ready set. The
-controller may:
+Each App currently has one logical Task controller and a deduplicating
+in-memory ready set. The controller schedules keys, obtains capacity and invokes
+bounded reconciliation. The Task reconciler and State operations derive
+eligibility, claim an attempt, validate and apply a result, reject stale effects
+and preserve the evidence needed by recovery. These are distinct responsibilities
+within the same runtime; scheduling does not own a second Task state machine.
 
-- deduplicate and prioritize task keys;
-- derive readiness from dependencies and exact Conditions;
-- claim at most one current attempt per key;
-- resolve the declared agent and optional workflow;
-- validate and apply one result/task-change batch atomically;
-- reject stale results; and
-- repair bounded delivery and execution state after restart.
+Conversation follows the same [reconciliation model](architecture.md#one-reconciliation-model).
+The [shared-controller candidate](../proposals/conversation-input-unification.md)
+would reuse scheduling code while preserving the Task-specific readiness,
+claim, result and recovery rules here. It is not implemented. It requires no
+Task dependency on Conversation and no merged resource schema.
 
-It must not interpret task prose, choose project strategy, infer external truth
-from time, contain App-specific policy, or use `tree.json` as a scheduler.
+The controller must not interpret task prose, choose project strategy, infer
+external truth from time, contain App-specific policy, or use `tree.json` as
+a scheduler.
 
 Global and per-App capacity limits allow unrelated keys to run concurrently
 while serializing each key. Durable excess work stays pending. Trusted human
-and normal lanes form the scheduling boundary, and human work has reserved Host
-capacity. Inside one lane, Runtime uses the effective priority derived from the
-persisted Task and FIFO for peers. A fresh exact wake may move ahead of passive
+and normal lanes order work inside the Task queue; all Task attempts use
+background Host capacity, preserving the interactive reserve for conversation
+handling. The pending shared-input change further distinguishes human Turns
+from automated reviews at that reserve boundary. Inside one lane, Runtime uses
+the effective priority derived from the persisted Task and FIFO for peers.
+A fresh exact wake may move ahead of passive
 peers at the same priority, but it cannot override human origin or a higher
 priority. Repeated wakes for one Task coalesce; a wake received while its
 attempt is running requests exactly one fresh pass. Passive recovery rereads
@@ -176,6 +182,14 @@ queued work, while lowering it permits active attempts to finish and delays new
 claims until usage is below the limit. Pause disables new claims without
 discarding the queue. Removing or renaming an App is rejected while it has
 unfinished Tasks.
+
+A delegated result returns through the same pattern at every level: commit the
+child outcome, record/wake its interested owner, and let that owner reconcile
+current evidence. A parent relation, an explicit `dependsOn` prerequisite and a
+Conversation follow-up link retain their different meanings. Child completion
+does not itself fulfill a parent Task or a human Request. The
+[comparison](../proposals/conversation-input-unification.md#which-differences-are-real)
+explains why this affects settlement, not the choice of scheduling machinery.
 
 ## Selecting the attempt mechanism
 

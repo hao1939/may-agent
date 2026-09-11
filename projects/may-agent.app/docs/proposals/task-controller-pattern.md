@@ -18,6 +18,13 @@ Authoring examples use the existing SDK, not a new schema.
 The [September 10 core review](../archive/reviews/core-simplicity-review-20260910.md)
 used the earlier `d9e7597e` baseline. Neither identifies a deployed release.
 
+The [Conversation/Task controller comparison](conversation-input-unification.md)
+now examines reuse of this scheduling implementation by the conversation inbox.
+Its recommended proof retains Task claims, retries and settlement while removing
+duplicated dispatch mechanics; representing Conversation execution as a
+maintained Task remains a larger alternative. This does not change the historical
+implementation evidence or the current Task contract below.
+
 ## Recommendation and expected value
 
 Use the existing controller to bring each Task toward its declared outcome by

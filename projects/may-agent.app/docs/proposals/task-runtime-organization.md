@@ -30,9 +30,11 @@ it does not replace the accepted inbox/state sequence below.
 
 The [conversation input unification review](conversation-input-unification.md)
 now owns the accepted replacement of the separate follow-up Task with typed
-system inputs to the conversation handler. It preserves the proven core
-claims and Request closure mechanics below; the shared route, selective timer
-query and old-consumer retirement are pending implementation.
+system inputs and the recommended proof of shared Conversation/Task scheduling.
+It compares the real semantic differences and the costs of a maintained-Task
+alternative. Existing core claims and Request closure mechanics below remain
+proven independently; the shared controller/route, selective timer query and
+old-consumer retirement are pending implementation.
 
 ## Task lifecycle review
 

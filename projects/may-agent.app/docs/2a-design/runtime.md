@@ -129,6 +129,12 @@ cooldown elapsed, and uses the `(status, updated_at)` index. A route that
 remains invalid therefore stays visible without continuously consuming CPU or
 rewriting its error row.
 
+The [shared-controller review](../proposals/conversation-input-unification.md#proposed-controller-boundary-and-code-layout)
+compares the current Task controller with the inbox pump. A common scheduling
+implementation is a pending candidate; both continue to use their existing
+durable eligibility, claim and outcome rules. Neither the shared mental model
+nor a discarded in-memory key permits replay of a stopped or exhausted input.
+
 ## Capacity
 
 The Host constructs one `HostCapacity` limit shared by request decisions and
