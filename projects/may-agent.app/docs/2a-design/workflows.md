@@ -488,6 +488,13 @@ hash alone is useful evidence but not a full reproducibility claim.
 Workflow-run storage and SQL projections are host-private. App code consumes
 only bounded `ExecutionView`/result references.
 
+Ordinary error results link to a run only when its terminal error record and
+artifact are readable. Setup belongs inside the execution failure boundary:
+a failed startup event must finalize an inserted run with the original reason.
+If storage cannot create or finalize that evidence, report the error without
+claiming a usable run link. Existing restart recovery handles incomplete rows;
+optional diagnostics and failure notifications cannot replace the original error.
+
 Expected durable waits always start a new workflow run later. Recovery of an
 interrupted run is mechanical attempt recovery only; it never becomes a hidden
 business-process continuation mechanism.

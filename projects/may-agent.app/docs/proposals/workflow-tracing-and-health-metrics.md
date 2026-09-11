@@ -1,8 +1,8 @@
 # Workflow tracing by default and useful health metrics
 
 **Design status:** Draft for review, September 11, 2026.
-**Implementation status:** First bounded source slice at Host `676b3692`, based
-on `335bf178`, is under review. It implements the evidence foundation and basic
+**Implementation status:** First bounded source slice merged in Host #143 as
+`939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
 [candidate section](#first-implementation-candidate) states what remains.
 
@@ -392,11 +392,14 @@ tracing backend or automatic repair.
 
 ## First implementation candidate
 
-Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `b071e651`,
-keeps this first PR independently useful:
+Host [PR #143](https://github.com/hao1939/may-agent/pull/143) merged as `939698ad`
+from verified head `1526e063`. The first slice is independently useful:
 
-- Workflow errors return the attempted run ID. Run inspection includes stored
-  outcomes, reasons, timing, exact child links and step-session evidence.
+- Ordinary workflow errors return a run ID only when its terminal error record
+  and artifact are readable. Setup failures share the existing finalization
+  boundary. Missing or failed persistence returns the error without a misleading
+  evidence link. Run inspection includes stored outcomes, reasons, timing,
+  exact child links and step-session evidence.
 - `ctx.log` retains known-secret-redacted, bounded diagnostics in the run's own
   artifact directory, even without a runtime logger or metrics. The log sink is
   optional and cannot replace the original execution error. Interruption retains
@@ -425,10 +428,10 @@ crash or write failure. Existing secret patterns are not a general PII guarantee
 authors must still avoid logging secrets or personal configuration. No live data
 was used for validation.
 
-Local `bun run ci` passed at that revision: 2,690 passed, three installation-only
-skips and zero failures, including browser tests (114 seconds for the test phase).
-Hosted checks and review remain
-the PR's gate. Regression tests fail if diagnostic persistence and failed-run
+Local `bun run ci` passed at that revision: 2,693 passed, three installation-only
+skips and zero failures, including browser tests (121 seconds for the test phase).
+Hosted Quality and Container passed on that exact head before merge.
+Regression tests fail if diagnostic persistence and failed-run
 identity are removed; no killed live worker or deployed installation was used.
 
 Review follow-up adds a scheduled query/command failure test that closes and
@@ -438,6 +441,15 @@ verifies that other sources continue. The existing real workflow steering test
 now reopens storage and checks the exact multiline reason and returned run ID;
 removing the interruption-reason write reproduces its failure. Current-head
 local and hosted validation are recorded on the PR.
+
+The subsequent setup-evidence fix at `1526e063` covers failed run insertion, a required
+startup-event sink that also rejects the failure notification, and failed
+terminal persistence. All three regression cases fail on `b071e651`. The fix
+finalizes startup failures through the existing error path, preserves the
+original startup reason, and omits a run link when terminal evidence is absent
+or unreadable. A storage outage can still leave an incomplete row for existing
+restart recovery; this adds no new recovery mechanism or durability claim.
+Canonical design checks pass using the example checker's merged core paths.
 
 A local synthetic trial used 40 runs with 20 messages each: median logging time
 was 0.06 ms without persistence versus 12.75 ms with persistence, with 2,614 bytes
