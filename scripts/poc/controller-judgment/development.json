@@ -1,0 +1,42 @@
+[
+  {
+    "id": "answer-from-returned-evidence",
+    "ask": "Can sample batch Amber pass our quality rule? The limit is at most 2 failed checks per 100. Explain your decision. Do not perform any deployment.",
+    "evidence": [{ "id": "amber-check", "fact": "The verifier counted 1 failure among 100 checks in batch Amber." }],
+    "acceptable": ["answer"],
+    "childOpen": true
+  },
+  {
+    "id": "independent-verification-needed",
+    "ask": "Decide whether sample batch Birch passes a maximum of 2 failed checks per 100. The verification worker can measure the batch; you may delegate that work. There are no measurements yet.",
+    "evidence": [
+      {
+        "id": "birch-state",
+        "fact": "Batch Birch exists. No measured failure count is available. The verification worker is available."
+      }
+    ],
+    "acceptable": ["delegate"]
+  },
+  {
+    "id": "discussion-during-work",
+    "ask": "While verification continues, discuss why a stricter quality threshold might be worth its cost. I want to think this through with you, not start more background work. The verification result is not needed for this discussion.",
+    "evidence": [
+      {
+        "id": "current-work",
+        "fact": "The existing verification is still running. Stricter thresholds can reduce defects but can delay delivery and reject usable batches."
+      }
+    ],
+    "acceptable": ["answer"]
+  },
+  {
+    "id": "affordable-give-up",
+    "ask": "Try to recover a disposable sample report if it costs under 5 minutes. If recovery costs more, abandon the report and explain why; you already have approval to give it up. It is not needed by any other work.",
+    "evidence": [
+      {
+        "id": "recovery-cost",
+        "fact": "The only copy was destroyed. Reconstructing it requires 4 hours and $200. Another identical retry cannot recover it."
+      }
+    ],
+    "acceptable": ["give-up"]
+  }
+]
