@@ -13,7 +13,7 @@ import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-
 import { EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
 import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
-import { listAppInboxItems } from "../../../src/app/core/state/app-inbox-store.js";
+import { getAppInboxItem, listAppInboxItems } from "../../../src/app/core/state/app-inbox-store.js";
 import { readAppConversationResource } from "../../../src/app/core/state/conversations.js";
 import {
   listConversationRequests,
@@ -24,7 +24,11 @@ import {
   listPendingConversationTaskChanges,
 } from "../../../src/app/core/state/conversation-task-turns.js";
 import { createAppTaskCapability } from "../../../src/app/core/tasks/app-task-capability.js";
-import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
+import {
+  installAppTaskRuntimes,
+  closeInstalledAppTaskRuntimes,
+  readLoadedAppTaskInputResult,
+} from "../../../src/app/core/tasks/app-task-runtime.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../../../src/app/composition/app-inbox-runtime.js";
 import {
   createTaskAttemptProcessExecutor,
@@ -59,8 +63,9 @@ const appRoot = arg("--app-root");
 const modelName = arg("--model");
 const out = arg("--out");
 const value = Number(arg("--value") ?? "0.92");
+const nested = process.argv.includes("--nested");
 if (!process.argv.includes("--live") || !appRoot || !modelName || !out || !Number.isFinite(value))
-  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER]");
+  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested]");
 assert(createModelRegistry()[modelName], "Selected model must be configured");
 const hostRoot = resolve(import.meta.dir, "../../..");
 const output = resolve(out);
@@ -136,7 +141,7 @@ const start = async () => {
     bus,
     timeoutMs: 180_000,
     spawnWorker(request) {
-      if (++dispatches > 8) throw Error("Trial dispatch allowance exhausted");
+      if (++dispatches > (nested ? 10 : 8)) throw Error("Trial dispatch allowance exhausted");
       const child = spawn(
         process.execPath,
         [fileURLToPath(import.meta.url), "--worker", "--root", root, "--request", JSON.stringify(request)],
@@ -214,17 +219,26 @@ try {
       await start();
       publish(
         "measurement",
-        `Please check the sample at ${sourceUrl} in the background and tell me whether it meets the 0.90 minimum. The source may take some time to answer; keep our discussion available while it runs.`,
+        nested
+          ? `Please arrange a background review of the sample at ${sourceUrl} against a 0.90 minimum. Have the reviewer obtain the measurement from a separate worker, then assess that worker's returned evidence. Report the conclusion to me. The source may take some time to answer; keep our discussion available while they work.`
+          : `Please check the sample at ${sourceUrl} in the background and tell me whether it meets the 0.90 minimum. The source may take some time to answer; keep our discussion available while it runs.`,
       );
       await measurementRequested.promise;
       const taskA = conversationTaskId("may", "may:primary");
-      const taskB = Object.keys(store().readSnapshot().resources!).find((id) => id !== taskA);
-      assert(taskB, "The model must delegate the requested background work");
-      assert.equal(store().readTask(taskB)?.status.phase, "running");
-      const ask = listConversationRequests(db, "may", "may:primary").find((request) =>
-        request.taskRefs.some((ref) => ref.taskId === taskB),
-      );
+      const ask = listConversationRequests(db, "may", "may:primary").find((request) => request.taskRefs.length > 0);
       assert(ask, "The accepted ask must remain linked to the actual background Task");
+      const taskB = ask.taskRefs[0]!.taskId;
+      const taskC = nested
+        ? Object.keys(store().readSnapshot().resources!).find((id) => id !== taskA && id !== taskB)
+        : undefined;
+      if (nested) assert(taskC, "The reviewer must delegate the independent measurement to a third Task");
+      const expectedTaskIds = [taskA, taskB, ...(taskC ? [taskC] : [])].sort();
+      const measurementAdmission = taskC
+        ? listAppInboxItems(db, { appId: "may" }).find((item) => item.waitingOn?.id === taskC)
+        : undefined;
+      if (nested)
+        assert(measurementAdmission?.taskAdmissionKey, "Code must retain the reviewer's exact measurement input");
+      assert.equal(store().readTask(taskC ?? taskB)?.status.phase, "running");
       assert.equal(ask.status, "open");
       const priorAnswers = answerCount();
       const discussed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers);
@@ -233,7 +247,8 @@ try {
         "While that runs, explain why one sample alone may not be enough for a decision. Just discuss it with me.",
       );
       await discussed;
-      assert.equal(store().readTask(taskB)?.status.phase, "running");
+      if (nested) assert.equal(store().readTask(taskB)?.status.conditionIds?.length, 1);
+      assert.equal(store().readTask(taskC ?? taskB)?.status.phase, "running");
       assert.equal(readConversationRequest(db, "may", "may:primary", ask.id)?.status, "open");
       const discussion = conversation()
         .messages.filter((message) => message.author.kind === "agent")
@@ -251,11 +266,24 @@ try {
       assert(reply.text.includes(String(value)), "The final reply must contain the observed measurement");
       assert.equal(conversation().messages.find((message) => message.id === discussion.id)?.text, discussion.text);
       const tasks = store().readSnapshot().resources!;
-      assert.deepEqual(Object.keys(tasks).sort(), [taskA, taskB].sort());
-      assert.equal(store().isCancelled(taskA), false);
-      assert.equal(store().isCancelled(taskB), false);
+      assert.deepEqual(Object.keys(tasks).sort(), expectedTaskIds);
+      for (const id of expectedTaskIds) assert.equal(store().isCancelled(id), false);
       const childOutcome = store().readAttempt(tasks[taskB]!.status.observedAttemptId!)!;
       assert.equal(childOutcome.acceptedResult?.state, "converged");
+      const measurementOutcome = taskC ? store().readAttempt(tasks[taskC]!.status.observedAttemptId!)! : undefined;
+      const measurementInput = measurementAdmission ? getAppInboxItem(db, measurementAdmission.id) : undefined;
+      if (taskC) {
+        assert.equal(measurementOutcome?.acceptedResult?.state, "converged");
+        assert.equal(measurementInput?.status, "done");
+        const exact = readLoadedAppTaskInputResult({
+          bus,
+          appDir: join(root, "projects/may.app"),
+          taskId: taskC,
+          admissionKey: measurementAdmission!.taskAdmissionKey!,
+        });
+        assert.equal(exact?.attemptId, measurementOutcome!.metadata.id);
+        assert.deepEqual(measurementInput?.result?.result, exact?.result);
+      }
       const resultInput = listAppInboxItems(db, { appId: "may" }).find((item) => item.input.kind === "task-outcome");
       assert.equal((resultInput?.input.data as { attemptId?: string })?.attemptId, childOutcome.metadata.id);
       assert.equal(listPendingConversationTaskChanges(db, "may").length, 0);
@@ -268,12 +296,15 @@ try {
       const resumed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers + 2);
       publish("reopen", "Remind me of the sample result and the limitation we discussed.");
       await resumed;
-      assert.deepEqual(Object.keys(store().readSnapshot().resources!).sort(), [taskA, taskB].sort());
+      assert.deepEqual(Object.keys(store().readSnapshot().resources!).sort(), expectedTaskIds);
       report = {
         taskA,
         taskB,
+        taskC,
         ask: fulfilled,
         childOutcome,
+        measurementOutcome,
+        measurementInput,
         discussion: discussion.text,
         reply: reply.text,
         resumedReply: conversation()
@@ -322,6 +353,7 @@ try {
     copied,
     model: modelName,
     value,
+    nested,
     root,
     durationMs: Date.now() - startedAt,
     dispatches,

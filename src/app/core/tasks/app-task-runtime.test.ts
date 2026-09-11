@@ -2012,7 +2012,7 @@ describe("canonical App task runtime", () => {
     ]);
   });
 
-  it("keeps the source Task runnable when the destination App does not accept its dependency request", () => {
+  it("keeps the source Task runnable when its dependency is neither admitted nor durably published", () => {
     const f = fixture();
     const bus = eventBus();
     const emitted: AgentEvent[] = [];
@@ -2058,7 +2058,7 @@ describe("canonical App task runtime", () => {
           },
         ],
       }),
-    ).toThrow("was not accepted by installed App evaluation; the Task remains runnable");
+    ).toThrow("was neither admitted nor durably published for App evaluation; the Task remains runnable");
     expect(emitted.some((event) => event.type === "app.input.requested")).toBe(true);
     expect(Object.keys(readTaskSnapshot(config).conditions ?? {})).toEqual([]);
   });

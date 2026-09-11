@@ -25,7 +25,15 @@ describe("App dependency catalog", () => {
       }),
       tasks: {},
     });
-    const source = { ...target, id: "may" };
+    const source = {
+      ...target,
+      id: "may",
+      inputSchema: Type.Union([
+        Type.Object({ kind: Type.Literal("message"), data: Type.Record(Type.String(), Type.Unknown()) }),
+        Type.Object({ kind: Type.Literal("goal"), data: Type.Record(Type.String(), Type.Unknown()) }),
+      ]),
+      requests: { mode: "agent" as const, inputKinds: ["message"] },
+    };
     const catalog = appDependencyCatalog(
       [
         { appDir: "/fixtures/may.app", definition: source },
@@ -42,6 +50,11 @@ describe("App dependency catalog", () => {
           { kind: "deep-eval", requiredData: [], dataTypes: {}, fixedData: {} },
           { kind: "owner-review", requiredData: [], dataTypes: {}, fixedData: {} },
         ],
+      },
+      {
+        appId: "may",
+        description: "Owns evidence-based evaluation outcomes.",
+        inputs: [{ kind: "goal", requiredData: [], dataTypes: {}, fixedData: {} }],
       },
     ]);
   });

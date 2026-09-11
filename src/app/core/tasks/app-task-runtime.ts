@@ -687,7 +687,7 @@ export function admitTaskAppDependencies(input: {
       throw new Error(`Task result declares App dependency ${dependency.id} more than once`);
     }
     dependencyIds.add(dependency.id);
-    assertInstalledAppDependency(input.opts, input.descriptor.id, dependency);
+    assertInstalledAppDependency(input.opts, dependency);
   }
 
   const existing = (input.existingConditions ?? []).flatMap((condition) => {
@@ -875,9 +875,13 @@ export function admitTaskAppDependencies(input: {
       },
     });
     const delivery = requested[EVENT_DELIVERY_RESULT];
-    if (!delivery) {
+    // A worker persists the input before the parent admits its relayed event.
+    // Save the exact pending wait once publication is durable; a local receipt
+    // is only available when admission runs in this process. Event recovery
+    // can redeliver that same input if the worker/parent stops between them.
+    if (!delivery && !requested[EVENT_ROW_ID]) {
       throw new Error(
-        `App dependency ${dependency.id} was not accepted by installed App ${dependency.appId}; the Task remains runnable`,
+        `App dependency ${dependency.id} was neither admitted nor durably published for App ${dependency.appId}; the Task remains runnable`,
       );
     }
     admitted.set(dependency.id, {
@@ -970,14 +974,8 @@ function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnap
 
 function assertInstalledAppDependency(
   opts: AppTaskRuntimeOptions,
-  sourceAppId: string,
   dependency: TaskAppDependency,
 ): void {
-  if (dependency.appId === sourceAppId && !dependency.taskId) {
-    throw new Error(
-      `App dependency ${dependency.id} cannot create sibling work in its owning App ${sourceAppId}; create a direct child or name an exact existing Task`,
-    );
-  }
   const registryConfigured = Boolean(opts.appRegistrySnapshot || opts.appRegistry);
   if (!registryConfigured) return;
   const entries = configuredRegistryEntries(opts);

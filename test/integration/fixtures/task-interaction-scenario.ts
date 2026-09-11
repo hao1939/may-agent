@@ -29,6 +29,7 @@ async function withProvider(
   f: ReturnType<typeof fixture>,
   decide: (context: AppInputContext) => ConversationTurnResult,
   execute: (contexts: AppInputContext[]) => Promise<void>,
+  maxResponses = 4,
 ) {
   const contexts: AppInputContext[] = [];
   let providerError: unknown;
@@ -49,7 +50,7 @@ async function withProvider(
       contexts.push(context);
       const toolError = payload.messages.find((message: { role: string; content: unknown }) => message.role === "tool");
       assert.equal(toolError, undefined, JSON.stringify(toolError));
-      assert(contexts.length <= 4, "Unexpected extra provider execution");
+      assert(contexts.length <= maxResponses, "Unexpected extra provider execution");
       assert(payload.tools.some((tool: { function: { name: string } }) => tool.function.name === "finish"));
       const answer = decide(context);
       response.writeHead(200, { "Content-Type": "text/event-stream" });
@@ -183,7 +184,7 @@ function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {
   });
 }
 
-async function delegation() {
+async function delegation(nested = false) {
   const f = fixture("owner", false, false, true);
   const measurement = Promise.withResolvers<void>();
   const source = createServer(async (_request, response) => {
@@ -204,15 +205,37 @@ async function delegation() {
     requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
     inputSchema: { anyOf: [
       { type: "object", properties: { kind: { const: "message" }, data: { type: "object" } }, required: ["kind", "data"] },
-      { type: "object", properties: { kind: { const: "measure" }, data: { type: "object" } }, required: ["kind", "data"] }
+      { type: "object", properties: { kind: { enum: ["measure", "sample"] }, data: { type: "object" } }, required: ["kind", "data"] }
     ] },
     tasks: { maxConcurrent: 2 },
-    task: () => ({ kind: "desired", intent: {
-      id: "measurement", parentId: "root", mode: "achieve", workflow: "probe",
+    task: (admitted) => ({ kind: "desired", intent: {
+      id: admitted.input.kind === "sample" ? "sample" : "measurement",
+      parentId: "root", mode: "achieve",
+      workflow: ${nested} && admitted.input.kind === "measure" ? "assess" : "probe",
       outcome: "Get the sample measurement", acceptance: ["Return the measured value"]
     } })
   };`,
   );
+  if (nested)
+    writeFileSync(
+      join(f.appDir, "agents", "owner", "workflows", "assess.ts"),
+      `export const name = "assess";
+      export const description = "Assess an independently measured sample";
+      export async function execute(ctx) {
+        const returned = ctx.reconciliation.events.items.find(({ event }) =>
+          event.type === "app.dependency.completed" && event.data.kind === "app");
+        if (!returned) return ctx.done("Requested an independent measurement", {
+          state: "waiting", summary: "Waiting for the sample", evidence: [],
+          dependencies: [{ id: "sample", appId: "sample", input: { kind: "sample", data: {} } }]
+        });
+        const result = returned.event.data.result;
+        if (result?.value !== 17) throw Error("Expected the exact measured result");
+        return ctx.done("Assessed the measured sample", {
+          state: "converged", summary: "The measurement is 17", evidence: returned.event.data.evidence,
+          result: { ...result, assessed: true }
+        });
+      }`,
+    );
   writeFileSync(
     join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
     `
@@ -307,7 +330,10 @@ async function delegation() {
                 acceptance: ["Return the measured value"],
               },
             };
-          if (humanTurns === 2) assert.equal(f.store.readTask("measurement")?.status.phase, "running");
+          if (humanTurns === 2) {
+            assert.equal(f.store.readTask(nested ? "sample" : "measurement")?.status.phase, "running");
+            if (nested) assert.equal(f.store.readTask("measurement")?.status.conditionIds?.length, 1);
+          }
           if (humanTurns === 3)
             assert(context.conversation?.messages.some((message) => message.text === "The measurement is 17."));
           return {
@@ -321,11 +347,20 @@ async function delegation() {
         const data = inputs[0]!.input.data as {
           taskId: string;
           attemptId: string;
-          outcome: { result: { value: number } };
+          outcome: { state: string; result: { value: number; assessed?: boolean } };
         };
         assert.equal(data.taskId, "measurement");
         assert.equal(data.attemptId, f.store.readTask("measurement")!.status.observedAttemptId);
+        if (nested && data.outcome.state === "waiting") {
+          assert.equal(context.conversation!.requests!.find((request) => request.id === "measurement")!.status, "open");
+          return {
+            summary: "The reviewer is waiting for its measurement; no new answer yet",
+            topic: { kind: "existing", id: context.conversation!.current!.topicId! },
+          };
+        }
+        assert.equal(data.outcome.state, "converged", JSON.stringify(data.outcome));
         assert.equal(data.outcome.result.value, 17);
+        if (nested) assert.equal(data.outcome.result.assessed, true);
         const request = context.conversation!.requests!.find((request) => request.id === "measurement")!;
         assert.equal(request.status, "open");
         return {
@@ -361,10 +396,11 @@ async function delegation() {
             "fulfilled",
           );
           const ids = Object.keys(f.store.readSnapshot().resources!).sort();
-          assert.equal(ids.length, 2);
+          assert.equal(ids.length, nested ? 3 : 2);
           for (const id of ids) {
             assert.equal(f.store.isCancelled(id), false);
             assert.equal(f.store.readReceipt(id), null);
+            assert.equal(f.store.readTask(id)?.status.executionFailures ?? 0, 0);
           }
           runtime!.close();
           await closeInstalledAppTaskRuntimes(f.bus);
@@ -377,7 +413,7 @@ async function delegation() {
           const resumed = replyAfter("The earlier result is still 17.");
           publish("resume", "Remind me of the result.");
           await resumed;
-          assert.equal(contexts.length, 4);
+          assert.equal(contexts.length, nested ? 5 : 4);
           assert.deepEqual(Object.keys(f.store.readSnapshot().resources!).sort(), ids);
           assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
         } finally {
@@ -385,6 +421,7 @@ async function delegation() {
           await closeInstalledAppTaskRuntimes(f.bus);
         }
       },
+      nested ? 5 : 4,
     );
   } finally {
     measurement.resolve();
@@ -397,8 +434,8 @@ try {
   const scenario = process.argv[2];
   if (scenario === "conversation") await conversation();
   else {
-    assert.equal(scenario, "delegation");
-    await delegation();
+    assert(["delegation", "nested"].includes(scenario!));
+    await delegation(scenario === "nested");
   }
 } finally {
   await cleanup();

@@ -60,7 +60,7 @@ its normal bounded finish/provider handling; inspect all calls in the transcript
 Private artifacts and temporary SQLite remain outside the checkout for review;
 do not publish raw transcripts or endpoint errors.
 
-## Managed Conversation recovery
+## Common Task loop through live workers
 
 For the critical shared loop with actual App policy and live worker execution:
 
@@ -87,6 +87,27 @@ limits bound the experiment, not Task lifetime. This uses a reduced tool catalog
 and a controlled observation source; it does not certify full installation,
 transport delivery, operational migration or every recovery case. Raw reports
 and provider logs remain local.
+
+Add `--nested` to request a reviewer who obtains an independent measurement
+from another worker before assessing it. This exercises A → B → C → B → A,
+using the same May App mapping and Task controller at each step. No extra App
+is installed for the test. The human specifies the need for independent
+measurement; the models choose the typed admissions, acceptance criteria and
+judgments. This does not test whether a model would choose that decomposition
+without being asked.
+
+```sh
+bun scripts/poc/controller-judgment/shared-loop.ts --live --nested --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/nested-loop-development
+bun scripts/poc/controller-judgment/shared-loop.ts --live --nested --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/nested-loop-transfer --value 0.78
+```
+
+The nested trial checks the exact C admission/result as well as B's return to
+A. It allows ten dispatches, including intermediate wait reports, within the
+same six-minute experiment limit. A pending wait is preserved once its typed
+input is durably published; the worker need not obtain a synchronous receipt
+from the parent process. Publication does not claim that execution succeeded.
+
+## Managed recovery with human input
 
 `managed-conversation.ts` uses actual human-event admission, a stable Conversation
 Task, the installed controller, `SubagentManager`, model/tool execution, and

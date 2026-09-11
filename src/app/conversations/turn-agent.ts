@@ -98,18 +98,7 @@ function requestPrompt(
   request: Readonly<AppInputContext>,
   registry: Pick<AppRegistry, "snapshot">,
 ): string {
-  const apps = appDependencyCatalog(registry.snapshot().entries, "")
-    .map((entry) =>
-      entry.appId === app.id
-        ? {
-            ...entry,
-            inputs: entry.inputs.filter(
-              (input) => app.requests?.inputKinds && !app.requests.inputKinds.includes(input.kind),
-            ),
-          }
-        : entry,
-    )
-    .filter((entry) => entry.appId !== app.id || entry.inputs.length > 0);
+  const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
   return [
     `You are ${app.agent ?? app.owner}, the conversational agent for App ${app.id}.`,
     "Understand the human's meaning in the exact bounded context collected by code, then make one structured decision. Do not infer intent with keywords or invent another tracking mechanism.",
