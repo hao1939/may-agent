@@ -41,7 +41,7 @@ import {
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
-import type { TaskAgentRunner, TaskWorkflowRunner } from "./execution.js";
+import type { TaskAgentRunner, TaskWorkflowRunner, TaskSessionRecovery } from "./execution.js";
 import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
   applyCanonicalAgentResidueCleanup,
@@ -3820,6 +3820,79 @@ describe("canonical App task runtime", () => {
     });
     expect(store.readReceipt("work/completed")).toEqual(completed);
   });
+
+  it.each(["reload", "close and reinstall"] as const)(
+    "uses current session adapters after %s without adding another listener",
+    async (replacement) => {
+      const f = fixture();
+      const bus = eventBus();
+      const calls: string[] = [];
+      let handled = () => {};
+      const sessions = (name: string): TaskSessionRecovery => ({
+        handoff: () => undefined,
+        isLive: () => false,
+        lastActivityAt: () => null,
+        result: () => undefined,
+        workflowInterrupted: () => false,
+        read(sessionId) {
+          calls.push(`${name}:read:${sessionId}`);
+          handled();
+          return null;
+        },
+        interrupt(sessionId, _reason, taskId) {
+          calls.push(`${name}:interrupt:${sessionId}:${taskId}`);
+          handled();
+        },
+      });
+      const install = (generation: number) => installCoreTaskRuntimes({
+        ...options(f, bus),
+        sessions: sessions(`generation-${generation}`),
+        installControllers: false,
+        appRegistrySnapshot: {
+          id: `session-adapter:${generation}`,
+          generation,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      }, { deferRecovery: true });
+
+      await install(1);
+      const listeners = bus.listenerCount;
+      if (replacement === "close and reinstall") await closeInstalledAppTaskRuntimes(bus);
+      await install(2);
+      expect(bus.listenerCount).toBe(listeners);
+
+      // A stale session must be interrupted by the current adapter. It cannot
+      // create Task ownership merely because its start event arrived late.
+      const interrupted = new Promise<void>((resolve) => { handled = resolve; });
+      bus.emit({
+        type: "session.start",
+        owner: "agent:sample-owner",
+        data: {
+          sessionId: "obsolete-session", agent: "sample-owner", task: "obsolete",
+          trigger: "test", firedAt: Date.now(),
+          taskBinding: { appId: "sample", taskId: "work/absent", generation: 1 },
+        },
+      } as AgentEvent);
+      await interrupted;
+      expect(calls).toEqual(["generation-2:interrupt:obsolete-session:work/absent"]);
+      expect(loadedTaskConfig(f).resourceStore.readTask("work/absent")).toBeNull();
+
+      const inspected = new Promise<void>((resolve) => { handled = resolve; });
+      bus.emit({
+        type: "session.end",
+        owner: "agent:sample-owner",
+        data: {
+          sessionId: "terminal-session", agent: "sample-owner", status: "done",
+          outcome: "done", summary: "finished", durationMs: 1,
+        },
+      });
+      await inspected;
+      expect(calls).toEqual([
+        "generation-2:interrupt:obsolete-session:work/absent",
+        "generation-2:read:terminal-session",
+      ]);
+    },
+  );
 
   it("starts new work from a reloaded definition while an old attempt is still running", async () => {
     const f = fixture();

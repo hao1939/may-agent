@@ -3271,9 +3271,14 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
   }
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
-  opts.bus.listen(
+  const bus = opts.bus;
+  bus.listen(
     (rawEvent): void => {
       if (rawEvent.type !== "session.start" && rawEvent.type !== "session.end") return;
+      // The listener outlives reloads and close/reinstall. Read adapters from
+      // the same published generation as the descriptors for this event.
+      const opts = appRouterOptionsByBus.get(bus);
+      if (!opts) return;
       const event = flattenEvent(rawEvent);
       const startedSessionId =
         event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
