@@ -191,7 +191,7 @@ export function listAppConversationMessages(
         createdAt: item.createdAt,
       });
     }
-    const resultText = item.continuesRequestId
+    const resultText = item.continuesRequestId || item.executionTaskId
       ? item.result?.response?.trim()
       : item.result?.response?.trim() || item.result?.summary?.trim();
     if (!resultText) continue;

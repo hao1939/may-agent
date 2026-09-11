@@ -203,6 +203,8 @@ export type AppInputContext<TData = unknown> = {
   humanRequested?: true;
   parentId?: string;
   input: AppInput<TData>;
+  /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
+  inputs?: ReadonlyArray<AppTaskInput>;
   dependency?: AppDependencyObservation;
   /** Exact bounded observation for the human's focused Task, when supplied. */
   focusedTask?: {
