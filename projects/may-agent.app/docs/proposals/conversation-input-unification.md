@@ -132,8 +132,12 @@ also returns accepted outcomes through live events and missed-result discovery.
 The [closure checkpoint](controller-poc-recovery-review.md#returning-owner-closure-through-conversation-input)
 returns the owner's saved closure through that same input route, including
 closure without a result. It leaves Request resolution to the Conversation.
-Old-owner retirement remains to migrate; live model use of this actual
-Conversation path is still unproved.
+The [managed Conversation trials](controller-poc-recovery-review.md#managed-conversation-recovery)
+now pass empty-response, interrupted-effect and restart recovery with real
+models and a synthetic App. They use normal prior-attempt context. Old-owner
+retirement, live child-chain follow-through and the worker subprocess remain
+unproved; full CI still has 129 unresolved failures. Whole-system simplification
+is the next acceptance gate.
 The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 also exercises human replies beside running background work and inside a paused
 App, including restart and the storage claim fence.

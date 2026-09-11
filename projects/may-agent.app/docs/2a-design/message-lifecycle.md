@@ -613,9 +613,11 @@ duplicate notifications, quiet ticks, late links and restart. The subsequent
 [closure checkpoint](../proposals/controller-poc-recovery-review.md#returning-owner-closure-through-conversation-input)
 returns owner closure without manufacturing a result or closing a human
 Request. Stop of that review Turn survives discovery; newer human input can
-still resolve the Request. Retained-state cutover, old-consumer retirement and
-live-model use of this Conversation path remain gaps; the installation is
-unchanged.
+still resolve the Request. The [managed-model trials](../proposals/controller-poc-recovery-review.md#managed-conversation-recovery)
+also pass empty-response, interrupted-effect and restart recovery using normal
+prior-attempt context, without duplicate writes. Retained-state cutover,
+old-consumer retirement, live child-chain follow-through and the worker
+subprocess remain gaps. Full CI is still red; the installation is unchanged.
 
 Unification requires typed system-input admission, source-aware context and
 authority, a quiet result, pending-human priority and capacity selection, and

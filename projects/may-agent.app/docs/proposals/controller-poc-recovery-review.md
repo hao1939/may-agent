@@ -5,6 +5,15 @@ remains incomplete and unmerged. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
 
+**Current assessment:** Focused lifecycle and managed-model recovery checks
+support the design. Whole-system simplification remains unproved: legacy
+execution/follow-up owners remain, Task-wide cooldown can delay fresh human
+input, and full CI has 129 unresolved failures. At `03618081`, the branch adds
+865 net production lines against its merge base (counting `src/` and `packages/`,
+excluding tests and fixtures). Finish cutover and examine those failures before
+expanding the design. The latest live evidence is
+[below](#managed-conversation-recovery).
+
 The worker decides **how to do the assigned work**. The assigning App, parent
 agent or human decides **whether to keep assigning it**, revise its scope or
 close it. The controller retains that assignment and evidence, releases each
@@ -179,11 +188,10 @@ public vocabulary and consumers still need a coordinated migration.
 PR #153's earlier live Host-contract trials already showed that a model can
 return an honest give-up and have it accepted after the execution fix. The
 [follow-through trial](controller-poc-input-continuation.md#can-a-model-use-it)
-also passed with fresh models and controller-owned return links. Neither is
-a real-model test of #155's interrupted continuation. That test remains:
-inject an empty response before useful work, and a provider failure after a
-committed effect; then verify useful continuation without duplicate effects
-or unsupported blockers using the actual App context.
+also passed with fresh models and controller-owned return links. Neither tested
+#155's interrupted continuation. The later [managed Conversation trials](#managed-conversation-recovery)
+cover an empty response before useful work and a provider failure after a
+committed effect, using actual App context and checking duplicate writes.
 
 ## Conversation checkpoint
 
@@ -464,10 +472,10 @@ historical rows examined. The query remains scoped to one App's links but its
 cost grows with their retained history. This local measurement is acceptable
 for the existing infrequent discovery tick; it is not a scale or latency guarantee.
 
-The closure checkpoint below extends this common route. Per-input pacing,
-retry failure/effect context, Conversation Task controls, the actual managed-model trial, and retirement of
-the old execution and follow-up owners remain required. No installed state or
-Host main changed.
+The closure checkpoint below extends this common route. Later checkpoints
+supply prior-attempt context and exercise managed-model recovery. Per-input
+pacing, Conversation Task controls and retirement of the old execution and
+follow-up owners remain required. No installed state or Host main changed.
 
 ## Returning owner closure through Conversation input
 
@@ -509,6 +517,65 @@ can find saved closures without a live event. All closures currently become
 facts, including closure after success. Measure any extra quiet-review model
 cost in the managed trial before adding suppression policy. This checkpoint
 does not prove live-model understanding or retire the legacy execution owner.
+
+## Prior evidence in normal execution
+
+[Checkpoint `4e040987`](https://github.com/hao1939/may-agent/commit/4e040987)
+fixes a gap exposed by reviewing the earlier live harness: it supplied its own
+previous report, while normal Conversation context omitted prior attempt
+evidence. A claim now projects the latest earlier stored attempt into
+`previousAttempt`: exact identity and generation, execution state, failure,
+session/workspace references and any accepted report/result/evidence. Current
+generation evidence takes precedence; fallback retains the older generation.
+
+The same projection reaches registered executors, managed agents, workflows,
+Codex packets and Conversation context. It adds no persisted field, table,
+query or recovery policy. Tests cover retry, accepted child failure, reopen,
+owner revision and isolation from consumer mutation. The missing-context
+regression failed before the fix; the focused suites then passed 27 tests.
+
+## Managed Conversation recovery
+
+[Checkpoint `03618081`](https://github.com/hao1939/may-agent/commit/03618081)
+replaces the shared prompt's premature "call finish() now" with continuation
+within the original scope and remaining budget, following App instructions and
+checking uncertain effects. It retains the existing bounded completion
+mechanism and schema guidance; there is no new recovery-prompt framework.
+
+The [live harness](https://github.com/hao1939/may-agent/blob/03618081/scripts/poc/controller-judgment/managed-conversation.ts)
+uses human-event admission, one stable Conversation Task, the installed
+controller, actual managed model/tool execution and Conversation settlement.
+Its synthetic App checks and records a measurement in temporary storage.
+Every write appends a record, making accidental repetition observable.
+
+All three trials passed on clean `03618081` with `gpt-5.6-sol`:
+
+| Injected fault | Observed behavior | Attempts / backend calls | Elapsed | Reported tokens |
+| --- | --- | --- | --- | --- |
+| Empty initial response | Read 0.92, recorded once, correctly reported above 0.90 | 1 / 3 | 13.0 s | 9,357 |
+| Interrupted stream after the record committed | Re-read committed state, avoided another write, returned the correct comparison | 1 / 4 | 18.5 s | 12,339 |
+| Managed result lost before settlement; SQLite reopened | New attempt received the exact failed session, read the existing 0.78 record and correctly reported below 0.90 without another write | 2 / 5 | 23.6 s | 15,221 |
+
+The lower-value restart case used unchanged App instructions. Each trial
+injected its fault, retained exactly one record, stored the reply and fulfilled
+Request update, left its Task open with no due retry, and avoided the legacy
+executor. Tool traces and answer comparisons were inspected. The interrupted
+trials' saved sessions contain the revised continuation prompt. The models
+chose the next useful read/action; code supplied retry timing, prior evidence
+and result settlement. None needed to schedule its own recovery.
+
+These are three synthetic, in-process managed trials, not a success-rate claim
+or proof of the worker subprocess, installed May App, transport delivery or
+live child chains. Reported tokens include repeated/cached input; backend
+internal retries and billing were not independently measured. The harness's
+attempt/call/time limits bound the experiment, not Task lifetime. An earlier
+empty-response baseline also passed with the old prompt; these results do not
+establish that the wording change improves success rate.
+
+The next proof is migration and removal: one execution owner after cutover,
+fresh human input unaffected by unrelated retry cooldown, live child return
+through intervening input, and the real worker/restart boundary. Keep the
+experiment focused on these gaps rather than adding a new recovery subsystem.
 
 ## Verification and cost
 
@@ -574,6 +641,12 @@ All five new cases pass in the full run; no failure entries were added or
 removed relative to `faba34f7`. The full migration gate remains red. These are
 source/runtime checks with supplied decisions; no live model trial ran.
 
+At `4e040987` and `03618081`, static checks pass and full CI remains at
+**2,665 passes, 3 skips and 129 failures**, across 2,797 tests in 282 files
+(137.4 and 139.5 seconds). Failure entries are unchanged from `1b43c973`.
+The recovery prompt, execution and completion-contract suites pass **38 tests**.
+Neither checkpoint clears the migration gate.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -628,6 +701,17 @@ The closure-route checkpoint adds **67 net production lines** (138 added,
 query to saved closures, and checks durable cancellation before aborting an
 attempt. It adds no table, index, scheduler or model decision. This remains
 intermediate code until the old Conversation execution and follow-up paths retire.
+The prior-evidence projection adds **55 net production lines** (56 added, one
+removed). The recovery prompt adds two net production lines; the separate live
+harness and its documentation are experiment cost. No overall code-reduction
+claim follows from these local counts.
+
+Across the full branch, `3037c4b9..03618081` changes 45 non-test files under
+`src/` and `packages/`: 2,053 lines added, 1,188 removed, **865 net added**.
+This excludes tests, fixtures, scripts and documentation; it is a review-cost
+indicator, not a complete complexity measure. The local recovery deletions
+below have not yet paid for the whole Conversation integration. Retiring the
+old owners and reviewing the resulting path count is an acceptance requirement.
 
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting
