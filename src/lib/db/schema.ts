@@ -146,6 +146,9 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
+-- Provider retries recover original context independently of today's Task scope.
+CREATE INDEX IF NOT EXISTS idx_events_telegram_input ON events(event_type, idempotency_key)
+  WHERE source = 'telegram' AND idempotency_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp, id);
 CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delivery_route, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);

@@ -716,6 +716,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   }
 
+  function selectedTaskTopicId(surface: string, task: { appId: string; taskId: string }): string | undefined {
+    const topic = selectedTopics.get(surface);
+    return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId)
+      ? topic.id
+      : undefined;
+  }
+
   async function refreshWatch(surface: string): Promise<void> {
     const watched = watchedTasks.get(surface);
     if (!watched) return;
@@ -753,12 +760,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
     const rendered = renderTelegramTaskUpdate(task);
+    // Keep the card's context consistent even if selection changes during I/O.
+    const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
       eventType: "task.watch",
       agent: opts.interfaceAgent,
       messageThreadId: watched.topicId,
       replyMarkup: taskButtons([{ appId: task.appId, taskId: task.taskId }]),
-      data: JSON.stringify({ taskRefs: [{ appId: task.appId, taskId: task.taskId }] }),
+      data: JSON.stringify({ taskRefs: [{ appId: task.appId, taskId: task.taskId }], topicId: conversationTopicId }),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -769,6 +778,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         chatId: watched.chatId,
         topicId: watched.topicId,
         taskRefs: [{ appId: task.appId, taskId: task.taskId }],
+        conversationTopicId,
       });
     // A send already in flight cannot be recalled. Its late result must not
     // change a newer selection, including a new watch of the same Task.
@@ -1161,10 +1171,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const taskTopicId = (task: { appId: string; taskId: string }): string | undefined => {
       // A clicked message supplies its own context, never today's selection.
       if (linked) return linked.topicId;
-      const topic = selectedTopics.get(surface);
-      return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId)
-        ? topic.id
-        : undefined;
+      return selectedTaskTopicId(surface, task);
     };
 
     const deliverCommandView = (

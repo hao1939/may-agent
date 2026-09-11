@@ -25,6 +25,7 @@ describe("canonical database schema", () => {
       expect(indexes.some(({ name }) => name === "idx_events_session")).toBe(true);
       expect(indexes.some(({ name }) => name === "idx_events_task_executor_progress")).toBe(true);
       expect(indexes.some(({ name }) => name === "idx_events_idempotency")).toBe(true);
+      expect(indexes.some(({ name }) => name === "idx_events_telegram_input")).toBe(true);
       const sessionIndexes = db.prepare("PRAGMA index_list(sessions)").all() as Array<{ name: string }>;
       const sessionColumns = db.prepare("PRAGMA table_info(sessions)").all() as Array<{ name: string }>;
       const workflowIndexes = db.prepare("PRAGMA index_list(workflow_runs)").all() as Array<{ name: string }>;
@@ -140,6 +141,7 @@ describe("canonical database schema", () => {
       expect(columns.some(({ name }) => name === "idempotency_scope")).toBe(true);
       expect(indexes.some(({ name }) => name === "idx_events_session")).toBe(true);
       expect(indexes.some(({ name }) => name === "idx_events_idempotency")).toBe(true);
+      expect(indexes.some(({ name }) => name === "idx_events_telegram_input")).toBe(true);
     } finally {
       db.close();
     }

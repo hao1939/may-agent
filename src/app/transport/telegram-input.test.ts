@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,7 +15,7 @@ import {
   stopAppInboxTurn,
   getAppInboxItem,
 } from "../core/state/app-inbox-store.js";
-import { createConversationTopic, readAppConversationResource } from "../core/state/conversations.js";
+import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../core/state/conversations.js";
 import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import {
   attachTelegramBot as attachTelegramBotRuntime,
@@ -196,6 +196,28 @@ function durableTelegramFixture() {
 }
 
 describe("Telegram durable input and natural follow-up", () => {
+  it("seeks recorded provider inputs by type and key before and after reopening storage", async () => {
+    const f = durableTelegramFixture();
+    try {
+      for (const id of [100, 101]) {
+        const prepare = spyOn(f.db, "prepare");
+        try {
+          f.message(id, "Check the original input");
+          await waitFor(() => f.polls().includes(id + 1));
+          const lookup = prepare.mock.calls.map(([sql]) => sql).find((sql) =>
+            sql.startsWith("SELECT id, delivery_status FROM events") && sql.includes("idempotency_key"),
+          );
+          expect(lookup).toBeDefined();
+          const plan = f.db.prepare(`EXPLAIN QUERY PLAN ${lookup}`).all("conversation.message.created", `telegram:123:${id}`);
+          expect(plan.some((row) => /SEARCH events .*\(event_type=\? AND idempotency_key=\?\)/.test(String(row.detail))))
+            .toBe(true);
+        } finally { prepare.mockRestore(); }
+        if (id === 100) await f.restart();
+      }
+      expect(f.admitted).toHaveLength(2);
+    } finally { await f.close(); }
+  });
+
   it("keeps the failed update and its suffix unacknowledged, then records each input once", async () => {
     const f = durableTelegramFixture();
     try {
@@ -428,6 +450,68 @@ describe("Telegram durable input and natural follow-up", () => {
       expect(f.inputs()[3].data.replyTo).toBeUndefined();
       expect(f.inputs()[3].data.context).toMatchObject({ focusedApp: "may", focusedTask: { taskId: "first" } });
     } finally { await f.close(); }
+  });
+
+  it("preserves progress-card Topic context across a stalled send, replies, Details, and Follow", async () => {
+    const f = durableTelegramFixture();
+    const held = Promise.withResolvers<void>();
+    try {
+      for (const [suffix, taskId] of [["aaaaaaaa", "first"], ["bbbbbbbb", "second"]]) {
+        createConversationTopic(f.db, {
+          id: `topic_${suffix}`, appId: "may", conversationId: "may:primary", title: `Subject ${suffix}`,
+          openedBy: "human", originMessageId: `original-${suffix}`, now: 1,
+        });
+        linkConversationTopicTask(f.db, `topic_${suffix}`, "may", taskId);
+      }
+      f.message(100, "/topic aaaaaaaa", { message_thread_id: 7 });
+      f.message(101, "/watch first", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch first"));
+      let sendStarted = false;
+      f.hold(async (body) => {
+        if (body.text.includes("Progress while sending")) { sendStarted = true; await held.promise; }
+      });
+      f.tasks.get("first")!.summary = "Progress while sending";
+      const wake = () => f.bus.emit({ type: "project.task.reconciled", source: "fixture",
+        owner: "app:may", data: { appId: "may", taskId: "first" } });
+      wake();
+      await waitFor(() => sendStarted);
+      f.message(102, "/topic bbbbbbbb", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic bbbbbbbb"));
+      held.resolve();
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch update"));
+      const progress = f.published.find((e) => e.data.metadata?.command === "/watch update")!;
+      expect(progress.data.metadata).toMatchObject({ topicId: "topic_aaaaaaaa", channelThreadId: "7",
+        taskRefs: [{ appId: "may", taskId: "first" }] });
+      const messageId = progress.data.metadata.channelMessageId;
+      const row = f.db.prepare("SELECT data FROM notification_messages WHERE chat_id = ? AND telegram_msg_id = ?")
+        .get("123", messageId)!;
+      expect(JSON.parse(String(row.data))).toMatchObject({ topicId: "topic_aaaaaaaa",
+        taskRefs: [{ appId: "may", taskId: "first" }] });
+      f.message(103, "Continue this work", { message_thread_id: 7,
+        reply_to_message: { message_id: messageId, text: progress.data.text } });
+      await waitFor(() => f.inputs().length === 1);
+      expect(f.inputs()[0].data).toMatchObject({ metadata: { topicId: "topic_aaaaaaaa" },
+        context: { focusedTask: { appId: "may", taskId: "first" } } });
+
+      // Re-following this Task clears the unrelated Topic, including on later updates.
+      f.message(104, "/watch first", { message_thread_id: 7 });
+      await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/watch first").length === 2);
+      f.tasks.get("first")!.summary = "Progress without a matching Topic";
+      wake();
+      await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/watch update").length === 2);
+      expect(f.published.filter((e) => e.data.metadata?.command === "/watch update")[1].data.metadata.topicId)
+        .toBeUndefined();
+      for (const [id, action, command] of [[105, "details", "/task linked"], [106, "follow", "/watch linked"]] as const) {
+        f.send([{ update_id: id, callback_query: { id: action, data: `task:${action}`,
+          message: { message_id: messageId, chat: { id: 123 }, message_thread_id: 7 } } }]);
+        await waitFor(() => f.published.some((e) => e.data.metadata?.command === command));
+        expect(f.published.find((e) => e.data.metadata?.command === command)!.data.metadata.topicId)
+          .toBe("topic_aaaaaaaa");
+      }
+      f.message(107, "What's next?", { message_thread_id: 7 });
+      await waitFor(() => f.inputs().length === 2);
+      expect(f.inputs()[1].data.metadata.topicId).toBe("topic_aaaaaaaa");
+    } finally { held.resolve(); await f.close(); }
   });
 
   for (const completedBeforeRestart of [false, true]) {
