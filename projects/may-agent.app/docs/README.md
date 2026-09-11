@@ -76,11 +76,13 @@ The [workflow tracing and health metrics proposal](proposals/workflow-tracing-an
 reopens the discussion with a narrower direction: keep evidence with each run
 and derive balanced health summaries through replaceable components, with a
 stronger path for investigating failures. The bounded first source slice merged
-in #143 (`939698ad`); deployment has not been verified. The next slice keeps
-SQLite history and refines the existing Overview, Metrics and run-evidence
-pages. Standard metric semantics apply; a Prometheus client is an optional
+in #143 (`939698ad`). The [page refinement candidate](proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
+is Host #147 (`a481ea32`): it keeps SQLite history and adds shared workflow
+summaries, truthful observations and run-evidence inspection to the existing
+pages. Standard metric semantics apply; a Prometheus client remains an optional
 recording/export helper, not a history store or new core dependency. The
-proposal records the source gaps and bounded next implementation.
+proposal records validation and remaining gaps. Neither source work nor these
+documents verify or activate deployment.
 The earlier error-routing alternatives and App consolidation remain
 [archived](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
 

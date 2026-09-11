@@ -12,8 +12,10 @@ remains partly unimplemented. Its
 [first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
 merged in Host #143 as `939698ad`, adding optional workflow outcome observations,
 richer SDK reads and retained source errors. Deployment is unverified. The
-SQLite-first storage and measurement rules below guide the next slice; they do
-not claim new metric types, client integration or dashboard behavior is shipped.
+SQLite-first reporting reads and browser presentation are implemented in the
+[page candidate](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate),
+Host #147 (`a481ea32`), not yet merged or deployed. No new metric types, client
+integration or monitoring service is included.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation
 or reporting requirements. The existing metric service contract below remains
@@ -223,6 +225,44 @@ compatibility, reset behavior, cardinality and cost for that use. Do not
 enable all default process collectors without checking their relevance and
 runtime support. Prometheus/Grafana remain optional future readers/backends,
 not prerequisites for running May or viewing its current history.
+
+### Bounded reporting reads
+
+The page candidate keeps read calculations in optional Host reporting adapters;
+HTTP and browser consumers share them. Apps still use `MetricService`.
+
+- Workflow summaries use one SQLite read snapshot and fixed `[start, end)`
+  bounds. Top-level runs are the default; including nested runs is explicit.
+  Filter by recorded App, workflow and source identity. The outcome selector
+  filters the run list, not the balanced summary's denominator or duration
+  population. Running executions are a current count, not a historical one.
+- Interactive windows are at most 90 days, groups at most 100 and run pages at
+  most 50. Group truncation does not truncate the total. End-time/run-ID cursors
+  preserve equal-time rows. Invalid durations and unknown outcomes are visible;
+  undated finished runs are counted only when their start is in the window.
+- Latest observations use sample time, then sample ID to break ties. Missing
+  retained history is unknown, regardless of the cached value. Freshness is
+  unknown without a positive cadence or for a future-dated observation; after
+  two declared sampling intervals it is stale. This tolerance is a display
+  heuristic, not proof of Host health or an automatic alert rule.
+- Threshold comparison, disabled-alert policy and the latest retained
+  collection error remain distinct. P3 priority alone does not mean watch-only.
+  A newer sample shows recovery from the prior collection failure without
+  deleting its Event evidence; retention still limits that evidence.
+- A capped global alert list cannot establish that an unlisted metric has no
+  alert. Its alert state is unknown until the exact metric read, which filters
+  alerts by that ID before applying the limit and selects the newest one.
+- Definition lists cap at 500. History caps at 2,000 samples and 2,000 failure
+  events within the selected window, returning the newest subset in time order
+  with visible truncation. History and a current read need not share a snapshot.
+- A sample links to a known workflow population only for one of the four
+  supplied definitions while its source query remains unchanged. Its link uses
+  the sample's observation time, not today's moving window. Re-reading retained
+  runs can differ after late settlement or retention; it does not recreate an
+  immutable historical population. Arbitrary metric names imply no such link.
+
+These are interactive-view limits, not a complete bulk export. The candidate
+adds one end-time index; no alternate outcome store or registry is introduced.
 
 ## Ownership and routing
 

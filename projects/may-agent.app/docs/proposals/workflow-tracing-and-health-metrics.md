@@ -1,11 +1,14 @@
 # Workflow tracing by default and useful health metrics
 
-**Design status:** SQLite-first direction agreed; page refinement and remaining
-implementation scope below are for review, September 11, 2026.
+**Design status:** SQLite-first direction and bounded page refinement agreed;
+remaining expansion below is for review, September 11, 2026.
 **Implementation status:** First bounded source slice merged in Host #143 as
 `939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
-[candidate section](#first-implementation-candidate) states what remains.
+[first candidate](#first-implementation-candidate) records that evidence. The
+page refinement is implemented in Host #147 (`a481ea32`), not yet merged or
+deployed; [page candidate](#page-refinement-candidate) records its verification
+and remaining scope.
 
 ## The idea
 
@@ -367,7 +370,8 @@ does not claim a proven performance budget or retention duration.
 
 ## Existing implementation and focused gaps
 
-Source rechecked at Host `8e242c11`, including merged #143:
+Source baseline is Host `e1a0005e`, including merged #143. Page candidate
+`a481ea32` fills the reporting/UI gaps as follows:
 
 | Existing home | Present capability / remaining gap |
 | --- | --- |
@@ -375,17 +379,17 @@ Source rechecked at Host `8e242c11`, including merged #143:
 | `src/lib/workflow-tool.ts`, `workflow-diagnostics.ts`, `workflow-evidence.ts` | Failure identity, bounded retained logs and linked evidence now exist. Input/partial-output coverage and artifact retention still need review. |
 | `src/lib/metrics.ts`, `src/app/metric-source-measurement.ts` | Scalar snapshots and retained source-error events exist. Counter resets and structured histograms are not implemented. |
 | `src/app/adapters/reporting/metric-read.ts`, `workflow-metrics.ts`, `src/app/composition/reporting.ts` | Optional reporting exposes sample time/size/note/cadence and four rolling outcome gauges. Their independent queries are not one atomic summary. |
-| `src/app/http/server.ts` metric/liveness reads | Browser reads still use cached values; latest-sample joins need deterministic tie handling. Reuse observation semantics and shared cohort calculations. |
-| `packages/webui/static/pages/live.js`, `metrics.js`, `system.js` | Existing views still infer health from alerts/cache, graph samples by index and do not render new workflow evidence. Replace those projections before expanding the dashboard. |
+| `src/app/adapters/reporting/workflow-health.ts`, `metric-observations.ts`, HTTP reads | Candidate supplies shared outcome snapshots, deterministic latest observations, retained collection errors and bounded history. No new collector or SDK storage access. |
+| `packages/webui/static/pages/live.js`, `metrics.js`, `system.js` | Candidate replaces cached health claims and index-spaced graphs, and renders run evidence. The bounded Task list is not a global Task-state aggregate; per-outcome duration and recovery-cost summaries remain deferred. |
 
 These are source observations, not a live health audit. The
 [earlier PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested
 recomputation and metric failure containment, not this workflow-first proposal.
 Do not promote its patch unchanged or reorganize directories first.
 
-## Next implementation: one useful page refinement
+## Bounded implementation: one useful page refinement
 
-The evidence foundation is merged; the next bounded source change should:
+The evidence foundation is merged; Host #147 implements this bounded scope:
 
 1. Supply shared outcome-summary reads and truthful metric observations to HTTP
    consumers. Keep source errors separate from last good samples. Use bounded
@@ -397,13 +401,72 @@ The evidence foundation is merged; the next bounded source change should:
    cohort, nested runs, later success, no data, stale/failed collection, equal
    sample timestamps, late samples, expired evidence and safe text rendering.
    Check consistent drill-down and irregular-time graphs in the real browser.
-4. Measure query/page cost and request count. Page entry must not fetch every
+4. Measure query cost and page request count. Page entry must not fetch every
    metric's history, and absence of reporting must not break unrelated execution
    or turn missing measurements into healthy zeroes.
 
 No service, production dependency, schema-wide metric framework or deployment
 is needed just to implement that slice. The wider evidence/cost checks below
 remain rollout gates, not a reason to implement every future metric now.
+
+## Page refinement candidate
+
+Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `a481ea32`,
+implements the bounded page scope above. It is not merged or deployed.
+
+- Overview exposes balanced finished outcomes, current running executions,
+  recent errors, a bounded all-App Task list and measurement coverage.
+- Metrics compares recorded App/workflow/source groups and pages matching run
+  evidence with fixed time bounds. Outcome filters leave the overall denominator
+  intact. Duration means elapsed time, not CPU, financial cost or Task success.
+- Observations expose sample time, missing/stale/unknown freshness, collection
+  errors and alert policy separately. History uses actual timestamps and visible
+  gaps. Only unchanged supplied workflow sources get a sample-time run link.
+- Existing trace detail renders run outcome/reason, source, linked executions,
+  step sessions, artifacts and bounded diagnostics, including missing detail.
+
+The owning [Metrics](../2a-design/metrics.md#bounded-reporting-reads) and
+[Web UI](../2a-design/webui.md#overview-metrics-and-run-inspection) contracts
+record exact semantics and interactive limits. Reporting stays outside core;
+the only storage addition is an end-time index. No metric client, service,
+new sampler or lifecycle is introduced. The unchanged scalar metric API does
+not gain monotonic counters or histograms merely because those types are useful.
+
+Local `bun run ci` passed on exact head `a481ea32`: 2,708 tests passed, three
+installation-only checks skipped and zero failed (108.33 seconds for tests),
+plus type, boundary and lint checks. The browser test exercises served code
+against a synthetic file-backed HTTP installation, including Overview to
+selected errors to exact run evidence, irregular history, safe text rendering,
+unavailable Task reads and collection failure. Entry makes no per-metric history
+requests. Tests also reconcile the real sampler's sample-time selection with
+raw records, cover equal-time pagination and exercise the real Task socket read.
+Final review fixed alert truncation at `a481ea32`: an older alert was hidden
+when the global list hit its cap. The 503-alert regression fails before the
+fix; exact detail now selects that metric's latest alert, while a truncated
+list leaves unobserved alert state unknown. All three HTTP/browser checks pass.
+Hosted Quality and Container passed on the same head in
+[run 34559259844](https://github.com/hao1939/may-agent/actions/runs/34559259844),
+including the actual image build and isolated smoke execution. The PR is ready
+for review, with no review threads outstanding when checked. Design integrity,
+checked examples and canonical App-boundary checks also pass. Merge and
+deployment remain separate.
+
+A synthetic in-memory trial used 100,000 runs, 500 metric definitions,
+100,000 samples and 10,000 collection failures. Median/p95 query time was
+26/36 ms for the top-level workflow report, 49/60 ms including nested runs and
+2.9/5.7 ms for the metric list (about 15 KB and 367 KB for the first and last
+responses). These are local query measurements, not deployed latency, browser
+performance or whole-system overhead guarantees.
+
+The bounded source slice is implemented; the complete proposal is not.
+Remaining rollout evidence includes artifact/input/partial-output coverage,
+failure injection and conversation/control responsiveness under collection.
+Retained history can change after late settlement or pruning. The Task list
+does not compute global counts or oldest eligible work; workflow groups use
+recorded source identity, not invented agent attribution. Per-outcome duration,
+aggregate retry/cost analysis, additional verified Host observations, histogram
+storage and Prometheus export should follow only a demonstrated investigation
+need. Neither CI nor this query trial replaces deployment verification.
 
 ## Trial and acceptance
 
@@ -523,15 +586,14 @@ retained per run. Four outcome queries over 100,000 stored runs (10,000 in-windo
 took 6.07 ms median and 9.50 ms p95 using the covering time-range index. This is
 logger/query microbenchmark evidence, not whole-workflow or deployed latency.
 
-Remaining: complete input/partial-output capture and artifact-retention review;
-full failure injection and responsiveness measurement; exact historical cohort
-drill-down and per-workflow UI; duration/cost/recovery summaries; source coverage
-gaps and additional Host/App health facts. Four independent samples are not an
-atomic dashboard snapshot: use a shared cohort read for an exact summary, and
-do not sum rolling-window samples. No automatic investigation, repair or new
-controller was introduced. The source is merged; deployment of compatible Host
-code and browser consumption remain separate. These documentation changes do
-not activate or deploy it.
+At the first-slice merge, browser consumption and shared cohort/duration reads
+were still missing; the [page candidate](#page-refinement-candidate) now supplies
+them and records the remaining input/partial-output, retention, failure-injection,
+responsiveness and cost/coverage gaps. Four independent samples are not an atomic
+dashboard snapshot; the candidate uses a shared retained-cohort read and does
+not sum rolling windows. No automatic investigation, repair or new controller
+was introduced. Only the first source slice is merged; deployment of compatible
+Host code and browser assets remains separate. These documents do not activate it.
 
 ### Prometheus client compatibility check
 

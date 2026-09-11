@@ -4,8 +4,11 @@
 **Implementation status:** The static route-based operator UI is implemented.
 The default project/task surface still uses older path-based projections and
 has not completed migration to the shared App-ID Task reader.
-The workflow health refinement below is planned, not shipped: Host #143 added
-evidence and SDK reads, but the browser does not yet render all those fields.
+The workflow health refinement is implemented in Host #147 (`a481ea32`),
+building on #143's evidence and SDK reads. It is a source candidate, not yet
+merged or deployed; [candidate evidence](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
+records checks and remaining scope. The new Overview Task summary uses the
+shared App-ID reader; it does not migrate the separate project/task surface.
 
 ## Purpose
 
@@ -61,7 +64,7 @@ The platform uses real browser paths and `history.pushState`:
 
 | Route                            | Purpose                                                         |
 | -------------------------------- | --------------------------------------------------------------- |
-| `/`                              | Live owner/project/agent/metric overview                        |
+| `/`                              | Overview of execution, current work and observations            |
 | `/agents` and `/agents/:name`    | Agent identity, context, projects, sessions, chat               |
 | `/projects` and `/projects/:id`  | Project readout and steering                                    |
 | `/projects/:id/tasks`            | Task list, optional relationship tree, and selected-task detail |
@@ -123,7 +126,7 @@ owns calculation and persistence semantics.
 
 | Surface | Primary content |
 | --- | --- |
-| Overview (`/`, currently Live) | Last-24h finished top-level runs and all four outcomes with a shared denominator; running executions and current Task states separately; recent failures, explicit attention items and collection problems; a few verified Host observations |
+| Overview (`/`, internal tab `live`) | Last-24h finished top-level runs and all four outcomes with a shared denominator; running executions and a bounded current Task list separately; recent failures, explicit attention items and collection problems; a few verified Host observations |
 | Metrics (`/metrics`) | App/workflow and time filters; comparable execution counts, success share and named duration statistics; searchable measurements with value, unit, sample time and coverage |
 | Metric detail (`/metrics/:id`) | Definition/source, actual time-axis history, sample size, collection errors, optional warning rule and links to matching evidence |
 | Existing run/trace detail | Recorded outcome/reason, steps, exact child links, bounded diagnostics and artifacts; missing, redacted, truncated or expired evidence |
@@ -143,6 +146,21 @@ Charts use actual sample times, visible collection gaps and explicit units and
 windows. A missing or failed read is not a zero value. Load bounded summaries
 on entry and detail/history on demand, not one request and graph for every
 metric. Render names, errors and notes as untrusted text, never executable HTML.
+
+The candidate uses `GET /api/workflow-health` for shared summary, breakdown and
+paged evidence. See [reporting bounds](metrics.md#bounded-reporting-reads) for
+scope, freshness and limits. `/api/metrics` supplies observations; the existing
+per-metric history endpoint is loaded only after selection. Late responses must
+not replace a newer selection. A workflow-run link opens
+`/events?workflowRunId=<id>#loop-trace`, with exact parent, prior-run, child and
+step-session links where retained; no relationship is inferred from names.
+
+Overview reads up to eight pending/running/waiting/attention Tasks using the
+existing Task list with explicit `allApps=true` and repeated `status` filters.
+This is a bounded list, not global state counts or an oldest-work calculation.
+An unavailable Task daemon is shown as unavailable, not no work. Exact Task
+detail still requires its App ID. Collection coverage includes all returned
+metric definitions, not only selected Host observations, and shows list limits.
 
 ## Project Surface
 
