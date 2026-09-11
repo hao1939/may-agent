@@ -53,3 +53,23 @@ visible in `attention`. They are not translated into owner maintenance work.
 The owner planner admits only the named reasons
 `experience-review`, `library-health-signal`, `project-comment`,
 `manual-library-review`, and `repair-index`.
+
+## Request another source check
+
+A transient source failure does not need a new Task or a daemon restart.
+Use the App's existing actions when another check is useful and authorized:
+
+1. Read `explore-<source>` and its latest evidence. Record the exact failed
+   endpoint and time; one failed request does not prove every source is down.
+2. If that Task is already running, follow its result. Otherwise, invoke
+   `explore-now` on App `scout-knowledge-lib`, with an explicit source such as
+   `{"source":"arxiv"}`. The same action supports `hn`, `xhs`, `github`, and
+   `reddit`. It wakes the existing source Task, not a sibling.
+3. Treat the accepted action as admission, not proof of recovery. Read the
+   Task's new source evidence and actual outputs. A useful change or an honest
+   no-op can both be valid; do not claim successful retrieval from `converged`
+   alone. Distinguish this requested check from a natural scheduled run.
+
+Use bounded connection and total timeouts for any direct HTTP diagnosis, and
+keep credentials out of evidence. Preserve existing schedules and credential
+Conditions; do not bypass access controls or turn a timeout into a polling loop.
