@@ -10,7 +10,15 @@ import { getDb, closeDb } from "../../../lib/requests.js";
 import { openDatabase } from "../../../lib/db.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { appTaskContext, claimObservedAppTask, completeAppTask } from "../tasks/app-task-reconciler.js";
+import {
+  appTaskContext,
+  cancelAppTask,
+  claimObservedAppTask,
+  completeAppTask,
+  failAppTaskAttempt,
+  stopAppTask,
+} from "../tasks/app-task-reconciler.js";
+import { MAX_TASK_EXECUTION_FAILURES } from "../tasks/app-task-state.js";
 import { admitTaskRequest } from "./inbox.js";
 import {
   createConversationTopic,
@@ -231,7 +239,13 @@ test("Task links accumulate without duplicates; overflow and unknown links roll 
   expect(readConversationRequest(db, app.id, "chat", "unknown")).toBeNull();
 });
 
-test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)", async (links) => {
+test.each([
+  ["preserve", "done"],
+  ["add", "done"],
+  ["preserve", "exhausted"],
+  ["preserve", "human-cancel"],
+  ["preserve", "app-stop"],
+] as const)("handoff and closure stay atomic (%s Task links, %s outcome)", async (links, taskOutcome) => {
   const { db, root } = fixture();
   createConversationTopic(db, {
     id: "origin",
@@ -321,9 +335,35 @@ test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)"
         updateKey: `unrelated-${i}`,
         now: Date.now() + i,
       });
-    const claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
+    let claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
     if (claim.kind !== "claimed") throw new Error("fixture claim");
-    completeAppTask(config, claim, { summary: "Evidence collected" });
+    if (taskOutcome === "done") {
+      completeAppTask(config, claim, { summary: "Evidence collected" });
+    } else if (taskOutcome === "exhausted") {
+      for (let i = 0; i < MAX_TASK_EXECUTION_FAILURES; i++) {
+        if (claim.kind !== "claimed") throw new Error("fixture retry claim");
+        const failure = failAppTaskAttempt(config, claim, "Evidence source unavailable");
+        if (i === MAX_TASK_EXECUTION_FAILURES - 1) expect(failure.status).toBe("attention");
+        else claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
+      }
+    } else if (taskOutcome === "human-cancel") {
+      const task = store.readTask("work")!;
+      expect(cancelAppTask(config, {
+        appId: owner.id,
+        taskId: "work",
+        expectedGeneration: task.metadata.generation,
+        expectedResourceVersion: task.metadata.resourceVersion,
+        reason: "Human cancelled evidence collection",
+      }).applied).toBe(true);
+    } else {
+      expect(stopAppTask(config, claim, {
+        summary: "Evidence cannot be obtained at acceptable cost",
+        evidence: ["fixture:source-unavailable"],
+      }).status).toBe("applied");
+    }
+    const settledTask = store.readTaskContext({ taskIds: ["work"] });
+    expect(readConversationRequest(db, app.id, "chat", ask.id)).toEqual(accepted);
+    expect(Boolean(store.readReceipt("work"))).toBe(taskOutcome === "done");
     // A new runtime can recover the missing review from durable state alone.
     const reopened = openDatabase(join(root, "may.db"));
     const recoveryBus = new EventBus();
@@ -340,6 +380,7 @@ test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)"
       now: () => Date.now() + 120_000,
     });
     try {
+      expect(AppTaskResourceStore.fromDb(reopened, owner.id).readTaskContext({ taskIds: ["work"] })).toEqual(settledTask);
       recoveryBus.emit({
         type: "conversation.supervision.review",
         data: { project: app.id, minQuietMs: 60_000 },
@@ -350,17 +391,23 @@ test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)"
       recovery.close();
       reopened.close();
     }
+    expect(readConversationRequest(db, app.id, "chat", ask.id)).toEqual(accepted);
     expect(listStaleConversationTopicTasks(db, app.id, { updatedBefore: Date.now() + 1, limit: 10 })).toContainEqual(
       expect.objectContaining({ taskId: "work" }),
     );
     const addedRefs = links === "add" ? [{ appId: owner.id, taskId: "additional-evidence" }] : [];
     const resultRefs = [...accepted.taskRefs, ...addedRefs];
     const priorTopicRefs = readConversationTopic(db, app.id, "chat", accepted.topicId!)!.taskRefs;
+    const closureText = taskOutcome === "done"
+      ? "Both options compared with costs."
+      : "The comparison is unfulfilled: evidence collection ended without enough evidence. We agreed to stop here.";
     const update = {
       ...ask,
       expectedRevision: accepted.revision,
-      disposition: "fulfilled",
-      reason: "The evidence supports the comparison",
+      disposition: taskOutcome === "done" ? "fulfilled" : "unfulfilled",
+      reason: taskOutcome === "done"
+        ? "The evidence supports the comparison"
+        : "Accepted ending the ask without sufficient evidence",
       taskRefs: addedRefs,
     };
     const event = () =>
@@ -377,7 +424,7 @@ test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)"
               conversationId: "chat",
               topicId: accepted.topicId,
               followUpId: "review-one",
-              text: "Both options compared with costs.",
+              text: closureText,
               taskRefs: resultRefs,
               requestUpdates: [update],
             },
@@ -410,15 +457,24 @@ test.each(["preserve", "add"])("handoff and closure stay atomic (%s Task links)"
     update.scope = "Compare options including costs";
     bus.emit(event());
     bus.emit(event());
-    expect(readConversationRequest(db, app.id, "chat", ask.id)?.closure?.messageId).toBe("result:review-one");
+    expect(readConversationRequest(db, app.id, "chat", ask.id)?.closure).toMatchObject({
+      disposition: update.disposition,
+      messageId: "result:review-one",
+    });
     expect(readConversationRequest(db, app.id, "chat", ask.id)?.taskRefs).toEqual(resultRefs);
     expect(readConversationTopic(db, app.id, "chat", accepted.topicId!)?.taskRefs).toEqual(
       expect.arrayContaining(resultRefs.map((ref) => expect.objectContaining(ref))),
     );
     expect(
-      readAppConversationResource(db, app.id, "chat").messages.filter((message) => message.id === "result:review-one"),
-    ).toHaveLength(1);
-    expect(listStaleConversationTopicTasks(db, app.id, { updatedBefore: Date.now() + 1, limit: 10 })).toEqual([]);
+      readAppConversationResource(db, app.id, "chat").messages
+        .filter((message) => message.id === "result:review-one")
+        .map((message) => message.text),
+    ).toEqual([closureText]);
+    // Closing the ask cannot complete, retry or cancel its independent Task.
+    expect(store.readTaskContext({ taskIds: ["work"] })).toEqual(settledTask);
+    const quietLinks = listStaleConversationTopicTasks(db, app.id, { updatedBefore: Date.now() + 1, limit: 10 });
+    if (taskOutcome === "exhausted") expect(quietLinks).toContainEqual(expect.objectContaining({ taskId: "work" }));
+    else expect(quietLinks).toEqual([]);
   } finally {
     runtime.close();
   }

@@ -21,7 +21,7 @@ const app = defineApp({
   id: "sample",
   version: 1,
   agent: "sample",
-  inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({}) }),
+  inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.Optional(Type.String()) }) }),
   requests: { mode: "agent" },
 });
 const answer = { summary: "Answered", response: "Answer", topic: { kind: "none" as const } };
@@ -33,7 +33,7 @@ afterEach(() =>
   }),
 );
 
-test("public Stop persists before abort, rejects late output and cannot affect the next turn", async () => {
+test("public Stop rejects late output and preserves a queued correction across reopen", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-turn-control-"));
   roots.push(root);
   const db = getDb(root);
@@ -96,9 +96,7 @@ test("public Stop persists before abort, rejects late output and cannot affect t
         entered.resolve();
         await finish.promise;
       }
-      return request.id === "two"
-        ? { ...answer, requestUpdates: [{ id: "ask", expectedRevision: 1, scope: "Discuss costs before implementing", disposition: "open" }] }
-        : answer;
+      return answer;
     },
   });
   const events = createEventInterface({
@@ -109,16 +107,17 @@ test("public Stop persists before abort, rejects late output and cannot affect t
     hasAgent: () => true,
     hasSession: () => true,
   });
-  const admit = (id: string, sequence: number) =>
+  const admit = (id: string, sequence: number, text: string) =>
     runtime.host.admit({
       id,
       appId: app.id,
       conversationId: "chat",
       conversationSequence: sequence,
       source: { kind: "human", id },
-      input: { kind: "message", data: {} },
+      input: { kind: "message", data: { text } },
     });
-  admit("one", 1);
+  admit("one", 1, "Review the options");
+  const correction = "Discuss costs before implementing";
   const working = runtime.host.reconcileOnce(app.id);
   await entered.promise;
   const turn = readAppConversationResource(db, app.id, "chat").activeTurn!;
@@ -133,28 +132,43 @@ test("public Stop persists before abort, rejects late output and cannot affect t
     expect(stoppedBeforeAbort).toBe(true);
     expect(tasks.readTask("independent")).toEqual(independent);
     expect(events.publish(control, { source: "fixture-human" }).delivery).toBe("accepted");
-    admit("two", 2);
+    admit("two", 2, correction);
     expect(runtime.host.readyCount(app.id)).toBe(0);
     finish.resolve();
     await working;
     expect(runtime.host.get("one")?.result?.response).toContain("Stopped this turn");
-    await runtime.host.reconcileOnce(app.id);
-    runtime.host.stopTurn({ appId: app.id, conversationId: "chat", turnId: "one", expectedRevision: turn.revision });
-    expect(runtime.host.get("two")?.result?.response).toBe("Answer");
-    expect(() =>
-      runtime.host.stopTurn({ appId: app.id, conversationId: "wrong", turnId: "one", expectedRevision: turn.revision }),
-    ).toThrow();
+    expect(readConversationRequest(db, app.id, "chat", "ask")).toMatchObject({ status: "open", revision: 1 });
+    // Restart after Stop while the correction is still queued. The new host
+    // must handle that input once without resuming the stopped execution.
+    runtime.close();
     const databasePath = db.prepare("PRAGMA database_list").get()!.file as string;
     const reopenedDb = openDatabase(databasePath);
     try {
+      expect(readAppConversationResource(reopenedDb, app.id, "chat").messages).toContainEqual(
+        expect.objectContaining({ id: "two", author: { kind: "human", id: "two" }, text: correction }),
+      );
       const after = createConversationInbox({
         db: reopenedDb,
         apps: [app],
-        resolveRequest: async () => {
+        resolveRequest: async ({ request }) => {
           calls++;
-          return answer;
+          expect(request.id).toBe("two");
+          expect(request.input.data.text).toBe(correction);
+          expect(request.conversation?.requests).toContainEqual(
+            expect.objectContaining({ id: "ask", revision: 1, status: "open", scope: "Review the options" }),
+          );
+          return {
+            ...answer,
+            requestUpdates: [{ id: "ask", expectedRevision: 1, scope: correction, disposition: "open" }],
+          };
         },
       });
+      expect((await after.reconcileOnce(app.id)).errors).toEqual([]);
+      after.stopTurn({ appId: app.id, conversationId: "chat", turnId: "one", expectedRevision: turn.revision });
+      expect(after.get("two")?.result?.response).toBe("Answer");
+      expect(() =>
+        after.stopTurn({ appId: app.id, conversationId: "wrong", turnId: "one", expectedRevision: turn.revision }),
+      ).toThrow();
       expect((await after.reconcileOnce(app.id)).claimed).toBe(0);
       expect(after.get("one")?.handling?.phase).toBe("stopped");
       expect(readConversationRequest(reopenedDb, app.id, "chat", "ask")).toMatchObject({ status: "open", revision: 2, scope: "Discuss costs before implementing" });
