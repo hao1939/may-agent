@@ -2,7 +2,7 @@
 
 This is an opt-in model experiment, outside CI. It asks whether a small App
 judgment contract is usable with process handled by code. It does **not**
-implement or prove the proposed common Task lifecycle.
+prove the complete common Task lifecycle or its migration.
 
 Run from the Host checkout with an authorized, configured model endpoint:
 
@@ -21,10 +21,10 @@ delegated to perform this development task and no live App/production changes.
 
 For a returned-result case, code settles a synthetic measurement through the
 real reconciler, closes/reopens SQLite, reads the exact accepted attempt and
-supplies its evidence to the model. The child stays open. The result checks a
-real source boundary: current maintained parents are still forced to wait while
-any child is live. A good answer with `acceptedState: waiting` is a lifecycle
-gap, not a passed end-to-end result-return test.
+supplies its evidence through the same context reader used by real Task
+executors. The child stays open. This experimental branch removes the parent
+liveness block: a supported answer is accepted while the child remains open.
+The previous source produced `acceptedState: waiting` for those same cases.
 
 Read `report.json` and the local transcripts. `decisionPass` scores only the
 choice of action; inspect response accuracy and usefulness separately. Reports
@@ -33,8 +33,9 @@ paths. Provider cost metadata is not a verified bill. A nonzero exit indicates
 a bad/invalid action choice or experiment failure. A zero exit does not certify
 all lifecycle gates. No response-to-user delivery or deployed May agent is used.
 
-`ask`, `wait` and `give-up` are judgment-only cases in this first slice; their
-production state transitions are not exercised. Delegation admits a real child
+`ask` and `wait` are judgment-only cases in this harness; their interface and
+wait transitions are not exercised. `give-up` records an accepted non-success
+outcome without closing the Task or retrying it automatically. Delegation admits a real child
 but does not run that child or route its result in this harness. Likewise,
 discussion cases test the agent's choice, not concurrent inbox availability.
 Every case stops after one decision. Controller callbacks have no automatic

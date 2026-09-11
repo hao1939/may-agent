@@ -6,6 +6,7 @@ import { Check } from "typebox/value";
 import { runDirectAgent } from "../../../src/app/direct-agent.js";
 import { createModelRegistry } from "../../../src/app/model-registry.js";
 import { AppTaskController } from "../../../src/app/core/tasks/controller.js";
+import { readAppTaskReconciliationEvents } from "../../../src/app/core/tasks/app-task-context.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
 import {
   appTaskContext,
@@ -14,6 +15,7 @@ import {
   deferAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
+  stopAppTask,
 } from "../../../src/app/core/tasks/app-task-reconciler.js";
 
 // Experimental App judgment contract, deliberately not a new public Host API.
@@ -126,14 +128,6 @@ for (const scenario of scenarios) {
     });
     store.close();
     store = AppTaskResourceStore.openStandalone(databasePath, "fixture");
-    const returnedAttemptId = store.readTrigger("owner")?.event.resultAttemptId;
-    if (returnedAttemptId !== originalAttemptId)
-      throw new Error("Durable return link did not identify the accepted attempt");
-    const returnedAttempt = store.readAttempt(String(returnedAttemptId));
-    if (returnedAttempt?.taskId !== "measurement") throw new Error("Return link names another child's attempt");
-    const retained = returnedAttempt.acceptedResult;
-    if (retained?.state !== "converged") throw new Error("Exact child outcome was not retained across restart");
-    evidence = retained.result?.evidence as Scenario["evidence"];
   }
 
   let resolveDone!: () => void;
@@ -149,6 +143,17 @@ for (const scenario of scenarios) {
     reconcile: async () => {
       const claim = claimObservedAppTask(context(), { taskId: "owner", appAgent: "owner", handler: "agent" });
       if (claim.kind !== "claimed") throw new Error(`Owner did not claim: ${claim.kind}`);
+      if (scenario.childOpen) {
+        const returned = readAppTaskReconciliationEvents(store, claim).items.find(
+          ({ event }) => event.data.childTaskId === "measurement",
+        )?.event.data;
+        const accepted = returned?.acceptedResult as
+          { state: string; result: { evidence: Scenario["evidence"] } } | undefined;
+        if (returned?.resultAttemptId !== originalAttemptId || accepted?.state !== "converged") {
+          throw new Error("Executor context did not supply the exact accepted child outcome");
+        }
+        evidence = accepted.result.evidence;
+      }
       const run = await runDirectAgent({
         agentName: "fixture-judge",
         task: JSON.stringify({ ask: scenario.ask, evidence: evidence.map((item) => item.fact) }),
@@ -177,6 +182,13 @@ for (const scenario of scenarios) {
           result: decision,
           evidence: evidenceReferences,
         });
+      } else if (decision.decision === "give-up") {
+        settlement = stopAppTask(context(), claim, {
+          summary: decision.reason,
+          response: decision.response,
+          result: decision,
+          evidence: evidenceReferences,
+        });
       } else if (decision.decision === "delegate" && decision.work) {
         settlement = deferAppTask(context(), claim, {
           disposition: "waiting",
@@ -197,8 +209,8 @@ for (const scenario of scenarios) {
           ],
         });
       }
-      // Other judgments are recorded for inspection only: the source migration has
-      // not yet supplied common non-success/ask semantics. Never fake those transitions.
+      // Ask/wait judgments are recorded for inspection only in this harness.
+      // Never fake their future interface and wait transitions.
       const attemptedTools = run.messages.flatMap((message) =>
         message.role === "assistant"
           ? message.content.flatMap((part) => (part.type === "toolCall" ? [part.name] : []))

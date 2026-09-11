@@ -47,7 +47,7 @@ import type { TaskOutcomeReader } from "../reads/reporting.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
-import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
+import { readAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
@@ -629,7 +629,7 @@ function runtimeTaskAttempt(input: {
           claim.taskId,
         ),
       ),
-      events: projectAppTaskReconciliationEvents(claim),
+      events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
       resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
       async publish(localKey, event) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);

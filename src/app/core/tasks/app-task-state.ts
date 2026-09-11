@@ -103,7 +103,7 @@ export type AppTaskAttempt = {
   eventsTruncated?: boolean;
   /** Accepted evidence from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
-    state: "converged" | "waiting";
+    state: "converged" | "waiting" | "stopped";
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
@@ -123,8 +123,11 @@ export type AppTaskAttempt = {
   workspace?: AppTaskWorkspace;
 };
 
-/** Immutable non-success terminal evidence for one exact Task generation. */
+/** Immutable closure evidence; historical records represent cancellation. */
 export type AppTaskCancellation = {
+  kind?: "closed" | "cancelled";
+  /** Optional exact outcome consumed by the App's close-after-result convention. */
+  acceptedResultAttemptId?: string;
   appId: string;
   taskId: string;
   generation: number;
@@ -133,7 +136,7 @@ export type AppTaskCancellation = {
   reason: string;
   summary: string;
   cancelledAt: string;
-  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string };
+  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" };
   response?: string;
   result?: Record<string, unknown>;
   evidence?: string[];

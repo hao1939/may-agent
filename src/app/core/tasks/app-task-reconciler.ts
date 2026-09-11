@@ -601,7 +601,7 @@ function finishAttempt(
 function acceptedAttemptResult(
   tree: TaskTree,
   taskId: string,
-  state: "converged" | "waiting",
+  state: "converged" | "waiting" | "stopped",
   input: {
     summary: string;
     response?: string;
@@ -2400,17 +2400,40 @@ export type AppTaskCancellationResult = {
   parentTaskId?: string;
 };
 
+type AppTaskCloseInput = {
+  appId: string;
+  taskId: string;
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  reason: string;
+};
+
+/** Explicit owner control. A conventional close must still match the consumed result. */
+export function closeAppTask(
+  config: AppTaskContext,
+  input: AppTaskCloseInput & { afterResult?: string },
+): { closure: AppTaskCancellation; interruptedAttemptId?: string; applied: boolean; parentTaskId?: string } {
+  const closed = closeTask(config, input, "closed");
+  return {
+    closure: closed.cancellation,
+    ...(closed.cancelledAttemptId ? { interruptedAttemptId: closed.cancelledAttemptId } : {}),
+    applied: closed.applied,
+    ...(closed.parentTaskId ? { parentTaskId: closed.parentTaskId } : {}),
+  };
+}
+
 /** Cancel one exact Task through the same fenced resource authority used by reconciliation. */
 export function cancelAppTask(
   config: AppTaskContext,
-  input: {
-    appId: string;
-    taskId: string;
-    expectedGeneration: number;
-    expectedResourceVersion: number;
-    reason: string;
-    controlKey?: string;
-  },
+  input: AppTaskCloseInput & { controlKey?: string },
+): AppTaskCancellationResult {
+  return closeTask(config, input, "cancelled");
+}
+
+function closeTask(
+  config: AppTaskContext,
+  input: AppTaskCloseInput & { controlKey?: string; afterResult?: string },
+  kind: "closed" | "cancelled",
 ): AppTaskCancellationResult {
   if (input.appId !== config.resourceStore.appId) {
     throw new Error(`Task cancellation belongs to another App: ${input.appId}`);
@@ -2439,6 +2462,9 @@ export function cancelAppTask(
     ) {
       throw new Error(`Task ${input.appId}/${input.taskId} was already cancelled at another version`);
     }
+    if (input.afterResult && existingCancellation.acceptedResultAttemptId !== input.afterResult) {
+      throw new Error("The Task was closed against a different accepted result");
+    }
     return { cancellation: existingCancellation, applied: false };
   }
 
@@ -2458,20 +2484,32 @@ export function cancelAppTask(
   if (tree.receipts?.[input.taskId]?.metadata.generation === resource.metadata.generation) {
     throw new Error(`Task ${input.appId}/${input.taskId} is already terminal`);
   }
-  if (resource.spec.mode === "maintain") {
-    throw new Error(`Task ${input.appId}/${input.taskId} is maintained and does not allow generic cancellation`);
+
+  if (input.afterResult) {
+    const accepted = config.resourceStore.readAttempt(input.afterResult);
+    if (
+      accepted?.taskId !== input.taskId ||
+      accepted.taskGeneration !== input.expectedGeneration ||
+      !["converged", "stopped"].includes(accepted.acceptedResult?.state ?? "") ||
+      resource.status.observedAttemptId !== input.afterResult ||
+      resource.status.currentAttemptId ||
+      tree.taskTriggers?.[input.taskId]?.event
+    ) {
+      throw new Error("Cannot close after a result while newer or unresolved work remains");
+    }
   }
 
-  const reason = input.reason.trim() || "human requested cancellation";
+  const reason = input.reason.trim() || (kind === "closed" ? "owner ended the Task" : "human requested cancellation");
   return commitTaskCancellation(config, tree, {
     ...input,
+    kind,
     reason,
-    summary: `Cancelled by human: ${reason}`,
-    decidedBy: { kind: "human" },
+    summary: kind === "closed" ? `Closed by App policy: ${reason}` : `Cancelled by human: ${reason}`,
+    decidedBy: kind === "closed" ? { kind: "app-policy" } : { kind: "human" },
   });
 }
 
-/** The selected App handler may stop its own finite leaf, never claim success. */
+/** Accept a non-success judgment for this input; the owner separately decides closure. */
 export function stopAppTask(
   config: AppTaskContext,
   claim: AppTaskClaim,
@@ -2494,28 +2532,34 @@ export function stopAppTask(
       reason: "newer Task evidence is pending",
     });
   }
-  if (match.resource.spec.mode !== "achieve" || liveChildTaskIds(tree, claim.taskId).length > 0) {
-    throw new Error("Stopping requires a finite Task without live direct children");
-  }
   requireNonEmptyString(input.summary, "Stop decision summary");
   requireStringList(input.evidence, "Stop decision evidence");
   const summary = `Stopped by App ${config.resourceStore.appId}; outcome not achieved: ${input.summary.trim()}`;
-  const stopped = commitTaskCancellation(config, tree, {
-    appId: config.resourceStore.appId,
-    taskId: claim.taskId,
-    expectedGeneration: claim.generation,
-    expectedResourceVersion: match.resource.metadata.resourceVersion,
-    reason: input.summary.trim(),
+  const { resource, attempt } = match;
+  const mutationScope = beginResourceMutationScope(tree, claim, []);
+  const now = new Date().toISOString();
+  attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
+  consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  unlinkTaskConditions(tree, claim.taskId);
+  finishAttempt(tree, resource, "completed", summary, now);
+  touchResource(resource, {
+    phase: "attention",
+    observedGeneration: claim.generation,
+    observedAttemptId: claim.attemptId,
+    currentAttemptId: undefined,
     summary,
     response: input.response,
-    result: input.result,
-    evidence: input.evidence,
-    decidedBy: { kind: "app", agent: claim.agent, attemptId: claim.attemptId },
+    result: input.result ? structuredClone(input.result) : undefined,
+    evidence: [...input.evidence],
+    conditionIds: [],
   });
-  return { status: "applied", summary, ...(stopped.parentTaskId ? { parentTaskId: stopped.parentTaskId } : {}) };
+  const parentTaskId = recordExecutableParentTrigger(tree, claim.taskId, "attention", summary, input.evidence, now, claim.attemptId);
+  trackResourceMutationTask(mutationScope, tree, parentTaskId);
+  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+  return { status: "applied", summary, ...(parentTaskId ? { parentTaskId } : {}) };
 }
 
-/** Human cancellation and an App stop share the same atomic terminal boundary. */
+/** Explicit owner closure and human cancellation share one atomic terminal boundary. */
 function commitTaskCancellation(
   config: AppTaskContext,
   tree: TaskTree,
@@ -2531,6 +2575,8 @@ function commitTaskCancellation(
     result?: Record<string, unknown>;
     evidence?: string[];
     controlKey?: string;
+    kind?: "closed" | "cancelled";
+    afterResult?: string;
   },
 ): AppTaskCancellationResult {
   const resource = tree.resources![input.taskId]!;
@@ -2550,14 +2596,18 @@ function commitTaskCancellation(
     phase: "attention",
     observedGeneration: resource.metadata.generation,
     currentAttemptId: undefined,
-    summary,
-    response: input.response ?? summary,
-    result: input.result ? structuredClone(input.result) : undefined,
+    ...(input.kind === "closed" ? {} : {
+      summary,
+      response: input.response ?? summary,
+      result: input.result ? structuredClone(input.result) : undefined,
+    }),
     evidence: [...(input.evidence ?? resource.status.evidence ?? [])],
     conditionIds: [],
   });
   resource.status.updatedAt = cancelledAt;
   const cancellation: AppTaskCancellation = {
+    ...(input.kind ? { kind: input.kind } : {}),
+    ...(input.afterResult ? { acceptedResultAttemptId: input.afterResult } : {}),
     appId: input.appId,
     taskId: input.taskId,
     generation: resource.metadata.generation,
@@ -3823,6 +3873,17 @@ function liveChildTaskIds(tree: TaskTree, taskId: string): string[] {
     .map((resource) => resource.metadata.id);
 }
 
+function pendingChildTaskIds(tree: TaskTree, taskId: string): string[] {
+  return liveChildTaskIds(tree, taskId).filter((id) => {
+    const child = tree.resources![id]!;
+    return (
+      child.status.phase !== "converged" ||
+      child.status.observedGeneration !== child.metadata.generation ||
+      Boolean(tree.taskTriggers?.[id])
+    );
+  });
+}
+
 function recordExecutableParentTrigger(
   tree: TaskTree,
   childId: string,
@@ -4106,25 +4167,9 @@ export function completeAppTask(
       taskContinues: true,
     };
   }
-  const liveChildren = liveChildTaskIds(tree, claim.taskId);
-  if (claim.mode === "achieve" && liveChildren.length > 0) {
-    throw new Error(
-      `Task ${claim.taskId} cannot converge while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
-        liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
-      }`,
-    );
-  }
   const now = new Date().toISOString();
-  const maintainHasLiveChildren = claim.mode === "maintain" && liveChildren.length > 0;
-  match.attempt.acceptedResult = acceptedAttemptResult(
-    tree,
-    claim.taskId,
-    maintainHasLiveChildren ? "waiting" : "converged",
-    input,
-    acceptanceBasis,
-  );
+  match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
-  unlinkTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) =>
     action.kind === "create-task"
@@ -4135,11 +4180,11 @@ export function completeAppTask(
   );
   const pendingSelfTrigger = Boolean(tree.taskTriggers?.[claim.taskId]?.event);
   const satisfiedTaskIds = [
-    ...(claim.mode === "achieve" && !pendingSelfTrigger ? [claim.taskId] : []),
+    ...(!pendingSelfTrigger ? [claim.taskId] : []),
     ...actions.filter((action) => action.kind === "close-task").map((action) => action.taskId),
   ];
   const parentTaskId =
-    claim.mode === "maintain" || !pendingSelfTrigger
+    !pendingSelfTrigger
       ? recordExecutableParentTrigger(
           tree,
           claim.taskId,
@@ -4164,62 +4209,16 @@ export function completeAppTask(
   for (const dependentTaskId of dependentTaskIds) {
     trackResourceMutationTask(mutationScope, tree, dependentTaskId);
   }
-  if (claim.mode === "maintain" || pendingSelfTrigger) {
-    touchResource(resource, {
-      phase: pendingSelfTrigger
-        ? "pending"
-        : claim.mode === "maintain" && maintainHasLiveChildren
-          ? "waiting"
-          : "converged",
-      observedGeneration: claim.generation,
-      observedAttemptId: claim.attemptId,
-      currentAttemptId: undefined,
-      summary: input.summary,
-      response: input.response,
-      result: input.result ? structuredClone(input.result) : undefined,
-      evidence: [...(input.evidence ?? [])],
-      conditionIds: [],
-    });
-  } else {
-    const intent = resourceIntent(resource);
-    const failureFingerprints = [
-      ...new Set(
-        Object.values(tree.attempts ?? {})
-          .filter((attempt) => attempt.taskId === claim.taskId && attempt.failureReason)
-          .map((attempt) => String(attempt.failureReason)),
-      ),
-    ];
-    tree.receipts = {
-      ...(tree.receipts ?? {}),
-      [claim.taskId]: {
-        metadata: {
-          id: claim.taskId,
-          generation: claim.generation,
-          resourceVersion: 1,
-        },
-        specHash: claim.specHash,
-        parentId: intent.parentId,
-        outcome: intent.outcome,
-        acceptance: [...intent.acceptance],
-        owner: claim.agent,
-        ...(intent.workflow ? { workflow: intent.workflow } : {}),
-        ...(intent.executor ? { executor: intent.executor } : {}),
-        input: structuredClone(intent.input ?? {}),
-        ...(intent.priority ? { priority: intent.priority } : {}),
-        handler: claim.handler,
-        summary: input.summary,
-        ...(input.response ? { response: input.response } : {}),
-        ...(input.result ? { result: structuredClone(input.result) } : {}),
-        evidence: [...(input.evidence ?? [])],
-        acceptanceBasis: structuredClone(acceptanceBasis),
-        failureFingerprints,
-        completedAt: now,
-        ...(match.attempt.workspace ? { workspace: structuredClone(match.attempt.workspace) } : {}),
-      },
-    };
-    if (tree.resources) delete tree.resources[claim.taskId];
-    if (tree.taskTriggers) delete tree.taskTriggers[claim.taskId];
-  }
+  touchResource(resource, {
+    phase: pendingSelfTrigger ? "pending" : resource.status.conditionIds?.length ? "waiting" : "converged",
+    observedGeneration: claim.generation,
+    observedAttemptId: claim.attemptId,
+    currentAttemptId: undefined,
+    summary: input.summary,
+    response: input.response,
+    result: input.result ? structuredClone(input.result) : undefined,
+    evidence: [...(input.evidence ?? [])],
+  });
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   input.prepareSupersededSessions?.(supersededSessionIds);
   commitTaskMutation(config, tree, { resourceMutation });
@@ -4228,9 +4227,7 @@ export function completeAppTask(
     actionsApplied,
     dependentTaskIds,
     supersededSessionIds,
-    ...(pendingSelfTrigger || (claim.mode === "maintain" && maintainHasLiveChildren)
-      ? { taskContinues: true as const }
-      : {}),
+    ...(pendingSelfTrigger ? { taskContinues: true as const } : {}),
   };
 }
 
@@ -4287,8 +4284,12 @@ export function deferAppTask(
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
   const conditions = input.conditions;
+  const preserveConditions = conditions === undefined && (resource.status.conditionIds ?? []).some((id) => {
+    const condition = tree.conditions?.[id];
+    return condition && condition.status.state !== "true";
+  });
   const waitsForChildren =
-    liveChildTaskIds(tree, claim.taskId).length > 0 ||
+    pendingChildTaskIds(tree, claim.taskId).length > 0 ||
     actions.some((action) => action.kind === "create-task" && action.parentId === claim.taskId);
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
@@ -4296,6 +4297,7 @@ export function deferAppTask(
   if (
     input.disposition === "waiting" &&
     !conditions?.length &&
+    !preserveConditions &&
     !waitsForChildren &&
     pendingTrigger?.type === "project.task.child-transitioned"
   ) {
@@ -4307,7 +4309,7 @@ export function deferAppTask(
     });
   }
   validateConditions(conditions, {
-    required: input.disposition === "waiting" && !waitsForChildren,
+    required: input.disposition === "waiting" && !waitsForChildren && !preserveConditions,
     taskId: claim.taskId,
   });
   validateActionEvidence(claim.taskId, input.evidence, actions.length);
@@ -4321,7 +4323,7 @@ export function deferAppTask(
     config,
     acceptanceBasis,
   );
-  if (!conditions?.length && liveChildTaskIds(tree, claim.taskId).length === 0) {
+  if (!conditions?.length && !preserveConditions && pendingChildTaskIds(tree, claim.taskId).length === 0) {
     throw new Error(`Waiting task ${claim.taskId} requires an exact Condition or live direct child`);
   }
   const now = new Date().toISOString();
@@ -4329,7 +4331,7 @@ export function deferAppTask(
   finishAttempt(tree, resource, "completed", input.summary, now);
   if (conditions?.length) {
     materializeWaitingConditions(tree, claim.taskId, conditions, now);
-  } else {
+  } else if (!preserveConditions) {
     unlinkTaskConditions(tree, claim.taskId);
   }
   touchResource(resource, {
@@ -4341,7 +4343,7 @@ export function deferAppTask(
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
     evidence: [...(input.evidence ?? [])],
-    ...(!conditions?.length ? { conditionIds: [] } : {}),
+    ...(!conditions?.length && !preserveConditions ? { conditionIds: [] } : {}),
   });
 
   // New input remains pending until accepted, whether or not it satisfies a

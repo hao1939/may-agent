@@ -66,9 +66,6 @@ function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestIn
       }
       return { kind: "observed", taskId, generation: admission.taskGeneration, changed: false };
     }
-    if (isAppTaskConverged(config, taskId)) {
-      throw new Error(`Task ${taskId} in App ${input.appId} is already complete; create distinct follow-up work`);
-    }
     intent = readAppTaskIntent(config, taskId);
     if (!intent) throw new Error(`Task ${taskId} does not exist in App ${input.appId}`);
   } else intent = input.attachment.intent;

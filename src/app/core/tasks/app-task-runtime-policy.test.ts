@@ -38,7 +38,6 @@ describe("App Task agent prompt context", () => {
     expect(protocol).toContain("agent pursuing one Task goal owned by App may");
     expect(protocol).not.toContain("accountable owner");
     expect(protocol).toContain("Finish exactly once with finish().result");
-    expect(protocol).toContain("Return state waiting only for an exact observable Condition");
     expect(protocol).toContain("Runtime publishes and correlates it");
     expect(protocol).not.toContain("Converged example");
   });

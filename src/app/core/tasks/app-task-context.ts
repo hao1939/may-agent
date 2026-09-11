@@ -9,6 +9,7 @@ import type { AppTaskCondition } from "./app-task-state.js";
 import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
+import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 
 /** Project the exact persisted attempt batch onto the public workflow contract. */
 export function projectAppTaskReconciliationEvents(claim: Pick<AppTaskClaim, "events" | "eventsTruncated">): {
@@ -34,6 +35,30 @@ export function projectAppTaskReconciliationEvents(claim: Pick<AppTaskClaim, "ev
     ...(eventIds.length === items.length && eventIds.length > 0 ? { throughEventId: Math.max(...eventIds) } : {}),
     truncated: claim.eventsTruncated,
   };
+}
+
+/** Resolve durable return links before asking the executor to judge their evidence. */
+export function readAppTaskReconciliationEvents(
+  store: Pick<AppTaskResourceStore, "readAttempt" | "readTask">,
+  claim: Pick<AppTaskClaim, "taskId" | "events" | "eventsTruncated">,
+): ReturnType<typeof projectAppTaskReconciliationEvents> {
+  const projected = projectAppTaskReconciliationEvents(claim);
+  for (const item of projected.items) {
+    if (item.event.type !== "project.task.child-transitioned" || item.event.source !== APP_TASK_RECOVERY_OWNER) continue;
+    const data: Record<string, unknown> = { ...item.event.data };
+    if (typeof data.resultAttemptId !== "string") continue; // Historical summary-only notification.
+    const attempt = store.readAttempt(data.resultAttemptId);
+    const child = typeof data.childTaskId === "string" ? store.readTask(data.childTaskId) : null;
+    if (attempt?.taskId === data.childTaskId && child?.spec.parentId === claim.taskId && attempt?.acceptedResult) {
+      data.acceptedResult = structuredClone(attempt.acceptedResult);
+    } else {
+      // A notification is a hint, never a substitute for accepted scoped evidence.
+      delete data.acceptedResult;
+      data.resultUnavailable = "The referenced accepted child result is unavailable in this Task's scope.";
+    }
+    item.event = Object.freeze({ ...item.event, data: Object.freeze(data) });
+  }
+  return projected;
 }
 
 type AppTaskWaitObservation = {
@@ -113,7 +138,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
   });
   return {
     open,
-    note: "These are accepted waits on this Task and remain part of its current state. Reconcile new events against the Task goal and these waits. Preserve a still-valid wait by requestId; create or replace work only when the goal requires it, never merely because the wait was absent from prose or child summaries. targetTaskId is the request's original target and must be preserved when redeclaring it. resolvedTaskId is only the Task created or found by that request; do not copy it into taskId when targetTaskId is absent.",
+    note: "These accepted waits remain part of the Task's state. Judge new evidence against the goal and these obligations. Return waiting without redeclaring unchanged waits; code retains their identities and observations. Propose new or changed work only when the goal requires it, never merely because a wait was absent from prose or child summaries.",
   };
 }
 

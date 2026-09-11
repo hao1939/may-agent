@@ -104,7 +104,6 @@ describe("Task context projections", () => {
         dependency: { requestId: "new", appId: "evaluation", status: "handling", resolvedTaskId: "new-task" },
       },
     ]);
-    expect(projected.note).toContain("do not copy it into taskId when targetTaskId is absent");
     expect(waits).toEqual(before);
   });
 
