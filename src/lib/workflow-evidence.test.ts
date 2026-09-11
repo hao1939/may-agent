@@ -12,7 +12,7 @@ import {
   readWorkflowDiagnostics,
 } from "./workflow-diagnostics.js";
 import { SubagentManager } from "./manager.js";
-import { MAX_WORKFLOW_PAYLOAD_BYTES } from "./workflow-payload.js";
+import { MAX_WORKFLOW_PAYLOAD_BYTES, retainWorkflowPayload } from "./workflow-payload.js";
 
 const roots: string[] = [];
 function fixture() {
@@ -30,6 +30,28 @@ afterEach(() => {
 });
 
 describe("workflow evidence without reporting", () => {
+  it("bounds payload traversal without invoking authored accessors, serializers or proxy traps", () => {
+    let invoked = 0;
+    const hook = () => { invoked++; throw new Error("Authored hook must not run"); };
+    for (const value of [{ get data() { return hook(); } }, { toJSON: hook }, new Proxy({}, { ownKeys: hook })]) {
+      expect(retainWorkflowPayload("output", value)).toEqual({ kind: "output", state: "unavailable", reason: "not-json" });
+    }
+    expect(invoked).toBe(0);
+    const wide = { large: "x".repeat(MAX_WORKFLOW_PAYLOAD_BYTES + 1), get later() { return hook(); } };
+    const deep = Array.from({ length: 100 }).reduce<object>((child) => ({ child }), {});
+    for (const value of [wide, deep, new Array(1_000_000), { ["x".repeat(MAX_WORKFLOW_PAYLOAD_BYTES)]: 0 }]) {
+      expect(retainWorkflowPayload("output", value)).toEqual({ kind: "output", state: "unavailable", reason: "too-large" });
+    }
+    expect(invoked).toBe(0);
+    for (const value of [{ optional: undefined }, [undefined], new Array(1)]) {
+      expect(retainWorkflowPayload("output", value)).toMatchObject({ state: "unavailable", reason: "not-json" });
+    }
+    const shared = { count: 1 };
+    expect(retainWorkflowPayload("output", [shared, shared])).toMatchObject({ state: "available", value: [shared, shared] });
+    const boundary = "x".repeat(MAX_WORKFLOW_PAYLOAD_BYTES - 2);
+    expect(retainWorkflowPayload("output", boundary)).toMatchObject({ state: "available", value: boundary });
+    expect(retainWorkflowPayload("output", boundary + "x")).toMatchObject({ state: "unavailable", reason: "too-large" });
+  });
   it.each(["done", "blocked"] as const)(
     "retains %s output with redaction and integrity checks after storage reopen",
     async (status) => {
