@@ -643,7 +643,10 @@ export async function executePreparedAgent(
   if (!error && !finishResult && !assistantText) {
     error = "Agent ended without producing a response";
   }
-  const status = timedOut ? "interrupted" : finishResult?.status === "failure" || error ? "error" : "done";
+  // A validated caller-defined result can report an unsuccessful domain outcome.
+  // Its caller judges that outcome; it is not an execution failure to retry.
+  const legacyFailure = !prepared.outputSchema && finishResult?.status === "failure";
+  const status = timedOut ? "interrupted" : error || legacyFailure ? "error" : "done";
 
   return {
     status,

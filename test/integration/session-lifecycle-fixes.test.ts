@@ -495,7 +495,7 @@ describe("workflow call empty final turn recovery", () => {
       autoClose: "immediate",
       requireFinish: true,
       outputSchema: Type.Object({
-        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
+        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("stopped")]),
         summary: Type.String(),
         evidence: Type.Array(Type.String()),
       }),
@@ -666,14 +666,14 @@ describe("workflow call empty final turn recovery", () => {
     expect((end as any).data.error).toBeUndefined();
   });
 
-  it("classifies a committed failure receipt as error despite a racing cancellation", async () => {
+  it.each([true, false])("preserves a committed non-success judgment despite cancellation (structured=%s)", async (structured) => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(
         finishCall("finish-failed", {
           status: "failure",
           summary: "Verified terminal failure.",
           result: {
-            state: "converged",
+            state: "stopped",
             summary: "Verified terminal failure.",
             evidence: ["runtime-check:failed"],
           },
@@ -683,27 +683,43 @@ describe("workflow call empty final turn recovery", () => {
       session.status = "interrupted";
       session.lastError = "Cancelled";
     });
+    if (!structured) session.outputSchema = undefined;
 
     const result = await (manager as any).executeSession(session);
 
-    expect(result.status).toBe("error");
+    const expectedStatus = structured ? "done" : "error";
+    expect(result.status).toBe(expectedStatus);
     expect(result.error).toBeUndefined();
     expect(result.structuredResult).toEqual({
-      state: "converged",
+      state: "stopped",
       summary: "Verified terminal failure.",
       evidence: ["runtime-check:failed"],
     });
-    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({ status: "error" });
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({ status: expectedStatus });
     const end = events.find(
       (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
     );
     expect(end).toMatchObject({
       type: "session.end",
       data: {
-        status: "error",
-        finishParams: { status: "failure", result: { state: "converged" } },
+        status: expectedStatus,
+        finishParams: { status: "failure", result: { state: "stopped" } },
       },
     });
+  });
+
+  it("rejects a committed finish missing the caller's required structured result", async () => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push(finishCall("finish-missing-result", { status: "failure", summary: "No structured judgment." }));
+      messages.push(finishResult("finish-missing-result", "FAILURE: No structured judgment."));
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("without the required schema-backed");
+    expect(result.structuredResult).toBeUndefined();
+    expect(readSessionMeta(persistDir, result.sessionId)?.status).toBe("error");
   });
 
   it("keeps cancellation interrupted with its reason when no finish receipt committed", async () => {

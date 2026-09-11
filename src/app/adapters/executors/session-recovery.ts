@@ -80,8 +80,10 @@ function readPersistedTerminalAgentResult(persistDir: string | undefined, sessio
       status?: unknown;
       finishParams?: { status?: unknown; result?: unknown };
     };
-    if (artifact.status !== "done" || artifact.finishParams?.status !== "success") return undefined;
-    return artifact.finishParams.result;
+    if (artifact.status !== "done") return undefined;
+    // Execution completion can carry a supported non-success judgment. Task
+    // admission validates its meaning before applying the persisted result.
+    return artifact.finishParams?.result;
   } catch {
     return undefined;
   }
@@ -199,7 +201,8 @@ function interruptSupersededAgentSession(
   });
   const persistedFinish = recoveredFinish;
   const recoveredStatus: "done" | "error" | "interrupted" = recoveredFinish
-    ? recoveredFinish.status === "failure"
+    ? (meta.outputSchema && recoveredFinish.result === undefined) ||
+      (!meta.outputSchema && recoveredFinish.status === "failure")
       ? "error"
       : "done"
     : "interrupted";
