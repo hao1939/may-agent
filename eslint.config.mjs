@@ -103,6 +103,34 @@ export default [
               group: ["**/adapters/**", "**/composition/**", "**/conversations/**"],
               message: "Core depends on contracts; select adapters and conversational handlers in composition.",
             },
+            {
+              group: ["**/app-input-event", "**/app-input-event.*", "**/lib/requests", "**/lib/requests.*"],
+              message: "Core uses focused state primitives; App input policy belongs outside core.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ["src/app/adapters/executors/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/app-task-runtime", "**/app-task-runtime.*",
+                "**/app-task-reconciler", "**/app-task-reconciler.*",
+                "**/app-task-store", "**/app-task-store.*",
+                "**/app-task-resource-store", "**/app-task-resource-store.*",
+              ],
+              allowTypeImports: true,
+              message: "Executors return proposed results; core owns Task lifecycle and state mutations.",
+            },
           ],
         },
       ],

@@ -12,7 +12,7 @@ import {
 import { createRuntimeAppRead } from "../../core/reads/app-read.js";
 import { readMetricView } from "../reporting/metric-read.js";
 import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
-import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/app-task-reconciler.js";
+import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 import { childEventTrace, type AgentEvent, type EventBus } from "../../core/events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 import type { TaskDefinitionSource, TaskWorkflowInput, TaskWorkflowRunner } from "../../core/tasks/execution.js";

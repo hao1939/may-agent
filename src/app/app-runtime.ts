@@ -265,9 +265,11 @@ export async function runAppRuntime(opts: {
         controlKey,
       }),
   });
+  const conversationAppId = "may";
   const events = createEventInterface({
     bus,
     db: getDb(opts.persistDir),
+    conversationAppId,
     acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
     hasApp: (appId) =>
       appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
@@ -296,7 +298,7 @@ export async function runAppRuntime(opts: {
     persistDir: opts.persistDir,
     hostCapacity,
     maxConcurrentRequests: configuredHostConcurrency,
-    conversationAppId: "may",
+    conversationAppId,
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     resolveRequest: createConversationAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),

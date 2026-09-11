@@ -19,7 +19,7 @@ afterEach(() => {
   }
 });
 
-function fixture() {
+function fixture(conversationAppId?: string) {
   const root = mkdtempSync(join(tmpdir(), "may-event-interface-"));
   roots.push(root);
   const bus = new EventBus();
@@ -30,8 +30,9 @@ function fixture() {
   const events = createEventInterface({
     bus,
     db,
+    conversationAppId,
     acceptsAppInput: (appId, input) => appId === "sample" && input.kind === "message",
-    hasApp: (appId) => appId === "sample",
+    hasApp: (appId) => appId.trim().replace(/\.app$/, "") === "sample",
     hasAgent: (agent) => agent === "may",
     hasSession: (sessionId) => sessionId === "s_known",
   });
@@ -39,6 +40,43 @@ function fixture() {
 }
 
 describe("simple event interface", () => {
+  it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
+    const { db, events } = fixture(selection);
+    for (const appId of ["sample", "sample.app", " sample.app "]) {
+      for (const target of [{ data: { agent: appId } }, { target: { appId }, data: {} }]) {
+        expect(() =>
+          events.publish(
+            { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
+            { source: "fixture" },
+          ),
+        ).toThrow("sample input must use app.input.requested");
+      }
+    }
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
+
+    const receipt = events.publish(
+      { type: "app.input.requested", target: { appId: "sample" }, data: { input: { kind: "message", data: {} } } },
+      { source: "fixture" },
+    );
+    expect(events.get(receipt.eventId)?.event.type).toBe("app.input.requested");
+
+    // A different agent's name is not core routing policy.
+    const chat = events.publish(
+      { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
+      { source: "fixture" },
+    );
+    expect(events.get(chat.eventId)?.event.type).toBe("chat.start.requested");
+  });
+
+  it("allows direct agent input without a conversational capability", () => {
+    const { events } = fixture();
+    const receipt = events.publish(
+      { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
+      { source: "fixture" },
+    );
+    expect(events.get(receipt.eventId)?.event.type).toBe("chat.start.requested");
+  });
+
   it("reports an async subscriber failure without changing a committed result or blocking another report", async () => {
     const { db, events } = fixture();
     createAppInboxItem(db, {

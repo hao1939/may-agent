@@ -12,7 +12,7 @@ import type {
 } from "./execution.js";
 import { appTaskSessionBinding } from "./session-binding.js";
 import { recoverUnavailableTaskHandlers } from "./handler-recovery.js";
-import { getDb } from "../../../lib/requests.js";
+import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
 import type { AppInboxClaim } from "../state/app-inbox-store.js";
 import {
@@ -42,7 +42,6 @@ import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths
 import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import type { TaskOutcomeReader } from "../reads/reporting.js";
-import { appOwnerReviewEvent } from "../../app-input-event.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
@@ -70,7 +69,6 @@ import {
 } from "../events/bus.js";
 import { MAX_TASK_EXECUTION_FAILURES } from "./app-task-state.js";
 import {
-  acknowledgeAppTaskRecoveryAttention,
   assertAppTaskEffectFresh,
   assertAppTaskClaimCurrent,
   hasPendingAppTaskEvidence,
@@ -83,7 +81,6 @@ import {
   failAppTaskAttempt,
   listHandlerExecutionFailedAppTasks,
   markAppTaskAttention,
-  pendingAppTaskRecoveryAttention,
   isAppTaskActionStaleError,
   isAppTaskConverged,
   observeAppTaskIntent,
@@ -3178,28 +3175,6 @@ function recoverInterruptedAppTasks(
       if (controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, taskId, { promote: true });
       }
-    }
-    const attentions = pendingAppTaskRecoveryAttention(config, attentionRecoveryTaskIds);
-    if (attentions.length > 0 && !descriptor.reconciliationPaused) {
-      opts.bus.emit(
-        appOwnerReviewEvent({
-          appId: descriptor.id,
-          source: `app-task:${descriptor.id}:task-recovery`,
-          sourceId: `task-recovery:${descriptor.id}:${attentions
-            .map((attention) => attention.taskId)
-            .sort()
-            .join(",")}`,
-          data: {
-            project: descriptor.id,
-            reason: "app-task-recovery-attention",
-            taskIds: attentions.map((attention) => attention.taskId),
-            summaries: Object.fromEntries(attentions.map((attention) => [attention.taskId, attention.summary])),
-            instruction:
-              "Some task attempts were active in a previous runtime but cannot be resumed because no trigger packet was persisted. Reconcile these review/attention tasks from fresh evidence, release stale capacity, and assign only bounded runnable follow-up work.",
-          },
-        }),
-      );
-      for (const attention of attentions) acknowledgeAppTaskRecoveryAttention(config, attention.taskId);
     }
   }
 }
