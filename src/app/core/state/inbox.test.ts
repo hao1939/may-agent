@@ -164,9 +164,17 @@ describe("request-to-Task state operation", () => {
 
   it("replays a lost reply without duplicating input and rejects changed desired work", () => {
     const { config, input } = fixture();
-    const first = attachRequestToTask(config, input);
+    let authorized = 0;
+    const authorize = () => {
+      if (authorized++) throw new Error("Original admission owner has stopped");
+    };
+    const first = attachRequestToTask(config, { ...input, authorize });
     const revision = config.resourceStore.revision();
-    expect(attachRequestToTask(config, input)).toMatchObject({ taskId: first.taskId, generation: first.generation });
+    expect(attachRequestToTask(config, { ...input, authorize })).toMatchObject({
+      taskId: first.taskId,
+      generation: first.generation,
+    });
+    expect(authorized).toBe(1);
     expect(config.resourceStore.revision()).toBe(revision);
     expect(
       config.resourceStore.readTaskContext({ taskIds: [first.taskId] }).taskTriggers?.[first.taskId]?.events,

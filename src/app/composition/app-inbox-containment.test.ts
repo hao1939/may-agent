@@ -1,3 +1,4 @@
+import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -28,7 +29,8 @@ async function dispatchFixture() {
       version: 1,
       agent: `${id}-worker`,
       inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({}) }),
-      requests: { mode: "agent" },
+      tasks: {},
+      task: ({ id }) => ({ kind: "existing", taskId: id }),
     }),
   );
   const registry = new AppRegistry(async () => apps.map((definition) => ({ appDir: root, definition })));
@@ -61,11 +63,16 @@ async function dispatchFixture() {
         conversationAppId: "may",
         scanIntervalMs: 60_000,
         deferStart: true,
-        readDependency: async () => null,
-        resolveRequest: async ({ request }) => {
+        readDependency: async ({ dependency }) => ({
+          ...dependency,
+          status: "done",
+          summary: "Answered",
+          response: "Answer",
+        }),
+        attachTask: fakeTaskAttacher(db, async ({ request }) => {
           calls.push(request.id);
-          return { summary: "Answered", response: "Answer", topic: { kind: "none" } };
-        },
+          return { taskId: request.id, ready: true };
+        }),
       });
       runtimes.push(runtime);
       return runtime;
@@ -175,7 +182,7 @@ for (const appId of ["may", "sample"]) {
 }
 
 for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-write", "dispatch"] as const) {
-  test(`contains ${mode} failure and preserves subsequent work and accepted asks`, async () => {
+  test(`contains ${mode} admission failure and preserves subsequent work and accepted asks`, async () => {
     const root = mkdtempSync(join(tmpdir(), "may-inbox-containment-"));
     const db = getDb(root);
     const app = defineApp({
@@ -183,7 +190,8 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
       version: 1,
       agent: "sample-worker",
       inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({}) }),
-      requests: { mode: "agent" },
+      tasks: {},
+      task: ({ id }) => ({ kind: "existing", taskId: id }),
     });
     const registry = new AppRegistry(async () => [{ appDir: root, definition: app }]);
     await registry.reload();
@@ -242,18 +250,26 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
       // Admissions can share a timestamp; independent Conversations have no
       // cross-Conversation FIFO promise, even with one execution slot.
       now: () => 1_000,
+      retryAfterMs: 0,
       scanIntervalMs: 50,
       deferStart: true,
-      readDependency: async () => null,
-      resolveRequest: async ({ request }) => {
+      readDependency: async ({ dependency }) => ({
+        ...dependency,
+        status: "done",
+        summary: "Answered",
+        response: "Answer",
+      }),
+      attachTask: fakeTaskAttacher(db, async ({ request }) => {
         calls.push(request.id);
         if (mode === "cleanup-read") armed = true;
-        if (mode === "report-write" && request.id === "first") {
-          await runtime.reload(undefined, async () => [{ appDir: root, definition: { ...app, agent: "replacement-worker" } }]);
-          throw new Error("model failed once");
+        if (mode === "report-write" && request.id === "first" && calls.filter((id) => id === "first").length === 1) {
+          await runtime.reload(undefined, async () => [
+            { appDir: root, definition: { ...app, agent: "replacement-worker" } },
+          ]);
+          throw new Error("attachment failed once");
         }
-        return { summary: "Answered", response: "Answer", topic: { kind: "none" } };
-      },
+        return { taskId: request.id, ready: true };
+      }),
     });
     const admit = (id: string, conversationId: string, sequence: number) =>
       runtime.host.admit({
@@ -276,13 +292,15 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
         () => runtime.host.get("correction")?.status === "done" && runtime.host.get("unrelated")?.status === "done",
       );
       expect(calls[0]).toBe("first");
-      expect([...calls].sort()).toEqual(["correction", "first", "unrelated"]);
+      expect([...calls].sort()).toEqual(
+        mode === "report-write" ? ["correction", "first", "first", "unrelated"] : ["correction", "first", "unrelated"],
+      );
       expect(readConversationRequest(db, app.id, "chat", "ask")).toEqual(accepted);
       expect(failures.length).toBeGreaterThan(0);
       if (mode === "report-write") {
         expect(reportingWrites).toBe(1);
-        expect(diagnostic.mock.calls.flat().join(" ")).toContain("model failed once");
-        expect(runtime.host.get("first")?.handling?.phase).toBe("failed");
+        expect(diagnostic.mock.calls.flat().join(" ")).toContain("attachment failed once");
+        expect(runtime.host.get("first")?.status).toBe("done");
         expect(failures[0]).toMatchObject({
           type: "handler.failed",
           source: "app-inbox",
@@ -294,8 +312,8 @@ for (const mode of ["ready-read", "cleanup-read", "dependency-read", "report-wri
             conversationId: "chat",
             claimRevision: 1,
             stage: "input-handling",
-            error: "model failed once",
-            disposition: "failed",
+            error: "attachment failed once",
+            disposition: "retry-scheduled",
           },
         });
       } else {

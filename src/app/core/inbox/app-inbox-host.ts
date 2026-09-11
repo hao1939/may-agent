@@ -799,6 +799,7 @@ export class AppInboxHost {
         : `task:${claim.item.id}`,
       request,
       claim,
+      authorize: () => this.#assertOwned(claim),
       now: this.#now(),
     });
     requiredText(attached.taskId, "Attached task id");

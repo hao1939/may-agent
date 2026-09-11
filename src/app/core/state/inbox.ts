@@ -128,6 +128,7 @@ export function attachRequestToTask(
     ) {
       throw new Error("claim is stale");
     }
+    if (!replay) input.authorize?.();
     // A released Host could commit admission and crash before storing the wait.
     // Reuse that exact target's identity; normal admission checks still reject
     // changed work. The request wait becomes authoritative in this transaction,
@@ -155,7 +156,7 @@ export function attachRequestToTask(
     if (continuing && generation === undefined) throw new Error(`Attached Task ${taskId} is missing`);
     const observation: AppTaskObservationResult = continuing
       ? { kind: "observed", taskId, generation: generation!, changed: false }
-      : admitTaskRequest(config, { ...input, idempotencyKey: admissionKey });
+      : admitTaskRequest(config, { ...input, idempotencyKey: admissionKey, authorize: undefined });
     if (replay) return observation;
     if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: observation.taskId }, { now })) {
       throw new Error("claim is stale");
