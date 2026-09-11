@@ -10,10 +10,10 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`dfd78b06` has 138 unresolved failures. New human input now permits a fresh attempt
+`186392c9` has 138 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
-The receipt-conversion checkpoint `dfd78b06` now adds verified old-source import
-below. The branch adds 362 net production lines against current main `a8f65188`
+Receipt and open-state conversion now have old-source import evidence below.
+The branch adds 600 net production lines against current main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Finish cutover and examine those
 failures before expanding the design.
 The latest live evidence is
@@ -830,7 +830,7 @@ The source remains an offline helper, not an operational upgrade runner.
 
 Eight conversion tests and the owning storage/accepted-result suites pass
 **46 tests**. The reproducible
-[`task-receipt-cutover.ts`](../../../may-agent/scripts/poc/task-receipt-cutover.ts)
+[`task-state-cutover.ts`](../../../may-agent/scripts/poc/task-state-cutover.ts)
 trial additionally writes a fresh SQLite database through old Host `a8f65188`,
 closes it, runs the candidate's normal Host schema upgrade and imports its real
 receipt. The original ask returns the original measurement, its old attempt
@@ -851,13 +851,68 @@ executable specification. Its reconstructed Task is an inert closed projection;
 the original receipt remains the historical record, including unavailable or
 compacted details. No lost evidence or acceptance check is invented.
 
-Maintained-cycle outcomes, unfinished failure/wait inputs, worker self-stops,
-supervisor retirement and the operational cutover remain required. This helper
+The next checkpoint below covers maintained-cycle outcomes, unfinished
+failure/wait inputs and worker self-stops. Supervisor retirement and the
+operational cutover remain required. Receipt import alone
 does not yet permit removing all historical receipt readers. It adds **186 net
 production lines**: 169 in the offline conversion and 17 in storage/history
 projection. It adds no table, scheduler or execution authority. The original
 receipts remain archival evidence while consumers move to accepted outcomes
 and explicit closure; this is not a completed compatibility retirement.
+
+## Retained open Task state
+
+The open-state converter at `186392c9` runs after receipt import, inside an App-scoped
+SQLite transaction. It preserves the latest maintained or waiting outcome on
+its exact retained attempt. Historical maintained results did not always save
+their acceptance method; the import leaves that detail absent instead of
+inventing a verifier or a model judgment. New execution still records its
+normal acceptance basis.
+
+Original input is recovered from saved attempt/event batches. Only input
+actually present in an accepted attempt is linked to that outcome. An older
+answer already returned through an inbox record stays there; a later unrelated
+Task result cannot replace it. Waiting inputs regain their exact child and
+Condition links. Existing Condition evidence and review deadlines survive the
+conversion, and another input can be handled while the wait remains open.
+
+An old worker self-stop is identified by its recorded App agent and attempt,
+not inferred from its prose. Its original cancellation record is retained on
+that attempt as historical evidence. The Task becomes eligible for continued
+work with backoff, and the worker receives its previous non-success report.
+Human/owner closure and human Turn Stop remain effective. This is a scoped
+offline conversion, not a new runtime operation for reopening closed Tasks.
+Interrupted and failed work retain their original input, ordered claimed and
+pending facts, failure counts, workspace/session evidence and pause controls.
+Workflow-to-agent handoff remains a handoff.
+
+Fifteen new source checks pass. They cover quiet maintained outcomes, later
+results, child and Condition returns across intervening input/restart, deadline
+retention, failure pacing and pause, obsolete claims, human Stop, worker stops,
+atomic rollback, App isolation, and refusal of missing or mismatched acceptance
+identity. The expanded
+[`task-state-cutover.ts`](../../../may-agent/scripts/poc/task-state-cutover.ts)
+trial also uses actual old Host `a8f65188` writers for a maintained result, a
+Condition wait, failure, in-flight work, worker self-stop and human cancellation.
+After the candidate schema/state upgrade, the wait and three unfinished Tasks
+continue with their original input. Completed work stays closed, maintained
+work stays open, and human cancellation remains unchanged. Results are supplied
+by the harness; no live-model or full Host restart is claimed.
+
+Full `bun run ci` passes Host/SDK types, App boundary and lint, then reports
+**2,724 passed, 3 skipped and 138 failed** across 2,865 tests in 288 files
+(144.6 seconds). The checkpoint adds fifteen passing checks with no new failure
+names versus `dfd78b06`; the unresolved failures are not presumed obsolete.
+It adds **238 net production lines**: 235 in the offline converter and three
+for historical state fields. It reuses event ordering/coalescing and the same
+fenced resource commit, adding no table, scheduler or execution owner.
+
+This is still an offline source helper. Missing original input or a missing or
+conflicting accepted-attempt reference aborts the App transaction; this version
+does not reconstruct lost history from backups or guess another answer. The
+operator must establish that the old Host and workers stopped before invoking
+it. Supervisor retirement, mixed ordinary/Conversation cutover, operational
+activation and full regression convergence remain unfinished.
 
 ## Verification and cost
 

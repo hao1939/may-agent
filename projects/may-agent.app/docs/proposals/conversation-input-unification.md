@@ -460,9 +460,14 @@ The [historical receipt conversion](controller-poc-recovery-review.md#historical
 now proves completed-work import against a database written by the old Host.
 It preserves original results and matching caller links, retains human closure,
 and does not close a newer Task generation. It requires the normal schema upgrade
-before state conversion. Maintained outcomes, unfinished failure/wait inputs,
-worker self-stops and supervisor retirement still need migration evidence; the
-source helper is not an operational upgrade procedure.
+before state conversion. The [open-state conversion](controller-poc-recovery-review.md#retained-open-task-state)
+also preserves maintained outcomes, restores original input/wait links and
+continues failures with backoff. Identified historical worker self-stops become
+retained non-success evidence; human/owner closure and Turn Stop stay effective.
+Missing acceptance methods remain absent, and missing or conflicting identity
+aborts the conversion rather than assigning an unrelated answer. Supervisor
+retirement, mixed-input cutover and operational activation still need proof;
+these source helpers are not an operational upgrade procedure.
 
 ## Acceptance and cost evidence
 
