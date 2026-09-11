@@ -1568,21 +1568,25 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         conversationId,
         command: text,
       });
-      const resumedEventId = resumeRecordedInput("runtime.reload.requested", requestId);
-      if (resumedEventId) {
-        const db = getDb(persistDir);
-        const completion = db.prepare(`
-          SELECT e.id FROM event_traces t JOIN events e ON e.id = t.event_id
-          WHERE t.parent_event_id = ? AND e.event_type = 'runtime.reload.finished'
-          ORDER BY e.id DESC LIMIT 1
-        `).get(resumedEventId);
-        if (completion) {
-          const event = loadPersistedEvent(db, Number(completion.id), persistDir);
-          if (!event) throw new Error("Saved reload result is unavailable");
-          showReloadResult(requestId, String(eventData(event).summary || "[reload] Finished"));
-        }
+      // Completion can be durable even if recording acceptance failed. Check
+      // the exact request's result before redelivery can repeat the reload.
+      const db = getDb(persistDir);
+      const completion = db.prepare(`
+        SELECT e.id FROM events request
+        JOIN event_traces t ON t.parent_event_id = request.id
+        JOIN events e ON e.id = t.event_id
+        WHERE request.event_type = 'runtime.reload.requested'
+          AND request.source = 'telegram' AND request.idempotency_key = ?
+          AND e.event_type = 'runtime.reload.finished'
+        ORDER BY e.id DESC LIMIT 1
+      `).get(requestId);
+      if (completion) {
+        const event = loadPersistedEvent(db, Number(completion.id), persistDir);
+        if (!event) throw new Error("Saved reload result is unavailable");
+        showReloadResult(requestId, String(eventData(event).summary || "[reload] Finished"));
         return true;
       }
+      if (resumeRecordedInput("runtime.reload.requested", requestId)) return true;
       const receipt = opts.publishEvent({
         type: "runtime.reload.requested",
         data: { requestId },

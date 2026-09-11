@@ -577,38 +577,56 @@ describe("Telegram durable input and natural follow-up", () => {
     } finally { held.resolve(); await f.close(); }
   });
 
-  for (const completedBeforeRestart of [false, true]) {
-    it(`returns the exact reload result after restart (${completedBeforeRestart ? "already completed" : "not yet admitted"})`, async () => {
+  for (const { state, completed, loseAcceptance, ok } of [
+    { state: "not yet admitted", completed: false, loseAcceptance: false, ok: true },
+    { state: "already completed", completed: true, loseAcceptance: false, ok: true },
+    { state: "completed with lost acceptance", completed: true, loseAcceptance: true, ok: true },
+    { state: "failed with lost acceptance", completed: true, loseAcceptance: true, ok: false },
+  ]) {
+    it(`returns the exact reload result after restart (${state})`, async () => {
       const f = durableTelegramFixture();
       let router: ReturnType<typeof attachCommandRouter> | undefined;
       let reloads = 0;
+      const summary = ok ? "Fixture definitions reloaded" : "Fixture definitions rejected; previous definitions kept";
       const attach = () => attachCommandRouter({ bus: f.bus, manager: {} as never, projectRoot: f.root,
-        reload: () => { reloads++; return { ok: true, summary: "Fixture definitions reloaded" }; },
+        reload: () => { reloads++; return { ok, summary }; },
         restart() {}, shutdown() {},
       });
       try {
-        if (completedBeforeRestart) router = attach();
+        if (completed) router = attach();
+        if (loseAcceptance) {
+          // Exercise the real writer's swallowed acceptance failure. This
+          // connection-local fault disappears when the fixture reopens storage.
+          f.db.exec(`CREATE TEMP TRIGGER reject_reload_acceptance
+            BEFORE UPDATE OF delivery_status ON events
+            WHEN OLD.event_type = 'runtime.reload.requested'
+            BEGIN SELECT RAISE(ABORT, 'fixture reload acceptance unavailable'); END`);
+        }
         f.afterRecord((input) => {
           if (input.type === "runtime.reload.requested") throw new Error("fixture lost receipt");
         });
         f.message(100, "/reload", { chat: { id: 456 }, message_thread_id: 7 });
         await waitFor(() => f.published.some((e) => e.type === "runtime.reload.requested"));
-        if (completedBeforeRestart) {
+        if (completed) {
           await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/reload"));
+          expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
+            .toEqual({ count: 1 });
         } else {
-          expect(f.db.prepare("SELECT delivery_status FROM events WHERE event_type = 'runtime.reload.requested'").get())
-            .toEqual({ delivery_status: "pending" });
           router = attach();
         }
+        expect(f.db.prepare("SELECT delivery_status FROM events WHERE event_type = 'runtime.reload.requested'").get())
+          .toEqual({ delivery_status: completed && !loseAcceptance ? "accepted" : "pending" });
         const priorSends = f.sends().length;
         await f.restart();
         await waitFor(() => f.polls().includes(101));
-        await waitFor(() => f.sends().slice(priorSends).some((c) => c.body.text === "Fixture definitions reloaded"));
+        await waitFor(() => f.sends().slice(priorSends).some((c) => c.body.text === summary));
         expect(reloads).toBe(1);
-        const replies = f.sends().slice(priorSends).filter((c) => c.body.text === "Fixture definitions reloaded");
+        const replies = f.sends().slice(priorSends).filter((c) => c.body.text === summary);
         expect(replies).toHaveLength(1);
         expect(replies[0].body).toMatchObject({ chat_id: "456", message_thread_id: 7 });
         expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.requested'").get())
+          .toEqual({ count: 1 });
+        expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
           .toEqual({ count: 1 });
       } finally { router?.close(); await f.close(); }
     });
