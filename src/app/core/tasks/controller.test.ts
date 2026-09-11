@@ -3,9 +3,9 @@ import { AppTaskController } from "./controller.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
-  const started = Date.now();
+  const started = performance.now();
   while (!predicate()) {
-    if (Date.now() - started > timeoutMs) throw new Error("timed out");
+    if (performance.now() - started > timeoutMs) throw new Error("timed out");
     await new Promise((resolve) => setTimeout(resolve, 1));
   }
 }
@@ -224,34 +224,42 @@ describe("AppTaskController", () => {
     second.close();
   });
 
-  it("yields to the event loop between shared-capacity handoffs", async () => {
+  it("yields to the event loop between shared-capacity handoffs despite a wall-clock jump", async () => {
     const capacity = new HostCapacity(1);
     const started: string[] = [];
     let releaseFirst: (() => void) | undefined;
+    const originalNow = Date.now;
+    const clock = spyOn(Date, "now").mockImplementation(originalNow);
     const controller = new AppTaskController({
       maxConcurrent: 1,
       capacity,
       reconcile: async (taskId) => {
         started.push(taskId);
+        if (taskId === "task-10") clock.mockReturnValue(originalNow() + 60_000);
         if (taskId === "task-0") await new Promise<void>((resolve) => (releaseFirst = resolve));
       },
     });
-    for (let index = 0; index < 40; index++) controller.enqueue(`task-${index}`);
-    await waitUntil(() => started.length === 1);
+    try {
+      for (let index = 0; index < 40; index++) controller.enqueue(`task-${index}`);
+      await waitUntil(() => started.length === 1);
 
-    let startedWhenTimerRan = -1;
-    const timerRan = new Promise<void>((resolve) => {
-      setTimeout(() => {
-        startedWhenTimerRan = started.length;
-        resolve();
-      }, 0);
-    });
-    releaseFirst?.();
-    await timerRan;
+      let startedWhenTimerRan = -1;
+      const timerRan = new Promise<void>((resolve) => {
+        setTimeout(() => {
+          startedWhenTimerRan = started.length;
+          resolve();
+        }, 0);
+      });
+      releaseFirst?.();
+      await timerRan;
 
-    expect(startedWhenTimerRan).toBeLessThan(40);
-    await waitUntil(() => started.length === 40);
-    controller.close();
+      expect(startedWhenTimerRan).toBeLessThan(40);
+      await waitUntil(() => started.length === 40);
+    } finally {
+      releaseFirst?.();
+      controller.close();
+      clock.mockRestore();
+    }
   });
 
   it("shares one Host capacity across independent App controllers", async () => {
