@@ -94,6 +94,22 @@ result is a different fact, handled through bounded execution failure rules.
 The distinction must survive storage and restart; agents should not have to
 learn a special success label to make code accept a non-success decision.
 
+Choosing **which ask an answer resolves** is also judgment. Reading an input,
+handling an event or finishing a Turn does not establish that every outstanding
+ask is answered. Conversation already has typed Request decisions for this;
+reuse them instead of inventing another generic obligation lifecycle. The
+controller preserves the links among the accepted ask, delegated work and
+returned evidence. It must carry those links across attempts and intervening
+input, without asking the agent to repeat an admission ID or rebuild a wait.
+
+The minimum follow-through trial is: ask for a measurement once, release the
+attempt, answer an unrelated question, restart, then return the measurement to
+its original caller. The explanation must not fulfill the measurement ask, and
+the eventual measurement must not overwrite the explanation. Use real models
+to judge the outcomes after the source path works. The current experiment
+[fails this delayed-input correlation check](controller-poc-outcomes-and-closure.md#the-follow-through-gap);
+correct one-attempt model decisions do not compensate for that process failure.
+
 ## One lifecycle, explicit outcomes
 
 | Fact | Meaning |

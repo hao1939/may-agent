@@ -17,6 +17,12 @@ fix is isolated on current Host main in [PR #153](https://github.com/hao1939/may
 at `edd368ac`, awaiting human review. It does not require the incompatible
 lifecycle experiment to merge first.
 
+The latest [input-result slice](https://github.com/hao1939/may-agent/commit/bc7228ca)
+retains exact immediate answers for callers. It also includes a failing
+regression for delayed answers: the controller does not yet preserve the
+original input's result correlation across a wait. This is a demonstrated
+process gap, not a request for more procedural instructions to the model.
+
 ## What now works in the experiment
 
 The controller records a supported outcome and releases the attempt. It keeps
@@ -53,6 +59,20 @@ the consumed outcome reference. The SQL table and several read names still say
 `cancellation`; that storage vocabulary and the public views need migration.
 There is no new table, service, scheduler or model-driven lifecycle manager.
 
+The [legacy close action removal](https://github.com/hao1939/may-agent/commit/eb0691d8)
+removes `close-task` from the SDK schema, admission and reconciler. That action
+previously fabricated a successful receipt while closing work. Owner closure
+remains a separate typed control. Rejected legacy actions roll back their whole
+batch; they cannot partially create work or manufacture success.
+
+For input answered by its current attempt, the existing admission record now
+points to that exact accepted attempt. The caller's inbox row retains the
+admission key. Result readers follow that link instead of the Task's latest
+phase or result, including after another answer, a retained wait or closure.
+Both writes share the outcome transaction. A new input cannot consume an old
+answer. Task reads also distinguish `closed` from merely having an answer, so
+an open Task can accept later input.
+
 ## Evidence and its limits
 
 The focused source gates passed **28 tests** across common lifecycle, context
@@ -74,7 +94,22 @@ The Task named Conversation in that fixture is **not** the migrated Conversation
 product. It does not exercise real message/Request records, the conversational
 handler, Esc, adapter delivery or the existing inbox cutover. Those remain gates.
 Existing Task input and result paths are exercised, but caller readiness still
-has consumers based on latest Task status rather than exact assignment outcomes.
+has migration work beyond the exact input reader described above.
+
+After close-action removal, **54 tests passed** across SDK, common lifecycle,
+context and runtime-policy checks. For the latest input-result slice, **113
+tests passed and 1 failed** across inbox, state, reads, conversation resolver,
+schema and common lifecycle. The failure is the new delayed-input regression
+below; it is retained as an ordinary failing test, not skipped. Host/SDK type
+checks, App-boundary checks and lint passed.
+
+Two production caller-return cases passed separately. The original answer is
+`0.92`; another input then receives `0.1` on the same still-open, waiting Task.
+The first caller and its parent still receive `0.92`. One case uses a
+notification and the other invokes the actual dependency-recovery operation.
+The second proves recovery behavior, not the real timer cadence. A separate
+storage-trigger test rejects the admission-result write and confirms that the
+accepted attempt rolls back with it.
 
 During development, the two real-agent returned-result cases changed from
 accepted waiting to accepted convergence while their children stayed open.
@@ -110,13 +145,36 @@ The independently reviewable fix at `edd368ac` also passed full local
 That check used current Host main plus the execution fix. It does not make the
 larger lifecycle branch's migration failures green.
 
-The broader affected-suite audit is **not green**: 300 passed, 77 failed, with
-3 asynchronous errors across 377 tests. Many assertions and polling fixtures
+The broader affected-suite audit is **not green**: 325 passed, 81 failed, with
+1 asynchronous error across 406 tests, before adding the delayed-input regression.
+Many assertions and polling fixtures
 still depend on Task deletion, a completion receipt, or the old stop semantics;
 timed-out receipt polling also accessed already-closed test databases. Treat
 the failures as migration work to inspect, not as evidence that every failure
 is harmless or that the tests should simply be removed. No full-CI or merge
 readiness claim is made for this branch.
+
+## The follow-through gap
+
+The new regression uses actual Task admission, claims, child-result context and
+SQLite reopen. The caller requests a measurement; the first attempt delegates
+it and waits. A later attempt answers a different question without resolving
+the measurement. The child returns, the parent accepts the measured result,
+and storage reopens. The original measurement admission still has no result
+pointer, so its caller cannot retrieve the answer.
+
+Current attribution uses input events in the accepting attempt. Those events
+no longer include the original ask after a completed waiting attempt. Restoring
+the old relationship is controller process. Neither asking the model to copy
+admission keys nor attaching the latest answer to every unresolved input is a
+valid fix: an intervening answer can belong to different work.
+
+The next source change must retain the original work-to-result connection and
+present its ask and evidence for judgment. For Conversation, deciding which
+accepted Request is resolved belongs to its existing typed decisions. The
+controller must not infer that semantic decision from a consumed event. The
+regression is still a Task fixture; actual Conversation execution and Request
+settlement have not migrated, and no real model has passed this complete loop.
 
 ## Value, cost and remaining work
 
@@ -127,6 +185,16 @@ exact result context and retained waits. Total changed implementation size is
 roughly level; this is fewer lifetime rules, not yet the large code reduction
 expected from removing duplicate Conversation execution.
 
+Close-action removal deleted roughly 123 net implementation lines. The
+input-result slice adds 56 net implementation lines plus tests: one
+optional admission JSON pointer, one inbox column, exact result reads and
+recovery per waiting input. It replaces the old recovery loop's unbounded
+per-Task row expansion with bounded pages. The current index still needs a
+query-cost check for many inputs waiting on one Task; a page-size limit alone
+does not prove bounded database work. Historical rows without a saved admission
+key also need an explicit migration policy. Do not treat these additions as a
+proved overall simplification while the delayed-answer case is broken.
+
 The small model fixtures retained about 1.3–2.6 KiB of JSON per attempt. That
 is a measurement of tiny cases, not a storage budget. Full accepted results can
 be much larger; the existing 16 KiB result admission cap bounds one result, not
@@ -136,9 +204,9 @@ the exercised cases.
 
 The next work is substantive:
 
-1. Migrate result readers, caller readiness and legacy receipt/close-action
-   paths. An old success must not fulfill a later assignment; closing work must
-   never manufacture a successful result. Preserve old receipts as history.
+1. Fix and prove result correlation across waits and intervening input without
+   agent bookkeeping. Finish caller/read migration and retain old receipts as
+   history. An old success must not fulfill a later assignment.
 2. Replace the actual Conversation execution owner with one stable Task, using
    the real message/Request operations in fenced settlement. Remove the old
    execution pump and follow-up owner after proving one authority at cutover.
@@ -149,8 +217,8 @@ The next work is substantive:
 5. Run real agents through that complete loop and compare the current contract
    on the same work. Report intervention, calls, cost and actual deleted paths.
 
-The current SDK still carries legacy mode and action fields. The old
-`close-task` action still creates a completion receipt, and the regular
-Conversation inbox remains an execution authority. The new ordinary App closure
+The current SDK still carries legacy mode fields and other Task actions, but
+`close-task` is gone. The regular Conversation inbox remains an execution
+authority. The new ordinary App closure
 convention is exercised through a typed control, not yet installed in all Apps.
 Those are explicit incomplete boundaries, not compatibility guarantees to keep.
