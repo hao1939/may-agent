@@ -426,6 +426,15 @@ separate. The current maintained supervisor has no generic cancellation API:
 implementation must supply a verified scoped drain/fence/retirement procedure.
 Any rollback must preserve evidence and the same single-owner property.
 
+For the first Conversation cutover, accept planned downtime: stop the old Host
+and all workers, preserve prior execution evidence, and admit unfinished input
+to the stable Task for redo. Keep answered and explicitly stopped inputs quiet.
+Do not restore the old handler's internal process or replay a saved decision as
+newly accepted work. Lease expiry alone cannot prove that an old process has
+stopped; the upgrade procedure must establish that before activating the new
+owner. The [source evidence](controller-poc-recovery-review.md#offline-conversation-cutover)
+distinguishes the tested state operation from the unfinished operational cutover.
+
 ## Acceptance and cost evidence
 
 Reuse [PR #149's follow-through fixtures](task-runtime-organization.md#request-follow-through-review)

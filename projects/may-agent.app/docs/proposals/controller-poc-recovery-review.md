@@ -6,12 +6,13 @@ remains incomplete and unmerged. This review applies the
 to PRs #153, #154 and #155; it does not merge or deploy them.
 
 **Current assessment:** Focused lifecycle and managed-model recovery checks
-support the design. Whole-system simplification remains unproved: legacy
-execution/follow-up owners remain, Task-wide cooldown can delay fresh human
-input, and full CI has 128 unresolved failures. At `ef0b9554`, the branch adds
-924 net production lines against its merge base (counting `src/` and `packages/`,
-excluding tests and fixtures). Finish cutover and examine those failures before
-expanding the design. The latest live evidence is
+support the design. Whole-system simplification remains unproved: the old
+Conversation executor is removed, but legacy follow-up routing remains,
+Task-wide cooldown can delay fresh human input, and full CI has 185 unresolved
+failures. At `f5b3eafe`, the branch adds 598 net production lines against its
+merge base (counting `src/` and `packages/`, excluding tests and fixtures).
+Finish cutover and examine those failures before expanding the design.
+The latest live evidence is
 [below](#managed-conversation-recovery).
 
 The worker decides **how to do the assigned work**. The assigning App, parent
@@ -597,6 +598,56 @@ silently close its original human Request. These use supplied decisions and
 the in-process runtime; worker-subprocess and live-model cancellation remain
 unproved. The old inbox execution and follow-up owners still need retirement.
 
+## Offline Conversation cutover
+
+[Checkpoint `f5b3eafe`](https://github.com/hao1939/may-agent/commit/f5b3eafe)
+removes the old Conversation turn handler and
+its separate reply/handoff callbacks. Inbox composition admits input and reads
+context; Task runtime owns Conversation execution. Missing Task admission fails
+before a conversational input is stored, without falling back to another executor.
+The older follow-up routing and result projection still require retirement.
+
+`migrateConversationInputs` is an offline state operation for one declared App
+and Conversation. In one transaction it saves prior execution evidence as
+historical attempts, retains exact old claim generations, fences those claims,
+and binds the inputs to the stable Task. Unfinished and failed input enters
+normal admission for redo; answered and explicitly stopped input stays quiet.
+It does not manufacture an accepted Task result. Requests retain their state
+until a new answer is accepted, and failed import rolls the conversion back.
+
+The focused Conversation/state/runtime suite passes **47 tests**, including
+reopen, replay, old-claim rejection, rollback, quiet history, subsequent human
+input and child return through an intervening discussion. A fixture omitted
+the required Request timestamp; that is corrected. The child-chain timeout
+failed after a reported 78 ms against its 2 s wall-clock limit, then passed
+alone. Its deadline now uses monotonic time with the same behavior assertions.
+Counters attached to the removed executor callback are deleted; actual Task
+binding, claims, settlement and exclusion from inbox execution are the evidence.
+The live harness now checks the retained input's execution Task directly; its
+previous three live results remain tied to `03618081`, not this changed source.
+
+This operation is not an upgrade command or proof that old processes stopped.
+Its `oldRuntimeStopped` argument records an operator assertion. Actual process
+shutdown, mixed ordinary/conversational input in the same Conversation,
+retained Task-policy migration and worker-process cutover remain unproved.
+The existing admission guard rejects unhandled unconverted input; the enclosing
+transaction rolls back rather than partially converting that case.
+
+Host/SDK types, boundary checks and lint pass. Full CI reports **2,621 passed,
+3 skipped and 185 failed** across 2,809 tests in 283 files (167.8 s). Compared
+with `ef0b9554`, 57 failure names were added and none removed. They belong to
+legacy Conversation Stop, execution, Request, handoff and containment suites
+still using the retired path. Useful contracts must move to Task execution;
+these failures cannot be dismissed as obsolete assertions without that audit.
+All 128 earlier failures also remain unresolved. This is a PoC checkpoint,
+not a merge-ready candidate.
+
+This slice removes **326 net production lines** (149 added, 475 removed),
+including the offline state operation. The whole branch now adds **598 net
+production lines** against `3037c4b9`, using the same exclusions below. Removing
+one duplicate executor is concrete progress, but total simplification still
+depends on retiring the remaining owner paths and resolving migration checks.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -617,6 +668,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `4e040987` | 2,665 / 3 / 129 | 2,797 / 282 | 137.4 | Prior attempt evidence reaches normal execution |
 | `03618081` | 2,665 / 3 / 129 | 2,797 / 282 | 139.5 | Continuation prompt; recovery/execution suites pass 38 tests |
 | `ef0b9554` | 2,672 / 3 / 128 | 2,803 / 282 | 135.9 | Atomic conversational cancellation; human reads no longer forbid maintenance cancellation |
+| `f5b3eafe` | 2,621 / 3 / 185 | 2,809 / 283 | 167.8 | Removes old Conversation execution; offline cutover passes, 57 legacy fixture failures added |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
