@@ -1,6 +1,7 @@
 /** Stable authoring contract for App declarations and bounded App-owned work. */
 
 export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";
+export { MAX_OBSERVER_SNAPSHOT_BYTES } from "./app.js";
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
@@ -36,6 +37,7 @@ export type {
   AppInput,
   AppInputSource,
   AppObserver,
+  AppObserverResult,
   AppRead,
   AppInputContext,
   AppRequest,
@@ -54,6 +56,7 @@ export type {
   MetricRecordOptions,
   MetricView,
   ObserverContext,
+  ObserverSnapshot,
   Static,
   TaskAttempt,
   TaskDetail,

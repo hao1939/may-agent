@@ -1,7 +1,7 @@
 import { Type, type Static, type TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
-import type { MetricDefinition, ObserverContext, TaskDetail } from "./workflow.js";
+import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
@@ -17,6 +17,7 @@ export type {
   MetricRecordOptions,
   MetricView,
   ObserverContext,
+  ObserverSnapshot,
   TaskAttempt,
   TaskDetail,
   TaskEventReceipt,
@@ -355,11 +356,23 @@ export type AppSchedule = AppScheduleBase &
       }
   );
 
+/** Observation memory is small discovery metadata, not logs or retained provider history. */
+export const MAX_OBSERVER_SNAPSHOT_BYTES = 64 * 1024;
+
+export type AppObserverResult = {
+  events: AppEvent[];
+  /** Plain JSON, at most 64 KiB UTF-8 and 32 levels deep (no cycles/nonfinite numbers).
+   * Installed after every event is durably published, not after Task handling.
+   * A partial append retains the old snapshot and can replay the prefix.
+   * Reset on reload/restart. An empty batch may also advance memory. */
+  nextObservation: ObserverSnapshot;
+};
+
 export type AppObserver = {
   id: string;
   intervalMs: number;
   /** Return observed facts; the host publishes them after the run succeeds. */
-  run(context: ObserverContext): Promise<AppEvent[]>;
+  run(context: ObserverContext): Promise<AppEvent[] | AppObserverResult>;
 };
 
 export type AppAction<TInputSchema extends TSchema = TSchema> = {
