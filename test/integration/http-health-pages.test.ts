@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer-core";
+import puppeteer, { type HTTPRequest } from "puppeteer-core";
 import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { insertWorkflowRun } from "../../src/lib/db/workflows.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
@@ -210,6 +210,112 @@ describe("served workflow and metric health pages", () => {
       db.prepare("DELETE FROM metric_alerts WHERE message IN ('synthetic oldest alert', 'synthetic latest alert', 'synthetic alert flood')").run();
     }
   });
+
+  test.skipIf(skipBrowser)(
+    "disabled rules suppress only derived warnings, not retained alerts, across HTTP and project/vital cards",
+    async () => {
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      const db = getDb(root);
+      const metrics = createMetricService({ getDb: () => db });
+      const id = "session.error-rate-6h";
+      const project = join(root, "projects", "policy-fixture");
+      mkdirSync(project, { recursive: true });
+      writeFileSync(join(project, "project.md"), "---\nid: policy-fixture\nowner: worker\nstatus: active\n---\n# Synthetic policy fixture\n");
+      const definition = { id, owner: "worker", project: "policy-fixture", threshold: 5, alertOp: ">" as const, measureInterval: 300000 };
+      try {
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", (request) => void (request.url().startsWith(base) ? request.continue() : request.abort()));
+        for (const [disabled, retained, value] of [
+          [false, false, 7], [false, false, 1], [true, false, 7],
+          [true, true, 7], [true, true, 1], [false, true, 1],
+        ] as const) {
+          db.prepare("DELETE FROM metric_alerts WHERE metric_id = ?").run(id);
+          metrics.define(definition);
+          metrics.record(id, value);
+          if (retained) metrics.alert(id, "Existing alert still needs resolution");
+          // Changing policy must not resolve the existing alert as a side effect.
+          metrics.define({ ...definition, config: { alert: { disabled } } });
+          const response = await fetch(base + "/api/liveness", { signal: AbortSignal.timeout(5000) });
+          expect(response.status).toBe(200);
+          const vital = (await response.json()).vitals.find((m: { id: string }) => m.id === id);
+          expect(vital).toMatchObject({ alertsDisabled: disabled, alertOpen: retained,
+            thresholdBreached: value > 5, breached: !disabled && value > 5 });
+          const expectedWarning = retained || (!disabled && value > 5);
+          await page.goto(base, { waitUntil: "domcontentloaded" });
+          const vitalCard = `.vital-card[title^="${id}"]`;
+          const projectChip = `.project-metric-chip[title^="${id}"]`;
+          await page.waitForSelector(vitalCard);
+          await page.waitForSelector(projectChip);
+          expect(await page.$eval(vitalCard, (el) => el.classList.contains("alerting"))).toBe(expectedWarning);
+          expect(await page.$eval(projectChip, (el) => el.classList.contains("alerting"))).toBe(expectedWarning);
+          expect(await page.$eval("#liveness-projects", (el) => !!el.querySelector(".project-health-alert"))).toBe(expectedWarning);
+          if (disabled) {
+            await page.goto(base + "/metrics/" + id, { waitUntil: "domcontentloaded" });
+            await page.waitForSelector("#metrics-recent h2");
+            const detail = await page.$eval("#metrics-recent", (el) => el.textContent || "");
+            expect(detail).toContain("Alerts disabled");
+            expect(detail.includes("Open alert:")).toBe(retained);
+          }
+        }
+      } finally {
+        for (const table of ["metric_alerts", "metric_snapshots"]) db.prepare(`DELETE FROM ${table} WHERE metric_id = ?`).run(id);
+        db.prepare("DELETE FROM metrics WHERE id = ?").run(id);
+        rmSync(project, { recursive: true, force: true });
+        await browser.close();
+      }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "route changes clear finished trace evidence and fence delayed success and error responses",
+    async () => {
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        let capture: ((request: HTTPRequest) => void) | null = null;
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (!request.url().startsWith(base)) void request.abort();
+          else if (capture && new URL(request.url()).searchParams.get("workflowRunId") === "wr_7") capture(request);
+          else void request.continue();
+        });
+        await page.goto(base + "/events?workflowRunId=wr_7#loop-trace", { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("[data-workflow-evidence]");
+        await page.evaluate("routeTo('/events')");
+        expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toBe("");
+        for (const [route, fail] of [["/events", false], ["/metrics", true], ["/events?workflowRunId=wr_6", false]] as const) {
+          const intercepted = new Promise<HTTPRequest>((resolveRequest) => { capture = resolveRequest; });
+          // Keep the real loader promise so assertions wait for its rendering/catch, not a sleep.
+          const pending = page.evaluate("loadLoopTrace({ workflowRunId: 'wr_7' })");
+          const held = await intercepted;
+          capture = null;
+          await page.evaluate(`routeTo(${JSON.stringify(route)})`);
+          if (route === "/metrics") await page.evaluate("routeTo('/events')");
+          const selectedRun = route.includes("wr_6");
+          if (selectedRun) await page.waitForSelector("[data-workflow-evidence]");
+          if (fail) await held.respond({ status: 500, contentType: "application/json", body: '{"error":"late trace failure"}' });
+          else await held.continue();
+          await pending;
+          const text = await page.$eval("#loop-trace-content", (el) => el.textContent || "");
+          expect(text).not.toContain("wr_7");
+          expect(text).not.toContain("late trace failure");
+          if (selectedRun) expect(text).toContain("wr_6");
+          else expect(text).toBe("");
+        }
+        await page.evaluate("openLoopTrace({ workflowRunId: 'wr_7' })");
+        await page.waitForSelector("[data-workflow-evidence]");
+        expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toContain("wr_7");
+        const event = getDb(root).prepare("SELECT id FROM events WHERE event_type = 'metric.measurement.failed' LIMIT 1").get() as { id: number };
+        await page.evaluate(`routeTo('/events/${event.id}#loop-trace')`);
+        await page.waitForFunction((id) => document.querySelector("#loop-trace-content")?.textContent?.includes(`event:${id}`), {}, event.id);
+        // A workflow selection takes precedence over an Event-page trace anchor.
+        await page.evaluate(`routeTo('/events/${event.id}?workflowRunId=wr_7#loop-trace')`);
+        await page.waitForSelector("[data-workflow-evidence]");
+        expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toContain("workflow:wr_7");
+      } finally { await browser.close(); }
+    }, 30000,
+  );
 
   test.skipIf(skipBrowser)(
     "browser reconciles a selected outcome with exact runs and shows real-time history and safe diagnostics",

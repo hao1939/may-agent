@@ -252,12 +252,7 @@ async function loadAgentOverview(name) {
     // Fetch sparkline data for the most-relevant metrics. To keep latency
     // bounded, pull history for at most 12 metrics: alerting first, then
     // by priority (P0 > P1 > P2). Each call is cheap (~5–20ms server-side).
-    const breached = ownedMetrics.filter(m => {
-      if (m.alertOpen) return true;
-      if (m.threshold == null || m.current == null) return false;
-      const above = m.alert_op === 'above' || m.alert_op === '>';
-      return above ? m.current > m.threshold : m.current < m.threshold;
-    });
+    const breached = ownedMetrics.filter(metricBreached);
     const sortedForSpark = [...ownedMetrics].sort((a, b) => {
       const aBr = breached.includes(a) ? 0 : 1;
       const bBr = breached.includes(b) ? 0 : 1;

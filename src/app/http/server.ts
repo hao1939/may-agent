@@ -881,7 +881,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           ...m,
           owner: m.owner || "may",
           updatedAt: m.observation?.measuredAt ?? null,
-          breached: m.thresholdBreached,
+          breached: m.alertsDisabled ? false : m.thresholdBreached,
           alertOpen: openAlertMetricIds.has(m.id) ? true : openAlertsTruncated ? null : false,
         };
       })

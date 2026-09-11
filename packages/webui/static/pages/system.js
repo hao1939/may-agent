@@ -172,7 +172,7 @@ function loopTraceQuery(target) {
 
 function openLoopTrace(target) {
   routeTo('/events');
-  setTimeout(() => loadLoopTrace(target), 80);
+  return loadLoopTrace(target);
 }
 
 function openEventGraph(eventId) {
@@ -897,6 +897,10 @@ function renderEventGraph(graph) {
 }
 
 let loopTraceLoadGeneration = 0;
+function clearLoopTrace() {
+  ++loopTraceLoadGeneration;
+  document.getElementById('loop-trace-content')?.replaceChildren();
+}
 async function loadLoopTrace(target) {
   const generation = ++loopTraceLoadGeneration;
   const el = document.getElementById('loop-trace-content');

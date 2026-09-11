@@ -157,6 +157,8 @@ function render() {
   const { tab, params } = parseRoute();
   currentTab = tab;
   currentRouteParams = params;
+  // Trace selection belongs to this route, not to the reusable Events pane.
+  clearLoopTrace();
   // Pane visibility — design's 5 surfaces map onto existing panes:
   //   live  → #dashboard
   //   projects → #projects (with optional :id deep-link via params.id)
@@ -218,17 +220,15 @@ function render() {
     const workflowRunId = new URLSearchParams(location.search).get('workflowRunId');
     if (workflowRunId) loadLoopTrace({ workflowRunId });
     if (params.eventId) {
-      setTimeout(() => {
-        const anchor = currentAnchorId();
-        if (anchor === 'event-details' || anchor === 'event-detail-rows') {
-          if (typeof _eventGraphView !== 'undefined') _eventGraphView = 'list';
-          if (typeof _eventGraphDetailView !== 'undefined') _eventGraphDetailView = anchor === 'event-detail-rows' ? 'rows' : 'graph';
-          loadEventGraph(params.eventId, { detail: true });
-        } else {
-          loadEventGraph(params.eventId);
-        }
-        if (anchor === 'loop-trace') loadLoopTrace(params.eventId);
-      }, 80);
+      const anchor = currentAnchorId();
+      if (anchor === 'event-details' || anchor === 'event-detail-rows') {
+        if (typeof _eventGraphView !== 'undefined') _eventGraphView = 'list';
+        if (typeof _eventGraphDetailView !== 'undefined') _eventGraphDetailView = anchor === 'event-detail-rows' ? 'rows' : 'graph';
+        loadEventGraph(params.eventId, { detail: true });
+      } else {
+        loadEventGraph(params.eventId);
+      }
+      if (!workflowRunId && anchor === 'loop-trace') loadLoopTrace(params.eventId);
     }
   }
   if (tab === 'projects') {

@@ -141,9 +141,10 @@ function formatMetricValue(value, unit) {
 
 function metricBreached(metric) {
   if (!metric) return false;
+  if (metric.alertOpen) return true;
   if (metric.alertsDisabled) return false;
-  if ('thresholdBreached' in metric) return !!(metric.alertOpen || metric.thresholdBreached);
-  if (metric.alertOpen || metric.breached) return true;
+  if ('thresholdBreached' in metric) return !!metric.thresholdBreached;
+  if (metric.breached) return true;
   if (metric.threshold == null || metric.current == null) return false;
   const above = metric.alert_op === '>' || metric.alert_op === 'above';
   return above ? Number(metric.current) > Number(metric.threshold) : Number(metric.current) < Number(metric.threshold);
@@ -231,9 +232,9 @@ async function loadLiveness() {
       html += `<div class="liveness-section"><h3>Host observations</h3>`;
       html += `<div class="vitals-grid">`;
       for (const metric of vitals) {
-        const alerting = !!(metric.breached || metric.alertOpen);
+        const alerting = metricBreached(metric);
         const value = formatMetricValue(metric.current, metric.unit);
-        const threshold = metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
+        const threshold = metric.alertsDisabled ? 'Alerts disabled' : metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
         html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'may') + ' · ' + threshold)}">
           <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'may')}</span></div>
           <div class="vital-value">${esc(value)}</div>
