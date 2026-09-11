@@ -10,6 +10,13 @@ import { attachCommandRouter } from "../command-router.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../composition/app-inbox-runtime.js";
+import { prepareConversationTaskTurn } from "../composition/conversation-task-turn.js";
+import { createAppTaskCapability } from "../core/tasks/app-task-capability.js";
+import {
+  closeInstalledAppTaskRuntimes,
+  installAppTaskRuntimes,
+  reconcileLoadedAppTaskOnce,
+} from "../core/tasks/app-task-runtime.js";
 import type { AppInputContext } from "@may-agent/sdk";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";
@@ -204,7 +211,7 @@ function durableTelegramFixture() {
 }
 
 describe("Telegram durable input and natural follow-up", () => {
-  it("carries selected and replied-to Topics through real admission, restart, and the agent input boundary", async () => {
+  it("carries selected and replied-to Topics through Task admission, restart, and the agent input boundary", async () => {
     const f = durableTelegramFixture();
     f.detachAdmission();
     const seen: Readonly<AppInputContext>[] = [];
@@ -217,20 +224,43 @@ describe("Telegram durable input and natural follow-up", () => {
       } },
       requests: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
     } }]);
-    const start = () => startAppInboxRuntime({ registry, db: f.db, bus: f.bus, persistDir: f.root,
-      hostCapacity: new HostCapacity(1), conversationAppId: "may", deferStart: true,
-      resolveRequest: async ({ request }) => {
-        seen.push(request);
-        return { summary: "Checked", response: "Checked", topic: { kind: "none" } };
-      },
-    });
+    const start = async () => {
+      const hostCapacity = new HostCapacity(1);
+      await installAppTaskRuntimes({
+        projectRoot: f.root, projectsRoot: f.root, persistDir: f.root, bus: f.bus,
+        hostCapacity, installControllers: false, appRegistrySnapshot: registry.snapshot(),
+        conversations: {
+          execute: (turn) => prepareConversationTaskTurn({
+            ...turn,
+            resolveRequest: async ({ request }) => {
+              seen.push(request);
+              return { summary: "Checked", response: "Checked", topic: { kind: "none" } };
+            },
+          }),
+        },
+      }, { deferRecovery: true });
+      const tasks = createAppTaskCapability({ bus: f.bus });
+      return startAppInboxRuntime({
+        registry, db: f.db, bus: f.bus, persistDir: f.root,
+        hostCapacity, conversationAppId: "may", deferStart: true,
+        admitConversation: tasks.admitConversation,
+        admitConversationChange: tasks.admitConversationChange,
+        stopConversationTurn: tasks.stopTurn,
+      });
+    };
     const reconcile = async (messageId: number, topicId?: string) => {
       const row = f.db.prepare("SELECT id FROM app_inbox_items WHERE source_id = ?")
         .get(`telegram:123:${messageId}`)!;
-      expect(runtime!.host.get(String(row.id))?.topicId).toBeUndefined(); // Selection is context, not a committed decision.
-      const result = await runtime!.host.reconcileOnce("may");
-      expect(result.errors).toEqual([]);
-      expect(result.claimed).toBe(1);
+      const item = runtime!.host.get(String(row.id))!;
+      expect(item.topicId).toBeUndefined(); // Selection is context, not a committed decision.
+      expect(item.executionTaskId).toBeDefined();
+      const before = seen.length;
+      const now = Date.now();
+      await reconcileLoadedAppTaskOnce({
+        bus: f.bus, appId: "may", taskId: item.executionTaskId!,
+        dispatch: { lane: "human", enqueuedAt: now, startedAt: now, readyWaitMs: 0 },
+      });
+      expect(seen).toHaveLength(before + 1);
       expect(seen.at(-1)!.conversation?.current?.topicId).toBe(topicId);
       expect(runtime!.host.get(String(row.id))?.status).toBe("done");
       expect(runtime!.host.get(String(row.id))?.topicId).toBeUndefined(); // May may choose no Topic.
@@ -260,6 +290,7 @@ describe("Telegram durable input and natural follow-up", () => {
       await waitFor(() => f.inputs().length === 1);
       expect(f.inputs()[0].data.replyTo).toBeUndefined();
       runtime.close();
+      await closeInstalledAppTaskRuntimes(f.bus);
       await f.restart();
       runtime = await start();
       await reconcile(101, "topic_bbbbbbbb");
@@ -298,7 +329,12 @@ describe("Telegram durable input and natural follow-up", () => {
         } });
         await reconcile(messageId);
       }
-    } finally { held.resolve(); runtime?.close(); await f.close(); }
+    } finally {
+      held.resolve();
+      runtime?.close();
+      await closeInstalledAppTaskRuntimes(f.bus);
+      await f.close();
+    }
   });
 
   it("does not discard an active watch when a command or button tries to follow completed work", async () => {
