@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { existsSync, readFileSync } from "node:fs";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { Check } from "typebox/value";
 import type { EventEnvelope } from "../events/bus.js";
 import { createTaskHandlerAvailability } from "./handler-availability.js";
@@ -18,7 +17,6 @@ import type { AppInboxClaim } from "../state/app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
-  type AppDefinition,
   type AppInputContext,
   type AppTaskAttachment,
   type Condition as AppTaskConditionSpec,
@@ -31,12 +29,16 @@ import {
   type TaskIntent as AppTaskIntent,
   type TaskReconcileResult as AppTaskHandlerResult,
 } from "@may-agent/sdk";
-import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
+import {
+  configuredAppAgent,
+  prepareAppTaskRuntimeDescriptors,
+  syncProjectReadModel,
+  type AppTaskRuntimeDescriptor,
+} from "./runtime-definition.js";
 import {
   cacheTaskSnapshots,
   ResourceTaskMutationStaleError,
   type AppTaskContext,
-  type TaskTree,
 } from "./app-task-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
@@ -114,16 +116,6 @@ import {
 } from "./app-task-reconciler.js";
 import type { TaskWorkspaces, PreparedTaskWorkspace } from "./workspace.js";
 
-type ProjectReadModel = {
-  id: string;
-  path: string;
-  name: string;
-  owner: string;
-  status: string;
-  type: string;
-  priority: string | null;
-};
-
 type AppTaskTiming = {
   dispatch: AppTaskDispatch;
   claimMs?: number;
@@ -177,17 +169,6 @@ function publishAppTaskTiming(
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const APP_DEPENDENCY_REVIEW_AFTER_MS = 300_000;
-
-export interface AppTaskRuntimeDescriptor {
-  id: string;
-  appDir: string;
-  projectDir: string;
-  agent: string;
-  app: AppDefinition;
-  reconciliationPaused: boolean;
-  /** Canonical Task authority; descriptor construction refuses legacy JSON state. */
-  resourceStore: AppTaskResourceStore;
-}
 
 export interface AppTaskRuntimeOptions {
   projectsRoot: string;
@@ -303,67 +284,6 @@ function taskRecoverySessionScopesMatch(
   }
   return Boolean(
     failed.workflowRunId && successfulSession.workflowRunId && failed.workflowRunId === successfulSession.workflowRunId,
-  );
-}
-
-function configuredAppAgent(app: AppDefinition, appDir: string): string {
-  const agent = typeof app.agent === "string" ? app.agent.trim() : "";
-  if (agent) return agent.replace(/^agent:/, "");
-  const legacyOwner = typeof app.owner === "string" ? app.owner.trim() : "";
-  if (legacyOwner) return legacyOwner.replace(/^agent:/, "");
-  // Registry validation requires an explicit agent. Never infer authority by
-  // scanning agent files here, including for standalone admission descriptors.
-  throw new Error(`App ${appDir} must declare its agent`);
-}
-
-function domainProjectDir(projectsRoot: string, appDir: string, appId: string, app: AppDefinition): string {
-  const localPath = typeof app.workspace?.localPath === "string" ? app.workspace.localPath.trim() : "";
-  if (localPath) return resolve(appDir, localPath);
-  const sibling = resolve(projectsRoot, appId);
-  return existsSync(sibling) ? sibling : appDir;
-}
-
-function projectReadModel(projectRoot: string, descriptor: AppTaskRuntimeDescriptor): ProjectReadModel {
-  const projectJson = loadProjectReadModel(descriptor.appDir);
-  const id = typeof projectJson.id === "string" && projectJson.id.trim() ? projectJson.id.trim() : descriptor.id;
-  const owner =
-    typeof projectJson.owner === "string" && projectJson.owner.trim()
-      ? projectJson.owner.trim().replace(/^agent:/, "")
-      : descriptor.agent;
-  const status =
-    typeof projectJson.status === "string" && projectJson.status.trim() ? projectJson.status.trim() : "active";
-  const type = typeof projectJson.type === "string" && projectJson.type.trim() ? projectJson.type.trim() : "agent-app";
-  const priority =
-    typeof projectJson.priority === "string" && projectJson.priority.trim() ? projectJson.priority.trim() : null;
-  const relativePath = relative(projectRoot, descriptor.appDir).replace(/\\/g, "/");
-  return {
-    id,
-    path: relativePath && !relativePath.startsWith("..") ? relativePath : descriptor.appDir,
-    name: id,
-    owner,
-    status,
-    type,
-    priority,
-  };
-}
-
-function syncProjectReadModel(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): void {
-  if (!opts.persistDir) return;
-  const model = projectReadModel(opts.projectRoot, descriptor);
-  const db = getDb(opts.persistDir);
-  db.run(
-    `INSERT INTO projects (id, path, name, owner, status, type, workflow, priority, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET
-       path = excluded.path,
-       name = excluded.name,
-       owner = excluded.owner,
-       status = excluded.status,
-       type = excluded.type,
-       workflow = excluded.workflow,
-       priority = COALESCE(excluded.priority, projects.priority),
-       updated_at = excluded.updated_at`,
-    [model.id, model.path, model.name, model.owner, model.status, model.type, "", model.priority, Date.now()],
   );
 }
 
@@ -2421,30 +2341,6 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
 }
 
 /** Prepare only canonical Task state needed by the admission worker. */
-export function standaloneAppTaskAdmissionDescriptors(input: {
-  persistDir: string;
-  projectsRoot: string;
-  entries: AppRegistrySnapshot["entries"];
-}): Map<string, AppTaskRuntimeDescriptor> {
-  const descriptors = new Map<string, AppTaskRuntimeDescriptor>();
-  for (const { appDir, definition: app } of input.entries) {
-    if (!app.tasks) continue;
-    const resourceStore = discoverAppTaskResourceStore(input.persistDir, app.id, appDir);
-    const descriptor: AppTaskRuntimeDescriptor = {
-      id: app.id,
-      appDir,
-      projectDir: domainProjectDir(input.projectsRoot, appDir, app.id, app),
-      agent: configuredAppAgent(app, appDir),
-      app,
-      reconciliationPaused: resourceStore.projectLifecycle() === "paused",
-      resourceStore,
-    };
-    validatePreparedAppTaskRuntime(descriptor);
-    descriptors.set(descriptor.id, descriptor);
-  }
-  return descriptors;
-}
-
 /** Wake already-admitted Task identities without repeating their mutation. */
 export function wakeLoadedAppTasks(input: {
   bus: EventBus;
@@ -3415,82 +3311,6 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
     },
     { label: "app-task-session", types: ["session.start", "session.end"] },
   );
-}
-
-function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
-  const { app, id } = descriptor;
-  const concurrency = app.tasks?.maxConcurrent ?? 1;
-  if (!Number.isInteger(concurrency) || concurrency <= 0) {
-    throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
-  }
-}
-
-function discoverAppTaskResourceStore(
-  persistDir: string | undefined,
-  appId: string,
-  appDir: string,
-): AppTaskResourceStore {
-  if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);
-  const db = getDb(persistDir);
-  const active = AppTaskResourceStore.activeFromDb(db, appId);
-  if (active) return active;
-  if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
-    throw new Error(
-      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect that evidence outside the Host or restore the canonical resource database`,
-    );
-  }
-
-  const seedPath = join(appDir, "tasks", "seed.json");
-  const seedText = existsSync(seedPath) ? readFileSync(seedPath, "utf8") : "{}";
-  const parsed = JSON.parse(seedText) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(`App ${appId} task seed must be a JSON object`);
-  }
-  const seed = parsed as Record<string, unknown>;
-  const tree = {
-    ...seed,
-    project: typeof seed.project === "string" && seed.project.trim() ? seed.project : appId,
-    project_lifecycle: seed.project_lifecycle === "paused" ? "paused" : "active",
-    groups: seed.groups && typeof seed.groups === "object" && !Array.isArray(seed.groups) ? seed.groups : {},
-    resources:
-      seed.resources && typeof seed.resources === "object" && !Array.isArray(seed.resources) ? seed.resources : {},
-    tasks: {},
-  } as TaskTree;
-  const sourceRevision = `seed:${createHash("sha256").update(seedText).digest("hex")}`;
-  const store = AppTaskResourceStore.fromDb(db, appId);
-  store.bootstrapSnapshot(tree, sourceRevision);
-  const bootstrapped = AppTaskResourceStore.activeFromDb(db, appId);
-  if (!bootstrapped) throw new Error(`App ${appId} task resource bootstrap did not publish authority`);
-  return bootstrapped;
-}
-
-async function prepareAppTaskRuntimeDescriptors(opts: AppTaskRuntimeOptions): Promise<AppTaskRuntimeDescriptor[]> {
-  const descriptors: AppTaskRuntimeDescriptor[] = [];
-  const ids = new Set<string>();
-  const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
-  const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
-  for (const { appDir, definition: app } of entries) {
-    if (!app.tasks) continue;
-    const id = app.id;
-    if (selectedIds && !selectedIds.has(id)) continue;
-    if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
-    ids.add(id);
-    const resourceStore = discoverAppTaskResourceStore(opts.persistDir, id, appDir);
-    const descriptor: AppTaskRuntimeDescriptor = {
-      id,
-      appDir,
-      projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
-      agent: configuredAppAgent(app, appDir),
-      app,
-      reconciliationPaused: false,
-      resourceStore,
-    };
-    descriptor.reconciliationPaused = resourceStore.projectLifecycle() === "paused";
-    validatePreparedAppTaskRuntime(descriptor);
-    resourceStore.setConfiguredMaxConcurrent(app.tasks.maxConcurrent ?? 1);
-    descriptors.push(descriptor);
-  }
-  return descriptors;
 }
 
 async function commitAppTaskRuntimeDescriptors(
