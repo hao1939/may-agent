@@ -1359,3 +1359,192 @@ test("a paused App answers human input through its Task across restart while bac
     ingress.runtime.close();
   }
 });
+
+test("the Conversation delegates and steers same-App work through the Task runtime across reopen", async () => {
+  let humanTurns = 0;
+  let backgroundRuns = 0;
+  let linkedTopic = "";
+  const ownApp = defineApp({
+    ...app,
+    requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    inputSchema: Type.Union([
+      Type.Object({ kind: Type.Literal("message"), data: Type.Object({}, { additionalProperties: true }) }),
+      Type.Object({ kind: Type.Literal("goal"), data: Type.Object({ outcome: Type.String() }) }),
+    ]),
+    tasks: {},
+    task: () => ({
+      kind: "desired",
+      intent: {
+        id: "goal/review",
+        parentId: "root",
+        mode: "achieve",
+        executor: "inspect",
+        outcome: "Review the design",
+        acceptance: ["Return evidence-backed findings"],
+      },
+    }),
+  });
+  const f = await fixture(
+    async (_definition, prompt, options) => {
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      expect(context.source.kind).toBe("human");
+      expect(options.toolPolicy).toBe("app-agent-full");
+      const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1]!.split("\n```")[0]!);
+      expect(catalog.find((entry: { appId: string }) => entry.appId === app.id)?.inputs).toEqual([
+        expect.objectContaining({ kind: "goal" }),
+      ]);
+      const next = ++humanTurns > 1;
+      if (next)
+        expect(context.conversation?.topics?.find((topic) => topic.id === linkedTopic)?.taskRefs).toContainEqual(
+          expect.objectContaining({ appId: app.id, taskId: "goal/review" }),
+        );
+      return {
+        status: "done",
+        structuredResult: {
+          summary: next ? "Review extended" : "Review accepted",
+          response: next ? "I'll include recovery in the same review." : "I'll review it and return the findings here.",
+          topic: next ? { kind: "existing", id: linkedTopic } : { kind: "new", title: "Design review" },
+          followUp: {
+            appId: app.id,
+            ...(next ? { task: { appId: app.id, taskId: "goal/review" } } : {}),
+            outcome: next ? "Include recovery in the review" : "Review the design",
+            acceptance: ["Return evidence-backed findings"],
+            input: { kind: "goal", data: { outcome: next ? "Include recovery" : "Review the design" } },
+          },
+        },
+      };
+    },
+    (_root, appDir) => ({
+      hostCapacity: new HostCapacity(2),
+      appRegistrySnapshot: { id: "same-App", generation: 1, entries: [{ appDir, definition: ownApp }] },
+      executors: {
+        inspect: async () => {
+          backgroundRuns++;
+          return {
+            state: "waiting",
+            summary: "Waiting for the evidence source",
+            conditions: [
+              {
+                id: "source",
+                type: "source.ready",
+                subject: "review",
+                expected: true,
+                owner: "app:source",
+                reviewAfterMs: 60_000,
+              },
+            ],
+          };
+        },
+      },
+    }),
+  );
+  let ingress = await startConversationIngress(f);
+  try {
+    const waiting = eventAfter(
+      f.bus,
+      (event) => event.type === "project.task.reconcile.profiled" && event.data.taskId === "goal/review",
+    );
+    ingress.publish("first", "Review the design in the background");
+    await waiting;
+    const original = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.kind === "human")!;
+    linkedTopic = original.topicId!;
+    expect(original.result?.response).toBe("I'll review it and return the findings here.");
+    expect(backgroundRuns).toBe(1);
+    const executionTaskId = original.executionTaskId!;
+    ingress.runtime.close();
+    await f.reopen();
+    ingress = await startConversationIngress(f);
+    expect(humanTurns).toBe(1);
+    const resumed = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "project.task.reconcile.profiled" && event.data.taskId === "goal/review" && backgroundRuns === 2,
+    );
+    ingress.publish("correction", "Include recovery in that same review");
+    await resumed;
+    expect(backgroundRuns).toBe(2);
+    expect(humanTurns).toBe(2);
+    expect(Object.keys(readTaskSnapshot(f.context()).resources!).sort()).toEqual(
+      [executionTaskId, "goal/review"].sort(),
+    );
+    expect(new Set(listAppInboxItems(f.db, { appId: app.id }).map((item) => item.executionTaskId))).toEqual(
+      new Set([executionTaskId]),
+    );
+    expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe(
+      "I'll include recovery in the same review.",
+    );
+    expect(f.store.isCancelled("goal/review")).toBe(false);
+  } finally {
+    ingress.runtime.close();
+  }
+});
+
+test("a subscribed App input executes in the default Conversation without a supervisor Task", async () => {
+  let turns = 0;
+  const f = await fixture(
+    async (_definition, prompt) => {
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      expect(context.source.kind).toBe("system");
+      expect(context.humanRequested).toBeUndefined();
+      expect(context.input).toEqual({ kind: "message", data: { text: "Provider changed" } });
+      turns++;
+      return {
+        status: "done",
+        structuredResult: { summary: "Change explained", response: "The provider changed.", topic: { kind: "none" } },
+      };
+    },
+    (_root, appDir) => ({
+      appRegistrySnapshot: {
+        id: "subscribed",
+        generation: 1,
+        entries: [
+          {
+            appDir,
+            definition: defineApp({
+              ...app,
+              requests: { mode: "agent", conversationId: "primary" },
+              subscriptions: [
+                {
+                  id: "provider",
+                  event: { type: "provider.changed" },
+                  toInput: () => ({ kind: "message", data: { text: "Provider changed" } }),
+                },
+              ],
+            }),
+          },
+        ],
+      },
+    }),
+  );
+  const ingress = await startConversationIngress(f);
+  try {
+    const answered = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        readAppConversationResource(f.db, app.id, "primary").messages.some(
+          (message) => message.text === "The provider changed.",
+        ),
+    );
+    f.bus.emit({
+      type: "provider.changed",
+      source: "fixture",
+      owner: "app:provider",
+      target: { appId: app.id, project: app.id },
+      data: {},
+      idempotencyKey: "provider-change",
+    });
+    await answered;
+    const items = listAppInboxItems(f.db, { appId: app.id });
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ status: "done", conversationId: "primary", source: { kind: "system" } });
+    expect(Object.keys(readTaskSnapshot(f.context()).resources!)).toEqual([items[0]!.executionTaskId!]);
+    expect(turns).toBe(1);
+  } finally {
+    ingress.runtime.close();
+  }
+});

@@ -4,11 +4,8 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppDependencyObservation } from "@may-agent/sdk";
-import { Check } from "typebox/value";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
-import type { SubagentManager } from "../../lib/index.js";
-import type { CallOptions, SubagentDefinition } from "../../lib/types.js";
 import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 import {
@@ -21,13 +18,12 @@ import {
 } from "../core/events/bus.js";
 import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
-import { createConversationAgentResolver } from "../conversations/turn-agent.js";
+import { conversationTaskId } from "../core/state/conversation-task-turns.js";
 import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "../core/state/app-inbox-store.js";
 import {
   createConversationTopic,
   linkConversationTopicTask,
-  readAppConversationResource,
   readConversationTopic,
 } from "../core/state/conversations.js";
 
@@ -245,341 +241,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("admits one bounded May follow-up directly to its owner Task and wakes supervision", async () => {
-    mkdirSync(join(root, "may.app"), { recursive: true });
-    writeFileSync(
-      join(root, "may.app", "app.js"),
-      `export default {
-        id: "may", version: 1, agent: "may",
-        inputSchema: { anyOf: [
-          { type: "object", additionalProperties: false, required: ["kind", "data"], properties: {
-            kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
-              message: { type: "string" }
-            } }
-          } },
-          { type: "object", additionalProperties: false, required: ["kind", "data"], properties: {
-            kind: { const: "goal" }, data: { type: "object", required: ["outcome", "acceptance"], properties: {
-              outcome: { type: "string" }, acceptance: { type: "array", items: { type: "string" } }
-            } }
-          } }
-        ] },
-        requests: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
-        task(input) { return { kind: "desired", intent: {
-          id: "goal/" + input.id, parentId: "may", outcome: input.input.data.outcome,
-          acceptance: input.input.data.acceptance, mode: "achieve", agent: "may"
-        } }; },
-        tasks: {
-          subscriptions: [
-            { type: "conversation.task.linked", project: "may" },
-            { type: "conversation.task.changed", project: "may" }
-          ],
-          resolve(event) { return event.type === "conversation.task.linked" || event.type === "conversation.task.changed" ? {
-            id: "conversation/follow-up", parentId: "may", outcome: "Supervise linked work",
-            acceptance: ["Every changed linked Task is reconciled"], mode: "maintain", agent: "may"
-          } : null; }
-        }
-      };\n`,
-    );
-    const bus = persistentBus();
-    const task = capabilities(bus);
-    const taskAdmissions: Array<Record<string, any>> = [];
-    const taskActivities: Array<Record<string, any>> = [];
-    const observedTypes: string[] = [];
-    const infos: string[] = [];
-    bus.subscribe((event) => {
-      observedTypes.push(event.type);
-      if (event.type === "info") infos.push(String(event.message));
-      if (event.type === "conversation.message.created" && event.source === "app-task-admission") {
-        taskActivities.push(event as unknown as Record<string, any>);
-      }
-    });
-    runtime = await startAppInboxRuntime({
-      registry: await loadedRegistry(root),
-      db,
-      bus,
-      ...task.options,
-      resolveRequest: async () => ({
-        summary: "The review needs durable work.",
-        response: "I’ll keep the review moving and return the result here.",
-        topic: { kind: "new", title: "Review the design" },
-        followUp: {
-          outcome: "Review the design",
-          acceptance: ["Return evidence-backed suggestions"],
-          appId: "evaluation",
-          input: { kind: "probe", data: { value: "review-design" } },
-        },
-      }),
-      admitTaskEvent: (input: any) => {
-        taskAdmissions.push(input);
-        return { accepted: true, by: "test-task", route: "direct" };
-      },
-      scanIntervalMs: 10_000,
-    });
-
-    bus.emit({
-      type: "conversation.message.created",
-      source: "may-console",
-      owner: "app:may",
-      target: { appId: "may" },
-      data: {
-        appId: "may",
-        conversationId: "may:primary",
-        author: { kind: "human", id: "human-review" },
-        text: "Review the design",
-      },
-    });
-
-    await waitUntil(() => {
-      const row = db
-        .prepare("SELECT status FROM app_inbox_items WHERE app_id = 'may' AND source_id = 'human-review'")
-        .get() as { status?: string } | null;
-      return row?.status === "done";
-    });
-    await waitUntil(() => task.attached.length === 1);
-    await waitUntil(() => taskAdmissions.length === 1);
-    expect(taskAdmissions[0]).toMatchObject({
-      appId: "may",
-      intent: { id: "conversation/follow-up", mode: "maintain" },
-      event: { type: "conversation.task.linked" },
-    });
-    expect(taskActivities).toContainEqual(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          appId: "may",
-          conversationId: "may:primary",
-          author: { kind: "tool", id: "runtime" },
-          metadata: expect.objectContaining({
-            command: "task-admitted",
-            taskRefs: [{ appId: "evaluation", taskId: task.attached[0] }],
-            followTask: { appId: "evaluation", taskId: task.attached[0] },
-          }),
-        }),
-      }),
-    );
-    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
-      count: 1,
-    });
-    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE app_id = 'evaluation'").get()).toEqual({
-      count: 0,
-    });
-    expect(readAppConversationResource(db, "may", "may:primary").topics?.[0]?.taskRefs).toEqual([
-      expect.objectContaining({ appId: "evaluation", taskId: task.attached[0] }),
-    ]);
-
-    bus.emit({
-      type: "project.task.reconciled",
-      source: "app-task:evaluation:task-reconciler",
-      owner: "agent:evaluator",
-      data: {
-        project: "evaluation",
-        taskId: task.attached[0],
-        generation: 1,
-        disposition: "waiting",
-        summary: "The evidence review is waiting for one source.",
-      },
-    });
-    await waitUntil(() => taskAdmissions.length === 2);
-    expect(observedTypes).toContain("conversation.task.changed");
-    expect(infos).toEqual([]);
-    expect(taskAdmissions).toHaveLength(2);
-    expect(taskAdmissions[1]).toMatchObject({
-      appId: "may",
-      intent: { id: "conversation/follow-up", mode: "maintain" },
-      event: {
-        type: "conversation.task.changed",
-        data: {
-          conversationId: "may:primary",
-          taskRef: { appId: "evaluation", taskId: task.attached[0] },
-        },
-      },
-    });
-
-    db.prepare(
-      `INSERT INTO app_tasks(
-         app_id, task_id, generation, resource_version, observed_generation, phase,
-         lane, changed, ready, updated_at, resource_json
-       ) VALUES ('evaluation', ?, 1, 1, 1, 'waiting', 'normal', 0, 0, 1, '{}')`,
-    ).run(task.attached[0]);
-    bus.emit({
-      type: "conversation.supervision.review",
-      source: "test-schedule",
-      owner: "app:may",
-      data: { project: "may", minQuietMs: 60_000, limit: 10 },
-    } as any);
-    await waitUntil(() => taskAdmissions.length === 3);
-    expect(taskAdmissions).toHaveLength(3);
-    expect(taskAdmissions[2]).toMatchObject({
-      appId: "may",
-      event: {
-        type: "conversation.task.changed",
-        data: {
-          conversationId: "may:primary",
-          taskRef: { appId: "evaluation", taskId: task.attached[0] },
-          reason: "No Task update was observed during the review interval.",
-        },
-      },
-    });
-  });
-
-  it("admits a May-owned goal through the model contract without re-entering conversation", async () => {
-    mkdirSync(join(root, "may.app"), { recursive: true });
-    writeFileSync(
-      join(root, "may.app", "app.js"),
-      `export default {
-        id: "may", version: 1, agent: "may",
-        inputSchema: { anyOf: [
-          { type: "object", required: ["kind", "data"], properties: {
-            kind: { const: "message" }, data: { type: "object" }
-          } },
-          { type: "object", required: ["kind", "data"], properties: {
-            kind: { const: "goal" }, data: { type: "object" }
-          } }
-        ] },
-        requests: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
-        task(input) { return { kind: "desired", intent: {
-          id: "goal/" + input.id, parentId: "may", outcome: input.input.data.outcome,
-          acceptance: input.input.data.acceptance, mode: "achieve", agent: "may"
-        } }; },
-        tasks: {
-          subscriptions: [{ type: "conversation.task.linked", project: "may" }],
-          resolve(event) { return event.type === "conversation.task.linked" ? {
-            id: "conversation/follow-up", parentId: "may", outcome: "Supervise linked work",
-            acceptance: ["Every changed linked Task is reconciled"], mode: "maintain", agent: "may"
-          } : null; }
-        }
-      };\n`,
-    );
-    const bus = persistentBus();
-    const task = capabilities(bus);
-    const taskAdmissions: Array<Record<string, any>> = [];
-    const registry = await loadedRegistry(root);
-    let modelCalls = 0;
-    let resumed: { topicId: string; taskId: string } | undefined;
-    const decision = {
-      summary: "May owns the durable review.",
-      response: "I’ll review it and return the result here.",
-      topic: { kind: "new", title: "Review the design" },
-      followUp: {
-        outcome: "Review the design",
-        acceptance: ["Return evidence-backed suggestions"],
-        appId: "may",
-        input: {
-          kind: "goal",
-          data: { outcome: "Review the design", acceptance: ["Return evidence-backed suggestions"] },
-        },
-      },
-    };
-    // Stub inference only: exercise real context/schema selection and admission.
-    const manager = {
-      getAgentDefinition: () => ({ name: "may", tools: [] }),
-      callAgentDefinition: async (_definition: SubagentDefinition, prompt: string, options: CallOptions) => {
-        modelCalls += 1;
-        const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);
-        expect(catalog.find((entry: { appId: string }) => entry.appId === "may")?.inputs).toEqual([
-          expect.objectContaining({ kind: "goal" }),
-        ]);
-        expect(options.toolPolicy).toBe("app-agent-full");
-        const result = resumed
-          ? {
-              ...decision,
-              response: "I’ll include recovery in the same review.",
-              topic: { kind: "existing", id: resumed.topicId },
-              followUp: {
-                ...decision.followUp,
-                task: { appId: "may", taskId: resumed.taskId },
-                input: {
-                  kind: "goal",
-                  data: {
-                    outcome: "Review the design, including recovery",
-                    acceptance: ["Return evidence-backed suggestions covering restart"],
-                  },
-                },
-              },
-            }
-          : decision;
-        expect(Check(options.outputSchema!, result)).toBe(true);
-        expect(Check(options.outputSchema!, { ...result, dependencies: [] })).toBe(false);
-        return { status: "done", structuredResult: result };
-      },
-    } as unknown as SubagentManager;
-    const runtimeOptions = {
-      registry,
-      db,
-      bus,
-      ...task.options,
-      resolveRequest: createConversationAgentResolver({ manager, registry, db }),
-      admitTaskEvent: (input: any) => {
-        taskAdmissions.push(input);
-        return { accepted: true, by: "test-task", route: "direct" };
-      },
-      scanIntervalMs: 10_000,
-    };
-    runtime = await startAppInboxRuntime(runtimeOptions);
-
-    bus.emit({
-      type: "conversation.message.created",
-      source: "may-console",
-      owner: "app:may",
-      data: {
-        appId: "may",
-        conversationId: "may:primary",
-        author: { kind: "human", id: "human-review" },
-        text: "Review this design for me",
-      },
-    });
-
-    await waitUntil(() => task.attached.length === 1);
-    await waitUntil(() => taskAdmissions.length === 1);
-    expect(modelCalls).toBe(1);
-    expect(task.attached[0]).toStartWith("goal/appreq_");
-    expect(readAppConversationResource(db, "may", "may:primary").topics?.[0]?.taskRefs).toEqual([
-      expect.objectContaining({ appId: "may", taskId: task.attached[0] }),
-    ]);
-    expect(taskAdmissions).toContainEqual(
-      expect.objectContaining({
-        appId: "may",
-        intent: expect.objectContaining({ id: "conversation/follow-up" }),
-      }),
-    );
-    const rows = db
-      .prepare(
-        "SELECT source_kind, conversation_seq FROM app_inbox_items WHERE app_id = 'may' ORDER BY source_kind = 'human' DESC",
-      )
-      .all() as Array<{ source_kind: string; conversation_seq: number | null }>;
-    expect(rows).toEqual([{ source_kind: "human", conversation_seq: expect.any(Number) }]);
-
-    const topic = readAppConversationResource(db, "may", "may:primary").topics![0];
-    resumed = { topicId: topic.id, taskId: task.attached[0] };
-    task.observations.set(resumed.taskId, { kind: "task", id: resumed.taskId, status: "running" });
-    await waitUntil(() => {
-      const row = db.prepare("SELECT status FROM app_inbox_items WHERE source_id = 'human-review'").get() as {
-        status: string;
-      };
-      return row.status === "done";
-    });
-    runtime.close();
-    runtime = await startAppInboxRuntime(runtimeOptions);
-    expect(modelCalls).toBe(1);
-    bus.emit({
-      type: "conversation.message.created",
-      source: "may-console",
-      owner: "app:may",
-      data: {
-        appId: "may",
-        conversationId: "may:primary",
-        author: { kind: "human", id: "human-resume" },
-        text: "Continue that review and include recovery",
-      },
-    });
-    await waitUntil(() => task.attached.length === 2);
-    expect(modelCalls).toBe(2);
-    expect(task.attached).toEqual([resumed.taskId, resumed.taskId]);
-    expect(readAppConversationResource(db, "may", "may:primary").topics?.[0]?.taskRefs).toEqual([
-      expect.objectContaining({ appId: "may", taskId: resumed.taskId }),
-    ]);
-  });
-
-  it("projects a standing Task result through its durable follow-up correlation", async () => {
+  it("cannot publish a legacy worker result as a Conversation reply", async () => {
     mkdirSync(join(root, "may.app"), { recursive: true });
     writeFileSync(
       join(root, "may.app", "app.js"),
@@ -657,21 +319,8 @@ describe("App inbox runtime", () => {
       },
     });
 
-    await waitUntil(() => messages.length === 1);
-    expect(messages[0]?.data).toMatchObject({
-      appId: "may",
-      conversationId: "may:primary",
-      messageId: "result:turn-review",
-      author: { kind: "agent", id: "may" },
-      metadata: {
-        requestId: "turn-review",
-        topicId: "topic-review",
-        taskRefs: [{ appId: "evaluation", taskId: "review/design" }],
-      },
-    });
-    expect(readConversationTopic(db, "may", "may:primary", "topic-review")?.taskRefs).toEqual([
-      expect.objectContaining({ appId: "evaluation", taskId: "review/design" }),
-    ]);
+    expect(messages).toEqual([]);
+    expect(readConversationTopic(db, "may", "may:primary", "topic-review")?.taskRefs).toEqual([]);
   });
 
   it("continues an exact focused Task when a human replies to it", async () => {
@@ -733,7 +382,7 @@ describe("App inbox runtime", () => {
     expect(row).toEqual({ target_task_id: "decision/deploy" });
   });
 
-  it("announces the exact owner Task when a human request is assigned", async () => {
+  it("admits exact owner work without reviving retired wrapper announcements", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const assignments: Array<Record<string, any>> = [];
@@ -820,24 +469,9 @@ describe("App inbox runtime", () => {
       },
     });
 
-    await waitUntil(() => assignments.length === 1);
-    await Bun.sleep(20);
-    expect(assignments[0]).toMatchObject({
-      data: {
-        appId: "may",
-        conversationId: "may:primary",
-        text: "Assigned to evaluation: Review the approved documentation scope and return verified results.",
-        metadata: {
-          channel: "may-console",
-          requestId: "human-turn",
-          taskRefs: [
-            { appId: "may", taskId: "conversation/human-turn" },
-            { appId: "evaluation", taskId: "probe/owner-request" },
-          ],
-          followTask: { appId: "evaluation", taskId: "probe/owner-request" },
-        },
-      },
-    });
+    await waitUntil(() => runtime?.host.get("owner-request")?.waitingOn?.kind === "task");
+    expect(task.attached).toEqual(["probe/owner-request"]);
+    expect(assignments).toEqual([]);
   });
 
   it("returns from durable publication before request coordination starts", async () => {
@@ -1053,32 +687,17 @@ describe("App inbox runtime", () => {
   });
 
   it.each(["evaluation", "assistant", undefined])(
-    "uses the selected frontend's Task presentation (%s)",
+    "routes exact Task changes independently of selected frontend (%s)",
     async (conversationAppId) => {
       const bus = persistentBus();
       const task = capabilities(bus);
-      const messages: Array<Record<string, any>> = [];
-      const changes: Array<Record<string, any>> = [];
+      const messages: unknown[] = [];
+      const admitted: unknown[] = [];
+      const changes: unknown[] = [];
       bus.subscribe((event) => {
-        if (event.type === "conversation.message.created") messages.push(event.data as Record<string, any>);
-        if (event.type === "conversation.task.changed") changes.push(event.data as Record<string, any>);
+        if (event.type === "conversation.message.created") messages.push(event.data);
+        if (event.type === "conversation.task.changed") changes.push(event.data);
       });
-      // The first input owns presentation; a later steering input must not duplicate it.
-      for (const [index, id] of ["original", "steering"].entries()) {
-        createAppInboxItem(db, {
-          id,
-          appId: "evaluation",
-          conversationId: "chat",
-          conversationSequence: index + 1,
-          ...(index ? { targetTaskId: "probe/current" } : {}),
-          channel: "browser",
-          source: { kind: "human", id },
-          input: { kind: "probe", data: { value: id } },
-          now: 1 + index * 3,
-        });
-        const claim = claimNextAppInboxItem(db, "evaluation", "test", 10_000, 2 + index * 3)!;
-        expect(waitAppInboxClaim(db, claim, { kind: "task", id: "probe/current" }, { now: 3 + index * 3 })).toBe(true);
-      }
       createConversationTopic(db, {
         id: "topic",
         appId: "evaluation",
@@ -1086,10 +705,10 @@ describe("App inbox runtime", () => {
         title: "Review",
         openedBy: "human",
         originMessageId: "original",
-        now: 1,
       });
       linkConversationTopicTask(db, "topic", "evaluation", "probe/current");
-      linkConversationTopicTask(db, "topic", "evaluation", "conversation/follow-up");
+      const executionTaskId = conversationTaskId("evaluation", "chat");
+      linkConversationTopicTask(db, "topic", "evaluation", executionTaskId);
       runtime = await startAppInboxRuntime({
         registry: await loadedRegistry(root),
         db,
@@ -1097,90 +716,64 @@ describe("App inbox runtime", () => {
         ...task.options,
         conversationAppId,
         deferStart: true,
-        now: () => 120_000,
+        admitConversationChange(input) {
+          admitted.push(input);
+          return { taskId: executionTaskId, created: true };
+        },
       });
-      const publish = (taskId: string, generation = 1, summary = "") =>
+      const publish = (taskId: string, attemptId?: string) =>
         bus.emit({
           type: "project.task.reconciled",
-          source: "test",
-          owner: "app:evaluation",
-          data: { project: "evaluation", taskId, generation, disposition: "waiting", summary },
-        });
-      publish("probe/current");
-      publish("probe/current");
-      publish("probe/current", 2, "Waiting for a source.");
-      expect(changes).toHaveLength(3);
-      if (conversationAppId === "evaluation") {
-        expect(messages).toHaveLength(2);
-        expect(messages[0]).toMatchObject({
-          appId: "evaluation",
-          conversationId: "chat",
-          author: { kind: "agent", id: "evaluation" },
-          text: "I’m continuing this as a Task and it is waiting for new evidence.",
-          metadata: {
-            requestId: "original",
-            channel: "browser",
-            taskRefs: [{ appId: "evaluation", taskId: "probe/current" }],
+          source: "fixture",
+          data: {
+            project: "evaluation",
+            taskId,
+            generation: 1,
+            disposition: "waiting",
+            attemptId,
+            summary: "Untrusted notification text",
           },
         });
-        expect(messages[1]!.idempotencyKey).not.toBe(messages[0]!.idempotencyKey);
-        expect(messages[1]!.text).toBe("Waiting for a source.");
-      } else {
-        expect(messages).toEqual([]);
-      }
-      // Retained follow-up work cannot wake itself when selection changes or is omitted.
-      // Another App may still observe that Task through its own Conversation.
-      createConversationTopic(db, {
-        id: "other-topic",
-        appId: "other",
-        conversationId: "other-chat",
-        title: "Observe review",
-        openedBy: "human",
-        originMessageId: "other-message",
-        now: 1,
+      // A waiting/progress notification without an outcome cannot launch a review.
+      publish("probe/current");
+      expect(admitted).toEqual([]);
+      publish("probe/current", "accepted-attempt");
+      expect(admitted).toEqual([
+        {
+          appId: "evaluation",
+          conversationId: "chat",
+          topicId: "topic",
+          taskAppId: "evaluation",
+          taskId: "probe/current",
+          attemptId: "accepted-attempt",
+        },
+      ]);
+      expect(changes).toEqual([
+        {
+          appId: "evaluation",
+          conversationId: "chat",
+          topicId: "topic",
+          taskRef: { appId: "evaluation", taskId: "probe/current" },
+          attemptId: "accepted-attempt",
+        },
+      ]);
+      publish(executionTaskId, "own-attempt");
+      expect(admitted).toHaveLength(1);
+      bus.emit({
+        type: "app.task.cancelled",
+        source: "fixture",
+        data: { appId: "evaluation", taskId: "probe/current", generation: 1 },
       });
-      linkConversationTopicTask(db, "other-topic", "evaluation", "conversation/follow-up");
-      publish("conversation/follow-up");
-      expect(changes).toHaveLength(4);
-      expect(changes[3]).toMatchObject({
-        appId: "other",
-        conversationId: "other-chat",
-        taskRef: { appId: "evaluation", taskId: "conversation/follow-up" },
-      });
-
-      // Both links qualify for recovery. Apply the same self-wake rule there,
-      // without suppressing ordinary work or another App's diagnostic watch.
-      for (const taskId of ["probe/current", "conversation/follow-up"]) {
-        db.prepare(
-          `INSERT INTO app_tasks(
-             app_id, task_id, generation, resource_version, observed_generation, phase,
-             lane, changed, ready, updated_at, resource_json
-           ) VALUES ('evaluation', ?, 1, 1, 1, 'waiting', 'normal', 0, 0, 1, '{}')`,
-        ).run(taskId);
-      }
-      const review = (appId: string) =>
-        bus.emit({
-          type: "conversation.supervision.review",
-          source: "test-schedule",
-          owner: `app:${appId}`,
-          data: { project: appId, minQuietMs: 60_000, limit: 10 },
-        } as any);
-      review("evaluation");
-      expect(changes).toHaveLength(5);
-      expect(changes[4]).toMatchObject({
+      expect(admitted.at(-1)).toEqual({
         appId: "evaluation",
         conversationId: "chat",
-        taskRef: { appId: "evaluation", taskId: "probe/current" },
-        reason: "No Task update was observed during the review interval.",
+        topicId: "topic",
+        taskAppId: "evaluation",
+        taskId: "probe/current",
+        closedGeneration: 1,
       });
-      review("other");
-      expect(changes).toHaveLength(6);
-      expect(changes[5]).toMatchObject({
-        appId: "other",
-        conversationId: "other-chat",
-        taskRef: { appId: "evaluation", taskId: "conversation/follow-up" },
-        reason: "No Task update was observed during the review interval.",
-      });
+      // Presentation and judgment happen only when the real Task accepts a reply.
+      expect(messages).toEqual([]);
     },
   );
 
@@ -1411,80 +1004,6 @@ describe("App inbox runtime", () => {
     const row = db.prepare("SELECT id FROM app_inbox_items WHERE app_id = 'evaluation'").get() as { id: string };
     expect(runtime.host.get(row.id)?.input).toEqual({ kind: "probe", data: { value: "changed" } });
     expect(task.attached).toEqual([`probe/${row.id}`]);
-  });
-
-  it("projects a subscribed direct request into its default Conversation without a wrapper Task", async () => {
-    mkdirSync(join(root, "may.app"), { recursive: true });
-    writeFileSync(
-      join(root, "may.app", "app.js"),
-      `export default {
-        id: "may",
-        version: 1,
-        owner: "may",
-        inputSchema: {
-          type: "object",
-          additionalProperties: false,
-          required: ["kind", "data"],
-          properties: {
-            kind: { const: "human-decision" },
-            data: { type: "object", required: ["message"], properties: { message: { type: "string" } } }
-          }
-        },
-        requests: { mode: "agent", conversationId: "may:primary" },
-        subscriptions: [{
-          id: "evaluation-decision",
-          event: { type: "evaluation.human_decision.requested", project: "may" },
-          toInput(event) { return { kind: "human-decision", data: event.data }; }
-        }]
-      };\n`,
-    );
-    const bus = persistentBus();
-    const task = capabilities(bus);
-    const updates: string[] = [];
-    bus.subscribe((event) => {
-      if (event.type === "conversation.updated") updates.push(String((event.data as any)?.conversationId));
-    });
-    runtime = await startAppInboxRuntime({
-      registry: await loadedRegistry(root),
-      db,
-      bus,
-      ...task.options,
-      resolveRequest: async ({ request }) => {
-        expect(request.conversation?.id).toBe("may:primary");
-        return {
-          summary: "Hao must decide.",
-          response: "Please approve the production rollout.",
-          topic: { kind: "none" },
-        };
-      },
-      scanIntervalMs: 10_000,
-    });
-
-    bus.emit({
-      type: "evaluation.human_decision.requested",
-      source: "evaluation",
-      owner: "app:may",
-      target: { appId: "may", project: "may" },
-      data: { message: "Please approve the production rollout." },
-    });
-    await waitUntil(() => {
-      const row = db.prepare("SELECT status FROM app_inbox_items WHERE app_id = 'may'").get() as
-        { status: string } | undefined;
-      return row?.status === "done";
-    });
-    await waitUntil(() => updates.includes("may:primary"));
-
-    expect(task.attached).toEqual([]);
-    expect(db.prepare("SELECT conversation_id FROM app_inbox_items WHERE app_id = 'may'").get()).toEqual({
-      conversation_id: "may:primary",
-    });
-    expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
-      expect.objectContaining({
-        author: { kind: "agent", id: "may" },
-        text: "Please approve the production rollout.",
-      }),
-    ]);
-    expect(updates).toContain("may:primary");
   });
 
   it("keeps unrelated event storms independent of the number of loaded Task Apps", async () => {
@@ -2113,7 +1632,7 @@ describe("App inbox runtime", () => {
         summary: "Gym is checking the reported behavior.",
       },
     });
-    await waitUntil(() => statuses.length === 1);
+    await waitUntil(() => updates > 0);
     bus.emit({
       type: "project.task.reconciled",
       source: "app-task:may",
@@ -2132,18 +1651,7 @@ describe("App inbox runtime", () => {
 
     expect(updates).toBeGreaterThan(0);
     expect(runtime.host.get("turn-1")?.conversationId).toBe("may:primary");
-    expect(statuses[0]).toMatchObject({
-      data: {
-        appId: "may",
-        conversationId: "may:primary",
-        text: "Gym is checking the reported behavior.",
-        metadata: {
-          requestId: "turn-1",
-          taskRefs: [{ appId: "may", taskId: "conversation/turn-1" }],
-        },
-      },
-    });
-    expect(statuses).toHaveLength(1);
+    expect(statuses).toEqual([]);
   });
 
   it("disables only schedule publication, retaining event admission and observers across reload", async () => {

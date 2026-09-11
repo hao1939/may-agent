@@ -363,38 +363,6 @@ export function listAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, task
     .map(rowToItem);
 }
 
-/** Human conversations currently awaiting one exact Task. */
-export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
-  return listAppInboxItemsWaitingOnTask(db, appId, taskId).filter(
-    (item) => item.source.kind === "human" && item.conversationId !== undefined,
-  );
-}
-
-/** Human Conversation requests whose current Task is waiting on one exact App request. */
-export function listHumanAppInboxItemsWaitingOnAppRequest(db: SqliteDb, requestId: string): AppInboxItem[] {
-  const normalizedRequestId = requiredText(requestId, "requestId");
-  return db
-    .prepare(
-      `SELECT DISTINCT inbox.*
-       FROM app_task_conditions condition
-       JOIN app_task_condition_routes route
-         ON route.app_id = condition.app_id AND route.condition_id = condition.condition_id
-       JOIN app_inbox_items inbox
-         ON inbox.app_id = route.app_id
-        AND inbox.waiting_on_kind = 'task'
-        AND inbox.waiting_on_id = route.task_id
-       WHERE condition.condition_id = ?
-         AND json_extract(condition.condition_json, '$.spec.type') = 'app.dependency.completed'
-         AND json_extract(condition.condition_json, '$.spec.subject') = ?
-         AND inbox.source_kind = 'human'
-         AND inbox.conversation_id IS NOT NULL
-         AND inbox.status = 'handling'
-       ORDER BY inbox.created_at, inbox.id`,
-    )
-    .all(`app-request:${normalizedRequestId}`, `id:${normalizedRequestId}`)
-    .map(rowToItem);
-}
-
 /** Bounded request evidence used to project Conversation messages. */
 export function listAppInboxConversationItems(
   db: SqliteDb,

@@ -135,7 +135,6 @@ export type AppInboxHostOptions = {
   /** Durable semantic completion notification; transport delivery is separate. */
   onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
   /** Notification after one request is durably attached to its exact Task. */
-  onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
 
 };
 
@@ -202,7 +201,6 @@ export class AppInboxHost {
   readonly #now: () => number;
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
-  readonly #onRequestTaskAttached?: (item: AppInboxItem, taskId: string) => void;
   readonly #executions = new Map<string, { claim: AppInboxClaim; controller: AbortController }>();
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
@@ -219,7 +217,6 @@ export class AppInboxHost {
     this.#now = options.now ?? Date.now;
     this.#onConversationChanged = options.onConversationChanged;
     this.#onRequestCompleted = options.onRequestCompleted;
-    this.#onRequestTaskAttached = options.onRequestTaskAttached;
     if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
     if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
       throw new Error("App host retryAfterMs must be finite and non-negative");
@@ -797,15 +794,7 @@ export class AppInboxHost {
       claim,
       now: this.#now(),
     });
-    const taskId = requiredText(attached.taskId, "Attached task id");
-    if (this.#onRequestTaskAttached) {
-      try {
-        this.#onRequestTaskAttached(claim.item, taskId);
-      } catch {
-        // The durable Task attachment is authoritative. A failed optional
-        // presentation hint must never undo or delay the work.
-      }
-    }
+    requiredText(attached.taskId, "Attached task id");
     return claim.item.conversationId;
   }
 }
