@@ -508,8 +508,8 @@ schema alone does not prove controller usability or reduced complexity.
 | Real agent with ordinary context | Useful judgments and successful follow-through without polling, lifecycle bookkeeping or procedural coaching |
 | Result accepted while child remains open | Caller proceeds using the exact result; a new assignment cannot consume an old success |
 | Close while idle/running, repeated close, late event/result | No new execution or stale settlement; history remains and unresolved work is visibly non-success |
-| Conversation -> A -> B, success and failure | One execution owner per Task; each owner judges its own outcome and returns it through saved links |
-| Human input while children wait | The Conversation handles it without waiting for a child or falsely accepting unfinished work |
+| A -> B -> C -> B -> A, success and failure | The same controller runs every Task; each worker judges evidence for its assignment and returns it through saved links |
+| Human input to A while delegated work waits | A handles it through the same Task loop without waiting for a child or falsely accepting unfinished work |
 | Stop, later input, pause and repeated failure | Scope is preserved; later input remains actionable, retries are paced and stopped work is not replayed |
 | Duplicate/during-run wakes and multiple outcomes | One current attempt per Task, no lost message/outcome, another pass only when eligible |
 | Transient failure, duplicate wake and restart during cooldown | Same Task/input, enforced backoff and no agent-generated retry batch; delay and failure evidence survive restart |
@@ -547,6 +547,6 @@ bounded discovery. Closure facts, retained-state cutover and retirement
 of the old execution paths remain required before accepting the whole-system
 simplification.
 
-This proposal changes design only. Check documentation integrity, executable
-examples, local Markdown links/anchors and whitespace. It does not implement
-or activate the new lifecycle, unified Conversation execution or migration.
+Check documentation integrity, executable examples, local Markdown links/anchors
+and whitespace. The linked source PoC implements the shared loop for review;
+this document does not activate it or certify migration and deployment.

@@ -215,6 +215,10 @@ returns ten compact cards at a time and `/tasks more` continues the same opaque
 cursor. Exact outcome, progress, result, and evidence stay available through
 `/task <ref>`.
 
+In the shared Task lifecycle PoC, exact detail includes the structured accepted
+result while the Task remains open; compact cards omit that payload. A newer
+running attempt must not display the prior result as its current answer.
+
 Apps must author `spec.outcome` as the concrete goal a human can recognize and
 `spec.acceptance` as the observable result that finishes it. The human surface
 does not recover a hidden goal from arbitrary App input and does not ask a model

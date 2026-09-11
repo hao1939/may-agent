@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`55e51193` has 80 unresolved failures. New human input now permits a fresh attempt
+`a9252e96` has 27 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -24,9 +24,12 @@ case held back from the first run. No production fix was needed for these trials
 The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
 also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
-The branch adds 643 net production lines against baseline main `a8f65188`
+The branch adds 646 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
 Resolve the remaining regression and integration gaps before expanding the design.
+The [runtime/input checks](#runtime-outcomes-and-input-continuation) now pass,
+as do [isolated daemon restarts](#daemon-restart-with-retained-outcomes).
+The remaining failures concern retired inbox execution/control fixtures.
 
 The worker decides **how to do the assigned work**. The assigning App, parent
 agent or human decides **whether to keep assigning it**, revise its scope or
@@ -1285,6 +1288,67 @@ appeared against `1b3506cc`. Runtime, inbox and daemon restart failures still
 need investigation. The production delta remains **643 net added lines** against
 `a8f65188`; the critical-path model trials retain their own source revisions.
 
+## Runtime outcomes and input continuation
+
+Host `c2b00c29` migrates the runtime and input-state checks to accepted attempts
+on retained Tasks. Together with Human Task reads, the three affected suites
+pass **181 checks**. They preserve exact answers, failure evidence, atomic
+state/wake writes, saved backoff across a fresh process, stale-attempt fencing
+and independent work. Capability replacement respects the existing retry
+deadline. Invalid output can be corrected in a later attempt; a worker cannot
+revise its own assignment.
+
+The parent-repair case now returns the child's first failure to its assigning
+Task. The App repairs the prerequisite; the common controller retries the child
+at its saved deadline without an `unblock-task` action. The child returns its
+verified result, then the parent accepts the original input. Both Tasks remain
+open. This passes with live controller delivery and with storage/runtime reopen
+before the parent's review. Accepted non-success reports also survive reopen,
+reach the subsequent executor as evidence and remain readable after later
+success. The original input stays unfinished until its exact answer is accepted.
+
+These checks exposed a small read-model defect: Human Task detail omitted the
+structured result retained on an open Task. The fix includes it in exact detail,
+keeps compact lists bounded and hides the old result while a newer attempt is
+running. It also preserves historical receipt detail. This adds **three net
+production lines**, bringing the full branch to **646** against `a8f65188`;
+no storage schema, scheduler or retry mechanism is added.
+
+Full CI passes types, the App boundary and lint, then reports **2,834 passed,
+3 skipped and 30 failed** (2,867 tests across 289 files, 151.82 seconds).
+All 50 resolved failure entries belong to the migrated runtime and input-state
+checks; no new failure name appeared against `55e51193`. The remaining checks
+cover retired inbox execution assumptions and daemon restart/scheduled execution.
+They still require behavioral review, not automatic expectation replacement.
+The earlier live-model trials retain their own source revisions.
+
+## Daemon restart with retained outcomes
+
+Host `a9252e96` updates the three daemon checks that still expected current
+completion to write a historical receipt and delete the Task. Their failing
+runs had already reached accepted results. The checks now read the exact
+accepted attempt, require its Task and generation to remain, and verify that
+no owner closure was recorded.
+
+The focused checks pass: scheduled workflow discovery, graceful shutdown while
+waiting for a fact, and a daemon crash during an active workflow. Both restart
+cases use real isolated daemons, sockets and workflow workers with optional
+schedules disabled. After restart, the same Task waits for the exact fact and
+accepts its result; the interrupted case also checks that the prior attempt is
+no longer running. No production code changed in this checkpoint.
+
+This is candidate-to-candidate restart evidence. It does not verify stopping
+all old-version execution owners or activating converted production state.
+A first local check incorrectly expected the raw Task socket view to expose the
+Human Task view's `terminal` field. That assertion was removed; retained Task
+identity and the absence of owner closure are checked through canonical storage.
+
+Full CI passes types, the App boundary and lint, then reports **2,837 passed,
+3 skipped and 27 failed** (2,867 tests across 289 files, 159.50 seconds).
+Only these three failure names disappear against `c2b00c29`; no new failure
+name appears. The remaining failures concern the retired inbox execution and
+control fixtures. The production delta stays at **646 net added lines**.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -1312,18 +1376,19 @@ results are retained here; passing focused tests does not clear the migration ga
 | `3e61e705` | 2,675 / 3 / 163 | 2,841 / 286 | 139.4 | Conversation execution requires a Task binding; tool-loop and accepted-result contracts migrated |
 | `127c3ab2` | 2,701 / 3 / 138 | 2,842 / 286 | 162.6 | Workspace and worker-process checks migrated; retained-effect recovery crosses real processes |
 | `55e51193` | 2,784 / 3 / 80 | 2,867 / 289 | 148.0 | Reconciler outcomes and owner closure migrated; intermediate checkpoints are recorded in the sections above |
+| `c2b00c29` | 2,834 / 3 / 30 | 2,867 / 289 | 151.82 | Runtime outcomes, input continuation and exact structured-result reads |
+| `a9252e96` | 2,837 / 3 / 27 | 2,867 / 289 | 159.50 | Real daemon restart and scheduled workflow checks read accepted attempts on retained Tasks |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
 result. Live-model evidence and its limits are recorded in their owning sections.
 At `ef0b9554`, no failure entries were added. The obsolete maintenance-cancellation
 prohibition is replaced by passing owner-control checks for both retained mode
-spellings. All 128 other failures remain unresolved.
+spellings. All 128 other failures remained unresolved at that checkpoint.
 
-The remaining failures include old receipt/deletion and failure-count
-expectations, Conversation/Request outcome readers, and real worker/restart
-fixtures. These are unresolved migration and runtime checks, not evidence that
-only assertions need changing. Review each behavior; do not skip checks or
+The remaining failures cover retired inbox execution/control assumptions.
+These are unresolved migration and runtime checks, not evidence that only
+assertions need changing. Review each behavior; do not skip checks or
 replace expectations merely to make CI pass.
 
 Earlier Conversation checks had 86 passes and 3 failures; the previous broader
