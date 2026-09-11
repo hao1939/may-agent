@@ -71,8 +71,19 @@ App accepts an input
    Add a short Task lifecycle reading table beside the code.
 
 These are separate source candidates based on `8e242c11`, so either can be
-reviewed independently. No SDK, persisted format or App declaration changes are
-needed. The source PRs will record their exact revisions and validation here.
+reviewed and merged independently. No SDK, persisted format or App declaration
+changes are needed. Both await human review; deployment remains separate.
+
+| Source candidate | Local verification |
+| --- | --- |
+| [Host #145](https://github.com/hao1939/may-agent/pull/145), `5989a608`: current session adapters | Full CI: 2,700 pass, three installation-only skips, no failures; both new regressions fail before the fix and pass after it |
+| [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
+
+Browser coverage ran in both suites. Hosted Quality and Container checks are
+pending on each PR. A temporary merge of both candidates passed all 128 Task
+runtime/admission-worker tests; canonical design integrity, examples and App
+checks also passed against that combined source. No installation or model-backed
+tests ran.
 
 **Value/cost decision:** Fix the observable adapter mismatch with one current
 runtime lookup. Extract the preparation code because it is a cohesive concern
