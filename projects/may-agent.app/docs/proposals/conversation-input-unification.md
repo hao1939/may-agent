@@ -108,7 +108,42 @@ its original caller. The explanation must not fulfill the measurement ask, and
 the eventual measurement must not overwrite the explanation. The
 [source and model follow-through trials](controller-poc-input-continuation.md)
 now pass this Task check. Actual Conversation execution and Request settlement
-remain to migrate; isolated correct decisions alone do not prove that boundary.
+now have a [direct-turn source slice](controller-poc-recovery-review.md#conversation-checkpoint);
+the complete handler and runtime cutover remain to migrate. Isolated correct
+decisions alone do not prove that boundary.
+
+### Recovery keeps the same Task
+
+An execution failure does not end the Task's responsibility. For a known
+transient, safely repeatable operation, code should retry the same work after
+backoff. The agent should not have to enumerate failed Tasks, issue routine
+unblocks, recreate work or decide Task lifetime to keep that process moving.
+Persist retry eligibility so ordinary wakes and restart cannot defeat the
+delay. Reuse the controller and existing recovery scan, not a recovery worker.
+
+Bound attempts, retry rate and the authorized execution budget independently
+of Task lifetime. Reaching a budget can release execution and expose the
+unresolved work for an owner decision; it must not close the Task. The current
+four-failure gate is implementation evidence, not a required target policy.
+Do not retry a missing permission, unchanged invalid result or a valid give-up
+judgment as if waiting longer would fix it. New input or an App decision can
+make that retained work eligible again.
+
+Core owns execution facts, safe mechanical repair, timing, fencing and evidence.
+The App owns judgments about cause, useful repair, scope, sufficiency and cost.
+Keep that guidance in the App's existing task/role instructions; first supply
+the failure and retained evidence as ordinary reconciliation context. Do not
+add a configurable recovery-prompt framework or a second recovery agent.
+
+A shared executor may retain a small instruction to continue the original
+bounded assignment after an interrupted/empty response. It must not demand an
+immediate final answer, invent a domain blocker or choose a repair strategy.
+Instructions to inspect uncertain effects do not replace idempotency or durable
+receipts where duplicate effects matter. A valid non-success judgment is an
+accepted outcome; the caller receives it and may close or revise the work.
+
+The [review of PRs #153–#155](controller-poc-recovery-review.md) applies these
+rules to their actual changes and records an observed backoff bypass.
 
 ## One lifecycle, explicit outcomes
 
@@ -356,6 +391,9 @@ schema alone does not prove controller usability or reduced complexity.
 | Human input while children wait | The Conversation handles it without waiting for a child or falsely accepting unfinished work |
 | Stop, later input, pause and exhausted failure | Scope is preserved; later work remains possible without replaying stopped work or erasing failure evidence |
 | Duplicate/during-run wakes and multiple outcomes | One current attempt per Task, no lost message/outcome, another pass only when eligible |
+| Transient failure, duplicate wake and restart during cooldown | Same Task/input, enforced backoff and no agent-generated retry batch; delay and failure evidence survive restart |
+| Empty initial response or interrupted final synthesis | Continue authorized work with retained evidence and budget; no forced premature blocker or duplicated committed effect |
+| Accepted non-success judgment | Preserve the exact judgment, return it to the caller and keep the Task open; no automatic execution-error retry |
 | Reopen storage before/after result or explanation commit | Retain accepted evidence, current Request scope and one durable explanation; discover missed notifications |
 | Quiet Task, timer and removed timer | No model work just because a Task is open; removing optional discovery preserves ordinary execution correctness |
 | Mixed human/system input and multiple Conversations | Correct claim and capacity origin, human reserve preserved, independent keys can run concurrently |
