@@ -5,6 +5,11 @@ import { runTaskWorkerProbe } from "../../test/integration/fixtures/run-task-wor
 // This keeps the parent-loss probe from touching another test's database or IPC.
 describe("real Task worker boundary", () => {
   it.each([
+    ["conversation", "handles human input on the same Task across worker and storage reopen"],
+    ["delegation", "runs A and B through the common loop and returns B's result while A remains responsive"],
+  ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-interaction-scenario.ts", scenario), 20_000);
+
+  it.each([
     ["parentLoss", "stops with its parent and recovers the same unfinished Task"],
     ["redoAfterParentLoss", "retains input and inspects an existing effect after the old worker exits"],
     ["restoredHandler", "retries a restored workflow in a due attempt without a repair pass"],

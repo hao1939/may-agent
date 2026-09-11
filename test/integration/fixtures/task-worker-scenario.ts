@@ -26,7 +26,7 @@ import {
 
 const roots: string[] = [];
 const children: Array<{ child: ChildProcess; closed: Promise<void> }> = [];
-async function cleanup() {
+export async function cleanup() {
   await Promise.all(
     children.splice(0).map(async ({ child, closed }) => {
       if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
@@ -41,7 +41,7 @@ async function cleanup() {
   }
 }
 
-function fixture(agent: string, wait = false, workflow = true) {
+export function fixture(agent: string, wait = false, workflow = true, conversation = false) {
   const root = mkdtempSync(join(tmpdir(), "may-task-worker-"));
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -54,7 +54,7 @@ function fixture(agent: string, wait = false, workflow = true) {
     join(appDir, "app.ts"),
     `export default {
     id: "sample", version: 1, agent: "owner", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, tasks: { maxConcurrent: 1 }
+    workspace: { kind: "local", localPath: "." }, ${conversation ? 'requests: { mode: "agent" }' : "tasks: { maxConcurrent: 1 }"}
   };`,
   );
   for (const name of ["owner", "specialist"]) {
@@ -70,7 +70,12 @@ function fixture(agent: string, wait = false, workflow = true) {
         tools: [],
       }),
     );
-    writeFileSync(join(dir, "AGENTS.md"), "Run only the declared fixture workflow.\n");
+    writeFileSync(
+      join(dir, "AGENTS.md"),
+      conversation
+        ? "Answer the admitted Conversation input using fixture evidence.\n"
+        : "Run only the declared fixture workflow.\n",
+    );
     writeFileSync(
       join(dir, "workflows", "probe.ts"),
       `
@@ -100,20 +105,22 @@ function fixture(agent: string, wait = false, workflow = true) {
       project: "sample",
       project_lifecycle: "active",
       groups: { root: { id: "root", parent_id: null, owner: agent } },
-      resources: {
-        "work/one": {
-          metadata: { id: "work/one", generation: 1, resourceVersion: 1 },
-          spec: {
-            parentId: "root",
-            mode: "achieve",
-            outcome: "Probe the worker boundary",
-            acceptance: ["Fixture evidence"],
-            ...(workflow ? { workflow: "probe" } : {}),
-            input: { wait },
+      resources: conversation
+        ? {}
+        : {
+            "work/one": {
+              metadata: { id: "work/one", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "root",
+                mode: "achieve",
+                outcome: "Probe the worker boundary",
+                acceptance: ["Fixture evidence"],
+                ...(workflow ? { workflow: "probe" } : {}),
+                input: { wait },
+              },
+              status: { phase: "pending", observedGeneration: 0, updatedAt: new Date().toISOString() },
+            },
           },
-          status: { phase: "pending", observedGeneration: 0, updatedAt: new Date().toISOString() },
-        },
-      },
     },
     "worker-fixture",
   );
@@ -124,10 +131,20 @@ function fixture(agent: string, wait = false, workflow = true) {
     taskId: "work/one",
     dispatch: { enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0, lane: "normal" },
   };
-  return { root, appDir, persistDir, db, store, bus, request, child: undefined as ChildProcess | undefined };
+  return {
+    root,
+    appDir,
+    persistDir,
+    db,
+    store,
+    bus,
+    request,
+    modelBaseUrl: "http://127.0.0.1:1",
+    child: undefined as ChildProcess | undefined,
+  };
 }
 
-function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> {
+export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> {
   let diagnostics = "";
   const worker = recovery ? "runTaskRecoveryWorker" : "runTaskAttemptWorker";
   const workerOptions = {
@@ -144,7 +161,7 @@ function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> 
           request: ${JSON.stringify(f.request)},
           definitionSource: ${JSON.stringify(f.request.definitionSource)},
           roots: ${JSON.stringify({ projectRoot: f.root, projectsRoot: join(f.root, "projects"), sharedRoot: join(f.root, "shared"), persistDir: f.persistDir })},
-          models: { test: { id: "test", name: "test", provider: "test", api: "openai-completions", apiKey: "fixture-only", baseUrl: "http://127.0.0.1:1", contextWindow: 8192, maxTokens: 1024, input: ["text"], cost: {} } }
+          models: { test: { id: "test", name: "test", provider: "test", api: "openai-completions", apiKey: "fixture-only", baseUrl: ${JSON.stringify(f.modelBaseUrl)}, contextWindow: 8192, maxTokens: 1024, input: ["text"], cost: {} } }
         });
         process.exit(0);
       `,
