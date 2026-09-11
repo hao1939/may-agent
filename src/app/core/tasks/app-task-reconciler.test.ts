@@ -1213,7 +1213,7 @@ describe("App task reconciler state", () => {
     ]);
   });
 
-  it("rejects a no-op or mixed self-update", () => {
+  it("rejects self-updates even when alone or mixed with other actions", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
@@ -1235,7 +1235,7 @@ describe("App task reconciler state", () => {
           },
         ],
       }),
-    ).toThrow("must change task execution intent");
+    ).toThrow("assignment changes belong to its assigning owner");
 
     expect(() =>
       completeAppTask(config, claim, {
@@ -1259,7 +1259,7 @@ describe("App task reconciler state", () => {
           },
         ],
       }),
-    ).toThrow("must be the only reconciliation action");
+    ).toThrow("assignment changes belong to its assigning owner");
   });
 
   it("carries observed workspace lineage from the attempt into its completion receipt", () => {
@@ -5108,7 +5108,7 @@ describe("App task reconciler state", () => {
     });
     if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
 
-    expect(
+    expect(() =>
       completeAppTask(config, parentClaim, {
         summary: "Owner review revised its desired execution",
         evidence: ["review:current"],
@@ -5121,10 +5121,15 @@ describe("App task reconciler state", () => {
           },
         ],
       }),
-    ).toMatchObject({
-      status: "applied",
-      actionsApplied: ["updated runtime/owner-review"],
-      taskContinues: true,
+    ).toThrow("assignment changes belong to its assigning owner");
+    expect(readTaskSnapshot(config).resources?.[parentClaim.taskId]?.metadata.generation).toBe(parentClaim.generation);
+    observeAppTaskIntent(config, {
+      intent: {
+        ...intent("maintain"),
+        id: parentClaim.taskId,
+        outcome: "Keep the platform reviewed from current evidence",
+      },
+      appAgent: "app-owner",
     });
 
     const revised = readTaskSnapshot(config).resources?.["runtime/owner-review"];

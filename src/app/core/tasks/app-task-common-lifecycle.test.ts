@@ -454,6 +454,38 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.config.resourceStore.readTask("conversation")?.status.currentAttemptId).toBe(claim.attemptId);
   });
 
+  it.each(["answer", "wait"])("rejects a worker rewriting its own assignment through %s and retains the original work", (settlement) => {
+    const f = fixture();
+    const claim = f.claim();
+    const before = f.config.resourceStore.readTask("conversation")!;
+    const proposal = {
+      summary: "Make the requirement easier",
+      evidence: ["The measurement is unavailable"],
+      actions: [
+        { kind: "create-task" as const, id: "child", parentId: "conversation", mode: "achieve" as const,
+          outcome: "Find the measurement", acceptance: ["Return evidence"], outputs: [] },
+        { kind: "update-task" as const, taskId: "conversation", expectedGeneration: claim.generation,
+          outcome: "Explain why the measurement is unavailable", acceptance: ["An explanation is enough"] },
+      ],
+    };
+    expect(() => settlement === "answer"
+      ? completeAppTask(f.config, claim, proposal)
+      : deferAppTask(f.config, claim, { ...proposal, disposition: "waiting" }))
+      .toThrow("assignment changes belong to its assigning owner");
+    expect(f.config.resourceStore.readTask("conversation")).toEqual(before);
+    expect(f.config.resourceStore.readTask("child")).toBeNull();
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+    failAppTaskAttempt(f.config, claim, "Rejected self-revision");
+    f.reopen();
+    f.advanceRetry();
+    const retry = f.claim();
+    expect(f.config.resourceStore.readTask("conversation")?.spec).toEqual(before.spec);
+    expect(retry.generation).toBe(claim.generation);
+    expect(retry.events).toEqual(claim.events);
+    completeAppTask(f.config, retry, { summary: "Measurement obtained", result: { value: 17 } });
+    expect(f.config.resourceStore.readAttempt(retry.attemptId)?.acceptedResult?.state).toBe("converged");
+  });
+
   it("accepts an answer to new input while keeping a different accepted wait and its route", () => {
     const f = fixture();
     deferAppTask(f.config, f.claim(), {

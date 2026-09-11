@@ -54,7 +54,7 @@ export type TaskAppDependency = {
   input: AppInput;
 };
 
-/** Desired Task mutations returned by one fenced reconciliation attempt. */
+/** Mutations of other Tasks returned by a fenced attempt; workers cannot rewrite their own assignment. */
 export type TaskAction =
   | {
       kind: "create-task";

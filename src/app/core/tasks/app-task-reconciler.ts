@@ -3526,8 +3526,10 @@ function applyTaskActions(
     if (config.resourceStore.isCancelled(targetId)) {
       throw new Error(`Handler action cannot mutate cancelled task ${targetId}; create a new linked task`);
     }
-    if (action.kind !== "create-task" && action.taskId === claim.taskId && action.kind !== "update-task") {
-      throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
+    if (action.kind !== "create-task" && action.taskId === claim.taskId) {
+      throw new Error(
+        `Handler action cannot mutate its own running task ${claim.taskId}; assignment changes belong to its assigning owner`,
+      );
     }
     switch (action.kind) {
       case "create-task": {
@@ -3587,16 +3589,14 @@ function applyTaskActions(
         if (executionChanged) {
           if (resource.status.currentAttemptId) {
             const supersededSessionId = tree.attempts?.[resource.status.currentAttemptId]?.sessionId;
-            if (action.taskId !== claim.taskId && supersededSessionId) {
+            if (supersededSessionId) {
               supersededSessionIds.add(supersededSessionId);
             }
             finishAttempt(
               tree,
               resource,
-              action.taskId === claim.taskId ? "completed" : "interrupted",
-              action.taskId === claim.taskId
-                ? "Current handler revised the task execution intent"
-                : "Task execution intent changed by reconciliation action",
+              "interrupted",
+              "Task execution intent changed by reconciliation action",
               now,
             );
           }
@@ -3917,13 +3917,6 @@ export function completeAppTask(
     };
   }
   validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
-  const selfUpdates = actions.filter(
-    (action): action is Extract<AppTaskAction, { kind: "update-task" }> =>
-      action.kind === "update-task" && action.taskId === claim.taskId,
-  );
-  if (selfUpdates.length > 0 && actions.length !== 1) {
-    throw new Error(`Handler self-update for ${claim.taskId} must be the only reconciliation action`);
-  }
   const acceptanceBasis = input.acceptanceBasis ?? defaultTaskAcceptance(claim, input.evidence ?? []);
   const mutationScope = beginResourceMutationScope(tree, claim, actions);
   const { actionsApplied, supersededSessionIds } = applyTaskActions(
@@ -3932,20 +3925,6 @@ export function completeAppTask(
     actions,
     config,
   );
-  if (selfUpdates.length === 1) {
-    const revised = tree.resources?.[claim.taskId];
-    if (!revised || revised.metadata.generation <= claim.generation) {
-      throw new Error(`Handler self-update for ${claim.taskId} must change task execution intent`);
-    }
-    commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
-    return {
-      status: "applied",
-      actionsApplied,
-      dependentTaskIds: [claim.taskId],
-      supersededSessionIds,
-      taskContinues: true,
-    };
-  }
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
   const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds);
