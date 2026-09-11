@@ -65,6 +65,12 @@ merged as `23968acd` and `39a23f22`. Deployment remains separate. Evaluation
 feature reduction and metric improvements remain conditional; directory
 organization is accepted and tracked by the simplification review.
 
+The [observer feedback proposal](proposals/observer-feedback-and-resource-conventions.md)
+applies the accepted contract-and-convention principle to two concrete gaps:
+publication-safe observation memory for Scout and one resource-linked GitHub
+PR observer. A fixture reproduced lost feedback; the proposed SDK/adapter
+changes and live integration proof are not yet implemented.
+
 The [workflow practices review](proposals/workflow-practices-review.md) applies
 multi-worker lessons to installed Apps: isolated changes, exact-candidate
 verification, reviewed integration, and useful progress during external waits.

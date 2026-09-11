@@ -25,6 +25,10 @@ when fixing it costs more than its current consequences.
 The [system simplification review](authority-boundary-simplification.md#design-choices-before-code-moves)
 now compares feature/path reductions before broader organization work. This page
 retains ownership of the external decisions below, especially evaluation UI scope.
+The later [observer feedback proposal](observer-feedback-and-resource-conventions.md)
+owns the separately reproduced checkpoint-before-publication gap and a first
+convention-based provider integration. It does not reopen general observer
+cancellation or precise restart recovery from this milestone.
 
 ## What changed after reviewing the plan
 

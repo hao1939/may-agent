@@ -142,6 +142,9 @@ Active reviews are:
 - [External components: simple, solid, and clearly organized](proposals/external-components-simplification.md)
   — three focused fixes, explicit feature/reliability tradeoffs, and conditional
   evaluation, metric, and layout follow-ups;
+- [Reliable observer feedback without a subscription system](proposals/observer-feedback-and-resource-conventions.md)
+  — proposed publication-safe observation memory, Scout regression fix and one
+  convention-based GitHub PR adapter using the existing Task route;
 - [Storage: a state service backed by SQLite](proposals/storage-state-service.md)
   — implemented input-to-Task attachment, Conversation state/handler separation
   and consistent naming, merged through #129;
