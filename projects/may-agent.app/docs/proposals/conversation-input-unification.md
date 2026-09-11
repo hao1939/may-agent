@@ -1,7 +1,7 @@
 # One Task lifecycle
 
 **Status:** Accepted design baseline, refined September 12, 2026. A source PoC
-is under review in [draft Host PR #158](https://github.com/hao1939/may-agent/pull/158);
+is under review in [Host PR #158](https://github.com/hao1939/may-agent/pull/158);
 it is unmerged and undeployed. Use one Task model, controller and lifecycle:
 explicit outcomes, rest between inputs, owner-controlled closure. Human
 conversation, delegated work and maintenance describe roles and inputs within
@@ -158,10 +158,11 @@ The [evidence record](controller-poc-recovery-review.md) owns source revisions,
 failed trials, focused checks, full-suite results and migration details. It also
 tracks removal of the old execution owners, the passing isolated
 [daemon cutover](controller-poc-recovery-review.md#real-daemon-cutover), and the
-remaining compatibility and complexity gates. Finish the shared-path acceptance
-audit before adding unusual recovery combinations or new mechanisms. Messages
-and reply delivery need their own boundary checks, but must not introduce
-another claim, retry or closure authority.
+completed [critical-path acceptance audit](controller-poc-recovery-review.md#critical-path-acceptance-audit).
+Human review should now assess the unified lifecycle, retained compatibility
+costs and adoption order. Broader usage and installation rollout remain outside
+this proof. Message and reply boundaries have their own checks within the same
+claim, retry and closure authority.
 
 ### Recovery keeps the same Task
 

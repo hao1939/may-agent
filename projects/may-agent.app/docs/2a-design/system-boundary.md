@@ -114,7 +114,10 @@ makes one stable Task the Conversation's actual execution owner, with no second
 executing inbox handler. Outcomes can be accepted while the Task stays open;
 an App, parent agent or human decides when to close it. The Host enforces that
 decision and preserves evidence without inferring responsibility lifetime.
-This lifecycle and the shared-input route are not yet implemented.
+This lifecycle and the shared-input route are implemented in the unmerged
+[Host PR #158](https://github.com/hao1939/may-agent/pull/158) candidate. They are
+not yet the released protocol; the proposal records the paired App and cutover
+requirements.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:

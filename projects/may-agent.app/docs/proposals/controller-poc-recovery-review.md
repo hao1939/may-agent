@@ -4,7 +4,7 @@
 undeployed. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
-The current review artifact is [draft Host PR #158](https://github.com/hao1939/may-agent/pull/158).
+The current review artifact is [Host PR #158](https://github.com/hao1939/may-agent/pull/158).
 
 **Recommendation:** Proceed with human review of one Task model, controller and
 lifecycle. A can take human input, delegate to B, and B can delegate to C:
@@ -51,9 +51,10 @@ recommendation for review, not merge or deployment approval.
 
 The source checks named above live under Host `src/app/core/tasks/`,
 `src/app/core/state/` and `src/app/adapters/workspaces/`; current full-CI evidence
-is recorded with the [reader checkpoint](#historical-reader-review). This audit
-inspected assertions and retained reports; it did not repeat successful model
-trials or claim those older trials ran against a newer revision.
+is recorded with the [reader checkpoint](#historical-reader-review), with the
+latest comment and guide changes recorded under [review preparation](#review-preparation).
+This audit inspected assertions and retained reports; it did not repeat successful
+model trials or claim those older trials ran against a newer revision.
 
 **Value versus cost:** one execution/settlement/retry authority replaces the
 independent inbox and supervisor paths. At the reader checkpoint, production
@@ -77,6 +78,28 @@ rollout/rollback. Source authority checks and small live judgment samples do not
 prove those broader behaviors. Follow the human's critical-path-first decision:
 record these limits instead of adding mechanisms or extending the PoC indefinitely.
 Host/App adoption still requires human review and a separate rollout plan.
+
+## Review preparation
+
+Host `c1a2e48e` clarifies SDK comments and source guides without changing runtime
+behavior. The guides distinguish accepted outcomes, worker failure reports,
+Turn Stop and owner closure; they also explain retained `achieve`/`maintain`
+labels and dispatch-error backoff. Stale claims that callback-test migration
+and isolated restart proof were pending are corrected.
+
+PR #158 is ready for human review, with a source reading order, changed-contract notes and the
+paired App revision `b73886ab05`. Review the lifecycle first, then human-facing
+settlement, result return/retry, and the offline conversion/coverage map. The
+canonical proposal and boundary document distinguish this implemented candidate
+from the released protocol. Historical evidence below keeps its original dates
+and revisions.
+
+Local `bun run check:ci` passes at `c1a2e48e`; design integrity, executable design
+examples and canonical App checks pass, along with the Host guide and changed
+design links. [GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/34650854597)
+both pass on that exact revision. The previous full local CI result at `54c1b5b4`
+retains its exact source revision. No model or daemon-cutover trial was repeated
+for these comment and guide edits. Host and App remain unmerged and undeployed.
 
 ## Historical reader review
 
