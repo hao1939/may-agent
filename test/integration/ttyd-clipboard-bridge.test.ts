@@ -2,27 +2,28 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { runInNewContext } from "node:vm";
 
 const repoRoot = resolve(import.meta.dirname, "../..");
 const patcher = resolve(repoRoot, "container/patch-ttyd-index.cjs");
 const bridge = resolve(repoRoot, "container/ttyd-clipboard-bridge.js");
 const tempDirs: string[] = [];
+const execFileAsync = promisify(execFile);
 
 afterEach(() => {
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 describe("ttyd clipboard bridge", () => {
-  test("installs the bridge before ttyd starts and registers OSC-52 once", () => {
+  test("installs the bridge before ttyd starts and registers OSC-52 once", async () => {
     const dir = mkdtempSync(join(tmpdir(), "may-ttyd-clipboard-"));
     const index = join(dir, "index.html");
     tempDirs.push(dir);
     writeFileSync(index, "<html><head></head><body><script>s(e.onSelectionChange(()=>{}))</script></body></html>");
 
-    const result = spawnSync("node", [patcher, index, bridge], { encoding: "utf8" });
-    expect(result.status).toBe(0);
+    await execFileAsync("node", [patcher, index, bridge], { encoding: "utf8", timeout: 5_000 });
     const patched = readFileSync(index, "utf8");
     expect(patched).toContain("registerOscHandler(52");
     expect(patched.match(/registerOscHandler\(52/g)).toHaveLength(1);
@@ -30,15 +31,14 @@ describe("ttyd clipboard bridge", () => {
       .toBeLessThan(patched.indexOf("registerOscHandler(52"));
   });
 
-  test("fails closed when the pinned ttyd initialization anchor drifts", () => {
+  test("fails closed when the pinned ttyd initialization anchor drifts", async () => {
     const dir = mkdtempSync(join(tmpdir(), "may-ttyd-clipboard-"));
     const index = join(dir, "index.html");
     tempDirs.push(dir);
     writeFileSync(index, "<html><head></head><body>changed ttyd bundle</body></html>");
 
-    const result = spawnSync("node", [patcher, index, bridge], { encoding: "utf8" });
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("expected one ttyd terminal anchor");
+    await expect(execFileAsync("node", [patcher, index, bridge], { encoding: "utf8", timeout: 5_000 }))
+      .rejects.toMatchObject({ code: 1, stderr: expect.stringContaining("expected one ttyd terminal anchor") });
   });
 
   test("decodes UTF-8 strictly and removes terminal control characters", () => {
