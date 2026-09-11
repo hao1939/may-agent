@@ -8,6 +8,7 @@ import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   claimObservedAppTask,
+  completeAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
   recordAppTaskTrigger,
@@ -153,15 +154,19 @@ describe("App task Condition review checkpoint", () => {
       ]);
       const third = claim(config);
       expect(third.events.map(({ event }) => event.eventId)).toEqual([403]);
-      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["pipeline", "decision"]);
       deferAppTask(config, third, { ...wait, conditions: [conditions[1]] });
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
       expect(readTaskSnapshot(config).conditions?.decision).toEqual(before?.decision);
       const decision = { type: "project.task.reconciled", eventId: 404, taskId: "decision", state: "converged" };
       expect(trackAppTaskConditionEventForTasks(config, decision, ["human-request"])).toMatchObject([
         { conditionId: "decision" },
       ]);
       expect(trackAppTaskConditionEventForTasks(config, decision, ["human-request"])).toEqual([]);
-      expect(claim(config).events.map(({ event }) => event.eventId)).toEqual([404]);
+      const fourth = claim(config);
+      expect(fourth.events.map(({ event }) => event.eventId)).toEqual([404]);
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
+      completeAppTask(config, fourth, { summary: "Both facts verified", evidence: ["pipeline:42", "decision:done"] });
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual([]);
     } finally {
       config.resourceStore.close();

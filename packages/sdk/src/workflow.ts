@@ -279,6 +279,8 @@ export type TaskReconciliationEvent = {
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
   items: TaskReconciliationEvent[];
+  /** Earlier asks whose awaited evidence is being considered now; not new input or new authority. */
+  continuedInputs?: TaskReconciliationEvent[];
   /** Highest durable event identity in items, when every item has one. */
   throughEventId?: number;
   /** More linked events remain pending for the same task. */

@@ -136,6 +136,8 @@ export type AppTaskAdmission = {
   taskGeneration: number;
   specHash: string;
   admittedAt: string;
+  /** Original ask supplied again when its saved wait returns evidence. */
+  inputEvent?: Record<string, unknown>;
   /** Exact accepted answer for this input; later Task outcomes do not replace it. */
   resultAttemptId?: string;
 };

@@ -4,12 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskMode } from "@may-agent/sdk";
 import { AppTaskController } from "./controller.js";
-import { readAppTaskReconciliationEvents } from "./app-task-context.js";
+import { readAppTaskLiveEvent, readAppTaskReconciliationEvents } from "./app-task-context.js";
 import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitTaskRequest, type TaskRequestInput } from "../state/inbox.js";
 import { readRuntimeTaskView } from "../reads/app-read.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
+import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   appTaskContext,
   cancelAppTask,
@@ -17,6 +18,7 @@ import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
+  failAppTaskAttempt,
   observeAppTaskIntent,
   recordAppTaskTrigger,
   readAppTaskAdmissionOutcome,
@@ -113,7 +115,11 @@ describe("common Task lifecycle source PoC", () => {
     });
     f.reopen();
     const resumed = f.claim();
-    expect(readAppTaskReconciliationEvents(f.config.resourceStore, resumed).items
+    const context = readAppTaskReconciliationEvents(f.config.resourceStore, resumed);
+    expect(context.continuedInputs?.map(({ event }) => event.data.request)).toEqual([
+      { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id: "measurement" } } },
+    ]);
+    expect(context.items
       .some(({ event }) => event.data.childTaskId === "sampler")).toBe(true);
     completeAppTask(f.config, resumed, {
       summary: "The measurement answers the original ask", result: { value: 17 }, evidence: ["measurement:17"],
@@ -124,6 +130,168 @@ describe("common Task lifecycle source PoC", () => {
       .toMatchObject({ attemptId: resumed.attemptId, state: "converged", result: { value: 17 } });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:explanation")?.result)
       .toEqual({ explanation: "Measure once the sample is ready" });
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits).toBeUndefined();
+  });
+
+  it("keeps a satisfied input wait across failed execution and restart until acceptance", () => {
+    const f = fixture();
+    admitTaskRequest(f.config, {
+      appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: "task:measurement",
+      request: { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: {} } },
+    });
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting", summary: "Waiting for observed evidence",
+      conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement",
+        expected: "done", owner: "app:sampler", reviewAfterMs: 60_000 }],
+    });
+    const event = { type: "project.task.reconciled", taskId: "measurement", state: "converged", eventId: 5 };
+    expect(trackAppTaskConditionEventForTasks(f.config, event, ["conversation"])).toHaveLength(1);
+    const first = f.claim();
+    expect(first.continuedInputKeys).toEqual(["task:measurement"]);
+    expect(failAppTaskAttempt(f.config, first, "Temporary provider failure").status).toBe("retrying");
+    f.reopen();
+    const retry = f.claim();
+    expect(readAppTaskReconciliationEvents(f.config.resourceStore, retry).continuedInputs?.[0]?.event.data.request)
+      .toMatchObject({ id: "measurement" });
+    const result = { summary: "Observed measurement", result: { value: 17 }, evidence: ["measurement:17"] };
+    f.config.resourceStore.db.exec(`CREATE TRIGGER reject_delayed_answer BEFORE UPDATE ON app_task_admissions
+      BEGIN SELECT RAISE(ABORT, 'answer rejected'); END`);
+    expect(() => completeAppTask(f.config, retry, result)).toThrow("answer rejected");
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits).toHaveProperty("task:measurement");
+    expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual(["measurement"]);
+    f.config.resourceStore.db.exec("DROP TRIGGER reject_delayed_answer");
+    completeAppTask(f.config, retry, result);
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:measurement")?.result).toEqual({ value: 17 });
+    expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual([]);
+    expect(f.config.resourceStore.readTask("conversation")?.status.inputWaits).toBeUndefined();
+    expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+  });
+
+  it("keeps two callers separate when child work returns out of order and needs another attempt", () => {
+    const f = fixture();
+    for (const name of ["first", "second"]) {
+      admitTaskRequest(f.config, {
+        appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${name}`,
+        request: { id: name, source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { name } } },
+      });
+      deferAppTask(f.config, f.claim(), {
+        disposition: "waiting", summary: `Measure ${name}`, evidence: ["measurement:needed"],
+        actions: [{ kind: "create-task", id: name, parentId: "conversation", mode: "achieve",
+          outcome: `Measure ${name}`, acceptance: ["Return measured value"], outputs: [] }],
+      });
+    }
+    completeAppTask(f.config, f.claim("second"), { summary: "First observation", result: { value: 2 } });
+    const reconsider = f.claim();
+    expect(reconsider.continuedInputKeys).toEqual(["task:second"]);
+    deferAppTask(f.config, reconsider, {
+      disposition: "waiting", summary: "Check the second sample again", evidence: ["measurement:inconclusive"],
+      actions: [{ kind: "create-task", id: "second-check", parentId: "conversation", mode: "achieve",
+        outcome: "Recheck second sample", acceptance: ["Return measured value"], outputs: [] }],
+    });
+    f.reopen();
+    completeAppTask(f.config, f.claim("first"), { summary: "First sample measured", result: { value: 1 } });
+    const first = f.claim();
+    expect(first.continuedInputKeys).toEqual(["task:first"]);
+    completeAppTask(f.config, first, { summary: "First answer", result: { value: 1 } });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
+    completeAppTask(f.config, f.claim("second-check"), { summary: "Rechecked", result: { value: 3 } });
+    const second = f.claim();
+    expect(second.continuedInputKeys).toEqual(["task:second"]);
+    completeAppTask(f.config, second, { summary: "Second answer", result: { value: 3 } });
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")?.result).toEqual({ value: 1 });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")?.result).toEqual({ value: 3 });
+  });
+
+  it.each([false, true])("keeps the ask with live wait evidence (accepted live: %s)", (acceptLive) => {
+    const f = fixture();
+    const ask = (id: string) => admitTaskRequest(f.config, {
+      appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${id}`,
+      request: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
+    });
+    ask("measurement");
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Get evidence",
+      conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement", expected: "done",
+        owner: "app:fixture", reviewAfterMs: 60_000 }] });
+    ask("explanation");
+    let claim = f.claim();
+    const fact = { type: "project.task.reconciled", eventId: 500, taskId: "measurement", state: "converged" };
+    trackAppTaskConditionEventForTasks(f.config, fact, ["conversation"]);
+    const live = readAppTaskLiveEvent(f.config, "conversation", fact);
+    expect(live.data.continuedInputs).toMatchObject([{ event: { data: { request: { id: "measurement" } } } }]);
+    const result = { summary: "Explained the threshold and judged the new measurement",
+      result: { value: 17, explanation: "A threshold is a minimum" } };
+    if (!acceptLive) {
+      completeAppTask(f.config, claim, result);
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:explanation")).toBeNull();
+      f.reopen();
+      claim = f.claim();
+      const inputs = readAppTaskReconciliationEvents(f.config.resourceStore, claim);
+      expect(inputs.continuedInputs?.some(({ event }) => (event.data.request as { id?: string } | undefined)?.id === "explanation")).toBe(true);
+      expect(inputs.continuedInputs?.map(({ event }) => (event.data.request as { id: string }).id).sort())
+        .toEqual(["explanation", "measurement"]);
+    }
+    completeAppTask(f.config, claim, { ...result, ...(acceptLive ? { acceptedLiveEventIds: [500] } : {}) });
+    f.reopen();
+    for (const id of ["measurement", "explanation"]) {
+      expect(readAppTaskAdmissionOutcome(f.config, "conversation", `task:${id}`)?.result).toEqual(result.result);
+    }
+    expect(f.config.resourceStore.readTask("conversation")?.status.conditionIds).toEqual([]);
+  });
+
+  it("giving up on new input does not discard a different input's wait", () => {
+    const f = fixture();
+    for (const id of ["measurement", "expensive-question"]) {
+      admitTaskRequest(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "conversation" },
+        idempotencyKey: `task:${id}`, request: { id, source: { kind: "app", id: "caller" },
+          input: { kind: "question", data: { id } } } });
+      if (id === "measurement") deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Get measurement",
+        conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement", expected: "done",
+          owner: "app:fixture", reviewAfterMs: 60_000 }] });
+      else stopAppTask(f.config, f.claim(), { summary: "This extra question is too expensive", evidence: ["cost:unjustified"] });
+    }
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:expensive-question")?.state).toBe("stopped");
+    expect(trackAppTaskConditionEventForTasks(f.config, {
+      type: "project.task.reconciled", eventId: 501, taskId: "measurement", state: "converged",
+    }, ["conversation"])).toHaveLength(1);
+    const measured = f.claim();
+    completeAppTask(f.config, measured, { summary: "Measured", result: { value: 17 } });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:measurement")?.result).toEqual({ value: 17 });
+  });
+
+  it("an old child generation cannot satisfy a newer input wait", () => {
+    const f = fixture();
+    const ask = (id: string) => admitTaskRequest(f.config, {
+      appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${id}`,
+      request: { id, source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { id } } },
+    });
+    ask("first");
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Measure first sample", evidence: ["measurement:needed"],
+      actions: [{ kind: "create-task", id: "sampler", parentId: "conversation", mode: "achieve",
+        outcome: "Measure first sample", acceptance: ["Return measured value"], outputs: [] }] });
+    const firstChild = f.claim("sampler");
+    completeAppTask(f.config, firstChild, { summary: "First measurement", result: { value: 17 } });
+    completeAppTask(f.config, f.claim(), { summary: "First answer", result: { value: 17 } });
+    ask("second");
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Measure second sample", evidence: ["measurement:needed"],
+      actions: [{ kind: "update-task", taskId: "sampler", expectedGeneration: 1, outcome: "Measure second sample" }] });
+    recordAppTaskTrigger(f.config, "conversation", {
+      type: "project.task.child-transitioned", source: APP_TASK_RECOVERY_OWNER,
+      childTaskId: "sampler", resultAttemptId: firstChild.attemptId,
+    });
+    const staleFact = f.claim();
+    expect(staleFact.continuedInputKeys).toBeUndefined();
+    completeAppTask(f.config, staleFact, { summary: "This old result has already been handled" });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
+    completeAppTask(f.config, f.claim("sampler"), { summary: "Second measurement", result: { value: 23 } });
+    const second = f.claim();
+    expect(second.continuedInputKeys).toEqual(["task:second"]);
+    completeAppTask(f.config, second, { summary: "Second answer", result: { value: 23 } });
+    f.reopen();
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")?.result).toEqual({ value: 17 });
+    expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")?.result).toEqual({ value: 23 });
   });
 
   it("keeps each admitted input's answer while a reused Task waits, answers again and closes", () => {

@@ -8,6 +8,14 @@ export type AppTaskTriggerEvent = {
   observedAt: string;
 };
 
+/** Return correlation for admitted input; eligibility stays with existing waits and Events. */
+export type AppTaskInputWait = {
+  taskGeneration: number;
+  /** Both lists empty means continue with already pending Task input, without replaying an old event batch. */
+  children: Array<{ id: string; generation: number }>;
+  conditions: Array<{ id: string; generation: number }>;
+};
+
 /** Host-private persisted Condition state. */
 export type AppTaskCondition = {
   metadata: {
@@ -61,6 +69,7 @@ export type AppTaskResource = {
     result?: Record<string, unknown>;
     evidence?: string[];
     conditionIds?: string[];
+    inputWaits?: Record<string, AppTaskInputWait>;
     updatedAt: string;
   };
 };
@@ -101,6 +110,8 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
+  /** Earlier admitted inputs brought back by this attempt's exact child/Condition evidence. */
+  continuedInputKeys?: string[];
   /** Accepted evidence from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
     state: "converged" | "waiting" | "stopped";

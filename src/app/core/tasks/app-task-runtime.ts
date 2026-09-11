@@ -47,7 +47,7 @@ import type { TaskOutcomeReader } from "../reads/reporting.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
-import { readAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
+import { readAppTaskLiveEvent, readAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
@@ -639,7 +639,7 @@ function runtimeTaskAttempt(input: {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
         const unsubscribe = events.onEvent((incoming) => {
           const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-          listener(canonicalAppEvent(incoming), () => {
+          listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
             if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
             acceptedLiveEventIds.add(eventId);
           });

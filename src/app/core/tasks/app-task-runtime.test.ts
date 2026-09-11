@@ -3543,16 +3543,15 @@ describe("canonical App task runtime", () => {
     } as AgentEvent;
     bus.emit(feedback);
 
-    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
-    while (!readTaskSnapshot(config).receipts?.["work/registered-executor"] && Date.now() < deadline) {
+    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })?.status !== "done" && Date.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(calls).toBe(1);
     expect(sawLiveFeedback).toBeTrue();
     expect(published).toHaveLength(1);
-    expect(readTaskSnapshot(config).receipts?.["work/registered-executor"]).toMatchObject({
-      handler: "executor:reviewer",
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })).toMatchObject({
+      status: "done",
       executor: "reviewer",
       summary: "Registered executor completed the Task",
       evidence: ["test:reviewer:1"],

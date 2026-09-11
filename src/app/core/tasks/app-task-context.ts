@@ -2,6 +2,7 @@
  * Task execution context: explicit scoped reads followed by pure projections.
  * No runtime registry, database-path lookup, lifecycle writes, or scheduling.
  */
+import type { TaskAttempt } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem, type AppInboxItem } from "../state/app-inbox-store.js";
 import type { AppTaskChildContext, AppTaskClaim } from "./app-task-reconciler.js";
@@ -10,6 +11,9 @@ import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
 import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
+import type { AppTaskContext } from "./app-task-store.js";
+import { continuedTaskInputKeys } from "./app-task-inputs.js";
+type TaskReconciliationEvents = TaskAttempt["events"];
 
 /** Project the exact persisted attempt batch onto the public workflow contract. */
 export function projectAppTaskReconciliationEvents(claim: Pick<AppTaskClaim, "events" | "eventsTruncated">): {
@@ -39,10 +43,20 @@ export function projectAppTaskReconciliationEvents(claim: Pick<AppTaskClaim, "ev
 
 /** Resolve durable return links before asking the executor to judge their evidence. */
 export function readAppTaskReconciliationEvents(
-  store: Pick<AppTaskResourceStore, "readAttempt" | "readTask">,
-  claim: Pick<AppTaskClaim, "taskId" | "events" | "eventsTruncated">,
-): ReturnType<typeof projectAppTaskReconciliationEvents> {
-  const projected = projectAppTaskReconciliationEvents(claim);
+  store: Pick<AppTaskResourceStore, "readAttempt" | "readTask" | "readTaskContext">,
+  claim: Pick<AppTaskClaim, "taskId" | "events" | "eventsTruncated" | "continuedInputKeys">,
+): TaskReconciliationEvents {
+  const projected: TaskReconciliationEvents = projectAppTaskReconciliationEvents(claim);
+  if (claim.continuedInputKeys?.length) {
+    const admissions = store.readTaskContext({ taskIds: [], admissionIds: claim.continuedInputKeys }).appTaskAdmissions;
+    const generation = store.readTask(claim.taskId)?.metadata.generation;
+    projected.continuedInputs = claim.continuedInputKeys.flatMap((key) => {
+      const admission = admissions?.[key];
+      return admission?.taskId === claim.taskId && admission.taskGeneration === generation &&
+        !admission.resultAttemptId && admission.inputEvent
+        ? [{ observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) }] : [];
+    });
+  }
   for (const item of projected.items) {
     if (item.event.type !== "project.task.child-transitioned" || item.event.source !== APP_TASK_RECOVERY_OWNER) continue;
     const data: Record<string, unknown> = { ...item.event.data };
@@ -59,6 +73,21 @@ export function readAppTaskReconciliationEvents(
     item.event = Object.freeze({ ...item.event, data: Object.freeze(data) });
   }
   return projected;
+}
+
+/** Live feedback carries the same original ask and accepted child evidence as a later attempt. */
+export function readAppTaskLiveEvent(config: AppTaskContext, taskId: string, event: AgentEvent) {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
+  const events = [{ event: event as Record<string, unknown>, observedAt: new Date().toISOString() }];
+  const projected = readAppTaskReconciliationEvents(config.resourceStore, {
+    taskId, events, eventsTruncated: false,
+    continuedInputKeys: continuedTaskInputKeys(config, tree, taskId, events),
+  });
+  const incoming = projected.items[0]!.event;
+  const data = { ...incoming.data };
+  delete data.continuedInputs;
+  if (projected.continuedInputs?.length) data.continuedInputs = projected.continuedInputs;
+  return Object.freeze({ ...incoming, data: Object.freeze(data) });
 }
 
 type AppTaskWaitObservation = {

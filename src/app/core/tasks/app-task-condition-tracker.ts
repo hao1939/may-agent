@@ -230,6 +230,11 @@ export function matchesAppTaskCondition(
   return isCondition(condition) && condition.status.state !== "true" && matches(condition, event);
 }
 
+/** Recognize the evidence that belongs to a wait, including an already observed fact. */
+export function matchesAppTaskConditionEvidence(condition: unknown, event: Record<string, unknown>): condition is AppTaskCondition {
+  return isCondition(condition) && matches(condition, event);
+}
+
 function observation(event: Record<string, unknown>): Record<string, unknown> {
   return {
     eventType: event.type,

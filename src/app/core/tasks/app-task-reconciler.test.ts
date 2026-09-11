@@ -6810,7 +6810,7 @@ describe("App task reconciler state", () => {
     ).toThrow("already linked to another task with a different specification");
   });
 
-  it("consumes a satisfied Condition before waiting for the same observation again", () => {
+  it("retires a satisfied Condition only when accepting the next wait", () => {
     const { config } = fixture();
     const taskIntent = intent("maintain");
     const first = declareAndClaimTask(config, {
@@ -6841,7 +6841,7 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
-    expect(readTaskSnapshot(config).conditions?.[condition.id]).toBeUndefined();
+    expect(readTaskSnapshot(config).conditions?.[condition.id]).toMatchObject({ status: { state: "true" } });
 
     deferAppTask(config, resumed, {
       disposition: "waiting",
