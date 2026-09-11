@@ -435,8 +435,89 @@ before publication; the standard route then admits the linked App request.
 
 An observer reads current external state and returns facts for the host to
 publish after a successful bounded run. It cannot mutate inbox/task state or
-start model execution. Replaying a level observation is safe because request
-admission and task intent use stable idempotency/correlation.
+start model execution. The [App observer contract](agent-app.md#resource-ownership-by-convention)
+owns provider discovery and resource-link conventions. Repeated level
+observations must preserve stable work identity and avoid repeatedly creating
+the same obligation; event recording alone does not deduplicate agent turns.
+
+## Execution feedback and agent wakes
+
+Code executes and maintains the feedback loop; the owning agent judges meaning
+and the next action. These responsibilities reuse existing resources:
+
+```text
+agent chooses an authorized action
+  -> executor runs it; observer follows external state when needed
+  -> execution/resource evidence records progress, output and result
+  -> relevant fact enters existing durable Task admission
+  -> the same Task receives the evidence and judges what to do next
+```
+
+Task-owned execution inherits the Host's App, Task and attempt identity.
+External resources use the adapter's documented ownership convention. A
+resource ID, attempt ID or session ID is evidence linked to work, not another
+work owner. Facts about shared resources can use existing Condition or App
+routes instead of inventing a single Task owner.
+
+A feedback fact identifies the source resource or operation, what was observed,
+when it was observed, and the relevant source revision when available. It uses
+the existing target and correlation fields and links to bounded evidence.
+Large output, reports and debug details remain with the execution or resource
+record; events and Task summaries reference them rather than duplicating logs.
+Do not invent progress percentages, success or freshness when the source does
+not establish them. A provider read failure is not proof its operation failed.
+
+### Record progress; wake for reconsideration
+
+| Observation | Normal handling |
+| --- | --- |
+| Log output or ordinary reported progress | Retain with the run and expose to readers; no agent turn for each line or heartbeat |
+| An awaited operation finishes, fails or needs input | Record the result/evidence and route feedback to the responsible Task |
+| A linked resource's configured relevant fields change | Publish the observed revision to its owning Task; the agent judges its significance |
+| A wait reaches its review deadline | Use the existing Condition/recovery review; elapsed time alone proves neither success nor failure |
+| New actionable input arrives while the Task is running | Preserve it through existing Task admission and pending-input handling; do not start a competing session |
+
+An immediate tool result already available to the active attempt does not need
+a second event to wake that same attempt. Likewise, progress emitted by an
+attempt is not an automatic self-wake. Asynchronous feedback reuses exact Task,
+dependency or Condition routes; it does not require a supervisor relay or an
+adapter calling the model directly. Closed, cancelled and superseded work
+remains subject to existing Task lifecycle rules, not provider metadata.
+
+Scheduling hints may coalesce; accepted input and outcome evidence follow
+their existing persistence and retention rules. Polling an unchanged provider
+should not repeatedly invoke judgment merely to rediscover the same state.
+Adapters declare which source fields matter, while the agent decides their
+meaning; no central table of provider-specific repair strategies is needed.
+
+When execution resumes, supply a bounded view of the objective, changed facts,
+current work/waits and evidence references. The agent can read deeper using
+existing Task and execution readers. Keep response guidance with its App or
+agent, separate from untrusted external output. A wake is a request to
+reconsider current evidence, never acceptance proof or new authority.
+
+### Observation is not successful publication
+
+An adapter must not mark a notification handled merely because it read the
+provider. If persistence fails or a replaced observer's result is discarded,
+the next eligible observation must still be able to report the current state.
+After durable admission, existing Host recovery owns the accepted work.
+
+Prefer safe re-observation and existing correlation over a second queue. If
+change suppression needs a checkpoint, distinguish observed state from
+successfully published feedback and advance the latter only at its durable
+boundary. Periodic level facts can be simpler, provided consumers suppress
+duplicate obligations and unnecessary execution. This is not an exactly-once
+delivery promise or a requirement to retain every intermediate provider change.
+
+**Implementation boundary:** May already has observer execution, exact Task
+admission and durable Task input recovery. This refinement does not claim a
+shared provider-discovery adapter or a publication-aware observer checkpoint
+API exists. In the reviewed Scout credential observer, cached state advances
+before Host publication, so an unpublished unchanged `unavailable` observation
+can be suppressed. That producer-side gap is not repaired by downstream event
+recovery; verify it alongside resource discovery before claiming end-to-end
+feedback reliability.
 
 ## Durability and retention
 

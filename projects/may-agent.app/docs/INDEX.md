@@ -24,6 +24,8 @@ archive.
 | Which Conversation guarantees are core and which behavior is replaceable? | [Conversation boundary](2a-design/architecture.md#conversation-core-and-capability-boundary) |
 | How should Conversation, Request and Topic reads/writes be coordinated? | [Conversation state API](2a-design/storage.md#conversation-state-api) |
 | Is this Host or App responsibility? | [system-boundary.md](2a-design/system-boundary.md) |
+| How do code execution and agent judgment share the feedback loop? | [Execution feedback and wakes](2a-design/events.md#execution-feedback-and-agent-wakes) |
+| How do contracts and conventions keep extensions local? | [Convention over configuration](1-principles/core-principles.md#convention-over-configuration) and [resource ownership](2a-design/agent-app.md#resource-ownership-by-convention) |
 | Is this a request, task, or fact? | [work-model.md](1-principles/work-model.md) |
 | How does an App declare behavior? | [agent-app.md](2a-design/agent-app.md) |
 | Which state is authoritative and rebuildable? | [storage.md](2a-design/storage.md) |

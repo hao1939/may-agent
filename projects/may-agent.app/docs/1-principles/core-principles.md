@@ -107,6 +107,25 @@ measured benefit that outweighs its new state, paths, races, and maintenance.
 See the [agent-first test](code-vs-data.md#before-adding-runtime-behavior) and
 [Herdr evidence](../archive/reviews/design-philosophy-history-20260909.md#lessons-from-herdr-supervisor).
 
+### Code executes and brings back evidence; agents judge
+
+Execution includes the feedback loop, not just starting an action. Code collects
+information, responses and signals; tracks operations and their reported
+progress; preserves outputs and failures; and makes relevant evidence available
+to the responsible agent. The agent should not have to manage routine polling,
+output discovery or a separate tracking registration after starting work.
+
+The agent decides what to pursue, what the facts mean, whether a result is
+sufficient and which authorized action comes next. Code enforces identity,
+permissions and predictable execution rules. A successful command is an
+execution fact, not proof that the intended outcome was achieved.
+
+These are two responsibilities in one work loop, not two new subsystems or a
+ban on direct agent tool use. Executors and observers provide capabilities;
+existing Host Events, State and Work runtime preserve and deliver their feedback.
+See [execution feedback and wakes](../2a-design/events.md#execution-feedback-and-agent-wakes)
+for the concrete contract.
+
 ## Apps own meaning; the Host owns mechanics
 
 An App decides what an input means, what outcome it owns, and whether one
@@ -274,17 +293,45 @@ See [human-control-surfaces.md](../2a-design/human-control-surfaces.md).
 
 ## Convention over configuration
 
-Conventions determine locations and defaults; explicit declarations determine
-ownership and behavior. Executable behavior has one typed, validated
-declaration: one `app.ts`, one `defineApp`, and one atomic App generation.
-Do not add a second loader,
-service locator, or implicit route merely to avoid a small declaration.
+Extend locally; integrate by contract and convention. A new capability should
+normally add its implementation, composition wiring and owned guidance without
+adding another ownership, tracking or execution system.
+
+- **Contract:** the small, validated boundary for actions, facts, identity,
+  evidence and responsibility.
+- **Convention:** the normal way participants make those facts discoverable,
+  such as a known metadata field carrying the owning Task identity.
+- **Agent knowledge:** trusted guidance for interpreting the facts and choosing
+  a response; its interpretation stays with the agent, not the delivery path.
+
+Herdr's `event-watchd` demonstrates this with a goal ID on a PR or build. A
+shared observer discovers the link without a per-resource register, renew or
+unregister lifecycle. The relationship still exists on the resource; the
+convention removes separately managed subscription state, not ownership.
+May can use its existing exact Task event route for this pattern; it does not
+need Herdr's daemon or native-session delivery path.
+
+Keep one authoritative home for each fact. A discovery cache may remember a
+resource and revision, but must not become an independent ownership registry.
+Conventions need readable examples and boundary validation; ambiguous or
+untrusted metadata must not silently choose work. Use existing explicit routes
+when a shared or read-only resource cannot carry one owner.
+
+Conventions also determine locations and defaults. Executable behavior still
+has one typed, validated declaration: one `app.ts`, one `defineApp`, and one
+atomic App generation. Do not add a second loader, service locator or implicit
+route merely to avoid a small declaration.
 
 Use ordinary imports and narrow typed dependencies. Composition chooses and
 connects concrete adapters; core code depends on their contracts. Keep App
 policy local and expose only needed capabilities through the SDK. A new folder
 or interface proves little until replacement or absence preserves the contract.
 See [Architecture](../2a-design/architecture.md) for the current code map.
+The [observer convention](../2a-design/agent-app.md#resource-ownership-by-convention)
+applies this rule to provider integration. The extension test is: can the next
+source join the existing work loop through its adapter and guidance, without
+changing core lifecycle rules? Add another mechanism only for a demonstrated
+capability, trust or lifecycle need.
 
 ## Fix the layer that failed
 

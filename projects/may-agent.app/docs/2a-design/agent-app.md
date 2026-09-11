@@ -317,6 +317,53 @@ know inbox or task storage, or mutate runtime state. Legacy watchers migrate to
 observers, workflow inputs, or explicit offline maintenance according to their
 actual responsibility.
 
+### Resource ownership by convention
+
+For resources created for one Task, prefer a resource-carried owner link over
+a separate per-resource watch registration. Herdr's `event-watchd` is the
+reference pattern: a worker labels its PR/build with a durable goal ID, and a
+shared provider scan discovers it. May keeps its own Host event and Task path.
+
+For example, a PR adapter documents one metadata location containing the
+owning `{appId, taskId}`. A worker or creation tool writes that link as part of
+creating the resource. An observer scans configured trusted repositories,
+reads the link and relevant provider state, and returns an ordinary fact with
+`target.appId` and `target.taskId`. The Host validates and durably routes it to
+existing work. This describes an accepted integration pattern, not a new SDK
+API or an already implemented universal PR metadata format.
+
+The adapter owns provider-specific scope, metadata parsing, credentials,
+bounded reads and source revision calculation. It does not resolve a live
+agent/session, write Task state, invent repair actions or send model prompts.
+The Host owns admission, scheduling and recovery; trusted App/agent guidance
+owns what to do with the evidence. Observer and executor feedback follow
+[the same event contract](events.md#execution-feedback-and-agent-wakes).
+
+Keep the convention explicit and limited:
+
+- A resource's owner link must be unambiguous and trusted within the configured
+  scope. An address does not grant authority or let external data assert Host
+  provenance. Do not guess an owner, create work or reopen a closed Task when
+  its link is missing, invalid or stale.
+- A remembered resource/revision is discovery evidence, not an independent
+  subscription or ownership authority. Recheck source ownership when reading
+  current state. Document discovery windows and make material coverage limits
+  visible; a bounded scan is not a promise to find every resource.
+- Shared health, credentials and read-only resources may use existing App or
+  Condition routes. A Condition records what a Task awaits, not registration
+  with an observer. A new Task may need a fresh level observation even when
+  the provider has not changed.
+- Removing the optional adapter removes its observation capability. Existing
+  obligations remain visible; silence is not success. Keep the existing wait
+  review/recovery path instead of adding adapter-owned recovery workers.
+
+Adding a source should normally change its adapter, composition and response
+guidance, not core lifecycle or a global subscription catalog. Prove the path
+with one resource: discovery and exact ownership, a useful change, quiet
+unchanged scans, failed publication and restart, and removed or closed owners.
+Retain the existing event path and accept documented discovery/latency limits
+before adding more machinery.
+
 ## Task reconciliation
 
 The shared task reconciler is the App runtime. The App supplies typed intent,
