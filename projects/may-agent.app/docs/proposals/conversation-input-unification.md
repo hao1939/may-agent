@@ -127,8 +127,11 @@ executor decisions. It admits follow-up work with the acknowledgment and brings
 back an exact accepted attempt as system input. The later
 [ingress and Stop checkpoint](controller-poc-recovery-review.md#normal-ingress-and-turn-stop)
 routes human messages through that Task and stops only the observed Turn.
-Result-event routing, background pause and old-owner retirement remain to
+Result-event routing and old-owner retirement remain to
 migrate; live model use of this actual Conversation path is still unproved.
+The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
+also exercises human replies beside running background work and inside a paused
+App, including restart and the storage claim fence.
 
 ### Recovery keeps the same Task
 
@@ -364,6 +367,11 @@ optional timer.
 
 Pending human input has priority over automated reviews; active reviews stay
 bounded and stoppable. Background pause leaves conversation handling available.
+Use one human Turn per App in addition to its declared background-attempt limit,
+all within the Host capacity limit. Both use the same controller and Task claim.
+Pending human input earns that allowance; an App name, Task priority or system
+review does not. Multiple human Conversations in one App share that single
+interactive slot. This conventional bound needs no additional App setting.
 No new preemption engine is needed. Stop fences recorded output but cannot undo
 an external action already performed; inspect evidence before safe redo.
 
@@ -458,7 +466,9 @@ The later [common-runtime checkpoint](controller-poc-recovery-review.md#common-r
 executes Conversation input through normal Task attempts. The
 [ingress and Stop checks](controller-poc-recovery-review.md#normal-ingress-and-turn-stop)
 also exercise normal human events, interface notifications and exact Turn
-control. Result routing, background pause, retained-state cutover and retirement
+control. The [capacity and pause checks](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
+preserve the human reserve and enforce pause at the claim transaction.
+Result routing, retained-state cutover and retirement
 of the old execution paths remain required before accepting the whole-system
 simplification.
 

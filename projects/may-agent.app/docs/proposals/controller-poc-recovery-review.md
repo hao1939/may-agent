@@ -239,8 +239,8 @@ This remains a source PoC with supplied decisions, not a live-model Conversation
 or a completed runtime cutover. The test calls the new outcome-admission state
 operation at the result boundary; production event subscription and recovery
 discovery are not wired to it yet. Normal human ingress, scoped Stop and
-active-Turn projection are covered by the later checkpoint below. Task controls,
-foreground capacity/background pause and failure pacing per input remain
+active-Turn projection are covered by the later checkpoint below, followed by
+capacity and background pause. Task controls and failure pacing per input remain
 unfinished. The old inbox pump and separate follow-up owner remain; both must
 retire before one execution owner is proved for the installed runtime.
 
@@ -321,10 +321,9 @@ The ingress tests install the real registry, event persistence, Task runtime
 and Conversation resolver. An old inbox resolver that throws if called stays
 unused. They are not live model or managed Conversation subprocess trials.
 
-Result-to-Conversation event admission and missed-result discovery,
-foreground/background pause and Conversation Task controls remain unfinished.
-Console-only startup still selects no Task runtime; it must install the common
-controller while gating background work separately.
+Result-to-Conversation event admission and missed-result discovery and
+Conversation Task controls remain unfinished. Capacity and background pause are
+covered by the next checkpoint.
 The retry context also needs the previous attempt's useful failure/effect
 evidence before a real interrupted-Conversation trial. Per-Task cooldown still
 delays unrelated fresh input. The retained-state guard refuses undrained legacy
@@ -332,6 +331,79 @@ input; the production resolver change does not provide a migration for it.
 These are required integration work. The old inbox pump, legacy execution
 fallback and separate follow-up owner must be removed before claiming one owner
 across the installed system. Host main and the installation remain unchanged.
+
+## Conversation capacity and background pause
+
+Source [checkpoint `ebb98a14`](https://github.com/hao1939/may-agent/commit/ebb98a14)
+moves the interactive capacity allowance into the common Task queue.
+The App's declared limit bounds background attempts;
+one human Turn per App may run alongside them, within the shared Host limit.
+Two queued human Conversations in one App share that extra slot. At a Host limit
+of one there is no physical reserve. Active attempts remain bounded and stoppable.
+
+Only persisted, unfinished human Conversation input earns foreground capacity.
+Ordinary Task priority and the trusted human scheduling lane still order work,
+but do not grant the reserve. A system review uses background capacity. The
+controller rechecks this distinction after waiting for capacity; a review cannot
+inherit a reservation after its human input is gone.
+
+An App pause now gates eligible Task keys instead of disabling its whole
+controller. Human Conversation input continues through the same controller,
+claim and execution path. The claim transaction rechecks pause against current
+input, so another SQLite writer cannot race a background attempt through it.
+No worker instruction, event label or dispatch lane bypasses that stored check.
+The earlier console-only note was incorrect: normal interactive-console startup
+already installs Task controllers. This change addresses persisted App pause.
+
+Two added installed-runtime tests prove human replies beside same-App background
+work and paused-App replies across restart, followed by background resumption.
+Three controller checks cover capacity-wait replacement, source revalidation and
+a failed scheduling read releasing capacity and using existing dispatch backoff.
+A separate two-connection SQLite check proves the pause race and the human-input
+exception at the actual claim boundary. These use supplied decisions, not live
+models or a managed Conversation subprocess.
+
+One partial index selects pending human input without scanning completed
+Conversation history. Scheduling reads App pause and the pending human Task set
+once at a dispatch boundary, then compares queue keys in memory. In a temporary
+SQLite/2,000-key queue check, ten selections averaged 0.4 ms with that snapshot,
+versus 8.5 ms with per-key reads. SQLite uses the partial index for both exact
+claim checks and the pending-Task query. This is local selection evidence, not
+a throughput or user-response guarantee.
+
+This removes no old inbox execution path yet. Full cutover, result routing,
+per-input pacing, Conversation Task controls and actual model use of the managed
+Conversation path remain required. The same agent can still judge approaches;
+it does not acquire capacity, unpause work or manage the scheduling loop.
+
+### Human input in a mixed batch
+
+Source [follow-up `86455d13`](https://github.com/hao1939/may-agent/commit/86455d13)
+fixes another boundary exposed by the capacity check: a pending human message earned a
+foreground slot, but 32 older system events could fill the actual attempt and
+leave the human message out. A follow-up includes human-origin input before
+the system backlog when selecting the bounded event batch. Selected events
+retain admission order, and remaining events stay pending. Conversation presents
+system evidence before human input so the existing current-ask and reply
+selection uses the latest considered human message, including after a retry.
+Stop uses that same selection while retaining any newer, unconsidered input.
+
+The paused-App regression first failed with 35 system events followed by a
+human message. It now includes the human message and 31 ordered system events;
+the four remaining system events cannot run while the App is paused after
+Stop. A retained-input retry also checks answer and Stop placement when newer
+human input is followed by a system fact. These use real claims, Conversation
+settlement and temporary SQLite, with supplied decisions.
+
+The first broader check caught the selection change also reordering an
+ordinary Task's retained failure input and later steering. The follow-up keeps
+priority selection separate from event presentation; that existing retry
+regression passes unchanged.
+
+This does not yet solve response latency under a backlog. Pending unreviewed
+events still prevent final acceptance, and retained inputs can enlarge later
+context. The checkpoint fixes which input receives the opportunity and reply;
+per-input acceptance and pacing remain migration work.
 
 ## Verification and cost
 
@@ -370,6 +442,20 @@ tests in 282 files (136.7 seconds). It adds three passing checks relative to
 `6aa80877`, with no new or removed failure names. The full migration gate is
 still red. No live model trial ran for this checkpoint.
 
+At `ebb98a14`, Host/SDK types, App-boundary checks and lint pass. Queue,
+controller, runtime and schema checks pass **58 tests**; the separate
+two-connection pause fence also passes. Full CI finishes with **2,653 passes,
+3 skips and 129 failures**, across 2,785 tests in 282 files (135.6 seconds).
+It adds six passing checks relative to `f5d0fab6`, with no new or removed failure
+names. The full migration gate remains red; no live model trial ran.
+
+At `86455d13`, Host/SDK types, App-boundary checks and lint pass. The focused
+Conversation, retry, context, queue and controller checks pass **85 tests**.
+Full CI finishes with **2,655 passes, 3 skips and 129 failures**, across 2,787
+tests in 282 files (131.2 seconds). It adds two passing regressions relative to
+`ebb98a14`, with no new or removed failure names. The full migration gate remains
+red. No live model or managed Conversation subprocess trial ran for this fix.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -402,6 +488,17 @@ controller and event bus, with no new table or scheduler. This remains an
 intermediate increase: optional legacy callbacks and the old inbox execution
 path still need retirement. Passing the new checks does not yet prove a smaller
 installed system.
+The capacity/pause checkpoint adds **86 net production lines** (157 added, 71
+removed), excluding tests. It adds one indexed input query and a scheduling
+snapshot to the existing controller, reusing Host capacity and dispatch backoff.
+The queue permits one human Turn beside the App's background limit; it retains
+one execution owner per Task. It does not create a second Conversation queue,
+executor, retry policy or recovery timer. Whole-system retirement remains open.
+The mixed-batch follow-up adds **16 net production lines** (21 added, five
+removed), excluding tests. It changes selection and reply placement inside
+existing claims and settlement; it adds no queue, storage schema or model
+decision. The PoC as a whole still adds production code until the old
+execution and follow-up owners are removed.
 
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting

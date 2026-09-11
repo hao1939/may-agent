@@ -430,6 +430,14 @@ must not automatically give a timer review human priority. At a single total
 execution slot there is no physical reserve, so bounded execution and Stop
 remain the responsiveness limit.
 
+For the common Task lifecycle, allow one human Turn per App in addition to its
+declared background-attempt limit, within the total Host limit. Multiple human
+Conversations in the same App share that interactive slot. A paused App can
+handle admitted human input while its background Tasks and system reviews wait.
+The [source checkpoint](../proposals/controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
+exercises this through the common queue and storage claim; installed cutover
+remains unfinished.
+
 The active Turn exposes the same exact Stop control regardless of its trigger.
 Stop cancels that execution, preserves accepted Requests and leaves independent
 Tasks under their own controls. A timer must not recreate the same stopped or
