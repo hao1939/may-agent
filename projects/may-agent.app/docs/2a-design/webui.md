@@ -4,7 +4,7 @@
 **Implementation status:** The static route-based operator UI is implemented.
 The default project/task surface still uses older path-based projections and
 has not completed migration to the shared App-ID Task reader.
-The workflow health refinement is implemented in Host #147 (`1b25e8ff`),
+The workflow health refinement is implemented in Host #147 (`2408b519`),
 building on #143's evidence and SDK reads. It is a source candidate, not yet
 merged or deployed; [candidate evidence](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
 records checks and remaining scope. The new Overview Task summary uses the
@@ -143,7 +143,9 @@ available records, refresh the summary with the detail and explain the change;
 do not promise an immutable historical population that was never saved.
 
 Charts use actual sample times, visible collection gaps and explicit units and
-windows. A missing or failed read is not a zero value. Load bounded summaries
+windows. Fixed-window charts, including legacy health panels, use the returned
+window bounds rather than stretching sparse samples across the whole axis.
+A missing or failed read is not a zero value. Load bounded summaries
 on entry and detail/history on demand, not one request and graph for every
 metric. Render names, errors and notes as untrusted text, never executable HTML.
 
@@ -158,6 +160,8 @@ Trace selection belongs to the current route: navigation clears the old trace
 and invalidates pending loads, including late failures. Generic Events must not
 show evidence from a previously selected run. An explicit workflow-run selection
 takes precedence over an event trace anchor.
+Internal link interception preserves the complete path, query and anchor, so a
+run link both selects the evidence and scrolls it into view.
 
 Overview reads up to eight pending/running/waiting/attention Tasks using the
 existing Task list with explicit `allApps=true` and repeated `status` filters.
