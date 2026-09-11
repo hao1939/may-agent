@@ -60,6 +60,11 @@ not another service or process. The worker chooses **how to do the work**; the
 owner chooses **whether to keep assigning it**, change its scope or close it.
 An App may supply both worker guidance and owner policy, but a worker's failure
 report does not grant it closure authority. No new role registry is needed.
+The worker can recommend revising or dropping the work and explain why. That
+recommendation is evidence for the owner, not an applied decision. Changing
+approach stays within the assignment; rewriting its outcome or acceptance
+criteria changes the assignment and belongs to the owner. The same agent can
+be a worker for its own assignment and an assigning owner for delegated work.
 
 ## Agent judges; controller carries it through
 

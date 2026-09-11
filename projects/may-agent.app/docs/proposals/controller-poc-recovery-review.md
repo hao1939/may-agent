@@ -82,13 +82,20 @@ once after a state change, without recursively re-arming against unchanged
 rows. The earlier test's incorrectly called wake assertion was replaced by
 actual three-argument wakes and deadline assertions in the seven-failure case.
 
-The original [controller-only backoff probe](https://github.com/hao1939/may-agent/blob/5b65d155/scripts/poc/controller-judgment/backoff.ts)
-is retained unchanged. It previously measured **202 ms** for a 200 ms retry
-and **1 ms** with a failure-callback wake. The new Task eligibility check stops
-such an early callback from claiming a cooling Task. That does not repair the
-probe's separate dispatch-timer behavior when no Task failure can be persisted;
-it remains a failing acceptance gap, not a passing test. Re-running it at
-`5b65d155` measured **201 ms** normally and **1 ms** after the callback wake.
+The original [controller-only backoff probe](https://github.com/hao1939/may-agent/blob/ca3a5986/scripts/poc/controller-judgment/backoff.ts)
+remains unchanged. At `5b65d155` it measured **201 ms** for a configured 200 ms
+retry, but only **1 ms** when the failure callback enqueued another wake.
+Persisted Task eligibility prevented an early Task claim, while dispatch/storage
+failure before that persistence could still bypass its own timer.
+
+[Checkpoint `ca3a5986`](https://github.com/hao1939/may-agent/commit/ca3a5986)
+makes the existing queue respect the dispatch retry timer. Wakes retain their
+priority and lane without making that Task immediately runnable. Other Tasks
+can run, pause still applies, and controller shutdown cancels its retry timers.
+The unchanged probe now passes: **202 ms** in both cases, two executions each.
+The controller, queue and workflow-adapter checks passed **40 tests**. Dispatch
+pacing is process-local when storage cannot be written; persisted Task retry
+deadlines still provide the restart guarantee once failure settlement succeeds.
 
 A [live worker trial](https://github.com/hao1939/may-agent/blob/5b65d155/scripts/poc/controller-judgment/continuing-failure.ts)
 uses the real Task protocol/schema and a read-only tool. The first model
@@ -115,9 +122,55 @@ This exercises direct-agent execution under the controller; it is not an
 installed App or the full managed Conversation runtime. The fixture repairs
 the source; it does not prove autonomous diagnosis or repair of a real service.
 
+### Removing parallel recovery paths
+
+[Checkpoint `3d3f5a73`](https://github.com/hao1939/may-agent/commit/3d3f5a73)
+removes the separate handler-availability repair pass and the scan that used
+another session's success to release failed work. An eligible attempt checks
+its current executor and verifier through ordinary execution. Interrupted
+attempt recovery and exact bound-session wake routing remain.
+
+An installed-runtime test removes an executor, observes its Task's persisted
+failure and cooldown, completes an independent Task, then restores the executor.
+The original Task succeeds after its deadline without changing generation or
+erasing the failed attempt. Reload does not duplicate the accepted execution.
+Startup fixtures now read exact input outcomes instead of removed completion
+helpers. The adapter test in `ca3a5986` also inspects actual workflow files
+directly after retirement of the availability-cache helper.
+
+Claiming now checks project pause inside the atomic mutation. A second SQLite
+connection pausing immediately before commit cannot start the queued retry.
+Explicit owner retry works during cooldown, with replayable control receipts;
+it preserves prior failure evidence. These are background Task checks, not
+proof of the unfinished Conversation pause and foreground-capacity integration.
+
+This retirement does **not** migrate legacy persisted `attention` or old stopped
+admissions. Production cutover must convert their retained obligations before
+removing their old recovery paths. No installed data was changed.
+
+### Worker judgment cannot rewrite the assignment
+
+[Checkpoint `b05340bc`](https://github.com/hao1939/may-agent/commit/b05340bc)
+removes a remaining self-update exception. The existing worker protocol already
+forbade changing its current Task through result actions, but settlement allowed
+the worker to rewrite its own outcome and acceptance criteria. Answer and wait
+settlement now reject that mutation atomically, including earlier actions in the
+same batch. A rejected rewrite retains the original assignment through failure,
+backoff and reopen. External owner revision and delegated-Task changes remain.
+
+The worker can explain that the requested measurement is unavailable and
+recommend a narrower ask. It cannot silently replace "obtain the measurement"
+with "explain why it is unavailable." Changing the method is its judgment;
+changing the assignment is the owner's. No new role or approval workflow is
+needed. The new and retained lifecycle/retry checks passed **34 tests**.
+[Test follow-up `650b019e`](https://github.com/hao1939/may-agent/commit/650b019e)
+replaces the old successful self-revision example with a worker reporting partial
+evidence, followed by explicit owner revision. All **three targeted action tests**
+pass, including retained evidence and runtime-prefixed identities.
+
 Remaining recovery work includes scoped cooldown so a failed conversational
-ask cannot delay unrelated fresh human input, migration of old failure/receipt
-readers, and dispatch failures that cannot persist state. Initial pacing reuses
+ask cannot delay unrelated fresh human input and migration of old failure/receipt
+readers. Initial pacing reuses
 250 ms exponential delay capped at 30 seconds; that is an experimental default,
 not evidence of acceptable long-term cost under sustained failures. The retained
 SDK spelling `stopped` is also misleading for a continuing unsuccessful attempt;
@@ -162,15 +215,26 @@ execution still need integration. Do not describe it as a completed cutover.
 
 ## Verification and cost
 
-At `5b65d155`, Host/SDK types, App-boundary checks and lint passed. The focused
-recovery/common-lifecycle suite passed 31 tests. The full portable run finished
-with **2,621 passes, 3 skips and 147 failures**, across 2,771 tests in 282 files
-(288.8 seconds). Full CI is not green. The failures include removed
-`isComplete()` calls in startup fixtures, old receipt/deletion assertions,
-fixed-count recovery expectations and handler-repair paths that no longer find
-new failures in `attention`. Five stale-handler tests time out while waiting
-for that old repair path. These need migration and regression review, not
-blanket expectation updates or skipped checks.
+At `3d3f5a73`, Host/SDK types, App-boundary checks and lint passed. Focused
+retry/common-lifecycle, storage and scheduler checks passed **62 tests**;
+startup and restored-executor checks also passed. Its full run finished with
+**2,625 passes, 3 skips, 130 failures and one test-loading error**, across 2,758
+tests in 281 files (131.0 seconds). The loading error was the workflow adapter
+test's remaining import of the removed availability helper, fixed in `ca3a5986`.
+
+At `b05340bc`, static checks passed and full CI finished with **2,631 passes,
+3 skips and 130 failures**, across 2,764 tests in 281 files (145.4 seconds).
+The test-loading error is gone. One newly exposed failure expected successful
+self-revision; the test-only follow-up above migrates that case and passes its
+targeted checks. No new full-suite total is claimed for that follow-up. The
+three skips require the separately installed agent/App fleet. **Full CI remains
+red**, and the common-lifecycle migration remains incomplete.
+
+The remaining failures include old receipt/deletion and failure-count
+expectations, Conversation/Request outcome readers, and real worker/restart
+fixtures. These are unresolved migration and runtime checks, not evidence that
+only assertions need changing. Review each behavior; do not skip checks or
+replace expectations merely to make CI pass.
 
 Earlier Conversation checks had 86 passes and 3 failures; the previous broader
 Task [audit](controller-poc-input-continuation.md#evidence) also remained red.
@@ -181,11 +245,13 @@ The Conversation slice adds an execution link on retained inputs, a state
 operation composing existing transactions, and a composition entry. There is
 no new table, scheduler, model role or inbox execution lease. It adds code
 without yet deleting the old runtime path, so net simplification is unproven.
-This recovery checkpoint adds no table, controller or recovery role. Its
-production source diff is 32 lines smaller in this checkpoint: it removes the
-fixed-count gate and simplifies failure settlement while adding one durable
-deadline and an overdue-timer correction. This excludes tests and the live
-harness, and does not establish whole-system simplification. Legacy handler
-recovery/read paths still need retirement. The source is committed on
-`poc/task-outcomes-and-closure`; Host main and the
-installation remain unchanged. Human review is still required for Host PRs.
+Recovery still uses the existing controller, queue, Task resource and due
+queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting
+dispatch timers adds 20, and removing self-revision deletes another 21. Combined,
+`5b65d155..b05340bc` adds 66 and removes 516 production lines: **450 fewer lines**,
+excluding tests and harnesses. The added dispatch timer map protects pacing
+before storage can settle a failure; it is not a new durable work authority.
+This establishes a local reduction, not whole-system simplification or a
+completed retained-state migration. The source is committed and pushed on
+`poc/task-outcomes-and-closure`; Host main and the installation remain unchanged.
+Human review is still required for Host PRs.
