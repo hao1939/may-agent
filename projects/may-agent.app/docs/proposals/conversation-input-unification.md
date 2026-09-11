@@ -105,10 +105,10 @@ input, without asking the agent to repeat an admission ID or rebuild a wait.
 The minimum follow-through trial is: ask for a measurement once, release the
 attempt, answer an unrelated question, restart, then return the measurement to
 its original caller. The explanation must not fulfill the measurement ask, and
-the eventual measurement must not overwrite the explanation. Use real models
-to judge the outcomes after the source path works. The current experiment
-[fails this delayed-input correlation check](controller-poc-outcomes-and-closure.md#the-follow-through-gap);
-correct one-attempt model decisions do not compensate for that process failure.
+the eventual measurement must not overwrite the explanation. The
+[source and model follow-through trials](controller-poc-input-continuation.md)
+now pass this Task check. Actual Conversation execution and Request settlement
+remain to migrate; isolated correct decisions alone do not prove that boundary.
 
 ## One lifecycle, explicit outcomes
 

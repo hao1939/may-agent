@@ -17,11 +17,13 @@ fix is isolated on current Host main in [PR #153](https://github.com/hao1939/may
 at `edd368ac`, awaiting human review. It does not require the incompatible
 lifecycle experiment to merge first.
 
-The latest [input-result slice](https://github.com/hao1939/may-agent/commit/bc7228ca)
+The [input-result checkpoint](https://github.com/hao1939/may-agent/commit/bc7228ca)
 retains exact immediate answers for callers. It also includes a failing
 regression for delayed answers: the controller does not yet preserve the
 original input's result correlation across a wait. This is a demonstrated
-process gap, not a request for more procedural instructions to the model.
+process gap, not a request for more procedural instructions to the model. The
+[next source and model slice](controller-poc-input-continuation.md) fixes that
+gap for its exercised Task paths; this document retains the preceding evidence.
 
 ## What now works in the experiment
 
@@ -156,25 +158,27 @@ readiness claim is made for this branch.
 
 ## The follow-through gap
 
-The new regression uses actual Task admission, claims, child-result context and
+At `bc7228ca`, the regression used actual Task admission, claims, child-result context and
 SQLite reopen. The caller requests a measurement; the first attempt delegates
 it and waits. A later attempt answers a different question without resolving
 the measurement. The child returns, the parent accepts the measured result,
 and storage reopens. The original measurement admission still has no result
 pointer, so its caller cannot retrieve the answer.
 
-Current attribution uses input events in the accepting attempt. Those events
+That attribution used input events in the accepting attempt. Those events
 no longer include the original ask after a completed waiting attempt. Restoring
 the old relationship is controller process. Neither asking the model to copy
 admission keys nor attaching the latest answer to every unresolved input is a
 valid fix: an intervening answer can belong to different work.
 
-The next source change must retain the original work-to-result connection and
-present its ask and evidence for judgment. For Conversation, deciding which
+The [next source change](controller-poc-input-continuation.md) retains the
+original work-to-result connection and presents its ask and evidence for
+judgment. For Conversation, deciding which
 accepted Request is resolved belongs to its existing typed decisions. The
 controller must not infer that semantic decision from a consumed event. The
 regression is still a Task fixture; actual Conversation execution and Request
-settlement have not migrated, and no real model has passed this complete loop.
+settlement have not migrated. The subsequent model trials exercise this Task
+return loop, not that missing product migration.
 
 ## Value, cost and remaining work
 
@@ -204,8 +208,8 @@ the exercised cases.
 
 The next work is substantive:
 
-1. Fix and prove result correlation across waits and intervening input without
-   agent bookkeeping. Finish caller/read migration and retain old receipts as
+1. Build on the [wait-correlation slice](controller-poc-input-continuation.md),
+   finish caller/read and scope-revision migration, and retain old receipts as
    history. An old success must not fulfill a later assignment.
 2. Replace the actual Conversation execution owner with one stable Task, using
    the real message/Request operations in fenced settlement. Remove the old
