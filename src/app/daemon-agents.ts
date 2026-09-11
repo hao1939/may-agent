@@ -12,7 +12,7 @@ import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./core/tasks
 import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
 import type { HostCapacity } from "./core/scheduling/host-capacity.js";
-import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./codex-goal-executor.js";
+import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./adapters/executors/codex/codex-goal-executor.js";
 import { getDb } from "../lib/requests.js";
 
 function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
