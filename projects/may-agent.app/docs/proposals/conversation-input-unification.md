@@ -136,8 +136,12 @@ The [managed Conversation trials](controller-poc-recovery-review.md#managed-conv
 now pass empty-response, interrupted-effect and restart recovery with real
 models and a synthetic App. They use normal prior-attempt context. Old-owner
 retirement, live child-chain follow-through and the worker subprocess remain
-unproved; full CI still has 129 unresolved failures. Whole-system simplification
+unproved; full CI still has 128 unresolved failures. Whole-system simplification
 is the next acceptance gate.
+The [human-control checkpoint](controller-poc-recovery-review.md#human-task-controls-through-conversation)
+also applies conversational Task cancellation atomically with its reply and
+removes the old daemon callback. Source checks cover user authority, stale
+decisions, rollback and interruption of the exact running Task.
 The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 also exercises human replies beside running background work and inside a paused
 App, including restart and the storage claim fence.

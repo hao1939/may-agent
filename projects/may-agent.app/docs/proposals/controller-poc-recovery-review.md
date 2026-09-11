@@ -8,8 +8,8 @@ to PRs #153, #154 and #155; it does not merge or deploy them.
 **Current assessment:** Focused lifecycle and managed-model recovery checks
 support the design. Whole-system simplification remains unproved: legacy
 execution/follow-up owners remain, Task-wide cooldown can delay fresh human
-input, and full CI has 129 unresolved failures. At `03618081`, the branch adds
-865 net production lines against its merge base (counting `src/` and `packages/`,
+input, and full CI has 128 unresolved failures. At `ef0b9554`, the branch adds
+924 net production lines against its merge base (counting `src/` and `packages/`,
 excluding tests and fixtures). Finish cutover and examine those failures before
 expanding the design. The latest live evidence is
 [below](#managed-conversation-recovery).
@@ -248,8 +248,8 @@ or a completed runtime cutover. The test calls the new outcome-admission state
 operation at the result boundary; production event subscription and recovery
 discovery are not wired to it yet. Normal human ingress, scoped Stop and
 active-Turn projection are covered by the later checkpoint below, followed by
-capacity and background pause. Task controls and failure pacing per input remain
-unfinished. The old inbox pump and separate follow-up owner remain; both must
+capacity, background pause and [human Task controls](#human-task-controls-through-conversation).
+Failure pacing per input remains unfinished. The old inbox pump and separate follow-up owner remain; both must
 retire before one execution owner is proved for the installed runtime.
 
 ## Common runtime integration
@@ -329,11 +329,8 @@ The ingress tests install the real registry, event persistence, Task runtime
 and Conversation resolver. An old inbox resolver that throws if called stays
 unused. They are not live model or managed Conversation subprocess trials.
 
-Result-to-Conversation event admission and missed-result discovery and
-Conversation Task controls remain unfinished. Capacity and background pause are
-covered by the next checkpoint.
-The retry context also needs the previous attempt's useful failure/effect
-evidence before a real interrupted-Conversation trial. Per-Task cooldown still
+Later checkpoints add result routing, missed-result discovery, human controls,
+capacity, background pause and prior-attempt evidence. Per-Task cooldown still
 delays unrelated fresh input. The retained-state guard refuses undrained legacy
 input; the production resolver change does not provide a migration for it.
 These are required integration work. The old inbox pump, legacy execution
@@ -379,9 +376,9 @@ versus 8.5 ms with per-key reads. SQLite uses the partial index for both exact
 claim checks and the pending-Task query. This is local selection evidence, not
 a throughput or user-response guarantee.
 
-This removes no old inbox execution path yet. Full cutover, result routing,
-per-input pacing, Conversation Task controls and actual model use of the managed
-Conversation path remain required. The same agent can still judge approaches;
+This removes no old inbox execution path yet. Later checkpoints add result
+routing, human Task controls and managed-model recovery trials; full cutover and
+per-input pacing remain required. The same agent can still judge approaches;
 it does not acquire capacity, unpause work or manage the scheduling loop.
 
 ### Human input in a mixed batch
@@ -474,8 +471,8 @@ for the existing infrequent discovery tick; it is not a scale or latency guarant
 
 The closure checkpoint below extends this common route. Later checkpoints
 supply prior-attempt context and exercise managed-model recovery. Per-input
-pacing, Conversation Task controls and retirement of the old execution and
-follow-up owners remain required. No installed state or Host main changed.
+pacing and retirement of the old execution and follow-up owners remain required.
+Human Task controls are covered below. No installed state or Host main changed.
 
 ## Returning owner closure through Conversation input
 
@@ -577,75 +574,56 @@ fresh human input unaffected by unrelated retry cooldown, live child return
 through intervening input, and the real worker/restart boundary. Keep the
 experiment focused on these gaps rather than adding a new recovery subsystem.
 
+## Human Task controls through Conversation
+
+[Checkpoint `ef0b9554`](https://github.com/hao1939/may-agent/commit/ef0b9554)
+moves conversational cancellation into the same fenced transaction as the
+accepted Turn, Request updates and reply. Preparation resolves an exact Task
+from human context or the selected stored Topic. Settlement reuses the existing
+Task cancellation operation and checks the prepared generation/resource version.
+A system Turn cannot control Tasks, and the worker cannot close its own Task.
+
+After commit, the existing cancellation event aborts the exact running attempt;
+the common ready event wakes its parent across the worker boundary. The old
+daemon callback that published a separate cancellation request is removed.
+Human-facing Task reads now offer cancellation for all open Tasks, regardless
+of the retained `achieve`/`maintain` spelling. No SDK control or table is added.
+
+The **41 Conversation tests** pass, including reply-write rollback, target
+revision after preparation, intervening human correction, source authority,
+cross-App closure/reopen, actual attempt abortion and rejected late output.
+The Task read/control suites pass **31 tests**. Cancelling the Task does not
+silently close its original human Request. These use supplied decisions and
+the in-process runtime; worker-subprocess and live-model cancellation remain
+unproved. The old inbox execution and follow-up owners still need retirement.
+
 ## Verification and cost
 
-At `3d3f5a73`, Host/SDK types, App-boundary checks and lint passed. Focused
-retry/common-lifecycle, storage and scheduler checks passed **62 tests**;
-startup and restored-executor checks also passed. Its full run finished with
-**2,625 passes, 3 skips, 130 failures and one test-loading error**, across 2,758
-tests in 281 files (131.0 seconds). The loading error was the workflow adapter
-test's remaining import of the removed availability helper, fixed in `ca3a5986`.
+Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
+The three skips require separately installed Apps/agents. Historical full-suite
+results are retained here; passing focused tests does not clear the migration gate.
 
-At `b05340bc`, static checks passed and full CI finished with **2,631 passes,
-3 skips and 130 failures**, across 2,764 tests in 281 files (145.4 seconds).
-The test-loading error is gone. One newly exposed failure expected successful
-self-revision; the test-only follow-up above migrates that case and passes its
-targeted checks. No new full-suite total is claimed for that follow-up. The
-three skips require the separately installed agent/App fleet. **Full CI remains
-red**, and the common-lifecycle migration remains incomplete.
+| Source checkpoint | Passed / skipped / failed | Tests / files | Seconds | Change in evidence |
+| --- | --- | --- | --- | --- |
+| `3d3f5a73` | 2,625 / 3 / 130 | 2,758 / 281 | 131.0 | One additional loading error; the stale availability-helper import was fixed in `ca3a5986` |
+| `b05340bc` | 2,631 / 3 / 130 | 2,764 / 281 | 145.4 | Loading error gone; self-revision expectation subsequently migrated in `650b019e` |
+| `895c75c6` | 2,637 / 3 / 129 | 2,769 / 281 | 130.6 | Conversation settlement checks |
+| `6aa80877` | 2,644 / 3 / 129 | 2,776 / 282 | 132.9 | Common runtime; index migration regression fixed |
+| `f5d0fab6` | 2,647 / 3 / 129 | 2,779 / 282 | 136.7 | Human ingress and Stop |
+| `ebb98a14` | 2,653 / 3 / 129 | 2,785 / 282 | 135.6 | Capacity and pause |
+| `86455d13` | 2,655 / 3 / 129 | 2,787 / 282 | 131.2 | Mixed-input selection and reply placement |
+| `faba34f7` | 2,660 / 3 / 129 | 2,792 / 282 | 135.8 | Outcome return route |
+| `1b43c973` | 2,665 / 3 / 129 | 2,797 / 282 | 136.9 | Owner closure return route |
+| `4e040987` | 2,665 / 3 / 129 | 2,797 / 282 | 137.4 | Prior attempt evidence reaches normal execution |
+| `03618081` | 2,665 / 3 / 129 | 2,797 / 282 | 139.5 | Continuation prompt; recovery/execution suites pass 38 tests |
+| `ef0b9554` | 2,672 / 3 / 128 | 2,803 / 282 | 135.9 | Atomic conversational cancellation; human reads no longer forbid maintenance cancellation |
 
-At `895c75c6`, static checks passed and the full portable run finished with
-**2,637 passes, 3 skips and 129 failures**, across 2,769 tests in 281 files
-(130.6 seconds). The new Conversation checks pass, but the full migration gate
-is still red. The subsequent test-only follow-up above has focused verification,
-not a new full-suite total.
-
-At `6aa80877`, Host/SDK types, App-boundary checks and lint pass. Full CI
-finishes with **2,644 passes, 3 skips and 129 failures**, across 2,776 tests in
-282 files (132.9 seconds). Compared with the prior follow-up checkpoint, it
-adds seven passing runtime tests with no new or removed failure names. The
-index migration regression found at `d42935a0` is fixed; the overall migration
-gate remains red.
-
-At `f5d0fab6`, Host/SDK types, App-boundary checks and lint pass. The two
-Conversation suites pass **22 tests**, including the Stop/error regression.
-Full CI finishes with **2,647 passes, 3 skips and 129 failures**, across 2,779
-tests in 282 files (136.7 seconds). It adds three passing checks relative to
-`6aa80877`, with no new or removed failure names. The full migration gate is
-still red. No live model trial ran for this checkpoint.
-
-At `ebb98a14`, Host/SDK types, App-boundary checks and lint pass. Queue,
-controller, runtime and schema checks pass **58 tests**; the separate
-two-connection pause fence also passes. Full CI finishes with **2,653 passes,
-3 skips and 129 failures**, across 2,785 tests in 282 files (135.6 seconds).
-It adds six passing checks relative to `f5d0fab6`, with no new or removed failure
-names. The full migration gate remains red; no live model trial ran.
-
-At `86455d13`, Host/SDK types, App-boundary checks and lint pass. The focused
-Conversation, retry, context, queue and controller checks pass **85 tests**.
-Full CI finishes with **2,655 passes, 3 skips and 129 failures**, across 2,787
-tests in 282 files (131.2 seconds). It adds two passing regressions relative to
-`ebb98a14`, with no new or removed failure names. The full migration gate remains
-red. No live model or managed Conversation subprocess trial ran for this fix.
-
-At `faba34f7`, Host/SDK types, App-boundary checks and lint pass. The two
-Conversation suites pass **31 tests**. Full CI finishes with **2,660 passes,
-3 skips and 129 failures**, across 2,792 tests in 282 files (135.8 seconds).
-Five added checks pass, with no new or removed failure names relative to
-`86455d13`. The full migration gate remains red; no live model trial ran.
-
-At `1b43c973`, Host/SDK types, App-boundary checks and lint pass. The two
-Conversation suites pass **36 tests**. Full CI finishes with **2,665 passes,
-3 skips and 129 failures**, across 2,797 tests in 282 files (136.9 seconds).
-All five new cases pass in the full run; no failure entries were added or
-removed relative to `faba34f7`. The full migration gate remains red. These are
-source/runtime checks with supplied decisions; no live model trial ran.
-
-At `4e040987` and `03618081`, static checks pass and full CI remains at
-**2,665 passes, 3 skips and 129 failures**, across 2,797 tests in 282 files
-(137.4 and 139.5 seconds). Failure entries are unchanged from `1b43c973`.
-The recovery prompt, execution and completion-contract suites pass **38 tests**.
-Neither checkpoint clears the migration gate.
+Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
+`650b019e` test follow-up has focused verification, not a separate full-suite
+result. Live-model evidence and its limits are recorded in their owning sections.
+At `ef0b9554`, no failure entries were added. The obsolete maintenance-cancellation
+prohibition is replaced by passing owner-control checks for both retained mode
+spellings. All 128 other failures remain unresolved.
 
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
@@ -705,9 +683,13 @@ The prior-evidence projection adds **55 net production lines** (56 added, one
 removed). The recovery prompt adds two net production lines; the separate live
 harness and its documentation are experiment cost. No overall code-reduction
 claim follows from these local counts.
+The human-control checkpoint adds **59 net production lines** (102 added,
+43 removed), including removal of the old daemon callback and mode-based
+cancellation visibility. It closes a cutover gap; it does not retire the full
+legacy execution owner.
 
-Across the full branch, `3037c4b9..03618081` changes 45 non-test files under
-`src/` and `packages/`: 2,053 lines added, 1,188 removed, **865 net added**.
+Across the full branch, `3037c4b9..ef0b9554` changes non-test files under
+`src/` and `packages/` with **924 net added lines**.
 This excludes tests, fixtures, scripts and documentation; it is a review-cost
 indicator, not a complete complexity measure. The local recovery deletions
 below have not yet paid for the whole Conversation integration. Retiring the

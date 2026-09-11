@@ -618,6 +618,12 @@ also pass empty-response, interrupted-effect and restart recovery using normal
 prior-attempt context, without duplicate writes. Retained-state cutover,
 old-consumer retirement, live child-chain follow-through and the worker
 subprocess remain gaps. Full CI is still red; the installation is unchanged.
+The [human-control checkpoint](../proposals/controller-poc-recovery-review.md#human-task-controls-through-conversation)
+applies an explained cancellation from a direct human Turn in the same state
+transaction as the reply. The existing cancellation event then interrupts the
+exact attempt. A failed reply write or stale Turn cannot leave a half-applied
+control. System-only Turns cannot issue human controls, and a Conversation worker cannot
+close its own Task.
 
 Unification requires typed system-input admission, source-aware context and
 authority, a quiet result, pending-human priority and capacity selection, and
