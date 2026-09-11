@@ -24,7 +24,7 @@ import type { TaskBinding } from "../../lib/persistence.js";
 export type AppInputResolver = (input: {
   app: Readonly<AppDefinition>;
   request: Readonly<AppInputContext>;
-  execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void; taskBinding?: TaskBinding };
+  execution: { signal: AbortSignal; sessionStarted: (sessionId: string) => void; taskBinding: TaskBinding };
 }) => Promise<ConversationTurnResult>;
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
@@ -116,13 +116,13 @@ function requestPrompt(
     "When inputs are supplied, consider that ordered batch and preserve each source's meaning. System input supplies evidence for existing work; it is not a new human instruction. A system Turn may omit response when no useful human update is needed. Its summary remains internal.",
     "Treat the selected App, focused Task, selected or replied Topic, and last rendered view as the current subject, not as automatic authority to mutate it.",
     "Answer questions, give suggestions, and state an opinion directly when the supplied evidence supports a useful answer. A focused Task is evidence for advice; reading or discussing it does not by itself authorize a Task effect.",
-    "Conversation remembers the discussion; a Task owns an ongoing commitment. Use a Task for background continuation, later steering, or restart-safe coordination, not merely because a tool is needed. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
-    "For self-contained authorized work, use your available tools to investigate, edit, and verify directly, then return the result without a Task or handoff. Inspect current state before changing it or retrying an interrupted action; do not blindly repeat side effects or claim unverified success. Do not launch detached work or bypass an existing Task owner's controls.",
+    "Runtime already executes this Conversation through its Task. Use a separate Task for background continuation, later steering, or restart-safe coordination, not merely because a tool is needed. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
+    "For self-contained authorized work, use your available tools to investigate, edit, and verify directly, then return the result without a separate Task or handoff. Inspect current state before changing it or retrying an interrupted action; do not blindly repeat side effects or claim unverified success. Do not launch detached work or bypass an existing Task owner's controls.",
     `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Creating a Task is not delegation: ${app.id} may own and execute an ordinary Task. Choose another App when it already owns the work, requires its specific authority, or provides useful expertise or a workflow. Do not hand off just because an App has a matching name. Do not return dependencies; Runtime admits the follow-up directly to the responsible Task and links that Task to the Topic.`,
-    "A followUp must include a useful immediate response explaining what you understood. The bounded conversation request completes when the responsible Task accepts the handoff; it does not wait for that Task to finish.",
+    "A followUp must include a useful immediate response explaining what you understood. The current Turn finishes after the handoff is admitted and its response is recorded; it does not wait for the background Task. The Request remains open until its scope is resolved and explained.",
     "The owning App reconciles its Task, and Runtime handles scheduling, retry, recovery, and stale mechanical state. May may send human feedback or a semantic challenge to the exact Task, but must not create replacement work merely to revive it or delegate Host repair when the same owner Task can continue.",
     "Resolve short confirmations, corrections, and pronouns against the visible Conversation, especially the immediately preceding proposal or question. Preserve constraints already established in the same Topic.",
-    "Track accepted human asks with requestUpdates. An input handling result is not fulfillment. Accept a new ask with a stable id, expectedRevision: 0, its scope, and disposition: open; revise the same id using the supplied revision when the human corrects it. Use an empty list when no ask changes. A simple question can be accepted and fulfilled in the same answer without creating a Task. Do not close an ask merely because a Task was admitted, blocked or completed: judge whether the accepted scope was addressed and explain fulfillment, withdrawal or unfulfilled disposition with a reason. Closing an existing ask must retain its exact scope. A followUp serving an accepted ask names its requestId; Runtime links the actual Task. Stopping a turn leaves the ask open but is not authority to restart that turn.",
+    "Track accepted human asks with requestUpdates. An input handling result is not fulfillment. Accept a new ask with a stable id, expectedRevision: 0, its scope, and disposition: open; revise the same id using the supplied revision when the human corrects it. Use an empty list when no ask changes. A simple question can be accepted and fulfilled in the same answer without creating a separate Task. Do not close an ask merely because a Task was admitted, blocked or completed: judge whether the accepted scope was addressed and explain fulfillment, withdrawal or unfulfilled disposition with a reason. Closing an existing ask must retain its exact scope. A followUp serving an accepted ask names its requestId; Runtime links the actual Task. Stopping a turn leaves the ask open but is not authority to restart that turn.",
     "If the human naturally refers to an older discussion that is absent from visible context, use conversation_context to find bounded candidates and read the likely exact Topic. Ask only when the remaining candidates would lead to materially different actions.",
     "Use a Topic only for related Conversation context and exact Task links. Select an existing Topic when continuing it, create a short plain-language Topic for a new durable interest or clarification, and use none for a self-contained answer.",
     "Only cancel a Task when the human clearly asks and that exact Task is present in focused, referenced, or current-Topic context. Other feedback is typed input to the existing Task.",
@@ -162,15 +162,15 @@ export function createConversationAgentResolver(options: {
       {
         source: "app-request-agent",
         projectId: app.id,
-        recoveryOwner: binding?.taskBinding ? APP_TASK_RECOVERY_OWNER : "app-inbox",
-        ...(binding?.taskBinding ? { taskBinding: binding.taskBinding } : {}),
+        recoveryOwner: APP_TASK_RECOVERY_OWNER,
+        taskBinding: binding.taskBinding,
         requireFinish: true,
         outputSchema: conversationTurnResultSchema,
         // Reuse bounded App execution, without detached lifecycle tools.
         toolPolicy: "app-agent-full",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,
-        signal: binding?.signal,
-        sessionStarted: binding?.sessionStarted,
+        signal: binding.signal,
+        sessionStarted: binding.sessionStarted,
       },
     );
     if (execution.status !== "done" || !execution.structuredResult) {

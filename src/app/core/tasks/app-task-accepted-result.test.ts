@@ -8,6 +8,7 @@ import {
   appTaskContext,
   cancelAppTask,
   claimObservedAppTask,
+  closeAppTask,
   completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
@@ -182,7 +183,7 @@ describe("accepted Task outcome evidence", () => {
     expect(restored.resourceStore.readReceipt("work")).toBeNull();
   });
 
-  it("records the admitted wait when a maintained parent still has live children", () => {
+  it("keeps an accepted parent outcome separate from its child's continuing responsibility", () => {
     const { config, claim } = fixture();
     const current = claim();
     observeAppTaskIntent(config, {
@@ -195,11 +196,14 @@ describe("accepted Task outcome evidence", () => {
       },
       appAgent: "owner",
     });
-    expect(completeAppTask(config, current, measured)).toMatchObject({ status: "applied", taskContinues: true });
-    expect(config.resourceStore.readTask("work")?.status.phase).toBe("waiting");
+    expect(completeAppTask(config, current, measured)).toMatchObject({ status: "applied" });
+    expect(config.resourceStore.readTask("work")?.status.phase).toBe("converged");
     expect(config.resourceStore.readAttempt(current.attemptId)).toMatchObject({
-      acceptedResult: { state: "waiting" },
+      acceptedResult: { state: "converged", ...measured },
     });
+    expect(config.resourceStore.readTask("measurement")?.status.phase).toBe("pending");
+    expect(config.resourceStore.isCancelled("measurement")).toBe(false);
+    expect(config.resourceStore.listRecoveryCandidates().items.map(({ taskId }) => taskId)).toEqual(["measurement"]);
   });
 
   it("cannot overwrite an accepted outcome with a duplicate or superseded result", () => {
@@ -230,13 +234,37 @@ describe("accepted Task outcome evidence", () => {
     expect(config.resourceStore.readTrigger("work")).toBeNull();
   });
 
-  it("keeps finite completion evidence consistent with its receipt", () => {
+  it("retains finite work's accepted evidence while open and after explicit owner closure", () => {
     const { config, claim, reopen } = fixture("achieve");
     const current = claim();
     completeAppTask(config, current, measured);
     const restored = reopen();
-    expect(restored.resourceStore.readTask("work")).toBeNull();
-    expect(restored.resourceStore.readReceipt("work")).toMatchObject(measured);
+    const resource = restored.resourceStore.readTask("work")!;
+    expect(resource.status).toMatchObject({
+      phase: "converged",
+      summary: measured.summary,
+      response: measured.response,
+      result: measured.result,
+      evidence: measured.evidence,
+    });
+    expect(restored.resourceStore.readReceipt("work")).toBeNull();
+    expect(restored.resourceStore.isCancelled("work")).toBe(false);
+    expect(restored.resourceStore.listRecoveryCandidates().items).toEqual([]);
+    const accepted = restored.resourceStore.readAttempt(current.attemptId)?.acceptedResult;
+    expect(
+      closeAppTask(restored, {
+        appId: "sample",
+        taskId: "work",
+        expectedGeneration: resource.metadata.generation,
+        expectedResourceVersion: resource.metadata.resourceVersion,
+        afterResult: current.attemptId,
+        reason: "Owner accepted the completed work",
+      }),
+    ).toMatchObject({
+      applied: true,
+      closure: { kind: "closed", acceptedResultAttemptId: current.attemptId },
+    });
+    expect(restored.resourceStore.readAttempt(current.attemptId)?.acceptedResult).toEqual(accepted);
     expect(restored.resourceStore.readAttempt(current.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
       ...measured,
