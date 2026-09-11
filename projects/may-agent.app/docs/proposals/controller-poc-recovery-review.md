@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`f9ada65b` has 122 unresolved failures. New human input now permits a fresh attempt
+`1b3506cc` has 105 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -24,7 +24,7 @@ case held back from the first run. No production fix was needed for these trials
 The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
 also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
-The branch adds 635 net production lines against baseline main `a8f65188`
+The branch adds 643 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
 Resolve the remaining regression and integration gaps before expanding the design.
 
@@ -1230,6 +1230,37 @@ the migrated callback checks; no new failure name appeared. This is a coverage
 migration with one production fix, not proof that the remaining regressions
 are obsolete. Design integrity/examples/App checks and 49 local document links
 pass; the Host code guides also pass a 20-link check. PR #158 remains draft.
+
+## Retry evidence and canonical attempt context
+
+Host `1b3506cc` updates the core retry and worker-failure checks to the accepted
+continuing-Task contract. All 23 checks in those groups pass: failure cost is
+counted once, ordinary facts cannot bypass backoff, retained input survives
+repeated failure, accepted progress or owner revision resets pacing, and the
+parent receives evidence without having to unblock each retry. Failure reports
+keep both Task and children open. Explicit owner closure is atomic and does not
+cascade: cross-connection races preserve children admitted before closure and
+reject new attachment that loses the closure race. The two retained mode
+spellings follow the same rules.
+
+The retry test exposed a real storage defect. A bounded history read selected
+attempts solely by timestamp and could omit the Task's current attempt when
+timestamps tied or the clock moved backward. A valid claim then looked stale.
+The query now prioritizes the existing current and observed attempt references
+inside the same 16-attempt limit. Two deterministic storage checks cover tied
+and backward timestamps, retained evidence, bounded history and history-free
+reads. No new table, query or retry mechanism is added. This adds eight net
+production lines; the full branch is **643 lines larger** than `a8f65188`.
+
+The three affected state/retry/reconciler suites report **198 passed and 24
+failed**. Those remaining reconciler failures are outside the migrated groups;
+receipt, action and lifetime expectations still need individual review.
+Full CI at this revision passes Host/SDK types, the App boundary and lint, then
+reports **2,758 passed, 3 skipped and 105 failed** (2,866 tests across 289 files,
+155.3 seconds). The seventeen resolved failure names all belong to the migrated
+retry/report groups; no other failure name changed from `f9ada65b`. This run
+completed without the earlier Bun worker crash. No operational cutover or
+whole-system simplification claim follows from this checkpoint.
 
 ## Verification and cost
 

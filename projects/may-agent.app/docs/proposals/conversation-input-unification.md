@@ -169,7 +169,10 @@ remains unproved.
 The old execution paths have been removed from the candidate source.
 [Coverage migration](controller-poc-recovery-review.md#moving-inbox-checks-onto-the-task-loop)
 now tests their retained guarantees through actual Task execution, including
-normal backoff after a rejected human-facing decision. The code guides describe
+normal backoff after a rejected human-facing decision. The later
+[core retry checks](controller-poc-recovery-review.md#retry-evidence-and-canonical-attempt-context)
+also preserve failure evidence and owner closure, and exposed a fixed context
+read bug where timestamps could hide the current attempt. The code guides describe
 context and presentation as handler responsibilities within that loop.
 [Current CI and migration evidence](controller-poc-recovery-review.md) still leave
 whole-system simplification unproved.
