@@ -119,7 +119,9 @@ Every ordinary inbound Telegram message creates its own bounded May frontend req
 Telegram reply anchor does not reopen, steer, or replace another request. The
 adapter attaches the provider message ID and at most 2,000 characters of quoted
 text. The stored `(chatId, messageId)` link may also supply its exact canonical
-message, Topic and single represented Task. An explicit reply takes precedence
+message, Topic and primary Task (`followTask`, or the sole `taskRefs` entry).
+Details may name related Tasks without making them equal reply targets; a compact
+update names only the Task it describes. An explicit reply takes precedence
 over a different selected Topic or watch. A multi-Task view supplies no automatic
 single-Task focus. These links are context, not approval or routing authority;
 May still judges intention and uses validated controls. The adapter never
@@ -264,6 +266,9 @@ Details and Follow updates using the same reads and local watch selection.
 Buttons resolve the stored link for that exact chat/message, re-read the Task
 and enforce the existing authorization boundary. They do not create approval
 state or a subscription. Missing links explain that current status is needed.
+Details preserves the clicked message's Topic without changing selection.
+Follow updates selects that Task's App and the clicked Topic when available;
+an unrelated previously selected Topic or implicit answer anchor is cleared.
 
 - `/apps [app]`;
 - `/topics` and `/topic [ref|clear]`;
@@ -334,6 +339,10 @@ chat/message identity, renders the single `runtime.reload.finished` result in
 the originating chat/topic, and appends it to Conversation only after the send
 succeeds. It does not ask May to interpret reload or maintain another work
 tracker.
+Provider redelivery restores reply correlation before retrying admission and
+reads an already-recorded completion by its exact parent event. It does not
+rerun an accepted reload merely to regenerate its reply. Reply display remains
+best effort and may repeat after restart; it is not an exactly-once receipt.
 
 ## Secrets And Presentation
 

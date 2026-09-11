@@ -3,7 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `67f0600f`.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `c0b98c12`, with
+review refinements following the verified `67f0600f` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -318,3 +319,30 @@ Verification at `67f0600f`:
 - GitHub Container build and isolated image smoke test passed. The PR records
   the current Quality check and review status.
 - Live Telegram/model experience trial and deployment: not performed.
+
+### Follow-up review
+
+Four additional synthetic probes exposed gaps not covered by the earlier green
+suite: following older work retained an unrelated Topic; a single-task card
+with related Tasks lost its exact reply focus; a retried reload finished without
+restoring its reply destination; malformed inline event data replayed as `{}`.
+
+The refinement reuses `followTask` to distinguish a card's primary Task from
+related detail links, carries the clicked Topic and clears incompatible local
+selection, restores reload correlation before admission retry and reads saved
+completion through its existing parent-event link. Both inline and external
+event bodies must match any stored descriptor and parse as an object. Legacy
+rows without descriptors still require valid object data. No new queue, lifecycle,
+or observer registration is added.
+
+The obsolete `telegram-reply-smoke.ts` is retired: it checked old session-routing
+events and unscoped message IDs rather than current Conversation admission.
+Its historical results are not acceptance evidence for this candidate. Current
+portable Telegram tests remain; a live experience trial is still pending.
+
+Verification at `c0b98c12`: complete `bun run ci` passed, with 2,746 tests
+passing, zero failures, and the same three installation-specific skips across
+283 files. Browser coverage executed. Host/SDK type checks, App-boundary checks
+and lint passed. Canonical design integrity, examples and App checks passed.
+Hosted checks are tracked on the PR. No deployment or live model/Telegram trial
+was performed.
