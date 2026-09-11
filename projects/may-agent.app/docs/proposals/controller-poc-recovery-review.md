@@ -238,11 +238,11 @@ Conversation Task tests** pass at that test-only follow-up.
 This remains a source PoC with supplied decisions, not a live-model Conversation
 or a completed runtime cutover. The test calls the new outcome-admission state
 operation at the result boundary; production event subscription and recovery
-discovery are not wired to it yet. Normal human ingress, Task controls, scoped
-Stop, foreground capacity/background pause, failure pacing per input and
-active-Turn projection still need integration. The old inbox pump and separate
-follow-up owner remain; both must retire before one execution owner is proved
-for the installed runtime.
+discovery are not wired to it yet. Normal human ingress, scoped Stop and
+active-Turn projection are covered by the later checkpoint below. Task controls,
+foreground capacity/background pause and failure pacing per input remain
+unfinished. The old inbox pump and separate follow-up owner remain; both must
+retire before one execution owner is proved for the installed runtime.
 
 ## Common runtime integration
 
@@ -286,16 +286,52 @@ temporary SQLite. They cover:
 - a one-App worker admitting follow-up work from its pinned catalog and emitting
   the exact post-commit notification.
 
-This proves the common runtime path for **already Task-admitted** input. Normal
-human ingress still uses the old inbox path. Result-to-Conversation event
-admission and missed-result discovery, scoped Stop, foreground/background pause,
-active-Turn projection, interface change notifications and Conversation Task
-controls remain unfinished. The
-retry context also needs to supply the previous attempt's useful failure/effect
+This checkpoint proves the common runtime path for **already Task-admitted**
+input. The next checkpoint moves normal ingress and scoped Stop to that path.
+
+## Normal ingress and Turn Stop
+
+Source [checkpoint `f5d0fab6`](https://github.com/hao1939/may-agent/commit/f5d0fab6)
+routes human Conversation events through the existing Task capability.
+Admission stores the input and its stable execution
+Task together, then wakes that Task. Production composition supplies this
+capability and removes its direct Conversation resolver; the Task execution
+backend already owns the resolver. The inbox does not schedule its old executor
+for Task-owned input. Existing Conversation reads render the saved reply and
+derive the active Turn from the current Task attempt.
+
+The owner can stop exactly the observed Turn without closing the Task or its
+Requests. One transaction interrupts the named attempt and records its considered
+inputs as stopped. Newer input stays pending. A late result cannot publish a
+reply, and neither a duplicate Stop nor restart can replay the stopped input.
+The post-commit event aborts live execution; its listener checks the stored
+decision first. Notification text alone cannot apply Stop. Ready and stopped
+notifications cannot be admitted again as fresh Task work.
+
+The new Stop regression also exposed an abort being reported as a handler
+failure after the owner had already ended its attempt. The shared error boundary
+now respects that stored decision and releases execution without a false failure
+or dispatch retry. Genuine executor failures still retain their paced retry.
+
+The two Conversation suites pass **22 tests** with supplied model decisions.
+Three added checks exercise normal event admission and durable duplicate
+receipts; Turn Stop with newer input, a late answer and replayed control; and
+transaction rollback plus restart with no automatic replay of stopped input.
+The ingress tests install the real registry, event persistence, Task runtime
+and Conversation resolver. An old inbox resolver that throws if called stays
+unused. They are not live model or managed Conversation subprocess trials.
+
+Result-to-Conversation event admission and missed-result discovery,
+foreground/background pause and Conversation Task controls remain unfinished.
+Console-only startup still selects no Task runtime; it must install the common
+controller while gating background work separately.
+The retry context also needs the previous attempt's useful failure/effect
 evidence before a real interrupted-Conversation trial. Per-Task cooldown still
-delays unrelated fresh input. These are required integration work, not optional
-polish. The old inbox executor and separate follow-up owner must be removed
-before claiming one owner across the installed system.
+delays unrelated fresh input. The retained-state guard refuses undrained legacy
+input; the production resolver change does not provide a migration for it.
+These are required integration work. The old inbox pump, legacy execution
+fallback and separate follow-up owner must be removed before claiming one owner
+across the installed system. Host main and the installation remain unchanged.
 
 ## Verification and cost
 
@@ -327,6 +363,13 @@ adds seven passing runtime tests with no new or removed failure names. The
 index migration regression found at `d42935a0` is fixed; the overall migration
 gate remains red.
 
+At `f5d0fab6`, Host/SDK types, App-boundary checks and lint pass. The two
+Conversation suites pass **22 tests**, including the Stop/error regression.
+Full CI finishes with **2,647 passes, 3 skips and 129 failures**, across 2,779
+tests in 282 files (136.7 seconds). It adds three passing checks relative to
+`6aa80877`, with no new or removed failure names. The full migration gate is
+still red. No live model trial ran for this checkpoint.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -353,6 +396,12 @@ notification, reusing the existing controller, recovery timer, capacity and
 worker event bridge. The lookup query plan uses the covering index on App and
 execution Task identity. This remains an intermediate increase until the old
 Conversation execution and follow-up paths are deleted.
+The ingress/Stop checkpoint adds **238 net production lines** (271 added, 33
+removed), excluding tests. It reuses the same Task, attempt fence, input records,
+controller and event bus, with no new table or scheduler. This remains an
+intermediate increase: optional legacy callbacks and the old inbox execution
+path still need retirement. Passing the new checks does not yet prove a smaller
+installed system.
 
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting

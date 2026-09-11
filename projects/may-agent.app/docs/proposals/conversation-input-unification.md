@@ -124,9 +124,11 @@ the eventual measurement must not overwrite the explanation. The
 now pass this Task check. A [Conversation source check](controller-poc-recovery-review.md#conversation-checkpoint)
 also passes that sequence with actual messages, Topics, Requests and supplied
 executor decisions. It admits follow-up work with the acknowledgment and brings
-back an exact accepted attempt as system input. Normal ingress, event/recovery
-wiring and execution controls remain to migrate; live model use of this actual
-Conversation path is still unproved.
+back an exact accepted attempt as system input. The later
+[ingress and Stop checkpoint](controller-poc-recovery-review.md#normal-ingress-and-turn-stop)
+routes human messages through that Task and stops only the observed Turn.
+Result-event routing, background pause and old-owner retirement remain to
+migrate; live model use of this actual Conversation path is still unproved.
 
 ### Recovery keeps the same Task
 
@@ -453,9 +455,12 @@ The [source PoC checkpoint](controller-poc-evidence.md) records exact-attempt
 evidence retention, real model judgment trials and the remaining result-return
 obstacle. No unified lifecycle or simplification is claimed from that first slice.
 The later [common-runtime checkpoint](controller-poc-recovery-review.md#common-runtime-integration)
-executes already-admitted Conversation input through normal Task attempts;
-ordinary ingress, result routing and retirement of the old execution paths
-remain required before accepting the whole-system simplification.
+executes Conversation input through normal Task attempts. The
+[ingress and Stop checks](controller-poc-recovery-review.md#normal-ingress-and-turn-stop)
+also exercise normal human events, interface notifications and exact Turn
+control. Result routing, background pause, retained-state cutover and retirement
+of the old execution paths remain required before accepting the whole-system
+simplification.
 
 This proposal changes design only. Check documentation integrity, executable
 examples, local Markdown links/anchors and whitespace. It does not implement
