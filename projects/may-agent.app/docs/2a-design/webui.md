@@ -4,7 +4,7 @@
 **Implementation status:** The static route-based operator UI is implemented.
 The default project/task surface still uses older path-based projections and
 has not completed migration to the shared App-ID Task reader.
-The workflow health refinement is implemented in Host #147 (`24fffb42`),
+The workflow health refinement is implemented in Host #147 (`1b25e8ff`),
 building on #143's evidence and SDK reads. It is a source candidate, not yet
 merged or deployed; [candidate evidence](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
 records checks and remaining scope. The new Overview Task summary uses the
@@ -154,6 +154,10 @@ per-metric history endpoint is loaded only after selection. Late responses must
 not replace a newer selection. A workflow-run link opens
 `/events?workflowRunId=<id>#loop-trace`, with exact parent, prior-run, child and
 step-session links where retained; no relationship is inferred from names.
+Trace selection belongs to the current route: navigation clears the old trace
+and invalidates pending loads, including late failures. Generic Events must not
+show evidence from a previously selected run. An explicit workflow-run selection
+takes precedence over an event trace anchor.
 
 Overview reads up to eight pending/running/waiting/attention Tasks using the
 existing Task list with explicit `allApps=true` and repeated `status` filters.
