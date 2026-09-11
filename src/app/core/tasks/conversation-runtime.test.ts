@@ -170,52 +170,66 @@ async function fixture(
   };
 }
 
-test("Conversation-only App uses normal runtime claims, paced failure and reply settlement", async () => {
-  const calls: CallOptions[] = [];
-  const contexts: AppInputContext[] = [];
-  const f = await fixture(async (_definition, prompt, options) => {
-    expect(prompt).toContain("Compare A and B");
-    expect(options.recoveryOwner).toBe(APP_TASK_RECOVERY_OWNER);
-    expect(options.taskBinding?.appId).toBe(app.id);
-    expect(claimAppInboxItem(f.db, "ask", "old-inbox", 1_000)).toBeNull();
-    calls.push(options);
-    contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
-    if (calls.length === 1) throw new Error("Model temporarily unavailable");
-    return { status: "done", structuredResult: answer };
-  });
-  expect(f.store.rootTaskId()).toBe("root");
-  const admitted = f.admit();
-  const failed = settled(f.bus, admitted.taskId);
-  wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId, admitted.taskId] });
-  await failed;
-  expect(calls).toHaveLength(1);
-  const cooldown = f.store.readTask(admitted.taskId)!;
-  expect(cooldown.status.executionFailures).toBe(1);
-  expect(cooldown.status.executionRetryAt).toBeDefined();
-  expect(getAppInboxItem(f.db, admitted.item.id)?.status).not.toBe("done");
-  expect(readConversationRequest(f.db, app.id, "primary", "compare")).toBeNull();
-  const completed = settled(f.bus, admitted.taskId);
-  await completed; // The real recovery timer performs the retry; the fixture does not.
-  expect(calls).toHaveLength(2);
-  expect(contexts[1]).toMatchObject({
-    previousAttempt: {
-      attemptId: calls[0]!.taskBinding!.attemptId,
-      generation: calls[0]!.taskBinding!.generation,
-      state: "failed",
-      summary: expect.stringContaining("Model temporarily unavailable"),
-    },
-  });
-  expect(new Set(calls.map((call) => call.taskBinding?.taskId))).toEqual(new Set([admitted.taskId]));
-  expect(new Set(calls.map((call) => call.taskBinding?.attemptId)).size).toBe(2);
-  expect(getAppInboxItem(f.db, admitted.item.id)).toMatchObject({ status: "done" });
-  expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
-  expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe(answer.response);
-  expect(f.store.isCancelled(admitted.taskId)).toBe(false);
-  expect(f.store.listRecoveryCandidates().items).toEqual([]);
-  expect(
-    f.db.prepare("SELECT id FROM app_inbox_items WHERE lease_owner IS NOT NULL OR lease_generation != 0").all(),
-  ).toEqual([]);
-});
+test.each(["throws", "invalid", "missing-topic"] as const)(
+  "Task input survives %s and reaches an exact answer through paced retry",
+  async (failure) => {
+    const calls: CallOptions[] = [];
+    const contexts: AppInputContext[] = [];
+    const f = await fixture(async (_definition, prompt, options) => {
+      expect(prompt).toContain("Compare A and B");
+      expect(options.recoveryOwner).toBe(APP_TASK_RECOVERY_OWNER);
+      expect(options.taskBinding?.appId).toBe(app.id);
+      expect(claimAppInboxItem(f.db, "ask", "old-inbox", 1_000)).toBeNull();
+      calls.push(options);
+      contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
+      if (calls.length === 1) {
+        if (failure === "throws") throw new Error("Model temporarily unavailable");
+        return {
+          status: "done",
+          structuredResult:
+            failure === "invalid" ? ({} as ConversationTurnResult) : { ...delegated, topic: { kind: "none" } },
+        };
+      }
+      return { status: "done", structuredResult: answer };
+    }, withBackground);
+    expect(f.store.rootTaskId()).toBe("root");
+    const admitted = f.admit();
+    const failed = settled(f.bus, admitted.taskId);
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId, admitted.taskId] });
+    await failed;
+    expect(calls).toHaveLength(1);
+    const cooldown = f.store.readTask(admitted.taskId)!;
+    expect(cooldown.status.executionFailures).toBe(1);
+    expect(cooldown.status.executionRetryAt).toBeDefined();
+    expect(getAppInboxItem(f.db, admitted.item.id)?.status).not.toBe("done");
+    expect(readConversationRequest(f.db, app.id, "primary", "compare")).toBeNull();
+    const failedAttempt = f.store.readAttempt(calls[0]!.taskBinding!.attemptId)!;
+    expect(failedAttempt.state).toBe("failed");
+    expect(failedAttempt.summary).toBeTruthy();
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
+    if (failure !== "throws") await f.reopen();
+    await settled(f.bus, admitted.taskId); // The real recovery timer performs the retry, also after reopen.
+    expect(calls).toHaveLength(2);
+    expect(contexts[1]).toMatchObject({
+      previousAttempt: {
+        attemptId: calls[0]!.taskBinding!.attemptId,
+        generation: calls[0]!.taskBinding!.generation,
+        state: "failed",
+        summary: failedAttempt.summary,
+      },
+    });
+    expect(new Set(calls.map((call) => call.taskBinding?.taskId))).toEqual(new Set([admitted.taskId]));
+    expect(new Set(calls.map((call) => call.taskBinding?.attemptId)).size).toBe(2);
+    expect(getAppInboxItem(f.db, admitted.item.id)).toMatchObject({ status: "done" });
+    expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
+    expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe(answer.response);
+    expect(f.store.isCancelled(admitted.taskId)).toBe(false);
+    expect(f.store.listRecoveryCandidates().items).toEqual([]);
+    expect(
+      f.db.prepare("SELECT id FROM app_inbox_items WHERE lease_owner IS NOT NULL OR lease_generation != 0").all(),
+    ).toEqual([]);
+  },
+);
 
 test("Conversation admission survives reopen and runs without an ingress wake", async () => {
   let calls = 0;
@@ -478,47 +492,86 @@ function withBackground(root: string, appDir: string, conversation = app): Parti
   };
 }
 
-test("failed reply transaction admits no background work; paced retry wakes the other App after commit", async () => {
-  let judgments = 0;
-  let backgroundRuns = 0;
-  const f = await fixture(
-    async () => {
-      judgments++;
-      return { status: "done", structuredResult: delegated };
-    },
-    (root, appDir) => ({
-      ...withBackground(root, appDir),
-      executors: {
-        measure: async () => {
-          backgroundRuns++;
-          expect(getAppInboxItem(f.db, "ask")?.result?.response).toBe(delegated.response);
-          expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
-          return { state: "converged", summary: "Sample is 17", evidence: ["measurement:17"] };
-        },
+test.each(["available", "removed"] as const)(
+  "failed reply commits no delegation; retry survives reopen with the target App %s",
+  async (availability) => {
+    let judgments = 0;
+    let backgroundRuns = 0;
+    let configured: Partial<AppTaskRuntimeOptions>;
+    const f = await fixture(
+      async () => {
+        judgments++;
+        return { status: "done", structuredResult: delegated };
       },
-    }),
-  );
-  f.db.exec(`CREATE TRIGGER reject_reply BEFORE UPDATE OF result ON app_inbox_items
+      (root, appDir) =>
+        (configured = {
+          ...withBackground(root, appDir),
+          executors: {
+            measure: async () => {
+              backgroundRuns++;
+              expect(getAppInboxItem(f.db, "ask")?.result?.response).toBe(delegated.response);
+              expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
+              return { state: "converged", summary: "Sample is 17", evidence: ["measurement:17"] };
+            },
+          },
+        }),
+    );
+    f.db.exec(`CREATE TRIGGER reject_reply BEFORE UPDATE OF result ON app_inbox_items
     WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'reply unavailable'); END`);
-  const admitted = f.admit("ask", "Get the measurement and report it here");
-  const failed = settled(f.bus, admitted.taskId);
-  wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
-  await failed;
-  expect(judgments).toBe(1);
-  expect(backgroundRuns).toBe(0);
-  expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
-  expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toBeNull();
-  expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeDefined();
-  f.db.exec("DROP TRIGGER reject_reply");
-  await settled(f.bus, "sample");
-  expect(judgments).toBe(2);
-  expect(backgroundRuns).toBe(1);
-  expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toMatchObject({
-    status: "open",
-    taskRefs: [{ appId: background.id, taskId: "sample" }],
-  });
-  expect(f.store.isCancelled(admitted.taskId)).toBe(false);
-});
+    const admitted = f.admit("ask", "Get the measurement and report it here");
+    const failed = settled(f.bus, admitted.taskId);
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
+    await failed;
+    expect(judgments).toBe(1);
+    expect(backgroundRuns).toBe(0);
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
+    expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toBeNull();
+    expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeDefined();
+    expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+    expect(readAppConversationResource(f.db, app.id, "primary").topics).toEqual([]);
+    f.db.exec("DROP TRIGGER reject_reply");
+    const available = configured!.appRegistrySnapshot!;
+    const withoutTarget = {
+      ...available,
+      generation: available.generation + 1,
+      entries: available.entries.filter((entry) => entry.definition.id !== background.id),
+    };
+    if (availability === "removed") configured!.appRegistrySnapshot = withoutTarget;
+    await f.reopen();
+    if (availability === "removed") {
+      await settled(f.bus, admitted.taskId);
+      expect(judgments).toBe(2);
+      expect(backgroundRuns).toBe(0);
+      expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+      expect(readAppConversationResource(f.db, app.id, "primary").topics).toEqual([]);
+      expect(f.store.readTask(admitted.taskId)?.status.executionFailures).toBe(2);
+      expect(f.store.isCancelled(admitted.taskId)).toBe(false);
+      configured!.appRegistrySnapshot = { ...available, generation: withoutTarget.generation + 1 };
+      await f.reopen();
+    }
+    await settled(f.bus, "sample");
+    expect(judgments).toBe(availability === "removed" ? 3 : 2);
+    expect(backgroundRuns).toBe(1);
+    expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toMatchObject({
+      status: "open",
+      taskRefs: [{ appId: background.id, taskId: "sample" }],
+    });
+    expect(f.store.isCancelled(admitted.taskId)).toBe(false);
+    const accepted = getAppInboxItem(f.db, "ask")!;
+    expect(accepted.result?.response).toBe(delegated.response);
+    configured!.appRegistrySnapshot = { ...withoutTarget, generation: available.generation + 3 };
+    await f.reopen();
+    await f.run(admitted.taskId);
+    expect(getAppInboxItem(f.db, "ask")).toEqual(accepted);
+    expect(judgments).toBe(availability === "removed" ? 3 : 2);
+    expect(backgroundRuns).toBe(1);
+    expect(
+      readAppConversationResource(f.db, app.id, "primary").messages.filter(
+        (message) => message.text === delegated.response,
+      ),
+    ).toHaveLength(1);
+  },
+);
 
 test("one-App worker resolves follow-up from its pinned registry and emits a post-commit wake", async () => {
   const f = await fixture(
@@ -760,42 +813,72 @@ test("a human Conversation decision cancels the exact running Task after its rep
   }
 });
 
-test("normal event ingress admits and executes one Conversation Task and notifies the interface", async () => {
-  let judgments = 0;
-  const f = await fixture(async () => {
-    judgments++;
-    return { status: "done", structuredResult: answer };
-  });
-  const ingress = await startConversationIngress(f);
-  try {
-    const replied = eventAfter(
-      f.bus,
-      (event) =>
+test.each(["delivered", "failed"] as const)(
+  "event ingress executes one Task; accepted reply survives a %s interface notification",
+  async (notification) => {
+    let judgments = 0;
+    const f = await fixture(async () => {
+      judgments++;
+      return { status: "done", structuredResult: answer };
+    });
+    const ingress = await startConversationIngress(f);
+    let notificationFailures = 0;
+    f.bus.listen((event) => {
+      if (
+        notification === "failed" &&
         event.type === "conversation.updated" &&
         readAppConversationResource(f.db, app.id, "primary").messages.some(
           (message) => message.text === answer.response,
+        )
+      ) {
+        notificationFailures++;
+        throw new Error("fixture interface unavailable");
+      }
+    });
+    try {
+      const replied = eventAfter(
+        f.bus,
+        (event) =>
+          (notification === "failed"
+            ? event.type === "subscriber.failed" && event.data.originalEventType === "conversation.updated"
+            : event.type === "conversation.updated") &&
+          readAppConversationResource(f.db, app.id, "primary").messages.some(
+            (message) => message.text === answer.response,
+          ),
+      );
+      const admitted = ingress.publish("first", "Compare A and B");
+      expect(admitted[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+      await replied;
+      // A duplicate returns its original durable receipt without routing again.
+      const replay = ingress.publish("first", "Compare A and B");
+      expect(replay[EVENT_ROW_ID]).toBe(admitted[EVENT_ROW_ID]);
+      expect(
+        f.db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(replay[EVENT_ROW_ID]!)?.delivery_status,
+      ).toBe("accepted");
+      const items = listAppInboxItems(f.db, { appId: app.id });
+      expect(items).toHaveLength(1);
+      expect(items[0]?.executionTaskId).toBeDefined();
+      expect(items[0]?.status).toBe("done");
+      expect(items[0]?.lease).toBeUndefined();
+      expect(judgments).toBe(1);
+      if (notification === "failed") expect(notificationFailures).toBeGreaterThan(0);
+      else expect(notificationFailures).toBe(0);
+      expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
+      ingress.runtime.close();
+      await f.reopen();
+      await f.run(items[0]!.executionTaskId!);
+      expect(getAppInboxItem(f.db, items[0]!.id)).toEqual(items[0]);
+      expect(
+        readAppConversationResource(f.db, app.id, "primary").messages.filter(
+          (message) => message.text === answer.response,
         ),
-    );
-    const admitted = ingress.publish("first", "Compare A and B");
-    expect(admitted[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
-    await replied;
-    // A duplicate returns its original durable receipt without routing again.
-    const replay = ingress.publish("first", "Compare A and B");
-    expect(replay[EVENT_ROW_ID]).toBe(admitted[EVENT_ROW_ID]);
-    expect(
-      f.db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(replay[EVENT_ROW_ID]!)?.delivery_status,
-    ).toBe("accepted");
-    const items = listAppInboxItems(f.db, { appId: app.id });
-    expect(items).toHaveLength(1);
-    expect(items[0]?.executionTaskId).toBeDefined();
-    expect(items[0]?.status).toBe("done");
-    expect(items[0]?.lease).toBeUndefined();
-    expect(judgments).toBe(1);
-    expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
-  } finally {
-    ingress.runtime.close();
-  }
-});
+      ).toHaveLength(1);
+      expect(judgments).toBe(1);
+    } finally {
+      ingress.runtime.close();
+    }
+  },
+);
 
 function measurementReply(context: AppInputContext): ConversationTurnResult {
   const ask = context.conversation!.requests!.find((request) => request.id === "measurement")!;
@@ -2065,37 +2148,67 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
   ).toEqual([expect.objectContaining({ appId: app.id, taskId: olderReview.id })]);
 });
 
-test("an existing Task outside human context cannot receive a guessed handoff", async () => {
-  const f = await fixture(
-    async () => ({
-      status: "done",
-      structuredResult: {
-        summary: "Tried a guessed handoff",
-        response: "I continued it.",
-        topic: { kind: "new", title: "Guessed review" },
-        followUp: {
-          appId: app.id,
-          task: { appId: app.id, taskId: olderReview.id },
-          outcome: "Continue the review",
-          acceptance: ["Review the evidence"],
-          input: { kind: "goal", data: {} },
+test.each(["handoff", "control"] as const)(
+  "rejected guessed %s retains Task input for a corrected attempt after reopen",
+  async (effect) => {
+    let calls = 0;
+    const f = await fixture(async (_definition, prompt) => {
+      calls++;
+      if (calls > 1) {
+        const context = JSON.parse(
+          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+        ) as AppInputContext;
+        expect(JSON.stringify(context.previousAttempt)).toContain("absent from Conversation context");
+        return { status: "done", structuredResult: answer };
+      }
+      return {
+        status: "done",
+        structuredResult: {
+          summary: `Tried a guessed ${effect}`,
+          response: "I continued it.",
+          topic: { kind: "new", title: "Guessed review" },
+          ...(effect === "control"
+            ? {
+                taskControls: [
+                  { kind: "cancel" as const, appId: app.id, taskId: olderReview.id, reason: "Human requested" },
+                ],
+              }
+            : {
+                followUp: {
+                  appId: app.id,
+                  task: { appId: app.id, taskId: olderReview.id },
+                  outcome: "Continue the review",
+                  acceptance: ["Review the evidence"],
+                  input: { kind: "goal", data: {} },
+                },
+              }),
         },
-      },
-    }),
-    manualContextTasks,
-  );
-  observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
-  const original = f.store.readTask(olderReview.id);
-  const admitted = f.admit("unknown-target", "Continue it");
-  await f.run(admitted.taskId);
-  expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("absent from Conversation context");
-  expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
-  expect(f.store.readTask(olderReview.id)).toEqual(original);
-  expect(getAppInboxItem(f.db, "unknown-target")?.status).not.toBe("done");
-  const discussion = readAppConversationResource(f.db, app.id, "primary");
-  expect(discussion.topics).toEqual([]);
-  expect(discussion.messages.some((message) => message.author.kind === "agent")).toBe(false);
-});
+      };
+    }, manualContextTasks);
+    observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
+    const original = f.store.readTask(olderReview.id);
+    const admitted = f.admit("unknown-target", "Continue it");
+    await f.run(admitted.taskId);
+    expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("absent from Conversation context");
+    expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
+    expect(f.store.readTask(olderReview.id)).toEqual(original);
+    expect(getAppInboxItem(f.db, "unknown-target")?.status).not.toBe("done");
+    const discussion = readAppConversationResource(f.db, app.id, "primary");
+    expect(discussion.topics).toEqual([]);
+    expect(discussion.messages.some((message) => message.author.kind === "agent")).toBe(false);
+    const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+    await f.reopen();
+    setSystemTime(new Date(due));
+    await f.run(admitted.taskId);
+    expect(calls).toBe(2);
+    expect(getAppInboxItem(f.db, "unknown-target")).toMatchObject({
+      status: "done",
+      result: { response: answer.response },
+    });
+    expect(f.store.readTask(olderReview.id)).toEqual(original);
+    expect(f.store.isCancelled(admitted.taskId)).toBe(false);
+  },
+);
 
 test("closed Task reuse retains the caller input for a corrected attempt after reopen", async () => {
   let calls = 0;

@@ -47,9 +47,27 @@ with prior evidence, rather than two model calls in one inbox callback. These
 are intentional contract changes, not reinstated legacy behavior.
 
 That table covers the original fourteen callback tests. The later migrations
-below preserve control and admission guarantees. Remaining saved-decision and
-failure fixtures still require investigation; neither these deterministic checks
-nor the passing synthetic model trials certify operational cutover or deployment.
+below preserve control, admission and failure guarantees. Neither these
+deterministic checks nor the passing synthetic model trials certify operational
+cutover or deployment.
+
+The eleven retired `app-inbox-failure.test.ts` cases expected an independently
+executing inbox and recovery without another model call. Their useful guarantees
+now belong to the shared Task path:
+
+| Retired failure-fixture behavior | Current executable coverage |
+| --- | --- |
+| Thrown execution, invalid answer, missing follow-up Topic | Task runtime preserves input and failure context, then accepts a corrected answer through the real backoff timer, including after reopen |
+| Failure evidence cannot be saved | `core/state/inbox.test.ts` rolls back failure evidence and retry pacing together; `test/integration/fixtures/task-worker-scenario.ts` proves actual worker-loss recovery retains input and checks a committed effect before redo |
+| New or existing Topic decision cannot commit | `core/state/conversation-task-turns.test.ts` reopens SQLite and verifies atomic rollback of Topic, Request, reply and accepted attempt |
+| Reply cannot commit; later notification fails | Runtime rollback leaves input unfinished; a failing interface listener after acceptance leaves one readable reply across reopen without more execution |
+| Rejected control or handoff | Runtime retains input and the unchanged target, then uses prior failure evidence for a corrected attempt after persisted backoff and reopen |
+| Handoff result cannot commit; target App is available or removed | Runtime rolls back child admission with the reply, retries after reopen, retains work while the App is absent and preserves the accepted reply after later App removal |
+
+An unaccepted attempt may be redone; there is no saved inbox decision to replay
+and no failure-count stop. Accepted replies and delegated work must remain
+intact. Storage atomicity and real process recovery have separate detailed
+owners; an in-process database reopen is not proof of worker death.
 
 The two old `app-turn-control.test.ts` cases now run in
 `core/tasks/conversation-runtime.test.ts`. Public Stop commits before abort,
@@ -91,8 +109,7 @@ atomic result/closure wakes. The daemon checks verify accepted attempts on
 retained Tasks after graceful shutdown while waiting and a crash during workflow
 execution, with optional schedules disabled. Scheduled workflow discovery also
 checks the accepted attempt while its Task stays open. These are isolated
-candidate-to-candidate restarts; old-version cutover and the remaining retired
-inbox execution fixtures still need verification.
+candidate-to-candidate restarts; old-version cutover still needs verification.
 
 Human Task detail reads include structured results from retained Task state and
 historical receipts. Their tests keep those results out of compact cards and

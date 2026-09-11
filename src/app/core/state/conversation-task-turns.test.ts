@@ -200,21 +200,42 @@ test("one Task executes real Conversation input and retains replies and Requests
   expect(judgments).toBe(2);
 });
 
-test("failed reply persistence rolls back Request, Topic and Task acceptance together", () => {
-  const f = fixture();
-  const input = f.admit();
-  const claim = f.claim(input.taskId);
-  f.db.exec(`CREATE TRIGGER fail_reply BEFORE UPDATE OF result ON app_inbox_items
+test.each(["new", "existing"] as const)(
+  "failed reply persistence rolls back %s Topic, Request and Task acceptance across reopen",
+  (kind) => {
+    const f = fixture();
+    if (kind === "existing")
+      createConversationTopic(f.db, {
+        id: "existing",
+        appId: app.id,
+        conversationId: "chat",
+        title: "Existing work",
+        openedBy: "human",
+        originMessageId: "earlier",
+      });
+    const input = f.admit();
+    const claim = f.claim(input.taskId);
+    const proposed: ConversationTurnResult = {
+      ...decision,
+      topic: kind === "new" ? decision.topic : { kind: "existing", id: "existing" },
+    };
+    const beforeTopics = readAppConversationResource(f.db, app.id, "chat").topics;
+    f.db.exec(`CREATE TRIGGER fail_reply BEFORE UPDATE OF result ON app_inbox_items
     WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'reply write failed'); END`);
-  expect(() => completeConversationTaskTurn(f.context(), claim, decision)).toThrow("reply write failed");
-  expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
-  expect(readAppConversationResource(f.db, app.id, "chat").topics).toEqual([]);
-  expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
-  expect(f.store.readTask(input.taskId)?.status.currentAttemptId).toBe(claim.attemptId);
-  expect(readAppTaskAdmissionOutcome(f.context(), input.taskId, input.item.taskAdmissionKey!)).toBeNull();
-  f.db.exec("DROP TRIGGER fail_reply");
-  expect(completeConversationTaskTurn(f.context(), claim, decision).status).toBe("applied");
-});
+    expect(() => completeConversationTaskTurn(f.context(), claim, proposed)).toThrow("reply write failed");
+    f.reopen();
+    expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
+    expect(readAppConversationResource(f.db, app.id, "chat").topics).toEqual(beforeTopics);
+    expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+    expect(f.store.readTask(input.taskId)?.status.currentAttemptId).toBe(claim.attemptId);
+    expect(readAppTaskAdmissionOutcome(f.context(), input.taskId, input.item.taskAdmissionKey!)).toBeNull();
+    expect(getAppInboxItem(f.db, input.item.id)?.result).toBeUndefined();
+    f.db.exec("DROP TRIGGER fail_reply");
+    expect(completeConversationTaskTurn(f.context(), claim, proposed).status).toBe("applied");
+    expect(readAppConversationResource(f.db, app.id, "chat").topics).toHaveLength(1);
+    expect(getAppInboxItem(f.db, input.item.id)?.result?.response).toBe(proposed.response);
+  },
+);
 
 test("late output after owner closure cannot publish a reply or close a Request", () => {
   const f = fixture();
