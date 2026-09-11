@@ -496,7 +496,12 @@ The [historical receipt conversion](controller-poc-recovery-review.md#historical
 now proves completed-work import against a database written by the old Host.
 It preserves original results and matching caller links, retains human closure,
 and does not close a newer Task generation. It requires the normal schema upgrade
-before state conversion. The [open-state conversion](controller-poc-recovery-review.md#retained-open-task-state)
+before state conversion. App runtime preparation rejects unconverted completion
+history before admission or execution. After conversion, retained Tasks and
+accepted attempts own runtime decisions; old receipts remain available for
+historical inspection. The [receipt-authority retirement](controller-poc-recovery-review.md#historical-receipts-no-longer-decide-execution)
+removes automatic duplicate pruning and prevents an old success from satisfying
+a newer assignment. The [open-state conversion](controller-poc-recovery-review.md#retained-open-task-state)
 also preserves maintained outcomes, restores original input/wait links and
 continues failures with backoff. Identified historical worker self-stops become
 retained non-success evidence; human/owner closure and Turn Stop stay effective.

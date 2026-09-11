@@ -10,8 +10,9 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 The [real-daemon cutover](#real-daemon-cutover) now passes for an isolated old
-Host and candidate pair. Installation adoption and compatibility retirement
-remain unfinished. Full local CI at `2b13943f` passes **2,860 tests**, with
+Host and candidate pair, including the current revision after integration with
+main. Installation adoption remains separate; historical readers and the final
+acceptance audit remain under review. Full local CI at `682ba127` passes **2,894 tests**, with
 **3 skipped and zero failures**. GitHub Quality and Container also pass at
 that same revision.
 New human input now permits a fresh attempt
@@ -28,9 +29,11 @@ case held back from the first run. No production fix was needed for these trials
 The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
 also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
-The branch adds 648 net production lines against baseline main `a8f65188`
+The branch adds 506 net production lines against current main `49272b5a`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
-Finish compatibility retirement and the acceptance audit before expanding the design.
+The [receipt-authority retirement](#historical-receipts-no-longer-decide-execution)
+removes another runtime path and fixes stale dependency readiness. Finish the
+historical reader review and acceptance audit before expanding the design.
 The [runtime/input checks](#runtime-outcomes-and-input-continuation) now pass,
 as do [isolated daemon restarts](#daemon-restart-with-retained-outcomes).
 The [Stop/admission checks](#public-stop-and-admission-ownership) now pass.
@@ -1508,13 +1511,78 @@ Full local CI at `2b13943f` passes Host/SDK types, App-boundary checks and lint:
 configuration skips are unchanged. The clean cutover report remains tied to
 `d2e1e2dc`; its successor changes only the polling test helper and regression.
 
+## Historical receipts no longer decide execution
+
+Host `9d819d53` removes completion receipts from admission, claims, dependency
+readiness, recovery and owner controls. Normal reconciliation no longer writes
+receipts or deletes Task resources. Accepted attempts and retained Task state
+own current outcomes; explicit owner closure fences future execution.
+
+The new regression uses an archived success for generation 1 and an unfinished
+generation 2. The previous runtime incorrectly made dependent work runnable.
+The revised runtime waits for generation 2's accepted outcome while keeping that
+Task open. The regression fails on the previous implementation and passes on
+the candidate. Exact input replay and accepted-outcome correlation checks pass.
+
+App descriptor preparation rejects unconverted completion history before work
+can be admitted or executed. Offline conversion remains explicit and retains
+the original receipts. The preparation test verifies rejection without mutation
+and successful preparation after conversion. This adds one App-local read check,
+with no new table, persisted flag, repair loop or per-claim migration. Archive
+readers remain available; this is retirement of runtime authority, not deletion
+of historical evidence.
+
+All 218 affected checks pass. The first full CI run had **2,860 passed, 3 skipped
+and one failed**: the large-history responsiveness fixture directly activated
+unconverted receipts. It now runs the existing offline conversion first and
+retains its 4 MB evidence payload and responsiveness assertion. That check
+passes, and full CI at `9d819d53` then passes **2,861 tests**, with **3 skipped
+and zero failures** (2,864 tests / 289 files; 166.47 seconds). The receipt cleanup
+removes **155 net production lines** under the inventory rules below.
+
+## Integration with current main
+
+Host `ff3b852b` incorporates main `49272b5a`, including Telegram #157 and the
+release metadata. It preserves the shared persisted-event reader, explicit
+reply/Topic context and the upstream human-facing guidance. It also carries
+Telegram's active-input coordinates through the actual Task attempt: the
+current button uses that attempt's admitted batch, so newly queued input from
+another chat cannot move its destination or grant control over another attempt.
+The existing public Stop/reopen test now exercises two different chat/thread
+origins and passes those assertions. No inbox execution owner is restored.
+
+Full CI at `ff3b852b` passes types, the App boundary and lint, then reports
+**2,893 passed, 3 skipped and one failed** (2,897 tests / 291 files; 169.91 seconds).
+The upstream Topic-context test still called the retired inbox executor. Host
+`682ba127` moves that test onto real Task admission, attempt execution and fenced
+reply settlement. It keeps selected and replied-to Topics, oversized journal
+input, restart, provider redelivery and foreign/missing-Topic isolation; its 43
+assertions pass. The test supplies the judgment, as before; no production change
+is needed to retain these guarantees.
+
+Full local CI at `682ba127` passes Host/SDK types, the App boundary and lint:
+**2,894 passed, 3 skipped, zero failures** (2,897 tests / 291 files; 134.74 seconds).
+GitHub Quality and Container also pass on that exact revision.
+
+The isolated daemon cutover passes again from clean old Host `a8f65188` to clean
+candidate `682ba127`. All four observed old processes exit before conversion;
+the candidate retains the earlier reply once, answers the original unfinished
+input, records measurement **17**, keeps the supervisor closed and executes
+fresh input on the same open Task. The report records one Task execution owner,
+four scripted provider calls and zero real model calls. The startup precondition
+accepts the converted state. The earlier Linux fixture and rollout limits still
+apply; the successful live judgment trials retain their original source revisions.
+
 ## Current simplification inventory
 
-At `bf402899`, compared with baseline `a8f65188`, non-test files under `src/`
-and `packages/` add **2,830** lines and remove **2,182**: **648 net added lines**.
+At `682ba127`, compared with current main `49272b5a`, non-test files under `src/`
+and `packages/` add **2,880** lines and remove **2,374**: **506 net added lines**.
 This excludes tests, fixtures, scripts and Markdown. The three offline cutover
-modules account for **517** added lines; ongoing code has **131 net added lines**.
+modules account for **517** added lines; ongoing code has **11 net removed lines**.
 Migration remains a real review and maintenance cost until it can be retired.
+Earlier checkpoints compare against `a8f65188`; counting the newly integrated
+Telegram changes against that older base would misattribute upstream work to
+the PoC.
 
 | Responsibility | Candidate path and removed authority |
 | --- | --- |
@@ -1523,11 +1591,13 @@ Migration remains a real review and maintenance cost until it can be retired.
 | Return delegated evidence | Saved return links and exact outcomes wake the caller through durable input; the paired App removes its supervisor declaration, and saved waits do not create supervisory attempts |
 | Retry unfinished work | Existing Task backoff and recovery own execution; input coordination retains admission/attachment only, with no model callback or saved execution decision |
 | End an assignment | Authorized owner closure is separate from accepted outcomes; both retained mode spellings use the same lifecycle rather than choosing automatic completion or reopening |
+| Interpret historical completion | Offline conversion imports accepted attempts and owner closure; runtime receipt matching, duplicate pruning and receipt-based dependency readiness are gone |
 
 Handler-specific context and reply settlement remain necessary: messages,
 Topics and Requests have product meaning. They do not introduce another claim,
-retry counter or lifetime policy. This is evidence of fewer execution owners,
-not a claim of fewer production lines or proven operational reliability.
+retry counter or lifetime policy. The ongoing implementation is slightly smaller;
+total production code including conversion is still larger. Neither line counts
+nor fewer execution owners establish overall maintenance cost or operational reliability.
 The real-daemon fixture above now proves old-version cutover for its stated
 scope. Historical reader retirement and the final integration audit remain.
 Keep the next work on those gaps instead of adding a framework
@@ -1566,6 +1636,9 @@ results are retained here; passing focused tests does not clear the migration ga
 | `bf402899` | 2,859 / 3 / 0 | 2,862 / 287 | 140.66 | Retires the last independent inbox failure fixtures; retained input, atomic settlement and affordable redo run through the shared lifecycle |
 | `d2e1e2dc` | 2,858 / 3 / 1 | 2,862 / 287 | 121.32 | Clean old-to-new daemon cutover passes; full suite exposes premature wall-clock timeout in an existing test helper |
 | `2b13943f` | 2,860 / 3 / 0 | 2,863 / 288 | 121.31 | Monotonic polling fixes the demonstrated test-helper deadline fault; all portable checks pass |
+| `9d819d53` | 2,861 / 3 / 0 | 2,864 / 289 | 166.47 | Runtime receipt authority removed; old success cannot satisfy a newer assignment; activation requires converted history |
+| `ff3b852b` | 2,893 / 3 / 1 | 2,897 / 291 | 169.91 | Current main integrated; one upstream Topic fixture still invokes the retired inbox executor |
+| `682ba127` | 2,894 / 3 / 0 | 2,897 / 291 | 134.74 | Topic fixture uses actual Task execution; local/remote CI and clean old-to-new daemon cutover pass |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
