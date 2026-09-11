@@ -465,8 +465,12 @@ also preserves maintained outcomes, restores original input/wait links and
 continues failures with backoff. Identified historical worker self-stops become
 retained non-success evidence; human/owner closure and Turn Stop stay effective.
 Missing acceptance methods remain absent, and missing or conflicting identity
-aborts the conversion rather than assigning an unrelated answer. Supervisor
-retirement, mixed-input cutover and operational activation still need proof;
+aborts the conversion rather than assigning an unrelated answer. The
+[mixed-input correction](controller-poc-recovery-review.md#mixed-ordinary-and-conversation-input)
+uses the existing `requests.inputKinds` declaration to distinguish Conversation
+input from ordinary Task input sharing its Conversation. Source tests now cover
+their admission, execution, result return and storage reopen without mutual
+blocking. Supervisor retirement and operational activation still need proof;
 these source helpers are not an operational upgrade procedure.
 
 ## Acceptance and cost evidence

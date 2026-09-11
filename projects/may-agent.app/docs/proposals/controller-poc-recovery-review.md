@@ -10,10 +10,11 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`186392c9` has 138 unresolved failures. New human input now permits a fresh attempt
+`47638e0e` has 138 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
-Receipt and open-state conversion now have old-source import evidence below.
-The branch adds 600 net production lines against current main `a8f65188`
+Receipt and open-state conversion now have old-source import evidence below;
+mixed ordinary/Conversation input also passes source cutover and runtime checks.
+The branch adds 632 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Finish cutover and examine those
 failures before expanding the design.
 The latest live evidence is
@@ -913,6 +914,42 @@ does not reconstruct lost history from backups or guess another answer. The
 operator must establish that the old Host and workers stopped before invoking
 it. Supervisor retirement, mixed ordinary/Conversation cutover, operational
 activation and full regression convergence remain unfinished.
+
+## Mixed ordinary and Conversation input
+
+At `47638e0e`, a Conversation can contain both messages and inputs for ordinary background
+Tasks. The previous admission guard treated every unfinished unconverted row
+in that Conversation as legacy Conversation execution. It therefore rejected
+new messages and rolled back migration whenever an ordinary input was present.
+The inbox claim/readiness queries also excluded the entire Conversation after
+its first input acquired an execution Task, stranding the ordinary work.
+
+Admission, result-return admission and offline conversion now use the existing
+App `requests.inputKinds` declaration to identify legacy Conversation input.
+Inbox readiness and claims use the same declaration to select ordinary input;
+they never claim converted input or a declared Conversation kind. Apps handling
+all input conversationally have no inbox execution work. State callers without
+an App declaration retain their conservative legacy fence. No new App option,
+table or execution owner is introduced.
+
+The focused suites pass **70 checks**. Two added regressions reproduce the
+previous failures: migration preserves ordinary input unchanged across reopen,
+and normal Host admission runs both a Conversation reply and an ordinary Task
+in the same Conversation before and after reopening storage. The Task's exact
+result returns to its ordinary input while the Task stays open. Existing checks
+also verify result-return admission while unrelated ordinary input is pending,
+and exclusion of expired legacy Conversation execution.
+
+Full `bun run ci` passes Host/SDK types, the App boundary and lint, then reports
+**2,726 passed, 3 skipped and 138 failed** across 2,867 tests in 288 files
+(158.8 seconds). No failure names were added or removed versus `186392c9`.
+The checkpoint adds **32 net production lines**; full-branch growth is 632.
+Those counts exclude tests, fixtures and Markdown. Documentation integrity,
+checked examples and the canonical App boundary also pass.
+
+This establishes the mixed-input source boundary, not an operational cutover.
+Retained supervisor retirement, complete process shutdown/activation, broader
+regression convergence and current-source model trials remain required.
 
 ## Verification and cost
 
