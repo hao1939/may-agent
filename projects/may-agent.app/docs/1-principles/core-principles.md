@@ -72,8 +72,12 @@ owns these boundaries and the behavior required when a capability is absent.
 
 Execution boundaries preserve failure evidence, clean up resources, apply bounded
 known-safe responses and expose truthful outcomes. Code executes predictable
-rules; the App or LLM judges uncertain causes, scope and whether more work is
-worthwhile. An honest stop can be the right decision.
+rules; the App's worker judges uncertain causes and how to proceed. The
+assigning owner judges scope and whether more work is worthwhile. A worker
+can report failure honestly; abandoning the assignment belongs to its owner.
+The [continuing-Task baseline](../proposals/conversation-input-unification.md#recovery-keeps-the-same-task)
+uses backoff to pace unfinished work without a fixed failure-count stop;
+implementation of that lifecycle remains pending.
 
 Useful default error handling and metrics remain product goals. Being provided
 by default does not by itself put a capability in core. The expanded core-metrics

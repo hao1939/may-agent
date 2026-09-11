@@ -25,6 +25,12 @@ process gap, not a request for more procedural instructions to the model. The
 [next source and model slice](controller-poc-input-continuation.md) fixes that
 gap for its exercised Task paths; this document retains the preceding evidence.
 
+The later [recovery refinement](controller-poc-recovery-review.md) changes one
+acceptance rule: an honest failure must retain the unfinished assignment and
+continue after backoff unless its owner changes the instruction. The no-retry
+`stopped` cases below remain historical evidence of report acceptance, not
+proof of that revised continuation contract.
+
 ## What now works in the experiment
 
 The controller records a supported outcome and releases the attempt. It keeps

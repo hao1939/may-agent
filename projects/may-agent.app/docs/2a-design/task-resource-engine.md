@@ -25,13 +25,13 @@ and [resource reads](#resource-read-interface) as references when implementing a
 
 ## One lifecycle baseline
 
-**Accepted target; not implemented.** Ordinary work, maintenance and Conversation
-share one Task execution lifecycle.
+**Accepted target; not implemented.** One Task lifecycle serves ordinary work, maintenance and Conversation.
 
-A Task remains available after producing a result. Ordinary Apps usually close
-completed work by convention; maintenance and Conversation usually stay open.
-Core does not judge responsibility lifetime or need an `achieve`/`maintain` mode.
-Timers are optional input. Quiet Tasks need no worker or recurring model call.
+A Task remains open after an outcome: the worker chooses how to proceed; its owner
+decides whether to retain, revise or close the assignment. Unfinished failure keeps
+reconciling with backoff, without a fixed failure-count stop. Attempts stay bounded.
+Core needs no `achieve`/`maintain` mode. Timers are optional input; quiet Tasks
+consume no worker or recurring model call.
 
 A caller consumes its exact assignment's accepted outcome, not child closure.
 Existing input/generation/result references distinguish it from an old success.

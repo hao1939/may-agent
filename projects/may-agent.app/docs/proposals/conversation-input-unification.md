@@ -55,9 +55,11 @@ The conversation Task is the actual execution owner, with one claim and retry
 authority; it does not wrap an independently executing inbox handler.
 
 An App, parent agent or human already managing work can be its closing owner.
-"External" means outside the controller's judgment, not a new service or role
-registry. The executor may recommend stopping; the accountable caller or App
-applies an authorized closure decision through the existing control boundary.
+"External" means outside the assigned worker's authority over this assignment,
+not another service or process. The worker chooses **how to do the work**; the
+owner chooses **whether to keep assigning it**, change its scope or close it.
+An App may supply both worker guidance and owner policy, but a worker's failure
+report does not grant it closure authority. No new role registry is needed.
 
 ## Agent judges; controller carries it through
 
@@ -72,7 +74,8 @@ follow-through procedure.
 | Is the evidence sufficient for this ask? | Validate and retain the outcome against the exact input and attempt |
 | What independent work is needed, and what would count as success? | Admit the child, save its return link, schedule it and return its outcome |
 | Does this new fact change the answer or remaining work? | Route durable input and construct the next context, even after restart |
-| Is another try worthwhile, or should we ask, narrow scope or give up? | Apply bounded safe retries, waits and authorized controls; preserve failure evidence |
+| What approach should the worker try next, and what help does it need? | Retain unfinished work and evidence; schedule another bounded attempt with backoff or an exact wait |
+| Should the owner keep the assignment, revise its scope or close it? | Validate and apply the owner's explicit control; a worker report cannot exercise that authority |
 | Has the accepted human ask been resolved, and how should we explain it? | Commit the explanation and Request closure together; deliver through the interface |
 
 For example, the agent asks for a measurement and states the acceptance rule.
@@ -88,11 +91,13 @@ invent a scope change, judge uncertain evidence or declare a human ask satisfied
 If a model trial needs procedural coaching to complete the loop, simplify the
 contract/context or fix the missing controller behavior before adding prompts.
 
-A valid judgment to give up is an outcome, not an execution error. Preserve it
-and return it to the caller. A provider failure, interrupted attempt or rejected
-result is a different fact, handled through bounded execution failure rules.
-The distinction must survive storage and restart; agents should not have to
-learn a special success label to make code accept a non-success decision.
+A valid "I could not do it" report is an attempt outcome, not a provider error
+or permission to abandon the assignment. Preserve it and return it to the
+owner, while retaining the unfinished work for later reconciliation. On its
+next eligible wake, the worker reads that evidence and continues trying within
+the assignment. It need not wait for an owner to explicitly unblock each failure.
+Only the owner can accept abandonment or change the assignment. Agents should
+not have to use a false success label to make code retain an honest report.
 
 Choosing **which ask an answer resolves** is also judgment. Reading an input,
 handling an event or finishing a Turn does not establish that every outstanding
@@ -114,33 +119,47 @@ decisions alone do not prove that boundary.
 
 ### Recovery keeps the same Task
 
-An execution failure does not end the Task's responsibility. For a known
-transient, safely repeatable operation, code should retry the same work after
-backoff. The agent should not have to enumerate failed Tasks, issue routine
-unblocks, recreate work or decide Task lifetime to keep that process moving.
-Persist retry eligibility so ordinary wakes and restart cannot defeat the
-delay. Reuse the controller and existing recovery scan, not a recovery worker.
+Neither an execution error nor an accepted failure report ends the Task's
+responsibility. Retain the assignment, unresolved input and evidence. Release
+the attempt and arrange its next reconciliation through the same controller.
+An event can report a changed prerequisite; a due timer provides another chance
+to make progress if no such event arrives. The worker should not manage polling,
+retry counts or routine unblock lists.
 
-Bound attempts, retry rate and the authorized execution budget independently
-of Task lifetime. Reaching a budget can release execution and expose the
-unresolved work for an owner decision; it must not close the Task. The current
-four-failure gate is implementation evidence, not a required target policy.
-Do not retry a missing permission, unchanged invalid result or a valid give-up
-judgment as if waiting longer would fix it. New input or an App decision can
-make that retained work eligible again.
+**Use backoff, not a fixed failure-count stop.** Repeated failure increases the
+delay to a practical maximum interval; it does not make the Task ineligible
+forever. Persist that deadline and check it before claiming, so duplicate wakes
+and restart cannot shorten it. Reuse existing due queries and the recovery timer.
+Counters inform pacing and diagnostics, not the controller's decision to give up.
+Ordinary failure must not end in "four attempts, now require manual unblock."
 
-Core owns execution facts, safe mechanical repair, timing, fencing and evidence.
-The App owns judgments about cause, useful repair, scope, sufficiency and cost.
-Keep that guidance in the App's existing task/role instructions; first supply
-the failure and retained evidence as ordinary reconciliation context. Do not
-add a configurable recovery-prompt framework or a second recovery agent.
+Bound each attempt and concurrency. A spending or pause instruction explicitly
+set by the owner remains enforceable; it is different from an arbitrary core
+retry-count policy. Backoff reduces spending rate, not total spending over an
+unlimited lifetime. Accept that tradeoff explicitly: existing failure events,
+attempt history, last progress and next retry time let the owner notice and
+intervene. No new recovery App, escalation ladder or metric service is required.
 
-A shared executor may retain a small instruction to continue the original
-bounded assignment after an interrupted/empty response. It must not demand an
-immediate final answer, invent a domain blocker or choose a repair strategy.
-Instructions to inspect uncertain effects do not replace idempotency or durable
-receipts where duplicate effects matter. A valid non-success judgment is an
-accepted outcome; the caller receives it and may close or revise the work.
+Retry means **reconcile current state again**, not blindly replay the failed
+commands. Cheap safe work may be redone. Inspect durable evidence or receipts
+before repeating an effect whose duplication matters. When an action lacks
+permission or a prerequisite, keep that action waiting, report the need and
+recheck appropriately; neither a timer nor persistence grants new authority.
+An invalid model result is failure evidence for correction, not a reason to
+invent a domain blocker or discard the assignment.
+
+Core owns claims, timing, fencing, retained evidence and notifications. The App
+supplies worker judgment about diagnosis and the next useful approach. Its
+assigning owner judges continued value, scope and closure. Put those instructions
+in the existing App task/role context; do not add a configurable recovery-prompt
+framework or require an owner model turn for every retry.
+
+A shared executor may explain that an attempt was interrupted, what evidence
+was retained and what execution allowance remains. It must not demand an
+immediate final answer or select a domain repair plan. Keep the existing bounded
+continuation mechanism small rather than nesting another model recovery loop.
+A saved failure report is accepted evidence, but it does not mark the original
+assignment fulfilled or erase its future retry eligibility.
 
 The [review of PRs #153–#155](controller-poc-recovery-review.md) applies these
 rules to their actual changes and records an observed backoff bypass.
@@ -150,7 +169,7 @@ rules to their actual changes and records an observed backoff bypass.
 | Fact | Meaning |
 | --- | --- |
 | Attempt ended | Bounded execution returned or stopped; this alone establishes no success |
-| Accepted outcome | Evidence establishes progress, an answer, a completed assignment, a wait or a non-success disposition for the exact work considered |
+| Accepted outcome | A validated report for the exact work considered: progress, an answer, completion, a wait or failure; accepting failure does not resolve the assignment |
 | Task is quiet | No eligible work is pending; the Task remains available for later input |
 | Task is closed | An authorized owner ended further execution; history and accepted outcomes remain readable |
 | Request is closed | May resolved the accepted human ask and recorded its explanation; this does not close the conversation Task |
@@ -160,10 +179,12 @@ Keep bounded execution, exact waits and visible failure evidence. Remove the
 core's need to infer whether being caught up means the responsibility has ended.
 A result never silently closes its Task, and closure never manufactures success.
 
-Ordinary work uses a simple App convention: accept the assignment's result,
-make it available to its caller, then request closure when no further input
-needs handling. This needs no extra human approval or model call. The Host
-checks the current version and pending input before applying that request, so
+Ordinary work uses a simple owner/App convention: accept evidence that satisfies
+the assignment, make it available to its caller, then request closure when no
+further input needs handling. Do not apply this convention to every accepted
+report: failure leaves the work unfinished. A declared acceptance rule needs
+no extra human approval or model call. The Host checks the current version and
+pending input before applying that request, so
 an old result cannot close over a newer correction. Maintenance and Conversation
 usually stay open; their owners close them when appropriate. Timers are optional
 for any Task and do not define a separate mode.
@@ -186,16 +207,18 @@ Task. Start with a new linked Task for genuinely new work after closure; omit a
 general reopen protocol.
 
 An open but quiet Task consumes stored state, not a worker or recurring model
-call. Safety queries select pending work, due declared waits and interrupted
-claims; open status alone is not eligibility. Forgotten quiet Tasks can remain
-stored initially. Optional retention policy may later close or archive them,
+call. Being caught up permits rest; an unfinished failed assignment remains
+pending behind its retry deadline or prerequisite wait. A failure report cannot
+silently make it permanently quiet. Safety queries select pending work, due
+waits/retries and interrupted claims; open status alone is not eligibility.
+Forgotten quiet Tasks can remain stored initially. Optional retention policy may later close or archive them,
 with unresolved asks accounted for; it is not required for execution correctness.
 
 ## Which differences are real?
 
 | Use | Inputs and handling | Usual closure convention |
 | --- | --- | --- |
-| Ordinary work | Assignment, corrections, relevant facts and child results | Caller/App closes after the relevant accepted outcome |
+| Ordinary work | Assignment, corrections, relevant facts and child results | Caller/App closes after its acceptance rule is satisfied, or explicitly withdraws unfinished work |
 | Maintenance | Relevant facts, optionally timer input | App or human ends the ongoing work |
 | Conversation | Ordered human input and linked Task facts; handler discusses, acts and explains | Human/App ends the Conversation; Request completion leaves it available |
 
@@ -210,14 +233,15 @@ belong to input, outcome and control semantics within the same engine:
 | Background pause and interactive work | Keep pause scoped to background work; a shared Task engine must not disable human discussion when background attempts are paused |
 | Required result and subscribed update | Check prerequisites for the action/result they constrain; a follow-up link must not block unrelated input or the next human Turn |
 | Ordered input and coalesced wake | Retain input identities and all unhandled outcomes; a queue key is only a hint |
-| Failure of work and availability of its owner | Bound retries for the failing work; fresh authorized input can be considered without erasing failure evidence or blindly repeating the failed operation |
+| Failure of work and availability of its owner | Pace attempts for failing work; fresh authorized input remains actionable without erasing failure evidence or blindly repeating the failed operation |
 | Human execution and automated review | Select existing capacity lanes from trusted input origin and execution purpose; Task identity, App name and priority do not grant the human reserve |
 
 Messages, Topics and Requests remain product records. They need no private
 scheduler, lease or retry loop. One Task result envelope can reference typed
 conversation decisions without flattening every record into a universal schema.
 Code validates revisions, identity, acceptance and closure authority; the
-App/LLM judges whether work is useful, sufficient or worth continuing.
+worker judges the approach and evidence; the assigning owner judges whether
+to retain, revise or close the assignment.
 
 ## What the source actually requires
 
@@ -239,8 +263,9 @@ execution block merely to reuse its current code. Account for the action whose
 prerequisite is missing and reject unsupported success claims.
 
 Current retry counters are Task-generation scoped, while conversational Stop
-and failures attach to an input. Define the smallest common handling rule using
-retained input/attempt identities. Do not rename `maintain` or add a hidden
+and failures attach to an input. Replace the failure-count stop with durable
+backoff, using retained input/attempt identities so one failed ask cannot silence
+unrelated human input. Do not rename `maintain` or add a hidden
 conversation mode to retain the same lifecycle branches.
 
 ## Options and their cost
@@ -318,9 +343,10 @@ The optional timer first queries unhandled outcomes or decisions. Start from
 the existing 15-minute / 100-link bounds, preserve progress across pages, and
 measure actual query cost; these are not a response-latency guarantee. Handle
 missed notifications, late links, multiple Tasks/Conversations and new Request
-revisions. Preserve handled, stopped and exhausted evidence; a timer must not
-reset a retry budget or revive closed work. Required claim/restart recovery
-remains Host-owned and independent of the optional timer.
+revisions. Preserve handled, stopped and failed-attempt evidence; a timer must
+not bypass a persisted retry deadline, an explicit owner pause or closed work.
+Required claim/restart recovery remains Host-owned and independent of the
+optional timer.
 
 Pending human input has priority over automated reviews; active reviews stay
 bounded and stoppable. Background pause leaves conversation handling available.
@@ -375,8 +401,9 @@ this lifecycle. Verify the target at its actual boundaries:
 tests, run real agents against isolated synthetic work through the source PoC.
 Use ordinary asks and the intended judgment context, with code owning the
 process above. Include a held-back variant without case-specific coaching:
-delegation and return, insufficient evidence, a changed ask, and an affordable
-failure where narrowing scope or giving up is better than another retry.
+delegation and return, insufficient evidence, a changed ask, repeated failure
+followed by useful progress, and an owner deciding to narrow or withdraw costly
+work. The worker follows that decision without making it for its own assignment.
 Record invalid decisions/calls, lost obligations, human interventions, model
 turns, latency and usage. Distinguish provider failure from a bad judgment.
 Compare the current and proposed boundaries on the same work; passing a new
@@ -389,11 +416,13 @@ schema alone does not prove controller usability or reduced complexity.
 | Close while idle/running, repeated close, late event/result | No new execution or stale settlement; history remains and unresolved work is visibly non-success |
 | Conversation -> A -> B, success and failure | One execution owner per Task; each owner judges its own outcome and returns it through saved links |
 | Human input while children wait | The Conversation handles it without waiting for a child or falsely accepting unfinished work |
-| Stop, later input, pause and exhausted failure | Scope is preserved; later work remains possible without replaying stopped work or erasing failure evidence |
+| Stop, later input, pause and repeated failure | Scope is preserved; later input remains actionable, retries are paced and stopped work is not replayed |
 | Duplicate/during-run wakes and multiple outcomes | One current attempt per Task, no lost message/outcome, another pass only when eligible |
 | Transient failure, duplicate wake and restart during cooldown | Same Task/input, enforced backoff and no agent-generated retry batch; delay and failure evidence survive restart |
 | Empty initial response or interrupted final synthesis | Continue authorized work with retained evidence and budget; no forced premature blocker or duplicated committed effect |
-| Accepted non-success judgment | Preserve the exact judgment, return it to the caller and keep the Task open; no automatic execution-error retry |
+| Accepted non-success report, then no owner intervention | Preserve and return the report; retain the original unfinished assignment and continue on a due wake without an unblock command |
+| More than four failures, then repaired prerequisite | No failure-count stop; persisted backoff paces attempts, and the same Task resumes useful work without a batch action |
+| Owner revises or closes after failure | Next attempt uses the new scope, or closure fences execution; the worker report alone cannot abandon work |
 | Reopen storage before/after result or explanation commit | Retain accepted evidence, current Request scope and one durable explanation; discover missed notifications |
 | Quiet Task, timer and removed timer | No model work just because a Task is open; removing optional discovery preserves ordinary execution correctness |
 | Mixed human/system input and multiple Conversations | Correct claim and capacity origin, human reserve preserved, independent keys can run concurrently |

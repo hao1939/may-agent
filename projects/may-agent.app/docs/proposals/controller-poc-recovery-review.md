@@ -5,38 +5,49 @@ remains incomplete and unmerged. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
 
-The default should be: retain the Task and its input, retry eligible mechanical
-failures with backoff, and bring evidence back to the App for decisions. Only
-the authorized App/parent/human closes the Task. Staying open does not require
-a live worker, repeated model judgment about waiting, or an unlimited spending
-commitment. Execution budgets and retry rate are separate from lifetime.
+The worker decides **how to do the assigned work**. The assigning App, parent
+agent or human decides **whether to keep assigning it**, revise its scope or
+close it. The controller retains that assignment and evidence, releases each
+attempt, and schedules the next eligible reconciliation with backoff. Neither
+a worker's honest failure report nor a core retry counter may abandon the work.
+
+This corrects the earlier review's suggestion that accepting a give-up judgment
+could leave unfinished work quiet until an explicit owner unblock. That would
+preserve the Task record while still letting the worker end the effort.
 
 ## PR assessment
 
-| PR and reviewed revision | Fit with the proposal | Recommendation |
+| PR and reviewed revision | What it fixes | Fit with the revised baseline |
 | --- | --- | --- |
-| [#153](https://github.com/hao1939/may-agent/pull/153), `edd368ac` | Correctly separates completed execution from a non-success App judgment. A validated `stopped` result must not be discarded because its outer finish status says `failure`. | Keep the fix. Under the new lifecycle, accept and return the judgment while leaving the Task open. Do not retry the same give-up as a provider error. |
-| [#154](https://github.com/hao1939/may-agent/pull/154), `5943a292` | Replaces a 16-action ceiling with 256 actions and a 64 KiB UTF-8 budget, checked before graph reads. This fixes a real atomic admission failure; it does not change Task recovery or closure. | Reasonable small fix for useful semantic action batches. Routine transient recovery should use controller eligibility, not require an agent to produce an unblock list. A larger list is not the recovery architecture. |
-| [#155](https://github.com/hao1939/may-agent/pull/155), `f691ff08` | Removes an instruction to immediately finish after an empty/interrupted response. That instruction could produce a blocker before work began. The replacement permits original work within retained scope and budget. | Reasonable containment fix. Keep generic continuation guidance small; put domain repair and value/cost judgment in App instructions. Prefer the common Task retry path over expanding model-driven rescue paths in Host. |
+| [#153](https://github.com/hao1939/may-agent/pull/153), `edd368ac` | Preserves a validated non-success result despite outer `finish(status: "failure")`. | Keep this execution-boundary distinction. Accept the failure as an attempt report, notify the owner, retain unfinished work and reconcile again after backoff. It neither closes the Task nor satisfies the assignment. The PR alone does not implement this continuation. |
+| [#154](https://github.com/hao1939/may-agent/pull/154), `5943a292` | Replaces a 16-action ceiling with 256 actions and a 64 KiB UTF-8 budget, checked before graph reads. | A fix for the old action-batch admission failure, not the target recovery mechanism. Remove the need for routine unblock batches by keeping failed work eligible with backoff. A larger arbitrary count does not establish that behavior. Storage payload limits are a separate admission concern; backoff does not bound one oversized transaction. |
+| [#155](https://github.com/hao1939/may-agent/pull/155), `f691ff08` | Replaces harmful "finish now" guidance after an empty/interrupted response with permission to continue the original bounded work. | Directionally correct. Core supplies execution facts and continuation mechanics; App instructions supply diagnosis and approach. The assigning owner retains value/cost, scope and closure decisions. Avoid growing a Host recovery-prompt framework. |
 
-These PRs are local fixes on the old lifecycle. None alone establishes the
-continuing-Task contract. In particular, #153 preserves a judgment at the
-execution boundary; the lifecycle experiment separately changes acceptance
-and closure. Do not infer that a saved `stopped` judgment must close its Task,
-or that keeping the Task open means repeating a concluded decision forever.
+These are fixes on the old lifecycle. Keep their verified local benefits
+separate from claims about the continuing-Task proposal. None alone provides
+owner-controlled abandonment, persisted pacing and continued work after an
+accepted failure report.
 
-For #154's shared-prerequisite example, distinguish a known safe retry from
-a decision about whether the prerequisite is actually repaired. Code can
-react to a declared fact or recheck a deterministic prerequisite. An uncertain
-repair decision belongs to the App. Once that decision is established, code
-should carry eligible work forward. Keep ordinary atomic action validation;
-do not add a batch-splitting subsystem merely to support routine retries.
+For #154's shared-prerequisite example, each Task can retain its assignment,
+report failure and release execution. Failure backoff schedules a later check;
+a declared repair event also reaches the same reconciliation path. The next
+attempt reads the current prerequisite and existing effects before acting.
+An agent need not enumerate Tasks or prepare a batch of `unblock-task` actions.
+There is no fixed attempt count after which the controller silently retires
+that work. Explicit owner controls remain separate.
 
-For #155, a Host message explaining that execution was interrupted is not an
-App repair plan. Universal scope and effect-preservation rules may stay with
-the executor. Questions such as whether to retry an approach, change scope,
-seek permission or give up belong to the App's existing instructions. An
-extra configurable `recoveryPrompt` hook has not yet earned its cost.
+Keep attempts bounded and concurrent execution controlled. Backoff lowers
+retry frequency; it cannot cap lifetime cost if a failure lasts forever. The
+accepted tradeoff is paced ongoing effort with visible failure evidence and
+owner intervention. It does not authorize new scope, missing permissions or
+blindly repeating uncertain effects. Already satisfied work can rest while
+awaiting owner closure; unfinished failure must retain a continuation path.
+
+For #155, keep worker guidance in the App's existing task/role instructions:
+"Use the current assignment and retained evidence to make the next useful
+step. Report failure honestly, but do not abandon the assignment or decide its
+lifetime." The owner may judge that more work is not worth its cost. This is
+an authority distinction, not a requirement for another model or service.
 
 ## Recovery evidence and remaining gap
 
@@ -49,9 +60,10 @@ adds two tests using real Task storage and the controller:
   reopen. This proves mechanics for the fixture, not retry safety for every
   failure in #154's reported incident.
 - **Exhausted execution retries** leave the Task open and failure evidence
-  intact across reopen. An ordinary timer wake does not reset the budget.
-  This records current behavior; it does not establish four failures as the
-  desired retry policy or prove that fresh human input is correctly isolated.
+  intact across reopen. The intended ordinary-wake assertion had an incorrect
+  call signature in this checkpoint; its uncommitted correction needs a rerun.
+  This records the old failure-count gate, which now conflicts with the target.
+  It does not prove continued recovery or fresh human input isolation.
 
 The portable [backoff probe](https://github.com/hao1939/may-agent/blob/c1c9f72b/scripts/poc/controller-judgment/backoff.ts)
 found a separate defect. With a configured 200 ms retry delay, the final run
@@ -61,13 +73,20 @@ gap visible. The existing timer schedules a future retry but does not prevent
 earlier queue input. It is a controller/timer probe, not a model or SQLite
 restart test; restart-safe cooldown remains to implement and verify.
 
-The best next mechanism is a persisted retry-eligibility deadline checked
-before claiming the Task and indexed by the existing recovery scan. It needs
-no domain recovery controller. Verify duplicate wakes, restart, scoped Stop,
-authorized budget exhaustion and explicit closure against it. A persistent
-known-safe failure may justify longer backoff; an unchanged semantic failure
-needs new evidence or judgment. Never manufacture success or closure to make
-the retry machinery settle.
+The next mechanism is a persisted retry-eligibility deadline checked before
+claiming and indexed by the existing recovery scan. Its initial uncommitted
+source patch passes TypeScript checking but has not passed behavioral checks;
+it still retains the four-failure stop and handles execution errors only.
+Neither that patch nor this checkpoint implements the revised baseline.
+
+The next acceptance checks must cover an accepted failure report followed by
+useful continuation on the same assignment, more than four failed attempts
+followed by recovery without unblock, duplicate wakes/restart during cooldown,
+and owner revision or closure. Include a real model that learns from its prior
+failure without deciding whether to keep the assignment. Verify that failure
+reports reach the parent without falsely completing its Request, and that
+later progress remains discoverable. Never manufacture success or closure to
+make the retry machinery settle.
 
 PR #153's earlier live Host-contract trials already showed that a model can
 return an honest give-up and have it accepted after the execution fix. The
