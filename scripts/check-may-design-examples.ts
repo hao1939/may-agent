@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { resolve } from "node:path";
 import { admitTaskReconcileResult } from "../projects/may-agent/packages/sdk/src/task-contract.ts";
-import { appTaskContext, observeAppTaskIntent } from "../projects/may-agent/src/app/app-task-reconciler.ts";
-import { AppTaskResourceStore } from "../projects/may-agent/src/app/app-task-resource-store.ts";
+import { appTaskContext, observeAppTaskIntent } from "../projects/may-agent/src/app/core/tasks/app-task-reconciler.ts";
+import { AppTaskResourceStore } from "../projects/may-agent/src/app/core/state/app-task-resource-store.ts";
 import app, { dependencyResult, waitingResult } from "../projects/may-agent.app/docs/examples/app.ts";
 import { reviewInput } from "../projects/may-agent.app/docs/examples/client.ts";
 import seed from "../projects/may-agent.app/docs/examples/seed.json";
