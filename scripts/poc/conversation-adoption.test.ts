@@ -4,15 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { fixtureRead, fixtureWrite } from "./conversation-adoption-tools.js";
+import { fixtureGit, fixtureRead, fixtureWrite } from "./conversation-adoption-tools.js";
 
 test("the portable daemon preflight activates committed source without a model call", async () => {
   let root: string | undefined;
   try {
     const result = await promisify(execFile)("bun", [join(import.meta.dir, "conversation-adoption.ts")], {
-      // Outer bound covers startup (30s), bounded Git setup, correlated reload
-      // (35s including admission), source inspection and subprocess shutdown.
-      timeout: 210_000,
+      // Outer bound covers startup (30s), up to 20 Git commands (10s each),
+      // two reload observations (35s each including admission), and shutdown.
+      timeout: 330_000,
     });
     root = result.stdout.match(/Experiment artifacts: (.+)/)?.[1];
     expect(root?.startsWith(join(tmpdir(), "may-e2e-"))).toBe(true);
@@ -23,6 +23,8 @@ test("the portable daemon preflight activates committed source without a model c
     expect(setup.catalogSize).toBe(6);
     expect(setup.initialReload.state).toBe("succeeded");
     expect(setup.initialReload.requestId).toStartWith("fixture-reload:");
+    expect(setup.sourcePreflight.activated).toBe(false);
+    expect(setup.sourcePreflight.sourceCommit).toBe(setup.fixtureCommit);
     const failure = JSON.parse(readFileSync(join(root!, "preflight-failure.json"), "utf8"));
     expect(failure.state).toBe("failed");
     expect(failure.requestId).not.toBe(setup.initialReload.requestId);
@@ -30,7 +32,22 @@ test("the portable daemon preflight activates committed source without a model c
   } finally {
     if (root?.startsWith(join(tmpdir(), "may-e2e-"))) rmSync(root, { recursive: true, force: true });
   }
-}, 220_000);
+}, 340_000);
+
+test("fixture Git forwards cancellation to a waiting subprocess", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-teaching-git-"));
+  const controller = new AbortController();
+  // hash-object waits for stdin; abort must stop it before the 10-second Git bound.
+  const timer = setTimeout(() => controller.abort(), 50);
+  try {
+    await expect(fixtureGit(root, ["hash-object", "--stdin"], controller.signal)).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  } finally {
+    clearTimeout(timer);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 5_000);
 
 test("the teaching trial tools confine writes to guidance, and reads to synthetic evidence/source", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-teaching-scope-"));

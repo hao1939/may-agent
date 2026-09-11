@@ -12,8 +12,11 @@ import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.j
 import { publishEvent, getEvent } from "../../packages/control/src/client.js";
 
 const exec = promisify(execFile);
-export async function fixtureGit(root: string, ...args: string[]): Promise<string> {
-  return (await exec("git", args, { cwd: root, timeout: 10_000 })).stdout.trim();
+export async function fixtureGit(root: string, args: string[], signal?: AbortSignal): Promise<string> {
+  signal?.throwIfAborted();
+  const result = await exec("git", args, { cwd: root, timeout: 10_000, signal });
+  signal?.throwIfAborted();
+  return result.stdout.trim();
 }
 
 /** Observe the existing operation result; admission or a timeout is not completion. */
@@ -124,15 +127,16 @@ export function fixtureSource({ projectRoot, persistDir }: { projectRoot: string
     execute: async (_id, raw, signal) => {
       const input = raw as { action: string; paths?: string[] };
       signal?.throwIfAborted();
+      if (!["status", "commit", "reload"].includes(input.action)) throw new Error("Unknown source action");
       if (input.action === "commit") {
         if (!input.paths?.length || !input.paths.every(guidance)) throw new Error("Explicit guidance paths required");
         for (const path of input.paths) scope(projectRoot, path, true);
-        await fixtureGit(projectRoot, "add", "--", ...input.paths);
-        await fixtureGit(projectRoot, "commit", "-qm", "Apply human-scoped guidance", "--", ...input.paths);
+        await fixtureGit(projectRoot, ["add", "--", ...input.paths], signal);
+        await fixtureGit(projectRoot, ["commit", "-qm", "Apply human-scoped guidance", "--", ...input.paths], signal);
       }
-      const sourceCommit = await fixtureGit(projectRoot, "rev-parse", "HEAD");
+      const sourceCommit = await fixtureGit(projectRoot, ["rev-parse", "HEAD"], signal);
       const reload = input.action === "reload" ? await fixtureReload(persistDir, signal) : undefined;
-      const dirty = await fixtureGit(projectRoot, "status", "--short", "--", "agents", "shared", "projects");
+      const dirty = await fixtureGit(projectRoot, ["status", "--short", "--", "agents", "shared", "projects"], signal);
       return response({
         sourceCommit,
         activeCommit: store.current()?.sourceCommit,

@@ -42,6 +42,8 @@ after the audit when it is no longer needed.
   Reload inspection follows the exact request event to its durable completion
   link; a 30-second observation bound or unavailable read is pending evidence,
   not a failed activation. The active source is checked separately.
+  Git commands receive the turn's cancellation signal and check it before each
+  command. Cancellation cannot undo a commit or reload already admitted.
 - The agent has no shell, external-PR mutation, dependency installation or
   deployment tool. Runtime still writes its ordinary session evidence. The
   write adapter permits only the synthetic agent's identity and skill files;
@@ -67,6 +69,10 @@ after the audit when it is no longer needed.
 
 Read the answers and source diffs. Counts of headings, tool calls or successful
 turns alone are not measures of helpfulness or correctness.
+The no-model preflight invokes the source tool itself for a permitted guidance
+commit, rejected path/action/cancelled commit, and successful/rejected reload.
+Timeout transcript reads use the Host's tolerant reader and mark the evidence
+partial; missing or partially written lines are not proof of no model activity.
 
 ## Observations from the initial trial
 
