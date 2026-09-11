@@ -57,7 +57,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
   };
 
+  const inFlightReloads = new Set<number>();
   function finishReload(event: unknown): void {
+    const rowId = eventRowId(event);
+    if (rowId !== null) {
+      if (inFlightReloads.has(rowId)) return;
+      inFlightReloads.add(rowId);
+    }
     const request = eventData(event);
     const emitResult = (result: RuntimeReloadResult): void => {
       bus.emit({
@@ -74,13 +80,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     };
     void Promise.resolve()
       .then(() => options.reload())
+      .catch((error) => ({
+        ok: false,
+        summary: `[reload] Failed: ${error instanceof Error ? error.message : String(error)}`,
+      }))
       .then(emitResult)
-      .catch((error) =>
-        emitResult({
-          ok: false,
-          summary: `[reload] Failed: ${error instanceof Error ? error.message : String(error)}`,
-        }),
-      );
+      .catch((error) => log("warn", `[reload] Could not record result: ${String(error)}`))
+      .finally(() => {
+        if (rowId !== null) inFlightReloads.delete(rowId);
+      });
   }
 
   function normalizeProjectPath(value: unknown): string | null {

@@ -125,7 +125,15 @@ export type AppConversationResource = {
   /** Latest durable message sequence represented by this view. */
   version: number;
   /** Exact observed turn for human control; a stale revision cannot stop its replacement. */
-  activeTurn?: { id: string; revision: number };
+  activeTurn?: {
+    id: string;
+    revision: number;
+    /** Source coordinates for honest presentation, not additional control authority. */
+    channel?: string;
+    channelTargetId?: string;
+    channelThreadId?: string;
+    channelMessageId?: number;
+  };
   /** Bounded accepted asks, independent of input handling and Task completion. */
   requests?: AppConversationRequest[];
   /** Exact incoming message currently being reconciled, when authoring an App request. */

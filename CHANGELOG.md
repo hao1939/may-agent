@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0](https://github.com/hao1939/may-agent/compare/v1.0.0...v1.1.0) (2026-09-11)
+
+
+### Features
+
+* **metrics:** show truthful workflow health and run evidence ([#147](https://github.com/hao1939/may-agent/issues/147)) ([3e9db14](https://github.com/hao1939/may-agent/commit/3e9db1422764736d9751e4ffc1255092e533e25d))
+
+
+### Bug Fixes
+
+* **metrics:** tolerate bounded startup write contention ([#151](https://github.com/hao1939/may-agent/issues/151)) ([05b939b](https://github.com/hao1939/may-agent/commit/05b939b0e24e501395bfaebc556957187d75dc3b))
+* **models:** preserve optional Responses tool fields ([#152](https://github.com/hao1939/may-agent/issues/152)) ([f614edb](https://github.com/hao1939/may-agent/commit/f614edbb7e9f6507ea5c6bb3ee489715155eb102))
+* **observers:** preserve feedback until facts are published ([#156](https://github.com/hao1939/may-agent/issues/156)) ([a8f6518](https://github.com/hao1939/may-agent/commit/a8f6518855aa5f85a697468665269124dda30479))
+* **tasks:** keep session adapters aligned with accepted runtime ([#145](https://github.com/hao1939/may-agent/issues/145)) ([5857529](https://github.com/hao1939/may-agent/commit/5857529effc31857dc2e5bd44e89e38cf5e5323c))
+* **telegram:** preserve input, reply context, and reload results ([#157](https://github.com/hao1939/may-agent/issues/157)) ([6fbc49a](https://github.com/hao1939/may-agent/commit/6fbc49a6c3d79df52655c8a97ec8277782337770))
+
 ## [1.0.0](https://github.com/hao1939/may-agent/compare/v0.3.0...v1.0.0) (2026-09-11)
 
 

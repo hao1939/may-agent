@@ -625,7 +625,7 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     previewTaskEvent: ({ appId, event, targetedTaskId }) => tasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: (input) => tasks.previewEventRoutes(input),
   });
-  const publish = (id: string, text: string) =>
+  const publish = (id: string, text: string, metadata?: Record<string, unknown>) =>
     f.bus.emit({
       type: "conversation.message.created",
       source: "fixture",
@@ -636,6 +636,7 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
         author: { kind: "human", id },
         text,
         idempotencyKey: `message:${id}`,
+        ...(metadata ? { metadata } : {}),
       },
     });
   return {
@@ -1390,10 +1391,18 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
     if (event.type === "handler.failed") failures.push(event);
   });
   try {
-    ingress.publish("first", "Compare A and B");
+    const firstSurface = {
+      channel: "telegram", channelTargetId: "-1000001", channelThreadId: "7", channelMessageId: 101,
+    };
+    const secondSurface = {
+      channel: "telegram", channelTargetId: "-1000002", channelThreadId: "8", channelMessageId: 102,
+    };
+    ingress.publish("first", "Compare A and B", firstSurface);
     const first = await firstStarted.promise;
     const observed = readAppConversationResource(f.db, app.id, "primary").activeTurn!;
-    expect(observed).toEqual({ id: first.taskBinding!.attemptId, revision: first.taskBinding!.generation });
+    expect(observed).toEqual({
+      id: first.taskBinding!.attemptId, revision: first.taskBinding!.generation, ...firstSurface,
+    });
     // A notification cannot grant control authority or become fresh input.
     const notification = eventAfter(f.bus, (event) => event.type === "app.task.attempt.stopped");
     f.bus.emit({
@@ -1411,7 +1420,8 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
     await notification;
     expect(first.signal?.aborted).toBe(false);
     expect(listAppInboxItems(f.db, { appId: app.id })).toHaveLength(1);
-    ingress.publish("second", "What is a threshold?");
+    ingress.publish("second", "What is a threshold?", secondSurface);
+    expect(readAppConversationResource(f.db, app.id, "primary").activeTurn).toEqual(observed);
     const aborted = new Promise<void>((resolve) =>
       first.signal!.addEventListener("abort", () => resolve(), { once: true }),
     );
@@ -1427,6 +1437,11 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
     releaseFirst.resolve();
     const second = await secondStarted.promise;
     expect(batches).toEqual([["first"], ["second"]]);
+    expect(readAppConversationResource(f.db, app.id, "primary").activeTurn).toEqual({
+      id: second.taskBinding!.attemptId,
+      revision: second.taskBinding!.generation,
+      ...secondSurface,
+    });
     const replay = ingress.tasks.stopTurn({
       appId: app.id,
       conversationId: "primary",

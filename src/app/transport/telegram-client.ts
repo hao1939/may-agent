@@ -145,12 +145,13 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
       for (const telegramMsgId of sentMsgIds) {
         try {
           storeNotificationMessage(opts.persistDir, {
+            chat_id: chatId,
             telegram_msg_id: telegramMsgId,
             event_type: context.eventType || null,
             agent: context.agent || null,
             session_id: context.sessionId || null,
             project_id: context.projectId || null,
-            data: notificationDataForChat(context.data, chatId),
+            data: notificationDataForChat(context.data, chatId, context.messageThreadId),
           });
         } catch {
           /* best-effort */
@@ -197,12 +198,20 @@ export function splitTelegramMessage(text: string, maxLen = TELEGRAM_MAX_LENGTH)
   return chunks;
 }
 
-function notificationDataForChat(data: string | undefined, chatId: string): string {
-  if (!data) return JSON.stringify({ channelTargetId: chatId });
+function notificationDataForChat(data: string | undefined, chatId: string, topicId?: number): string {
+  if (!data)
+    return JSON.stringify({
+      channelTargetId: chatId,
+      ...(topicId === undefined ? {} : { channelThreadId: String(topicId) }),
+    });
   try {
     const parsed = JSON.parse(data) as unknown;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return JSON.stringify({ ...(parsed as Record<string, unknown>), channelTargetId: chatId });
+      return JSON.stringify({
+        ...(parsed as Record<string, unknown>),
+        channelTargetId: chatId,
+        ...(topicId === undefined ? {} : { channelThreadId: String(topicId) }),
+      });
     }
   } catch {
     // Preserve non-JSON legacy context below.

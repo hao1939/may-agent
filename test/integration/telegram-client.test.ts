@@ -51,7 +51,7 @@ describe("telegram client", () => {
         { chat_id: "12345", text: "hello" },
       ]);
       expect(info).toEqual([]);
-      expect(getNotificationMessage(persistDir, 700)).toMatchObject({
+      expect(getNotificationMessage(persistDir, "12345", 700)).toMatchObject({
         event_type: "message.created",
         agent: "may",
         session_id: "s_1",

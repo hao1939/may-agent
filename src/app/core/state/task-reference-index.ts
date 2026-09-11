@@ -74,10 +74,13 @@ export type TaskReferenceResolution =
   | { kind: "ambiguous"; candidates: ResolvedTaskReference[] }
   | { kind: "missing" };
 
+/** Invalid human reference, distinct from a failed storage read. */
+export class TaskReferenceError extends Error {}
+
 export function resolveTaskReference(db: SqliteDb, input: string): TaskReferenceResolution {
   const reference = input.trim().toLowerCase();
   if (!/^(?:[0-9a-f]{8}|[0-9a-f]{16}|[0-9a-f]{64})$/.test(reference)) {
-    throw new Error("Task reference must contain 8, 16, or 64 hexadecimal characters");
+    throw new TaskReferenceError("Task reference must contain 8, 16, or 64 hexadecimal characters");
   }
   const column = reference.length === 8 ? "prefix8" : reference.length === 16 ? "prefix16" : "digest";
   const rows = db

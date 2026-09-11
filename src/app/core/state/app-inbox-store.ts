@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
+import type { AppConversationResource, AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
+import type { AppTaskAttempt } from "../tasks/app-task-state.js";
+import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
@@ -229,10 +231,10 @@ export function readActiveAppTurn(
   db: SqliteDb,
   appId: string,
   conversationId: string,
-): { id: string; revision: number } | undefined {
+): AppConversationResource["activeTurn"] {
   const attempt = db
     .prepare(
-      `SELECT a.attempt_id, a.task_generation FROM app_tasks t
+      `SELECT a.attempt_id, a.task_generation, a.attempt_json FROM app_tasks t
      JOIN app_task_attempts a ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
      WHERE t.app_id = ? AND t.task_id = (
        SELECT execution_task_id FROM app_inbox_items
@@ -240,16 +242,45 @@ export function readActiveAppTurn(
      ) AND a.state = 'running'`,
     )
     .get(appId, appId, conversationId);
-  if (attempt) return { id: String(attempt.attempt_id), revision: Number(attempt.task_generation) };
+  if (attempt) {
+    const claimed = parseJson<AppTaskAttempt>(attempt.attempt_json, "Task attempt");
+    // Match the claimed batch's reply destination; newly queued input cannot
+    // move the active Turn or its Stop button to a different surface.
+    const inputs = taskInputAdmissionKeys(claimed.events ?? [], claimed.continuedInputKeys)
+      .map((key) =>
+        key.startsWith("conversation-input:") ? getAppInboxItem(db, key.slice("conversation-input:".length)) : null,
+      )
+      .filter((item) =>
+        item?.appId === appId && item.conversationId === conversationId && item.executionTaskId === claimed.taskId,
+      );
+    const source = inputs.filter((item) => item?.source.kind === "human").at(-1) ?? inputs.at(-1);
+    return {
+      id: String(attempt.attempt_id),
+      revision: Number(attempt.task_generation),
+      ...(source?.channel ? { channel: source.channel } : {}),
+      ...(source?.channelTargetId ? { channelTargetId: source.channelTargetId } : {}),
+      ...(source?.channelThreadId ? { channelThreadId: source.channelThreadId } : {}),
+      ...(source?.channelMessageId ? { channelMessageId: source.channelMessageId } : {}),
+    };
+  }
   const row = db
     .prepare(
-      `SELECT id, lease_generation FROM app_inbox_items
+      `SELECT id, lease_generation, channel, channel_target_id, channel_thread_id, channel_message_id FROM app_inbox_items
     WHERE app_id = ? AND conversation_id = ? AND source_kind = 'human'
       AND status = 'handling' AND lease_owner IS NOT NULL
     ORDER BY conversation_seq, created_at LIMIT 1`,
     )
     .get(appId, conversationId);
-  return row ? { id: String(row.id), revision: Number(row.lease_generation) } : undefined;
+  return row
+    ? {
+        id: String(row.id),
+        revision: Number(row.lease_generation),
+        ...(row.channel ? { channel: String(row.channel) } : {}),
+        ...(row.channel_target_id ? { channelTargetId: String(row.channel_target_id) } : {}),
+        ...(row.channel_thread_id ? { channelThreadId: String(row.channel_thread_id) } : {}),
+        ...(row.channel_message_id ? { channelMessageId: Number(row.channel_message_id) } : {}),
+      }
+    : undefined;
 }
 
 /** Called inside the Host's stop transaction; terminal input cannot restart. */
