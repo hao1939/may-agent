@@ -895,6 +895,7 @@ describe("Human Task service", () => {
     receipt.outcome = "目".repeat(1_000);
     receipt.summary = "摘".repeat(1_000);
     receipt.response = "full response";
+    receipt.result = { content: "x".repeat(3_000) };
     receipt.evidence = ["full evidence"];
     db.prepare("UPDATE app_task_receipts SET receipt_json = ? WHERE app_id = 'alpha' AND receipt_id = 'large'").run(
       JSON.stringify(receipt),
@@ -906,6 +907,7 @@ describe("Human Task service", () => {
     expect(Buffer.byteLength(card.summary!, "utf8")).toBeLessThanOrEqual(HUMAN_TASK_LIST_TEXT_MAX_BYTES);
     expect(card.outcome.endsWith("…")).toBe(true);
     expect(card.response).toBeUndefined();
+    expect(card.result).toBeUndefined();
     expect(card.evidence).toBeUndefined();
     expect(Buffer.byteLength(JSON.stringify(card), "utf8")).toBeLessThan(2_048);
 
@@ -913,6 +915,7 @@ describe("Human Task service", () => {
     expect(detail?.outcome).toBe(receipt.outcome);
     expect(detail?.summary).toBe(receipt.summary);
     expect(detail?.response).toBe("full response");
+    expect(detail?.result).toEqual(receipt.result);
     expect(detail?.evidence).toEqual(["full evidence"]);
   });
 
@@ -955,6 +958,7 @@ describe("Human Task service", () => {
     resource.status.observedAttemptId = "attempt-previous";
     resource.status.summary = "The previous proposal is complete.";
     resource.status.response = "Adopt the previous proposal.";
+    resource.status.result = { previous: true };
     resource.status.evidence = ["previous proof"];
     db.prepare(
       `INSERT INTO app_task_attempts(
@@ -991,6 +995,7 @@ describe("Human Task service", () => {
       response: expect.anything(),
       evidence: expect.anything(),
     });
+    expect(service.getTask({ appId: "alpha", taskId: "maintained" })?.result).toBeUndefined();
   });
 
   test("persists Task-level cancellation, fences the attempt, and removes it from active work", () => {

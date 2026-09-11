@@ -83,7 +83,6 @@ import {
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
-  retryFailedAppTask,
   appTaskContext,
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
@@ -222,12 +221,16 @@ it("recovers legacy attention as the same Tasks without inventing App review inp
     // Old notification metadata may still exist in persisted attempt JSON.
     if (id === "work/legacy-notified") Object.assign(attempt, { attentionNotifiedAt: "2020-01-01T00:00:00.000Z" });
     attempt.metadata.resourceVersion += 1;
+    const resourceVersion = resource.metadata.resourceVersion;
+    resource.metadata.resourceVersion += 1;
+    resource.status.phase = "attention";
+    delete resource.status.executionFailures;
+    delete resource.status.executionRetryAt;
     expect(
       config.resourceStore.commit({
-        fences: [
-          { taskId: id, resourceVersion: resource.metadata.resourceVersion, generation: resource.metadata.generation },
-        ],
+        fences: [{ taskId: id, resourceVersion, generation: resource.metadata.generation }],
         attempts: [attempt],
+        tasks: [{ resource, ready: false }],
       }),
     ).toBe(true);
   }
@@ -298,10 +301,11 @@ it("recovers legacy attention as the same Tasks without inventing App review inp
     } finally {
       stop();
     }
-    expect(config.resourceStore.readReceipt(taskId)).toMatchObject({
-      metadata: { generation: before.resources![taskId].metadata.generation },
-      evidence: ["fixture:verified"],
+    expect(readAcceptedRuntimeAttempt(config, taskId)).toMatchObject({
+      taskGeneration: before.resources![taskId].metadata.generation,
+      acceptedResult: { evidence: ["fixture:verified"] },
     });
+    expect(config.resourceStore.isCancelled(taskId)).toBe(false);
   }
   expect(calls).toEqual(legacyIds);
 });
@@ -352,14 +356,17 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
     });
   await run("work/workflow");
   const waiting = config.resourceStore.readTask("work/workflow")!;
-  expect(waiting.status.phase).toBe("attention");
+  expect(waiting.status.phase).toBe("pending");
+  expect(waiting.status.executionRetryAt).toBeGreaterThan(Date.now());
   expect(waiting.status.summary).toContain("workflow runner is not installed");
   const attempts = Object.values(readTaskSnapshot(config).attempts ?? {});
   expect(attempts).toHaveLength(1);
   await run("work/workflow");
   expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toEqual(attempts);
   await run("work/independent");
-  expect(config.resourceStore.readReceipt("work/independent")).not.toBeNull();
+  expect(readAcceptedRuntimeAttempt(config, "work/independent")?.acceptedResult?.summary).toBe(
+    "Independent work completed",
+  );
 
   let calls = 0;
   await installCoreTaskRuntimes({
@@ -385,8 +392,14 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
   });
   expect(config.resourceStore.readTask("work/workflow")?.status.phase).toBe("pending");
   await run("work/workflow");
+  expect(calls).toBe(0);
+  advanceRuntimeTaskRetry(config, "work/workflow");
+  await run("work/workflow");
   expect(calls).toBe(1);
-  expect(config.resourceStore.readReceipt("work/workflow")?.metadata.generation).toBe(waiting.metadata.generation);
+  expect(readAcceptedRuntimeAttempt(config, "work/workflow")).toMatchObject({
+    taskGeneration: waiting.metadata.generation,
+    acceptedResult: { summary: "Verified by supplied runner" },
+  });
   expect(
     Object.values(readTaskSnapshot(config).attempts ?? {}).find((a) => a.metadata.id === attempts[0]!.metadata.id),
   ).toEqual(attempts[0]);
@@ -452,7 +465,7 @@ it("retains an App and exact agent work when its agent capability is removed, th
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
     });
   await run();
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
   const attempts = Object.values(readTaskSnapshot(config).attempts ?? {});
   expect(attempts).toHaveLength(1);
   expect(attempts[0]?.failureReason).toBe("HandlerUnavailable");
@@ -462,7 +475,13 @@ it("retains an App and exact agent work when its agent capability is removed, th
   await installCoreTaskRuntimes({ ...base, agents });
   expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
   await run();
-  expect(config.resourceStore.readReceipt(taskId)?.metadata.generation).toBe(1);
+  expect(calls).toBe(0);
+  advanceRuntimeTaskRetry(config, taskId);
+  await run();
+  expect(readAcceptedRuntimeAttempt(config, taskId)).toMatchObject({
+    taskGeneration: 1,
+    acceptedResult: { summary: "Current goal verified" },
+  });
   expect(calls).toBe(1);
 });
 
@@ -546,9 +565,9 @@ it("does not release an agent handoff until its required workflow verifier is av
   await installCoreTaskRuntimes(base);
   await run();
   expect(agentCalls).toBe(0);
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
   await installCoreTaskRuntimes(base);
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("attention");
+  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
   expect(config.resourceStore.readReceipt(taskId)).toBeNull();
   const before = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const withoutVerifier: TaskWorkflowRunner = {
@@ -562,12 +581,14 @@ it("does not release an agent handoff until its required workflow verifier is av
   expect(agentCalls).toBe(0);
   expect(verified).toBe(0);
   await installCoreTaskRuntimes({ ...base, workflows });
+  advanceRuntimeTaskRetry(config, taskId);
   await run();
   // A fresh workflow pass may re-establish its handoff after recovery.
-  if (!config.resourceStore.readReceipt(taskId)) await run();
+  if (!readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult) await run();
   expect(verified).toBe(1);
   expect(agentCalls).toBe(1);
-  expect(config.resourceStore.readReceipt(taskId)?.acceptanceBasis.method).toBe("deterministic");
+  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.acceptanceBasis.method).toBe("deterministic");
+  expect(config.resourceStore.isCancelled(taskId)).toBe(false);
 });
 
 function activateTaskResources(config: AppTaskContext, persistDir: string, appId = "sample"): AppTaskContext {
@@ -608,6 +629,17 @@ function loadedTaskConfig(f: ReturnType<typeof fixture>, persistDir = join(f.roo
     maxConcurrent: 1,
     resourceStore,
   });
+}
+
+function readAcceptedRuntimeAttempt(config: AppTaskContext, taskId: string) {
+  const id = config.resourceStore.readTask(taskId)?.status.observedAttemptId;
+  return id ? config.resourceStore.readAttempt(id) : null;
+}
+
+function advanceRuntimeTaskRetry(config: AppTaskContext, taskId: string) {
+  const deadline = config.resourceStore.readTask(taskId)!.status.executionRetryAt!;
+  expect(deadline).toBeGreaterThan(Date.now());
+  setSystemTime(new Date(deadline));
 }
 
 function mutateRuntimeAttemptFixture(
@@ -2944,13 +2976,13 @@ describe("canonical App task runtime", () => {
     );
 
     expect(existsSync(worktreeRoot)).toBe(false);
-    expect(readTaskSnapshot(config).resources?.["work/retry-workspace"]?.status.phase).toBe("attention");
+    expect(readTaskSnapshot(config).resources?.["work/retry-workspace"]?.status.phase).toBe("pending");
 
     await recoverInstalledAppTasks(bus);
 
     expect(existsSync(worktreeRoot)).toBe(false);
     expect(readTaskSnapshot(config).resources?.["work/retry-workspace"]?.status).toMatchObject({
-      phase: "attention",
+      phase: "pending",
       observedGeneration: 1,
     });
     openControllerGate();
@@ -3165,14 +3197,15 @@ describe("canonical App task runtime", () => {
         resultPersisted: true,
       });
 
-      const receiptDeadline = Date.now() + 2_000;
-      while (!readTaskSnapshot(config).receipts?.[intent.id] && Date.now() < receiptDeadline) await Bun.sleep(5);
-      const terminalReceipt = JSON.stringify(readTaskSnapshot(config).receipts?.[intent.id]);
-      expect(terminalReceipt).not.toBeUndefined();
+      const resultDeadline = Date.now() + 2_000;
+      while (!readAcceptedRuntimeAttempt(config, intent.id)?.acceptedResult && Date.now() < resultDeadline)
+        await Bun.sleep(5);
+      const terminalResult = JSON.stringify(readAcceptedRuntimeAttempt(config, intent.id)?.acceptedResult);
+      expect(terminalResult).not.toBeUndefined();
       expect(await externalReaperExit).toEqual({ code: 0, signal: null });
       await Bun.sleep(700);
       expect(existsSync(staleMutation)).toBe(false);
-      expect(JSON.stringify(readTaskSnapshot(config).receipts?.[intent.id])).toBe(terminalReceipt);
+      expect(JSON.stringify(readAcceptedRuntimeAttempt(config, intent.id)?.acceptedResult)).toBe(terminalResult);
     } finally {
       try {
         process.kill(-stalePgid, "SIGKILL");
@@ -3420,7 +3453,7 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 2_000;
-    while (!readTaskSnapshot(config).receipts?.["work/post-claim-superseded"] && Date.now() < deadline) {
+    while (!readAcceptedRuntimeAttempt(config, "work/post-claim-superseded")?.acceptedResult && Date.now() < deadline) {
       await Bun.sleep(5);
     }
 
@@ -3434,9 +3467,9 @@ describe("canonical App task runtime", () => {
       disposition: "stale",
       staleRecovery: "superseded",
     });
-    expect(readTaskSnapshot(config).receipts?.["work/post-claim-superseded"]).toMatchObject({
-      metadata: { generation: 2 },
-      summary: "The replacement generation completed",
+    expect(readAcceptedRuntimeAttempt(config, "work/post-claim-superseded")).toMatchObject({
+      taskGeneration: 2,
+      acceptedResult: { summary: "The replacement generation completed" },
     });
   });
 
@@ -3647,7 +3680,8 @@ describe("canonical App task runtime", () => {
       completed: [],
       cancelled: [{ taskId: childId, summary: expect.stringContaining("Cancelled by human") }],
     });
-    expect(config.resourceStore.readReceipt(parentId)?.summary).toContain("Assessment delivered");
+    expect(readAcceptedRuntimeAttempt(config, parentId)?.acceptedResult?.summary).toContain("Assessment delivered");
+    expect(config.resourceStore.isCancelled(parentId)).toBe(false);
     expect(config.resourceStore.readReceipt(childId)).toBeNull();
     expect(config.resourceStore.readCancellation(childId)?.decidedBy).toEqual({ kind: "human" });
   }, 5_000);
@@ -4131,17 +4165,22 @@ describe("canonical App task runtime", () => {
 
       const config = loadedTaskConfig(f);
       const deadline = Date.now() + 2_000;
-      while (!readTaskSnapshot(config).receipts?.["work/replacement-executor"] && Date.now() < deadline) {
+      while (
+        !readAcceptedRuntimeAttempt(config, "work/replacement-executor")?.acceptedResult &&
+        Date.now() < deadline
+      ) {
         await Bun.sleep(5);
       }
       expect(calls).toBe(1);
       expect(cliRequests).toBe(0);
-      expect(readTaskSnapshot(config).receipts?.["work/replacement-executor"]).toMatchObject({
+      expect(readAcceptedRuntimeAttempt(config, "work/replacement-executor")).toMatchObject({
         handler: "executor:codex",
-        executor: "codex",
-        summary: "Replacement Codex adapter completed the Task",
-        evidence: ["test:replacement-codex"],
+        acceptedResult: {
+          summary: "Replacement Codex adapter completed the Task",
+          evidence: ["test:replacement-codex"],
+        },
       });
+      expect(config.resourceStore.readTask("work/replacement-executor")?.spec.executor).toBe("codex");
     },
   );
 
@@ -4270,18 +4309,19 @@ describe("canonical App task runtime", () => {
         },
       });
     await attach(false);
+    const config = loadedTaskConfig(f);
     const deadline = Date.now() + 1500;
-    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "attention" && Date.now() < deadline)
-      await Bun.sleep(5);
+    while (!config.resourceStore.readTask(taskId)?.status.executionRetryAt && Date.now() < deadline) await Bun.sleep(5);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
       id: taskId,
-      status: "attention",
+      status: "pending",
       generation: 1,
       summary: "Current evidence does not confirm the requirement",
       conditions: [],
-      evidence: expect.arrayContaining(['workflow-blocker-context:{"finding":"exact assertion missing","runId":"123"}']),
+      evidence: expect.arrayContaining([
+        'workflow-blocker-context:{"finding":"exact assertion missing","runId":"123"}',
+      ]),
     });
-    const config = loadedTaskConfig(f);
     const attemptsBefore = Object.values(readTaskSnapshot(config).attempts ?? {});
     expect(attemptsBefore).toHaveLength(1);
     expect(attemptsBefore[0]).toMatchObject({ state: "failed", failureReason: "handler-blocked" });
@@ -4289,8 +4329,7 @@ describe("canonical App task runtime", () => {
     await closeInstalledAppTaskRuntimes(bus);
     await installAppTaskRuntimes(runtimeOptions);
     await recoverInstalledAppTasks(bus);
-    await Bun.sleep(50);
-    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status).toBe("attention");
+    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status).toBe("pending");
     expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
     const humanTasks = new HumanTaskService(getDb(join(f.root, "state")), {
       snapshot: () => runtimeOptions.appRegistrySnapshot,
@@ -4306,12 +4345,13 @@ describe("canonical App task runtime", () => {
     });
     const retryDeadline = Date.now() + 1500;
     while (
-      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "attention" &&
+      (Object.values(readTaskSnapshot(config).attempts ?? {}).length < 2 ||
+        !config.resourceStore.readTask(taskId)?.status.executionRetryAt) &&
       Date.now() < retryDeadline
     )
       await Bun.sleep(5);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
-      status: "attention",
+      status: "pending",
       generation: 1,
       conditions: [],
     });
@@ -4476,7 +4516,7 @@ describe("canonical App task runtime", () => {
     expect(readFileSync(join(f.appDir, "retained.txt"), "utf8")).toBe("unfinished source\n");
   });
 
-  it("parks invalid handler results instead of retrying them through recovery", async () => {
+  it("paces invalid output and accepts a corrected result on the same Task", async () => {
     const f = fixture();
     const bus = eventBus();
     let calls = 0;
@@ -4485,7 +4525,9 @@ describe("canonical App task runtime", () => {
       executors: {
         invalid: async () => {
           calls += 1;
-          return { state: "error", summary: "Invalid authored state", evidence: [] } as never;
+          return calls === 1
+            ? ({ state: "error", summary: "Invalid authored state", evidence: [] } as never)
+            : { state: "converged", summary: "Corrected result", evidence: ["fixture:corrected"] };
         },
       },
       appRegistrySnapshot: {
@@ -4504,7 +4546,7 @@ describe("canonical App task runtime", () => {
           id: "work/invalid-result",
           parentId: "operations",
           outcome: "Settle a rejected result",
-          acceptance: ["Invalid output does not become a retry loop"],
+          acceptance: ["Invalid output is rejected and the same work can continue"],
           mode: "achieve",
           agent: "sample-owner",
           executor: "invalid",
@@ -4518,34 +4560,43 @@ describe("canonical App task runtime", () => {
       },
     });
     const config = appTaskContext({
-      appDir: f.appDir, projectDir: f.projectDir, agent: "sample-owner", maxConcurrent: 1,
+      appDir: f.appDir,
+      projectDir: f.projectDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!,
     });
     const deadline = Date.now() + 1_000;
-    while (
-      config.resourceStore.readTask("work/invalid-result")?.status.phase !== "attention" && Date.now() < deadline
-    ) {
+    while (!config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt && Date.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(config.resourceStore.readTask("work/invalid-result")?.status).toMatchObject({
-      phase: "attention",
+      phase: "pending",
       observedGeneration: 1,
       summary: "Handler result was rejected: state must be converged, waiting, stopped, or needs-agent",
     });
     for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
-    await Bun.sleep(50);
     expect(calls).toBe(1);
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(
       "work/invalid-result",
     );
     expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toContainEqual(
       expect.objectContaining({
-        taskId: "work/invalid-result", state: "failed", failureReason: "HandlerResultInvalid",
+        taskId: "work/invalid-result",
+        state: "failed",
+        failureReason: "HandlerResultInvalid",
       }),
     );
+    expect(config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt).toBeGreaterThan(Date.now());
+    const correctedDeadline = Date.now() + 1500;
+    while (!readAcceptedRuntimeAttempt(config, "work/invalid-result")?.acceptedResult && Date.now() < correctedDeadline)
+      await Bun.sleep(5);
+    expect(readAcceptedRuntimeAttempt(config, "work/invalid-result")?.acceptedResult?.summary).toBe("Corrected result");
+    expect(calls).toBe(2);
+    expect(config.resourceStore.isCancelled("work/invalid-result")).toBe(false);
   });
 
-  it("stops controller retries durably while recovery and unrelated work remain available", async () => {
+  it("paces controller retries beyond the old limit while unrelated work progresses", async () => {
     const f = fixture();
     const bus = eventBus();
     let calls = 0;
@@ -4593,26 +4644,31 @@ describe("canonical App task runtime", () => {
         },
       });
     await attach("broken");
-    const deadline = Date.now() + 4_000;
-    while (config.resourceStore.readTask("work/broken")?.status.phase !== "attention" && Date.now() < deadline) {
+    const deadline = Date.now() + 6_000;
+    while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < 5 && Date.now() < deadline) {
       await Bun.sleep(5);
     }
-    expect(calls).toBe(4);
+    expect(calls).toBe(5);
     expect(config.resourceStore.readTask("work/broken")?.status).toMatchObject({
-      phase: "attention",
-      executionFailures: 4,
+      phase: "pending",
+      executionFailures: 5,
     });
     for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
     await attach("healthy");
     const healthyDeadline = Date.now() + 1_000;
-    while (!readTaskSnapshot(config).receipts?.["work/healthy"] && Date.now() < healthyDeadline) await Bun.sleep(5);
-    expect(readTaskSnapshot(config).receipts?.["work/healthy"]?.summary).toBe("Verified independent work");
-    expect(calls).toBe(4);
+    while (!readAcceptedRuntimeAttempt(config, "work/healthy")?.acceptedResult && Date.now() < healthyDeadline)
+      await Bun.sleep(5);
+    expect(readAcceptedRuntimeAttempt(config, "work/healthy")?.acceptedResult?.summary).toBe(
+      "Verified independent work",
+    );
+    expect(calls).toBe(5);
+    expect(config.resourceStore.readTask("work/broken")?.status.executionRetryAt).toBeGreaterThan(Date.now());
+    expect(config.resourceStore.isCancelled("work/broken")).toBe(false);
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
   });
 
   it.each([false, true])(
-    "lets an existing parent repair exhausted work and accept the caller result (restart: %j)",
+    "lets the parent repair a prerequisite while its child continues through normal retry (restart: %j)",
     async (restart) => {
       const f = fixture();
       let bus = eventBus();
@@ -4629,25 +4685,17 @@ describe("canonical App task runtime", () => {
           reviews.push(structuredClone({ children, events }));
           pendingCallerStates.push(host.get("request-delivery"));
           const child = children.live.find((entry) => entry.taskId === childId);
-          if (child?.status === "attention") {
-            // The fixture App chooses the repair. The Host only executes its
-            // existing fenced action; no new owner or recovery Task is created.
+          if (child?.status === "pending" && child.summary?.includes("Verification prerequisite unavailable")) {
+            // The App repairs the prerequisite. The existing controller retries
+            // the same child at its saved deadline without a separate unblock decision.
             repaired = true;
             return {
               state: "waiting",
               summary: "Prerequisite repaired; verify the same child again",
               evidence: ["test:prerequisite-repaired"],
-              actions: [
-                {
-                  kind: "unblock-task",
-                  taskId: childId,
-                  expectedGeneration: child.generation,
-                  reason: "Prerequisite repair verified",
-                },
-              ],
             };
           }
-          if (children.completed.some((entry) => entry.taskId === childId)) {
+          if (child?.status === "done") {
             return {
               state: "converged",
               summary: "Owner accepted the verified delivery",
@@ -4751,20 +4799,17 @@ describe("canonical App task runtime", () => {
             dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
           });
         await run(parentId);
-        for (let index = 0; index < 3; index += 1) {
-          await expect(run(childId)).rejects.toThrow("Verification prerequisite unavailable");
-        }
         expect(await run(childId)).toEqual([parentId]);
         const config = loadedTaskConfig(f);
         expect(config.resourceStore.readTask(childId)?.status).toMatchObject({
-          phase: "attention",
-          executionFailures: 4,
+          phase: "pending",
+          executionFailures: 1,
         });
         expect(config.resourceStore.readTask(parentId)?.status.phase).toBe("waiting");
         const parentTrigger = readTaskSnapshot(config).taskTriggers?.[parentId];
         expect(parentTrigger?.events).toHaveLength(1);
         for (let index = 0; index < 3; index += 1) expect(await run(childId)).toEqual([]);
-        expect(childCalls).toBe(4);
+        expect(childCalls).toBe(1);
         expect(readTaskSnapshot(config).taskTriggers?.[parentId]).toEqual(parentTrigger);
         expect(await host!.recoverTaskDependencies()).toMatchObject({ woken: 0, errors: [] });
         expect(host!.readyCount("sample")).toBe(0);
@@ -4778,23 +4823,30 @@ describe("canonical App task runtime", () => {
 
       const config = loadedTaskConfig(f);
       const deadline = Date.now() + 5_000;
-      while (!config.resourceStore.readReceipt(parentId) && Date.now() < deadline) await Bun.sleep(5);
-      expect(config.resourceStore.readReceipt(parentId)?.summary).toBe("Owner accepted the verified delivery");
-      expect(childCalls).toBe(5);
+      while (
+        readAcceptedRuntimeAttempt(config, parentId)?.acceptedResult?.state !== "converged" &&
+        Date.now() < deadline
+      )
+        await Bun.sleep(5);
+      expect(readAcceptedRuntimeAttempt(config, parentId)?.acceptedResult?.summary).toBe(
+        "Owner accepted the verified delivery",
+      );
+      expect(childCalls).toBe(2);
       expect(reviews).toHaveLength(3);
       expect(reviews[1]!.children.live).toContainEqual(
         expect.objectContaining({
           taskId: childId,
           generation: 1,
-          status: "attention",
+          status: "pending",
           summary: expect.stringContaining("Verification prerequisite unavailable"),
         }),
       );
       expect(JSON.stringify(reviews[1]!.events)).toContain("Verification prerequisite unavailable");
-      expect(reviews[2]!.children.completed).toContainEqual(
+      expect(reviews[2]!.children.live).toContainEqual(
         expect.objectContaining({
           taskId: childId,
           generation: 1,
+          status: "done",
           summary: "Delivery verification passed",
           evidence: ["test:verification-passed"],
         }),
@@ -4814,18 +4866,21 @@ describe("canonical App task runtime", () => {
         },
       });
       const snapshot = readTaskSnapshot(config);
-      expect(Object.keys(snapshot.resources ?? {})).toEqual([]);
-      expect(Object.keys(snapshot.receipts ?? {}).sort()).toEqual([parentId, childId].sort());
-      expect(Object.values(snapshot.attempts ?? {}).filter((attempt) => attempt.taskId === childId)).toHaveLength(5);
+      expect(Object.keys(snapshot.resources ?? {}).sort()).toEqual([parentId, childId].sort());
+      expect(Object.keys(snapshot.receipts ?? {})).toEqual([]);
+      expect(config.resourceStore.isCancelled(parentId)).toBe(false);
+      expect(config.resourceStore.isCancelled(childId)).toBe(false);
+      expect(Object.values(snapshot.attempts ?? {}).filter((attempt) => attempt.taskId === childId)).toHaveLength(2);
       for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
       expect(reviews).toHaveLength(3);
-      expect(childCalls).toBe(5);
+      expect(childCalls).toBe(2);
     },
   );
 
   it.each(["normal", "recovered"])(
-    "settles an App stop without success and retains it after restart (%s)",
+    "retains a worker failure report and resumes the same input after reopen (%s)",
     async (route) => {
+      setSystemTime(new Date());
       const f = fixture();
       let bus = eventBus();
       const persistDir = join(f.root, "state");
@@ -4836,7 +4891,28 @@ describe("canonical App task runtime", () => {
         evidence: ["analysis:feasibility"],
         result: { partial: "Feasibility findings" },
       };
+      let repaired = false;
       let calls = 0;
+      const currentOutcome = () =>
+        repaired
+          ? {
+              state: "converged" as const,
+              summary: "Feature verified",
+              evidence: ["test:feature"],
+              result: { feature: "working" },
+            }
+          : decision;
+      const agents: TaskAgentRunner = {
+        available: () => true,
+        prepare: async () => true,
+        role: (agent) => ({ agent, instructions: "Finish the assigned feature" }),
+        snapshot: () => agents,
+        async execute(attempt) {
+          calls++;
+          expect(attempt.attempt.previousAttempt?.acceptedResult).toMatchObject(decision);
+          return { handlerResult: { ...currentOutcome(), actions: [] }, runId: null };
+        },
+      };
       const app = defineApp({
         ...definition(),
         task: () => ({
@@ -4855,39 +4931,40 @@ describe("canonical App task runtime", () => {
         installCoreTaskRuntimes({
           ...options(f, bus),
           installControllers: false,
+          agents,
           executors: {
-            fixture: async () => {
+            fixture: async (attempt) => {
               calls++;
-              return decision;
+              if (repaired) expect(attempt.previousAttempt?.acceptedResult).toMatchObject(decision);
+              return currentOutcome();
             },
           },
-          appRegistrySnapshot: { id: "boot:app-stop", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+          appRegistrySnapshot: {
+            id: "boot:failure-report",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: app }],
+          },
         });
       await install();
       const config = loadedTaskConfig(f);
-      const host = new AppInboxHost({
-        db: getDb(persistDir),
-        apps: [app],
-        attachTask: async (input) => {
-          if (!input.claim) throw new Error("expected request claim");
-          return attachRequestToTask(config, { ...input, claim: input.claim });
-        },
-        readDependency: async ({ dependency }) => {
-          const task = readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: dependency.id });
-          return task
-            ? {
-                ...dependency,
-                status: task.status,
-                summary: task.summary,
-                response: task.response,
-                result: task.result,
-                evidence: task.evidence,
-              }
-            : null;
-        },
-      });
+      const createHost = (state: AppTaskContext) =>
+        new AppInboxHost({
+          db: state.resourceStore.db,
+          apps: [app],
+          attachTask: async (input) => {
+            if (!input.claim) throw new Error("expected input claim");
+            return attachRequestToTask(state, { ...input, claim: input.claim });
+          },
+          readDependency: ({ dependency, admissionKey }) =>
+            createAppTaskCapability({ bus }).readDependency({
+              appDir: f.appDir,
+              dependency,
+              admissionKey,
+            }),
+        });
+      const host = createHost(config);
       host.admit({
-        id: "request-stop",
+        id: "request-feature",
         appId: "sample",
         source: { kind: "human", id: "operator" },
         input: { kind: "sample", data: {} },
@@ -4901,24 +4978,25 @@ describe("canonical App task runtime", () => {
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         });
       const events: AgentEvent[] = [];
-      bus.subscribe((event) => {
-        events.push(event);
-      });
+      bus.subscribe((event) => events.push(event));
       if (route === "normal") {
         expect(await run()).toEqual([]);
         expect(events).toContainEqual(
-          expect.objectContaining({ type: "app.dependency.updated", data: expect.objectContaining({ id: taskId }) }),
+          expect.objectContaining({
+            type: "app.dependency.updated",
+            data: expect.objectContaining({ id: taskId }),
+          }),
         );
         expect(events).not.toContainEqual(expect.objectContaining({ type: "app.dependency.completed" }));
       } else {
         const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "auto" });
         if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
-        recordAppTaskAttemptSession(config, claim, "session-stop");
+        recordAppTaskAttemptSession(config, claim, "session-report");
         const input = {
           result: decision,
           config,
           taskId,
-          sessionId: "session-stop",
+          sessionId: "session-report",
           descriptor: {
             id: "sample",
             appDir: f.appDir,
@@ -4932,49 +5010,58 @@ describe("canonical App task runtime", () => {
         expect(consumeTerminalTaskResult(input)).toMatchObject({ state: "stopped", reconcileTaskIds: [] });
         expect(consumeTerminalTaskResult(input)).toBeNull();
       }
-      expect(config.resourceStore.readCancellation(taskId)).toMatchObject({
-        decidedBy: { kind: "app", agent: "sample-owner" },
-        result: decision.result,
-        evidence: decision.evidence,
+      const reported = readAcceptedRuntimeAttempt(config, taskId)!;
+      expect(reported.acceptedResult).toMatchObject(decision);
+      expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+      expect(host.readyCount("sample")).toBe(0);
+      expect(host.get("request-feature")).toMatchObject({
+        status: "handling",
+        waitingOn: { kind: "task", id: taskId },
       });
-      expect(config.resourceStore.readReceipt(taskId)).toBeNull();
-      expect(host.readyCount("sample")).toBe(1);
-      expect(await host.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
-      expect(host.get("request-stop")).toMatchObject({
-        status: "done",
-        result: {
-          summary: expect.stringContaining("outcome not achieved"),
-          response: expect.stringContaining("outcome not achieved"),
-          result: decision.result,
-          evidence: decision.evidence,
-        },
-      });
+      const admissionKey = host.get("request-feature")!.taskAdmissionKey!;
+      expect(readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey })).toBeNull();
+
       await closeInstalledAppTaskRuntimes(bus);
       closeDb(persistDir);
       bus = eventBus();
       await install();
       const reopened = loadedTaskConfig(f);
+      const resumedHost = createHost(reopened);
       recordAppTaskTrigger(reopened, taskId, { type: "sample.wake", eventId: 88 });
-      for (let index = 0; index < 3; index += 1) {
+      for (let index = 0; index < 3; index++) {
         await recoverInstalledAppTasks(bus);
         expect(await run()).toEqual([]);
       }
       expect(calls).toBe(route === "normal" ? 1 : 0);
+      expect(reopened.resourceStore.readAttempt(reported.metadata.id)).toEqual(reported);
       expect(Object.values(readTaskSnapshot(reopened).attempts ?? {})).toHaveLength(1);
       const tasks = new HumanTaskService(getDb(persistDir), {
-        snapshot: () => ({
-          id: "stop:read",
-          generation: 1,
-          entries: [{ appDir: f.appDir, definition: app }],
-        }),
+        snapshot: () => ({ id: "failure:read", generation: 1, entries: [{ appDir: f.appDir, definition: app }] }),
       });
       expect(tasks.getTask({ appId: "sample", taskId })).toMatchObject({
-        status: "cancelled",
-        terminal: true,
+        status: "pending",
+        terminal: false,
         result: decision.result,
         evidence: decision.evidence,
-        summary: expect.stringContaining("outcome not achieved"),
+        summary: expect.stringContaining("continuing after backoff"),
       });
+      repaired = true;
+      advanceRuntimeTaskRetry(reopened, taskId);
+      await run();
+      expect(calls).toBe(route === "normal" ? 2 : 1);
+      expect(readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey })).toMatchObject({
+        state: "converged",
+        summary: "Feature verified",
+        result: { feature: "working" },
+      });
+      expect(await resumedHost.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+      expect(resumedHost.get("request-feature")).toMatchObject({
+        status: "done",
+        result: { summary: "Feature verified" },
+      });
+      expect(reopened.resourceStore.isCancelled(taskId)).toBe(false);
+      expect(tasks.getTask({ appId: "sample", taskId })?.result).toEqual({ feature: "working" });
+      expect(reopened.resourceStore.readAttempt(reported.metadata.id)).toEqual(reported);
       expect(reopened.resourceStore.readReceipt(taskId)).toBeNull();
     },
   );
@@ -4993,7 +5080,8 @@ describe("canonical App task runtime", () => {
         },
       },
       appRegistrySnapshot: {
-        id: "boot:failure-contention", generation: 1,
+        id: "boot:failure-contention",
+        generation: 1,
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
     });
@@ -5001,21 +5089,32 @@ describe("canonical App task runtime", () => {
     const taskId = "work/failure-contention";
     observeAppTaskIntent(config, {
       appAgent: "sample-owner",
-      intent: { id: taskId, parentId: "operations", outcome: "Bound genuine failures despite new input",
-        acceptance: ["Failures remain counted"], mode: "achieve", executor: "broken" },
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Bound genuine failures despite new input",
+        acceptance: ["Failures remain counted"],
+        mode: "achieve",
+        executor: "broken",
+      },
       trigger: { type: "sample.work", eventId: 100 },
     });
     const db = openDatabase(join(f.root, "state", "may.db"));
     const concurrent = appTaskContext({
-      appDir: f.appDir, projectDir: f.appDir, agent: "sample-owner", maxConcurrent: 1,
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.activeFromDb(db, "sample")!,
     });
     const commit = AppTaskResourceStore.prototype.commit;
     const racedAttempts = new Set<string>();
     let saves = 0;
     AppTaskResourceStore.prototype.commit = function (mutation) {
-      const failure = mutation.attempts?.find((attempt) =>
-        attempt.taskId === taskId && attempt.state === "failed" && attempt.failureReason === "HandlerExecutionFailed");
+      const failure = mutation.attempts?.find(
+        (attempt) =>
+          attempt.taskId === taskId && attempt.state === "failed" && attempt.failureReason === "HandlerExecutionFailed",
+      );
       if (failure) {
         saves++;
         if (!racedAttempts.has(failure.metadata.id)) {
@@ -5026,8 +5125,12 @@ describe("canonical App task runtime", () => {
       return commit.call(this, mutation);
     };
     try {
-      for (let index = 0; index < 8; index++) {
-        await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      for (let index = 0; index < 4; index++) {
+        if (index) advanceRuntimeTaskRetry(config, taskId);
+        await reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         }).catch(() => {});
       }
@@ -5038,16 +5141,18 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(4);
     expect(racedAttempts.size).toBe(4);
     expect(saves).toBe(8); // Each failed transaction is retried, not the executor.
-    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "attention", executionFailures: 4 });
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "pending", executionFailures: 4 });
     const tree = readTaskSnapshot(config);
     expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
     for (const attempt of Object.values(tree.attempts ?? {})) {
       expect(attempt).toMatchObject({ state: "failed", failureReason: "HandlerExecutionFailed" });
     }
-    expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId).sort()).toEqual([100, 101, 102, 103, 104]);
+    expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId).sort()).toEqual([
+      100, 101, 102, 103, 104,
+    ]);
   });
 
-  it("bounds failed executions across independent wakes and a fresh process", async () => {
+  it("persists retry backoff across independent wakes and a fresh process", async () => {
     const f = fixture();
     const bus = eventBus();
     let calls = 0;
@@ -5088,17 +5193,23 @@ describe("canonical App task runtime", () => {
         dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
       });
     // Each call is an independent wake, not a controller's own retry timer.
-    for (let index = 0; index < 8; index += 1) await run().catch(() => {});
-    expect(calls).toBe(4);
-    const stopped = config.resourceStore.readTask(taskId)!;
-    expect(stopped.status.phase).toBe("attention");
-    expect(stopped.status.summary).toContain("Explicitly retry");
+    for (let index = 0; index < 5; index += 1) {
+      if (index) advanceRuntimeTaskRetry(config, taskId);
+      await run().catch(() => {});
+      const failureCount = calls;
+      await run();
+      expect(calls).toBe(failureCount);
+    }
+    expect(calls).toBe(5);
+    const cooling = config.resourceStore.readTask(taskId)!;
+    expect(cooling.status.phase).toBe("pending");
+    expect(cooling.status.executionRetryAt).toBeGreaterThan(Date.now());
     expect(readTaskSnapshot(config).taskTriggers?.[taskId]?.events).toEqual([
       expect.objectContaining({ event: expect.objectContaining({ eventId: 100 }) }),
     ]);
-    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(4);
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(5);
 
-    // A new diagnostic/event ID is not authorization for more failed execution.
+    // A new diagnostic/event ID cannot shorten the persisted cooldown.
     recordAppTaskTrigger(config, taskId, { type: "sample.diagnostic", eventId: 101, data: {} });
     expect(
       config.resourceStore
@@ -5106,15 +5217,15 @@ describe("canonical App task runtime", () => {
         .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
     ).toEqual([100, 101]);
     await run();
-    expect(calls).toBe(4);
-    const stoppedVersion = config.resourceStore.readTask(taskId)!.metadata.resourceVersion;
+    expect(calls).toBe(5);
+    const coolingVersion = config.resourceStore.readTask(taskId)!.metadata.resourceVersion;
     await run();
     expect(
       config.resourceStore
         .readTaskContext({ taskIds: [taskId] })
         .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
     ).toEqual([100, 101]);
-    expect(config.resourceStore.readTask(taskId)!.metadata.resourceVersion).toBe(stoppedVersion);
+    expect(config.resourceStore.readTask(taskId)!.metadata.resourceVersion).toBe(coolingVersion);
 
     await closeInstalledAppTaskRuntimes(bus);
     closeDb(join(f.root, "state"));
@@ -5137,7 +5248,7 @@ describe("canonical App task runtime", () => {
       ],
       { timeout: 10_000 },
     );
-    expect(JSON.parse(stdout)).toEqual({ kind: "attention", attempts: 4 });
+    expect(JSON.parse(stdout)).toEqual({ kind: "waiting", attempts: 5 });
 
     const restarted = loadedTaskConfig(f);
     expect(
@@ -5145,13 +5256,7 @@ describe("canonical App task runtime", () => {
         .readTaskContext({ taskIds: [taskId] })
         .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
     ).toEqual([100, 101]);
-    const resource = restarted.resourceStore.readTask(taskId)!;
-    retryFailedAppTask(restarted, {
-      appId: "sample",
-      taskId,
-      expectedGeneration: resource.metadata.generation,
-      expectedResourceVersion: resource.metadata.resourceVersion,
-    });
+    advanceRuntimeTaskRetry(restarted, taskId);
     expect(
       restarted.resourceStore
         .readTaskContext({ taskIds: [taskId] })
@@ -5159,7 +5264,7 @@ describe("canonical App task runtime", () => {
     ).toEqual([100, 101]);
     const retry = claimObservedAppTask(restarted, { taskId, appAgent: "sample-owner", handler: "auto" });
     expect(retry.kind).toBe("claimed");
-    if (retry.kind !== "claimed") throw new Error("expected authorized retry");
+    if (retry.kind !== "claimed") throw new Error("expected due retry");
     expect(retry.generation).toBe(1);
     expect(retry.events.map((entry) => entry.event.eventId)).toEqual([100, 101]);
     expect(completeAppTask(restarted, retry, { summary: "Repair verified", evidence: ["test:verified"] }).status).toBe(
@@ -5219,13 +5324,13 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 3_000;
-    while (!readTaskSnapshot(config).receipts?.["work/resume-codex-goal"] && Date.now() < deadline) {
+    while (!readAcceptedRuntimeAttempt(config, "work/resume-codex-goal")?.acceptedResult && Date.now() < deadline) {
       await Bun.sleep(5);
     }
 
     const tree = readTaskSnapshot(config);
     expect(calls).toBe(2);
-    expect(tree.receipts?.["work/resume-codex-goal"]).toMatchObject({
+    expect(readAcceptedRuntimeAttempt(config, "work/resume-codex-goal")?.acceptedResult).toMatchObject({
       summary: "The same Task resumed and completed",
       evidence: ["test:same-task-resumed"],
     });
@@ -5450,16 +5555,18 @@ describe("canonical App task runtime", () => {
 
     const config = loadedTaskConfig(f);
     const deadline = Date.now() + 3_000;
-    while (!readTaskSnapshot(config).receipts?.["work/event-storm"] && Date.now() < deadline) await Bun.sleep(5);
+    while (!readAcceptedRuntimeAttempt(config, "work/event-storm")?.acceptedResult && Date.now() < deadline)
+      await Bun.sleep(5);
 
     expect(calls).toBe(3);
     expect(followUpBatchSizes).toEqual([32, 32]);
-    expect(readTaskSnapshot(config).receipts?.["work/event-storm"]).toMatchObject({
+    expect(readAcceptedRuntimeAttempt(config, "work/event-storm")).toMatchObject({
       handler: "executor:storm",
-      outcome: "Reconcile every exact feedback event",
-      summary: "Event storm was reconciled",
-      evidence: ["test:storm:3"],
+      acceptedResult: { summary: "Event storm was reconciled", evidence: ["test:storm:3"] },
     });
+    expect(config.resourceStore.readTask("work/event-storm")?.spec.outcome).toBe(
+      "Reconcile every exact feedback event",
+    );
   });
 
   it("keeps task admission durable while paused without starting reconciliation", async () => {
@@ -5753,8 +5860,8 @@ describe("canonical App task runtime", () => {
     }
 
     for (const route of ["normal", "startup", "busy"] as const) {
-      it.each(["progress", "revised", "waiting", "stopped"] as const)(
-        `publishes the committed %s disposition through ${route} without claiming completion`,
+      it.each(["progress", "self-revision", "waiting", "stopped"] as const)(
+        `handles %s through ${route} without closing the Task`,
         async (disposition) => {
           const addInput = (taskId: string) =>
             recordAppTaskTrigger(f.config, taskId, {
@@ -5766,7 +5873,7 @@ describe("canonical App task runtime", () => {
           await installCoreTaskRuntimes(f.base);
           const taskId = "continued";
           f.observe(taskId);
-          if (disposition === "revised") {
+          if (disposition === "self-revision") {
             f.terminalResult.actions = [
               {
                 kind: "update-task",
@@ -5808,31 +5915,55 @@ describe("canonical App task runtime", () => {
               });
               await recoverInstalledAppTasks(f.base.bus);
             } else {
-              expect(await f.run(taskId)).toEqual(
-                disposition === "waiting" || disposition === "stopped" ? [] : [taskId],
-              );
+              expect(await f.run(taskId)).toEqual(disposition === "progress" ? [taskId] : []);
+              if (disposition === "self-revision") {
+                // Rejection is not proof that the current caller has released its lease.
+                expect(f.config.resourceStore.readTask(taskId)?.status.currentAttemptId).toBe(claim.attemptId);
+                expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toBeUndefined();
+                mutateRuntimeAttemptFixture(f.config, taskId, claim.attemptId, (attempt) => {
+                  attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
+                });
+                expect(await f.run(taskId)).toContain(taskId);
+              }
             }
           }
           expect(f.config.resourceStore.readReceipt(taskId)).toBeNull();
+          expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
           expect(f.config.resourceStore.readTask(taskId)?.status.phase).toBe(
-            disposition === "stopped" ? "attention" : disposition === "waiting" ? "waiting" : "pending",
+            disposition === "waiting" ? "waiting" : "pending",
           );
           if (disposition === "progress") {
             expect(f.config.resourceStore.readTask(taskId)?.status.result).toEqual(f.payload);
             expect(readTaskSnapshot(f.config).taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([
               101,
             ]);
-          } else if (disposition === "revised") {
+          } else if (disposition === "self-revision") {
             expect(f.config.resourceStore.readTask(taskId)).toMatchObject({
-              metadata: { generation: 2 },
-              spec: { acceptance: ["Decision includes the revised proof"] },
+              metadata: { generation: 1 },
+              spec: { acceptance: ["Decision is checked and retained"] },
             });
+            expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toBeUndefined();
+            expect(emitted.filter((event) => event.type === "app.dependency.completed")).toHaveLength(0);
+            expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
+            // The rejected worker action cannot alter the assignment, but execution can redo safely.
+            f.terminalResult.actions = [];
+            if (f.config.resourceStore.readTask(taskId)?.status.executionRetryAt)
+              advanceRuntimeTaskRetry(f.config, taskId);
+            await f.run(taskId);
+            expect(readAcceptedRuntimeAttempt(f.config, taskId)).toMatchObject({
+              taskGeneration: 1,
+              acceptedResult: { state: "converged", result: f.payload },
+            });
+            expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
+            return;
           } else if (disposition === "stopped") {
-            expect(f.config.resourceStore.readCancellation(taskId)).toMatchObject({
-              decidedBy: { kind: "app", agent: "sample-owner" },
-              summary: expect.stringContaining("outcome not achieved"),
+            expect(f.config.resourceStore.readCancellation(taskId)).toBeNull();
+            expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toMatchObject({
+              state: "stopped",
+              summary: "The optional experiment is not feasible",
               result: { feasible: false },
             });
+            expect(f.config.resourceStore.readTask(taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
           } else {
             expect(f.config.resourceStore.readTask(taskId)?.status.conditionIds).toEqual(["external-proof"]);
           }
@@ -5844,16 +5975,6 @@ describe("canonical App task runtime", () => {
             [{ kind: "task", id: taskId, appId: "sample" }],
           );
           expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
-          if (disposition === "revised") {
-            // The same Task now runs under the stored revised acceptance.
-            f.terminalResult.actions = [];
-            await f.run(taskId);
-            expect(f.config.resourceStore.readReceipt(taskId)).toMatchObject({
-              metadata: { generation: 2 },
-              acceptance: ["Decision includes the revised proof"],
-              result: f.payload,
-            });
-          }
         },
       );
     }
@@ -5904,7 +6025,8 @@ describe("canonical App task runtime", () => {
         f.terminalResult.state = "converged";
         delete f.terminalResult.conditions;
         await f.run(claim.taskId);
-        expect(f.config.resourceStore.readReceipt(claim.taskId)?.result).toEqual(f.payload);
+        expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.acceptedResult?.result).toEqual(f.payload);
+        expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
         expect(f.agentCalls()).toBe(1);
         await recoverInstalledAppTasks(f.base.bus);
         await f.run(claim.taskId);
@@ -6020,9 +6142,8 @@ describe("canonical App task runtime", () => {
           expect(store.readAttempt(other.attemptId)?.state).toBe("interrupted");
           expect(store.readTask("other")?.metadata.generation).toBe(2);
           expect(store.readAttempt(claim.attemptId)?.state).toBe("completed");
-          expect(
-            state === "converged" ? store.readReceipt("owner")?.result : store.readTask("owner")?.status.result,
-          ).toEqual(f.payload);
+          expect(store.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({ state, result: f.payload });
+          expect(store.isCancelled("owner")).toBe(false);
           expect(
             emitted.filter((event) => event.type.startsWith("app.dependency.")).map((event) => event.type),
           ).toEqual([state === "converged" ? "app.dependency.completed" : "app.dependency.updated"]);
@@ -6107,17 +6228,18 @@ describe("canonical App task runtime", () => {
         await f.run(claim.taskId);
       }
       for (const taskId of ["normal", "recovered"]) {
-        expect(f.config.resourceStore.readReceipt(taskId)).toMatchObject({
+        expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toMatchObject({
           result: f.payload,
           response: "The result is ready",
           acceptanceBasis: { method: "agent-judgment" },
         });
+        expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
       }
       // Reading a settled Task must not execute or consume its session again.
       await recoverInstalledAppTasks(f.base.bus);
       await f.run(claim.taskId);
       expect(f.agentCalls()).toBe(1);
-      expect(f.config.resourceStore.readReceipt(claim.taskId)?.metadata.generation).toBe(claim.generation);
+      expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.taskGeneration).toBe(claim.generation);
     });
 
     for (const route of ["startup", "busy"] as const) {
@@ -6206,22 +6328,26 @@ describe("canonical App task runtime", () => {
           expect(f.agentCalls()).toBe(1);
           expect(verificationCalls).toBe(verification === "missing" ? 0 : 1);
           if (verification === "accept") {
-            expect(f.config.resourceStore.readReceipt(claim.taskId)).toMatchObject({
-              metadata: { generation: claim.generation },
-              result: f.payload,
-              acceptanceBasis: { method: "deterministic", verifier: "required-proof" },
+            expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)).toMatchObject({
+              taskGeneration: claim.generation,
+              acceptedResult: {
+                result: f.payload,
+                acceptanceBasis: { method: "deterministic", verifier: "required-proof" },
+              },
             });
           } else {
             expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
             expect(f.config.resourceStore.readTask(claim.taskId)?.metadata.generation).toBe(claim.generation);
             expect(f.config.resourceStore.readTask(claim.taskId)?.status).toMatchObject({
-              phase: "attention",
+              phase: "pending",
               summary:
                 verification === "missing"
                   ? "Agent convergence was rejected because workflow must-verify handed off without a verifier"
                   : "Fixture postcondition",
             });
+            expect(f.config.resourceStore.readTask(claim.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
           }
+          expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
           await f.run(claim.taskId);
           expect(workflowCalls).toBe(2);
           expect(f.agentCalls()).toBe(1);

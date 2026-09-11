@@ -42,6 +42,7 @@ export type HumanTaskView = {
   statusDetail?: string;
   summary?: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence?: string[];
   updatedAt: number;
   terminal: boolean;
@@ -239,7 +240,7 @@ function boundedUtf8Text(value: string, maxBytes: number): string {
 }
 
 function listCard(view: HumanTaskView): HumanTaskView {
-  const { acceptance: _acceptance, response: _response, evidence: _evidence, ...card } = view;
+  const { acceptance: _acceptance, response: _response, result: _result, evidence: _evidence, ...card } = view;
   return {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
@@ -469,6 +470,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       statusDetail: taskStatusDetail("done"),
       summary: receipt.summary,
       ...(receipt.response ? { response: receipt.response } : {}),
+      ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
       ...(receipt.evidence ? { evidence: [...receipt.evidence] } : {}),
       updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
       terminal: true,
@@ -497,6 +499,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     statusDetail: taskStatusDetail(status, { ready: row.ready, attempt }),
     ...(observationIsCurrent && resource.status.summary ? { summary: resource.status.summary } : {}),
     ...(observationIsCurrent && resource.status.response ? { response: resource.status.response } : {}),
+    ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
     ...(observationIsCurrent && resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
     terminal: false,

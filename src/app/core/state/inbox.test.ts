@@ -1,7 +1,7 @@
 import { Type, defineApp } from "@may-agent/sdk";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { readAppConversationResource } from "./conversations.js";
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,6 +21,7 @@ import {
 import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import {
   cancelAppTask,
+  closeAppTask,
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
@@ -28,6 +29,7 @@ import {
   observeAppTaskIntent,
   retryFailedAppTask,
   stopAppTask,
+  readAppTaskAdmissionOutcome,
 } from "../tasks/app-task-reconciler.js";
 import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
 import { admitTaskRequest, attachRequestToTask } from "./inbox.js";
@@ -35,6 +37,7 @@ import { admitTaskRequest, attachRequestToTask } from "./inbox.js";
 const roots: string[] = [];
 const connections: SqliteDb[] = [];
 afterEach(() => {
+  setSystemTime();
   for (const db of connections.splice(0)) db.close();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -89,6 +92,20 @@ function fixture() {
     claim,
   };
   return { db, path, config, input };
+}
+
+function advanceToRetry(config: ReturnType<typeof openState>, taskId = "work/one") {
+  const retryAt = config.resourceStore.readTask(taskId)!.status.executionRetryAt!;
+  expect(retryAt).toBeGreaterThan(Date.now());
+  setSystemTime(new Date(retryAt));
+}
+
+function repeatFailures(config: ReturnType<typeof openState>, count: number) {
+  for (let failure = 0; failure < count; failure++) {
+    if (failure) advanceToRetry(config);
+    expect(failTask(config).status).toBe("retrying");
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(failure + 1);
+  }
 }
 
 async function worker(path: string, action: string, taskId?: string) {
@@ -306,17 +323,27 @@ describe("request-to-Task state operation", () => {
     expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
   });
 
-  it.each(["attention", "cancel"])("persists request readiness for %s without a notification", (operation) => {
+  it.each(["report", "cancel"])("preserves input and owner control after %s without a notification", (operation) => {
     const { db, config, input } = fixture();
     attachRequestToTask(config, input);
-    if (operation === "attention") {
+    if (operation === "report") {
       const claim = claimObservedAppTask(config, {
         taskId: "work/one",
         appAgent: "example-owner",
         handler: "agent:example-owner",
       });
       if (claim.kind !== "claimed") throw new Error("expected claim");
-      markAppTaskAttention(config, claim, { summary: "Needs a decision", reason: "fixture" });
+      stopAppTask(config, claim, { summary: "Source is offline", evidence: ["fixture:source-offline"] });
+      expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
+        state: "stopped",
+        summary: "Source is offline",
+        evidence: ["fixture:source-offline"],
+      });
+      expect(config.resourceStore.isCancelled(claim.taskId)).toBe(false);
+      expect(readAppTaskAdmissionOutcome(config, claim.taskId, input.idempotencyKey)).toBeNull();
+      expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+      advanceToRetry(config);
+      finishTask(config);
     } else {
       const current = config.resourceStore.readTask("work/one")!;
       cancelAppTask(config, {
@@ -324,13 +351,13 @@ describe("request-to-Task state operation", () => {
         taskId: "work/one",
         expectedGeneration: current.metadata.generation,
         expectedResourceVersion: current.metadata.resourceVersion,
-        reason: "stop",
+        reason: "Owner withdrew the assignment",
       });
     }
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 
-  it.each(["complete", "stop"])("cannot commit a Task %s without its durable request wake", (decision) => {
+  it.each(["complete", "close"])("cannot commit Task %s without its durable input wake", (decision) => {
     const { db, config, input } = fixture();
     attachRequestToTask(config, input);
     const claim = claimObservedAppTask(config, {
@@ -339,24 +366,31 @@ describe("request-to-Task state operation", () => {
       handler: "agent:example-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const task = config.resourceStore.readTask(claim.taskId)!;
     const settle = () =>
-      decision === "stop"
-        ? stopAppTask(config, claim, { summary: "Optional work is not feasible", evidence: ["fixture:feasibility"] })
+      decision === "close"
+        ? closeAppTask(config, {
+            appId: "example",
+            taskId: claim.taskId,
+            expectedGeneration: task.metadata.generation,
+            expectedResourceVersion: task.metadata.resourceVersion,
+            reason: "Owner withdrew this input",
+          })
         : completeAppTask(config, claim, { summary: "Verified", evidence: [] });
     db.exec(
       "CREATE TRIGGER fail_wake BEFORE UPDATE OF available_at ON app_inbox_items WHEN NEW.available_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'wake failure'); END",
     );
+    const before = readTaskSnapshot(config);
     expect(settle).toThrow("wake failure");
-    expect(config.resourceStore.readReceipt("work/one")).toBeNull();
-    expect(config.resourceStore.readCancellation("work/one")).toBeNull();
-    expect(config.resourceStore.readTask("work/one")?.status.phase).toBe("running");
+    expect(readTaskSnapshot(config)).toEqual(before);
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     db.exec("DROP TRIGGER fail_wake");
-    expect(settle().status).toBe("applied");
+    expect(settle()).toMatchObject(decision === "close" ? { applied: true } : { status: "applied" });
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 
-  it("durably readies the linked request when retries exhaust without an EventBus or executable parent", async () => {
+  it("preserves retry pacing and unfinished input across processes beyond the old failure limit", async () => {
+    setSystemTime(new Date());
     const { db, path, config, input } = fixture();
     attachRequestToTask(config, input);
     createAppInboxItem(db, {
@@ -367,56 +401,48 @@ describe("request-to-Task state operation", () => {
     });
     const other = claimAppInboxItem(db, "other-request", "other-handler", 60_000)!;
     waitAppInboxClaim(db, other, { kind: "task", id: "work/one" });
-    for (let failure = 1; failure <= 3; failure++) {
-      expect(failTask(config).status).toBe("retrying");
-      expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
-    }
-    // The last failure commits in a different process; no in-memory wake survives it.
-    expect(await worker(path, "fail")).toEqual({ exitCode: 0, stderr: "" });
-    expect(config.resourceStore.readTask("work/one")?.status).toMatchObject({
-      phase: "attention",
-      executionFailures: 4,
-    });
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
-    expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
-    const review = claimAppInboxItem(db, input.request.id, "reviewer", 60_000);
-    expect(review?.item.waitingOn).toEqual({ kind: "task", id: "work/one" });
+    repeatFailures(config, 5);
+    const deadline = config.resourceStore.readTask("work/one")!.status.executionRetryAt!;
+    // A fresh process observes the saved deadline, with no EventBus or in-memory timer.
+    expect(await worker(path, "expect-backoff")).toEqual({ exitCode: 0, stderr: "" });
     const restarted = openState(path);
     connections.push(restarted.resourceStore.db);
-    expect(
-      claimObservedAppTask(restarted, {
-        taskId: "work/one",
-        appAgent: "example-owner",
-        handler: "agent:example-owner",
-      }).kind,
-    ).toBe("attention");
+    expect(restarted.resourceStore.readTask("work/one")?.status).toMatchObject({
+      phase: "pending",
+      executionFailures: 5,
+      executionRetryAt: deadline,
+    });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     const tree = restarted.resourceStore.readTaskContext({ taskIds: ["work/one"] });
-    expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(5);
     expect(tree.taskTriggers?.["work/one"]?.events).toHaveLength(1);
+    advanceToRetry(restarted);
+    finishTask(restarted);
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
+    expect(restarted.resourceStore.isCancelled("work/one")).toBe(false);
+    expect(readAppTaskAdmissionOutcome(restarted, "work/one", input.idempotencyKey)?.summary).toBe("Verified");
   });
 
-  it("readies a request attached after exhaustion without authorizing another execution", () => {
+  it("a newly attached human input permits progress without erasing prior failure cost", () => {
     const { db, config, input } = fixture();
     admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
-    for (let failure = 0; failure < 4; failure++) failTask(config);
+    repeatFailures(config, 4);
     attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
-    expect(
-      claimObservedAppTask(config, {
-        taskId: "work/one",
-        appAgent: "example-owner",
-        handler: "agent:example-owner",
-      }).kind,
-    ).toBe("attention");
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(4);
     expect(
       config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers?.["work/one"]?.events,
     ).toHaveLength(2);
+    finishTask(config);
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(config.resourceStore.isCancelled("work/one")).toBe(false);
   });
 
-  it.each(["retry", "revise"])("does not return exhausted attention after an authorized %s", (operation) => {
+  it.each(["retry", "revise"])("waits for an exact answer after an authorized %s", (operation) => {
     const { db, config, input } = fixture();
     admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
-    for (let failure = 0; failure < 4; failure++) failTask(config);
+    repeatFailures(config, 4);
     const task = config.resourceStore.readTask("work/one")!;
     if (operation === "retry") {
       retryFailedAppTask(config, {
@@ -439,24 +465,31 @@ describe("request-to-Task state operation", () => {
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 
-  it("rolls back the final execution failure if its request wake cannot commit", () => {
+  it("rolls back failure evidence and pacing together when retry persistence fails", () => {
     const { db, config, input } = fixture();
     attachRequestToTask(config, input);
-    for (let failure = 0; failure < 3; failure++) failTask(config);
+    repeatFailures(config, 3);
+    advanceToRetry(config);
     const claim = claimObservedAppTask(config, {
       taskId: "work/one",
       appAgent: "example-owner",
       handler: "agent:example-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const before = readTaskSnapshot(config);
     db.exec(
-      "CREATE TRIGGER fail_wake BEFORE UPDATE OF available_at ON app_inbox_items WHEN NEW.available_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'wake failure'); END",
+      "CREATE TRIGGER fail_retry BEFORE UPDATE OF resource_json ON app_tasks WHEN NEW.app_id = 'example' AND NEW.task_id = 'work/one' AND json_extract(NEW.resource_json, '$.status.executionFailures') = 4 BEGIN SELECT RAISE(ABORT, 'retry write failure'); END",
     );
-    expect(() => failAppTaskAttempt(config, claim, "Fixture execution failure")).toThrow("wake failure");
-    expect(config.resourceStore.readTask("work/one")?.status).toMatchObject({ phase: "running", executionFailures: 3 });
+    expect(() => failAppTaskAttempt(config, claim, "Fixture execution failure")).toThrow("retry write failure");
+    expect(readTaskSnapshot(config)).toEqual(before);
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
-    db.exec("DROP TRIGGER fail_wake");
-    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("attention");
+    db.exec("DROP TRIGGER fail_retry");
+    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("retrying");
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(4);
+    expect(config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("failed");
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    advanceToRetry(config);
+    finishTask(config);
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
   });
 

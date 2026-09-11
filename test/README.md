@@ -65,7 +65,19 @@ explicit wait for child evidence; lifetime modes cannot infer that decision.
 Historical receipt-reader checks seed the old stored shape explicitly instead
 of calling current completion to fabricate it. They retain duplicate pruning,
 child identity and recovery-generation coverage until cutover permits retirement.
-These migrations do not certify the remaining runtime and daemon restart tests.
+The Task runtime suite now exercises those same outcomes through installed
+executors, startup recovery and existing session evidence. Coverage includes
+parent-led prerequisite repair without an unblock action, continued failure
+reports across reopen, capability replacement without bypassing backoff, and
+retained result evidence after cleanup and event storms. Input-state checks
+preserve exact answer correlation, retry deadlines across a fresh process and
+atomic result/closure wakes. These migrations do not certify the remaining old
+inbox execution fixtures or full daemon restart/cutover.
+
+Human Task detail reads include structured results from retained Task state and
+historical receipts. Their tests keep those results out of compact cards and
+hide old observations while a newer attempt is running; runtime checks verify
+that failure evidence remains readable after a later accepted answer.
 
 ## SDK export contract
 

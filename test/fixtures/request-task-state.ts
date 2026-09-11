@@ -49,8 +49,17 @@ if (import.meta.main) {
   const db = config.resourceStore.db;
   try {
     if (action === "complete") finishTask(config, taskId);
-    else if (action === "fail") failTask(config, taskId);
-    else {
+    else if (action === "expect-backoff") {
+      const task = config.resourceStore.readTask(taskId)!;
+      const claim = claimObservedAppTask(config, { taskId, appAgent: "example-owner", handler: "agent:example-owner" });
+      if (
+        claim.kind !== "waiting" ||
+        claim.retryAt !== task.status.executionRetryAt ||
+        (task.status.executionFailures ?? 0) < 5 ||
+        config.resourceStore.isCancelled(taskId)
+      )
+        throw new Error("Fresh process did not preserve the continuing Task's retry deadline");
+    } else {
       const item = getAppInboxItem(db, "request-one");
       if (!item?.lease) throw new Error("Request is no longer owned");
       if (action === "crash-admission-existing" || action === "crash-admission-desired") {
