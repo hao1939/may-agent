@@ -9,6 +9,7 @@ import { createEventInterface } from "../core/events/interface.js";
 import { attachCommandRouter } from "../command-router.js";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";
+import { resolveTaskReference } from "../core/state/task-reference-index.js";
 import {
   createAppInboxItem,
   claimNextAppInboxItem,
@@ -139,6 +140,7 @@ function durableTelegramFixture() {
         getTask: ({ taskId, ref }) => {
           const id = taskId ?? ref ?? "";
           taskReads.push(id);
+          if (ref && !tasks.has(ref)) resolveTaskReference(getDb(root), ref);
           return tasks.get(id) ?? null;
         },
       },
@@ -157,6 +159,7 @@ function durableTelegramFixture() {
   let bot = start();
   return {
     root, bus, published, calls, tasks, taskReads, admitted,
+    get bot() { return bot; },
     get db() { return getDb(root); },
     reject(value: boolean) { rejectInput = value; },
     blockAdmission(value: boolean) { admissionBlocked = value; },
@@ -275,6 +278,60 @@ describe("Telegram durable input and natural follow-up", () => {
       expect(f.inputs()[0].data.context).toMatchObject({ focusedApp: "sample" });
       expect(f.inputs()[1].data.metadata).toMatchObject({ channelTargetId: "456" });
     } finally { blocked.resolve(); await f.close(); }
+  });
+
+  it.each(["success", "failure", "close"])("orders all immediate command replies across a delayed send (%s)", async (outcome) => {
+    const f = durableTelegramFixture();
+    const held = Promise.withResolvers<void>();
+    const thread = { message_thread_id: 7 };
+    const surfaceSends = () => f.sends().filter((call) => call.body.chat_id === "123" && call.body.message_thread_id === 7);
+    try {
+      f.hold(async (body) => {
+        if (!body.text.startsWith("Task first")) return;
+        await held.promise;
+        if (outcome === "failure") throw new Error("fixture send unavailable");
+      });
+      f.message(100, "/task first", thread);
+      await waitFor(() => surfaceSends().length === 1);
+      f.message(101, "/task invalid", thread);
+      f.message(102, "/help", thread);
+      f.message(103, "/start", thread);
+      f.message(104, "/unknown", thread);
+      f.message(105, "/apps sample", thread);
+      f.message(106, "/help", { ...thread, chat: { id: 456 } });
+      f.message(107, "/help", { message_thread_id: 8 });
+      f.message(108, "Continue this work", thread);
+      await waitFor(() => f.polls().includes(109) && f.sends().some((call) => call.body.chat_id === "456") &&
+        f.sends().some((call) => call.body.message_thread_id === 8));
+      expect(surfaceSends()).toHaveLength(1);
+      expect(f.admitted).toEqual(["Continue this work"]);
+      expect(f.inputs()[0].data.context.focusedApp).toBe("sample");
+
+      if (outcome === "close") {
+        f.bot.close();
+        held.resolve();
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        expect(surfaceSends()).toHaveLength(1);
+        expect(f.published.some((event) => event.data.metadata?.command)).toBe(false);
+        return;
+      }
+      held.resolve();
+      await waitFor(() => f.published.some((event) => event.data.metadata?.command === "/apps sample"));
+      expect(surfaceSends().map((call) => call.body.text)).toEqual([
+        expect.stringContaining("Task first"),
+        expect.stringContaining("Task reference must contain"),
+        expect.stringContaining("Optional shortcuts"),
+        expect.stringContaining("Optional shortcuts"),
+        expect.stringContaining("Unknown command: /unknown"),
+        expect.stringContaining("Selected App: sample"),
+      ]);
+      expect(surfaceSends()[1].body.reply_parameters.message_id).toBe(101);
+      expect(surfaceSends()[2].body.parse_mode).toBe("Markdown");
+      expect(surfaceSends()[4].body.reply_parameters.message_id).toBe(104);
+      // Help and validation feedback remain presentation only, not replacement Task views.
+      expect(f.published.filter((event) => event.data.metadata?.command).map((event) => event.data.metadata.command))
+        .toEqual(outcome === "failure" ? ["/apps sample"] : ["/task first", "/apps sample"]);
+    } finally { held.resolve(); await f.close(); }
   });
 
   it("scopes reply links and command views by chat, and explicit replies override a different watch after reopen", async () => {

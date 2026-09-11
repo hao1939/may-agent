@@ -425,8 +425,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     emitInfo: (message) => bus.emit({ type: "info", message }),
   });
   const { apiCall, sendMessage } = telegramClient;
-  // Preserve command-view order without blocking admission or independent updates.
+  // Order immediate command replies, including help/errors, without blocking input or updates.
   const commandDeliveries = new Map<string, Promise<void>>();
+  function queueCommandDelivery(surface: string, deliver: () => Promise<unknown>): void {
+    const prior = commandDeliveries.get(surface) ?? Promise.resolve();
+    const next = prior
+      .then(async () => {
+        if (running) await deliver();
+      })
+      .catch((error) => log("warn", `[telegram] Command delivery failed: ${String(error)}`))
+      .finally(() => {
+        if (commandDeliveries.get(surface) === next) commandDeliveries.delete(surface);
+      });
+    commandDeliveries.set(surface, next);
+  }
   const watchedTasks = new Map<
     string,
     { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
@@ -1098,10 +1110,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId)) return;
     } catch (error) {
       if (!(error instanceof TaskReferenceError)) throw error;
-      void sendMessage(chatIdStr, `${error.message}. Ask May to find the work, or use /tasks.`, undefined, {
-        replyToMessageId: msg.message_id,
-        messageThreadId: topicId,
-      });
+      queueCommandDelivery(surface, () =>
+        sendMessage(chatIdStr, `${error.message}. Ask May to find the work, or use /tasks.`, undefined, {
+          replyToMessageId: msg.message_id,
+          messageThreadId: topicId,
+        }),
+      );
       return;
     }
 
@@ -1181,47 +1195,36 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       followTask?: { appId: string; taskId: string },
     ): void => {
       const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
-      const prior = commandDeliveries.get(surface) ?? Promise.resolve();
-      const next = prior
-        .then(() =>
-          running
-            ? sendMessage(chatIdStr, rendered, undefined, {
-                eventType: "telegram.reply",
-                agent: opts.interfaceAgent,
-                data: JSON.stringify({
-                  direction: "outbound",
-                  conversationId,
-                  command: text,
-                  taskRefs,
-                  followTask,
-                  topicId: conversationTopicId,
-                }),
-                replyToMessageId: msg.message_id,
-                messageThreadId: topicId,
-                replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
-              })
-            : undefined,
-        )
-        .then((deliveredMessageId) => {
-          if (!deliveredMessageId || !running) return;
-          recordConversationMessage({
+      queueCommandDelivery(surface, async () => {
+        const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
+          eventType: "telegram.reply",
+          agent: opts.interfaceAgent,
+          data: JSON.stringify({
+            direction: "outbound",
             conversationId,
-            text: rendered,
             command: text,
-            messageId: deliveredMessageId,
-            chatId: chatIdStr,
-            topicId,
             taskRefs,
             followTask,
-            conversationTopicId,
-          });
-          onDelivered?.();
-        })
-        .catch((error) => log("warn", `[telegram] Command view failed: ${String(error)}`))
-        .finally(() => {
-          if (commandDeliveries.get(surface) === next) commandDeliveries.delete(surface);
+            topicId: conversationTopicId,
+          }),
+          replyToMessageId: msg.message_id,
+          messageThreadId: topicId,
+          replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
         });
-      commandDeliveries.set(surface, next);
+        if (!deliveredMessageId || !running) return;
+        recordConversationMessage({
+          conversationId,
+          text: rendered,
+          command: text,
+          messageId: deliveredMessageId,
+          chatId: chatIdStr,
+          topicId,
+          taskRefs,
+          followTask,
+          conversationTopicId,
+        });
+        onDelivered?.();
+      });
     };
 
     if (command === "/apps") {
@@ -1526,28 +1529,30 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (command === "/start" || command === "/help") {
-      void sendMessage(
-        chatIdStr,
-        "🤖 *May*\n\n" +
-          "Tell May what you need. Reply to an update to follow up.\n" +
-          "You can ask ‘What's still running?’ or ‘Where were we?’ without remembering IDs.\n" +
-          "Background work continues when you close Telegram.\n\n" +
-          "*Optional shortcuts:*\n" +
-          "/apps \[app\] — List or select an App\n" +
-          "/topics — List Topics; use /topics more for older pages\n" +
-          "/topic \[ref\|clear\] — Show, follow, or leave a Topic\n" +
-          "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
-          "/todo \[all\], /todo more — Show Tasks that need your action\n" +
-          "/task <ref> — Show one Task\n" +
-          "/watch \[ref\] — Watch or show one Task\n" +
-          "/unwatch — Stop watching without changing the Task\n" +
-          "/cancel \[ref\] — Cancel a Task\n" +
-          "/help — Show this message\n\n" +
-          "Use Stop this turn to interrupt the current turn; background Tasks continue. New messages wait their turn.\n\n" +
-          "*Host administration (all Apps):*\n" +
-          "/reload — Reload Host definitions",
-        "Markdown",
-        { messageThreadId: topicId },
+      queueCommandDelivery(surface, () =>
+        sendMessage(
+          chatIdStr,
+          "🤖 *May*\n\n" +
+            "Tell May what you need. Reply to an update to follow up.\n" +
+            "You can ask ‘What's still running?’ or ‘Where were we?’ without remembering IDs.\n" +
+            "Background work continues when you close Telegram.\n\n" +
+            "*Optional shortcuts:*\n" +
+            "/apps \[app\] — List or select an App\n" +
+            "/topics — List Topics; use /topics more for older pages\n" +
+            "/topic \[ref\|clear\] — Show, follow, or leave a Topic\n" +
+            "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
+            "/todo \[all\], /todo more — Show Tasks that need your action\n" +
+            "/task <ref> — Show one Task\n" +
+            "/watch \[ref\] — Watch or show one Task\n" +
+            "/unwatch — Stop watching without changing the Task\n" +
+            "/cancel \[ref\] — Cancel a Task\n" +
+            "/help — Show this message\n\n" +
+            "Use Stop this turn to interrupt the current turn; background Tasks continue. New messages wait their turn.\n\n" +
+            "*Host administration (all Apps):*\n" +
+            "/reload — Reload Host definitions",
+          "Markdown",
+          { messageThreadId: topicId },
+        ),
       );
       return true;
     }
@@ -1584,13 +1589,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return true;
     }
 
-    void sendMessage(chatIdStr, `Unknown command: ${command}. Use /help to see available commands.`, undefined, {
-      eventType: "telegram.reply",
-      agent: opts.interfaceAgent,
-      data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
-      replyToMessageId: msg.message_id,
-      messageThreadId: topicId,
-    });
+    queueCommandDelivery(surface, () =>
+      sendMessage(chatIdStr, `Unknown command: ${command}. Use /help to see available commands.`, undefined, {
+        eventType: "telegram.reply",
+        agent: opts.interfaceAgent,
+        data: JSON.stringify({ direction: "outbound", conversationId, command: text }),
+        replyToMessageId: msg.message_id,
+        messageThreadId: topicId,
+      }),
+    );
     return true;
   }
 
