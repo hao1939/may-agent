@@ -6,7 +6,7 @@ import { readConversationTaskInputs, type ConversationTaskProposal } from "../co
 import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 import { prepareConversationInput } from "../conversations/context.js";
 import { readConversationTopic } from "../core/state/conversations.js";
-import type { AppInputResolver } from "../conversations/turn-handler.js";
+import type { AppInputResolver } from "../conversations/turn-agent.js";
 
 /** Prepare a judgment under the Task claim. The common runtime alone settles it. */
 export async function prepareConversationTaskTurn(input: {

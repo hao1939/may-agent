@@ -36,6 +36,19 @@ export function conversationTaskId(appId: string, conversationId: string): strin
   return `conversation_${createHash("sha256").update([appId, conversationId].join("\0")).digest("hex").slice(0, 24)}`;
 }
 
+/** Conventional execution intent, shared by admission and offline cutover. */
+export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent, "id"> {
+  const root = config.resourceStore.rootTaskId();
+  if (!root) throw new Error("Conversation App has no structural root");
+  return {
+    parentId: root,
+    mode: "maintain",
+    executor: "conversation",
+    outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
+    acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
+  };
+}
+
 export function isConversationTask(config: AppTaskContext, taskId: string): boolean {
   return Boolean(
     config.resourceStore.db
@@ -341,7 +354,7 @@ export function completeConversationTaskTurn(
     // second follow-up worker needs to run for Request closure to be truthful.
     for (const handled of items) {
       const changed = db.run(
-        `UPDATE app_inbox_items SET status = 'done', topic_id = ?, result = ?,
+        `UPDATE app_inbox_items SET status = 'done', topic_id = ?, result = ?, handling = NULL,
       completed_at = ?, changed_at = ?, updated_at = ?
       WHERE id = ? AND execution_task_id = ? AND status != 'done' AND lease_owner IS NULL`,
         [

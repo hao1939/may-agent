@@ -19,7 +19,7 @@ import { createBashTool } from "../../lib/tools/bash.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { createConversationAgentResolver } from "./turn-agent.js";
-import type { AppInputResolver } from "./turn-handler.js";
+import type { AppInputResolver } from "./turn-agent.js";
 import { readAppConversationResource } from "../core/state/conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
 

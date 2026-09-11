@@ -531,10 +531,10 @@ test("one controller returns B through A to the real Conversation after interven
   let topicId = "";
   let firstResultAttemptId = "";
   const until = async (predicate: () => boolean) => {
-    const until = Date.now() + 2_000;
+    const until = performance.now() + 2_000;
     while (!predicate()) {
       if (failures.length) throw failures[0];
-      if (Date.now() >= until) throw new Error("Conversation chain did not progress");
+      if (performance.now() >= until) throw new Error("Conversation chain did not progress");
       await new Promise((resolve) => setTimeout(resolve, 1));
     }
   };

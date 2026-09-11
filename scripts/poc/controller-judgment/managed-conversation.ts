@@ -66,7 +66,6 @@ const definition = defineApp({
 let injected = false;
 let calls = 0;
 let providerCalls = 0;
-let oldExecutions = 0;
 let notify: (() => void) | undefined;
 let profileCount = 0;
 const executions: Array<Record<string, unknown>> = [];
@@ -218,10 +217,6 @@ async function start() {
     hasTaskTarget: (input) => tasks.has(input),
     previewTaskEvent: (input) => tasks.previewEvent(input),
     previewTaskEventRoutes: (input) => tasks.previewEventRoutes(input),
-    resolveRequest: async () => {
-      oldExecutions++;
-      throw Error("Legacy Conversation executor ran");
-    },
   });
   return {
     bus,
@@ -291,7 +286,7 @@ try {
         items.length === 1 &&
         items[0]?.status === "done" &&
         !store.isCancelled(taskId) &&
-        oldExecutions === 0 &&
+        items[0]?.executionTaskId === taskId &&
         taskCount === 1 &&
         requests.every((request) => request !== null) &&
         store.nextDueAt() === null &&
@@ -319,7 +314,6 @@ try {
         taskCount,
         attemptCount: profileCount,
         injected,
-        oldExecutions,
       };
     })(),
     new Promise<never>((_resolve, reject) => {

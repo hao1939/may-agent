@@ -18,6 +18,7 @@ import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
 import {
   admitConversationTaskInput,
+  conversationTaskIntent,
   admitConversationTaskChange,
   conversationTaskId,
   completeConversationTaskTurn,
@@ -2457,17 +2458,10 @@ export function admitLoadedConversationInput(input: {
   if (!descriptor || !requests || (requests.inputKinds && !requests.inputKinds.includes(input.item.input.kind)))
     throw new Error(`App ${input.item.appId} has no loaded Conversation capability for this input`);
   if (!Check(descriptor.app.inputSchema, input.item.input)) throw new Error("Invalid Conversation input");
-  const root = descriptor.resourceStore.rootTaskId();
-  if (!root) throw new Error("Conversation App has no structural root");
-  const admitted = admitConversationTaskInput(appTaskConfig(descriptor), {
+  const config = appTaskConfig(descriptor);
+  const admitted = admitConversationTaskInput(config, {
     ...input.item,
-    intent: {
-      parentId: root,
-      mode: "maintain",
-      executor: "conversation",
-      outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
-      acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
-    },
+    intent: conversationTaskIntent(config),
   });
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return admitted;

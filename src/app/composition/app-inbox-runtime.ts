@@ -1,11 +1,9 @@
 import { createConversationInbox } from "./conversation-inbox.js";
-import type { AppInputResolver } from "../conversations/turn-handler.js";
 import { recordConversationTaskOutcome } from "../core/state/conversation-outcomes.js";
 import { listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
-import { createHash } from "node:crypto";
 import {
   isConversationFollowUpTask,
   oneItemPerConversationTask,
@@ -18,7 +16,6 @@ import {
   type AppEvent,
   type AppInput,
   type AppInputSource,
-  type AppInputContext,
   type EventSelector,
   type ObserverContext,
   type TaskIntent,
@@ -106,7 +103,6 @@ export type StartAppInboxRuntimeOptions = {
   admitConversation?: AppInboxHostOptions["admitConversation"];
   admitConversationChange?: AppTaskCapability["admitConversationChange"];
   stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
-  resolveRequest?: AppInputResolver;
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -450,7 +446,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     attachTask,
     admitConversation: options.admitConversation,
     stopConversationTurn: options.stopConversationTurn,
-    resolveRequest: options.resolveRequest,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
@@ -461,109 +456,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     leaseMs: options.leaseMs,
     retryAfterMs: options.retryAfterMs,
     onConversationChanged: notifyConversationUpdated,
-    onRequestMessage(item, text, topicId) {
-      if (!item.conversationId) return;
-      options.bus.emit({
-        type: "conversation.message.created",
-        source: "app-inbox",
-        owner: `app:${item.appId}`,
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          messageId: `result:${item.id}`,
-          author: { kind: "agent", id: item.appId },
-          text,
-          metadata: {
-            channel: item.channel,
-            channelTargetId: item.channelTargetId,
-            channelThreadId: item.channelThreadId,
-            requestId: item.id,
-            topicId,
-          },
-          idempotencyKey: `conversation-request-message:${item.conversationId}:${item.id}`,
-        },
-      });
-    },
-    async onRequestFollowUp(item, followUp, topicId, authorize) {
-      if (!item.conversationId) {
-        throw new Error(`App follow-up ${item.id} requires a Conversation`);
-      }
-      const requestId = `appreq_${createHash("sha256").update(`${item.id}\0follow-up`).digest("hex").slice(0, 24)}`;
-      const target = loadedById.get(followUp.appId);
-      if (!target?.definition.task || !target.definition.tasks) {
-        throw new Error(`App follow-up targets non-Task App ${followUp.appId}`);
-      }
-      if (!attachTask) throw new Error("App follow-up Task admission is not configured");
-      const source = { kind: "app" as const, id: item.appId };
-      const request: AppInputContext = {
-        id: requestId,
-        source,
-        ...(item.source.kind === "human" ? { humanRequested: true } : {}),
-        input: followUp.input,
-      };
-      const attachment = followUp.task
-        ? ({ kind: "existing", taskId: followUp.task.taskId } as const)
-        : target.definition.task({ id: requestId, source, input: followUp.input });
-      if (!attachment) throw new Error(`App ${followUp.appId} returned no Task for conversational follow-up`);
-      const attached = await attachTask({
-        appId: followUp.appId,
-        attachment,
-        idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
-        request,
-        authorize,
-        topicId,
-        ...(followUp.requestId
-          ? {
-              requestLink: {
-                appId: item.appId,
-                conversationId: item.conversationId,
-                id: followUp.requestId,
-                revision:
-                  item.handling?.phase === "decided"
-                    ? (item.handling.requestRevisions?.[followUp.requestId] ?? -1)
-                    : -1,
-              },
-            }
-          : {}),
-      });
-      authorize();
-      options.bus.emit({
-        type: "conversation.message.created",
-        source: "app-task-admission",
-        owner: `app:${item.appId}`,
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          author: { kind: "tool", id: "runtime" },
-          text: `Accepted durable work: ${followUp.outcome}`,
-          metadata: {
-            command: "task-admitted",
-            channel: item.channel,
-            channelTargetId: item.channelTargetId,
-            channelThreadId: item.channelThreadId,
-            requestId: item.id,
-            topicId,
-            taskRefs: [{ appId: followUp.appId, taskId: attached.taskId }],
-            followTask: { appId: followUp.appId, taskId: attached.taskId },
-          },
-          idempotencyKey: `conversation-task-assigned:${item.conversationId}:${requestId}:${followUp.appId}:${attached.taskId}`,
-        },
-      });
-      options.bus.emit({
-        type: "conversation.task.linked",
-        source: "app-inbox",
-        owner: `app:${item.appId}`,
-        target: { appId: item.appId, project: item.appId },
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          topicId,
-          requestId,
-          taskRef: { appId: followUp.appId, taskId: attached.taskId },
-        },
-        idempotencyKey: `conversation-task-linked:${item.conversationId}:${topicId}:${followUp.appId}:${attached.taskId}`,
-      } as unknown as AgentEvent);
-    },
     onRequestTaskAttached(item, taskId) {
       if (item.source.kind !== "app") return;
       if (item.conversationId && item.topicId && !item.parentId) {

@@ -1,4 +1,3 @@
-import type { AppInputResolver } from "./turn-handler.js";
 import {
   Type,
   conversationTurnResultSchema,
@@ -19,6 +18,14 @@ import {
 } from "../core/state/conversations.js";
 import { pageOpenConversationRequests, readConversationRequest } from "../core/state/conversation-requests.js";
 import { APP_TASK_RECOVERY_OWNER } from "../core/tasks/session-binding.js";
+
+import type { TaskBinding } from "../../lib/persistence.js";
+
+export type AppInputResolver = (input: {
+  app: Readonly<AppDefinition>;
+  request: Readonly<AppInputContext>;
+  execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void; taskBinding?: TaskBinding };
+}) => Promise<ConversationTurnResult>;
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
 

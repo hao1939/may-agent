@@ -1,7 +1,6 @@
 import { stateTransaction as withTransaction } from "../../../lib/db/transaction.js";
 import { readInputContext, freezeInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
-import type { AppInputHandler } from "./input-handler.js";
-import { completeInboxInput, InputCompletionError } from "../state/inbox.js";
+import { completeInboxInput } from "../state/inbox.js";
 import { randomUUID } from "node:crypto";
 import {
   matchesEventSelector,
@@ -20,27 +19,23 @@ import type { SqliteDb } from "../../../lib/db.js";
 import { assertValidAppDefinition } from "../apps/definition-validation.js";
 import {
   assertAppInboxClaim,
-  associateAppInboxClaimSession,
   claimNextAppInboxItem,
   createAppInboxItem,
   excludeExecutingConversations,
   getAppInboxItem,
   listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
-  stopAppInboxTurn,
   type AppTurnTarget,
   renewAppInboxClaim,
   wakeAppInboxItem,
   wakeAppInboxItemsWaitingOn,
   wakeAppInboxItemsWaitingOnApp,
   type AppInboxClaim,
-  type AppInboxHandling,
   type AppInboxItem,
   type AppInboxWaitKind,
   type AppInboxTaskDependencyKey,
   type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
-import { ConversationRequestConflict } from "../state/conversation-requests.js";
 
 /**
  * The task engine must treat idempotencyKey as stable admission identity.
@@ -131,7 +126,6 @@ export type AppInboxHostOptions = {
   stopConversationTurn?: (target: AppTurnTarget) => unknown;
   /** Optional context enrichment; Task-only operation does not require it. */
   prepareInput?: (item: AppInboxItem, input: Readonly<AppInputContext>) => Promise<AppInputContext>;
-  handleInput?: AppInputHandler;
   workerId?: string;
   leaseMs?: number;
   retryAfterMs?: number;
@@ -202,7 +196,6 @@ export class AppInboxHost {
   readonly #prepareInput?: AppInboxHostOptions["prepareInput"];
   readonly #admitConversation?: AppInboxHostOptions["admitConversation"];
   readonly #stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
-  readonly #handleInput?: AppInputHandler;
   readonly #workerId: string;
   readonly #leaseMs: number;
   readonly #retryAfterMs: number;
@@ -220,7 +213,6 @@ export class AppInboxHost {
     this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
     this.#prepareInput = options.prepareInput;
-    this.#handleInput = options.handleInput;
     this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
     this.#leaseMs = options.leaseMs ?? 60_000;
     this.#retryAfterMs = options.retryAfterMs ?? 1_000;
@@ -403,10 +395,10 @@ export class AppInboxHost {
       now: this.#now(),
     };
     if (
-      this.#admitConversation &&
       app.requests &&
       (!app.requests.inputKinds || app.requests.inputKinds.includes(input.input.kind))
     ) {
+      if (!this.#admitConversation) throw new Error("Conversation Task admission is not configured");
       return this.#admitConversation({
         ...prepared,
         conversationId: prepared.conversationId ?? defaultConversationId ?? `${app.id}:primary`,
@@ -420,21 +412,9 @@ export class AppInboxHost {
   }
 
   stopTurn(target: AppTurnTarget): void {
-    const app = this.#requiredApp(target.appId);
-    if (this.#stopConversationTurn) {
-      this.#stopConversationTurn(target);
-      return;
-    }
-    const item = this.get(target.turnId);
-    if (!item || !app.requests || (app.requests.inputKinds && !app.requests.inputKinds.includes(item.input.kind))) {
-      throw new Error("Stop this turn requires conversational input, not a Task request");
-    }
-    const changed = withTransaction(this.#db, () => stopAppInboxTurn(this.#db, target, this.#now()));
-    const active = this.#executions.get(target.turnId);
-    if (active?.claim.generation === target.expectedRevision && (changed || item.handling?.phase === "stopped")) {
-      active.controller.abort(new Error("Human stopped this turn"));
-    }
-    this.#notifyConversationChanges([item]);
+    this.#requiredApp(target.appId);
+    if (!this.#stopConversationTurn) throw new Error("Conversation Task control is not configured");
+    this.#stopConversationTurn(target);
   }
 
   readyCount(appId: string): number {
@@ -649,26 +629,7 @@ export class AppInboxHost {
       };
       outcome.failures = [failure];
       try {
-        if (this.get(claim.item.id)?.handling?.phase === "stopped") {
-          failure.disposition = "stopped";
-          if (claim.item.conversationId) conversationIds.add(claim.item.conversationId);
-        } else if (
-          ((claim.item.handling?.phase === "executing" || claim.item.handling?.phase === "decided") &&
-            !(error instanceof InputCompletionError)) ||
-          error instanceof ConversationRequestConflict
-        ) {
-          const reason = errorMessage(error).slice(0, 2000);
-          const conversationId = this.#completeRequest(
-            claim,
-            {
-              summary: "This conversational turn failed; the ask remains unresolved.",
-              response: `I couldn't finish this turn: ${reason}\n\nYour ask remains unresolved. Send a new message or explicitly ask me to retry. Any work already admitted continues independently.`,
-            },
-            { phase: "failed", reason },
-          );
-          failure.disposition = "failed";
-          if (conversationId) conversationIds.add(conversationId);
-        } else if (
+        if (
           releaseAppInboxClaim(this.#db, claim, {
             retryAfterMs: this.#retryAfterMs,
             now: this.#now(),
@@ -702,21 +663,7 @@ export class AppInboxHost {
       app.requests &&
       (app.requests.inputKinds === undefined || app.requests.inputKinds.includes(claim.item.input.kind))
     ) {
-      if (!this.#handleInput) throw new Error("App input handler is not configured");
-      return this.#handleInput({
-        app, claim, request,
-        execution: {
-          signal: this.#executions.get(claim.item.id)!.controller.signal,
-          sessionStarted: (sessionId) => {
-            this.#assertOwned(claim);
-            if (!associateAppInboxClaimSession(this.#db, claim, sessionId, this.#now())) throw new Error("claim is stale");
-          },
-        },
-        authorize: () => this.#assertOwned(claim),
-        complete: (result) => this.#completeRequest(claim, result),
-        getApp: (appId) => this.#requiredApp(appId),
-        refreshInput: () => this.#authorRequest(claim.item),
-      });
+      throw new Error("Conversation input requires offline cutover to its Task execution owner");
     }
 
     const dependency = request.dependency;
@@ -789,9 +736,12 @@ export class AppInboxHost {
     }
   }
 
-  #completeRequest(claim: AppInboxClaim, result: AppResult, handling?: AppInboxHandling): string | undefined {
+  #completeRequest(claim: AppInboxClaim, result: AppResult): string | undefined {
     completeInboxInput(this.#db, {
-      claim, result, handling, authorize: () => this.#assertOwned(claim), now: this.#now(),
+      claim,
+      result,
+      authorize: () => this.#assertOwned(claim),
+      now: this.#now(),
     });
     if (this.#onRequestCompleted) {
       try {

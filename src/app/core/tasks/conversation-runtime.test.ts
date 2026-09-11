@@ -442,7 +442,6 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
   f.bus.setPersistenceSubscriber(writer.handler);
   f.bus.setDeliveryRecorder(writer.recordDelivery);
   const tasks = createAppTaskCapability({ bus: f.bus });
-  let oldExecutions = 0;
   const runtime = await startAppInboxRuntime({
     registry,
     db: f.db,
@@ -459,10 +458,6 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     hasTaskTarget: (input) => tasks.has(input),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => tasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: (input) => tasks.previewEventRoutes(input),
-    resolveRequest: async () => {
-      oldExecutions++;
-      throw new Error("Old inbox must not execute Conversation input");
-    },
   });
   const publish = (id: string, text: string) =>
     f.bus.emit({
@@ -481,9 +476,6 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     runtime,
     tasks,
     publish,
-    get oldExecutions() {
-      return oldExecutions;
-    },
   };
 }
 
@@ -559,7 +551,6 @@ test("a human Conversation decision cancels the exact running Task after its rep
     expect(source.readAttempt(executing.attemptId)?.acceptedResult).toBeUndefined();
     expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
     expect(f.store.isCancelled(listAppInboxItems(f.db, { appId: app.id })[0]!.executionTaskId!)).toBe(false);
-    expect(ingress.oldExecutions).toBe(0);
     expect(humanTurns).toBe(2);
   } finally {
     release.resolve();
@@ -597,7 +588,6 @@ test("normal event ingress admits and executes one Conversation Task and notifie
     expect(items[0]?.executionTaskId).toBeDefined();
     expect(items[0]?.status).toBe("done");
     expect(items[0]?.lease).toBeUndefined();
-    expect(ingress.oldExecutions).toBe(0);
     expect(judgments).toBe(1);
     expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
   } finally {
@@ -739,7 +729,6 @@ test.each(["live", "restart", "admission-write-failure"])(
         f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 1 } });
       await replied;
       expect(contexts).toHaveLength(2);
-      expect(ingress.oldExecutions).toBe(0);
       expect(f.store.readTask("legacy-review")).toBeNull();
       const input = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.kind === "system")!;
       expect(input.input.kind).toBe("task-outcome");
@@ -844,7 +833,6 @@ test("a failed child report returns to Conversation without closing its assignme
         evidence: ["measurement source: unavailable"],
       },
     });
-    expect(ingress.oldExecutions).toBe(0);
     expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(2);
     expect(child.isCancelled("sample")).toBe(false);
   } finally {
@@ -1044,7 +1032,6 @@ test.each(["live", "restart", "stop"])("owner closure returns without manufactur
     await withdrawn;
     expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.closure?.disposition).toBe("withdrawn");
     expect(f.store.isCancelled(closureInput.executionTaskId!)).toBe(false);
-    expect(ingress.oldExecutions).toBe(0);
   } finally {
     releaseChild.resolve();
     releaseReview.resolve();
@@ -1170,7 +1157,6 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
     expect(messages.some((message) => message.text === answer.response)).toBe(false);
     expect(messages.some((message) => message.text === "A threshold is a comparison boundary.")).toBe(true);
     expect(readAppConversationResource(f.db, app.id, "primary").activeTurn).toBeUndefined();
-    expect(ingress.oldExecutions).toBe(0);
     expect(failures).toEqual([]);
     ingress.runtime.close();
     await f.reopen();
@@ -1271,7 +1257,6 @@ test("human Conversation input keeps capacity beside same-App background work; s
     await reviewed;
     expect(reviews).toEqual(["review"]);
     expect(backgroundRuns).toBe(2);
-    expect(ingress.oldExecutions).toBe(0);
   } finally {
     releaseBackground.resolve();
     ingress.runtime.close();
@@ -1370,7 +1355,6 @@ test("a paused App answers human input through its Task across restart while bac
     await Promise.all([reviewed, resumed]);
     expect(inputs).toEqual(["before", "after", "review"]);
     expect(backgroundRuns).toBe(1);
-    expect(ingress.oldExecutions).toBe(0);
   } finally {
     ingress.runtime.close();
   }
