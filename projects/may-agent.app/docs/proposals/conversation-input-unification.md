@@ -1,12 +1,13 @@
 # One Task lifecycle
 
-**Status:** Accepted design baseline, refined September 11, 2026; implementation
-is pending. Use one Task execution lifecycle for ordinary work, maintenance and
-Conversation: explicit outcomes, rest between inputs, owner-controlled closure.
-This supersedes the earlier recommendation to share only scheduling while
-keeping two execution lifecycles. The expected simplification must still be
-proved in source. Reviewed against Host `5857529e` and the current `may.app`
-declaration; no runtime change or deployment is claimed.
+**Status:** Accepted design baseline, refined September 11, 2026. A source PoC
+is under review in [draft Host PR #158](https://github.com/hao1939/may-agent/pull/158);
+it is unmerged and undeployed. Use one Task model, controller and lifecycle:
+explicit outcomes, rest between inputs, owner-controlled closure. Human
+conversation, delegated work and maintenance describe roles and inputs within
+that model. Regression convergence, operational cutover and the expected
+simplification remain unproved. This supersedes the earlier recommendation to
+share only scheduling while keeping two execution lifecycles.
 
 May should discuss and work with the human while delegated work progresses,
 then return useful outcomes without repeated reminders. The same loop should
@@ -22,12 +23,11 @@ owns the target lifecycle and distinguishes it from the implemented protocol.
 release execution. Run again for relevant pending input or justified recovery.
 An authorized owner decides when to close the Task.**
 
-Conversation describes a Task's interaction with the human. It is not a second
-execution category beside Task. For example, Task A handles human input and
-delegates work to Task B. Both use the same controller and lifecycle;
-their handlers interpret different inputs and produce different results.
-Messages, Topics and Requests preserve the human context without owning another
-execution loop.
+Any Task can receive relevant input, delegate work, judge returned evidence and
+respond. For example, Task A handles human input and delegates work to Task B;
+B may delegate again. Their handlers receive the context and capabilities needed
+for their assignments. Conversation names the human interaction: messages,
+Topics and Requests preserve that context within the same execution loop.
 
 ```text
 Human input / child result / relevant fact / optional timer
@@ -135,64 +135,27 @@ controller preserves the links among the accepted ask, delegated work and
 returned evidence. It must carry those links across attempts and intervening
 input, without asking the agent to repeat an admission ID or rebuild a wait.
 
-The minimum follow-through trial is: ask for a measurement once, release the
-attempt, answer an unrelated question, restart, then return the measurement to
-its original caller. The explanation must not fulfill the measurement ask, and
-the eventual measurement must not overwrite the explanation. The
-[source and model follow-through trials](controller-poc-input-continuation.md)
-now pass this Task check. A [Conversation source check](controller-poc-recovery-review.md#conversation-checkpoint)
-also passes that sequence with actual messages, Topics, Requests and supplied
-executor decisions. It admits follow-up work with the acknowledgment and brings
-back an exact accepted attempt as system input. The later
-[ingress and Stop checkpoint](controller-poc-recovery-review.md#normal-ingress-and-turn-stop)
-routes human messages through that Task and stops only the observed Turn.
-The [result-route checkpoint](controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
-also returns accepted outcomes through live events and missed-result discovery.
-The [closure checkpoint](controller-poc-recovery-review.md#returning-owner-closure-through-conversation-input)
-returns the owner's saved closure through that same input route, including
-closure without a result. It leaves Request resolution to the Conversation.
-The [managed Conversation trials](controller-poc-recovery-review.md#managed-conversation-recovery)
-now pass empty-response, interrupted-effect and restart recovery with real
-models and a synthetic App. They use normal prior-attempt context.
-The [shared-loop worker trial](controller-poc-recovery-review.md#critical-path-through-real-workers)
-now passes A delegating to B, A answering while B runs, B's outcome waking A,
-Request fulfillment and runtime/storage reopen. Both use the normal Task worker;
-the model responses in this trial are scripted. The subsequent
-[live May trials](controller-poc-recovery-review.md#live-may-on-the-shared-loop)
-pass that two-Task path with the actual App declaration and role instructions,
-including an unchanged below-threshold variant. They use a reduced tool catalog.
-The later [nested Task trial](controller-poc-recovery-review.md#nested-delegation-uses-the-same-task-loop)
-also exercises A → B → C → B → A within the same App, including live worker
-judgment and fresh execution after runtime/storage reopen. It removes the
-automatic caller wake on intermediate waits. Operational old-owner cutover
-remains unproved.
-The old execution paths have been removed from the candidate source.
-[Coverage migration](controller-poc-recovery-review.md#moving-inbox-checks-onto-the-task-loop)
-now tests their retained guarantees through actual Task execution, including
-normal backoff after a rejected human-facing decision. The later
-[core retry checks](controller-poc-recovery-review.md#retry-evidence-and-canonical-attempt-context)
-also preserve failure evidence and owner closure, and exposed a fixed context
-read bug where timestamps could hide the current attempt. The code guides describe
-context and presentation as handler responsibilities within that loop.
-[Current CI and migration evidence](controller-poc-recovery-review.md) still leave
-whole-system simplification unproved.
-The [Task-worker process checks](controller-poc-recovery-review.md#workspace-and-worker-process-boundaries)
-now verify retained input and effects across worker loss, plus workspace release
-while Tasks stay open. These use deterministic workflows; operational cutover
-still needs its own proof.
-The [human-control checkpoint](controller-poc-recovery-review.md#human-task-controls-through-conversation)
-also applies conversational Task cancellation atomically with its reply and
-removes the old daemon callback. Source checks cover user authority, stale
-decisions, rollback and interruption of the exact running Task.
+Prioritize this critical path: human input wakes A; A delegates to B; B delegates
+to C; A remains available for discussion; C's evidence returns through B to A;
+A replies and resolves the accepted ask. A, B and C all use the same Task loop.
+A quiet Task holds no running agent. After an outcome, fresh relevant input can
+wake that same Task again; only its authorized owner closes the assignment.
 
-Prioritize the critical path before additional corner cases: human input to A,
-delegation to B, continued discussion with A, B's accepted outcome returning to A,
-and a useful reply. The live trials now support that path with actual App guidance
-and model decisions. Keep the basic reopen check; defer further fault injection and
-unusual migration combinations until this shared loop earns the design's cost.
-The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
-also exercises human replies beside running background work and inside a paused
-App, including restart and the storage claim fence.
+The [live nested trials](controller-poc-recovery-review.md#nested-delegation-uses-the-same-task-loop)
+pass this path with the actual May App declaration and role instructions, real
+model judgment, and a reduced tool catalog. Both an above-threshold measurement
+and an unchanged below-threshold variant return the correct assessment, preserve
+the evidence caveat, fulfill the original Request and leave all three Tasks open.
+Fresh input also executes after runtime/storage reopen. Independent collection
+and review were explicitly requested; unprompted decomposition was not tested.
+
+The [evidence record](controller-poc-recovery-review.md) owns source revisions,
+failed trials, focused checks, full-suite results and migration details. It also
+tracks removal of the old execution owners and the remaining restart/cutover
+and complexity gates. Basic reopen is not operational upgrade proof. Finish
+those shared-path checks before adding unusual recovery combinations or new
+mechanisms. Messages and reply delivery need their own boundary checks, but
+must not introduce another claim, retry or closure authority.
 
 ### Recovery keeps the same Task
 

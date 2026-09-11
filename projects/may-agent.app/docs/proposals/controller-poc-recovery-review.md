@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`1b3506cc` has 105 unresolved failures. New human input now permits a fresh attempt
+`55e51193` has 80 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -1262,6 +1262,29 @@ retry/report groups; no other failure name changed from `f9ada65b`. This run
 completed without the earlier Bun worker crash. No operational cutover or
 whole-system simplification claim follows from this checkpoint.
 
+## Common reconciler outcomes and owner closure
+
+Host `55e51193` completes the reconciler and parent-result coverage migration:
+**185 checks pass** across those two suites. New outcomes are read from accepted
+attempts on retained Tasks. Explicit owner closure preserves evidence, rejects
+later admission and leaves independent children executable. A parent explicitly
+waits for child evidence; a lifetime mode cannot infer that judgment. Failed
+work retains its input and retries at its saved deadline without a supervisory
+Task or manual unblock.
+
+Four historical receipt-reader checks now seed the pre-controller stored shape
+directly. Current completion no longer fabricates old state for them. They still
+exercise real duplicate pruning, child preservation and exact recovery identity;
+this preserves compatibility coverage until cutover permits reader retirement.
+
+This checkpoint changes tests and coverage documentation only. Full CI passes
+types, the App boundary and lint, then reports **2,784 passed, 3 skipped and 80
+failed** (2,867 tests across 289 files, 148.0 seconds). All 25 resolved failure
+names belong to the migrated reconciler and parent checks; no new failure name
+appeared against `1b3506cc`. Runtime, inbox and daemon restart failures still
+need investigation. The production delta remains **643 net added lines** against
+`a8f65188`; the critical-path model trials retain their own source revisions.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -1288,6 +1311,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `89329ce4` | 2,668 / 3 / 170 | 2,841 / 286 | 149.8 | New human input gets a fresh attempt; seven new checks pass and one old failure resolves |
 | `3e61e705` | 2,675 / 3 / 163 | 2,841 / 286 | 139.4 | Conversation execution requires a Task binding; tool-loop and accepted-result contracts migrated |
 | `127c3ab2` | 2,701 / 3 / 138 | 2,842 / 286 | 162.6 | Workspace and worker-process checks migrated; retained-effect recovery crosses real processes |
+| `55e51193` | 2,784 / 3 / 80 | 2,867 / 289 | 148.0 | Reconciler outcomes and owner closure migrated; intermediate checkpoints are recorded in the sections above |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
