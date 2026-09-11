@@ -15,7 +15,7 @@ import {
   getAppInboxItem,
 } from "../core/state/app-inbox-store.js";
 import { createConversationTopic, readAppConversationResource } from "../core/state/conversations.js";
-import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
+import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import {
   attachTelegramBot as attachTelegramBotRuntime,
   renderTelegramApps,
@@ -50,7 +50,7 @@ function attachTelegramBot(
       return {
         eventId: Number(emitted[EVENT_ROW_ID]) || 1,
         eventType: input.type,
-        delivery: emitted[EVENT_DELIVERY_RESULT]?.accepted ? "accepted" : "recorded",
+        delivery: "accepted",
       };
     },
   });
@@ -84,6 +84,23 @@ function durableTelegramFixture() {
   let rejectedRecordings = 0;
   let afterRecord: ((input: EventInput) => void) | undefined;
   let holdSend: ((body: any) => Promise<void>) | undefined;
+  let admissionBlocked = false;
+  const admitted: string[] = [];
+  const unsubscribeAdmission = bus.subscribeDurableRoute((event) => {
+    const data = event.data as Record<string, any>;
+    if (event.type === "conversation.message.created" && data.author?.kind === "human") {
+      if (admissionBlocked) throw new Error("fixture admission unavailable after event recording");
+      createAppInboxItem(getDb(root), {
+        id: data.author.id, appId: "may", conversationId: data.conversationId,
+        conversationSequence: Number(event[EVENT_ROW_ID]), source: { kind: "human", id: data.author.id },
+        input: { kind: "message", data: { message: data.text, context: data.context } },
+        channel: "telegram", channelTargetId: data.metadata.channelTargetId,
+        channelThreadId: data.metadata.channelThreadId, channelMessageId: data.metadata.channelMessageId,
+      });
+      admitted.push(data.text);
+    }
+    return { accepted: true, by: "fixture-input", route: "direct" };
+  });
   globalThis.fetch = (async (url, init) => {
     const method = String(url).split("/").at(-1)!;
     const body = JSON.parse(String(init?.body ?? "{}"));
@@ -137,9 +154,10 @@ function durableTelegramFixture() {
   };
   let bot = start();
   return {
-    root, bus, published, calls, tasks, taskReads,
+    root, bus, published, calls, tasks, taskReads, admitted,
     get db() { return getDb(root); },
     reject(value: boolean) { rejectInput = value; },
+    blockAdmission(value: boolean) { admissionBlocked = value; },
     rejections: () => rejectedRecordings,
     afterRecord(fn: (input: EventInput) => void) { afterRecord = fn; },
     hold(fn: (body: any) => Promise<void>) { holdSend = fn; },
@@ -162,6 +180,7 @@ function durableTelegramFixture() {
     },
     async close() {
       bot.close();
+      unsubscribeAdmission();
       await new Promise<void>((resolve) => setImmediate(resolve));
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -199,15 +218,21 @@ describe("Telegram durable input and natural follow-up", () => {
       f.afterRecord((input) => {
         if (input.data.author?.kind === "human" && !lostReceipt) { lostReceipt = true; throw new Error("fixture receipt lost after persistence"); }
       });
-      f.message(100, "Review this");
+      f.blockAdmission(true);
+      const longInput = "Review this and preserve every detail. ".repeat(200);
+      f.message(100, longInput);
       await waitFor(() => lostReceipt);
+      expect(f.admitted).toHaveLength(0);
+      expect(f.polls()).toEqual([0]);
       f.tasks.delete("first");
+      f.blockAdmission(false);
       await f.restart();
       await waitFor(() => f.polls().includes(101));
       expect(f.inputs()).toHaveLength(1);
       expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE idempotency_key = 'telegram:123:100'").get()).toEqual({ count: 1 });
-      // No route is installed: the durable event remains available to Host recovery.
-      expect(f.db.prepare("SELECT delivery_status FROM events WHERE idempotency_key = 'telegram:123:100'").get()).not.toEqual({ delivery_status: "accepted" });
+      expect(f.admitted).toEqual([longInput.trim()]);
+      expect(f.db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE source_id = 'telegram:123:100'").get()).toEqual({ count: 1 });
+      expect(f.db.prepare("SELECT delivery_status FROM events WHERE idempotency_key = 'telegram:123:100'").get()).toEqual({ delivery_status: "accepted" });
     } finally { await f.close(); }
   });
 
@@ -276,9 +301,10 @@ describe("Telegram durable input and natural follow-up", () => {
     const f = durableTelegramFixture();
     const blocked = Promise.withResolvers<void>();
     try {
-      createAppInboxItem(f.db, { id: "active", appId: "may", conversationId: "may:primary", conversationSequence: 1,
-        channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 42,
-        source: { kind: "human", id: "telegram:123:42" }, input: { kind: "message", data: { message: "Review changes" } } });
+      f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
+        conversationId: "may:primary", author: { kind: "human", id: "active" }, text: "Review changes",
+        metadata: { channel: "telegram", channelTargetId: "123", channelThreadId: "7", channelMessageId: 42 },
+      } });
       claimNextAppInboxItem(f.db, "may", "fixture", 60_000);
       f.hold((body) => body.text.startsWith("Task first") ? blocked.promise : Promise.resolve());
       f.message(100, "/task first", { message_thread_id: 7 });

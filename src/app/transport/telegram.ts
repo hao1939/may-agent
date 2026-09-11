@@ -21,7 +21,8 @@ import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
-import { type EventBus } from "../core/events/bus.js";
+import { EVENT_DELIVERY_RESULT, type EventBus } from "../core/events/bus.js";
+import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/requests.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
 import { readAppConversationResource } from "../core/state/conversations.js";
@@ -580,7 +581,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const surface = surfaceKey(String(chatId), query.message?.message_thread_id);
     const control = turnControls.get(surface);
     let text = "This Stop button has expired. Refresh the conversation.";
-    let recordingFailure: unknown;
+    let admissionFailure: unknown;
     try {
       if (!isAllowed(chatId)) text = "Unauthorized.";
       else if (control && query.data === control.token && query.message?.message_id === control.messageId) {
@@ -602,14 +603,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               },
               idempotencyKey: `telegram-stop:${control.turnId}:${control.revision}`,
             });
+            requireAdmission(receipt);
           } catch (error) {
-            recordingFailure = error;
+            admissionFailure = error;
             throw error;
           }
-          text =
-            receipt.delivery === "accepted"
-              ? "Stop request accepted. Background Tasks continue."
-              : "Stop recorded, but not yet confirmed. Background Tasks continue.";
+          text = "Stop request accepted. Background Tasks continue.";
         }
         void clearTurnControl(surface);
         conversationRefresh.queue(sharedConversationId);
@@ -620,7 +619,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     void apiCall("answerCallbackQuery", { callback_query_id: query.id, text: text.slice(0, 200) }).catch((error) =>
       log("warn", `[telegram] Could not acknowledge Stop: ${String(error)}`),
     );
-    if (recordingFailure) throw recordingFailure;
+    if (admissionFailure) throw admissionFailure;
   }
 
   function handleCallback(query: any): void {
@@ -947,6 +946,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }),
     );
 
+    requireAdmission(received);
     const rowId = received.eventId;
     try {
       storeNotificationMessage(persistDir, {
@@ -978,15 +978,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return allowedChatIds.includes(String(chatId));
   }
 
-  function alreadyRecorded(type: string, key: string): boolean {
+  function resumeRecordedInput(type: string, key: string): boolean {
     // Provider redelivery may follow restart or a lost publication receipt.
     // Do not rebuild an accepted input using today's focus and cause a hash
     // conflict. The existing event journal/recovery owns its original payload.
-    return Boolean(
-      getDb(persistDir)
-        .prepare("SELECT 1 FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1")
-        .get(type, key),
-    );
+    const db = getDb(persistDir);
+    const row = db.prepare(
+      "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
+    ).get(type, key);
+    if (!row) return false;
+    if (row.delivery_status !== "accepted") {
+      const event = loadPersistedEvent(db, Number(row.id), persistDir);
+      if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
+      const retried = bus.redeliverPersisted(event, Number(row.id));
+      if (!retried[EVENT_DELIVERY_RESULT]?.accepted) throw new Error("Telegram input is recorded but not yet admitted");
+    }
+    return true;
+  }
+
+  function requireAdmission(receipt: EventReceipt): void {
+    if (receipt.delivery !== "accepted") throw new Error("Telegram input is recorded but not yet admitted");
   }
 
   function handleMessage(msg: any): void {
@@ -1027,7 +1038,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const conversationId = primaryConversationId(opts.interfaceAgent);
     if (
       !text.startsWith("/") &&
-      alreadyRecorded("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
+      resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
     )
       return;
     conversationRefresh.queue(sharedConversationId);
@@ -1430,7 +1441,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/cancel") {
       const cancellationKey = `telegram:${chatIdStr}:${msg.message_id}:cancel`;
-      if (alreadyRecorded("app.task.cancel.requested", cancellationKey)) return true;
+      if (resumeRecordedInput("app.task.cancel.requested", cancellationKey)) return true;
       if (rest.length > 1) {
         deliverCommandView("Use: /cancel [ref]");
         return true;
@@ -1458,11 +1469,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ...taskCancelRequestedEvent(selected, "human requested cancellation from Telegram"),
         idempotencyKey: cancellationKey,
       });
+      requireAdmission(receipt);
       try {
-        if (receipt.delivery !== "accepted") {
-          deliverCommandView("Cancellation recorded, but not yet confirmed. Check the Task's current state.");
-          return true;
-        }
         const task = opts.humanTasks.getTask({ appId: selected.appId, taskId: selected.taskId });
         if (!task) throw new Error("Task disappeared after cancellation");
         stopWatching(surface);
@@ -1502,18 +1510,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/reload") {
       const requestId = `telegram:${chatIdStr}:${msg.message_id}:reload`;
-      if (alreadyRecorded("runtime.reload.requested", requestId)) return true;
+      if (resumeRecordedInput("runtime.reload.requested", requestId)) return true;
       pendingReloads.set(requestId, {
         chatId: chatIdStr,
         ...(topicId === undefined ? {} : { topicId }),
         conversationId,
         command: text,
       });
-      opts.publishEvent({
+      const receipt = opts.publishEvent({
         type: "runtime.reload.requested",
         data: { requestId },
         idempotencyKey: requestId,
       });
+      requireAdmission(receipt);
       return true;
     }
 

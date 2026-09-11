@@ -34,7 +34,7 @@ function attachTelegramBot(
       return {
         eventId: Number(emitted[EVENT_ROW_ID]) || 1,
         eventType: input.type,
-        delivery: "recorded",
+        delivery: "accepted",
       };
     },
   });
