@@ -2,7 +2,7 @@ import { createConversationInbox } from "./conversation-inbox.js";
 import type { AppInputResolver } from "../conversations/turn-handler.js";
 import type { AppRequestTaskController } from "../conversations/turn-handler.js";
 import { recordConversationTaskOutcome } from "../core/state/conversation-outcomes.js";
-import { listPendingConversationTaskOutcomes } from "../core/state/conversation-task-turns.js";
+import { listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
@@ -105,7 +105,7 @@ export type StartAppInboxRuntimeOptions = {
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
   admitConversation?: AppInboxHostOptions["admitConversation"];
-  admitConversationOutcome?: AppTaskCapability["admitConversationOutcome"];
+  admitConversationChange?: AppTaskCapability["admitConversationChange"];
   stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   resolveRequest?: AppInputResolver;
   controlTask?: AppRequestTaskController;
@@ -405,6 +405,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       summary?: string;
       reason?: string;
       attemptId?: string;
+      closedGeneration?: number;
     },
   ): void => {
     // Live updates and recovery share this boundary. The owning Conversation
@@ -427,6 +428,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         followUpId: change.followUpId,
         taskRef,
         ...(change.attemptId ? { attemptId: change.attemptId } : {}),
+        ...(change.closedGeneration !== undefined ? { closedGeneration: change.closedGeneration } : {}),
         ...(change.disposition ? { disposition: change.disposition } : {}),
         ...(change.summary ? { summary: change.summary } : {}),
         ...(change.reason ? { reason: change.reason } : {}),
@@ -1256,24 +1258,24 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const minQuietMs = Math.max(60_000, Math.floor(Number(data.minQuietMs) || 900_000));
         const limit = Math.min(100, Math.max(1, Math.floor(Number(data.limit) || 100)));
         if (!appId) throw new Error("Conversation supervision review requires its App");
-        if (options.admitConversationOutcome) {
-          const outcomes = listPendingConversationTaskOutcomes(options.db, appId, limit);
-          for (const outcome of outcomes) {
+        if (options.admitConversationChange) {
+          const changes = listPendingConversationTaskChanges(options.db, appId, limit);
+          for (const change of changes) {
             emitConversationTaskChanged(
-              outcome,
-              { appId: outcome.taskAppId, taskId: outcome.taskId },
+              change,
+              { appId: change.taskAppId, taskId: change.taskId },
               {
-                attemptId: outcome.attemptId,
-                followUpId: outcome.attemptId,
-                idempotencyKey: `conversation-outcome-review:${eventRowId(event)}:${outcome.topicId}:${outcome.taskAppId}:${outcome.attemptId}`,
+                ...change,
+                followUpId: change.attemptId ?? `closed:${change.taskId}:${change.closedGeneration}`,
+                idempotencyKey: `conversation-change-review:${eventRowId(event)}:${change.topicId}:${change.taskAppId}:${change.taskId}:${change.attemptId ?? `closed:${change.closedGeneration}`}`,
               },
             );
           }
           return {
             accepted: true,
-            by: `conversation-outcomes:${appId}`,
+            by: `conversation-changes:${appId}`,
             route: "direct",
-            note: `${outcomes.length} missing outcome input(s) selected`,
+            note: `${changes.length} missing change input(s) selected`,
           };
         }
         const links = listStaleConversationTopicTasks(options.db, appId, {
@@ -1299,20 +1301,24 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: `${links.length} quiet linked Task(s) selected for bounded review`,
         };
       }
-      if (String(event.type) === "conversation.task.changed" && options.admitConversationOutcome) {
+      if (String(event.type) === "conversation.task.changed" && options.admitConversationChange) {
         const ref = record(data.taskRef);
         if (
           [data.appId, data.conversationId, data.topicId, ref.appId, ref.taskId].every(
             (value) => typeof value === "string" && value.trim(),
           )
         ) {
-          const admitted = options.admitConversationOutcome({
+          const admitted = options.admitConversationChange({
             appId: String(data.appId),
             conversationId: String(data.conversationId),
             topicId: String(data.topicId),
             taskAppId: String(ref.appId),
             taskId: String(ref.taskId),
-            attemptId: typeof data.attemptId === "string" ? data.attemptId : "",
+            ...(typeof data.closedGeneration === "number" &&
+            Number.isSafeInteger(data.closedGeneration) &&
+            data.closedGeneration > 0
+              ? { closedGeneration: data.closedGeneration }
+              : { attemptId: typeof data.attemptId === "string" ? data.attemptId : "" }),
           });
           if (admitted)
             return {
@@ -1320,8 +1326,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               by: `conversation-task:${admitted.taskId}`,
               route: "direct",
               note: admitted.created
-                ? "Accepted outcome admitted as Conversation input"
-                : "Outcome already handled or unavailable",
+                ? "Stored Task change admitted as Conversation input"
+                : "Task change already handled or unavailable",
             };
         }
       }
@@ -1396,8 +1402,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           for (const appId of host.wakeAppIds({ kind: "session", id: sessionId })) schedule(appId);
         }
       }
-      if (String(event.type) === "project.task.reconciled") {
-        const appId = typeof data.project === "string" ? data.project.trim() : "";
+      if (String(event.type) === "project.task.reconciled" || event.type === "app.task.cancelled") {
+        const closed = event.type === "app.task.cancelled";
+        const sourceAppId = closed ? data.appId : data.project;
+        const appId = typeof sourceAppId === "string" ? sourceAppId.trim() : "";
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
         const summary = typeof data.summary === "string" ? data.summary.trim() : "";
@@ -1410,12 +1418,18 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                 followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
                 disposition,
                 summary,
-                ...(typeof data.attemptId === "string" ? { attemptId: data.attemptId } : {}),
+                ...(closed
+                  ? { closedGeneration: Number(data.generation) }
+                  : typeof data.attemptId === "string"
+                    ? { attemptId: data.attemptId }
+                    : {}),
                 idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
               },
             );
           }
         }
+        // Closure is already committed; its notification cannot become fresh Task input.
+        if (closed) return { accepted: true, by: "task-runtime-notification", route: "direct" };
         const conversationResult = record(record(data.result).conversation);
         const conversationId =
           typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";

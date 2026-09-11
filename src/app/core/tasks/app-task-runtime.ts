@@ -18,12 +18,12 @@ import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
 import {
   admitConversationTaskInput,
-  admitConversationTaskOutcome,
+  admitConversationTaskChange,
   conversationTaskId,
   completeConversationTaskTurn,
   isConversationTask,
   stopConversationTaskTurn,
-  type ConversationTaskOutcomeRef,
+  type ConversationTaskChangeRef,
 } from "../state/conversation-task-turns.js";
 import type { AppInboxClaim, AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import {
@@ -589,6 +589,9 @@ function runtimeTaskAttempt(input: {
   let closed = false;
   const unsubscribeCancellation = events.onEvent((incoming) => {
     if (incoming.type !== "app.task.cancelled" && incoming.type !== "app.task.attempt.stopped") return;
+    const cancellation =
+      incoming.type === "app.task.cancelled" ? descriptor.resourceStore.readCancellation(claim.taskId) : null;
+    if (incoming.type === "app.task.cancelled" && !cancellation) return;
     if (
       incoming.type === "app.task.attempt.stopped" &&
       descriptor.resourceStore.readAttempt(claim.attemptId)?.failureReason !== "owner-stopped"
@@ -596,7 +599,7 @@ function runtimeTaskAttempt(input: {
       return;
     const data = eventData(incoming) as Record<string, unknown>;
     if (data.attemptId !== claim.attemptId) return;
-    const reason = typeof data.reason === "string" ? data.reason : "Task was cancelled";
+    const reason = cancellation?.reason ?? (typeof data.reason === "string" ? data.reason : "Task was cancelled");
     controller.abort(new Error(reason));
   });
   return {
@@ -2493,21 +2496,25 @@ export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTu
   return result;
 }
 
-/** Notification text is a hint. Only the exact stored outcome can become input. */
-export function admitLoadedConversationOutcome(input: ConversationTaskOutcomeRef & { bus: EventBus }) {
+/** Notification text is a hint. Only the exact stored outcome or closure can become input. */
+export function admitLoadedConversationChange(input: ConversationTaskChangeRef & { bus: EventBus }) {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   const taskId = conversationTaskId(input.appId, input.conversationId);
-  if (!descriptor?.app.requests || !descriptor.resourceStore.readTask(taskId)) return null;
+  if (!descriptor || !descriptor.resourceStore.readTask(taskId)) return null;
+  if (!descriptor.app.requests) return { taskId, created: false };
   const source = AppTaskResourceStore.activeFromDb(descriptor.resourceStore.db, input.taskAppId);
-  const attempt = source?.readAttempt(input.attemptId);
   if (
     descriptor.resourceStore.isCancelled(taskId) ||
     (input.taskAppId === descriptor.id && input.taskId === taskId) ||
-    attempt?.taskId !== input.taskId ||
-    !attempt?.acceptedResult
+    !source
   )
     return { taskId, created: false };
-  const admitted = admitConversationTaskOutcome(appTaskConfig(descriptor), { resourceStore: source! }, input);
+  if (input.attemptId !== undefined) {
+    const attempt = source.readAttempt(input.attemptId);
+    if (attempt?.taskId !== input.taskId || !attempt.acceptedResult) return { taskId, created: false };
+  } else if (source.readCancellation(input.taskId)?.generation !== input.closedGeneration)
+    return { taskId, created: false };
+  const admitted = admitConversationTaskChange(appTaskConfig(descriptor), { resourceStore: source }, input);
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return { taskId: admitted.taskId, created: admitted.created };
 }
@@ -2879,6 +2886,7 @@ export function cancelLoadedAppTask(input: {
       data: {
         appId,
         taskId,
+        generation: result.cancellation.generation,
         ...(result.cancelledAttemptId ? { attemptId: result.cancelledAttemptId } : {}),
         reason: result.cancellation.reason,
       },

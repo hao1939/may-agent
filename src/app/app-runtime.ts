@@ -301,7 +301,7 @@ export async function runAppRuntime(opts: {
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     admitConversation: appTasks.admitConversation,
-    admitConversationOutcome: appTasks.admitConversationOutcome,
+    admitConversationChange: appTasks.admitConversationChange,
     stopConversationTurn: appTasks.stopTurn,
     controlTask: async ({ control, authorize }) => {
       if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);

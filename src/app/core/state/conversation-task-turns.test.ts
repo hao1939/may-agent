@@ -25,11 +25,11 @@ import { readAppConversationResource, linkConversationTopicTask } from "./conver
 import { readConversationRequest } from "./conversation-requests.js";
 import {
   admitConversationTaskInput,
-  admitConversationTaskOutcome,
+  admitConversationTaskChange,
   completeConversationTaskTurn,
   stopConversationTaskTurn,
   readConversationTaskInputs,
-  listPendingConversationTaskOutcomes,
+  listPendingConversationTaskChanges,
 } from "./conversation-task-turns.js";
 
 const roots: string[] = [];
@@ -542,7 +542,7 @@ test("one controller returns B through A to the real Conversation after interven
           for (const id of result.dependentTaskIds) controller.enqueue(id);
           if (taskId === "A") {
             firstResultAttemptId = claim.attemptId;
-            const returned = admitConversationTaskOutcome(f.context(), f.context(), {
+            const returned = admitConversationTaskChange(f.context(), f.context(), {
               conversationId: "chat",
               topicId,
               taskId: "A",
@@ -581,7 +581,7 @@ test("one controller returns B through A to the real Conversation after interven
     const originalReply = getAppInboxItem(f.db, "first")?.result;
     recordAppTaskTrigger(f.context(), "A", { type: "sample.changed" });
     completeAppTask(f.context(), f.claim("A"), { summary: "Later sample", result: { value: 99 } });
-    const replay = admitConversationTaskOutcome(f.context(), f.context(), {
+    const replay = admitConversationTaskChange(f.context(), f.context(), {
       conversationId: "chat",
       topicId,
       taskId: "A",
@@ -670,15 +670,15 @@ test("a returned outcome keeps its exact App, Task and attempt identity across A
     taskId: "measurement",
     attemptId: claim.attemptId,
   };
-  expect(() => admitConversationTaskOutcome(f.context(), worker, returned)).toThrow("accepted attempt");
+  expect(() => admitConversationTaskChange(f.context(), worker, returned)).toThrow("accepted attempt");
   completeAppTask(worker, claim, { summary: "Measured", result: { value: 17 } });
-  expect(() => admitConversationTaskOutcome(f.context(), worker, { ...returned, topicId: "unrelated" })).toThrow(
+  expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, topicId: "unrelated" })).toThrow(
     "no link",
   );
-  expect(() => admitConversationTaskOutcome(f.context(), worker, { ...returned, attemptId: "missing" })).toThrow(
+  expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: "missing" })).toThrow(
     "accepted attempt",
   );
-  const wake = admitConversationTaskOutcome(f.context(), worker, returned);
+  const wake = admitConversationTaskChange(f.context(), worker, returned);
   expect(wake.taskId).toBe(first.taskId);
   expect(wake.item.input.data).toMatchObject({
     appId: "worker",
@@ -687,7 +687,7 @@ test("a returned outcome keeps its exact App, Task and attempt identity across A
     outcome: { result: { value: 17 } },
   });
   expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
-  expect(admitConversationTaskOutcome(f.context(), worker, returned).created).toBe(false);
+  expect(admitConversationTaskChange(f.context(), worker, returned).created).toBe(false);
 });
 
 test("cutover refuses unhandled legacy input even with an expired lease", () => {
@@ -803,7 +803,7 @@ test("pending human input leads a bounded mixed batch inside a paused App", () =
   expect(f.store.allowsTaskExecution(human.taskId)).toBe(false);
 });
 
-test("bounded outcome discovery advances across Conversations, retains Stop and finds late links", () => {
+test("bounded change discovery advances across Conversations, retains Stop and finds late links", () => {
   const f = fixture();
   const first = f.admit();
   const firstClaim = f.claim(first.taskId);
@@ -828,10 +828,18 @@ test("bounded outcome discovery advances across Conversations, retains Stop and 
     if (index < 2) linkConversationTopicTask(f.db, topic.id, app.id, taskId);
   }
   linkConversationTopicTask(f.db, otherTopic.id, app.id, "sample-0");
+  const finished = f.store.readTask("sample-1")!;
+  closeAppTask(f.context(), {
+    appId: app.id,
+    taskId: "sample-1",
+    expectedGeneration: finished.metadata.generation,
+    expectedResourceVersion: finished.metadata.resourceVersion,
+    reason: "Owner closed completed work",
+  });
   // A self-link must not turn every Conversation reply into another model call.
   linkConversationTopicTask(f.db, topic.id, app.id, first.taskId);
   expect(() =>
-    admitConversationTaskOutcome(f.context(), f.context(), {
+    admitConversationTaskChange(f.context(), f.context(), {
       conversationId: "chat",
       topicId: topic.id,
       taskId: first.taskId,
@@ -839,11 +847,11 @@ test("bounded outcome discovery advances across Conversations, retains Stop and 
     }),
   ).toThrow("own outcome");
   const handled: string[] = [];
-  for (let index = 0; index < 3; index++) {
-    const page = listPendingConversationTaskOutcomes(f.db, app.id, 1);
+  for (let index = 0; index < 4; index++) {
+    const page = listPendingConversationTaskChanges(f.db, app.id, 1);
     expect(page).toHaveLength(1);
     const ref = page[0]!;
-    const admitted = admitConversationTaskOutcome(f.context(), f.context(), ref);
+    const admitted = admitConversationTaskChange(f.context(), f.context(), ref);
     handled.push(admitted.item.id);
     const claim = f.claim(admitted.taskId);
     if (index === 0) {
@@ -860,12 +868,12 @@ test("bounded outcome discovery advances across Conversations, retains Stop and 
       });
     f.reopen();
   }
-  expect(new Set(handled).size).toBe(3);
-  expect(listPendingConversationTaskOutcomes(f.db, app.id)).toEqual([]);
+  expect(new Set(handled).size).toBe(4);
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
   expect(getAppInboxItem(f.db, handled[0]!)?.handling?.phase).toBe("stopped");
   // Adding the link after acceptance must still return that exact stored outcome.
   linkConversationTopicTask(f.db, topic.id, app.id, "sample-2");
-  expect(listPendingConversationTaskOutcomes(f.db, app.id).map((item) => item.taskId)).toEqual(["sample-2"]);
+  expect(listPendingConversationTaskChanges(f.db, app.id).map((item) => item.taskId)).toEqual(["sample-2"]);
   const current = f.store.readTask(first.taskId)!;
   closeAppTask(f.context(), {
     appId: app.id,
@@ -874,5 +882,66 @@ test("bounded outcome discovery advances across Conversations, retains Stop and 
     expectedResourceVersion: current.metadata.resourceVersion,
     reason: "Owner ended the Conversation",
   });
-  expect(listPendingConversationTaskOutcomes(f.db, app.id)).toEqual([]);
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+});
+
+test("closure input validates the exact source and rolls admission back without losing owner closure", () => {
+  const f = fixture();
+  const input = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
+  const topic = readAppConversationResource(f.db, app.id, "chat").topics[0]!;
+  const source = AppTaskResourceStore.fromDb(f.db, "measurement");
+  source.bootstrapSnapshot(
+    {
+      project: "measurement",
+      project_lifecycle: "active",
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null } },
+    },
+    "closure-fixture",
+  );
+  const worker = appTaskContext({ ...f.context(), resourceStore: source });
+  observeAppTaskIntent(worker, {
+    appAgent: "measurement",
+    intent: {
+      id: "sample",
+      parentId: "root",
+      mode: "achieve",
+      outcome: "Measure sample",
+      acceptance: ["Observed value"],
+    },
+  });
+  linkConversationTopicTask(f.db, topic.id, source.appId, "sample");
+  const task = source.readTask("sample")!;
+  const closed = closeAppTask(worker, {
+    appId: source.appId,
+    taskId: "sample",
+    expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion,
+    reason: "The owner withdrew the assignment",
+  });
+  const ref = {
+    conversationId: "chat",
+    topicId: topic.id,
+    taskId: "sample",
+    closedGeneration: closed.closure.generation,
+  };
+  expect(() =>
+    admitConversationTaskChange(f.context(), worker, { ...ref, closedGeneration: ref.closedGeneration + 1 }),
+  ).toThrow("closed generation");
+  expect(() => admitConversationTaskChange(f.context(), worker, { ...ref, topicId: "unrelated" })).toThrow("no link");
+  f.db.exec(`CREATE TRIGGER reject_closure_input BEFORE INSERT ON app_inbox_items
+    WHEN NEW.input_kind = 'task-closed' BEGIN SELECT RAISE(ABORT, 'closure input unavailable'); END`);
+  expect(() => admitConversationTaskChange(f.context(), worker, ref)).toThrow("closure input unavailable");
+  expect(f.store.readTrigger(input.taskId)).toBeNull();
+  expect(source.readCancellation("sample")).toEqual(closed.closure);
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toHaveLength(1);
+  f.db.exec("DROP TRIGGER reject_closure_input");
+  const admitted = admitConversationTaskChange(f.context(), worker, ref);
+  expect(admitted.item.input).toEqual({
+    kind: "task-closed",
+    data: { appId: source.appId, taskId: "sample", generation: closed.closure.generation, closure: closed.closure },
+  });
+  expect(admitConversationTaskChange(f.context(), worker, ref).created).toBe(false);
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
 });

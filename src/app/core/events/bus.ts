@@ -669,6 +669,7 @@ export type SystemEvent =
       data: {
         appId: string;
         taskId: string;
+        generation?: number;
         attemptId?: string;
         reason: string;
       };
