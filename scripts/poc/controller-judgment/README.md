@@ -101,3 +101,21 @@ non-success dispositions, exact assignment reuse, human input during a wait,
 Stop and pause, missed notifications, quiet timers, migration with one execution
 owner, and a measured reduction in source paths. Compare against the current
 contract on the same work before claiming simpler or more reliable operation.
+
+## Recovery and backoff
+
+`bun scripts/poc/controller-judgment/backoff.ts` probes whether a normal wake
+can bypass the controller's retry delay. It uses the real controller and real
+timers without a model or database. It exits nonzero if either the ordinary
+retry or the wake-during-cooldown case runs early. The current source fails the
+second case: a timer schedules a retry, but does not fence earlier queue input.
+This is a known acceptance gap, not a passing reliability claim. Restart-safe
+cooldown still needs a separate durable-state test and implementation.
+
+The common-lifecycle source tests now also exercise 24 retry-safe failed Tasks
+under the controller without an agent-generated action batch, and confirm that
+exhausting the current retry budget leaves the Task open across reopen. Those
+tests do not endorse the current four-failure policy as the target policy, or
+prove that every real failure is safely retryable. PRs #153, #154 and #155 inform
+the review: valid non-success judgment, oversized semantic action batches and
+execution continuation are different boundaries.

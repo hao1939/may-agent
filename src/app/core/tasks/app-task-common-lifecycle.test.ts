@@ -88,6 +88,59 @@ function signal() {
 }
 
 describe("common Task lifecycle source PoC", () => {
+  it("recovers 24 transient failures through the controller without an agent-generated unblock batch", async () => {
+    const f = fixture();
+    completeAppTask(f.config, f.claim(), { summary: "Fixture owner is quiet" });
+    const ids = Array.from({ length: 24 }, (_, index) => `work-${index}`);
+    for (const id of ids) observeAppTaskIntent(f.config, {
+      appAgent: "owner", intent: { ...f.intent, id, outcome: "Read a retry-safe measurement" },
+    });
+    const counts = new Map<string, number>();
+    let completed = 0;
+    let resolve!: () => void;
+    let reject!: (error: unknown) => void;
+    const done = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
+    const controller = new AppTaskController({
+      maxConcurrent: 3, retryDelayMs: () => 20,
+      onError: (_id, error, willRetry) => { if (!willRetry) reject(error); },
+      async reconcile(taskId) {
+        const claim = f.claim(taskId);
+        counts.set(taskId, (counts.get(taskId) ?? 0) + 1);
+        if (counts.get(taskId) === 1) {
+          expect(failAppTaskAttempt(f.config, claim, "Temporary provider unavailable").status).toBe("retrying");
+          throw new Error("Temporary provider unavailable");
+        }
+        expect(completeAppTask(f.config, claim, { summary: "Read succeeded", result: { value: 7 } }).status).toBe("applied");
+        if (++completed === ids.length) resolve();
+      },
+    });
+    const timeout = setTimeout(() => reject(new Error("Mechanical recovery did not finish")), 5_000);
+    try { ids.forEach((id) => controller.enqueue(id)); await done; }
+    finally { clearTimeout(timeout); controller.close(); await controller.whenDrained(); }
+    f.reopen();
+    expect([...counts.values()]).toEqual(ids.map(() => 2));
+    for (const id of ids) {
+      expect(f.config.resourceStore.readTask(id)?.status.result).toEqual({ value: 7 });
+      expect(f.config.resourceStore.readCancellation(id)).toBeNull();
+    }
+    expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+  });
+
+  it("exhausted retries leave an open Task for App judgment, including after restart and duplicate wakes", () => {
+    const f = fixture();
+    for (let index = 0; index < 4; index++) {
+      const result = failAppTaskAttempt(f.config, f.claim(), "Execution unavailable");
+      expect(result.status).toBe(index === 3 ? "attention" : "retrying");
+    }
+    f.reopen();
+    recordAppTaskTrigger(f.config, "conversation", "owner", { type: "project.task.tick", eventId: 50, data: {} });
+    const result = claimObservedAppTask(f.config, { taskId: "conversation", appAgent: "owner", handler: "agent" });
+    expect(result.kind).toBe("attention");
+    expect(f.config.resourceStore.readTask("conversation")?.status.executionFailures).toBe(4);
+    expect(f.config.resourceStore.readCancellation("conversation")).toBeNull();
+    expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+  });
+
   it("returns a delayed input's answer after an intervening question and restart", () => {
     const f = fixture();
     const ask = (id: string) => admitTaskRequest(f.config, {
