@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
   isTypedConditionSubject as isTypedAppTaskConditionSubject,
+  taskActionBudgetProblem,
   MIN_CONDITION_REVIEW_AFTER_MS as MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS,
   type Condition as AppTaskConditionSpec,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
@@ -3525,6 +3526,8 @@ function validateTaskActions(
 }
 
 function taskActionContextIds(actions: unknown[]): string[] {
+  const problem = taskActionBudgetProblem(actions);
+  if (problem) throw new Error(problem);
   return actions.flatMap((rawAction) => {
     if (!isRecord(rawAction)) return [];
     const values =

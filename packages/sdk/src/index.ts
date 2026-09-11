@@ -3,6 +3,9 @@
 export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
+  MAX_TASK_ACTIONS,
+  MAX_TASK_ACTION_BYTES,
+  taskActionBudgetProblem,
   admitTaskReconcileResult,
   admitTaskVerificationResult,
   conditionSchema,

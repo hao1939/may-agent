@@ -12,6 +12,9 @@ import type {
 
 export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 export const MAX_TASK_RESULT_BYTES = 16 * 1024;
+// Bound one atomic storage transition, independently of worker concurrency.
+export const MAX_TASK_ACTIONS = 256;
+export const MAX_TASK_ACTION_BYTES = 64 * 1024;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
@@ -110,8 +113,12 @@ const resultFields = {
   response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
   evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
-  // Actions admit desired work; the runtime separately bounds its execution.
-  actions: Type.Optional(Type.Array(taskActionSchema)),
+  actions: Type.Optional(
+    Type.Array(taskActionSchema, {
+      maxItems: MAX_TASK_ACTIONS,
+      description: `One atomic admission is limited to ${MAX_TASK_ACTION_BYTES} UTF-8 JSON bytes across all actions. Worker concurrency is separate.`,
+    }),
+  ),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
   dependencies: Type.Optional(
     Type.Array(
@@ -549,6 +556,8 @@ export function admitTaskReconcileResult(
 
   const rawActions = admittedOutput.actions ?? [];
   if (!Array.isArray(rawActions)) return { ok: false, error: "actions must be an array" };
+  const actionBudgetProblem = taskActionBudgetProblem(rawActions);
+  if (actionBudgetProblem) return { ok: false, error: actionBudgetProblem };
   const actions: TaskAction[] = [];
   for (let index = 0; index < rawActions.length; index += 1) {
     const normalized = normalizeAction(rawActions[index], options, index);
@@ -620,6 +629,16 @@ export function admitTaskReconcileResult(
       ...(dependencies.length > 0 ? { dependencies } : {}),
     },
   };
+}
+
+/** Shared by schema admission and the Host before expanding action targets. */
+export function taskActionBudgetProblem(actions: unknown[]): string | undefined {
+  if (actions.length > MAX_TASK_ACTIONS) {
+    return `actions exceed the ${MAX_TASK_ACTIONS}-entry storage budget`;
+  }
+  if (new TextEncoder().encode(JSON.stringify(actions)).byteLength > MAX_TASK_ACTION_BYTES) {
+    return `actions exceed the ${MAX_TASK_ACTION_BYTES}-byte storage budget`;
+  }
 }
 
 export function admitTaskVerificationResult(

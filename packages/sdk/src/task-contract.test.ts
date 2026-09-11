@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Check } from "typebox/value";
-import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultSchema } from "./task-contract.js";
+import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultSchema, MAX_TASK_ACTIONS, MAX_TASK_ACTION_BYTES } from "./task-contract.js";
 
 const workflowOptions = { allowNeedsAgent: true, defaultParentId: "app-root" };
 
@@ -28,6 +28,25 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("bounds the complete action payload in UTF-8 bytes and the atomic transition count", () => {
+    const action = { kind: "unblock-task", taskId: "repair/one", expectedGeneration: 1, reason: "" };
+    const overhead = new TextEncoder().encode(JSON.stringify([action])).byteLength;
+    const output = { state: "waiting", summary: "Recover", evidence: [], actions: [{ ...action, reason: "x".repeat(MAX_TASK_ACTION_BYTES - overhead) }] };
+    expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(true);
+    for (const reason of [output.actions[0].reason + "x", "界".repeat(Math.ceil(MAX_TASK_ACTION_BYTES / 3))]) {
+      expect(admitTaskReconcileResult({ ...output, actions: [{ ...action, reason }] }, workflowOptions)).toEqual({
+        ok: false, error: `actions exceed the ${MAX_TASK_ACTION_BYTES}-byte storage budget`,
+      });
+    }
+    const actions = Array.from({ length: MAX_TASK_ACTIONS }, (_, i) => ({ ...action, taskId: `r/${i}`, reason: "retry" }));
+    expect(admitTaskReconcileResult({ ...output, actions }, workflowOptions).ok).toBe(true);
+    const oversized = { ...output, actions: [...actions, { ...action, reason: "retry" }] };
+    expect(Check(taskAgentResultSchema, oversized)).toBe(false);
+    expect(admitTaskReconcileResult(oversized, workflowOptions)).toEqual({
+      ok: false, error: `actions exceed the ${MAX_TASK_ACTIONS}-entry storage budget`,
+    });
+  });
+
   it("admits independent recovery actions without treating their count as execution concurrency", () => {
     const actions = Array.from({ length: 24 }, (_, i) => ({
       kind: "unblock-task" as const,

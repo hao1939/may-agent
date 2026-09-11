@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
+import { MAX_TASK_ACTION_BYTES, MAX_TASK_ACTIONS, type TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
@@ -5538,7 +5538,7 @@ describe("App task reconciler state", () => {
     ).toThrow("no completed failed attempt");
   });
 
-  it.each([1, 24])("lets a controller recover %i attention tasks without changing their generations", (count) => {
+  it.each([1, 24, MAX_TASK_ACTIONS])("lets a controller recover %i attention tasks without changing their generations", (count) => {
     const state = fixture();
     const { config } = state;
     const retryIntent = {
@@ -5845,6 +5845,27 @@ describe("App task reconciler state", () => {
       metadata: { generation: target.generation + 1 },
       status: { phase: "pending" },
     });
+  });
+
+  it.each(["complete", "wait"])("rejects oversized %s actions before graph reads or mutation", (settlement) => {
+    const { config } = fixture();
+    const claim = declareAndClaimTask(config, {
+      intent: intent("maintain"), appAgent: "app-owner", handler: "agent:branch-owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    let graphReads = 0;
+    const readContext = config.resourceStore.readTaskContext.bind(config.resourceStore);
+    config.resourceStore.readTaskContext = (...args) => { graphReads++; return readContext(...args); };
+    const input = {
+      summary: "Oversized recovery", evidence: ["new prerequisite"],
+      actions: [{ kind: "unblock-task" as const, taskId: "repair/one", expectedGeneration: 1, reason: "x".repeat(MAX_TASK_ACTION_BYTES) }],
+    };
+    expect(() => settlement === "complete"
+      ? completeAppTask(config, claim, input)
+      : deferCanonicalAppTask(config, claim, { ...input, disposition: "waiting" }),
+    ).toThrow(`actions exceed the ${MAX_TASK_ACTION_BYTES}-byte storage budget`);
+    expect(graphReads).toBe(0);
+    expect(config.resourceStore.readTask(claim.taskId)?.status.phase).toBe("running");
   });
 
   it("rejects an invalid action batch without partially applying earlier actions", () => {

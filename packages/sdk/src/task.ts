@@ -154,6 +154,9 @@ export type TaskVerifier = (
 /** Runtime validation is opt-in so the App declaration entry point stays lightweight. */
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
+  MAX_TASK_ACTIONS,
+  MAX_TASK_ACTION_BYTES,
+  taskActionBudgetProblem,
   admitTaskReconcileResult,
   admitTaskVerificationResult,
   conditionSchema,
