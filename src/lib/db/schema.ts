@@ -1,6 +1,19 @@
 import type { SqliteDb } from "../db.js";
 import { ensureTaskResourceSchema } from "./task-resource-schema.js";
 
+const NOTIFICATION_SCHEMA = `
+CREATE TABLE IF NOT EXISTS notification_messages (
+  chat_id TEXT NOT NULL,
+  telegram_msg_id INTEGER NOT NULL,
+  event_type TEXT,
+  agent TEXT,
+  session_id TEXT,
+  project_id TEXT,
+  data TEXT,
+  sent_at INTEGER,
+  PRIMARY KEY (chat_id, telegram_msg_id)
+);`;
+
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS sessions (
@@ -133,6 +146,9 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
+-- Provider retries recover original context independently of today's Task scope.
+CREATE INDEX IF NOT EXISTS idx_events_telegram_input ON events(event_type, idempotency_key)
+  WHERE source = 'telegram' AND idempotency_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp, id);
 CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delivery_route, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
@@ -375,15 +391,7 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
 CREATE INDEX IF NOT EXISTS idx_ma_open_created ON metric_alerts(created_at DESC, id DESC) WHERE resolved_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_ma_open_metric_created ON metric_alerts(metric_id, created_at DESC, id DESC) WHERE resolved_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS notification_messages (
-  telegram_msg_id INTEGER PRIMARY KEY,
-  event_type TEXT,
-  agent TEXT,
-  session_id TEXT,
-  project_id TEXT,
-  data TEXT,
-  sent_at INTEGER
-);
+${NOTIFICATION_SCHEMA}
 
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
@@ -471,6 +479,7 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppEventAdmissionColumns(db);
+    ensureNotificationChatScope(db);
     retireConversationChildWaits(db);
     ensureExistingTaskBindingColumns(db);
     db.exec(`
@@ -693,6 +702,32 @@ function ensureExistingEventsTableColumns(db: SqliteDb): void {
   for (const [column, definition] of EVENT_COLUMNS) {
     ensureColumn(db, "events", column, definition);
   }
+}
+
+/** Runs inside the schema transaction; keep unscoped rows as history, not routing. */
+function ensureNotificationChatScope(db: SqliteDb): void {
+  const columns = db.prepare("PRAGMA table_info(notification_messages)").all() as Array<{ name: string }>;
+  if (columns.some((column) => column.name === "chat_id")) return;
+  db.exec("ALTER TABLE notification_messages RENAME TO notification_messages_unscoped");
+  db.exec(NOTIFICATION_SCHEMA);
+  db.exec(`
+    INSERT INTO notification_messages
+      (chat_id, telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at)
+    SELECT CASE WHEN json_valid(data) THEN
+      CASE
+        WHEN json_extract(data, '$.chatId') IS NOT NULL
+          AND json_extract(data, '$.channelTargetId') IS NOT NULL
+          AND CAST(json_extract(data, '$.chatId') AS TEXT) != CAST(json_extract(data, '$.channelTargetId') AS TEXT)
+          THEN ''
+        WHEN json_type(data, '$.channelTargetId') IN ('text', 'integer')
+          THEN CAST(json_extract(data, '$.channelTargetId') AS TEXT)
+        WHEN json_type(data, '$.chatId') IN ('text', 'integer')
+          THEN CAST(json_extract(data, '$.chatId') AS TEXT) ELSE '' END
+      ELSE '' END,
+      telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at
+    FROM notification_messages_unscoped;
+    DROP TABLE notification_messages_unscoped;
+  `);
 }
 
 function tableExists(db: SqliteDb, table: string): boolean {

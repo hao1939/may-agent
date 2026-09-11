@@ -25,7 +25,7 @@ import {
 import { log } from "../../lib/log.js";
 import type { SqliteDb } from "../../lib/db.js";
 import { listConversationRequests } from "../core/state/conversation-requests.js";
-import { readJsonArtifactWithDescriptor } from "../../lib/artifacts.js";
+import { loadPersistedEvent } from "../core/events/persisted.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../core/events/bus.js";
 import {
   AppInboxHost,
@@ -197,63 +197,6 @@ function eventIdentity(event: AgentEvent): string | undefined {
   return eventId ? `event:${eventId}` : undefined;
 }
 
-function parseStoredEventData(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "string" || !value.trim()) return null;
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Rebuild the immutable event input needed to finish a plan after restart. */
-function loadAdmissionEvent(db: SqliteDb, eventId: number, persistDir?: string): AgentEvent | null {
-  const row = db
-    .prepare(
-      `SELECT event_type, source, owner, data, body_ref, body_sha256, body_bytes,
-              session_id, project_id, task_id, timestamp, urgency, ttl_ms
-       FROM events
-       WHERE id = ?`,
-    )
-    .get(eventId);
-  if (!row || typeof row.event_type !== "string") return null;
-
-  let data = parseStoredEventData(row.data) ?? {};
-  if (persistDir && typeof row.body_ref === "string" && row.body_ref.trim()) {
-    const artifact = readJsonArtifactWithDescriptor<Record<string, unknown>>(persistDir, row.body_ref);
-    if (
-      artifact &&
-      (!row.body_sha256 || artifact.descriptor.sha256 === row.body_sha256) &&
-      (!row.body_bytes || artifact.descriptor.bytes === Number(row.body_bytes))
-    ) {
-      data = artifact.value;
-    }
-  }
-  const appId =
-    typeof data.appId === "string" && data.appId.trim()
-      ? data.appId.trim()
-      : typeof row.project_id === "string" && row.project_id.trim()
-        ? row.project_id.trim()
-        : undefined;
-  const taskId = typeof row.task_id === "string" && row.task_id.trim() ? row.task_id.trim() : undefined;
-  const sessionId = typeof row.session_id === "string" && row.session_id.trim() ? row.session_id.trim() : undefined;
-  const target = { ...(appId ? { appId } : {}), ...(taskId ? { taskId } : {}), ...(sessionId ? { sessionId } : {}) };
-  const event = {
-    type: row.event_type,
-    ...(typeof row.source === "string" ? { source: row.source } : {}),
-    ...(typeof row.owner === "string" ? { owner: row.owner } : {}),
-    ...(Object.keys(target).length > 0 ? { target } : {}),
-    data,
-    ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
-    ...(row.urgency === "low" || row.urgency === "normal" || row.urgency === "high" || row.urgency === "immediate"
-      ? { urgency: row.urgency }
-      : {}),
-    ...(typeof row.ttl_ms === "number" ? { ttl_ms: row.ttl_ms } : {}),
-  } as AgentEvent;
-  Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
-  return event;
-}
 
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
   const taskId = typeof event.target?.taskId === "string" ? event.target.taskId.trim() : "";
@@ -1096,7 +1039,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (closed) return;
         const plan = plans[index++];
         if (!plan) return;
-        const event = loadAdmissionEvent(options.db, plan.eventId, options.persistDir);
+        const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
         if (!event) {
           for (const command of plan.commands) {
             if (command.status !== "pending") continue;
@@ -1186,7 +1129,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
               ? metadata.channelMessageId
               : undefined;
-          const context = record(data.context);
+          // Preserve the surface's Topic as input context, not a committed turn decision.
+          const context: Record<string, unknown> = {
+            ...record(data.context),
+            ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
+              ? { conversationTopicId: metadata.topicId.trim() }
+              : {}),
+          };
           const focusedTask = record(context.focusedTask);
           const focusedAppId =
             typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
@@ -1199,9 +1148,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               kind: "message",
               data: {
                 message: text,
-                ...(data.context && typeof data.context === "object" && !Array.isArray(data.context)
-                  ? { context: data.context }
-                  : {}),
+                ...(Object.keys(context).length ? { context } : {}),
               },
             },
             originEventId: persistedEventId,

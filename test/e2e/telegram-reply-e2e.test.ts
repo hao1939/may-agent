@@ -34,7 +34,7 @@ function attachTelegramBot(
       return {
         eventId: Number(emitted[EVENT_ROW_ID]) || 1,
         eventType: input.type,
-        delivery: "recorded",
+        delivery: "accepted",
       };
     },
   });
@@ -495,6 +495,7 @@ describe("telegram reply e2e", () => {
         },
       });
       expect(replies).toContain("Unknown command: /close. Use /help to see available commands.");
+      expect(replies).toContainEqual(expect.stringContaining("Ask May to find the work"));
       expect(events.some((event) => event.type === "runtime.shutdown.requested")).toBe(false);
       expect(events.some((event) => event.type === "session.cancel.requested")).toBe(false);
       expect(events.some((event) => event.type === "input")).toBe(false);

@@ -113,7 +113,7 @@ function fixture() {
     },
     publishEvent(input) {
       published.push(input);
-      return { eventId: published.length, eventType: input.type, delivery: "recorded" };
+      return { eventId: published.length, eventType: input.type, delivery: "accepted" };
     },
   });
   return {

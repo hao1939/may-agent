@@ -6,7 +6,11 @@ import type {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
 import type { AppInboxItem } from "../core/state/app-inbox-store.js";
-import { readAppConversationResource, readConversationMessageTopicId } from "../core/state/conversations.js";
+import {
+  readAppConversationResource,
+  readConversationMessageTopicId,
+  readConversationTopic,
+} from "../core/state/conversations.js";
 import {
   observeTaskDependency,
   type AppDependencyReader,
@@ -21,11 +25,16 @@ function encodedBytes(value: unknown): number {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
 }
 
-function focusedTaskIdentity(input: AppInput): { appId: string; taskId: string } | null {
-  if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return null;
+function inputContext(input: AppInput): Record<string, unknown> {
+  if (!input.data || typeof input.data !== "object" || Array.isArray(input.data)) return {};
   const context = (input.data as Record<string, unknown>).context;
-  if (!context || typeof context !== "object" || Array.isArray(context)) return null;
-  const focusedTask = (context as Record<string, unknown>).focusedTask;
+  return context && typeof context === "object" && !Array.isArray(context)
+    ? (context as Record<string, unknown>)
+    : {};
+}
+
+function focusedTaskIdentity(context: Record<string, unknown>): { appId: string; taskId: string } | null {
+  const focusedTask = context.focusedTask;
   if (!focusedTask || typeof focusedTask !== "object" || Array.isArray(focusedTask)) return null;
   const value = focusedTask as Record<string, unknown>;
   const appId = typeof value.appId === "string" ? value.appId.trim().replace(/\.app$/, "") : "";
@@ -116,7 +125,8 @@ export async function prepareConversationInput(
   readDependency?: AppDependencyReader,
 ): Promise<AppInputContext> {
   const request = { ...input };
-  const focusedTask = focusedTaskIdentity(item.input);
+  const context = inputContext(item.input);
+  const focusedTask = focusedTaskIdentity(context);
   if (focusedTask) {
     let observation: AppDependencyObservation | null = null;
     if (readDependency) {
@@ -135,11 +145,14 @@ export async function prepareConversationInput(
     };
   }
   if (item.conversationId) {
-    const contextTopicId =
-      item.topicId ??
-      (item.replyToSourceId
-        ? (readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId) ?? undefined)
-        : undefined);
+    const hintedTopic =
+      typeof context.conversationTopicId === "string" && context.conversationTopicId.trim()
+        ? readConversationTopic(db, item.appId, item.conversationId, context.conversationTopicId)
+        : null;
+    const repliedTopicId = item.replyToSourceId
+      ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
+      : undefined;
+    const contextTopicId = item.topicId ?? repliedTopicId ?? hintedTopic?.id;
     const conversation = readAppConversationResource(db, item.appId, item.conversationId, {
       limit: 40,
       ...(contextTopicId ? { topicId: contextTopicId } : {}),

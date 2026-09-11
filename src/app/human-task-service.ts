@@ -3,6 +3,7 @@ import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskReso
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import {
+  TaskReferenceError,
   displayTaskReferences,
   ensureTaskReferenceIndex,
   resolveTaskReference,
@@ -976,7 +977,7 @@ export class HumanTaskService {
       const resolved = resolveTaskReference(this.db, input.ref);
       if (resolved.kind === "missing") return null;
       if (resolved.kind === "ambiguous") {
-        throw new Error(
+        throw new TaskReferenceError(
           `Ambiguous Task reference ${input.ref}: ${resolved.candidates
             .map((candidate) => `${candidate.appId}/${candidate.taskId}`)
             .join(", ")}`,
