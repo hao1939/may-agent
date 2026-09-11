@@ -2420,7 +2420,7 @@ export function wakeLoadedAppTasks(input: {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
-  if (!descriptor || !controller || descriptor.reconciliationPaused) return;
+  if (!descriptor || !controller) return;
   const config = appTaskConfig(descriptor);
   const opts = appRouterOptionsByBus.get(input.bus);
   const admittedTaskId = input.taskIds.at(-1);
@@ -2638,15 +2638,21 @@ function installConventionTaskControllers(
       existingBinding.descriptor = descriptor;
       existingBinding.opts = opts;
       existingController.updateMaxConcurrent(descriptor.app.tasks?.maxConcurrent ?? 1);
-      existingController.setEnabled(!descriptor.reconciliationPaused);
+      // Eligibility is read from current storage per Task, including while paused.
+      existingController.setEnabled(true);
       continue;
     }
-    if (descriptor.reconciliationPaused) continue;
 
     const binding: AppTaskControllerBinding = { descriptor, opts };
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
+      readScheduling: () => ({
+        backgroundPaused: binding.descriptor.resourceStore.projectLifecycle() !== "active",
+        foregroundTaskIds: binding.descriptor.app.requests
+          ? binding.descriptor.resourceStore.pendingHumanConversationTaskIds()
+          : new Set(),
+      }),
       startAfter: opts.startAfter,
       // Dispatch/storage failures have no persisted Task retry yet.
       maxRetries: Number.POSITIVE_INFINITY,

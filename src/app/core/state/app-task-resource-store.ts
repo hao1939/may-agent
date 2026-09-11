@@ -119,8 +119,8 @@ export type AppTaskControlReceipt = {
 
 export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
-  /** Readiness release must not race an App pause from another writer. */
-  requireActiveProject?: boolean;
+  /** Check background pause against current input inside the claim transaction. */
+  requireUnpausedTask?: string;
   expectMissingTaskIds?: string[];
   tasks?: TaskResourceWrite[];
   deleteTaskIds?: string[];
@@ -476,6 +476,35 @@ export class AppTaskResourceStore {
     if (!rawMetadata) return null;
     const value = parseJson<Record<string, unknown>>(rawMetadata).project_lifecycle;
     return value === "active" || value === "paused" ? value : null;
+  }
+
+  /** Foreground eligibility comes from admitted human input, never Task priority. */
+  hasPendingHumanConversationInput(taskId: string): boolean {
+    return Boolean(
+      this.db
+        .prepare(
+          `SELECT 1 FROM app_inbox_items WHERE app_id = ? AND execution_task_id = ?
+       AND source_kind = 'human' AND status != 'done' LIMIT 1`,
+        )
+        .get(this.appId, taskId),
+    );
+  }
+
+  pendingHumanConversationTaskIds(): Set<string> {
+    return new Set(
+      (
+        this.db
+          .prepare(
+            `SELECT DISTINCT execution_task_id FROM app_inbox_items WHERE app_id = ?
+       AND execution_task_id IS NOT NULL AND source_kind = 'human' AND status != 'done'`,
+          )
+          .all(this.appId) as Array<{ execution_task_id: string }>
+      ).map((row) => row.execution_task_id),
+    );
+  }
+
+  allowsTaskExecution(taskId: string): boolean {
+    return this.projectLifecycle() === "active" || this.hasPendingHumanConversationInput(taskId);
   }
 
   readTask(taskId: string): AppTaskResource | null {
@@ -1177,7 +1206,7 @@ export class AppTaskResourceStore {
       throw new Error("Task resource mutation requires at least one existing or missing-task fence");
     }
     return transaction(this.db, () => {
-      if (mutation.requireActiveProject && this.projectLifecycle() !== "active") return false;
+      if (mutation.requireUnpausedTask && !this.allowsTaskExecution(mutation.requireUnpausedTask)) return false;
       for (const fence of mutation.fences) {
         const current = this.db
           .prepare(

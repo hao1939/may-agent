@@ -383,10 +383,11 @@ export type AppTaskPolicy = {
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
+  /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
   maxConcurrent?: number;
 };
 
-/** Direct bounded handling for conversational input; it creates no App Task. */
+/** Conversation input executes through one stable Task per Conversation. */
 export type AppRequestPolicy = {
   mode: "agent";
   /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */

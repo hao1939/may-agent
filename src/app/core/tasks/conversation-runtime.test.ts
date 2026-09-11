@@ -620,3 +620,192 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
     ingress.runtime.close();
   }
 });
+
+test("human Conversation input keeps capacity beside same-App background work; system reviews do not", async () => {
+  const backgroundStarted = Promise.withResolvers<void>();
+  const releaseBackground = Promise.withResolvers<void>();
+  const reviews: string[] = [];
+  let humanTurns = 0;
+  let backgroundRuns = 0;
+  const definition = defineApp({ ...app, tasks: { maxConcurrent: 1, subscriptions: [], resolve: () => null } });
+  const capacity = new HostCapacity(2);
+  const f = await fixture(
+    async (_agent, prompt) => {
+      const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+      const human = context.inputs.some((input: { source: { kind: string } }) => input.source.kind === "human");
+      if (human) {
+        humanTurns++;
+        expect(backgroundRuns).toBe(1);
+        expect(capacity.snapshot().running).toBe(2);
+      } else reviews.push(context.inputs[0].source.id);
+      return {
+        status: "done",
+        structuredResult: {
+          summary: human ? "Answered the human" : "Reviewed the fact quietly",
+          ...(human ? { response: `Human answer ${humanTurns}` } : {}),
+          topic: { kind: "none" },
+        },
+      };
+    },
+    (_root, appDir) => ({
+      hostCapacity: capacity,
+      appRegistrySnapshot: { id: "shared-app", generation: 1, entries: [{ appDir, definition }] },
+      executors: {
+        hold: async () => {
+          backgroundRuns++;
+          backgroundStarted.resolve();
+          await releaseBackground.promise;
+          return { state: "converged", summary: "Background finished", evidence: [] };
+        },
+      },
+    }),
+  );
+  const ingress = await startConversationIngress(f);
+  try {
+    for (const id of ["background", "urgent-background"])
+      observeAppTaskIntent(f.context(), {
+        appAgent: app.agent!,
+        intent: {
+          id,
+          parentId: "root",
+          mode: "achieve",
+          executor: "hold",
+          priority: "P0",
+          outcome: "Independent work",
+          acceptance: ["Handled"],
+        },
+      });
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: ["background"] });
+    await backgroundStarted.promise;
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: ["urgent-background"] });
+    const review = ingress.tasks.admitConversation({
+      appId: app.id,
+      conversationId: "review-chat",
+      source: { kind: "system", id: "review" },
+      input: { kind: "review", data: {} },
+      idempotencyKey: "review",
+    });
+    for (const index of [1, 2]) {
+      const replied = eventAfter(
+        f.bus,
+        (event) =>
+          event.type === "conversation.updated" &&
+          readAppConversationResource(f.db, app.id, "primary").messages.some(
+            (message) => message.text === `Human answer ${index}`,
+          ),
+      );
+      ingress.publish(`human-${index}`, "Discuss the work while it runs");
+      await replied;
+      expect(reviews).toEqual([]);
+      expect(backgroundRuns).toBe(1);
+    }
+    expect(f.store.readTask(review.taskId)?.status.currentAttemptId).toBeUndefined();
+    const reviewed = settled(f.bus, review.taskId);
+    releaseBackground.resolve();
+    await reviewed;
+    expect(reviews).toEqual(["review"]);
+    expect(backgroundRuns).toBe(2);
+    expect(ingress.oldExecutions).toBe(0);
+  } finally {
+    releaseBackground.resolve();
+    ingress.runtime.close();
+  }
+});
+
+test("a paused App answers human input through its Task across restart while background work waits", async () => {
+  let backgroundRuns = 0;
+  const inputs: string[] = [];
+  const definition = defineApp({ ...app, tasks: { subscriptions: [], resolve: () => null } });
+  const f = await fixture(
+    async (_agent, prompt) => {
+      const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+      const id = context.inputs[0].source.id;
+      inputs.push(id);
+      return {
+        status: "done",
+        structuredResult: { summary: "Handled input", response: `Handled ${id}`, topic: { kind: "none" } },
+      };
+    },
+    (_root, appDir) => {
+      mkdirSync(join(appDir, "tasks"));
+      writeFileSync(join(appDir, "tasks", "seed.json"), JSON.stringify({ project_lifecycle: "paused" }));
+      return {
+        appRegistrySnapshot: { id: "paused-app", generation: 1, entries: [{ appDir, definition }] },
+        executors: {
+          count: async () => {
+            backgroundRuns++;
+            return { state: "converged", summary: "Resumed work", evidence: [] };
+          },
+        },
+      };
+    },
+  );
+  let ingress = await startConversationIngress(f);
+  try {
+    observeAppTaskIntent(f.context(), {
+      appAgent: app.agent!,
+      intent: {
+        id: "background",
+        parentId: "root",
+        mode: "achieve",
+        executor: "count",
+        outcome: "Wait while paused",
+        acceptance: ["Handled"],
+      },
+    });
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: ["background"] });
+    const review = ingress.tasks.admitConversation({
+      appId: app.id,
+      conversationId: "review-chat",
+      source: { kind: "system", id: "review" },
+      input: { kind: "review", data: {} },
+      idempotencyKey: "review",
+    });
+    // A direct worker call must obey storage's pause fence as well as the queue.
+    for (const taskId of ["background", review.taskId])
+      await reconcileLoadedAppTaskOnce({
+        bus: f.bus,
+        appId: app.id,
+        taskId,
+        dispatch: { lane: "human", enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0 },
+      });
+    const reply = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        readAppConversationResource(f.db, app.id, "primary").messages.some(
+          (message) => message.text === "Handled before",
+        ),
+    );
+    ingress.publish("before", "Discuss the paused project");
+    await reply;
+    expect(inputs).toEqual(["before"]);
+    expect(backgroundRuns).toBe(0);
+    ingress.runtime.close();
+    const options = await f.reopen();
+    ingress = await startConversationIngress(f);
+    const next = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        readAppConversationResource(f.db, app.id, "primary").messages.some(
+          (message) => message.text === "Handled after",
+        ),
+    );
+    ingress.publish("after", "Keep discussing without resuming background work");
+    await next;
+    expect(inputs).toEqual(["before", "after"]);
+    expect(backgroundRuns).toBe(0);
+    expect(f.store.projectLifecycle()).toBe("paused");
+    const reviewed = settled(f.bus, review.taskId);
+    const resumed = settled(f.bus, "background");
+    f.store.setProjectLifecycle("active");
+    await installAppTaskRuntimes(options, { deferRecovery: true });
+    await Promise.all([reviewed, resumed]);
+    expect(inputs).toEqual(["before", "after", "review"]);
+    expect(backgroundRuns).toBe(1);
+    expect(ingress.oldExecutions).toBe(0);
+  } finally {
+    ingress.runtime.close();
+  }
+});

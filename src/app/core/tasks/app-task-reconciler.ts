@@ -2618,7 +2618,7 @@ export function claimObservedAppTask(
       generation: tree.receipts?.[input.taskId]?.metadata.generation ?? 0,
     };
   }
-  if (config.resourceStore.projectLifecycle() === "paused") {
+  if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
   const retryAt = pendingTaskExecutionRetryAt(resource);
@@ -2934,7 +2934,7 @@ export function claimObservedAppTask(
   try {
     commitTaskMutation(config, tree, {
       resourceMutation: {
-        requireActiveProject: true,
+        requireUnpausedTask: input.taskId,
         fences: [resourceFence],
         tasks: [resourceWrite(tree, resource, false)],
         attempts: [...changedAttempts],
@@ -2943,7 +2943,7 @@ export function claimObservedAppTask(
       },
     });
   } catch (error) {
-    if (error instanceof ResourceTaskMutationStaleError && config.resourceStore.projectLifecycle() === "paused") {
+    if (error instanceof ResourceTaskMutationStaleError && !config.resourceStore.allowsTaskExecution(input.taskId)) {
       return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
     }
     throw error;

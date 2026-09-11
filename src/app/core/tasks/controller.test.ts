@@ -325,6 +325,121 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("replaces a background capacity wait when human Conversation work becomes ready", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire()!;
+    const started: string[] = [];
+    const finishHuman = Promise.withResolvers<void>();
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set(["conversation"]) }),
+      reconcile: async (taskId) => {
+        started.push(taskId);
+        if (taskId === "conversation") await finishHuman.promise;
+      },
+    });
+    try {
+      controller.enqueue("ordinary", { lane: "human", priority: "P0" });
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      controller.enqueue("conversation");
+      await waitUntil(() => started.length === 1);
+      expect(started).toEqual(["conversation"]);
+      expect(capacity.snapshot().running).toBe(2);
+      finishHuman.resolve();
+      await waitUntil(() => controller.snapshot().running.length === 0 && capacity.snapshot().waiting === 1);
+      releaseBackground();
+      await waitUntil(() => started.includes("ordinary") && capacity.snapshot().running === 0);
+      expect(started).toEqual(["conversation", "ordinary"]);
+      expect(capacity.snapshot().waiting).toBe(0);
+    } finally {
+      finishHuman.resolve();
+      releaseBackground();
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
+  it("rechecks input class after waiting instead of spending the foreground reserve on a system review", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire()!;
+    const releaseForeground = capacity.tryAcquireForeground()!;
+    let humanPending = true;
+    const started: string[] = [];
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      readScheduling: () => ({
+        backgroundPaused: false,
+        foregroundTaskIds: new Set(humanPending ? ["conversation"] : []),
+      }),
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+    try {
+      controller.enqueue("conversation");
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      humanPending = false;
+      releaseForeground();
+      await waitUntil(() => capacity.snapshot().running === 1 && capacity.snapshot().waiting === 1);
+      expect(started).toEqual([]);
+      releaseBackground();
+      await waitUntil(() => started.length === 1 && capacity.snapshot().running === 0);
+      expect(started).toEqual(["conversation"]);
+      expect(capacity.snapshot().waiting).toBe(0);
+    } finally {
+      releaseBackground();
+      releaseForeground();
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
+  it("releases reserved capacity and backs off when the scheduling read fails", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire()!;
+    const releaseForeground = capacity.tryAcquireForeground()!;
+    const reported = Promise.withResolvers<void>();
+    let readBroken = false;
+    let starts = 0;
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      retryDelayMs: () => 30,
+      readScheduling: () => {
+        if (readBroken) throw new Error("Scheduling storage unavailable");
+        return { backgroundPaused: false, foregroundTaskIds: new Set(["conversation"]) };
+      },
+      reconcile: async () => {
+        starts++;
+      },
+      onError: (_taskId, error, willRetry) => {
+        expect(String(error)).toContain("Scheduling storage unavailable");
+        expect(willRetry).toBe(true);
+        reported.resolve();
+      },
+    });
+    try {
+      controller.enqueue("conversation");
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      readBroken = true;
+      releaseForeground();
+      await reported.promise;
+      expect(starts).toBe(0);
+      expect(capacity.snapshot()).toEqual({ running: 1, waiting: 0 });
+      expect(controller.snapshot().pending).toEqual(["conversation"]);
+      readBroken = false;
+      await waitUntil(() => starts === 1 && controller.snapshot().running.length === 0);
+      expect(capacity.snapshot()).toEqual({ running: 1, waiting: 0 });
+    } finally {
+      releaseBackground();
+      releaseForeground();
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
   it("shares the Host limit across independent controllers", async () => {
     // One of three Host slots is reserved for foreground May conversation.
     const appCapacity = new HostCapacity(3);

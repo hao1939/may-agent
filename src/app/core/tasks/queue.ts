@@ -10,6 +10,7 @@ export class AppTaskQueue {
   private readonly queued = new Set<string>();
   private readonly promotedQueued = new Set<string>();
   private readonly running = new Set<string>();
+  private readonly foregroundRunning = new Set<string>();
   private readonly dirty = new Set<string>();
   private readonly dirtyPromote = new Set<string>();
   private readonly priorities = new Map<string, AppTaskPriority>();
@@ -20,6 +21,7 @@ export class AppTaskQueue {
   constructor(
     private concurrency: number,
     private readonly isReady: (taskId: string) => boolean = () => true,
+    private readonly isForeground: (taskId: string) => boolean = () => false,
   ) {
     this.validateMaxConcurrent(concurrency);
   }
@@ -80,16 +82,16 @@ export class AppTaskQueue {
   }
 
   take(): string | null {
-    if (this.running.size >= this.maxConcurrent) return null;
-    const lane = this.nextLane();
-    if (!lane) return null;
-    const takeIndex = this.nextIndex(lane);
+    const next = this.peek();
+    if (!next) return null;
+    const takeIndex = this.pending.indexOf(next.taskId);
     if (takeIndex < 0) return null;
     const [taskId] = this.pending.splice(takeIndex, 1);
     if (!taskId) return null;
     this.queued.delete(taskId);
     this.promotedQueued.delete(taskId);
     this.running.add(taskId);
+    if (next.foreground) this.foregroundRunning.add(taskId);
     return taskId;
   }
 
@@ -97,6 +99,7 @@ export class AppTaskQueue {
     if (!this.running.delete(taskId)) {
       throw new Error(`AppTaskQueue cannot complete task that is not running: ${taskId}`);
     }
+    this.foregroundRunning.delete(taskId);
     if (this.dirty.delete(taskId)) {
       const promote = this.dirtyPromote.delete(taskId);
       const priority = this.dirtyPriorities.get(taskId) ?? this.priorities.get(taskId);
@@ -111,14 +114,7 @@ export class AppTaskQueue {
   }
 
   nextLane(): AppTaskLane | null {
-    if (this.running.size >= this.maxConcurrent || this.pending.length === 0) return null;
-    let lane: AppTaskLane | null = null;
-    for (const taskId of this.pending) {
-      if (!this.isReady(taskId)) continue;
-      if (this.lanes.get(taskId) === "human") return "human";
-      lane = "normal";
-    }
-    return lane;
+    return this.peek()?.lane ?? null;
   }
 
   get pendingCount(): number {
@@ -141,17 +137,27 @@ export class AppTaskQueue {
     };
   }
 
-  private nextIndex(lane: AppTaskLane): number {
-    let selected = -1;
+  /** One interactive slot in addition to the declared background App limit. */
+  peek(): { taskId: string; lane: AppTaskLane; foreground: boolean } | null {
+    let selected: { taskId: string; lane: AppTaskLane; foreground: boolean } | null = null;
     let selectedRank = Number.POSITIVE_INFINITY;
     let selectedPromoted = false;
     for (let index = 0; index < this.pending.length; index++) {
       const taskId = this.pending[index];
-      if (!taskId || !this.isReady(taskId) || this.lanes.get(taskId) !== lane) continue;
-      const rank = priorityRank(this.priorities.get(taskId) ?? "P2");
+      if (!taskId || !this.isReady(taskId)) continue;
+      const foreground = this.isForeground(taskId);
+      if (
+        foreground
+          ? this.foregroundRunning.size >= 1
+          : this.running.size - this.foregroundRunning.size >= this.concurrency
+      )
+        continue;
+      const lane = this.lanes.get(taskId) ?? "normal";
+      const rank =
+        (foreground ? 0 : 8) + (lane === "human" ? 0 : 4) + priorityRank(this.priorities.get(taskId) ?? "P2");
       const promoted = this.promotedQueued.has(taskId);
       if (rank < selectedRank || (rank === selectedRank && promoted && !selectedPromoted)) {
-        selected = index;
+        selected = { taskId, lane, foreground };
         selectedRank = rank;
         selectedPromoted = promoted;
       }

@@ -30,6 +30,8 @@ export type AppTaskControllerOptions = {
   maxConcurrent: number;
   /** Shared Host capacity. App-local limits still apply independently. */
   capacity?: HostCapacity;
+  /** One current scheduling read per dispatch boundary, not per queued key. */
+  readScheduling?(): { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string> };
   reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
   /** Best-effort diagnostics; never holds capacity or gates retries. */
   onError?(taskId: string, error: unknown, willRetry: boolean): void | Promise<void>;
@@ -61,11 +63,19 @@ export class AppTaskController {
   private startReady: boolean;
   private waitingForCapacity = false;
   private waitingCapacityLane?: AppTaskLane;
+  private waitingCapacityForeground?: boolean;
   private cancelCapacityWait?: () => void;
   private readonly drainWaiters = new Set<() => void>();
+  private scheduling = { backgroundPaused: false, foregroundTaskIds: new Set<string>() as ReadonlySet<string> };
 
   constructor(private readonly options: AppTaskControllerOptions) {
-    this.queue = new AppTaskQueue(options.maxConcurrent, (taskId) => !this.retryTimers.has(taskId));
+    this.queue = new AppTaskQueue(
+      options.maxConcurrent,
+      (taskId) =>
+        !this.retryTimers.has(taskId) &&
+        (!this.scheduling.backgroundPaused || this.scheduling.foregroundTaskIds.has(taskId)),
+      (taskId) => this.scheduling.foregroundTaskIds.has(taskId),
+    );
     this.startReady = !options.startAfter;
     if (options.startAfter) {
       void Promise.resolve(options.startAfter).then(
@@ -79,11 +89,19 @@ export class AppTaskController {
     if (this.closed) return false;
     const added = this.queue.enqueue(taskId, opts);
     if (added && !this.readySince.has(taskId)) this.readySince.set(taskId, Date.now());
-    if (this.waitingCapacityLane === "normal" && this.queue.nextLane() === "human") {
+    if (!this.refreshScheduling()) return added;
+    const next = this.queue.peek();
+    if (
+      this.waitingForCapacity &&
+      next &&
+      (this.waitingCapacityForeground !== next.foreground ||
+        (this.waitingCapacityLane === "normal" && next.lane === "human"))
+    ) {
       this.cancelCapacityWait?.();
       this.cancelCapacityWait = undefined;
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
+      this.waitingCapacityForeground = undefined;
     }
     this.schedulePump();
     return added;
@@ -107,6 +125,7 @@ export class AppTaskController {
       this.cancelCapacityWait = undefined;
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
+      this.waitingCapacityForeground = undefined;
       return;
     }
     this.schedulePump();
@@ -121,6 +140,7 @@ export class AppTaskController {
     this.cancelCapacityWait = undefined;
     this.waitingForCapacity = false;
     this.waitingCapacityLane = undefined;
+    this.waitingCapacityForeground = undefined;
     this.readySince.clear();
     this.resolveDrainWaiters();
   }
@@ -147,18 +167,16 @@ export class AppTaskController {
 
   private pump(): void {
     if (this.closed || !this.enabled) return;
+    if (!this.refreshScheduling()) return;
+    const next = this.queue.peek();
+    if (!next) return;
     if (this.options.capacity) {
-      if (this.queue.pendingCount === 0 || this.queue.runningCount >= this.queue.maxConcurrent) return;
-      const lane = this.queue.nextLane();
-      if (!lane) return;
-      // The lane orders Task work inside this controller. It does not make a
-      // Task attempt the interactive frontend: letting every P0/owner-review
-      // attempt consume foreground capacity can fill the slot reserved for a
-      // live human turn. All Task executions therefore share background Host
-      // capacity; the selected conversational inbox alone uses the foreground reservation.
-      const release = this.options.capacity.tryAcquire();
+      // Priority orders work; only durable human Conversation input earns the reserve.
+      const release = next.foreground
+        ? this.options.capacity.tryAcquireForeground()
+        : this.options.capacity.tryAcquire();
       if (!release) {
-        this.waitForCapacity(lane);
+        this.waitForCapacity(next.lane, next.foreground);
         return;
       }
       const taskId = this.queue.take();
@@ -166,37 +184,46 @@ export class AppTaskController {
         release();
         return;
       }
-      this.run(taskId, release, lane);
+      this.run(taskId, release, next.lane);
       // Reconciliation has a synchronous state-claim prefix. Fill available
       // concurrency on later loop turns so readiness I/O can run between claims.
-      if (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) this.schedulePump();
+      if (this.queue.peek()) this.schedulePump();
       return;
     }
-    const lane = this.queue.nextLane() ?? "normal";
     const taskId = this.queue.take();
     if (!taskId) return;
-    this.run(taskId, undefined, lane);
-    if (this.queue.pendingCount > 0 && this.queue.runningCount < this.queue.maxConcurrent) this.schedulePump();
+    this.run(taskId, undefined, next.lane);
+    if (this.queue.peek()) this.schedulePump();
   }
 
-  private waitForCapacity(lane: AppTaskLane): void {
+  private waitForCapacity(lane: AppTaskLane, foreground: boolean): void {
     if (this.waitingForCapacity || this.closed || !this.enabled || !this.startReady || !this.options.capacity) return;
     this.waitingForCapacity = true;
     this.waitingCapacityLane = lane;
+    this.waitingCapacityForeground = foreground;
     const acquired = (release: () => void) => {
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
+      this.waitingCapacityForeground = undefined;
       this.cancelCapacityWait = undefined;
       if (this.closed || !this.enabled || !this.startReady) {
         release();
         this.resolveDrainWaiters();
         return;
       }
-      const taskId = this.queue.take();
-      if (taskId) this.run(taskId, release, lane);
+      if (!this.refreshScheduling()) {
+        release();
+        return;
+      }
+      const next = this.queue.peek();
+      const taskId = next?.foreground === foreground ? this.queue.take() : null;
+      if (taskId) this.run(taskId, release, next!.lane);
       else release();
+      this.schedulePump();
     };
-    this.cancelCapacityWait = this.options.capacity.acquireCancellable(acquired);
+    this.cancelCapacityWait = foreground
+      ? this.options.capacity.acquireForegroundCancellable(acquired)
+      : this.options.capacity.acquireCancellable(acquired);
   }
 
   private run(taskId: string, capacityRelease?: () => void, lane: AppTaskLane = "normal"): void {
@@ -217,35 +244,49 @@ export class AppTaskController {
       .then(() => {
         this.failures.delete(taskId);
       })
-      .catch((error) => {
-        const attempt = (this.failures.get(taskId) ?? 0) + 1;
-        const maxRetries = this.options.maxRetries ?? 3;
-        const willRetry = attempt <= maxRetries && !this.closed;
-        this.failures.set(taskId, attempt);
-        if (willRetry) {
-          const delay = Math.max(0, this.options.retryDelayMs?.(attempt) ?? Math.min(30_000, 250 * 2 ** (attempt - 1)));
-          const timer = setTimeout(() => {
-            this.retryTimers.delete(taskId);
-            this.enqueue(taskId, { lane });
-          }, delay);
-          this.retryTimers.set(taskId, timer);
-        }
-        const reportFailure = (reportError: unknown) => {
-          console.error(`Task ${taskId} failure reporter failed; willRetry=${willRetry}`, { error, reportError });
-        };
-        try {
-          // Do not await reporting: a slow diagnostic sink must not hold a Task slot.
-          void Promise.resolve(this.options.onError?.(taskId, error, willRetry)).catch(reportFailure);
-        } catch (reportError) {
-          reportFailure(reportError);
-        }
-      })
+      .catch((error) => this.recordFailure(taskId, error, lane))
       .finally(() => {
         this.queue.complete(taskId);
         capacityRelease?.();
         this.resolveDrainWaiters();
         this.schedulePump();
       });
+  }
+
+  private refreshScheduling(): boolean {
+    try {
+      if (this.options.readScheduling) this.scheduling = this.options.readScheduling();
+      return true;
+    } catch (error) {
+      // A failed storage read uses the same dispatch backoff and keeps queued work.
+      const taskId = this.queue.snapshot().pending[0];
+      if (taskId && !this.retryTimers.has(taskId)) this.recordFailure(taskId, error, "normal");
+      return false;
+    }
+  }
+
+  private recordFailure(taskId: string, error: unknown, lane: AppTaskLane): void {
+    const attempt = (this.failures.get(taskId) ?? 0) + 1;
+    const maxRetries = this.options.maxRetries ?? 3;
+    const willRetry = attempt <= maxRetries && !this.closed;
+    this.failures.set(taskId, attempt);
+    if (willRetry) {
+      const delay = Math.max(0, this.options.retryDelayMs?.(attempt) ?? Math.min(30_000, 250 * 2 ** (attempt - 1)));
+      const timer = setTimeout(() => {
+        this.retryTimers.delete(taskId);
+        this.enqueue(taskId, { lane });
+      }, delay);
+      this.retryTimers.set(taskId, timer);
+    }
+    const reportFailure = (reportError: unknown) => {
+      console.error(`Task ${taskId} failure reporter failed; willRetry=${willRetry}`, { error, reportError });
+    };
+    try {
+      // Do not await reporting: a slow diagnostic sink must not hold a Task slot.
+      void Promise.resolve(this.options.onError?.(taskId, error, willRetry)).catch(reportFailure);
+    } catch (reportError) {
+      reportFailure(reportError);
+    }
   }
 
   private releaseStartGate(): void {

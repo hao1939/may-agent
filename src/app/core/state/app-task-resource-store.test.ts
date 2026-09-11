@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { openDatabase } from "../../../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "../tasks/app-task-recovery.js";
+import { admitConversationTaskInput } from "./conversation-task-turns.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
@@ -106,6 +107,75 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
+  it("fences a background claim against another writer's pause while permitting admitted human Conversation input", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-pause-fence-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    const store = AppTaskResourceStore.openStandalone(path, "example");
+    const peer = AppTaskResourceStore.openStandalone(path, "example");
+    const config = appTaskContext({
+      appDir: root,
+      projectDir: root,
+      agent: "example",
+      maxConcurrent: 1,
+      resourceStore: store,
+    });
+    try {
+      store.bootstrapSnapshot(
+        {
+          project: "example",
+          project_lifecycle: "active",
+          root_task_id: "root",
+          groups: { root: { id: "root", parent_id: null } },
+        },
+        "fixture",
+      );
+      observeAppTaskIntent(config, {
+        appAgent: "example",
+        intent: { id: "work", parentId: "root", mode: "achieve", outcome: "Background work", acceptance: ["Handled"] },
+      });
+      const commit = store.commit.bind(store);
+      let raced = false;
+      store.commit = (mutation) => {
+        if (!raced && mutation.attempts?.some((attempt) => attempt.state === "running")) {
+          raced = true;
+          peer.setProjectLifecycle("paused");
+        }
+        return commit(mutation);
+      };
+      expect(claimObservedAppTask(config, { taskId: "work", appAgent: "example", handler: "agent" }).kind).toBe(
+        "waiting",
+      );
+      expect(raced).toBe(true);
+      expect(store.readTask("work")?.status.currentAttemptId).toBeUndefined();
+      expect(store.readTaskContext({ taskIds: ["work"] }).attempts).toEqual({});
+      const human = admitConversationTaskInput(config, {
+        appId: "example",
+        conversationId: "chat",
+        source: { kind: "human", id: "ask" },
+        input: { kind: "message", data: { text: "Discuss the paused work" } },
+        intent: {
+          parentId: "root",
+          mode: "maintain",
+          executor: "conversation",
+          outcome: "Discuss",
+          acceptance: ["Reply"],
+        },
+      });
+      const claimed = claimObservedAppTask(config, {
+        taskId: human.taskId,
+        appAgent: "example",
+        handler: "executor:conversation",
+      });
+      expect(claimed.kind).toBe("claimed");
+      expect(peer.projectLifecycle()).toBe("paused");
+      expect(peer.readTask(human.taskId)?.status.currentAttemptId).toBeDefined();
+      expect(peer.readTask("work")?.status.currentAttemptId).toBeUndefined();
+    } finally {
+      peer.close();
+      store.close();
+    }
+  });
   it("backfills normalized Condition and Task relationship routes when opening a legacy resource database", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-resource-legacy-"));
     roots.push(root);
