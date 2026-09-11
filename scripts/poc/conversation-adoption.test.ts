@@ -1,38 +1,75 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fixtureGit, fixtureRead, fixtureWrite } from "./conversation-adoption-tools.js";
+import { pollUntil } from "../../test/e2e/lib/live-daemon.js";
 
-test("the portable daemon preflight activates committed source without a model call", async () => {
-  let root: string | undefined;
-  try {
-    const result = await promisify(execFile)("bun", [join(import.meta.dir, "conversation-adoption.ts")], {
+test("the portable daemon preflight activates source and cleans up even when interrupted", async () => {
+  for (const interrupt of [false, true]) {
+    let root: string | undefined;
+    let stdout = "";
+    const trial = promisify(execFile)("bun", [join(import.meta.dir, "conversation-adoption.ts")], {
+      // Linux CI: give this test an exact group containing both harness and daemon.
+      detached: true,
       // Outer bound covers startup (30s), up to 20 Git commands (10s each),
       // two reload observations (35s each including admission), and shutdown.
       timeout: 330_000,
     });
-    root = result.stdout.match(/Experiment artifacts: (.+)/)?.[1];
+    // Capture the root even when execFile rejects on timeout/non-zero exit.
+    trial.child.stdout?.on("data", (chunk) => {
+      stdout += chunk.toString();
+      root ??= stdout.match(/(?:^|\n)Experiment artifacts: ([^\r\n]+)\r?\n/)?.[1];
+      if (interrupt && root) trial.child.kill("SIGTERM");
+    });
+    try {
+      if (interrupt) {
+        // Kill only the harness after it has spawned the daemon, reproducing the
+        // outer timeout's signal path without waiting for the full failure bound.
+        await expect(trial).rejects.toMatchObject({ signal: "SIGTERM" });
+      } else {
+        const result = await trial;
+        expect(result.stdout).toContain("Completed isolated trial");
+        const setup = JSON.parse(readFileSync(join(root!, "setup.json"), "utf8"));
+        expect(setup.live).toBe(false);
+        expect(setup.fixtureCommit).toMatch(/^[0-9a-f]{40}$/);
+        expect(setup.catalogSize).toBe(6);
+        expect(setup.initialReload.state).toBe("succeeded");
+        expect(setup.initialReload.requestId).toStartWith("fixture-reload:");
+        expect(setup.sourcePreflight.activated).toBe(false);
+        expect(setup.sourcePreflight.sourceCommit).toBe(setup.fixtureCommit);
+        const failure = JSON.parse(readFileSync(join(root!, "preflight-failure.json"), "utf8"));
+        expect(failure.state).toBe("failed");
+        expect(failure.requestId).not.toBe(setup.initialReload.requestId);
+        expect(failure.eventId).not.toBe(setup.initialReload.eventId);
+      }
+    } finally {
+      try {
+        if (trial.child.pid) process.kill(-trial.child.pid, "SIGKILL");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      } finally {
+        if (root?.startsWith(join(tmpdir(), "may-e2e-"))) rmSync(root, { recursive: true, force: true });
+      }
+    }
     expect(root?.startsWith(join(tmpdir(), "may-e2e-"))).toBe(true);
-    expect(result.stdout).toContain("Completed isolated trial");
-    const setup = JSON.parse(readFileSync(join(root!, "setup.json"), "utf8"));
-    expect(setup.live).toBe(false);
-    expect(setup.fixtureCommit).toMatch(/^[0-9a-f]{40}$/);
-    expect(setup.catalogSize).toBe(6);
-    expect(setup.initialReload.state).toBe("succeeded");
-    expect(setup.initialReload.requestId).toStartWith("fixture-reload:");
-    expect(setup.sourcePreflight.activated).toBe(false);
-    expect(setup.sourcePreflight.sourceCommit).toBe(setup.fixtureCommit);
-    const failure = JSON.parse(readFileSync(join(root!, "preflight-failure.json"), "utf8"));
-    expect(failure.state).toBe("failed");
-    expect(failure.requestId).not.toBe(setup.initialReload.requestId);
-    expect(failure.eventId).not.toBe(setup.initialReload.eventId);
-  } finally {
-    if (root?.startsWith(join(tmpdir(), "may-e2e-"))) rmSync(root, { recursive: true, force: true });
+    expect(existsSync(root!)).toBe(false);
+    // Orphaned zombies may await the OS reaper, but no executable process in
+    // this test's group may survive. Do not depend on PID-reaping timing.
+    await pollUntil(
+      async () => {
+        const { stdout: processes } = await promisify(execFile)("ps", ["-eo", "pgid=,stat="], { timeout: 1_000 });
+        return processes.split("\n").every((line) => {
+          const [group, state] = line.trim().split(/\s+/);
+          return Number(group) !== trial.child.pid || state?.startsWith("Z");
+        });
+      },
+      { timeoutMs: 5_000, description: "preflight group stopped" },
+    );
   }
-}, 340_000);
+}, 680_000);
 
 test("fixture Git forwards cancellation to a waiting subprocess", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-teaching-git-"));
