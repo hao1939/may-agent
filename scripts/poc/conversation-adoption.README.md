@@ -19,6 +19,9 @@ bun scripts/poc/conversation-adoption.ts --live
 The pilot makes four bounded conversation turns. The full run makes fourteen,
 each with a 90-second observation limit. A timeout stops the experiment; it
 does not repeat the action. The subprocess is closed in `finally`.
+Failed/stopped input handling also stops after saving evidence, even though the
+inbox row may be terminal. A decided response that truthfully reports a domain
+failure (such as rejected activation) remains valid evidence, not a model error.
 
 The script prints its temporary evidence directory and retains it for local
 inspection. `results.json` contains synthetic inputs, accepted results, source

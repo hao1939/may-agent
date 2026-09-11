@@ -5,7 +5,28 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fixtureGit, fixtureRead, fixtureWrite } from "./conversation-adoption-tools.js";
+import { requireDecidedTurn } from "./conversation-adoption.js";
 import { pollUntil } from "../../test/e2e/lib/live-daemon.js";
+
+test("only decided turns can continue the experiment; truthful domain failure is still a decision", () => {
+  for (const disposition of ["fulfilled", "unfulfilled"]) {
+    expect(() =>
+      requireDecidedTurn({
+        status: "done",
+        handling: JSON.stringify({ phase: "decided", decision: { requestUpdates: [{ disposition }] } }),
+      }),
+    ).not.toThrow();
+  }
+  for (const handling of [
+    undefined,
+    "null",
+    "not JSON",
+    ...["failed", "stopped", "executing"].map((phase) => JSON.stringify({ phase })),
+  ]) {
+    expect(() => requireDecidedTurn({ status: "done", handling })).toThrow();
+  }
+  expect(() => requireDecidedTurn({ status: "timeout" })).toThrow();
+});
 
 test("the portable daemon preflight activates source and cleans up even when interrupted", async () => {
   for (const interrupt of [false, true]) {

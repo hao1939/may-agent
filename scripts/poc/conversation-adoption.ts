@@ -46,6 +46,13 @@ function write(root: string, path: string, content: string) {
 }
 const sha = (value: string) => createHash("sha256").update(value).digest("hex");
 
+/** Mechanical completion only: judging adoption still requires reading the evidence. */
+export function requireDecidedTurn(row: Record<string, unknown> | undefined): void {
+  const phase = typeof row?.handling === "string" ? JSON.parse(row.handling)?.phase : undefined;
+  if (row?.status !== "done" || phase !== "decided")
+    throw new Error("Turn did not reach a decision; stop experiment instead of replaying or continuing dependent work");
+}
+
 async function main() {
   const live = process.argv.includes("--live");
   const pilot = process.argv.includes("--pilot");
@@ -253,8 +260,9 @@ async function main() {
             changed: before !== store.current()!.sourceCommit,
           }),
         );
-        if (row?.status === "timeout")
-          throw new Error("Turn bound exceeded; stop experiment instead of replaying work");
+        // Inbox completion also represents failed/stopped handling. Preserve the
+        // record first, then stop; a later case cannot repair this trial's input.
+        requireDecidedTurn(row);
       }
       write(
         sb.root,
