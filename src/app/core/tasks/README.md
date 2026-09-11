@@ -61,9 +61,18 @@ a separate maintenance lifecycle.
 | Turn Stop / `stopAppTaskAttempt()` | Stop the observed attempt; keep the Task and accepted Requests |
 | `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained evidence remains readable |
 
-Task attempt failures persist their retry deadline. A dispatch or storage error
-before that write uses `controller.ts`'s local retry timer; the installed runtime
-sets its retry limit to infinity. Neither path decides to abandon the Task.
+Task attempt failures persist their retry deadline, backing off from 250 ms to
+15 minutes during prolonged failure. Fresh human input still permits one new
+attempt. Dispatch or storage errors before that write use `controller.ts`'s local
+timer (250 ms to 30 seconds). Neither path has a failure-count stop. These timers
+pace different work: a dispatch may only retry a storage operation; an attempt
+may spend model tokens or perform effects. Backoff limits frequency, not lifetime
+spending. The owner can revise, pause or close the assignment.
+
+New dependencies add work; stored waits survive omission from later results.
+The agent need not repeat old requests to add another one for the same App.
+Exact request reuse, duplicate detection and stale-effect fences remain; the
+Host does not infer that a differently worded request replaces earlier work.
 
 Definition preparation does not publish a generation. The runtime still owns
 one publication/rollback boundary and pins execution definitions for attempts.

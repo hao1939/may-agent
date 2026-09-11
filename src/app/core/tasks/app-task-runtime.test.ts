@@ -1593,101 +1593,63 @@ describe("canonical App task runtime", () => {
     }
   });
 
-  it("rejects replacement of an open App request before emitting duplicate work", () => {
+  it("adds distinct work for the same App without replaying retained waits, including after restart", async () => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
-    const emitted: Array<Record<string, unknown>> = [];
+    const taskId = "work/two-reviews";
+    const admissions: string[] = [];
     bus.subscribe((event) => {
-      emitted.push(event as unknown as Record<string, unknown>);
-      if (event.type === "app.input.requested") {
-        return { accepted: true, by: "test-app-inbox", route: "direct" };
-      }
+      if (event.type !== "app.input.requested") return;
+      const data = event.data;
+      createAppInboxItem(getDb(persistDir), {
+        id: String(data.requestId), appId: "sample", source: { kind: "app", id: "sample" },
+        input: data.input as { kind: string; data: unknown }, idempotencyKey: String(data.idempotencyKey),
+      });
+      admissions.push(String(data.requestId));
+      return { accepted: true, by: "fixture-input-admission", route: "direct" };
     });
-    const config = loadedTaskConfig(f, persistDir);
-    observeAppTaskIntent(config, {
-      intent: {
-        id: "work/cross-app-conflict",
-        parentId: "operations",
-        outcome: "Use one independent review",
-        acceptance: ["The review result is considered"],
-        mode: "achieve",
-      },
-      appAgent: "sample-owner",
+    let calls = 0;
+    const install = () => installCoreTaskRuntimes({
+      ...options(f, bus), installControllers: false,
+      executors: { worker: async () => {
+        calls++;
+        return { state: "waiting", summary: "Review in progress", evidence: [],
+          dependencies: calls <= 2 ? [{ id: `review-${calls}`, appId: "sample",
+            input: { kind: "review", data: { sample: calls } } }] : [] };
+      } },
+      appRegistrySnapshot: { id: "additive-work", generation: 1, entries: [{ appDir: f.appDir,
+        definition: { ...definition(), task: () => ({ kind: "existing", taskId: "review" }) } }] },
+    }, { deferRecovery: true });
+    await install();
+    let config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: taskId, parentId: "operations", outcome: "Obtain the requested independent reviews",
+      acceptance: ["Both observations considered"], mode: "achieve", executor: "worker",
+    } });
+    const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    await run();
+    const firstWait = config.resourceStore.readTask(taskId)!.status.conditionIds![0]!;
+    expect(firstWait).toBe(`app-request:${admissions[0]}`);
+    await closeInstalledAppTaskRuntimes(bus);
+    closeDb(persistDir);
+    await install();
+    config = loadedTaskConfig(f);
+    recordAppTaskTrigger(config, taskId, { type: "sample.work", data: { message: "Also review the second sample" } });
+    await run();
+    expect(calls).toBe(2);
+    expect(admissions).toHaveLength(2);
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "waiting", conditionIds: [firstWait, `app-request:${admissions[1]}`],
     });
-    const claim = claimObservedAppTask(config, {
-      taskId: "work/cross-app-conflict",
-      appAgent: "sample-owner",
-      handler: "agent:sample-owner",
-      reason: "test",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    const resourceStore = config.resourceStore;
-    const descriptor = {
-      id: "sample",
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      app: definition(),
-      reconciliationPaused: false,
-      resourceStore,
-    };
-    const first = admitTaskAppDependencies({
-      opts: { ...options(f, bus), persistDir },
-      descriptor,
-      claim,
-      dependencies: [{ id: "review", appId: "evaluation", input: { kind: "deep-scan", data: { reason: "original" } } }],
-    });
-    const requestId = first[0]!.subject.slice("id:".length);
-    const requestedEvent = emitted.find(
-      (event) =>
-        event.type === "app.input.requested" &&
-        (event.data as { requestId?: string } | undefined)?.requestId === requestId,
-    );
-    const idempotencyKey = (requestedEvent?.data as { idempotencyKey?: string } | undefined)?.idempotencyKey;
-    if (!idempotencyKey) throw new Error("expected emitted App request lineage key");
-    createAppInboxItem(getDb(persistDir), {
-      id: requestId,
-      appId: "evaluation",
-      source: { kind: "app", id: "sample" },
-      input: { kind: "deep-scan", data: { reason: "original" } },
-      idempotencyKey,
-    });
-    const emittedBeforeConflict = emitted.length;
-
-    expect(() =>
-      admitTaskAppDependencies({
-        opts: { ...options(f, bus), persistDir },
-        descriptor,
-        claim,
-        existingConditions: first,
-        dependencies: [
-          {
-            id: "replacement-review",
-            appId: "evaluation",
-            input: { kind: "deep-scan", data: { reason: "changed" } },
-          },
-        ],
-      }),
-    ).toThrow(`would replace open request ${requestId}`);
-    expect(emitted).toHaveLength(emittedBeforeConflict);
-
-    expect(() =>
-      admitTaskAppDependencies({
-        opts: { ...options(f, bus), persistDir },
-        descriptor,
-        claim,
-        existingConditions: [],
-        dependencies: [
-          {
-            id: "replacement-after-lost-link",
-            appId: "evaluation",
-            input: { kind: "deep-scan", data: { reason: "changed again" } },
-          },
-        ],
-      }),
-    ).toThrow(`would replace unlinked open request ${requestId}`);
-    expect(emitted).toHaveLength(emittedBeforeConflict);
+    recordAppTaskTrigger(config, taskId, { type: "sample.work", data: { message: "Keep both reviews" } });
+    await run();
+    expect(calls).toBe(3);
+    expect(admissions).toHaveLength(2);
+    expect(config.resourceStore.readTask(taskId)?.status.conditionIds).toEqual([firstWait, `app-request:${admissions[1]}`]);
+    expect(listAppInboxItems(getDb(persistDir), { appId: "sample" }).map((item) => item.input.data))
+      .toEqual(expect.arrayContaining([{ sample: 1 }, { sample: 2 }]));
   });
 
   it("preserves one accepted App request across a rejected attempt and its retry", () => {

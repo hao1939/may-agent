@@ -819,7 +819,6 @@ describe("common Task lifecycle source PoC", () => {
     let conversationRuns = 0;
     const controller = new AppTaskController({
       maxConcurrent: 3,
-      maxRetries: 0,
       onError: (_id, error) => {
         failures.push(error);
         bRunning.resolve();

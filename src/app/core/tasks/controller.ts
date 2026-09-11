@@ -35,8 +35,7 @@ export type AppTaskControllerOptions = {
   reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
   /** Best-effort diagnostics; never holds capacity or gates retries. */
   onError?(taskId: string, error: unknown, willRetry: boolean): void | Promise<void>;
-  /** Dispatch-error retries only. The installed runtime uses Infinity; Task attempt backoff is persisted separately. */
-  maxRetries?: number;
+  /** Dispatch-error pacing only; unfinished work retries until this controller closes. */
   retryDelayMs?: (attempt: number) => number;
   /** Do not claim work until the controller instance being replaced has drained. */
   startAfter?: PromiseLike<void>;
@@ -268,8 +267,7 @@ export class AppTaskController {
 
   private recordFailure(taskId: string, error: unknown, lane: AppTaskLane): void {
     const attempt = (this.failures.get(taskId) ?? 0) + 1;
-    const maxRetries = this.options.maxRetries ?? 3;
-    const willRetry = attempt <= maxRetries && !this.closed;
+    const willRetry = !this.closed;
     this.failures.set(taskId, attempt);
     if (willRetry) {
       const delay = Math.max(0, this.options.retryDelayMs?.(attempt) ?? Math.min(30_000, 250 * 2 ** (attempt - 1)));

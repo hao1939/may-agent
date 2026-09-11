@@ -71,8 +71,8 @@ const done = new Promise<void>((resolveStep, rejectStep) => { allDone = resolveS
 let retryAt = 0;
 let pass = false;
 let scheduler: AppTaskRecoveryScheduler;
-const controller = () => new AppTaskController({ maxConcurrent: 1, maxRetries: 0,
-  onError: (_id, error) => reject(error),
+const controller = () => new AppTaskController({ maxConcurrent: 1,
+  onError: (_id, error) => { runtime.close(); reject(error); },
   async reconcile(taskId) {
     const claim = claimObservedAppTask(context(), { taskId, appAgent: "worker", handler: "agent" });
     if (claim.kind === "waiting") return;

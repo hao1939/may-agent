@@ -54,6 +54,40 @@ function fixture() {
   };
 }
 
+it("paces prolonged failure without ending the assignment, including after reopen", () => {
+  const f = fixture();
+  let now = Date.now();
+  let previousDelay = 0;
+  for (let failures = 1; failures <= 16; failures++) {
+    setSystemTime(now);
+    const claim = f.claim();
+    expect(claim.events.some(({ event }) => event.type === "app.task.requested")).toBe(true);
+    failAppTaskAttempt(f.config, claim, "Source still unavailable");
+    const task = f.config.resourceStore.readTask("work")!;
+    const due = task.status.executionRetryAt!;
+    const delay = due - now;
+    expect(delay).toBeGreaterThanOrEqual(previousDelay);
+    expect(delay).toBeLessThanOrEqual(15 * 60_000);
+    if (failures >= 13) expect(delay).toBe(15 * 60_000);
+    if (failures === 13) {
+      f.reopen();
+      recordAppTaskTrigger(f.config, "work", { type: "project.task.tick" });
+      expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }))
+        .toMatchObject({ kind: "waiting", retryAt: due });
+    }
+    expect(task.status.executionFailures).toBe(failures);
+    expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+    expect(f.config.resourceStore.isCancelled("work")).toBe(false);
+    previousDelay = delay;
+    now = due;
+  }
+  setSystemTime(now);
+  const final = f.claim();
+  completeAppTask(f.config, final, { summary: "Source restored", result: { value: 17 } });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")?.attemptId).toBe(final.attemptId);
+  expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
+});
+
 it("uses the real due timer after restart, preserves cooldown under early wakes, and releases capacity", async () => {
   const f = fixture();
   const capacity = new HostCapacity(1);

@@ -124,8 +124,7 @@ let childId: string | undefined;
 function controller() {
   const runtime = new AppTaskController({
     maxConcurrent: 1,
-    maxRetries: 0,
-    onError: (_id, error) => failStep?.(error),
+    onError: (_id, error) => { runtime.close(); failStep?.(error); },
     reconcile: async (taskId) => {
       const claim = claimObservedAppTask(context(), {
         taskId,

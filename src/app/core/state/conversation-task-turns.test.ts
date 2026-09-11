@@ -135,7 +135,6 @@ test("one Task executes real Conversation input and retains replies and Requests
     });
     const controller = new AppTaskController({
       maxConcurrent: 1,
-      maxRetries: 0,
       onError: (_id, error) => reject(error),
       async reconcile(id) {
         const claim = f.claim(id);
@@ -562,7 +561,6 @@ test("one controller returns B through A to the real Conversation after interven
   const makeController = () =>
     new AppTaskController({
       maxConcurrent: 1,
-      maxRetries: 0,
       onError: (_id, error) => {
         failures.push(error);
       },

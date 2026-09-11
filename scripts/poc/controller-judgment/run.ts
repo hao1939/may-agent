@@ -156,8 +156,7 @@ for (const scenario of scenarios) {
   });
   const controller = new AppTaskController({
     maxConcurrent: 1,
-    maxRetries: 0,
-    onError: (_taskId, error) => rejectDone(error),
+    onError: (_taskId, error) => { controller.close(); rejectDone(error); },
     reconcile: async () => {
       const claim = claimObservedAppTask(context(), { taskId: "owner", appAgent: "owner", handler: "agent" });
       if (claim.kind !== "claimed") throw new Error(`Owner did not claim: ${claim.kind}`);

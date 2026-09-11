@@ -808,21 +808,10 @@ export function admitTaskAppDependencies(input: {
         `Cannot classify App dependency ${dependency.id} while open request ${unresolvedExisting.requestId} is unavailable`,
       );
     }
-    const unredeclaredSameApp = existing.filter(
-      ({ item, requestId }) => item?.appId === dependency.appId && !matchedExisting.has(requestId),
-    );
-    if (unredeclaredSameApp.length > 0) {
-      throw new Error(
-        `App dependency ${dependency.id} would replace open request ${unredeclaredSameApp[0]!.requestId}; redeclare that durable request before adding distinct ${dependency.appId} work`,
-      );
-    }
-    const detachedOpen = detachedOpenFor(dependency.appId).find((item) => !matchedExisting.has(item.id));
-    if (detachedOpen) {
-      throw new Error(
-        `App dependency ${dependency.id} would replace unlinked open request ${detachedOpen.id}; redeclare that durable request before adding distinct ${dependency.appId} work`,
-      );
-    }
   }
+  // New dependencies add work. Stored waits survive omission; asking the agent
+  // to repeat them would turn continuation back into bookkeeping. Exact reuse,
+  // duplicate checks and effect fencing still protect already admitted work.
   for (let index = 0; index < newDependencies.length; index += 1) {
     const dependency = newDependencies[index]!;
     const duplicate = newDependencies
@@ -2687,8 +2676,6 @@ function installConventionTaskControllers(
           : new Set(),
       }),
       startAfter: opts.startAfter,
-      // Dispatch/storage failures have no persisted Task retry yet.
-      maxRetries: Number.POSITIVE_INFINITY,
       reconcile: async (taskId, dispatch) => {
         const activeDescriptor = binding.descriptor;
         const activeOpts = binding.opts;

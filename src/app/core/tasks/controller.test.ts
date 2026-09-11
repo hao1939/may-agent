@@ -591,24 +591,23 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
-  it("retries controller failures with bounded backoff", async () => {
+  it("keeps retrying dispatch failures beyond the former count limit", async () => {
     let runs = 0;
     const errors: boolean[] = [];
     const controller = new AppTaskController({
       maxConcurrent: 1,
-      maxRetries: 2,
       retryDelayMs: () => 0,
       reconcile: async () => {
         runs++;
-        if (runs < 3) throw new Error("temporary");
+        if (runs < 8) throw new Error("temporary");
       },
       onError: (_taskId, _error, willRetry) => {
         errors.push(willRetry);
       },
     });
     controller.enqueue("a");
-    await waitUntil(() => runs === 3);
-    expect(errors).toEqual([true, true]);
+    await waitUntil(() => runs === 8);
+    expect(errors).toEqual(Array(7).fill(true));
     controller.close();
   });
 
@@ -704,7 +703,6 @@ describe("AppTaskController", () => {
     const controller = new AppTaskController({
       maxConcurrent: 1,
       capacity,
-      maxRetries: 1,
       retryDelayMs: () => 0,
       reconcile(taskId) {
         starts.push(taskId);
