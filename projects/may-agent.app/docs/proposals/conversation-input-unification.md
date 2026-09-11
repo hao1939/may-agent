@@ -65,6 +65,10 @@ recommendation is evidence for the owner, not an applied decision. Changing
 approach stays within the assignment; rewriting its outcome or acceptance
 criteria changes the assignment and belongs to the owner. The same agent can
 be a worker for its own assignment and an assigning owner for delegated work.
+Do not ask the worker to reapprove its assignment on every wake. Give it the
+assignment, constraints and current evidence so it can concentrate on how to
+make progress. Reporting a blocker or recommending a scope change is useful
+judgment; deciding to abandon the assignment remains the owner's decision.
 
 ## Agent judges; controller carries it through
 
@@ -448,6 +452,10 @@ does not establish a smaller or more reliable system.
 The [source PoC checkpoint](controller-poc-evidence.md) records exact-attempt
 evidence retention, real model judgment trials and the remaining result-return
 obstacle. No unified lifecycle or simplification is claimed from that first slice.
+The later [common-runtime checkpoint](controller-poc-recovery-review.md#common-runtime-integration)
+executes already-admitted Conversation input through normal Task attempts;
+ordinary ingress, result routing and retirement of the old execution paths
+remain required before accepting the whole-system simplification.
 
 This proposal changes design only. Check documentation integrity, executable
 examples, local Markdown links/anchors and whitespace. It does not implement

@@ -115,10 +115,13 @@ progress; preserves outputs and failures; and makes relevant evidence available
 to the responsible agent. The agent should not have to manage routine polling,
 output discovery or a separate tracking registration after starting work.
 
-The agent decides what to pursue, what the facts mean, whether a result is
-sufficient and which authorized action comes next. Code enforces identity,
-permissions and predictable execution rules. A successful command is an
-execution fact, not proof that the intended outcome was achieved.
+The agent judges what the facts mean, whether a result is sufficient and which
+authorized action comes next. For assigned work, the worker decides how to
+make progress; the assigning App, parent agent or human decides whether to
+continue, revise or close the assignment. The worker may recommend that decision
+without applying it to its own assignment. Code enforces identity, permissions
+and predictable execution rules. A successful command is an execution fact,
+not proof that the intended outcome was achieved.
 
 These are two responsibilities in one work loop, not two new subsystems or a
 ban on direct agent tool use. Executors and observers provide capabilities;

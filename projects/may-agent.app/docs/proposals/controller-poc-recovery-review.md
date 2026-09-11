@@ -244,6 +244,59 @@ active-Turn projection still need integration. The old inbox pump and separate
 follow-up owner remain; both must retire before one execution owner is proved
 for the installed runtime.
 
+## Common runtime integration
+
+The [runtime checkpoint `d42935a0`](https://github.com/hao1939/may-agent/commit/d42935a0)
+moves Conversation judgment behind the normal Task execution boundary. The
+composition capability prepares a typed decision; the common reconciler owns
+the claim, lease renewal, cancellation signal, failure settlement and retry.
+It commits the Conversation decision, reply, Request updates and follow-up
+admission in the existing state transaction. The former composition function
+that also settled the attempt is removed.
+
+A Conversation-only App can now install a Task runtime without an authored
+Task tree. Its structural root is conventional. Runtime identifies Conversation
+execution from the persisted input link, using an indexed lookup; an unrelated
+executor named `conversation` retains its ordinary Task contract. Ordinary Task
+admission still requires the App's declared Task capability.
+The [storage follow-up `6aa80877`](https://github.com/hao1939/may-agent/commit/6aa80877)
+restores additive columns after the historical inbox-table rebuild, before
+creating the new index. Full CI exposed that upgrade-ordering regression;
+the existing migration test and both Conversation suites pass after the fix
+(**24 tests**, including the seven runtime checks).
+
+After committing a follow-up, core emits `app.task.ready` with its exact App and
+Task identity. The existing runtime listener schedules that saved work. The
+event is a notification, not admission authority; recovery can still discover
+the durable ready Task. A one-App worker prepares only the selected follow-up
+App from its pinned registry. The event uses the existing worker relay protocol;
+this checkpoint does not run a new real-process Conversation relay scenario.
+
+The [seven installed-runtime tests](https://github.com/hao1939/may-agent/blob/d42935a0/src/app/core/tasks/conversation-runtime.test.ts)
+use the shipped Conversation resolver with supplied model decisions and
+temporary SQLite. They cover:
+
+- a model failure followed by the existing recovery timer's successful retry;
+- restart discovery of admitted Conversation input without another ingress wake;
+- owner closure aborting execution and fencing a late reply;
+- the normal one-attempt worker entry settling a Conversation decision;
+- ordinary execution for an unrelated executor named `conversation`;
+- a failed reply transaction admitting no child, followed by a paced retry that
+  commits the explanation and wakes the other App under shared Host capacity;
+- a one-App worker admitting follow-up work from its pinned catalog and emitting
+  the exact post-commit notification.
+
+This proves the common runtime path for **already Task-admitted** input. Normal
+human ingress still uses the old inbox path. Result-to-Conversation event
+admission and missed-result discovery, scoped Stop, foreground/background pause,
+active-Turn projection, interface change notifications and Conversation Task
+controls remain unfinished. The
+retry context also needs to supply the previous attempt's useful failure/effect
+evidence before a real interrupted-Conversation trial. Per-Task cooldown still
+delays unrelated fresh input. These are required integration work, not optional
+polish. The old inbox executor and separate follow-up owner must be removed
+before claiming one owner across the installed system.
+
 ## Verification and cost
 
 At `3d3f5a73`, Host/SDK types, App-boundary checks and lint passed. Focused
@@ -267,6 +320,13 @@ At `895c75c6`, static checks passed and the full portable run finished with
 is still red. The subsequent test-only follow-up above has focused verification,
 not a new full-suite total.
 
+At `6aa80877`, Host/SDK types, App-boundary checks and lint pass. Full CI
+finishes with **2,644 passes, 3 skips and 129 failures**, across 2,776 tests in
+282 files (132.9 seconds). Compared with the prior follow-up checkpoint, it
+adds seven passing runtime tests with no new or removed failure names. The
+index migration regression found at `d42935a0` is fixed; the overall migration
+gate remains red.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -287,6 +347,13 @@ removed), excluding tests. It reuses Task admission, accepted attempts, Topic
 links and Request updates; it adds no table or scheduler. This extra code must
 replace the old input execution and follow-up paths during cutover, rather than
 remain alongside them as another permanent authority.
+The common-runtime checkpoint and storage follow-up add **171 net production lines** (216 added,
+45 removed), excluding tests. It adds one index and one post-commit ready
+notification, reusing the existing controller, recovery timer, capacity and
+worker event bridge. The lookup query plan uses the covering index on App and
+execution Task identity. This remains an intermediate increase until the old
+Conversation execution and follow-up paths are deleted.
+
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting
 dispatch timers adds 20, and removing self-revision deletes another 21. Combined,
