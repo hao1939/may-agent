@@ -71,8 +71,12 @@ parent-led prerequisite repair without an unblock action, continued failure
 reports across reopen, capability replacement without bypassing backoff, and
 retained result evidence after cleanup and event storms. Input-state checks
 preserve exact answer correlation, retry deadlines across a fresh process and
-atomic result/closure wakes. These migrations do not certify the remaining old
-inbox execution fixtures or full daemon restart/cutover.
+atomic result/closure wakes. The daemon checks verify accepted attempts on
+retained Tasks after graceful shutdown while waiting and a crash during workflow
+execution, with optional schedules disabled. Scheduled workflow discovery also
+checks the accepted attempt while its Task stays open. These are isolated
+candidate-to-candidate restarts; old-version cutover and the remaining retired
+inbox execution fixtures still need verification.
 
 Human Task detail reads include structured results from retained Task state and
 historical receipts. Their tests keep those results out of compact cards and
