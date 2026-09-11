@@ -58,7 +58,14 @@ closure races verify that existing children survive while admission after
 closure is rejected. Both retained mode spellings follow the same lifecycle.
 `app-task-resource-store.test.ts` separately proves that a bounded history read
 keeps the Task's current and observed attempts despite tied or backward timestamps.
-These migrations do not certify the remaining receipt, action and runtime tests.
+Current reconciler outcome and action checks use accepted attempts on retained
+Tasks. Owner closure rejects later admission, preserves accepted evidence and
+leaves independent children executable. The parent-result suite checks an
+explicit wait for child evidence; lifetime modes cannot infer that decision.
+Historical receipt-reader checks seed the old stored shape explicitly instead
+of calling current completion to fabricate it. They retain duplicate pruning,
+child identity and recovery-generation coverage until cutover permits retirement.
+These migrations do not certify the remaining runtime and daemon restart tests.
 
 ## SDK export contract
 
