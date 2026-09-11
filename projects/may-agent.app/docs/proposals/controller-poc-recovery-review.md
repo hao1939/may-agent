@@ -4,14 +4,16 @@
 remains incomplete and unmerged. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
+The current review artifact is [draft Host PR #158](https://github.com/hao1939/may-agent/pull/158).
 
 **Current assessment:** Focused lifecycle and managed-model recovery checks
-support the design. Whole-system simplification remains unproved: the old
-Conversation executor is removed, but legacy follow-up routing remains,
-Task-wide cooldown can delay fresh human input, and full CI has 185 unresolved
-failures. At `f5b3eafe`, the branch adds 598 net production lines against its
-merge base (counting `src/` and `packages/`, excluding tests and fixtures).
-Finish cutover and examine those failures before expanding the design.
+support the design. The source now removes the old Conversation executor and
+supervisor reply path; the paired App candidate removes its supervisor declaration.
+Adoption remains unproved: retained work still needs cutover, Task-wide cooldown
+can delay fresh human input, and full CI at `75154039` has 171 unresolved failures.
+The branch adds 153 net production lines against current main `a8f65188` (counting `src/`
+and `packages/`, excluding tests and fixtures). Finish cutover and examine those
+failures before expanding the design.
 The latest live evidence is
 [below](#managed-conversation-recovery).
 
@@ -648,6 +650,65 @@ production lines** against `3037c4b9`, using the same exclusions below. Removing
 one duplicate executor is concrete progress, but total simplification still
 depends on retiring the remaining owner paths and resolving migration checks.
 
+## Follow-up retirement
+
+[Checkpoint `24208b00`](https://github.com/hao1939/may-agent/commit/24208b00)
+removes the supervisor's result-to-reply projection,
+automatic waiting/assignment messages and quiet-Task review query. Task-change
+events now carry exact source identities; admission reads the accepted attempt
+or owner closure from storage, and execution gathers current Conversation
+context. The timer only discovers missing outcome/closure inputs. An absent
+Conversation capability cannot route those events back to an old supervisor.
+
+The paired May App candidate, workspace commit `0823556a65` on
+`poc/may-conversation-task-input`, removes `conversation/follow-up`, its event
+resolver and its separate result contract. May's ordinary Conversation guidance
+retains the useful judgment: preserve current scope, leave healthy work alone,
+keep unchanged automated reviews quiet and do not confuse a later finding with
+another fulfillment of an old ask. The existing schedule remains a discovery
+tick. This App source is isolated and must be reviewed with the Host candidate;
+it has not been integrated into workspace main or activated.
+
+The five focused Host suites pass **96 tests**. The seven May declaration tests
+pass against the candidate SDK. The important coverage changes are:
+
+| Former check | Current proof or accepted tradeoff |
+| --- | --- |
+| Separate supervisor admits and returns delegated work | Common runtime tests return exact outcomes through live notification, restart and failed admission; no supervisor is created |
+| May-owned goal and later steering | Real runtime selects the same App's goal input, executes independent work, reopens storage and steers that exact Task |
+| Subscribed input answered directly | Persisted subscription routes system input to the default Conversation's one execution Task |
+| Request closure through supervisor output | Twelve state tests retain scope/revision checks, bounded context, actual handoff links and atomic reply/closure; failed settlement uses safe redo |
+| Host-generated waiting and assignment notices | Removed; accepted replies and Task reads remain the user-facing evidence |
+| Quiet linked work is periodically investigated | Removed; the timer discovers saved outcomes/closures, while mechanical failures remain visible in Task evidence and paced recovery |
+
+No worker-process or live-model evidence is added by these supplied-decision
+tests. A retained old supervisor still requires explicit owner retirement during
+offline cutover; removing its declaration does not close its durable Task.
+Retained Task-policy migration, per-input cooldown and the remaining full-suite
+failures are still adoption gates.
+
+Full CI at `24208b00` passes types, App boundary and lint, then reports **2,634
+passed, 3 skipped and 171 failed** across 2,808 tests in 283 files (132.3 s).
+Against `f5b3eafe`, no failure entries were added and 14 were removed through
+the coverage migration above. The three old composition cases became the two
+new runtime checks plus existing cross-App return coverage; total test count
+falls by one. Remaining failures are unresolved work, not automatic candidates
+for changing expectations.
+
+The Host slice removes **445 net production lines** (16 added, 461 removed).
+The whole Host branch now adds **153 net production lines** against `3037c4b9`,
+excluding tests, fixtures, scripts and documentation. This is a smaller change
+than the earlier 924-line increase, with duplicate source paths actually removed.
+It is not evidence that operational migration is complete.
+
+[Checkpoint `75154039`](https://github.com/hao1939/may-agent/commit/75154039)
+integrates upstream main `a8f65188`, preserving the observer-feedback, model-field
+and metrics changes. The single manual conflict combined two SDK type imports.
+Full CI passes types, boundaries and lint, then reports **2,660 passed, 3 skipped
+and 171 failed** across 2,834 tests in 286 files (137.8 s). The 26 additional
+tests pass; failure entries are unchanged from `24208b00`. The production delta
+against that current main remains 153 net lines, excluding upstream additions.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -669,6 +730,8 @@ results are retained here; passing focused tests does not clear the migration ga
 | `03618081` | 2,665 / 3 / 129 | 2,797 / 282 | 139.5 | Continuation prompt; recovery/execution suites pass 38 tests |
 | `ef0b9554` | 2,672 / 3 / 128 | 2,803 / 282 | 135.9 | Atomic conversational cancellation; human reads no longer forbid maintenance cancellation |
 | `f5b3eafe` | 2,621 / 3 / 185 | 2,809 / 283 | 167.8 | Removes old Conversation execution; offline cutover passes, 57 legacy fixture failures added |
+| `24208b00` | 2,634 / 3 / 171 | 2,808 / 283 | 132.3 | Retires supervisor projection; migrates Request, same-App and subscription coverage |
+| `75154039` | 2,660 / 3 / 171 | 2,834 / 286 | 137.8 | Integrates current main; 26 additional tests pass, failure entries unchanged |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
