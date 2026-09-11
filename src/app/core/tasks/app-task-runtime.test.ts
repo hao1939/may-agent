@@ -3821,12 +3821,13 @@ describe("canonical App task runtime", () => {
     expect(store.readReceipt("work/completed")).toEqual(completed);
   });
 
-  it.each(["reload", "close and reinstall"] as const)(
+  it.each(["reload", "close and reinstall", "rejected reload"] as const)(
     "uses current session adapters after %s without adding another listener",
     async (replacement) => {
       const f = fixture();
       const bus = eventBus();
       const calls: string[] = [];
+      const publications: number[] = [];
       let handled = () => {};
       const sessions = (name: string): TaskSessionRecovery => ({
         handoff: () => undefined,
@@ -3847,6 +3848,12 @@ describe("canonical App task runtime", () => {
       const install = (generation: number) => installCoreTaskRuntimes({
         ...options(f, bus),
         sessions: sessions(`generation-${generation}`),
+        afterCommit: () => {
+          publications.push(generation);
+          if (generation === 2 && replacement === "rejected reload") {
+            throw new Error("Rejected candidate publication");
+          }
+        },
         installControllers: false,
         appRegistrySnapshot: {
           id: `session-adapter:${generation}`,
@@ -3858,7 +3865,13 @@ describe("canonical App task runtime", () => {
       await install(1);
       const listeners = bus.listenerCount;
       if (replacement === "close and reinstall") await closeInstalledAppTaskRuntimes(bus);
-      await install(2);
+      if (replacement === "rejected reload") {
+        await expect(install(2)).rejects.toThrow("Rejected candidate publication");
+      } else {
+        await install(2);
+      }
+      const acceptedGeneration = replacement === "rejected reload" ? 1 : 2;
+      expect(publications).toEqual([1, 2]); // Rollback must not publish the old generation again.
       expect(bus.listenerCount).toBe(listeners);
 
       // A stale session must be interrupted by the current adapter. It cannot
@@ -3874,7 +3887,7 @@ describe("canonical App task runtime", () => {
         },
       } as AgentEvent);
       await interrupted;
-      expect(calls).toEqual(["generation-2:interrupt:obsolete-session:work/absent"]);
+      expect(calls).toEqual([`generation-${acceptedGeneration}:interrupt:obsolete-session:work/absent`]);
       expect(loadedTaskConfig(f).resourceStore.readTask("work/absent")).toBeNull();
 
       const inspected = new Promise<void>((resolve) => { handled = resolve; });
@@ -3888,8 +3901,8 @@ describe("canonical App task runtime", () => {
       });
       await inspected;
       expect(calls).toEqual([
-        "generation-2:interrupt:obsolete-session:work/absent",
-        "generation-2:read:terminal-session",
+        `generation-${acceptedGeneration}:interrupt:obsolete-session:work/absent`,
+        `generation-${acceptedGeneration}:read:terminal-session`,
       ]);
     },
   );

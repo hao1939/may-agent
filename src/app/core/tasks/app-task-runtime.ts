@@ -3367,6 +3367,7 @@ export async function installAppTaskRuntimes(
 ): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
+  const previousOptions = appRouterOptionsByBus.get(opts.bus);
   let published = false;
   try {
     return await commitAppTaskRuntimeDescriptors(
@@ -3388,7 +3389,9 @@ export async function installAppTaskRuntimes(
     // generation backward. Normal indexed recovery will retry the work.
     if (published) throw error;
     try {
-      await commitAppTaskRuntimeDescriptors({ ...opts, afterCommit: undefined }, previous, {
+      // Restore the accepted adapters and source roots with their descriptors.
+      // A rejected candidate cannot supply the options for the old generation.
+      await commitAppTaskRuntimeDescriptors({ ...(previousOptions ?? opts), afterCommit: undefined }, previous, {
         includeFreshLeases: false,
         deferred: false,
       });
