@@ -88,7 +88,7 @@ remains separate.
 
 Browser coverage ran in both suites. #145's complete local CI includes merged
 #146 and both rejected-publication regressions. Hosted Quality and Container
-checks are pending on `148acd7f`; they passed on the preceding `ec609863` revision.
+checks passed on `148acd7f`.
 #146's checks also passed on its reviewed revision. Canonical design integrity,
 examples and App checks passed against #145's updated source.
 No installation or model-backed tests ran.
