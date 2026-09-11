@@ -13,6 +13,8 @@ import {
   appTaskContext,
   claimObservedAppTask,
   completeAppTask,
+  closeAppTask,
+  readAppTaskChildContext,
 } from "../tasks/app-task-reconciler.js";
 
 describe("App read projections", () => {
@@ -261,6 +263,45 @@ describe("App read projections", () => {
       await expect(read.tasks.list({ status: [status === "done" ? "pending" : "done"] })).resolves.toEqual({ items: [] });
       expect(config.resourceStore.readTask(intent.id)).toEqual(accepted);
     }
+  });
+
+  it("keeps an accepted result discoverable after owner closure without reporting active work", async () => {
+    const config = resourceConfig();
+    observeAppTaskIntent(config, {
+      appAgent: "evaluation",
+      intent: { id: "result", parentId: "review", outcome: "Measure", acceptance: ["Measured"], agent: "evaluation" },
+    });
+    const claim = claimObservedAppTask(config, { taskId: "result", appAgent: "evaluation", handler: "agent:evaluation" });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    expect(completeAppTask(config, claim, {
+      summary: "Measured", result: { value: 17 }, evidence: ["measurement:17"],
+    }).status).toBe("applied");
+    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
+    expect((await read.tasks.get("result"))?.closed).not.toBe(true);
+    const resource = config.resourceStore.readTask("result")!;
+    expect(closeAppTask(config, {
+      appId: "evaluation", taskId: "result",
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion,
+      reason: "Owner consumed the measurement", afterResult: claim.attemptId,
+    }).applied).toBe(true);
+    const page = await read.tasks.list();
+    expect(page.items).toEqual([expect.objectContaining({
+      id: "result", closed: true, result: { value: 17 }, evidence: ["measurement:17"],
+    })]);
+    expect(await read.tasks.get("result")).toMatchObject(page.items[0]!);
+    expect(readAppTaskChildContext(config, "review").cancelled).toEqual([
+      expect.objectContaining({ taskId: "result", kind: "closed", evidence: ["measurement:17"] }),
+    ]);
+    const reporting = {
+      appDir: config.appDir,
+      tasks: {
+        get: (id: string) => readRuntimeTaskView({ taskStateConfig: config }, id),
+        list: (options: Parameters<typeof listRuntimeTaskViews>[1]) => listRuntimeTaskViews({ taskStateConfig: config }, options),
+      },
+    };
+    expect(readTaskOutcomes(reporting).sourceCount).toBe(0);
+    expect(readTaskOutcomes({ ...reporting, projection: { includeDone: true } }).sourceCount).toBe(1);
   });
 
   it("reads only the outcome containing an exact Task", async () => {

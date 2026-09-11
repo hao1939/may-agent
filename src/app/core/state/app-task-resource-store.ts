@@ -734,11 +734,7 @@ export class AppTaskResourceStore {
       clauses.push(
         `SELECT task_id AS id FROM app_tasks
          WHERE app_id = ? AND task_id > ? AND phase IN (${storedPhases.map(() => "?").join(", ")})
-           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
-           AND NOT EXISTS (
-             SELECT 1 FROM app_task_cancellations c
-             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
-           )`,
+           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})`,
       );
       values.push(this.appId, after, ...storedPhases, ...livePhases);
     }

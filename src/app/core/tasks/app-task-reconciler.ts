@@ -1820,6 +1820,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
       completedAt: receipt.completedAt,
     }));
   const cancelled = config.resourceStore.readCancelledChildren(taskId, MAX_COMPLETED_CHILD_CONTEXT).map((child) => ({
+    kind: child.kind ?? "cancelled",
     taskId: child.taskId,
     parentId: taskId,
     generation: child.generation,

@@ -3,7 +3,9 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
-import { cancelAppTask } from "./core/tasks/app-task-reconciler.js";
+import { cancelAppTask, closeAppTask } from "./core/tasks/app-task-reconciler.js";
+import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
+import { listRuntimeTaskViews } from "./core/reads/app-read.js";
 import type { AppTaskContext } from "./core/tasks/app-task-store.js";
 import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./core/state/app-inbox-store.js";
 import {
@@ -1059,6 +1061,50 @@ describe("Human Task service", () => {
     });
     expect(store.revision()).toBe(revision + 1);
     expect(cancelAppTask(taskConfig(db, store, "alpha"), control).applied).toBeFalse();
+  });
+
+  test("reads and filters owner closure without calling it cancellation or success", () => {
+    const db = database();
+    const service = new HumanTaskService(db, registry("alpha"));
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    const config = taskConfig(db, store, "alpha");
+    for (const taskId of ["withdrawn", "cancelled"]) {
+      insertTask(db, { appId: "alpha", taskId, phase: "waiting", updatedAt: 10 });
+      const current = store.readTask(taskId)!;
+      const control = {
+        appId: "alpha", taskId,
+        expectedGeneration: current.metadata.generation,
+        expectedResourceVersion: current.metadata.resourceVersion,
+        reason: "Further work costs more than it is worth",
+      };
+      expect((taskId === "withdrawn" ? closeAppTask : cancelAppTask)(config, control).applied).toBe(true);
+    }
+    insertReceipt(db, "alpha", "previously-finished", 20);
+    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
+
+    expect(service.getTask({ appId: "alpha", taskId: "withdrawn" })).toMatchObject({
+      status: "closed", terminal: true, cancellable: false,
+      statusDetail: "Closed by its owner; the retained result says what was achieved.",
+    });
+    expect(service.getTask({ appId: "alpha", taskId: "previously-finished" })).toMatchObject({
+      status: "closed", terminal: true, response: "previously-finished result",
+    });
+    expect(service.listTasks().items).toEqual([]);
+    expect(service.listTasks({ status: ["cancelled"] }).items.map((task) => task.taskId)).toEqual(["cancelled"]);
+    expect(service.listTasks({ status: ["done"] }).items).toEqual([]);
+    const first = service.listTasks({ appId: "alpha", status: ["closed"], limit: 1 });
+    expect(first.items.map((task) => task.taskId)).toEqual(["withdrawn"]);
+    expect(first.nextCursor).toBeString();
+    const second = service.listTasks({ appId: "alpha", status: ["closed"], limit: 1, cursor: first.nextCursor });
+    expect(second.items.map((task) => task.taskId)).toEqual(["previously-finished"]);
+    expect(second.nextCursor).toBeUndefined();
+    expect(service.listTasks({ appId: "other", status: ["closed"] }).items).toEqual([]);
+    expect(service.listTasks({ includeDone: true }).items).toHaveLength(3);
+
+    const history = listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] });
+    expect(history.items).toEqual([expect.objectContaining({
+      id: "previously-finished", closed: true, response: "previously-finished result",
+    })]);
   });
 
   test.each(["achieve", "maintain"] as const)("owner cancellation uses the same contract for %s work", (mode) => {

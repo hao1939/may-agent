@@ -42,7 +42,7 @@ export type TaskDetail = TaskView & {
 };
 
 export type TaskListOptions = {
-  /** Exact phases to include. Omitted means every phase. */
+  /** Exact phases to include. Omitted means every phase, including closed history. */
   status?: TaskView["status"][];
   /** Bounded page size. Runtime caps this at 100. */
   limit?: number;
@@ -57,7 +57,7 @@ export type TaskPage = {
 
 /** Opt-in, read-only shadow grouping. Legacy Task identities remain the traceability authority. */
 export type TaskOutcomeProjection = {
-  /** Include immutable completed receipts. Omitted means active Tasks only. */
+  /** Include accepted outcomes and closed history. Omitted means active work only. */
   includeDone?: boolean;
   /** Return only the reviewed outcome containing this exact Task. */
   taskId?: string;
@@ -339,9 +339,11 @@ export type TaskAttempt = {
   /** Bounded direct-child facts needed to reconcile parent work. */
   children: {
     live: TaskReconciliationChild[];
+    /** Archived outcomes from the retired completion protocol, not current readiness. */
     completed: TaskReconciliationChild[];
-    /** Terminal non-success findings. Never successful prerequisites or live work. */
+    /** Owner closure history (legacy field name). Closure alone proves neither success nor failure. */
     cancelled?: Array<{
+      kind?: "closed" | "cancelled";
       taskId: string;
       parentId: string;
       generation: number;
