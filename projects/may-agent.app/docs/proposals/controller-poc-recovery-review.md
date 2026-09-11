@@ -12,8 +12,8 @@ supervisor reply path; the paired App candidate removes its supervisor declarati
 The [real-daemon cutover](#real-daemon-cutover) now passes for an isolated old
 Host and candidate pair. Installation adoption and compatibility retirement
 remain unfinished. Full local CI at `2b13943f` passes **2,860 tests**, with
-**3 skipped and zero failures**. Both GitHub checks passed at `bf402899`;
-the newer revision has its own checks.
+**3 skipped and zero failures**. GitHub Quality and Container also pass at
+that same revision.
 New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;

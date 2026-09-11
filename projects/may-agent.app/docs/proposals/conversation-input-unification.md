@@ -24,11 +24,13 @@ owns the target lifecycle and distinguishes it from the implemented protocol.
 release execution. Run again for relevant pending input or justified recovery.
 An authorized owner decides when to close the Task.**
 
+Use **Task** as the execution model throughout the design, code and review.
 Any Task can receive relevant input, delegate work, judge returned evidence and
 respond. For example, Task A handles human input and delegates work to Task B;
 B may delegate again. Their handlers receive the context and capabilities needed
-for their assignments. Conversation names the human interaction: messages,
-Topics and Requests preserve that context within the same execution loop.
+for their assignments. Conversation names human interaction with a Task:
+messages, Topics and Requests preserve that context within the same execution
+loop. These capabilities do not select a Task category or lifetime.
 
 ```text
 Human input / child result / relevant fact / optional timer
@@ -55,12 +57,11 @@ Human input / child result / relevant fact / optional timer
 App / parent agent / human -> explicit close -> fence execution and future wakes
 ```
 
-Conversation retains messages, Topics and accepted Requests. One stable Task
-owns its execution; a Turn is a conversation-facing name for a bounded attempt.
-Do not create a Task per message or per Request. Independent delegated work
-gets its own Task, so it can progress while the Conversation handles more input.
-The conversation Task is the actual execution owner, with one claim and retry
-authority; it does not wrap an independently executing inbox handler.
+A retains the human interaction's messages, Topics and accepted Requests.
+A Turn names its bounded attempt in the interface. Do not create a Task per
+message or per Request. Independent delegated work gets its own Task, so B can
+progress while A handles more input. A and B each have one claim and retry
+authority in the same controller.
 
 Use A → B → C → B → A to review composition. A can receive human input; B can
 delegate again and judge C's evidence. Each is a Task using the same controller.
@@ -153,11 +154,12 @@ and review were explicitly requested; unprompted decomposition was not tested.
 
 The [evidence record](controller-poc-recovery-review.md) owns source revisions,
 failed trials, focused checks, full-suite results and migration details. It also
-tracks removal of the old execution owners and the remaining restart/cutover
-and complexity gates. Basic reopen is not operational upgrade proof. Finish
-those shared-path checks before adding unusual recovery combinations or new
-mechanisms. Messages and reply delivery need their own boundary checks, but
-must not introduce another claim, retry or closure authority.
+tracks removal of the old execution owners, the passing isolated
+[daemon cutover](controller-poc-recovery-review.md#real-daemon-cutover), and the
+remaining compatibility and complexity gates. Finish the shared-path acceptance
+audit before adding unusual recovery combinations or new mechanisms. Messages
+and reply delivery need their own boundary checks, but must not introduce
+another claim, retry or closure authority.
 
 ### Recovery keeps the same Task
 
@@ -275,11 +277,22 @@ with unresolved asks accounted for; it is not required for execution correctness
 
 ## Which differences are real?
 
-| Use | Inputs and handling | Usual closure convention |
-| --- | --- | --- |
-| Ordinary work | Assignment, corrections, relevant facts and child results | Caller/App closes after its acceptance rule is satisfied, or explicitly withdraws unfinished work |
-| Maintenance | Relevant facts, optionally timer input | App or human ends the ongoing work |
-| Conversation | Ordered human input and linked Task facts; handler discusses, acts and explains | Human/App ends the Conversation; Request completion leaves it available |
+| Capability | What it contributes to a Task |
+| --- | --- |
+| Human interaction | Message context, discussion, replies and tracking accepted asks |
+| Delegation | Child assignments and returned evidence for the assigning Task to judge |
+| Scheduled observation | Relevant timer input and facts to reconsider |
+
+These capabilities can be combined in the same Task. They are not mutually
+exclusive work types. Every Task remains available until its assigning owner
+closes it; the App may supply the owner's closure convention.
+
+**Review rule:** a capability may change the context a Task reads or the typed
+effects it proposes. Claims, bounded attempts, input continuation, backoff,
+result return and owner-controlled closure use the same lifecycle. Explain
+special handling through a concrete input or effect requirement. Do not use
+"conversation versus task" as the architectural boundary or add a lifecycle
+branch merely because a Task talks to a human.
 
 Long lifetime, delegation, waiting, several asks and timer input do not require
 separate controllers or an `achieve`/`maintain` switch. The remaining differences
@@ -556,9 +569,10 @@ control. The [capacity and pause checks](controller-poc-recovery-review.md#conve
 preserve the human reserve and enforce pause at the claim transaction.
 The [outcome-route checks](controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
 cover live delivery, missed notifications, failed admission, honest failure and
-bounded discovery. Closure facts, retained-state cutover and retirement
-of the old execution paths remain required before accepting the whole-system
-simplification.
+bounded discovery. The [current evidence record](controller-poc-recovery-review.md)
+adds closure checks, retirement of the old execution owners, full passing CI
+and an isolated daemon cutover. Historical compatibility paths and the overall
+maintenance cost still need review before claiming whole-system simplification.
 
 Check documentation integrity, executable examples, local Markdown links/anchors
 and whitespace. The linked source PoC implements the shared loop for review;
