@@ -59,6 +59,35 @@ An App, parent agent or human already managing work can be its closing owner.
 registry. The executor may recommend stopping; the accountable caller or App
 applies an authorized closure decision through the existing control boundary.
 
+## Agent judges; controller carries it through
+
+The controller exists to remove procedural work from the agent. Give the agent
+the current ask, relevant evidence and unresolved decisions. It judges what is
+useful next; code carries out that decision and brings back the next relevant
+input. A short prompt is not enough if the agent still has to remember the
+follow-through procedure.
+
+| Agent/App judgment | Code-owned process |
+| --- | --- |
+| Is the evidence sufficient for this ask? | Validate and retain the outcome against the exact input and attempt |
+| What independent work is needed, and what would count as success? | Admit the child, save its return link, schedule it and return its outcome |
+| Does this new fact change the answer or remaining work? | Route durable input and construct the next context, even after restart |
+| Is another try worthwhile, or should we ask, narrow scope or give up? | Apply bounded safe retries, waits and authorized controls; preserve failure evidence |
+| Has the accepted human ask been resolved, and how should we explain it? | Commit the explanation and Request closure together; deliver through the interface |
+
+For example, the agent asks for a measurement and states the acceptance rule.
+Code records and runs that work, then returns its accepted evidence to the
+caller. The caller judges whether the measurement answers the ask. It never
+has to poll the child, register a subscription, copy a lease/version, or remember
+to revisit the work later. Closing ordinary completed children is an App
+convention applied by code; it requires no extra model turn.
+
+Do not call the model to implement a known state transition or repeatedly ask
+whether an unchanged Task should keep waiting. Do not make the controller
+invent a scope change, judge uncertain evidence or declare a human ask satisfied.
+If a model trial needs procedural coaching to complete the loop, simplify the
+contract/context or fix the missing controller behavior before adding prompts.
+
 ## One lifecycle, explicit outcomes
 
 | Fact | Meaning |
@@ -285,8 +314,20 @@ Reuse [PR #149's follow-through fixtures](task-runtime-organization.md#request-f
 and existing controller/dependency tests. Those prove current mechanics, not
 this lifecycle. Verify the target at its actual boundaries:
 
+**Agent usability is an acceptance gate.** In addition to supplied-decision
+tests, run real agents against isolated synthetic work through the source PoC.
+Use ordinary asks and the intended judgment context, with code owning the
+process above. Include a held-back variant without case-specific coaching:
+delegation and return, insufficient evidence, a changed ask, and an affordable
+failure where narrowing scope or giving up is better than another retry.
+Record invalid decisions/calls, lost obligations, human interventions, model
+turns, latency and usage. Distinguish provider failure from a bad judgment.
+Compare the current and proposed boundaries on the same work; passing a new
+schema alone does not prove controller usability or reduced complexity.
+
 | Scenario | Required evidence |
 | --- | --- |
+| Real agent with ordinary context | Useful judgments and successful follow-through without polling, lifecycle bookkeeping or procedural coaching |
 | Result accepted while child remains open | Caller proceeds using the exact result; a new assignment cannot consume an old success |
 | Close while idle/running, repeated close, late event/result | No new execution or stale settlement; history remains and unresolved work is visibly non-success |
 | Conversation -> A -> B, success and failure | One execution owner per Task; each owner judges its own outcome and returns it through saved links |
@@ -307,6 +348,10 @@ does not establish a smaller or more reliable system.
 
 ## Documentation verification
 
-This revision changes design only. Check documentation integrity, executable
+The [source PoC checkpoint](controller-poc-evidence.md) records exact-attempt
+evidence retention, real model judgment trials and the remaining result-return
+obstacle. No unified lifecycle or simplification is claimed from that first slice.
+
+This proposal changes design only. Check documentation integrity, executable
 examples, local Markdown links/anchors and whitespace. It does not implement
 or activate the new lifecycle, unified Conversation execution or migration.
