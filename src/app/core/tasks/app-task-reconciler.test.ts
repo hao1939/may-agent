@@ -806,7 +806,7 @@ describe("App task reconciler state", () => {
     expect(renewAppTaskAttemptLease(resourceConfig, staleClaim, renewalAt)).toBe(false);
   });
 
-  it("keeps an achieve task live when its handler revises the same task generation", () => {
+  it("retains worker evidence when the assigning owner revises the next execution", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("achieve"),
@@ -815,28 +815,19 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    const result = completeAppTask(config, claim, {
-      summary: "Bound the newly observed cleanup proof",
+    stopAppTask(config, claim, {
+      summary: "Cleanup proof obtained; workflow verification is still needed",
       evidence: ["cleanup-proof:resource-group-absent"],
-      actions: [
-        {
-          kind: "update-task",
-          taskId: claim.taskId,
-          expectedGeneration: claim.generation,
-          workflow: "known-workflow",
-          input: {
-            sessionId: "session-1",
-            cleanupProof: "resource-group-absent",
-          },
-        },
-      ],
+      result: { cleanupProof: "resource-group-absent" },
     });
-
-    expect(result).toMatchObject({
-      status: "applied",
-      actionsApplied: [`updated ${claim.taskId}`],
-      dependentTaskIds: [claim.taskId],
-      taskContinues: true,
+    expect(readTaskSnapshot(config).resources?.[claim.taskId]?.metadata.generation).toBe(claim.generation);
+    observeAppTaskIntent(config, {
+      intent: {
+        ...intent("achieve"),
+        workflow: "known-workflow",
+        input: { sessionId: "session-1", cleanupProof: "resource-group-absent" },
+      },
+      appAgent: "app-owner",
     });
     const tree = readTaskSnapshot(config);
     expect(tree.resources?.[claim.taskId]).toMatchObject({
@@ -851,6 +842,9 @@ describe("App task reconciler state", () => {
       status: { phase: "pending" },
     });
     expect(tree.attempts?.[claim.attemptId]?.state).toBe("completed");
+    expect(tree.attempts?.[claim.attemptId]?.acceptedResult).toMatchObject({
+      state: "stopped", result: { cleanupProof: "resource-group-absent" },
+    });
     expect(tree.receipts?.[claim.taskId]).toBeUndefined();
   });
 
