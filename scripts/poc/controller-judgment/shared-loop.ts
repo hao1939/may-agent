@@ -120,6 +120,7 @@ let bus = new EventBus();
 let db = getDb(paths.persistDir);
 let ingress: AppInboxRuntime | undefined;
 let dispatches = 0;
+const allowanceExceeded = Promise.withResolvers<never>();
 const children: Array<{ child: ChildProcess; closed: Promise<void> }> = [];
 const events: Array<{ at: number; event: AgentEvent }> = [];
 const startedAt = Date.now();
@@ -141,7 +142,11 @@ const start = async () => {
     bus,
     timeoutMs: 180_000,
     spawnWorker(request) {
-      if (++dispatches > (nested ? 10 : 8)) throw Error("Trial dispatch allowance exhausted");
+      if (++dispatches > (nested ? 10 : 8)) {
+        const error = Error("Trial dispatch allowance exhausted");
+        allowanceExceeded.reject(error);
+        throw error;
+      }
       const child = spawn(
         process.execPath,
         [fileURLToPath(import.meta.url), "--worker", "--root", root, "--request", JSON.stringify(request)],
@@ -215,6 +220,7 @@ let report: Record<string, unknown> = {};
 let timer: ReturnType<typeof setTimeout> | undefined;
 try {
   await Promise.race([
+    allowanceExceeded.promise,
     (async () => {
       await start();
       publish(

@@ -2507,7 +2507,8 @@ export function admitLoadedConversationChange(input: ConversationTaskChangeRef &
     return { taskId, created: false };
   if (input.attemptId !== undefined) {
     const attempt = source.readAttempt(input.attemptId);
-    if (attempt?.taskId !== input.taskId || !attempt.acceptedResult) return { taskId, created: false };
+    if (attempt?.taskId !== input.taskId || !attempt.acceptedResult || attempt.acceptedResult.state === "waiting")
+      return { taskId, created: false };
   } else if (source.readCancellation(input.taskId)?.generation !== input.closedGeneration)
     return { taskId, created: false };
   const admitted = admitConversationTaskChange(

@@ -102,8 +102,10 @@ bun scripts/poc/controller-judgment/shared-loop.ts --live --nested --app-root /p
 ```
 
 The nested trial checks the exact C admission/result as well as B's return to
-A. It allows ten dispatches, including intermediate wait reports, within the
-same six-minute experiment limit. A pending wait is preserved once its typed
+A. It allows ten dispatches within the same six-minute experiment limit.
+Recorded waits remain readable but do not trigger a caller attempt: an answer,
+failure report or owner closure returns through the common input loop.
+A pending wait is preserved once its typed
 input is durably published; the worker need not obtain a synchronous receipt
 from the parent process. Publication does not claim that execution succeeded.
 

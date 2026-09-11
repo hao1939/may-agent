@@ -29,7 +29,6 @@ async function withProvider(
   f: ReturnType<typeof fixture>,
   decide: (context: AppInputContext) => ConversationTurnResult,
   execute: (contexts: AppInputContext[]) => Promise<void>,
-  maxResponses = 4,
 ) {
   const contexts: AppInputContext[] = [];
   let providerError: unknown;
@@ -50,7 +49,7 @@ async function withProvider(
       contexts.push(context);
       const toolError = payload.messages.find((message: { role: string; content: unknown }) => message.role === "tool");
       assert.equal(toolError, undefined, JSON.stringify(toolError));
-      assert(contexts.length <= maxResponses, "Unexpected extra provider execution");
+      assert(contexts.length <= 4, "Unexpected extra provider execution");
       assert(payload.tools.some((tool: { function: { name: string } }) => tool.function.name === "finish"));
       const answer = decide(context);
       response.writeHead(200, { "Content-Type": "text/event-stream" });
@@ -352,13 +351,6 @@ async function delegation(nested = false) {
         };
         assert.equal(data.taskId, "measurement");
         assert.equal(data.attemptId, f.store.readTask("measurement")!.status.observedAttemptId);
-        if (nested && data.outcome.state === "waiting") {
-          assert.equal(context.conversation!.requests!.find((request) => request.id === "measurement")!.status, "open");
-          return {
-            summary: "The reviewer is waiting for its measurement; no new answer yet",
-            topic: { kind: "existing", id: context.conversation!.current!.topicId! },
-          };
-        }
         assert.equal(data.outcome.state, "converged", JSON.stringify(data.outcome));
         assert.equal(data.outcome.result.value, 17);
         if (nested) assert.equal(data.outcome.result.assessed, true);
@@ -389,6 +381,15 @@ async function delegation(nested = false) {
           const discussion = replyAfter("We can keep discussing while it runs.");
           publish("discuss", "Can we discuss the method while it runs?");
           await discussion;
+          if (nested) {
+            assert.equal(contexts.length, 2, "Saving B's wait must not execute A");
+            assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
+            f.bus.emit({
+              type: "conversation.supervision.review",
+              source: "timer",
+              data: { project: "sample", limit: 1 },
+            });
+          }
           const returned = replyAfter("The measurement is 17.");
           measurement.resolve();
           await returned;
@@ -420,7 +421,7 @@ async function delegation(nested = false) {
           const resumed = replyAfter("The earlier result is still 17.");
           publish("resume", "Remind me of the result.");
           await resumed;
-          assert.equal(contexts.length, nested ? 5 : 4);
+          assert.equal(contexts.length, 4);
           assert.deepEqual(Object.keys(f.store.readSnapshot().resources!).sort(), ids);
           assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
         } finally {
@@ -428,7 +429,6 @@ async function delegation(nested = false) {
           await closeInstalledAppTaskRuntimes(f.bus);
         }
       },
-      nested ? 5 : 4,
     );
   } finally {
     measurement.resolve();

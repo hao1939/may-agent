@@ -411,7 +411,7 @@ export function listPendingConversationTaskChanges(
       FROM conversation_topics topic
       JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
       JOIN app_task_attempts attempt ON attempt.app_id = linked.app_id AND attempt.task_id = linked.task_id
-      WHERE topic.app_id = ? AND json_extract(attempt.attempt_json, '$.acceptedResult') IS NOT NULL
+      WHERE topic.app_id = ? AND json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('converged', 'stopped')
       UNION ALL
       SELECT topic.app_id, topic.conversation_id, topic.id, linked.app_id, linked.task_id, NULL,
         json_extract(closed.cancellation_json, '$.generation'), closed.requested_at,
@@ -484,6 +484,9 @@ export function admitConversationTaskChange(
       const attempt = source.resourceStore.readAttempt(input.attemptId);
       if (attempt?.taskId !== input.taskId || !attempt.acceptedResult)
         throw new Error("Task result must name an accepted attempt of the linked Task");
+      // Match ordinary Task dependencies: a recorded wait is progress, not
+      // a returned answer. Keep it readable without starting a caller attempt.
+      if (attempt.acceptedResult.state === "waiting") return { taskId: task.metadata.id, created: false };
       id = `conversation-result:${prefix}:${input.attemptId}`;
       fact = {
         kind: "task-outcome",
