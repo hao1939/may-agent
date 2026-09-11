@@ -97,6 +97,18 @@ the App boundary and lint: **2,896 passed, 3 skipped, zero failures**
 App/agent configuration. The last real-daemon cutover remains `682ba127`;
 the reader changes do not modify conversion, claims or execution.
 
+GitHub Quality at `c50f56f4` subsequently hit its 15-minute timeout. A local
+run with the same JUnit options still passed all 2,896 tests in 129.24 seconds.
+Comparing logs found only the five clipboard-bridge tests without results; that
+suite contained two unbounded synchronous Node subprocess calls. The log does
+not establish why the child process stalled. Host `54c1b5b4` replaces those
+calls with asynchronous execution and a five-second subprocess timeout, keeping
+the successful patch and exact invalid-anchor checks. All five focused tests
+pass. Full local CI then passes **2,896 tests, 3 skipped, zero failures**
+(2,899 tests / 291 files; 130.91 seconds), and GitHub **Quality and Container
+both pass at `54c1b5b4`**. No automatic retries, new skips or larger job timeout were added.
+This follow-up changes only the test harness; the runtime inventory is unchanged.
+
 Archive readers and their pre-cutover read projections remain deliberately.
 They are needed for offline inspection, including old cancellation records
 without a retained executable spec. Runtime preparation rejects unconverted
@@ -1698,6 +1710,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `ff3b852b` | 2,893 / 3 / 1 | 2,897 / 291 | 169.91 | Current main integrated; one upstream Topic fixture still invokes the retired inbox executor |
 | `682ba127` | 2,894 / 3 / 0 | 2,897 / 291 | 134.74 | Topic fixture uses actual Task execution; local/remote CI and clean old-to-new daemon cutover pass |
 | `c50f56f4` | 2,896 / 3 / 0 | 2,899 / 291 | 136.97 | Owner closure reads and filters are truthful; closed results remain discoverable without appearing as active work |
+| `54c1b5b4` | 2,896 / 3 / 0 | 2,899 / 291 | 130.91 | Clipboard tests use bounded asynchronous subprocesses after a hosted timeout; local CI and both GitHub checks pass |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
