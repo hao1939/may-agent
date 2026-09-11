@@ -148,7 +148,9 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     validate: (input, options) => {
       const agent = optionalText(input.data.agent) ?? optionalText(input.target?.appId);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
-      if (agent === options.conversationAppId) throw new Error(`${agent} input must use app.input.requested`);
+      const appId = agent.replace(/\.app$/, "");
+      if (appId === options.conversationAppId?.trim().replace(/\.app$/, ""))
+        throw new Error(`${appId} input must use app.input.requested`);
       if (!options.hasAgent(agent) && !options.hasApp(agent)) throw new Error(`Agent or App ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },

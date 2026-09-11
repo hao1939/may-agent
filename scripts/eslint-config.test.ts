@@ -66,6 +66,11 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     'import { createConversationTurnHandler } from "../../conversations/turn-handler.js"; void createConversationTurnHandler;',
     'export { prepareConversationInput } from "../../conversations/context";',
     'import type { TaskWorkspaces } from "./workspace.js"; export type Contract = TaskWorkspaces;',
+    'import { appOwnerReviewEvent } from "../../app-input-event.js"; void appOwnerReviewEvent;',
+    'export { appOwnerReviewEvent } from "../../app-input-event";',
+    'import { getDb } from "../../../lib/requests.js"; void getDb;',
+    'export { closeDb } from "../../../lib/requests";',
+    'import { getDb as connection } from "../../../lib/db/connection.js"; void connection;',
   ].join("\n");
   for (const filePath of [
     "src/app/core/tasks/controller.ts",
@@ -81,6 +86,10 @@ it("keeps capability implementations out of core, but allows wiring and boundary
       ["no-restricted-imports", 3],
       ["no-restricted-imports", 4],
       ["no-restricted-imports", 5],
+      ["no-restricted-imports", 7],
+      ["no-restricted-imports", 8],
+      ["no-restricted-imports", 9],
+      ["no-restricted-imports", 10],
     ]);
   }
   for (const filePath of [
@@ -93,5 +102,33 @@ it("keeps capability implementations out of core, but allows wiring and boundary
   ]) {
     const [result] = await eslint.lintText(source, { filePath });
     expect(result.messages).toEqual([]);
+  }
+});
+
+it("keeps executor value imports out of lifecycle mutation modules while allowing contract types", async () => {
+  const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
+  const modules = [
+    "tasks/app-task-runtime",
+    "tasks/app-task-reconciler",
+    "tasks/app-task-store",
+    "state/app-task-resource-store",
+  ];
+  for (const filePath of ["src/app/adapters/executors/managed-agent.ts", "src/app/adapters/executors/codex/probe.ts"]) {
+    const prefix = filePath.includes("/codex/") ? "../../../core/" : "../../core/";
+    const forbidden = modules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `${prefix}${name}${ext}`));
+    const source = [
+      ...forbidden.map((path, index) => `import { value${index} } from ${JSON.stringify(path)}; void value${index};`),
+      ...forbidden.map(
+        (path, index) =>
+          `import type { Type${index} } from ${JSON.stringify(path)}; export type Contract${index} = Type${index};`,
+      ),
+      `import { APP_TASK_RECOVERY_OWNER } from "${prefix}tasks/session-binding.js"; void APP_TASK_RECOVERY_OWNER;`,
+    ].join("\n");
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(result.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual(
+      forbidden.map((_, index) => ["no-restricted-imports", index + 1]),
+    );
+    const [testResult] = await eslint.lintText(source, { filePath: filePath.replace(/\.ts$/, ".test.ts") });
+    expect(testResult.messages).toEqual([]);
   }
 });

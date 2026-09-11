@@ -32,7 +32,7 @@ function fixture(conversationAppId?: string) {
     db,
     conversationAppId,
     acceptsAppInput: (appId, input) => appId === "sample" && input.kind === "message",
-    hasApp: (appId) => appId === "sample",
+    hasApp: (appId) => appId.trim().replace(/\.app$/, "") === "sample",
     hasAgent: (agent) => agent === "may",
     hasSession: (sessionId) => sessionId === "s_known",
   });
@@ -40,15 +40,17 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
-  it("requires durable input for the conversational App selected by composition", () => {
-    const { db, events } = fixture("sample");
-    for (const target of [{ data: { agent: "sample" } }, { target: { appId: "sample" }, data: {} }]) {
-      expect(() =>
-        events.publish(
-          { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
-          { source: "fixture" },
-        ),
-      ).toThrow("sample input must use app.input.requested");
+  it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
+    const { db, events } = fixture(selection);
+    for (const appId of ["sample", "sample.app", " sample.app "]) {
+      for (const target of [{ data: { agent: appId } }, { target: { appId }, data: {} }]) {
+        expect(() =>
+          events.publish(
+            { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
+            { source: "fixture" },
+          ),
+        ).toThrow("sample input must use app.input.requested");
+      }
     }
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
 
