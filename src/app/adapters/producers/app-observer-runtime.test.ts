@@ -1,6 +1,12 @@
-import { describe, expect, it } from "bun:test";
-import type { AppDefinition } from "@may-agent/sdk";
-import { EventBus } from "../../core/events/bus.js";
+import { describe, expect, it, spyOn } from "bun:test";
+import {
+  MAX_OBSERVER_SNAPSHOT_BYTES,
+  type AppDefinition,
+  type AppObserver,
+  type AppObserverResult,
+  type ObserverSnapshot,
+} from "@may-agent/sdk";
+import { EVENT_ROW_ID, EventBus } from "../../core/events/bus.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 
 function entry(definition: AppDefinition) {
@@ -160,5 +166,284 @@ describe("canonical App observers", () => {
     expect(events).not.toContain("stale.fact");
     expect(events).toContain("fresh.fact");
     runtime.close();
+  });
+});
+
+describe("publication-coupled observation memory", () => {
+  function fixture(run: AppObserver["run"]) {
+    let now = 1;
+    const bus = new EventBus();
+    let eventId = 0;
+    const persist = (event: object) =>
+      Object.defineProperty(event, EVENT_ROW_ID, { value: ++eventId, configurable: true });
+    bus.setPersistenceSubscriber((event) => {
+      persist(event);
+    });
+    const definition: AppDefinition = {
+      id: "sample",
+      version: 1,
+      agent: "worker",
+      inputSchema: { type: "object" },
+      observers: [{ id: "provider", intervalMs: 100, run }],
+    };
+    const runtime = createAppObserverRuntime({
+      bus,
+      now: () => now,
+      context: () => ({
+        read: {} as never,
+        log: {} as never,
+        workspace: { appRoot: "/apps/sample.app", projectRoot: "/projects/sample" },
+      }),
+    });
+    runtime.replace([entry(definition)]);
+    return {
+      bus,
+      runtime,
+      definition,
+      persist,
+      async scan() {
+        runtime.scanNow();
+        // The fixtures return already resolved promises: this continuation is
+        // queued after the runtime's publication, not an elapsed-time guess.
+        await Promise.resolve();
+        now += 100;
+      },
+    };
+  }
+
+  it("retries a failed transition, stays quiet after publication, and reports recurrence", async () => {
+    let state = "ready",
+      fail = false;
+    const seen: ObserverSnapshot[] = [];
+    const f = fixture(async ({ previousObservation }) => ({
+      events: state === "ready" || previousObservation !== state ? [{ type: "sample.state", data: { state } }] : [],
+      nextObservation: state,
+    }));
+    f.bus.setPersistenceSubscriber((event) => {
+      if (event.type === "sample.state") {
+        if (fail) throw new Error("publication unavailable");
+        seen.push((event.data as { state: string }).state);
+      }
+      f.persist(event);
+    });
+    try {
+      await f.scan();
+      state = "unavailable";
+      fail = true;
+      await f.scan();
+      fail = false;
+      await f.scan();
+      await f.scan();
+      state = "ready";
+      await f.scan();
+      await f.scan();
+      state = "unavailable";
+      await f.scan();
+      expect(seen).toEqual(["ready", "unavailable", "ready", "ready", "unavailable"]);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("retains the prior snapshot after a partial batch and detaches both input and output", async () => {
+    const previous: (ObserverSnapshot | undefined)[] = [];
+    const next = { revision: 1 };
+    let fail = false;
+    const f = fixture(async (ctx) => {
+      previous.push(structuredClone(ctx.previousObservation));
+      if (ctx.previousObservation) (ctx.previousObservation as { revision: number }).revision = 999;
+      return {
+        events: [
+          { type: "first.fact", data: {} },
+          { type: "second.fact", data: {} },
+        ],
+        nextObservation: next,
+      };
+    });
+    const published: string[] = [];
+    f.bus.setPersistenceSubscriber((event) => {
+      if (event.type === "second.fact" && fail) throw new Error("second append failed");
+      if (event.type.endsWith(".fact")) published.push(event.type);
+      f.persist(event);
+    });
+    try {
+      await f.scan();
+      next.revision = 2;
+      fail = true;
+      await f.scan();
+      fail = false;
+      await f.scan();
+      await f.scan();
+      expect(previous).toEqual([undefined, { revision: 1 }, { revision: 1 }, { revision: 2 }]);
+      expect(published).toEqual([
+        "first.fact",
+        "second.fact",
+        "first.fact",
+        "first.fact",
+        "second.fact",
+        "first.fact",
+        "second.fact",
+      ]);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("does not remember a fact when publication returns without a durable receipt", async () => {
+    const seen: (ObserverSnapshot | undefined)[] = [];
+    const f = fixture(async (ctx) => {
+      seen.push(ctx.previousObservation);
+      return { events: [{ type: "transient", data: {} }], nextObservation: "observed" };
+    });
+    f.bus.setPersistenceSubscriber(() => {});
+    try {
+      await f.scan();
+      await f.scan();
+      expect(seen).toEqual([undefined, undefined]);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("rejects a whole invalid result before publishing any fact or changing memory", async () => {
+    let snapshot: unknown = "valid";
+    let badEvent = false;
+    const seen: (ObserverSnapshot | undefined)[] = [];
+    const f = fixture(async (ctx) => {
+      seen.push(ctx.previousObservation);
+      return {
+        events: [{ type: "sample.fact", data: {} }, ...(badEvent ? [{}] : [])],
+        nextObservation: snapshot,
+      } as AppObserverResult;
+    });
+    const published: string[] = [];
+    f.bus.subscribe((event) => published.push(event.type));
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    try {
+      await f.scan();
+      for (snapshot of [
+        undefined,
+        NaN,
+        new Date(),
+        { bad: undefined },
+        cycle,
+        "界".repeat(MAX_OBSERVER_SNAPSHOT_BYTES),
+      ]) {
+        await f.scan();
+      }
+      snapshot = "would-hide-invalid-batch";
+      badEvent = true;
+      await f.scan();
+      badEvent = false;
+      snapshot = null;
+      await f.scan();
+      expect(seen.slice(1)).toEqual(Array(8).fill("valid"));
+      expect(published.filter((type) => type === "sample.fact")).toHaveLength(2);
+      expect(published.filter((type) => type === "app.observer.failed")).toHaveLength(7);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("rejects oversized ASCII values and keys before serializing the oversized input", async () => {
+    const huge = "a".repeat(MAX_OBSERVER_SNAPSHOT_BYTES * 16);
+    let snapshot: ObserverSnapshot = huge;
+    const f = fixture(async () => ({ events: [{ type: "sample.fact", data: {} }], nextObservation: snapshot }));
+    const events: string[] = [];
+    f.bus.subscribe((event) => events.push(event.type));
+    const stringify = spyOn(JSON, "stringify");
+    try {
+      for (snapshot of [huge, { value: huge }, { [huge]: null }]) {
+        stringify.mockClear();
+        await f.scan();
+        expect(stringify.mock.calls.some(([value]) => value === snapshot || value === huge)).toBe(false);
+      }
+      expect(events).toEqual(Array(3).fill("app.observer.failed"));
+    } finally {
+      stringify.mockRestore();
+      f.runtime.close();
+    }
+  });
+
+  it("accounts for JSON escaping, UTF-8, keys and collection overhead within one size budget", async () => {
+    let snapshot: ObserverSnapshot = null;
+    let previous: ObserverSnapshot | undefined;
+    const f = fixture(async (ctx) => {
+      previous = ctx.previousObservation;
+      return { events: [], nextObservation: snapshot };
+    });
+    const cases: Array<[ObserverSnapshot, boolean]> = [
+      ["a".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 2), true],
+      ["a".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 1), false],
+      ['"'.repeat((MAX_OBSERVER_SNAPSHOT_BYTES - 2) / 2), true],
+      ['"'.repeat(MAX_OBSERVER_SNAPSHOT_BYTES / 2), false],
+      ["界".repeat(21_844), true],
+      ["界".repeat(21_845), false],
+      [{ ["k".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 9)]: null }, true],
+      [{ ["k".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 8)]: null }, false],
+      [Array(32_767).fill(0), true],
+      [Array(32_768).fill(0), false],
+      [JSON.parse('{"__proto__":{"safe":true},"values":[null,false,1]}'), true],
+    ];
+    try {
+      await f.scan();
+      for (const [candidate, accepted] of cases) {
+        snapshot = candidate;
+        await f.scan();
+        snapshot = null;
+        await f.scan();
+        expect(previous).toEqual(accepted ? candidate : null);
+      }
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("describes both supported result shapes for malformed stateful results", async () => {
+    const f = fixture(async () => ({ events: null, nextObservation: "invalid" }) as never);
+    const errors: string[] = [];
+    f.bus.subscribe((event) => {
+      if (event.type === "app.observer.failed") errors.push((event.data as { error: string }).error);
+    });
+    try {
+      await f.scan();
+      expect(errors).toEqual([
+        "observer must return AppEvent[] or { events: AppEvent[], nextObservation }; events must be canonical App events",
+      ]);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("forgets replaced memory and fences a late snapshot and facts on replace or close", async () => {
+    const seen: (ObserverSnapshot | undefined)[] = [];
+    const pending = Promise.withResolvers<AppObserverResult>();
+    let blocked = false;
+    const f = fixture((ctx) => {
+      seen.push(ctx.previousObservation);
+      return blocked ? pending.promise : Promise.resolve({ events: [], nextObservation: "published" });
+    });
+    const facts: string[] = [];
+    f.bus.subscribe((event) => facts.push(event.type));
+    await f.scan();
+    blocked = true;
+    await f.scan();
+    f.runtime.replace([entry(f.definition)]);
+    blocked = false;
+    await f.scan();
+    pending.resolve({ events: [{ type: "stale.fact", data: {} }], nextObservation: "stale" });
+    await Promise.resolve();
+    await f.scan();
+    expect(seen).toEqual([undefined, "published", undefined, "published"]);
+    expect(facts).toEqual([]);
+    const closing = Promise.withResolvers<AppObserverResult>();
+    f.definition.observers![0]!.run = () => closing.promise;
+    f.runtime.replace([entry(f.definition)]);
+    f.runtime.scanNow();
+    f.runtime.close();
+    closing.resolve({ events: [{ type: "closed.fact", data: {} }], nextObservation: "closed" });
+    await Promise.resolve();
+    expect(facts).toEqual([]);
   });
 });

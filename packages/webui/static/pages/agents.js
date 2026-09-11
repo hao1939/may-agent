@@ -246,18 +246,14 @@ async function loadAgentOverview(name) {
     ]);
     const cfg = aboutRes && aboutRes.agentJson;
     const ownedMetrics = (metricsRes.metrics || []).filter(m => m.owner === name);
+    const metricsIncomplete = metricsRes.truncated === true;
     const ownedProjects = (projectsRes || []).filter(p => p.owner === name);
     const sessions = (livenessRes.agents || []).find(a => a.name === name)?.sessions || [];
 
     // Fetch sparkline data for the most-relevant metrics. To keep latency
     // bounded, pull history for at most 12 metrics: alerting first, then
     // by priority (P0 > P1 > P2). Each call is cheap (~5–20ms server-side).
-    const breached = ownedMetrics.filter(m => {
-      if (m.alertOpen) return true;
-      if (m.threshold == null || m.current == null) return false;
-      const above = m.alert_op === 'above' || m.alert_op === '>';
-      return above ? m.current > m.threshold : m.current < m.threshold;
-    });
+    const breached = ownedMetrics.filter(metricBreached);
     const sortedForSpark = [...ownedMetrics].sort((a, b) => {
       const aBr = breached.includes(a) ? 0 : 1;
       const bBr = breached.includes(b) ? 0 : 1;
@@ -291,9 +287,10 @@ async function loadAgentOverview(name) {
       if (Array.isArray(cfg.tools)) html += `<tr><td style="padding:2px 12px 2px 0;color:var(--fg2);vertical-align:top;white-space:nowrap">tools (${cfg.tools.length})</td><td style="font-size:11px;color:var(--fg2)">${cfg.tools.map(t => esc(typeof t === 'string' ? t : (t.name || JSON.stringify(t)))).join(', ')}</td></tr>`;
       html += `</tbody></table></div>`;
     }
-    html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Metrics <span style="color:var(--fg)">${ownedMetrics.length}</span>${breached.length > 0 ? `<span style="color:var(--red);font-size:11px">⚠ ${breached.length} breached</span>` : ''}</h3>`;
+    html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Metrics <span style="color:var(--fg)">${ownedMetrics.length}${metricsIncomplete ? ' shown' : ''}</span>${breached.length > 0 ? `<span style="color:var(--red);font-size:11px">⚠ ${breached.length} breached${metricsIncomplete ? ' shown' : ''}</span>` : ''}</h3>`;
+    if (metricsIncomplete) html += '<p class="health-warning">Partial metric data: other metrics may be missing.</p>';
     if (ownedMetrics.length === 0) {
-      html += `<div style="color:var(--fg2);font-size:12px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">No metrics owned.</div>`;
+      html += `<div style="color:var(--fg2);font-size:12px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px">${metricsIncomplete ? 'No matching definitions in this partial list.' : 'No metrics owned.'}</div>`;
     } else {
       html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
       // Sort: breached first (red), then by priority.

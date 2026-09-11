@@ -67,7 +67,7 @@ async function loadHealthGraphs() {
         '<span style="font-size:12px;color:var(--fg2);font-weight:500">' + metric.label + '</span>' +
         '<span style="font-size:16px;font-weight:700;color:' + color + '">' + latestStr + '</span>' +
         '</div>' +
-        renderSparklineWithValues(snaps, metric.threshold, 300, 50) +
+        renderSparklineWithValues(snaps, metric.threshold, 300, 50, null, data.window) +
         '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--fg2);opacity:0.7">' +
         '<span>24h ago</span>' +
         '<span>threshold: ' + (metric.threshold * metric.scale).toFixed(metric.scale > 1 ? 0 : 2) + metric.unit + '</span>' +
@@ -141,7 +141,10 @@ function formatMetricValue(value, unit) {
 
 function metricBreached(metric) {
   if (!metric) return false;
-  if (metric.alertOpen || metric.breached) return true;
+  if (metric.alertOpen) return true;
+  if (metric.alertsDisabled) return false;
+  if ('thresholdBreached' in metric) return !!metric.thresholdBreached;
+  if (metric.breached) return true;
   if (metric.threshold == null || metric.current == null) return false;
   const above = metric.alert_op === '>' || metric.alert_op === 'above';
   return above ? Number(metric.current) > Number(metric.threshold) : Number(metric.current) < Number(metric.threshold);
@@ -191,7 +194,7 @@ function shortMetricLabel(metric, project) {
 function scheduleLivenessRefresh() {
   if (typeof currentTab !== 'undefined' && currentTab !== 'live') return;
   if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
-  livenessRefreshTimer = setTimeout(loadLiveness, 500);
+  livenessRefreshTimer = setTimeout(() => { loadLiveness(); loadWorkflowOverview(); loadOverviewTasks(); }, 500);
 }
 
 async function loadLiveness() {
@@ -201,6 +204,7 @@ async function loadLiveness() {
   try {
     const res = await fetch('/api/liveness?hours=' + encodeURIComponent(livenessHours));
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Liveness read failed');
     const summary = data.summary || {};
     const agents = data.agents || [];
     // Window the backend actually used (it clamps 1..72). Fall back to
@@ -209,6 +213,7 @@ async function loadLiveness() {
     const since = Number(summary.windowSince) || (Date.now() - windowHours * 60 * 60 * 1000);
     const span = Date.now() - since;
     const alerts = data.alerts || [];
+    const visibleAlerts = alerts.slice(0, 4);
     const vitals = data.vitals || [];
     const decisions = data.recentDecisions || [];
     const messages = data.messages || [];
@@ -220,20 +225,21 @@ async function loadLiveness() {
     let html = `<h2>
       <span>System liveness</span>
       <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
-      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/events')" title="Click to open Events tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
+      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}${summary.openAlertsTruncated || summary.openAlerts > visibleAlerts.length ? ' · showing newest ' + visibleAlerts.length : ''}</span>
     </h2>`;
+    html += '<div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>';
 
     if (vitals.length > 0) {
-      html += `<div class="liveness-section"><h3>Core vitals</h3>`;
+      html += `<div class="liveness-section"><h3>Host observations</h3>`;
       html += `<div class="vitals-grid">`;
       for (const metric of vitals) {
-        const alerting = !!(metric.breached || metric.alertOpen);
+        const alerting = metricBreached(metric);
         const value = formatMetricValue(metric.current, metric.unit);
-        const threshold = metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
-        html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo('/metrics/${attrEsc(metric.id)}')" title="${esc(metric.id)} · owner ${esc(metric.owner || 'may')} · ${esc(threshold)}">
+        const threshold = metric.alertsDisabled ? 'Alerts disabled' : metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
+        html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'may') + ' · ' + threshold)}">
           <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'may')}</span></div>
           <div class="vital-value">${esc(value)}</div>
-          <div class="vital-sub">${esc(threshold)}${metric.updatedAt ? ' · ' + esc(formatAgo(metric.updatedAt)) : ''}</div>
+          <div class="vital-sub">${esc(threshold)}</div><div class="health-note">${esc(metricObservationLabel(metric))}${metric.alertOpen === null ? ' · alert list limited; open metric detail' : ''}</div>
         </div>`;
       }
       html += `</div></div>`;
@@ -347,7 +353,7 @@ async function loadLiveness() {
     if (alerts.length === 0) {
       html += `<div class="liveness-item">No open metric alerts.</div>`;
     } else {
-      for (const alert of alerts.slice(0, 4)) {
+      for (const alert of visibleAlerts) {
         const resolveBtn = alert.alertId
           ? `<button title="Resolve" onclick="verbResolveAlert(${Number(alert.alertId)}, event)" style="background:none;border:1px solid var(--border);color:var(--fg2);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;float:right">resolve</button>`
           : '';
@@ -388,6 +394,7 @@ async function loadLiveness() {
 // not just whether the runtime is alive.
 async function renderLivenessProjects() {
   const el = document.getElementById('liveness-projects');
+  const coverage = document.getElementById('liveness-measurement-problems');
   if (!el) return;
   try {
     const [projectsRes, metricsRes] = await Promise.all([
@@ -395,9 +402,15 @@ async function renderLivenessProjects() {
       fetch('/api/metrics'),
     ]);
     const all = await projectsRes.json();
-    const metricData = await metricsRes.json().catch(() => ({ metrics: [] }));
+    const metricData = await metricsRes.json();
+    if (!projectsRes.ok || !metricsRes.ok) throw new Error('Project or metric read unavailable');
     if (!Array.isArray(all)) { el.innerHTML = ''; return; }
     const allMetrics = Array.isArray(metricData.metrics) ? metricData.metrics : [];
+    const metricsIncomplete = metricData.truncated === true;
+    const problems = allMetrics.filter(m => m.freshness !== 'fresh' || m.collectionFailure?.afterLastSample);
+    if (coverage) coverage.innerHTML = `<h3>Measurement coverage</h3><p class="health-note">${problems.length} missing, stale or uncertain observations among ${allMetrics.length} definitions${metricData.truncated ? ' (list limited)' : ''}. No alerts is not proof of health.</p>
+      ${problems.slice(0, 5).map(m => `<div class="health-note"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a> · ${esc(metricObservationLabel(m))}${m.collectionFailure?.afterLastSample ? ' · ' + esc(m.collectionFailure.reason) : ''}</div>`).join('')}
+      ${problems.length > 5 ? '<a href="/metrics">Inspect all measurements</a>' : ''}`;
     const TERMINAL = new Set(['done', 'complete', 'closed']);
     const active = all.filter(p => !TERMINAL.has(p.status));
     const enriched = active.map((project) => {
@@ -433,19 +446,21 @@ async function renderLivenessProjects() {
         const value = formatMetricValue(metric.current, metric.unit);
         const label = shortMetricLabel(metric, p);
         const thresholdLabel = metric.threshold == null ? '' : `${metric.alert_op === '<' || metric.alert_op === 'below' ? 'min' : 'max'} ${formatMetricValue(metric.threshold, metric.unit)}`;
-        return `<button class="project-metric-chip ${breached ? 'alerting' : ''}" onclick="event.stopPropagation(); routeTo('/metrics/${attrEsc(metric.id)}')" title="${esc(metric.id)}${thresholdLabel ? ' · ' + esc(thresholdLabel) : ''}">
+        return `<button class="project-metric-chip ${breached ? 'alerting' : ''}" onclick="event.stopPropagation(); routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + (thresholdLabel ? ' · ' + thresholdLabel : ''))}">
           <span class="project-metric-label">${esc(label)}</span>
-          <b>${esc(value)}</b>
+          <b>${esc(value)}</b><span>${esc(metric.freshness || 'unknown')}</span>
         </button>`;
       }).join('');
       const moreCount = Math.max(0, item.metrics.length - 5);
       const alertLabel = item.alertCount > 0
-        ? `<span class="project-health-alert">${item.alertCount} alert${item.alertCount === 1 ? '' : 's'}</span>`
-        : item.metrics.length > 0
-          ? `<span class="project-health-ok">metrics ok</span>`
-          : `<span class="project-health-muted">no project metrics</span>`;
+        ? `<span class="project-health-alert">${item.alertCount} alert${item.alertCount === 1 ? '' : 's'}${metricsIncomplete ? ' shown' : ''}</span>`
+        : metricsIncomplete
+          ? `<span class="project-health-muted">${item.metrics.length} metrics shown · overall metric health unknown</span>`
+          : item.metrics.length > 0
+            ? `<span class="project-health-muted">${item.metrics.filter(m => m.freshness !== 'fresh' || m.collectionFailure?.afterLastSample).length} missing/stale/uncertain measurements · no threshold breaches</span>`
+            : `<span class="project-health-muted">no project metrics</span>`;
 
-      html += `<div class="liveness-item project-health-item" onclick="routeTo('/projects/' + '${attrEsc(routeId)}')">
+      html += `<div class="liveness-item project-health-item" onclick="routeTo(${jsStringAttr('/projects/' + encodeURIComponent(routeId))})">
         <div class="project-health-main">
           <span style="color:${pulseColor};font-size:14px" title="${formatAgo(p.updatedAt)}">${pulse}</span>
           <span class="project-health-title"><strong>${esc(p.name)}</strong>${owner ? ` <span class="meta">${esc(owner)}</span>` : ''}</span>
@@ -453,11 +468,13 @@ async function renderLivenessProjects() {
           <span class="meta" style="font-size:11px">${formatAgo(p.updatedAt)}</span>
           ${alertLabel}
         </div>
-        <div class="project-health-metrics">${metricChips || '<span class="meta">No registered project metrics yet.</span>'}${moreCount ? `<span class="project-health-muted">+${moreCount}</span>` : ''}</div>
+        ${metricsIncomplete ? '<p class="health-warning">Partial metric data: other metrics may be missing.</p>' : ''}
+        <div class="project-health-metrics">${metricChips || `<span class="meta">${metricsIncomplete ? 'No matching definitions in this partial list.' : 'No registered project metrics yet.'}</span>`}${moreCount ? `<span class="project-health-muted">+${moreCount}${metricsIncomplete ? ' shown' : ''}</span>` : ''}</div>
       </div>`;
     }
     el.innerHTML = html;
   } catch (e) {
+    if (coverage) coverage.innerHTML = '<p class="health-warning">Measurement coverage unavailable. Open Metrics to inspect the read failure.</p>';
     el.innerHTML = `<div class="liveness-item">Failed to load projects: ${esc(e.message || String(e))}</div>`;
   }
 }

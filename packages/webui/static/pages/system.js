@@ -172,7 +172,7 @@ function loopTraceQuery(target) {
 
 function openLoopTrace(target) {
   routeTo('/events');
-  setTimeout(() => loadLoopTrace(target), 80);
+  return loadLoopTrace(target);
 }
 
 function openEventGraph(eventId) {
@@ -896,7 +896,13 @@ function renderEventGraph(graph) {
   return html;
 }
 
+let loopTraceLoadGeneration = 0;
+function clearLoopTrace() {
+  ++loopTraceLoadGeneration;
+  document.getElementById('loop-trace-content')?.replaceChildren();
+}
 async function loadLoopTrace(target) {
+  const generation = ++loopTraceLoadGeneration;
   const el = document.getElementById('loop-trace-content');
   if (!el) return;
   el.innerHTML = '<div style="padding:10px;color:var(--fg2);border:1px solid var(--border);border-radius:6px">Loading loop trace…</div>';
@@ -905,11 +911,37 @@ async function loadLoopTrace(target) {
     const res = await fetch(eventIdTarget ? `/api/events/${encodeURIComponent(target)}/trace` : `/api/loop-trace?${loopTraceQuery(target)}`);
     const trace = await res.json();
     if (!res.ok) throw new Error(trace.error || 'failed');
+    if (generation !== loopTraceLoadGeneration) return;
     el.innerHTML = renderLoopTrace(trace);
     if (typeof scrollToHashAnchor === 'function') scrollToHashAnchor();
   } catch (e) {
+    if (generation !== loopTraceLoadGeneration) return;
     el.innerHTML = `<div style="padding:10px;color:var(--red);border:1px solid var(--border);border-radius:6px">Failed to load loop trace: ${esc(e.message)}</div>`;
   }
+}
+
+function renderWorkflowEvidence(evidence) {
+  if (!evidence) return '<p class="health-warning">Workflow evidence is unavailable or expired.</p>';
+  const run = evidence.run;
+  const diagnostics = evidence.diagnostics;
+  const links = [
+    run.parentWorkflowRunId ? `<a href="${esc(workflowRunLink(run.parentWorkflowRunId))}">Parent run</a>` : '',
+    run.resumedFromRunId ? `<a href="${esc(workflowRunLink(run.resumedFromRunId))}">Earlier execution</a>` : '',
+    `<a href="/api/loop-trace?workflowRunId=${encodeURIComponent(run.runId)}">Full retained evidence (JSON)</a>`,
+  ].filter(Boolean).join(' · ');
+  return `<section class="health-section" data-workflow-evidence><h3>Workflow evidence · ${esc(run.runId)}</h3>
+    <p>${esc(run.workflow)} · ${esc(run.status)} · ${esc(healthTime(run.startedAt))} → ${esc(healthTime(run.endedAt))}</p>
+    <p>${links}</p><h4>Purpose</h4><pre class="health-text">${esc((run.task || '').slice(0, 2000))}${run.task?.length > 2000 ? '\n[preview limited; open full evidence]' : ''}</pre>
+    <h4>Recorded result / reason</h4><pre class="health-text">${esc(run.result_summary || '')}\n${esc(run.result_reason || 'No reason recorded.')}</pre>
+    <p class="health-note">Source: ${esc(run.sourcePath || 'unknown')} · entry hash ${esc(run.entryContentHash || 'unknown')}. Workflow completion is not Task acceptance.</p>
+    <p class="health-note">Artifact reference: ${esc(run.artifact_ref || 'none')}${run.artifact_error ? ' · ' + esc(run.artifact_error) : ''}</p>
+    <h4>Steps / agent calls</h4>${evidence.steps.length ? evidence.steps.map(step => `<div class="health-task"><a href="/sessions/${encodeURIComponent(step.sessionId)}">${esc(step.stepLabel || step.sessionId)}</a> · ${esc(step.status)} · ${esc(step.agent)}<pre class="health-text">${esc(step.error || step.outcome || '')}</pre></div>`).join('') : '<p>No retained step sessions.</p>'}
+    ${evidence.stepsTruncated ? '<p class="health-warning">Step list truncated.</p>' : ''}
+    <h4>Child workflows</h4>${evidence.childRunIds.length ? evidence.childRunIds.map(id => `<a href="${esc(workflowRunLink(id))}">${esc(id)}</a>`).join(' · ') : '<p>No retained child links.</p>'}
+    ${evidence.childrenTruncated ? '<p class="health-warning">Child list truncated.</p>' : ''}
+    <h4>Run diagnostics</h4>${diagnostics.state === 'available' ? `<pre class="health-text">${esc(diagnostics.entries.map(e => `${healthTime(e.at)} [${e.level}] ${e.message}`).join('\n') || 'No messages recorded.')}</pre>` : '<p class="health-warning">Diagnostics unavailable: not recorded, expired or unreadable.</p>'}
+    ${diagnostics.truncated ? '<p class="health-warning">Diagnostics truncated by recording limits.</p>' : ''}
+    <p class="health-note">Diagnostics are bounded and best-effort; known-secret redaction is not a guarantee of complete or secret-free evidence.</p></section>`;
 }
 
 function renderLoopTrace(trace) {
@@ -936,6 +968,7 @@ function renderLoopTrace(trace) {
   html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`;
   for (const chip of chips) html += `<span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:2px 8px">${esc(chip)}</span>`;
   html += `</div>`;
+  if (trace.target.kind === 'workflow') html += renderWorkflowEvidence(trace.workflowEvidence);
   if (trace.handler?.name || trace.handler?.reason) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:8px">handler: <b style="color:var(--fg)">${esc(trace.handler.name || '—')}</b>${trace.handler.status ? ` · ${esc(trace.handler.status)}` : ''}${trace.handler.reason ? ` · ${esc(trace.handler.reason)}` : ''}</div>`;
   }

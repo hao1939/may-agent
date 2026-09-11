@@ -3,6 +3,7 @@ import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
+import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
@@ -295,105 +296,110 @@ export function attachMetricSourceMeasurement(options: {
 }): MetricSourceMeasurementRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
-  metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
-  const subscriberFailureSource = {
-    source: "rolling one-hour subscriber.failed event count",
-    sourceQuery: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
-    measureInterval: 300_000,
-    description:
-      "Counts every durable subscriber.failed event in the rolling hour, including malformed or unroutable exact-task failures.",
-  };
-  const existingSubscriberFailureMetric = db
-    .prepare("SELECT id FROM metrics WHERE id = ?")
-    .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID);
-  if (!existingSubscriberFailureMetric) {
-    metricService.define({
-      id: SUBSCRIBER_FAILED_COUNT_METRIC_ID,
-      name: "Event bus subscriber failures (1h)",
-      owner: "may",
-      type: "health",
-      target: 0,
-      threshold: 3,
-      unit: "count",
-      priority: "P2",
-      status: "active",
-      ...subscriberFailureSource,
-      alertOp: ">",
-      speed: "fast",
-      config: { alert: { mode: "consecutive_failures", count: 2 } },
-    });
-  } else {
-    db.run(
-      `UPDATE metrics
+  // Startup registrations are repeatable definition writes, not observations.
+  // Reuse the bounded storage policy when another startup process owns SQLite's
+  // writer lock; keep measurement and subscription effects outside this retry.
+  withSqliteBusyRetry("register source metric definitions", () => {
+    metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
+    const subscriberFailureSource = {
+      source: "rolling one-hour subscriber.failed event count",
+      sourceQuery: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
+      measureInterval: 300_000,
+      description:
+        "Counts every durable subscriber.failed event in the rolling hour, including malformed or unroutable exact-task failures.",
+    };
+    const existingSubscriberFailureMetric = db
+      .prepare("SELECT id FROM metrics WHERE id = ?")
+      .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID);
+    if (!existingSubscriberFailureMetric) {
+      metricService.define({
+        id: SUBSCRIBER_FAILED_COUNT_METRIC_ID,
+        name: "Event bus subscriber failures (1h)",
+        owner: "may",
+        type: "health",
+        target: 0,
+        threshold: 3,
+        unit: "count",
+        priority: "P2",
+        status: "active",
+        ...subscriberFailureSource,
+        alertOp: ">",
+        speed: "fast",
+        config: { alert: { mode: "consecutive_failures", count: 2 } },
+      });
+    } else {
+      db.run(
+        `UPDATE metrics
        SET source = ?, source_query = ?, measure_interval = ?, description = ?
        WHERE id = ?`,
-      [
-        subscriberFailureSource.source,
-        subscriberFailureSource.sourceQuery,
-        subscriberFailureSource.measureInterval,
-        subscriberFailureSource.description,
-        SUBSCRIBER_FAILED_COUNT_METRIC_ID,
-      ],
-    );
-  }
-  const unexpectedUnhandledSource = {
-    source: "rolling one-hour unexpected unhandled event count",
-    sourceQuery: UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
-    measureInterval: 300_000,
-    description:
-      "Counts unhandled events that are not declared observation-only task lifecycle, profiling, progress, metric, conversation, review, approval, or Host Operations report facts.",
-  };
-  const existingUnexpectedUnhandledMetric = db
-    .prepare("SELECT id FROM metrics WHERE id = ?")
-    .get(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID);
-  if (!existingUnexpectedUnhandledMetric) {
+        [
+          subscriberFailureSource.source,
+          subscriberFailureSource.sourceQuery,
+          subscriberFailureSource.measureInterval,
+          subscriberFailureSource.description,
+          SUBSCRIBER_FAILED_COUNT_METRIC_ID,
+        ],
+      );
+    }
+    const unexpectedUnhandledSource = {
+      source: "rolling one-hour unexpected unhandled event count",
+      sourceQuery: UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
+      measureInterval: 300_000,
+      description:
+        "Counts unhandled events that are not declared observation-only task lifecycle, profiling, progress, metric, conversation, review, approval, or Host Operations report facts.",
+    };
+    const existingUnexpectedUnhandledMetric = db
+      .prepare("SELECT id FROM metrics WHERE id = ?")
+      .get(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID);
+    if (!existingUnexpectedUnhandledMetric) {
+      metricService.define({
+        id: UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
+        name: "Unexpected unhandled signal events (1h)",
+        owner: "may",
+        type: "health",
+        target: 0,
+        threshold: 5,
+        unit: "count",
+        priority: "P1",
+        status: "active",
+        ...unexpectedUnhandledSource,
+        alertOp: ">",
+        speed: "fast",
+      });
+    } else {
+      // Source semantics are canonical Runtime code. Preserve live alert
+      // calibration while repairing stale or historically hand-authored queries.
+      db.run(
+        `UPDATE metrics
+       SET source = ?, source_query = ?, measure_interval = ?, description = ?
+       WHERE id = ?`,
+        [
+          unexpectedUnhandledSource.source,
+          unexpectedUnhandledSource.sourceQuery,
+          unexpectedUnhandledSource.measureInterval,
+          unexpectedUnhandledSource.description,
+          UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
+        ],
+      );
+    }
     metricService.define({
-      id: UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
-      name: "Unexpected unhandled signal events (1h)",
+      id: STALE_ACTIVE_METRIC_ID,
+      name: "Stale cadence-bound active metrics",
       owner: "may",
       type: "health",
       target: 0,
-      threshold: 5,
+      threshold: 45,
       unit: "count",
       priority: "P1",
       status: "active",
-      ...unexpectedUnhandledSource,
+      source: "cadence-aware metric snapshot history",
+      sourceQuery: STALE_ACTIVE_SOURCE_QUERY,
+      measureInterval: 300_000,
       alertOp: ">",
       speed: "fast",
+      description:
+        "Counts active metrics with an explicit positive measure interval that missed at least two expected samples, with a 15-minute minimum grace window.",
     });
-  } else {
-    // Source semantics are canonical Runtime code. Preserve live alert
-    // calibration while repairing stale or historically hand-authored queries.
-    db.run(
-      `UPDATE metrics
-       SET source = ?, source_query = ?, measure_interval = ?, description = ?
-       WHERE id = ?`,
-      [
-        unexpectedUnhandledSource.source,
-        unexpectedUnhandledSource.sourceQuery,
-        unexpectedUnhandledSource.measureInterval,
-        unexpectedUnhandledSource.description,
-        UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
-      ],
-    );
-  }
-  metricService.define({
-    id: STALE_ACTIVE_METRIC_ID,
-    name: "Stale cadence-bound active metrics",
-    owner: "may",
-    type: "health",
-    target: 0,
-    threshold: 45,
-    unit: "count",
-    priority: "P1",
-    status: "active",
-    source: "cadence-aware metric snapshot history",
-    sourceQuery: STALE_ACTIVE_SOURCE_QUERY,
-    measureInterval: 300_000,
-    alertOp: ">",
-    speed: "fast",
-    description:
-      "Counts active metrics with an explicit positive measure interval that missed at least two expected samples, with a 15-minute minimum grace window.",
   });
 
   let pending: { triggerEventId?: number; measuredAt: number; forced: boolean } | undefined;

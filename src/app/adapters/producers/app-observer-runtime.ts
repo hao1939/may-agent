@@ -1,6 +1,12 @@
-import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
+import {
+  MAX_OBSERVER_SNAPSHOT_BYTES,
+  type AppEvent,
+  type AppObserver,
+  type ObserverContext,
+  type ObserverSnapshot,
+} from "@may-agent/sdk";
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
-import type { EventBus } from "../../core/events/bus.js";
+import { EVENT_ROW_ID, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";
 
 type ObserverState = {
@@ -10,6 +16,7 @@ type ObserverState = {
   fingerprint: string;
   lastSlot: number;
   running: boolean;
+  observation?: ObserverSnapshot;
 };
 
 export type AppObserverRuntime = {
@@ -29,6 +36,62 @@ function validFact(value: unknown): value is AppEvent {
   return (
     typeof event.type === "string" && Boolean(event.type.trim()) && Object.prototype.hasOwnProperty.call(event, "data")
   );
+}
+
+function copySnapshot(value: unknown): ObserverSnapshot {
+  let remaining = MAX_OBSERVER_SNAPSHOT_BYTES;
+  const charge = (bytes: number): void => {
+    if (bytes > remaining) throw new Error(`observer snapshot exceeds ${MAX_OBSERVER_SNAPSHOT_BYTES} bytes`);
+    remaining -= bytes;
+  };
+  const chargeString = (item: string): void => {
+    // UTF-16 length is a lower bound on JSON UTF-8 size. Reject huge strings
+    // before encoding; only input bounded by the budget reaches this encoder.
+    charge(item.length);
+    charge(Buffer.byteLength(JSON.stringify(item), "utf8") - item.length);
+  };
+  const copyProperty = (item: object, key: string, depth: number): ObserverSnapshot => {
+    const property = Object.getOwnPropertyDescriptor(item, key);
+    if (!property || !("value" in property))
+      throw new Error("observer snapshot must contain only JSON data properties");
+    return copy(property.value, depth);
+  };
+  const copy = (item: unknown, depth: number): ObserverSnapshot => {
+    if (depth > 32) throw new Error("observer snapshot is too complex");
+    if (typeof item === "string") {
+      chargeString(item);
+      return item;
+    }
+    if (item === null || typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item))) {
+      charge(JSON.stringify(item).length);
+      return item;
+    }
+    if (typeof item !== "object" || item === null) throw new Error("observer snapshot must contain only JSON values");
+    charge(2); // Brackets/braces; every child and separator also consumes budget.
+    if (Array.isArray(item)) {
+      const result: ObserverSnapshot[] = [];
+      for (let i = 0; i < item.length; i++) {
+        if (i > 0) charge(1);
+        result.push(copyProperty(item, String(i), depth + 1));
+      }
+      return result;
+    }
+    if (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) {
+      throw new Error("observer snapshot must contain only plain JSON objects");
+    }
+    const result: Record<string, ObserverSnapshot> = Object.create(null);
+    let first = true;
+    // Do not materialize all values or invoke getters/toJSON on App objects.
+    for (const key in item) {
+      if (!Object.hasOwn(item, key)) continue;
+      charge(first ? 1 : 2); // Colon and, after the first member, comma.
+      first = false;
+      chargeString(key);
+      result[key] = copyProperty(item, key, depth + 1);
+    }
+    return result;
+  };
+  return copy(value, 0);
 }
 
 /**
@@ -76,18 +139,35 @@ export function createAppObserverRuntime(options: {
 
   const run = async (key: string, state: ObserverState, slot: number): Promise<void> => {
     try {
-      const facts = await state.observer.run(options.context(state.appId, state.appDir));
+      const result = await state.observer.run({
+        ...options.context(state.appId, state.appDir),
+        previousObservation: structuredClone(state.observation),
+      });
       if (closed || states.get(key) !== state) return;
+      const facts = Array.isArray(result) ? result : result?.events;
       if (!Array.isArray(facts) || facts.some((fact) => !validFact(fact))) {
-        throw new Error("observer must return an array of canonical App events");
+        throw new Error(
+          "observer must return AppEvent[] or { events: AppEvent[], nextObservation }; events must be canonical App events",
+        );
       }
+      // Validate and detach before publishing any fact. Never retain an
+      // App-owned mutable object as the last successfully published state.
+      const observation = Array.isArray(result) ? undefined : copySnapshot(result.nextObservation);
       for (const fact of facts) {
-        options.bus.emit({
+        if (closed || states.get(key) !== state) return;
+        const published = options.bus.emit({
           ...fact,
           source: fact.source ?? `app:${state.appId}:observer:${state.observer.id}`,
           owner: fact.owner ?? `app:${state.appId}`,
         } as never);
+        // emit can also carry transient/non-journaled notifications. Such a
+        // result cannot justify suppressing future stateful observations.
+        const eventId = published[EVENT_ROW_ID] ?? 0;
+        if (!Array.isArray(result) && (!Number.isSafeInteger(eventId) || eventId <= 0)) {
+          throw new Error("stateful observer fact has no durable event receipt");
+        }
       }
+      if (!closed && states.get(key) === state) state.observation = observation;
     } catch (error) {
       if (closed || states.get(key) !== state) return;
       try {

@@ -9,6 +9,8 @@ import { createRuntimeAppRead } from "../../core/reads/app-read.js";
 import { createAppReporting } from "../../composition/reporting.js";
 import { measureSourceMetrics } from "../../metric-source-measurement.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./workflow-metrics.js";
+import { readMetricObservations } from "./metric-observations.js";
+import { readWorkflowHealth, workflowHealthQuery } from "./workflow-health.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -59,6 +61,14 @@ describe("replaceable workflow reporting", () => {
     expect(samples.every((sample) => sample?.sampleSize === 10 && sample.measuredAt! >= now - 1_000)).toBe(true);
     expect(samples[0]?.note).toContain("Retained top-level runs");
     expect(samples[0]?.measureInterval).toBe(300_000);
+    const observation = readMetricObservations(db).metrics.find((metric) => metric.id === "workflow.error-count-24h")!;
+    expect(observation.workflowSelection).toMatchObject({ end: samples[1]!.measuredAt, outcome: "error" });
+    const selected = workflowHealthQuery(
+      new URLSearchParams(
+        Object.entries({ ...observation.workflowSelection, runs: "true" }).map(([key, value]) => [key, String(value)]),
+      ),
+    );
+    expect(readWorkflowHealth(db, selected)).toMatchObject({ matchingRuns: 2, totals: { finished: 10 } });
     expect(db.prepare("SELECT COUNT(*) AS n FROM metric_alerts").get()).toEqual({ n: 0 });
     expect(
       db
@@ -76,6 +86,7 @@ describe("replaceable workflow reporting", () => {
     const empty = await read(id);
     expect(empty).toMatchObject({ value: 0, sampleSize: 0 });
     db.run("UPDATE metrics SET source_query = 'SELECT * FROM missing_fixture_table' WHERE id = ?", [id]);
+    expect(readMetricObservations(db).metrics.find((metric) => metric.id === id)!.workflowSelection).toBeNull();
     const failed = await measureSourceMetrics({ bus, persistDir: root });
     expect(failed.skipped).toEqual([id]);
     expect(failed.failures).toEqual([{ id, reason: expect.stringContaining("missing_fixture_table") }]);

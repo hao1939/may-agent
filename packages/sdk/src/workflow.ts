@@ -167,7 +167,13 @@ export type AppRead = {
   metric(metricId: string): Promise<MetricView | null>;
 };
 
+/** Disposable provider observation memory, never Task state or a delivery queue. */
+export type ObserverSnapshot =
+  null | boolean | number | string | ObserverSnapshot[] | { [key: string]: ObserverSnapshot };
+
 export type ObserverContext = {
+  /** Defensive copy of the last published snapshot; absent after startup/reload. */
+  previousObservation?: ObserverSnapshot;
   read: AppRead;
   log: Logger;
   /** Paths scoped to this App declaration and its configured workspace. */
