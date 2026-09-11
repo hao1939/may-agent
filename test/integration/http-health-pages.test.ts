@@ -390,7 +390,12 @@ describe("served workflow and metric health pages", () => {
         await page.type("#metric-search", "workflow.error");
         expect(await page.$$eval("[data-metric-search]:not([hidden])", (rows) => rows.length)).toBe(1);
         await page.click('#metrics-workflows a[href*="workflowRunId=wr_7"]');
+        expect(new URL(page.url()).hash).toBe("#loop-trace");
         await page.waitForSelector("[data-workflow-evidence]");
+        await page.waitForFunction(() => {
+          const target = document.getElementById("loop-trace")?.getBoundingClientRect();
+          return target && target.top >= 0 && target.top < window.innerHeight;
+        });
         const text = await page.$eval("[data-workflow-evidence]", (el) => el.textContent);
         expect(text).toContain("Original upload failure");
         expect(text).toContain("wr_10");
@@ -425,6 +430,37 @@ describe("served workflow and metric health pages", () => {
             fullPage: true,
           });
         }
+        // The legacy panels label a full day, even when only a small part has data.
+        const metrics = createMetricService({ getDb: () => db });
+        metrics.define({ id: "handler.success-rate", type: "gauge" });
+        for (const hoursAgo of [6, 5])
+          metrics.record("handler.success-rate", 0.9, { measuredAt: now - hoursAgo * 3600000 });
+        await page.goto(base, { waitUntil: "domcontentloaded" });
+        const historyResponse = page.waitForResponse(
+          (response) => new URL(response.url()).pathname === "/api/metrics/handler.success-rate/history",
+        );
+        await page.click("#legacy-dashboard summary");
+        const history = await historyResponse;
+        expect(history.status()).toBe(200);
+        const { window: historyWindow } = await history.json();
+        expect(historyWindow.end - historyWindow.start).toBe(86400000);
+        await page.waitForSelector("#health-graphs [data-sample-time]");
+        const plot = await page.$eval("#health-graphs svg", (svg) => {
+          const axis = svg.querySelector("line")!;
+          return {
+            start: Number(axis.getAttribute("x1")),
+            end: Number(axis.getAttribute("x2")),
+            samples: Array.from(svg.querySelectorAll("[data-sample-time]"), (dot) => ({
+              time: Number(dot.getAttribute("data-sample-time")),
+              x: Number(dot.getAttribute("cx")),
+            })),
+          };
+        });
+        expect(plot.samples).toHaveLength(2);
+        for (const sample of plot.samples)
+          expect((sample.x - plot.start) / (plot.end - plot.start))
+            .toBeCloseTo((sample.time - historyWindow.start) / (historyWindow.end - historyWindow.start), 4);
+        expect(errors).toEqual([]);
         failMetrics = true;
         await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() =>

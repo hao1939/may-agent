@@ -67,7 +67,7 @@ async function loadHealthGraphs() {
         '<span style="font-size:12px;color:var(--fg2);font-weight:500">' + metric.label + '</span>' +
         '<span style="font-size:16px;font-weight:700;color:' + color + '">' + latestStr + '</span>' +
         '</div>' +
-        renderSparklineWithValues(snaps, metric.threshold, 300, 50) +
+        renderSparklineWithValues(snaps, metric.threshold, 300, 50, null, data.window) +
         '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--fg2);opacity:0.7">' +
         '<span>24h ago</span>' +
         '<span>threshold: ' + (metric.threshold * metric.scale).toFixed(metric.scale > 1 ? 0 : 2) + metric.unit + '</span>' +

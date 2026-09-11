@@ -285,7 +285,7 @@ document.addEventListener('click', (event) => {
   const url = new URL(href, location.origin);
   if (url.origin !== location.origin || !isPlatformClientRoute(url.pathname)) return;
   event.preventDefault();
-  routeTo(url.pathname + url.search);
+  routeTo(url.pathname + url.search + url.hash);
 });
 
 
