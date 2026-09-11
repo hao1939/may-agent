@@ -166,8 +166,12 @@ also exercises A → B → C → B → A within the same App, including live wor
 judgment and fresh execution after runtime/storage reopen. It removes the
 automatic caller wake on intermediate waits. Operational old-owner cutover
 remains unproved.
-The old execution paths have been removed from the candidate source;
-[current CI and migration evidence](controller-poc-recovery-review.md) still leave
+The old execution paths have been removed from the candidate source.
+[Coverage migration](controller-poc-recovery-review.md#moving-inbox-checks-onto-the-task-loop)
+now tests their retained guarantees through actual Task execution, including
+normal backoff after a rejected human-facing decision. The code guides describe
+context and presentation as handler responsibilities within that loop.
+[Current CI and migration evidence](controller-poc-recovery-review.md) still leave
 whole-system simplification unproved.
 The [Task-worker process checks](controller-poc-recovery-review.md#workspace-and-worker-process-boundaries)
 now verify retained input and effects across worker loss, plus workspace release

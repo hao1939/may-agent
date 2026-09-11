@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`64cd4d1b` has 136 unresolved failures. New human input now permits a fresh attempt
+`f9ada65b` has 122 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -24,7 +24,7 @@ case held back from the first run. No production fix was needed for these trials
 The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
 also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
-The branch adds 632 net production lines against baseline main `a8f65188`
+The branch adds 635 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
 Resolve the remaining regression and integration gaps before expanding the design.
 
@@ -1197,6 +1197,39 @@ is 632 net production lines larger than baseline `a8f65188`, unchanged from
 the start of this review. These fixes add no new
 controller or storage mechanism. Full-suite convergence, operational cutover
 and overall simplification remain separate acceptance gates.
+
+## Moving inbox checks onto the Task loop
+
+Host `f9ada65b` moves the retained contracts of fourteen removed inbox-execution
+callback tests onto actual Task execution and settlement. Five added checks
+cover canonical focus/command context without mutation, an old Topic outside
+the bounded prompt, rejection of guessed work, and correction of a closed-target
+handoff through normal backoff after storage reopen. Existing runtime checks
+own direct replies, delegation, steering, subscribed input and human controls.
+The Host's `test/README.md` maps each retired contract to its current owner;
+generic inbox admission, attachment and readiness checks remain.
+
+The old Topic check caught a real defect: preparation resolved an eight-character
+reference, but settlement wrote that alias into canonical foreign-key fields.
+Settlement now writes the resolved Topic ID. The closed-target check uses
+previous-attempt evidence and the common retry, without restoring a special
+two-call conversation recovery path. All **68 affected tests pass**. The code
+guides now describe one Task lifecycle and the human-facing handler's limited
+context/presentation responsibilities. This adds three production lines; the
+full branch remains **635 net production lines larger** than `a8f65188`.
+
+The first full CI run passed types, boundaries and lint, then aborted when a
+Bun 1.3.14 test worker crashed with SIGILL during the workflow-guards integration
+suite. Its partial totals are not a comparable full-suite result. Running that
+suite alone passed all nine tests, without reproducing the crash. Both logs
+are retained locally; the native crash remains unexplained.
+One explicit full rerun passed types, boundaries and lint, then completed with
+**2,737 passed, 3 skipped and 122 failed** (2,862 tests across 289 files,
+174.2 seconds). Against `64cd4d1b`, the only fourteen removed failure names are
+the migrated callback checks; no new failure name appeared. This is a coverage
+migration with one production fix, not proof that the remaining regressions
+are obsolete. Design integrity/examples/App checks and 49 local document links
+pass; the Host code guides also pass a 20-link check. PR #158 remains draft.
 
 ## Verification and cost
 
