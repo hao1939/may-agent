@@ -21,6 +21,11 @@ The Task runtime decides transitions; these operations enforce their storage
 boundaries. Events announce meaningful changes and accelerate discovery, while
 durable state remains authoritative. There is no extra server or storage queue.
 
+Bounded Task context retains the exact current and observed attempt references
+before filling the remaining history slots. Timestamp order alone cannot select
+execution authority or accepted evidence: clocks can move backwards, and two
+attempts can share a timestamp. The history limit remains 16 attempts per Task.
+
 Cutover helpers require the old Host and every worker to be stopped, after the
 normal database schema upgrade. They are source operations, not an operational
 upgrade runner. Receipt import preserves original historical receipts and links

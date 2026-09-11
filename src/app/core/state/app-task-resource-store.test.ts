@@ -593,6 +593,41 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it.each(["equal", "backward"])(
+    "keeps canonical attempt references inside bounded history with %s timestamps",
+    (clock) => {
+      const store = open();
+      try {
+        const tree = fixture();
+        const current = tree.attempts!["attempt-1"]!;
+        const accepted = structuredClone(current);
+        accepted.metadata.id = "accepted-previous";
+        accepted.state = "completed";
+        accepted.summary = "Previous accepted evidence";
+        delete accepted.lease;
+        delete accepted.sessionId;
+        tree.attempts![accepted.metadata.id] = accepted;
+        tree.resources!.active!.status.observedAttemptId = accepted.metadata.id;
+        for (let index = 0; index < 20; index++) {
+          const historical = structuredClone(accepted);
+          historical.metadata.id = `z-history-${index.toString().padStart(2, "0")}`;
+          historical.startedAt = clock === "equal" ? current.startedAt : "2026-08-22T00:00:00.000Z";
+          tree.attempts![historical.metadata.id] = historical;
+        }
+        store.bootstrapSnapshot(tree, "fixture");
+        const context = store.readTaskContext({ taskIds: ["active"] });
+        expect(Object.keys(context.attempts!)).toHaveLength(16);
+        expect(context.attempts![current.metadata.id]).toEqual(current);
+        expect(context.attempts![accepted.metadata.id]).toEqual(accepted);
+        expect(context.attempts!["z-history-19"]).toBeDefined();
+        expect(context.attempts!["z-history-00"]).toBeUndefined();
+        expect(store.readTaskContext({ taskIds: ["active"] }, { includeHistory: false }).attempts).toEqual({});
+      } finally {
+        store.close();
+      }
+    },
+  );
+
   it("reads a bounded task context without pulling unrelated App history", () => {
     const store = open();
     const tree = fixture();

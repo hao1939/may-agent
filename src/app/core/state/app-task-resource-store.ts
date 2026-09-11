@@ -912,6 +912,11 @@ export class AppTaskResourceStore {
           ).map((row) => [row.task_id, parseJson<AppTaskCancellation>(row.cancellation_json)]),
         )
       : {};
+    // Canonical references must survive a bounded history read even when the
+    // clock moves backwards or several attempts share a timestamp.
+    const referencedAttemptIds = Object.values(resources).flatMap(({ status }) =>
+      [status.currentAttemptId, status.observedAttemptId].filter((id): id is string => Boolean(id)),
+    );
     const attempts =
       options.includeHistory !== false && taskIds.length
         ? Object.fromEntries(
@@ -920,12 +925,15 @@ export class AppTaskResourceStore {
                 .prepare(
                   `SELECT attempt_id, attempt_json FROM (
                    SELECT attempt_id, attempt_json,
-                     ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY started_at DESC, attempt_id DESC) AS position
+                     ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY
+                       CASE WHEN attempt_id IN (${referencedAttemptIds.map(() => "?").join(", ") || "NULL"})
+                         THEN 0 ELSE 1 END,
+                       started_at DESC, attempt_id DESC) AS position
                    FROM app_task_attempts
                    WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})
                  ) WHERE position <= ?`,
                 )
-                .all(this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
+                .all(...referencedAttemptIds, this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
                 attempt_id?: string;
                 attempt_json?: string;
               }>

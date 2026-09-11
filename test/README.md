@@ -51,6 +51,15 @@ including other old execution fixtures and daemon tests, require separate
 investigation. Neither these deterministic checks nor the passing synthetic
 model trials certify operational cutover or deployment.
 
+The core reconciler's retry and worker-report checks now use persisted backoff
+and explicit owner closure. They retain duplicate-failure accounting, stale
+fences, partial evidence, parent notification and rollback checks. Cross-connection
+closure races verify that existing children survive while admission after
+closure is rejected. Both retained mode spellings follow the same lifecycle.
+`app-task-resource-store.test.ts` separately proves that a bounded history read
+keeps the Task's current and observed attempts despite tied or backward timestamps.
+These migrations do not certify the remaining receipt, action and runtime tests.
+
 ## SDK export contract
 
 The SDK root test runs the installed compiler CLI and compares its emitted
