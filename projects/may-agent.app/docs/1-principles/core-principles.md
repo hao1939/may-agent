@@ -186,11 +186,14 @@ relationships. Neither is another work lifecycle or state authority. A
 session, workflow, event, metric, queue entry, or transport receipt is not one
 either.
 
-When a Task needs another App's result, create a typed child request and wait
-on that exact identity. A conversational turn instead admits or steers the
-responsible Task and finishes; it does not become a waiting parent. May can
-own an ordinary Task. Another App is useful for existing ownership, required
-authority, or expertise, not as a mandatory routing fallback.
+When a Task needs another Task's result, describe the work through typed App
+input. The Host preserves the exact return link and releases execution while
+waiting. Relevant input can wake the assigning Task again, including human
+discussion or the delegated result. Conversation is its human-facing role;
+it adds no execution lifecycle. Both Tasks may belong to May. Another App is
+useful for existing ownership, required authority, or expertise. The
+[common-lifecycle proposal](../proposals/conversation-input-unification.md)
+owns this accepted direction and its current implementation limits.
 
 See [work-model.md](work-model.md) and
 [agent-app.md](../2a-design/agent-app.md).

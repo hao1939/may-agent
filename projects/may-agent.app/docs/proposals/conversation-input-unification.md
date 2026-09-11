@@ -1,4 +1,4 @@
-# Conversation and Task: one reconciliation model
+# One Task lifecycle
 
 **Status:** Accepted design baseline, refined September 11, 2026; implementation
 is pending. Use one Task execution lifecycle for ordinary work, maintenance and
@@ -39,8 +39,8 @@ Human input / child result / relevant fact / optional timer
                   claim a bounded attempt
                             |
                             v
-                selected conversation / agent /
-                   workflow / other handler
+                  App-selected handler
+                 (agent, workflow, etc.)
                             |
                             v
              validate and commit outcome + evidence
@@ -60,6 +60,18 @@ Do not create a Task per message or per Request. Independent delegated work
 gets its own Task, so it can progress while the Conversation handles more input.
 The conversation Task is the actual execution owner, with one claim and retry
 authority; it does not wrap an independently executing inbox handler.
+
+Use A → B → C → B → A to review composition. A can receive human input; B can
+delegate again and judge C's evidence. Each is a Task using the same controller.
+An App boundary chooses ownership and capabilities, not a different delegation
+protocol: typed input may create another Task in the same App or another App.
+Code owns admission, return links and wakes. The worker states the needed
+outcome and acceptance, then judges the returned evidence.
+
+Automatically return an answer, honest failure report or owner closure.
+A saved wait is progress that remains available to read; it does not itself
+start another caller attempt. This is the same rule for every Task. It avoids
+model work to supervise an already recorded wait or recheck routine admission.
 
 An App, parent agent or human already managing work can be its closing owner.
 "External" means outside the assigned worker's authority over this assignment,
@@ -148,8 +160,12 @@ Request fulfillment and runtime/storage reopen. Both use the normal Task worker;
 the model responses in this trial are scripted. The subsequent
 [live May trials](controller-poc-recovery-review.md#live-may-on-the-shared-loop)
 pass that two-Task path with the actual App declaration and role instructions,
-including an unchanged below-threshold variant. They use a reduced tool catalog;
-three-Task live follow-through and operational old-owner cutover remain unproved.
+including an unchanged below-threshold variant. They use a reduced tool catalog.
+The later [nested Task trial](controller-poc-recovery-review.md#nested-delegation-uses-the-same-task-loop)
+also exercises A → B → C → B → A within the same App, including live worker
+judgment and fresh execution after runtime/storage reopen. It removes the
+automatic caller wake on intermediate waits. Operational old-owner cutover
+remains unproved.
 The old execution paths have been removed from the candidate source;
 [current CI and migration evidence](controller-poc-recovery-review.md) still leave
 whole-system simplification unproved.

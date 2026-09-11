@@ -10,7 +10,7 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`1be08130` has 136 unresolved failures. New human input now permits a fresh attempt
+`64cd4d1b` has 136 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
@@ -21,6 +21,9 @@ input and delegates to B; these are roles within one lifecycle.
 The [live May trials](#live-may-on-the-shared-loop) also pass this path using the
 paired App declaration and instructions unchanged, including a below-threshold
 case held back from the first run. No production fix was needed for these trials.
+The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
+also pass with actual model judgment after simplifying same-App admission and
+result return. A saved wait no longer starts an unnecessary caller attempt.
 The branch adds 632 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
 Resolve the remaining regression and integration gaps before expanding the design.
@@ -1106,6 +1109,94 @@ Full CI at `1be08130` passes types, the App boundary and lint, then reports
 Those two correlation tests are the only changed failure names versus `4e216338`.
 Design checks and all 46 changed-document links pass. The remaining failures
 still require individual review; they are not all assumed to be outdated tests.
+
+## Nested delegation uses the same Task loop
+
+The three-Task probe treats human interaction, review and measurement as roles:
+A receives the ask, B requests C's measurement, C returns evidence to B, and B
+returns its assessment to A. All three belong to the same May App and use the
+same Task controller. No measurement App or extra execution owner is installed.
+
+Host `f89ce4e7` removes two restrictions exposed by this path. Ordinary Task
+handlers now see their own App's typed work inputs, using the same catalog as
+the human-facing handler. A dependency may create another Task through that
+App's mapping; the worker need not switch to low-level Task creation actions.
+The source also accepts durable publication as sufficient to save a pending
+wait. A Task worker publishes into the shared journal before the parent admits
+the relayed input. Requiring the parent's synchronous receipt inside that worker
+had reported failure even though the child was admitted. The fix reuses journal
+recovery and exact input identity; it adds no IPC request/reply protocol.
+Publication still does not claim admission, execution or a successful result.
+
+Host `dbc707fa` corrects a related input-routing problem: a typed work input no
+longer inherits the App's default Conversation. Only declared conversational
+inputs use that default; explicit Conversation links remain supported. Without
+this correction, C's raw result could appear in the human discussion before B
+judged it. Delegated evidence returns to the assigning Task for interpretation.
+
+The deterministic worker trial covers typed A → B → C → B → A admission,
+an intervening human discussion, exact
+returned evidence, no raw child reply in the human discussion, zero Task
+execution failures, open Task identities and a fresh reply after SQLite/runtime
+reopen. The missing-publication and invalid-target admission checks also pass.
+
+An initial live run at `f89ce4e7` correctly delegated, discussed and assessed
+the measured 0.92 against 0.90. Its script reported success too early on reopen:
+the extra raw child message satisfied a reply-count predicate, while the new
+input was still pending. That run proves the inspected pre-reopen model
+behavior, not completed reopen. The corrected harness at `dbc707fa` requires
+the new input to be settled and its own response to recall the measured value.
+It also selects the exact final attempt rather than relying on result order.
+
+The next live development run at `dbc707fa` exposed an avoidable model loop.
+B's waiting report quoted the pre-admission observation that no child existed
+yet. A interpreted it as current state and unnecessarily steered B again; B
+then read Task state to verify work that code had already admitted. The three
+Tasks eventually returned the correct result, but the trial exhausted its ten
+dispatch allowance before the reopen input could execute. That is a failed
+end-to-end trial, not proof of clean follow-through. Increasing the allowance
+would hide the unnecessary supervision work.
+
+Host `64cd4d1b` instead matches ordinary dependency behavior: automatically
+return an answer, honest failure report or owner closure. Keep recorded waits
+readable without starting a caller attempt. Both event admission and periodic
+change discovery enforce this rule. The 58 focused storage, lifecycle and
+worker checks pass; the nested worker probe also verifies that the discovery
+timer cannot turn a saved wait into another model request. The experiment now
+reports allowance exhaustion immediately instead of waiting for its overall
+timeout while the controller retries failed dispatches. These are fixture
+allowances, not Task lifetime or retry-count limits.
+
+Two live trials at Host `64cd4d1b` and paired App `b73886ab05` now pass the full
+three-Task path, including a newly executed and settled input after reopen.
+Both use `gpt-5.6-sol`. Their source checkouts were clean, revisions and copied
+App/role/shared-file hashes match, and the held-back trial changes only the
+measurement. No model instructions were tuned between the two runs.
+
+| Trial | Inspected final and reopened judgment | Task attempts | Model responses | Measurement reads | Tool errors | Elapsed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Development: 0.92 | Meets 0.90 by 0.02; retains the single-sample limitation | 7 | 9 | 1 | 0 | 88.0 s |
+| Held-back value: 0.78 | Misses 0.90 by 0.12; retains the single-sample limitation | 7 | 8 | 1 | 0 | 83.9 s |
+
+Neither run emits `handler.failed`. The seven attempts are A's admission, B's
+delegation, C's measurement, A's intervening discussion, B's assessment, A's
+final reply and A's new reply after reopen. The worker uses its available tools
+to collect and inspect evidence; no Task polling or extra supervisory attempt
+is needed. Both fulfill the original Request and leave all three Tasks open.
+The human explicitly requests independent collection and review, so this tests
+using that decomposition, not whether the model would choose it unprompted.
+The reduced tool catalog, controlled HTTP source and basic storage/runtime
+reopen do not prove full daemon restart, operational cutover or transport
+delivery. Elapsed time includes deliberately holding the observation; it is
+not a provider-speed comparison. Raw reports and transcripts remain local.
+
+Full CI at `64cd4d1b` passes Host/SDK types, the App boundary and lint, then
+reports **2,732 passed, 3 skipped and 136 failed** across 2,871 tests in 289 files
+(161.3 seconds). The failure names are unchanged from `1be08130`. The branch
+is 632 net production lines larger than baseline `a8f65188`, unchanged from
+the start of this review. These fixes add no new
+controller or storage mechanism. Full-suite convergence, operational cutover
+and overall simplification remain separate acceptance gates.
 
 ## Verification and cost
 
