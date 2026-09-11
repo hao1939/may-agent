@@ -1148,7 +1148,7 @@ describe("canonical App task runtime", () => {
         appDir: f.appDir,
         agent: "sample-owner",
         maxConcurrent: 1,
-        lifecycle: "paused",
+        lifecycle: "active",
       }),
       persistDir,
     );
@@ -1159,7 +1159,7 @@ describe("canonical App task runtime", () => {
       appDir: evaluationDir,
       agent: "evaluator",
       maxConcurrent: 1,
-      lifecycle: "paused",
+      lifecycle: "active",
       appId: "evaluation",
     });
     const evaluationConfig = activateTaskResources(evaluationSourceConfig, persistDir, "evaluation");
@@ -1195,10 +1195,13 @@ describe("canonical App task runtime", () => {
         },
       ],
     });
+    const startGate = Promise.withResolvers<void>();
     await installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
       appRegistrySnapshot: registry.snapshot(),
+      // Drive claims explicitly while retaining the real admission/result routes.
+      startAfter: startGate.promise,
     });
 
     const db = getDb(persistDir);
@@ -1232,9 +1235,10 @@ describe("canonical App task runtime", () => {
       hostCapacity: new HostCapacity(2),
       attachTask: async (input) => {
         const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
+        const result = attachLoadedAppTask({ ...input, bus });
         attachedDependencyTaskId ??= taskId;
         attachedDependencyTaskCount += 1;
-        return attachLoadedAppTask({ ...input, bus });
+        return result;
       },
       readDependency: createAppTaskCapability({ bus }).readDependency,
       previewTaskEvent: ({ appId, event, targetedTaskId }) => {
@@ -1288,7 +1292,7 @@ describe("canonical App task runtime", () => {
         projectDir: f.appDir,
         agent: "sample-owner",
         app: definition(),
-        reconciliationPaused: true,
+        reconciliationPaused: false,
         resourceStore: sampleStore,
       };
       const conditions = admitTaskAppDependencies({
@@ -1549,6 +1553,9 @@ describe("canonical App task runtime", () => {
       });
     } finally {
       inbox.close();
+      const drained = closeInstalledAppTaskRuntimes(bus);
+      startGate.resolve();
+      await drained;
       // The runtime and inbox share the Host connection; fixture cleanup owns it.
     }
   });
