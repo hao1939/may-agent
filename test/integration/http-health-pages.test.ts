@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -25,10 +25,11 @@ describe("served workflow and metric health pages", () => {
   let child: ChildProcess;
   let stopped: Promise<void>;
   let base: string;
-  const now = Date.now() - 1000;
+  let now: number;
   const markup = '<img src=x onerror="window.healthInjected=true">';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    now = Date.now() - 1000;
     root = mkdtempSync(join(tmpdir(), "may-http-health-"));
     const projects = join(root, "projects");
     cpSync(resolve(import.meta.dir, "../../packages/webui/static"), join(projects, "platform", "ui"), {
@@ -128,7 +129,7 @@ describe("served workflow and metric health pages", () => {
     }
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     child?.kill("SIGKILL");
     await stopped;
     if (root) {
@@ -254,6 +255,13 @@ describe("served workflow and metric health pages", () => {
           expect(response.status).toBe(200);
           return response.json();
         }
+        async function failureSummary() {
+          await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#metrics-alerts p");
+          return page.$eval("#metrics-alerts p", (el) => el.textContent || "");
+        }
+        // Recover the seeded failure so an omitted failure would look like zero.
+        metrics.record("workflow.error-count-24h", 0, { measuredAt: now });
         // Exactly 500 is complete; an empty owner/project can still be reported honestly.
         const complete = await readMetrics();
         expect(complete.metrics).toHaveLength(500);
@@ -262,14 +270,23 @@ describe("served workflow and metric health pages", () => {
         expect(empty.agentText).toContain("No metrics owned.");
         expect(empty.projectText).toContain("no project metrics");
         expect(empty.agentText + empty.projectText).not.toContain("Partial metric data");
+        expect(await failureSummary()).toContain("0 measurements with a failure after the last sample.");
 
         metrics.define(hidden);
-        metrics.record(hidden.id, 2);
+        metrics.record(hidden.id, 2, { measuredAt: now - 1 });
+        const failure = db.prepare(`INSERT INTO events(event_type, source, metric_id, timestamp, data)
+          VALUES ('metric.measurement.failed', 'test', ?, ?, ?)`);
+        failure.run(hidden.id, now, JSON.stringify({ metricId: hidden.id, reason: "Synthetic omitted failure" }));
         const capped = await readMetrics();
         expect(capped.metrics).toHaveLength(500);
         expect(capped.truncated).toBe(true);
         expect(capped.metrics.some((metric: { id: string }) => metric.id === hidden.id)).toBe(false);
-        expect((await readMetrics("?id=" + hidden.id)).metrics[0]).toMatchObject({ id: hidden.id, thresholdBreached: true });
+        expect((await readMetrics("?id=" + hidden.id)).metrics[0]).toMatchObject({
+          id: hidden.id, thresholdBreached: true, collectionFailure: { afterLastSample: true },
+        });
+        expect(await failureSummary()).toContain("0 measurements with a failure after the last sample among 500 shown definitions (partial list).");
+        failure.run(visible.id, Date.now(), JSON.stringify({ metricId: visible.id, reason: "Synthetic visible failure" }));
+        expect(await failureSummary()).toContain("1 measurements with a failure after the last sample among 500 shown definitions (partial list).");
         for (const [owner, visibleValue] of [[hidden.owner, null], [visible.owner, 0], [visible.owner, 2]] as const) {
           if (visibleValue !== null) {
             metrics.define({ ...visible, project: "cap-fixture" });

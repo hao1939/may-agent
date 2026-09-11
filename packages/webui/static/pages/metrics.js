@@ -179,7 +179,7 @@ async function loadMetricsTab() {
     } else {
       el.innerHTML = renderObservationList(data);
       const failures = data.metrics.filter(m => m.collectionFailure?.afterLastSample);
-      document.getElementById('metrics-alerts').innerHTML = `<p>${data.alertsTruncated ? 'More than ' : ''}${data.alerts.length} open alerts; ${failures.length} measurements with a failure after the last sample. No alerts is not proof of health.</p>
+      document.getElementById('metrics-alerts').innerHTML = `<p>${data.alertsTruncated ? 'More than ' : ''}${data.alerts.length} open alerts; ${failures.length} measurements with a failure after the last sample${data.truncated ? ' among ' + data.metrics.length + ' shown definitions (partial list)' : ''}. No alerts is not proof of health.</p>
         ${data.alerts.slice(0, 20).map(a => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(a.metricId)}">${esc(a.name || a.metricId)}</a>: ${esc(a.message)} · opened ${esc(healthTime(a.createdAt))}</div>`).join('')}${data.alerts.length > 20 ? '<p>Showing newest 20 alerts; use metric detail for a selected definition.</p>' : ''}
         ${failures.map(m => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a>: ${esc(m.collectionFailure.reason)} · <a href="/events/${m.collectionFailure.eventId}">event</a></div>`).join('')}`;
     }
