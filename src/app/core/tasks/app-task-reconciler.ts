@@ -1648,6 +1648,21 @@ export function observeAppTaskIntent(
       },
     };
   }
+  // Only a newly admitted human message can waive pacing. Replays returned
+  // above; a Task fact, timer or delegated humanRequested flag is not a new ask.
+  const request =
+    input.trigger && isRecord(input.trigger.data) && isRecord(input.trigger.data.request)
+      ? input.trigger.data.request
+      : undefined;
+  if (
+    admissionKey &&
+    input.trigger?.type === "app.task.requested" &&
+    request &&
+    isRecord(request.source) &&
+    request.source.kind === "human"
+  ) {
+    touchResource(resource, { executionRetryAt: undefined, freshHumanInput: true });
+  }
   recordAdmission(input.intent.id, generation);
   const relevantConditionIds = new Set([...initialConditionIds, ...(resource.status.conditionIds ?? [])]);
   commitTaskMutation(config, tree, {
@@ -2498,7 +2513,7 @@ export function stopAppTask(
   touchResource(resource, {
     phase: "pending",
     executionFailures: failures,
-    executionRetryAt: Date.parse(now) + taskExecutionRetryDelay(failures),
+    executionRetryAt: resource.status.freshHumanInput ? undefined : Date.parse(now) + taskExecutionRetryDelay(failures),
     observedGeneration: claim.generation,
     observedAttemptId: claim.attemptId,
     currentAttemptId: undefined,
@@ -2702,6 +2717,7 @@ export function claimObservedAppTask(
       phase: "pending",
       executionFailures: failures,
       executionRetryAt: Date.now() + taskExecutionRetryDelay(failures),
+      freshHumanInput: undefined,
       observedGeneration: resource.metadata.generation,
       currentAttemptId: undefined,
       summary,
@@ -2964,6 +2980,7 @@ export function claimObservedAppTask(
     phase: "running",
     currentAttemptId: attemptId,
     executionRetryAt: undefined,
+    freshHumanInput: undefined,
   });
   const currentConditionIds = new Set(resource.status.conditionIds ?? []);
   const relevantConditionIds = new Set([...initialConditionIds, ...currentConditionIds]);
@@ -3069,7 +3086,7 @@ export function failAppTaskAttempt(
   touchResource(resource, {
     phase: "pending",
     executionFailures: failures,
-    executionRetryAt: Date.parse(now) + taskExecutionRetryDelay(failures),
+    executionRetryAt: resource.status.freshHumanInput ? undefined : Date.parse(now) + taskExecutionRetryDelay(failures),
     currentAttemptId: undefined,
     summary,
   });
@@ -4222,10 +4239,14 @@ export function markAppTaskAttention(
   const failures = (resource.status.executionFailures ?? 0) + 1;
   touchResource(resource, {
     phase: handoff ? "attention" : "pending",
-    ...(handoff ? {} : {
-      executionFailures: failures,
-      executionRetryAt: Date.parse(now) + taskExecutionRetryDelay(failures),
-    }),
+    ...(handoff
+      ? {}
+      : {
+          executionFailures: failures,
+          executionRetryAt: resource.status.freshHumanInput
+            ? undefined
+            : Date.parse(now) + taskExecutionRetryDelay(failures),
+        }),
     observedGeneration: claim.generation,
     currentAttemptId: undefined,
     summary: input.summary,

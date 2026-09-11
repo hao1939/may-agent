@@ -63,6 +63,8 @@ export type AppTaskResource = {
     executionFailures?: number;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
     executionRetryAt?: number;
+    /** A new human admission permits one fresh claim; that claim consumes the opportunity. */
+    freshHumanInput?: true;
     summary?: string;
     response?: string;
     result?: Record<string, unknown>;

@@ -223,6 +223,108 @@ test("Conversation admission survives reopen and runs without an ingress wake", 
   expect(Object.keys(readTaskSnapshot(f.context()).resources!)).toEqual([admitted.taskId]);
 });
 
+test.each(["during failure", "during cooldown and reopen"])(
+  "new human input gets a fresh Conversation attempt (%s) without dropping the original Request",
+  async (arrival) => {
+    const firstStarted = Promise.withResolvers<void>();
+    const releaseFailure = Promise.withResolvers<void>();
+    const secondStarted = Promise.withResolvers<void>();
+    const releaseAnswer = Promise.withResolvers<void>();
+    const contexts: AppInputContext[] = [];
+    const capacity = new HostCapacity(1);
+    const f = await fixture(
+      async (_definition, prompt) => {
+        contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
+        if (contexts.length === 1) {
+          firstStarted.resolve();
+          await releaseFailure.promise;
+          throw new Error("Source temporarily unavailable");
+        }
+        secondStarted.resolve();
+        await releaseAnswer.promise;
+        return {
+          status: "done",
+          structuredResult: {
+            summary: "Discussed the new source",
+            response: "I will use the corrected source; the comparison remains open.",
+            topic: { kind: "none" },
+          },
+        };
+      },
+      { hostCapacity: capacity },
+    );
+    applyConversationRequestUpdates(f.db, {
+      appId: app.id,
+      conversationId: "primary",
+      updateKey: "accepted-ask",
+      now: Date.now(),
+      updates: [{ id: "compare", expectedRevision: 0, scope: "Compare A and B", disposition: "open" }],
+    });
+    const admitted = f.admit();
+    // Seed prior failures so this check cannot accidentally pass by waiting out
+    // the first 250 ms delay. The runtime, not the fixture, settles the next failure.
+    const resource = f.store.readTask(admitted.taskId)!;
+    resource.metadata.resourceVersion++;
+    resource.status.executionFailures = 7;
+    f.store.commit({
+      fences: [{ taskId: admitted.taskId, resourceVersion: resource.metadata.resourceVersion - 1 }],
+      tasks: [{ resource, trigger: f.store.readTrigger(admitted.taskId)!, ready: true }],
+    });
+    f.store.setProjectLifecycle("paused");
+    let ingress = await startConversationIngress(f);
+    let releaseCapacity: (() => void) | undefined;
+    try {
+      const failed = settled(f.bus, admitted.taskId);
+      wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
+      await firstStarted.promise;
+      if (arrival === "during failure") ingress.publish("correction", "Use the corrected source");
+      releaseFailure.resolve();
+      await failed;
+      if (arrival === "during cooldown and reopen") {
+        const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+        expect(due - Date.now()).toBeGreaterThan(20_000);
+        releaseCapacity = await capacity.acquire();
+        ingress.publish("correction", "Use the corrected source");
+        ingress.publish("correction", "Use the corrected source");
+        expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeUndefined();
+        expect(contexts).toHaveLength(1);
+        ingress.runtime.close();
+        await f.reopen();
+        ingress = await startConversationIngress(f);
+        expect(contexts).toHaveLength(1);
+        releaseCapacity();
+        releaseCapacity = undefined;
+        expect(Date.now()).toBeLessThan(due);
+      }
+      await secondStarted.promise;
+      expect(contexts).toHaveLength(2);
+      expect(contexts[1]!.inputs!.map((input) => input.source.id)).toEqual(["ask", "correction"]);
+      expect(contexts[1]!.previousAttempt).toMatchObject({
+        state: "failed",
+        summary: expect.stringContaining("Source temporarily unavailable"),
+      });
+      expect(f.store.readTask(admitted.taskId)?.status.executionFailures).toBe(8);
+      expect(f.store.projectLifecycle()).toBe("paused");
+      expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("open");
+      const done = settled(f.bus, admitted.taskId);
+      releaseAnswer.resolve();
+      await done;
+      expect(listAppInboxItems(f.db, { appId: app.id }).every((item) => item.status === "done")).toBe(true);
+      expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("open");
+      expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe(
+        "I will use the corrected source; the comparison remains open.",
+      );
+      expect(f.store.listRecoveryCandidates().items).toEqual([]);
+      expect(f.store.isCancelled(admitted.taskId)).toBe(false);
+    } finally {
+      releaseFailure.resolve();
+      releaseAnswer.resolve();
+      releaseCapacity?.();
+      ingress.runtime.close();
+    }
+  },
+);
+
 test("owner closure aborts the common attempt and rejects a late Conversation reply", async () => {
   const started = Promise.withResolvers<CallOptions>();
   const release = Promise.withResolvers<void>();

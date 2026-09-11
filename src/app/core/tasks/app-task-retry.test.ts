@@ -9,8 +9,17 @@ import { AppTaskController } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import {
-  appTaskContext, claimObservedAppTask, closeAppTask, completeAppTask, failAppTaskAttempt,
-  observeAppTaskIntent, readAppTaskAdmissionOutcome, recordAppTaskTrigger, retryFailedAppTask, stopAppTask,
+  appTaskContext,
+  claimObservedAppTask,
+  closeAppTask,
+  completeAppTask,
+  failAppTaskAttempt,
+  markAppTaskAttention,
+  observeAppTaskIntent,
+  readAppTaskAdmissionOutcome,
+  recordAppTaskTrigger,
+  retryFailedAppTask,
+  stopAppTask,
 } from "./app-task-reconciler.js";
 
 const cleanup: Array<() => void> = [];
@@ -159,6 +168,114 @@ it("retains ordered failure input and newer human steering through a paced retry
   expect(next.events.map(({ event }) => event)).toEqual([...first.events.map(({ event }) => event), steering]);
   expect(next.generation).toBe(first.generation);
   expect(f.config.resourceStore.readAttempt(first.attemptId)?.state).toBe("failed");
+});
+
+function admitHuman(f: ReturnType<typeof fixture>, id = "correction") {
+  return admitTaskRequest(f.config, {
+    appId: "sample",
+    attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: `human:${id}`,
+    request: {
+      id,
+      source: { kind: "human", id },
+      input: { kind: "message", data: { text: "Use the corrected source" } },
+    },
+  });
+}
+
+it("a new human admission waives one cooldown across reopen without resetting failure cost", () => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture();
+  const first = f.claim();
+  failAppTaskAttempt(f.config, first, "Source unavailable");
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 250);
+  admitHuman(f);
+  f.reopen();
+  expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
+  expect(f.config.resourceStore.listRecoveryCandidates().items.map(({ taskId }) => taskId)).toContain("work");
+  const next = f.claim();
+  expect(next.events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
+  expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
+  failAppTaskAttempt(f.config, next, "Still unavailable");
+  const due = Date.now() + 500;
+  expect(f.config.resourceStore.nextDueAt()).toBe(due);
+  expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(2);
+  admitHuman(f); // Durable replay must not buy another early attempt.
+  recordAppTaskTrigger(f.config, "work", { type: "project.task.tick", eventId: 100 });
+  admitTaskRequest(f.config, {
+    appId: "sample",
+    attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "system:review",
+    request: {
+      id: "review",
+      source: { kind: "system", id: "timer" },
+      humanRequested: true,
+      input: { kind: "review", data: {} },
+    },
+  });
+  f.reopen();
+  expect(f.config.resourceStore.nextDueAt()).toBe(due);
+  expect(() => f.claim()).toThrow("waiting");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "human:correction")).toBeNull();
+});
+
+it.each(["executor failure", "rejected result"])("human input arriving during %s gets one fresh attempt", (kind) => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture();
+  const first = f.claim();
+  admitHuman(f);
+  if (kind === "executor failure") failAppTaskAttempt(f.config, first, "Source unavailable");
+  else markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
+  f.reopen();
+  const next = f.claim();
+  expect(next.events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
+  expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
+  expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
+  admitHuman(f); // Replay while running is not a new human message either.
+  failAppTaskAttempt(f.config, next, "Still unavailable");
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
+  expect(() => f.claim()).toThrow("waiting");
+});
+
+it("failed capability admission consumes the human opportunity without an unpaced retry loop", () => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture();
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  admitHuman(f);
+  const claim = claimObservedAppTask(f.config, {
+    taskId: "work",
+    appAgent: "owner",
+    handler: "agent",
+    isAgentRunnable: () => false,
+  });
+  expect(claim.kind).toBe("attention");
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
+  admitHuman(f);
+  expect(() => f.claim()).toThrow("waiting");
+  setSystemTime(new Date(f.config.resourceStore.nextDueAt()!));
+  failAppTaskAttempt(f.config, f.claim(), "Source still unavailable");
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 1_000);
+});
+
+it("a rejected human admission cannot clear durable cooldown", () => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture();
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  const before = f.config.resourceStore.readTask("work");
+  const commit = spyOn(f.config.resourceStore, "commit").mockImplementationOnce(() => {
+    throw new Error("Admission storage unavailable");
+  });
+  try {
+    expect(() => admitHuman(f)).toThrow("Admission storage unavailable");
+  } finally {
+    commit.mockRestore();
+  }
+  f.reopen();
+  expect(f.config.resourceStore.readTask("work")).toEqual(before);
+  expect(() => f.claim()).toThrow("waiting");
+  admitHuman(f);
+  expect(f.claim().events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
 });
 
 it.each(["execution error", "failure report"])("allows an explicit owner retry during cooldown after %s", (kind) => {
