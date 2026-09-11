@@ -4,7 +4,7 @@
 **Implementation status:** The static route-based operator UI is implemented.
 The default project/task surface still uses older path-based projections and
 has not completed migration to the shared App-ID Task reader.
-The workflow health refinement is implemented in Host #147 (`2408b519`),
+The workflow health refinement is implemented in Host #147 (`374a99db`),
 building on #143's evidence and SDK reads. It is a source candidate, not yet
 merged or deployed; [candidate evidence](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate)
 records checks and remaining scope. The new Overview Task summary uses the
@@ -169,6 +169,9 @@ This is a bounded list, not global state counts or an oldest-work calculation.
 An unavailable Task daemon is shown as unavailable, not no work. Exact Task
 detail still requires its App ID. Collection coverage includes all returned
 metric definitions, not only selected Host observations, and shows list limits.
+Agent overviews and individual project cards also show incomplete metric
+coverage, including when their subset is empty; counts describe shown metrics,
+not complete totals. See [reporting bounds](metrics.md#bounded-reporting-reads).
 Overview shows at most 20 open alerts. Its summary reads one extra row and
 reports truncation: exactly 20 and more than 20 must not look like the same
 total. A Host observation outside a truncated alert list has unknown alert

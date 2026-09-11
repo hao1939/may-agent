@@ -14,7 +14,7 @@ merged in Host #143 as `939698ad`, adding optional workflow outcome observations
 richer SDK reads and retained source errors. Deployment is unverified. The
 SQLite-first reporting reads and browser presentation are implemented in the
 [page candidate](../proposals/workflow-tracing-and-health-metrics.md#page-refinement-candidate),
-Host #147 (`2408b519`), not yet merged or deployed. No new metric types, client
+Host #147 (`374a99db`), not yet merged or deployed. No new metric types, client
 integration or monitoring service is included.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation
@@ -258,6 +258,11 @@ HTTP and browser consumers share them. Apps still use `MetricService`.
 - Definition lists cap at 500. History caps at 2,000 samples and 2,000 failure
   events within the selected window, returning the newest subset in time order
   with visible truncation. History and a current read need not share a snapshot.
+- Agent/project subsets of a truncated definition list are also incomplete.
+  Show partial-data warnings and subset counts, retain visible breaches, and
+  never infer no owned metrics or no breaches from omitted definitions. Exact
+  metric-ID reads filter before the cap; complete owner/project browsing remains
+  outside this bounded view.
 - A sample links to a known workflow population only for one of the four
   supplied definitions while its source query remains unchanged. Its link uses
   the sample's observation time, not today's moving window. Re-reading retained

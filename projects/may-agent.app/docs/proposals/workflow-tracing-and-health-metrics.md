@@ -6,7 +6,7 @@ remaining expansion below is for review, September 11, 2026.
 `939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
 [first candidate](#first-implementation-candidate) records that evidence. The
-page refinement is implemented in Host #147 (`2408b519`), not yet merged or
+page refinement is implemented in Host #147 (`374a99db`), not yet merged or
 deployed; [page candidate](#page-refinement-candidate) records its verification
 and remaining scope.
 
@@ -371,7 +371,7 @@ does not claim a proven performance budget or retention duration.
 ## Existing implementation and focused gaps
 
 Source baseline is Host `e1a0005e`, including merged #143. Page candidate
-`2408b519` fills the reporting/UI gaps as follows:
+`374a99db` fills the reporting/UI gaps as follows:
 
 | Existing home | Present capability / remaining gap |
 | --- | --- |
@@ -411,7 +411,7 @@ remain rollout gates, not a reason to implement every future metric now.
 
 ## Page refinement candidate
 
-Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `2408b519`,
+Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `374a99db`,
 implements the bounded page scope above. It is not merged or deployed.
 
 - Overview exposes balanced finished outcomes, current running executions,
@@ -433,8 +433,8 @@ No metric client, service,
 new sampler or lifecycle is introduced. The unchanged scalar metric API does
 not gain monotonic counters or histograms merely because those types are useful.
 
-Local `bun run ci` passed on exact head `2408b519`: 2,711 tests passed, three
-installation-only checks skipped and zero failed (111.11 seconds for tests),
+Local `bun run ci` passed on exact head `374a99db`: 2,712 tests passed, three
+installation-only checks skipped and zero failed (114.03 seconds for tests),
 plus type, boundary and lint checks. The browser test exercises served code
 against a synthetic file-backed HTTP installation, including Overview to
 selected errors to exact run evidence, irregular history, safe text rendering,
@@ -445,8 +445,8 @@ Final review fixed alert truncation at `a481ea32`: an older alert was hidden
 when the global list hit its cap. The 503-alert regression fails before the
 fix; exact detail now selects that metric's latest alert, while a truncated
 list leaves unobserved alert state unknown. That revision passed its three
-HTTP/browser checks. Hosted Quality and Container passed on `2408b519` in
-[run 34563614170](https://github.com/hao1939/may-agent/actions/runs/34563614170),
+HTTP/browser checks. Hosted Quality and Container passed on `374a99db` in
+[run 34565073074](https://github.com/hao1939/may-agent/actions/runs/34565073074),
 including the actual image build and isolated smoke execution. Design integrity,
 checked examples and canonical App-boundary checks passed. Merge and deployment
 remain separate.
@@ -472,8 +472,18 @@ Review follow-up `2408b519` preserves anchors in the shared link handler and
 passes the API time window to the legacy health chart. The existing browser
 journey now verifies the clicked run's hash and visible trace, plus sparse
 samples' positions within the actual returned 24-hour window. Each regression
-failed before its fix; all 15 focused checks and full local/hosted CI pass. The
-source is ready for review, not merged or deployed.
+failed before its fix; all 15 focused checks and full local/hosted CI passed on
+that revision.
+
+Review follow-up `374a99db` makes agent and project subsets honor definition-list
+truncation. Each affected surface warns about partial metric data, labels subset
+counts as shown and preserves visible breaches; omitted definitions no longer
+imply no owned metrics or no problems. It reuses the existing flag without new
+reads or endpoints. A real-browser regression covers exactly 500 definitions,
+501 with an omitted breached definition, empty/partially represented owners and
+projects, and a visible breach. Exact-ID reads still find the omitted definition.
+The regression failed before the fix; all 16 focused checks and full local/hosted
+CI pass. The source is ready for review, not merged or deployed.
 
 A local probe extracted the actual joined alert queries from the HTTP source.
 With 200,000 resolved and 1,000 open synthetic alerts, median query times before
