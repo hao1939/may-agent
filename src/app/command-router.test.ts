@@ -55,8 +55,11 @@ function cleanup(root: string, router: { close(): void }): void {
 }
 
 describe("command router", () => {
-  it("accepts reload synchronously and emits one correlated terminal result", async () => {
-    const f = fixture(async () => ({ ok: true, summary: "[reload] 6 task-enabled App(s)" }));
+  it("accepts reload synchronously, shares in-flight redelivery and emits one correlated terminal result", async () => {
+    const result = Promise.withResolvers<{ ok: boolean; summary: string }>();
+    const started = Promise.withResolvers<void>();
+    let calls = 0;
+    const f = fixture(() => { calls++; started.resolve(); return result.promise; });
     const observed: any[] = [];
     const unsubscribe = f.bus.subscribe((event) => observed.push(event));
     try {
@@ -72,7 +75,16 @@ describe("command router", () => {
           .prepare("SELECT delivery_status, accepted_by FROM events WHERE id = ?")
           .get(Number(request[EVENT_ROW_ID])),
       ).toEqual({ delivery_status: "accepted", accepted_by: "command-router:runtime-reload" });
+      // Duplicate delivery before execution starts and while it is in flight
+      // must attach to the same operation, not start another reload.
+      f.bus.redeliverPersisted(request, Number(request[EVENT_ROW_ID]));
+      await started.promise;
+      f.bus.redeliverPersisted(request, Number(request[EVENT_ROW_ID]));
       await Bun.sleep(0);
+      expect(calls).toBe(1);
+      result.resolve({ ok: true, summary: "[reload] 6 task-enabled App(s)" });
+      await Bun.sleep(0);
+      expect(observed.filter((event) => event.type === "runtime.reload.finished")).toHaveLength(1);
       expect(observed).toContainEqual(
         expect.objectContaining({
           type: "runtime.reload.finished",
@@ -86,9 +98,35 @@ describe("command router", () => {
         }),
       );
     } finally {
+      result.resolve({ ok: true, summary: "[reload] Fixture cleanup" });
+      await Bun.sleep(0);
       unsubscribe();
       cleanup(f.root, f.router);
     }
+  });
+
+  it("allows redelivery after reload result recording fails without inventing a failed execution", async () => {
+    let calls = 0;
+    const f = fixture(() => { calls++; return { ok: true, summary: "[reload] Verified definitions" }; });
+    const db = getDb(f.root);
+    try {
+      db.exec(`CREATE TEMP TRIGGER reject_reload_result BEFORE INSERT ON events
+        WHEN NEW.event_type = 'runtime.reload.finished'
+        BEGIN SELECT RAISE(ABORT, 'fixture result write unavailable'); END`);
+      const request = f.bus.emit({ type: "runtime.reload.requested", source: "telegram", owner: "agent:may",
+        data: { requestId: "reload-write-failure" } } as any);
+      await Bun.sleep(0);
+      expect(calls).toBe(1);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
+        .toEqual({ count: 0 });
+      db.exec("DROP TRIGGER reject_reload_result");
+      f.bus.redeliverPersisted(request, Number(request[EVENT_ROW_ID]));
+      await Bun.sleep(0);
+      expect(calls).toBe(2);
+      const results = db.prepare("SELECT data FROM events WHERE event_type = 'runtime.reload.finished'").all();
+      expect(results).toHaveLength(1);
+      expect(JSON.parse(String(results[0].data))).toMatchObject({ ok: true, summary: "[reload] Verified definitions" });
+    } finally { cleanup(f.root, f.router); }
   });
 
   it("turns a reload exception into a terminal failure result", async () => {

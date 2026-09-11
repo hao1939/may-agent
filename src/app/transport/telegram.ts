@@ -1020,7 +1020,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
     ).get(type, key);
     if (!row) return undefined;
-    if (row.delivery_status !== "accepted") {
+    // Reload acceptance only starts an asynchronous operation. Its caller has
+    // already checked for completion; reenter the route after a crash, while
+    // the router shares any execution still in flight in this process.
+    if (row.delivery_status !== "accepted" || type === "runtime.reload.requested") {
       const event = loadPersistedEvent(db, Number(row.id), persistDir);
       if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
       const retried = bus.redeliverPersisted(event, Number(row.id));

@@ -579,6 +579,7 @@ describe("Telegram durable input and natural follow-up", () => {
 
   for (const { state, completed, loseAcceptance, ok } of [
     { state: "not yet admitted", completed: false, loseAcceptance: false, ok: true },
+    { state: "accepted without completion", completed: false, loseAcceptance: false, ok: true },
     { state: "already completed", completed: true, loseAcceptance: false, ok: true },
     { state: "completed with lost acceptance", completed: true, loseAcceptance: true, ok: true },
     { state: "failed with lost acceptance", completed: true, loseAcceptance: true, ok: false },
@@ -586,6 +587,8 @@ describe("Telegram durable input and natural follow-up", () => {
     it(`returns the exact reload result after restart (${state})`, async () => {
       const f = durableTelegramFixture();
       let router: ReturnType<typeof attachCommandRouter> | undefined;
+      let interruptedRoute: (() => void) | undefined;
+      const interrupted = state === "accepted without completion";
       let reloads = 0;
       const summary = ok ? "Fixture definitions reloaded" : "Fixture definitions rejected; previous definitions kept";
       const attach = () => attachCommandRouter({ bus: f.bus, manager: {} as never, projectRoot: f.root,
@@ -594,6 +597,12 @@ describe("Telegram durable input and natural follow-up", () => {
       });
       try {
         if (completed) router = attach();
+        if (interrupted) {
+          // Model the crash boundary: acceptance is durable, but the queued
+          // asynchronous reload never executes or records a completion.
+          interruptedRoute = f.bus.subscribeDurableRoute((event) => event.type === "runtime.reload.requested"
+            ? { accepted: true, by: "command-router:runtime-reload", route: "direct" } : undefined);
+        }
         if (loseAcceptance) {
           // Exercise the real writer's swallowed acceptance failure. This
           // connection-local fault disappears when the fixture reopens storage.
@@ -612,10 +621,15 @@ describe("Telegram durable input and natural follow-up", () => {
           expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
             .toEqual({ count: 1 });
         } else {
+          expect(reloads).toBe(0);
+          expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
+            .toEqual({ count: 0 });
+          interruptedRoute?.();
+          interruptedRoute = undefined;
           router = attach();
         }
         expect(f.db.prepare("SELECT delivery_status FROM events WHERE event_type = 'runtime.reload.requested'").get())
-          .toEqual({ delivery_status: completed && !loseAcceptance ? "accepted" : "pending" });
+          .toEqual({ delivery_status: (completed && !loseAcceptance) || interrupted ? "accepted" : "pending" });
         const priorSends = f.sends().length;
         await f.restart();
         await waitFor(() => f.polls().includes(101));
@@ -628,7 +642,7 @@ describe("Telegram durable input and natural follow-up", () => {
           .toEqual({ count: 1 });
         expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
           .toEqual({ count: 1 });
-      } finally { router?.close(); await f.close(); }
+      } finally { interruptedRoute?.(); router?.close(); await f.close(); }
     });
   }
 
