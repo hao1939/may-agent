@@ -9,9 +9,10 @@ import { attachTelegramBot } from "./telegram.js";
 
 async function until(predicate: () => boolean) {
   // A failed durable publication uses the adapter's real 5-second poll backoff.
-  const end = Date.now() + 8000;
+  // Measure elapsed time independently of wall-clock adjustments.
+  const end = performance.now() + 8000;
   while (!predicate()) {
-    if (Date.now() > end) throw new Error("Telegram control did not progress");
+    if (performance.now() > end) throw new Error("Telegram control did not progress");
     await Bun.sleep(5);
   }
 }
