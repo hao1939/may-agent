@@ -9,9 +9,10 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 **Current assessment:** Focused lifecycle and managed-model recovery checks
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
-Adoption remains unproved: retained work still needs cutover, Task-wide cooldown
-can delay fresh human input, and full CI at `75154039` has 171 unresolved failures.
-The branch adds 153 net production lines against current main `a8f65188` (counting `src/`
+Adoption remains unproved: retained work still needs cutover and full CI at
+`89329ce4` has 170 unresolved failures. New human input now permits a fresh attempt
+without resetting failure counts; source responsiveness checks pass below.
+The branch adds 176 net production lines against current main `a8f65188` (counting `src/`
 and `packages/`, excluding tests and fixtures). Finish cutover and examine those
 failures before expanding the design.
 The latest live evidence is
@@ -180,9 +181,10 @@ replaces the old successful self-revision example with a worker reporting partia
 evidence, followed by explicit owner revision. All **three targeted action tests**
 pass, including retained evidence and runtime-prefixed identities.
 
-Remaining recovery work includes scoped cooldown so a failed conversational
-ask cannot delay unrelated fresh human input and migration of old failure/receipt
-readers. Initial pacing reuses
+At this checkpoint, remaining work included human responsiveness during
+cooldown and migration of old failure/receipt readers. The later
+[fresh-input checks](#fresh-human-input-during-retry) exercise a simpler
+Task-wide exception instead of independent per-input deadlines. Initial pacing reuses
 250 ms exponential delay capped at 30 seconds; that is an experimental default,
 not evidence of acceptable long-term cost under sustained failures. The retained
 SDK spelling `stopped` is also misleading for a continuing unsuccessful attempt;
@@ -684,7 +686,7 @@ pass against the candidate SDK. The important coverage changes are:
 No worker-process or live-model evidence is added by these supplied-decision
 tests. A retained old supervisor still requires explicit owner retirement during
 offline cutover; removing its declaration does not close its durable Task.
-Retained Task-policy migration, per-input cooldown and the remaining full-suite
+Retained Task-policy migration, human responsiveness during cooldown and the remaining full-suite
 failures are still adoption gates.
 
 Full CI at `24208b00` passes types, App boundary and lint, then reports **2,634
@@ -709,6 +711,41 @@ and 171 failed** across 2,834 tests in 286 files (137.8 s). The 26 additional
 tests pass; failure entries are unchanged from `24208b00`. The production delta
 against that current main remains 153 net lines, excluding upstream additions.
 
+## Fresh human input during retry
+
+[Checkpoint `89329ce4`](https://github.com/hao1939/may-agent/commit/89329ce4)
+reproduces the Task-wide cooldown delaying newly
+admitted human input, both after failure and when input arrives during a failing
+attempt. It uses one persisted `freshHumanInput` flag on the Task, written in
+the admission transaction and consumed by the next claim. New input clears a
+deadline without clearing the failure count. Input arriving during execution
+keeps that opportunity through failure settlement and restart. No retry table,
+per-input counter, scheduler or App recovery action is added.
+
+Five new state checks exercise durable replay, input arriving during executor
+failure or result rejection, failed capability admission and rejected admission
+rollback. Two Conversation-runtime checks use real input admission, controller,
+SQLite, capacity, pause and reply settlement with supplied inference. They seed
+seven earlier failures, then observe the runtime's next failure. New human input
+executes before the resulting 30-second delay, including after a capacity wait
+and storage reopen. The original Request stays open; the new answer does not
+pretend to fulfill it. Existing scoped Stop coverage remains part of validation.
+
+The accepted tradeoff is earlier reconsideration of the pending failed work
+when a human speaks. Each new admission permits one fresh claim; duplicate
+messages, system reviews and timers do not. A failed capability check consumes
+the opportunity too, preventing a rapid loop while execution is unavailable.
+This proves source mechanics, not actual model responsiveness or transport
+delivery. Retained-state cutover, full-suite migration and worker-process
+proof remain open.
+
+Host/SDK types, boundary and lint checks pass. Full CI reports **2,668 passed,
+3 skipped and 170 failed** across 2,841 tests in 286 files (149.8 s). All seven
+new checks pass. No failure entries were added; the existing check that fresh
+input must not receive an old attention result now passes. This slice adds
+**23 net production lines**, bringing the whole branch to **176 net added lines**
+against `a8f65188`, excluding tests and fixtures.
+
 ## Verification and cost
 
 Host/SDK types, App-boundary checks and lint pass at the listed checkpoints.
@@ -732,6 +769,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `f5b3eafe` | 2,621 / 3 / 185 | 2,809 / 283 | 167.8 | Removes old Conversation execution; offline cutover passes, 57 legacy fixture failures added |
 | `24208b00` | 2,634 / 3 / 171 | 2,808 / 283 | 132.3 | Retires supervisor projection; migrates Request, same-App and subscription coverage |
 | `75154039` | 2,660 / 3 / 171 | 2,834 / 286 | 137.8 | Integrates current main; 26 additional tests pass, failure entries unchanged |
+| `89329ce4` | 2,668 / 3 / 170 | 2,841 / 286 | 149.8 | New human input gets a fresh attempt; seven new checks pass and one old failure resolves |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite

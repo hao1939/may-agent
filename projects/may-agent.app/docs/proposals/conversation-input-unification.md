@@ -135,9 +135,10 @@ closure without a result. It leaves Request resolution to the Conversation.
 The [managed Conversation trials](controller-poc-recovery-review.md#managed-conversation-recovery)
 now pass empty-response, interrupted-effect and restart recovery with real
 models and a synthetic App. They use normal prior-attempt context. Old-owner
-retirement, live child-chain follow-through and the worker subprocess remain
-unproved; full CI still has 128 unresolved failures. Whole-system simplification
-is the next acceptance gate.
+cutover, live child-chain follow-through and the worker subprocess remain
+unproved. The old execution paths have been removed from the candidate source;
+[current CI and migration evidence](controller-poc-recovery-review.md) still leave
+whole-system simplification unproved.
 The [human-control checkpoint](controller-poc-recovery-review.md#human-task-controls-through-conversation)
 also applies conversational Task cancellation atomically with its reply and
 removes the old daemon callback. Source checks cover user authority, stale
@@ -161,6 +162,22 @@ forever. Persist that deadline and check it before claiming, so duplicate wakes
 and restart cannot shorten it. Reuse existing due queries and the recovery timer.
 Counters inform pacing and diagnostics, not the controller's decision to give up.
 Ordinary failure must not end in "four attempts, now require manual unblock."
+
+**New human input permits a fresh attempt.** A newly admitted human message
+waives the current cooldown. If it arrives during execution, the next claim
+still gets that opportunity after failure. Persist the opportunity with input
+admission and consume it at the next claim, including a failed capability check.
+Keep the consecutive failure count: another failure increases the next delay.
+Duplicate admissions, automatic facts, timers and an App's `humanRequested`
+annotation cannot manufacture a fresh human message. Capacity and owner controls
+still apply.
+
+This is one Task-wide retry policy with a human-input exception, not independent
+retry deadlines for every ask. The fresh attempt receives pending context and
+may reconsider earlier failed work sooner. That affordable redo keeps discussion
+responsive without per-input retry bookkeeping. It does not discard the old ask,
+fulfill its Request or authorize repeating uncertain effects. See the
+[responsiveness checks](controller-poc-recovery-review.md#fresh-human-input-during-retry).
 
 Bound each attempt and concurrency. A spending or pause instruction explicitly
 set by the owner remains enforceable; it is different from an arbitrary core
@@ -292,11 +309,11 @@ and Topic/Task links provide the starting point; do not preserve a whole-owner
 execution block merely to reuse its current code. Account for the action whose
 prerequisite is missing and reject unsupported success claims.
 
-Current retry counters are Task-generation scoped, while conversational Stop
-and failures attach to an input. Replace the failure-count stop with durable
-backoff, using retained input/attempt identities so one failed ask cannot silence
-unrelated human input. Do not rename `maintain` or add a hidden
-conversation mode to retain the same lifecycle branches.
+Keep Task-wide durable backoff and exact input/attempt identities. New human
+admission permits the fresh attempt described above; Stop applies only to the
+observed Turn/input. Separate retry counters for every ask are unnecessary for
+this contract. Do not rename `maintain` or add a hidden conversation mode to
+retain the same lifecycle branches.
 
 ## Options and their cost
 
@@ -463,6 +480,7 @@ schema alone does not prove controller usability or reduced complexity.
 | Stop, later input, pause and repeated failure | Scope is preserved; later input remains actionable, retries are paced and stopped work is not replayed |
 | Duplicate/during-run wakes and multiple outcomes | One current attempt per Task, no lost message/outcome, another pass only when eligible |
 | Transient failure, duplicate wake and restart during cooldown | Same Task/input, enforced backoff and no agent-generated retry batch; delay and failure evidence survive restart |
+| New human input during failure or cooldown | One fresh claim with pending context, retained failure count and Requests; duplicate/system input cannot waive pacing; capacity and owner controls still apply |
 | Empty initial response or interrupted final synthesis | Continue authorized work with retained evidence and budget; no forced premature blocker or duplicated committed effect |
 | Accepted non-success report, then no owner intervention | Preserve and return the report; retain the original unfinished assignment and continue on a due wake without an unblock command |
 | More than four failures, then repaired prerequisite | No failure-count stop; persisted backoff paces attempts, and the same Task resumes useful work without a batch action |
