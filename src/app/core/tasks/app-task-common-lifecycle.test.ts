@@ -84,6 +84,27 @@ function signal() {
 }
 
 describe("common Task lifecycle source PoC", () => {
+  it("rejects legacy closure in an action batch without accepting any result or earlier action", () => {
+    const f = fixture();
+    const claim = f.claim();
+    expect(() => completeAppTask(f.config, claim, {
+      summary: "Withdraw scope",
+      evidence: ["owner:withdrawal"],
+      actions: [
+        {
+          kind: "create-task", id: "child", parentId: "conversation",
+          outcome: "Temporary work", acceptance: ["Return evidence"], mode: "achieve", outputs: [],
+        },
+        // A previously persisted/provider-generated action must fail atomically.
+        { kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" } as never,
+      ],
+    })).toThrow("unsupported action kind: close-task");
+    expect(f.config.resourceStore.readTask("child")).toBeNull();
+    expect(f.config.resourceStore.readReceipt("child")).toBeNull();
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+    expect(f.config.resourceStore.readTask("conversation")?.status.currentAttemptId).toBe(claim.attemptId);
+  });
+
   it("accepts an answer to new input while keeping a different accepted wait and its route", () => {
     const f = fixture();
     deferAppTask(f.config, f.claim(), {

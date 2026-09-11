@@ -3439,7 +3439,7 @@ function validateTaskActions(
   for (const rawAction of actions as unknown[]) {
     if (!isRecord(rawAction)) throw new Error("Handler result contains a non-object action");
     const kind = rawAction.kind;
-    if (!["create-task", "update-task", "close-task", "unblock-task"].includes(String(kind))) {
+    if (!["create-task", "update-task", "unblock-task"].includes(String(kind))) {
       throw new Error(`Handler result contains an unsupported action kind: ${String(kind)}`);
     }
 
@@ -3551,29 +3551,15 @@ function validateTaskActions(
     if (action.kind === "update-task" && action.category !== undefined && action.category !== null) {
       requireNonEmptyString(action.category, `Handler update for ${action.taskId} category`);
     }
-    if (action.kind === "close-task") {
-      requireNonEmptyString(action.summary, `Handler close for ${action.taskId} summary`);
-    }
     if (action.kind === "unblock-task") {
       requireNonEmptyString(action.reason, `Handler unblock for ${action.taskId} reason`);
     }
     if (actionTargetAlreadyReceipted(validationTree, action)) {
-      if (action.kind === "close-task") continue;
       throw new Error(
         `Handler ${action.kind} action cannot mutate completed task ${action.taskId}; create a new linked task`,
       );
     }
     const resource = mutableActionResource(validationTree, action);
-    if (action.kind === "close-task") {
-      const liveChildren = liveChildTaskIds(validationTree, action.taskId);
-      if (liveChildren.length > 0) {
-        throw new Error(
-          `Handler close action cannot absorb ${action.taskId} while it has live children: ${liveChildren.slice(0, 8).join(", ")}${
-            liveChildren.length > 8 ? ` (+${liveChildren.length - 8} more)` : ""
-          }`,
-        );
-      }
-    }
     if (
       action.kind === "update-task" &&
       action.parentId === undefined &&
@@ -3603,9 +3589,6 @@ function validateTaskActions(
     }
     if (action.kind === "update-task" && action.parentId !== undefined) {
       resource.spec.parentId = action.parentId;
-    }
-    if (action.kind === "close-task") {
-      delete validationTree.resources?.[action.taskId];
     }
   }
 }
@@ -3678,9 +3661,7 @@ function applyTaskActions(
   tree: TaskTree,
   claim: AppTaskClaim,
   actions: AppTaskAction[],
-  evidence: string[],
   config: AppTaskContext,
-  acceptanceBasis: AppTaskAcceptanceBasis,
 ): { actionsApplied: string[]; supersededSessionIds: string[] } {
   validateTaskActions(tree, actions, config);
   const now = new Date().toISOString();
@@ -3695,11 +3676,6 @@ function applyTaskActions(
     if (action.kind !== "create-task" && action.taskId === claim.taskId && action.kind !== "update-task") {
       throw new Error(`Handler action cannot mutate its own running task ${claim.taskId}`);
     }
-    if (action.kind === "close-task" && actionTargetAlreadyReceipted(tree, action)) {
-      applied.push(`already completed ${action.taskId}`);
-      continue;
-    }
-
     switch (action.kind) {
       case "create-task": {
         if (createActionMatchesLiveTask(tree, action)) {
@@ -3792,60 +3768,6 @@ function applyTaskActions(
         };
         tree.resources![action.taskId] = nextResource;
         applied.push(`updated ${action.taskId}`);
-        break;
-      }
-      case "close-task": {
-        const resource = mutableActionResource(tree, action);
-        const intent = resourceIntent(resource);
-        const agent = resolvedAgent(tree, intent, claim.agent);
-        unlinkTaskConditions(tree, action.taskId);
-        if (resource.status.currentAttemptId) {
-          const supersededSessionId = tree.attempts?.[resource.status.currentAttemptId]?.sessionId;
-          if (supersededSessionId) supersededSessionIds.add(supersededSessionId);
-          finishAttempt(tree, resource, "interrupted", action.summary.trim(), now);
-        }
-        const failureFingerprints = [
-          ...new Set(
-            Object.values(tree.attempts ?? {})
-              .filter((attempt) => attempt.taskId === action.taskId && attempt.failureReason)
-              .map((attempt) => String(attempt.failureReason)),
-          ),
-        ];
-        tree.receipts = {
-          ...(tree.receipts ?? {}),
-          [action.taskId]: {
-            metadata: {
-              id: action.taskId,
-              generation: resource.metadata.generation,
-              resourceVersion: 1,
-            },
-            specHash: appTaskSpecHash(intent, agent),
-            parentId: intent.parentId,
-            outcome: intent.outcome,
-            acceptance: [...intent.acceptance],
-            owner: agent,
-            ...(intent.workflow ? { workflow: intent.workflow } : {}),
-            ...(intent.executor ? { executor: intent.executor } : {}),
-            input: structuredClone(intent.input ?? {}),
-            ...(intent.priority ? { priority: intent.priority } : {}),
-            handler: claim.handler,
-            summary: action.summary.trim(),
-            evidence: [...evidence],
-            acceptanceBasis: structuredClone(acceptanceBasis),
-            failureFingerprints,
-            completedAt: now,
-            ...(latestTaskAttempt(tree, action.taskId, resource.metadata.generation)?.workspace
-              ? {
-                  workspace: structuredClone(
-                    latestTaskAttempt(tree, action.taskId, resource.metadata.generation)!.workspace!,
-                  ),
-                }
-              : {}),
-          },
-        };
-        delete tree.resources?.[action.taskId];
-        delete tree.taskTriggers?.[action.taskId];
-        applied.push(`closed ${action.taskId}`);
         break;
       }
       case "unblock-task": {
@@ -4149,9 +4071,7 @@ export function completeAppTask(
     tree,
     claim,
     actions,
-    input.evidence ?? [],
     config,
-    acceptanceBasis,
   );
   if (selfUpdates.length === 1) {
     const revised = tree.resources?.[claim.taskId];
@@ -4181,7 +4101,6 @@ export function completeAppTask(
   const pendingSelfTrigger = Boolean(tree.taskTriggers?.[claim.taskId]?.event);
   const satisfiedTaskIds = [
     ...(!pendingSelfTrigger ? [claim.taskId] : []),
-    ...actions.filter((action) => action.kind === "close-task").map((action) => action.taskId),
   ];
   const parentTaskId =
     !pendingSelfTrigger
@@ -4313,15 +4232,12 @@ export function deferAppTask(
     taskId: claim.taskId,
   });
   validateActionEvidence(claim.taskId, input.evidence, actions.length);
-  const acceptanceBasis = defaultTaskAcceptance(claim, input.evidence ?? []);
   const mutationScope = beginResourceMutationScope(tree, claim, actions);
   const { actionsApplied, supersededSessionIds } = applyTaskActions(
     tree,
     claim,
     actions,
-    input.evidence ?? [],
     config,
-    acceptanceBasis,
   );
   if (!conditions?.length && !preserveConditions && pendingChildTaskIds(tree, claim.taskId).length === 0) {
     throw new Error(`Waiting task ${claim.taskId} requires an exact Condition or live direct child`);
@@ -4356,21 +4272,7 @@ export function deferAppTask(
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   input.prepareSupersededSessions?.(supersededSessionIds);
   commitTaskMutation(config, tree, { resourceMutation });
-  const satisfiedTaskIds = actions.filter((action) => action.kind === "close-task").map((action) => action.taskId);
-  const reconcileTaskIds = [
-    ...new Set([
-      ...actions.flatMap((action) =>
-        action.kind === "create-task"
-          ? [action.id]
-          : action.kind === "update-task" || action.kind === "unblock-task"
-            ? [action.taskId]
-            : [],
-      ),
-      ...Object.values(tree.resources ?? {})
-        .filter((candidate) => candidate.spec.dependsOn?.some((id) => satisfiedTaskIds.includes(id)))
-        .map((candidate) => candidate.metadata.id),
-    ]),
-  ];
+  const reconcileTaskIds = actions.map((action) => action.kind === "create-task" ? action.id : action.taskId);
   return { status: "applied", actionsApplied, reconcileTaskIds, supersededSessionIds };
 }
 

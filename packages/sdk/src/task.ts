@@ -96,12 +96,6 @@ export type TaskAction =
       category?: string | null;
     }
   | {
-      kind: "close-task";
-      taskId: string;
-      expectedGeneration: number;
-      summary: string;
-    }
-  | {
       kind: "unblock-task";
       taskId: string;
       expectedGeneration: number;

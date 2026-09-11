@@ -28,6 +28,20 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("rejects legacy close actions instead of manufacturing a successful outcome", () => {
+    const result = {
+      state: "converged",
+      summary: "Withdraw the child scope",
+      evidence: ["owner:withdrawal"],
+      actions: [{ kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" }],
+    };
+    expect(Check(taskAgentResultSchema, result)).toBe(false);
+    expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
+      ok: false,
+      error: "actions[0].kind must be one of create-task, update-task, unblock-task",
+    });
+  });
+
   it("preserves a caller response separately from task summary", () => {
     expect(
       admitTaskReconcileResult(

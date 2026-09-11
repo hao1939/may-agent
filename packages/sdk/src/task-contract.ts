@@ -74,15 +74,6 @@ export const taskActionSchema = Type.Union([
   ),
   Type.Object(
     {
-      kind: Type.Literal("close-task"),
-      taskId: nonEmptyStringSchema,
-      expectedGeneration: Type.Integer({ minimum: 1 }),
-      summary: nonEmptyStringSchema,
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
       kind: Type.Literal("unblock-task"),
       taskId: nonEmptyStringSchema,
       expectedGeneration: Type.Integer({ minimum: 1 }),
@@ -405,16 +396,6 @@ function normalizeAction(value: unknown, options: TaskReconcileAdmissionOptions,
       return normalizeCreateTaskAction(value, options, index);
     case "update-task":
       return normalizeUpdateTaskAction(value, index);
-    case "close-task": {
-      const taskId = normalizedString(value.taskId);
-      if (!taskId) return `actions[${index}].taskId must be a non-empty string`;
-      if (!validGeneration(value.expectedGeneration)) {
-        return `actions[${index}].expectedGeneration must be a positive integer`;
-      }
-      const summary = normalizedString(value.summary);
-      if (!summary) return `actions[${index}].summary must be a non-empty string`;
-      return { kind: "close-task", taskId, expectedGeneration: value.expectedGeneration, summary };
-    }
     case "unblock-task": {
       const taskId = normalizedString(value.taskId);
       if (!taskId) return `actions[${index}].taskId must be a non-empty string`;
@@ -426,7 +407,7 @@ function normalizeAction(value: unknown, options: TaskReconcileAdmissionOptions,
       return { kind: "unblock-task", taskId, expectedGeneration: value.expectedGeneration, reason };
     }
     default:
-      return `actions[${index}].kind must be one of create-task, update-task, close-task, unblock-task`;
+      return `actions[${index}].kind must be one of create-task, update-task, unblock-task`;
   }
 }
 
