@@ -33,7 +33,7 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
     apiKey,
   };
 
-  return {
+  const registry: ModelRegistry = {
     "claude-opus-4-6": {
       ...getBuiltinModel("anthropic", "claude-opus-4-6"),
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-4-6"],
@@ -96,4 +96,14 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       apiKey,
     },
   };
+  // This configured endpoint supports the Responses strict field. Pi otherwise
+  // omits it for Copilot catalog entries; omission can make optional tool fields
+  // required upstream. Support lets Pi send its default strict:false without
+  // rewriting schemas or changing model/tool validation.
+  for (const model of Object.values(registry)) {
+    if (model.api === "openai-responses") {
+      model.compat = { ...model.compat, supportsStrictMode: true };
+    }
+  }
+  return registry;
 }

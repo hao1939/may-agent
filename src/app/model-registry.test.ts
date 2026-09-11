@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { streamSimple } from "@earendil-works/pi-ai/compat";
+import { Type } from "typebox";
 import { createModelRegistry } from "./model-registry.js";
 
 describe("model registry", () => {
@@ -39,5 +41,46 @@ describe("model registry", () => {
 
     expect(registry["gpt-5.6-sol"]?.baseUrl).toBe("http://localhost:4000");
     expect(registry["claude-opus-5"]?.apiKey).toBe("not-needed");
+  });
+
+  it("preserves optional tool fields in configured Responses requests", async () => {
+    const registry = createModelRegistry({ MODEL_BASE_URL: "http://127.0.0.1:9" });
+    const parameters = Type.Object({
+      result: Type.Union([
+        Type.Object({
+          decision: Type.Literal("prepared"),
+          spec: Type.String(),
+          native: Type.Optional(Type.Literal(true)),
+          retry: Type.Optional(Type.Object({ afterRunId: Type.Integer({ minimum: 1 }) })),
+        }),
+        Type.Object({ decision: Type.Literal("blocked"), reason: Type.String() }),
+      ]),
+    });
+    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol"]) {
+      let payload: unknown;
+      const model = registry[name]!;
+      const response = streamSimple(
+        model,
+        {
+          messages: [{ role: "user", content: "Return one selection with no native route or retry.", timestamp: 0 }],
+          tools: [{ name: "finish", description: "Return the step result.", parameters }],
+        },
+        {
+          apiKey: "synthetic-unused",
+          onPayload(value) {
+            payload = value;
+            // Exercise the real provider serialization without a model, network
+            // request, credentials or simulated successful model result.
+            throw new Error("payload-captured-no-network");
+          },
+        },
+      );
+      const result = await response.result();
+      expect(result.stopReason).toBe("error");
+      expect(result.errorMessage).toContain("payload-captured-no-network");
+      expect(payload).toMatchObject({
+        tools: [{ type: "function", name: "finish", strict: false, parameters }],
+      });
+    }
   });
 });
