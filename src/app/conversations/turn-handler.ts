@@ -10,6 +10,7 @@ import {
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../../lib/db.js";
+import type { TaskBinding } from "../../lib/persistence.js";
 import {
   recordAppInboxHandling,
   type AppInboxItem,
@@ -27,7 +28,7 @@ const APP_REQUEST_RECONSIDERATION_MAX = 2;
 export type AppInputResolver = (input: {
   app: Readonly<AppDefinition>;
   request: Readonly<AppInputContext>;
-  execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void };
+  execution?: { signal: AbortSignal; sessionStarted: (sessionId: string) => void; taskBinding?: TaskBinding };
 }) => Promise<ConversationTurnResult>;
 
 export type AppRequestTaskController = (input: {

@@ -614,6 +614,7 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["changed_at", "INTEGER"],
   ["handling", "TEXT"],
   ["task_admission_key", "TEXT"],
+  ["execution_task_id", "TEXT"],
 ];
 
 function ensureExistingAppInboxTableColumns(db: SqliteDb): void {

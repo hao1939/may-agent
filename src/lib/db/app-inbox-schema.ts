@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   waiting_on_kind     TEXT,
   waiting_on_id       TEXT,
   task_admission_key  TEXT,
+  execution_task_id   TEXT,
   result              TEXT,
   handling            TEXT,
   available_at        INTEGER,

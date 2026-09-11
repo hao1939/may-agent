@@ -45,6 +45,8 @@ export type AppInboxItem = {
   waitingOn?: { kind: AppInboxWaitKind; id: string };
   /** Admission whose exact outcome this input awaits; independent of later Task cycles. */
   taskAdmissionKey?: string;
+  /** The Task owns execution; this row only retains Conversation input and its reply. */
+  executionTaskId?: string;
   result?: AppResult;
   handling?: AppInboxHandling;
   availableAt?: number;
@@ -165,6 +167,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     sessionId: optionalText(row.session_id),
     waitingOn: waitingKind && waitingId ? { kind: waitingKind, id: waitingId } : undefined,
     taskAdmissionKey: optionalText(row.task_admission_key),
+    executionTaskId: optionalText(row.execution_task_id),
     result: result ? parseJson<AppResult>(result, "result") : undefined,
     handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
     availableAt: optionalNumber(row.available_at),
@@ -478,6 +481,11 @@ export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: 
               SUM(CASE WHEN status = 'handling' THEN 1 ELSE 0 END) AS handling,
               SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
               SUM(CASE WHEN status != 'done'
+                            AND execution_task_id IS NULL
+                            AND NOT EXISTS (SELECT 1 FROM app_inbox_items owned
+                              WHERE owned.app_id = app_inbox_items.app_id
+                                AND owned.conversation_id = app_inbox_items.conversation_id
+                                AND owned.execution_task_id IS NOT NULL)
                             AND ((lease_owner IS NULL AND available_at IS NOT NULL AND available_at <= ?)
                               OR (lease_expires_at IS NOT NULL AND lease_expires_at <= ?))
                        THEN 1 ELSE 0 END) AS ready,
@@ -617,6 +625,13 @@ export function listUnlinkedAppDelegations(db: SqliteDb, limit = 100): AppInboxI
 
 const CLAIMABLE_SQL = `
   status != 'done'
+  AND execution_task_id IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM app_inbox_items owned
+    WHERE owned.app_id = app_inbox_items.app_id
+      AND owned.conversation_id = app_inbox_items.conversation_id
+      AND owned.execution_task_id IS NOT NULL
+  )
   AND (
     (lease_owner IS NULL AND available_at IS NOT NULL AND available_at <= ?)
     OR (lease_expires_at IS NOT NULL AND lease_expires_at <= ?)
@@ -684,14 +699,19 @@ export function claimAppInboxItem(
 
 /** `candidate` is the ready input; IDs are bound parameters, never SQL text. */
 export function excludeExecutingConversations(executingIds: string[]): string {
-  return executingIds.length
+  const taskOwned = `AND NOT EXISTS (
+    SELECT 1 FROM app_inbox_items owned
+    WHERE owned.app_id = candidate.app_id AND owned.conversation_id = candidate.conversation_id
+      AND owned.execution_task_id IS NOT NULL
+  )`;
+  return taskOwned + (executingIds.length
     ? `AND NOT EXISTS (
     SELECT 1 FROM app_inbox_items local
     WHERE local.id IN (${executingIds.map(() => "?").join(",")})
       AND (local.id = candidate.id OR
         (local.app_id = candidate.app_id AND local.conversation_id = candidate.conversation_id))
   )`
-    : "";
+    : "");
 }
 
 export function claimNextAppInboxItem(
@@ -722,6 +742,7 @@ export function claimNextAppInboxItem(
          SELECT candidate.id
          FROM app_inbox_items candidate
          WHERE candidate.app_id = ?
+           AND candidate.execution_task_id IS NULL
            ${excludeExecutingConversations(executingIds)}
            AND candidate.status != 'done'
            AND (

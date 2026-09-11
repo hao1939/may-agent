@@ -19,6 +19,7 @@ import { createBashTool } from "../../lib/tools/bash.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { createConversationAgentResolver } from "./turn-agent.js";
+import type { AppInputResolver } from "./turn-handler.js";
 import { readAppConversationResource } from "../core/state/conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
 
@@ -54,7 +55,7 @@ describe("conversational attempt contract", () => {
     roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
   });
 
-  async function attempt(current = request, app = may) {
+  async function attempt(current = request, app = may, execution?: Parameters<AppInputResolver>[0]["execution"]) {
     const db = openDatabase(":memory:");
     databases.push(db);
     applyDbSchema(db);
@@ -72,9 +73,17 @@ describe("conversational attempt contract", () => {
       snapshot: () => ({ entries: [may, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
     const resolve = createConversationAgentResolver({ manager, registry, db });
-    expect(await resolve({ app, request: current })).toEqual(answer);
+    expect(await resolve({ app, request: current, execution })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
+
+  it("keeps a Task-owned Conversation session under that Task's recovery authority", async () => {
+    const taskBinding = { appId: may.id, taskId: "conversation", generation: 1, attemptId: "attempt" };
+    const { options } = await attempt(request, may, {
+      signal: new AbortController().signal, sessionStarted: () => {}, taskBinding,
+    });
+    expect(options).toMatchObject({ recoveryOwner: "app-task-reconciler", taskBinding });
+  });
 
   it("retrieves omitted asks by exact identity and pages without crossing Conversations", async () => {
     const current = { ...request, conversation: { id: "chat", owner: may.id, messages: [] } };

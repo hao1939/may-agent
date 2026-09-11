@@ -17,6 +17,7 @@ import {
   readConversationTopic,
 } from "../core/state/conversations.js";
 import { pageOpenConversationRequests, readConversationRequest } from "../core/state/conversation-requests.js";
+import { APP_TASK_RECOVERY_OWNER } from "../core/tasks/session-binding.js";
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
 
@@ -151,7 +152,8 @@ export function createConversationAgentResolver(options: {
       {
         source: "app-request-agent",
         projectId: app.id,
-        recoveryOwner: "app-inbox",
+        recoveryOwner: binding?.taskBinding ? APP_TASK_RECOVERY_OWNER : "app-inbox",
+        ...(binding?.taskBinding ? { taskBinding: binding.taskBinding } : {}),
         requireFinish: true,
         outputSchema: conversationTurnResultSchema,
         // Reuse bounded App execution, without detached lifecycle tools.
