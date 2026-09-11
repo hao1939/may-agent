@@ -5,6 +5,7 @@ import {
   type TaskAppDependency,
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
+import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
 
 export type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
@@ -17,6 +18,7 @@ export type TaskCapabilityRun = {
   /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
+  conversation?: ConversationTaskProposal;
 };
 
 export type NormalizedTaskHandlerResult = {

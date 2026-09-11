@@ -2,13 +2,13 @@ import type { AppDefinition, AppTaskAttachment } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
-import { completeConversationTaskTurn, readConversationTaskInputs } from "../core/state/conversation-task-turns.js";
+import { readConversationTaskInputs, type ConversationTaskProposal } from "../core/state/conversation-task-turns.js";
 import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 import { prepareConversationInput } from "../conversations/context.js";
 import type { AppInputResolver } from "../conversations/turn-handler.js";
 
-/** A bounded capability under an already claimed Task, with no inbox execution. */
-export async function executeConversationTaskTurn(input: {
+/** Prepare a judgment under the Task claim. The common runtime alone settles it. */
+export async function prepareConversationTaskTurn(input: {
   config: AppTaskContext;
   claim: AppTaskClaim;
   app: Readonly<AppDefinition>;
@@ -16,7 +16,7 @@ export async function executeConversationTaskTurn(input: {
   readDependency?: AppDependencyReader;
   getFollowUpApp?: (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
   signal: AbortSignal;
-}) {
+}): Promise<ConversationTaskProposal> {
   const { config, claim, app, signal } = input;
   if (app.id !== config.resourceStore.appId) throw new Error("Conversation executor belongs to another App");
   signal.throwIfAborted();
@@ -65,5 +65,5 @@ export async function executeConversationTaskTurn(input: {
     if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
     followUp = { config: target.config, attachment };
   }
-  return completeConversationTaskTurn(config, claim, decision, { followUp });
+  return { decision, followUp };
 }

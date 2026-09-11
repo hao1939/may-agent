@@ -5,6 +5,7 @@ import {
   conversationTurnResultSchema,
   type AppTaskAttachment,
   type ConversationTurnResult,
+  type TaskAcceptanceBasis,
   type TaskIntent,
 } from "@may-agent/sdk";
 import { stateTransaction } from "../../../lib/db/transaction.js";
@@ -20,6 +21,20 @@ import { applyConversationRequestUpdates, readConversationRequest } from "./conv
 export function conversationTaskId(appId: string, conversationId: string): string {
   return `conversation_${createHash("sha256").update([appId, conversationId].join("\0")).digest("hex").slice(0, 24)}`;
 }
+
+export function isConversationTask(config: AppTaskContext, taskId: string): boolean {
+  return Boolean(
+    config.resourceStore.db
+      .prepare("SELECT 1 FROM app_inbox_items WHERE app_id = ? AND execution_task_id = ? LIMIT 1")
+      .get(config.resourceStore.appId, taskId),
+  );
+}
+
+/** A prepared judgment has no authority to settle or close its executing Task. */
+export type ConversationTaskProposal = {
+  decision: ConversationTurnResult;
+  followUp?: { config: AppTaskContext; attachment: AppTaskAttachment };
+};
 
 /** Source PoC boundary: input and its Task admission become visible in one commit. */
 export function admitConversationTaskInput(
@@ -122,8 +137,12 @@ export function completeConversationTaskTurn(
   config: AppTaskContext,
   claim: AppTaskClaim,
   decision: ConversationTurnResult,
-  options: { now?: number; followUp?: { config: AppTaskContext; attachment: AppTaskAttachment } } = {},
-) {
+  options: {
+    now?: number;
+    followUp?: ConversationTaskProposal["followUp"];
+    acceptanceBasis?: TaskAcceptanceBasis;
+  } = {},
+): ReturnType<typeof completeAppTask> & { admittedTasks?: Array<{ appId: string; taskId: string }> } {
   if (!Check(conversationTurnResultSchema, decision)) throw new Error("Invalid Conversation decision");
   if (decision.taskControls?.length) throw new Error("Conversation Task controls are not yet integrated");
   if (Boolean(decision.followUp) !== Boolean(options.followUp))
@@ -143,6 +162,7 @@ export function completeConversationTaskTurn(
       response: decision.response,
       result: { conversation: decision },
       evidence: decision.evidence,
+      acceptanceBasis: options.acceptanceBasis,
     });
     // New, unreviewed evidence may retain this as progress. Such an attempt
     // must not publish a final answer or apply its proposed Request closure.

@@ -6,6 +6,22 @@ import type { AppTaskChildContext, AppTaskClaim, AppTaskLiveSnapshot } from "./a
 import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { TaskCapabilityRun } from "./result.js";
 import type { AppTaskAttempt } from "./app-task-state.js";
+import type { AppTaskContext } from "./app-task-store.js";
+import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
+import type { AppRegistrySnapshot } from "../apps/registry.js";
+
+/** Conversation-specific judgment, using the common Task attempt and settlement. */
+export type TaskConversationRunner = {
+  execute(input: {
+    config: AppTaskContext;
+    claim: AppTaskClaim;
+    app: Readonly<AppDefinition>;
+    registry: AppRegistrySnapshot;
+    signal: AbortSignal;
+    getFollowUpApp(appId: string): { app: Readonly<AppDefinition>; config: AppTaskContext };
+  }): Promise<ConversationTaskProposal>;
+  snapshot?(): TaskConversationRunner;
+};
 
 /** Read-only App declaration, never its mutable Task store. */
 export type TaskExecutionApp = { id: string; appDir: string; projectDir: string; app: AppDefinition };

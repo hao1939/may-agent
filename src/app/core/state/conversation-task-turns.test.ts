@@ -18,7 +18,7 @@ import { AppTaskController } from "../tasks/controller.js";
 import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import { createConversationInbox } from "../../composition/conversation-inbox.js";
-import { executeConversationTaskTurn } from "../../composition/conversation-task-turn.js";
+import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
 import { createAppInboxItem, claimAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { readAppConversationResource } from "./conversations.js";
 import { readConversationRequest } from "./conversation-requests.js";
@@ -29,6 +29,11 @@ import {
 } from "./conversation-task-turns.js";
 
 const roots: string[] = [];
+// State fixtures supply the claim. Installed-runtime tests exercise its owner.
+async function executeConversationTaskTurn(input: Parameters<typeof prepareConversationTaskTurn>[0]) {
+  const proposal = await prepareConversationTaskTurn(input);
+  return completeConversationTaskTurn(input.config, input.claim, proposal.decision, { followUp: proposal.followUp });
+}
 afterEach(() =>
   roots.splice(0).forEach((root) => {
     closeDb(root);

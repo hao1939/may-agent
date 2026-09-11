@@ -64,6 +64,8 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
   ON app_inbox_items(origin_event_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
   ON app_inbox_items(app_id, conversation_id, conversation_seq);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_execution_task
+  ON app_inbox_items(app_id, execution_task_id) WHERE execution_task_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_idempotency
   ON app_inbox_items(app_id, idempotency_key)
   WHERE idempotency_key IS NOT NULL AND idempotency_key != '';

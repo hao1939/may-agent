@@ -8,6 +8,7 @@ import {
 } from "@may-agent/sdk";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "../../lib/index.js";
+import type { SubagentDefinition } from "../../lib/types.js";
 import type { SqliteDb } from "../../lib/db.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { appDependencyCatalog } from "../app-dependency-catalog.js";
@@ -88,7 +89,7 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext
 function requestPrompt(
   app: Readonly<AppDefinition>,
   request: Readonly<AppInputContext>,
-  registry: AppRegistry,
+  registry: Pick<AppRegistry, "snapshot">,
 ): string {
   const apps = appDependencyCatalog(registry.snapshot().entries, "")
     .map((entry) =>
@@ -137,13 +138,14 @@ function requestPrompt(
 
 export function createConversationAgentResolver(options: {
   manager: SubagentManager;
-  registry: AppRegistry;
+  registry: Pick<AppRegistry, "snapshot">;
   db: SqliteDb;
+  definitions?: ReadonlyMap<string, SubagentDefinition>;
 }): AppInputResolver {
   return async ({ app, request, execution: binding }) => {
     const agent = (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "");
     if (!agent) throw new Error(`App ${app.id} has no conversational agent`);
-    const registered = options.manager.getAgentDefinition(agent);
+    const registered = options.definitions ? options.definitions.get(agent) : options.manager.getAgentDefinition(agent);
     if (!registered) throw new Error(`Agent ${agent} is not registered`);
     const contextTool = conversationContextTool(options.db, request);
     const definition = contextTool ? { ...registered, tools: [...registered.tools, contextTool] } : registered;

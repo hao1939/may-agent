@@ -294,6 +294,13 @@ export type SystemEvent =
       };
     }
   | {
+      type: "app.task.ready";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: { appId: string; taskId: string };
+    }
+  | {
       type: "app.dependency.completed";
       source?: string;
       owner: string;
