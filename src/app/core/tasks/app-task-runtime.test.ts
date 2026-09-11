@@ -183,6 +183,122 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
   };
 }
 
+it("recovers legacy attention as the same Tasks without inventing App review input", async () => {
+  const f = fixture();
+  const persistDir = join(f.root, "state");
+  let config = loadedTaskConfig(f);
+  const legacyIds = ["work/legacy", "work/legacy-notified"];
+  const taskIds = [...legacyIds, "work/domain-blocker"];
+  for (const id of taskIds) {
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id,
+        parentId: "operations",
+        outcome: `Complete ${id}`,
+        acceptance: ["Verified"],
+        mode: "achieve",
+        executor: "fixture",
+      },
+    });
+    const claim = claimObservedAppTask(config, { taskId: id, appAgent: "sample-owner", handler: "executor:fixture" });
+    if (claim.kind !== "claimed") throw new Error("expected fixture claim");
+    markAppTaskAttention(config, claim, {
+      reason: legacyIds.includes(id) ? "previous-runtime-attempt-not-recoverable" : "DomainDecisionRequired",
+      summary: `Retained evidence for ${id}`,
+    });
+    const resource = config.resourceStore.readTask(id)!;
+    const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+    attempt.state = "interrupted";
+    attempt.runtimeId = "previous-runtime";
+    delete attempt.trigger;
+    // Old notification metadata may still exist in persisted attempt JSON.
+    if (id === "work/legacy-notified") Object.assign(attempt, { attentionNotifiedAt: "2020-01-01T00:00:00.000Z" });
+    attempt.metadata.resourceVersion += 1;
+    expect(
+      config.resourceStore.commit({
+        fences: [
+          { taskId: id, resourceVersion: resource.metadata.resourceVersion, generation: resource.metadata.generation },
+        ],
+        attempts: [attempt],
+      }),
+    ).toBe(true);
+  }
+  const before = readTaskSnapshot(config);
+  closeDb(persistDir);
+
+  const bus = eventBus();
+  const writer = new DbWriter(persistDir);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const calls: string[] = [];
+  await installCoreTaskRuntimes(
+    {
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        fixture: async ({ task }) => {
+          calls.push(task.id);
+          return { state: "converged", summary: "Recovered same work", evidence: ["fixture:verified"] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "legacy-attention-recovery",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    },
+    { deferRecovery: true },
+  );
+  config = loadedTaskConfig(f);
+  await recoverInstalledAppTasks(bus);
+  const recovered = readTaskSnapshot(config);
+  expect(Object.keys(recovered.resources ?? {}).sort()).toEqual(Object.keys(before.resources ?? {}).sort());
+  expect(Object.keys(recovered.attempts ?? {}).sort()).toEqual(Object.keys(before.attempts ?? {}).sort());
+  for (const id of legacyIds) {
+    expect(recovered.resources?.[id]).toMatchObject({
+      metadata: { id, generation: before.resources![id].metadata.generation },
+      spec: before.resources![id].spec,
+      status: { phase: "pending", summary: `Retained evidence for ${id}; retrying from current task evidence` },
+    });
+  }
+  expect(recovered.resources?.["work/domain-blocker"]).toEqual(before.resources?.["work/domain-blocker"]);
+  await recoverInstalledAppTasks(bus);
+  expect(readTaskSnapshot(config)).toEqual(recovered);
+  expect(
+    getDb(persistDir)
+      .prepare(
+        "SELECT event_type FROM events WHERE event_type IN ('app.input.requested', 'project.task.recovery.repaired')",
+      )
+      .all(),
+  ).toEqual([{ event_type: "project.task.recovery.repaired" }]);
+  expect(calls).toEqual([]);
+  for (const taskId of legacyIds) {
+    const profiled = Promise.withResolvers<void>();
+    const stop = bus.listen((event) => {
+      if (event.type === "project.task.reconcile.profiled" && "data" in event && event.data.taskId === taskId)
+        profiled.resolve();
+    });
+    try {
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      // Profiling is deferred; let its real persistence finish before closing the fixture DB.
+      await profiled.promise;
+    } finally {
+      stop();
+    }
+    expect(config.resourceStore.readReceipt(taskId)).toMatchObject({
+      metadata: { generation: before.resources![taskId].metadata.generation },
+      evidence: ["fixture:verified"],
+    });
+  }
+  expect(calls).toEqual(legacyIds);
+});
+
 it("keeps omitted workflows visible, continues unrelated work, and recovers with a supplied runner", async () => {
   const f = fixture();
   const bus = eventBus();

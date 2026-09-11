@@ -32,8 +32,8 @@ import type {
 import { applyAppTaskConditionEvent } from "./app-task-condition-tracker.js";
 import { normalizeTaskAgent } from "../../app-agent-selection.js";
 import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 
-export const APP_TASK_RECOVERY_OWNER = "app-task-reconciler";
 const MAX_UNCHANGED_CONDITION_REVIEWS = 3;
 const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
 
@@ -152,11 +152,6 @@ export type AppTaskAttemptRecovery = {
 export type AppTaskTerminalSessionRecovery = AppTaskAttemptRecovery & {
   sessionId: string;
   terminalStatus: "done" | "error" | "interrupted";
-};
-
-export type AppTaskRecoveryAttention = {
-  taskId: string;
-  summary: string;
 };
 
 export type AppTaskRecoveryRepair = {
@@ -1288,52 +1283,6 @@ export function repairRunningAppTasksWithoutAttempt(
     });
   }
   return repairs;
-}
-
-export function pendingAppTaskRecoveryAttention(
-  config: AppTaskContext,
-  candidateTaskIds: Iterable<string>,
-): AppTaskRecoveryAttention[] {
-  const candidates = [...candidateTaskIds];
-  if (candidates.length === 0) return [];
-  const tree = config.resourceStore.readTaskContext({ taskIds: candidates });
-  return Object.values(tree.resources ?? {}).flatMap((resource) => {
-    const attempts = Object.values(tree.attempts ?? {})
-      .filter((attempt) => attempt.taskId === resource.metadata.id)
-      .sort((left, right) => right.startedAt.localeCompare(left.startedAt));
-    const attempt = attempts[0];
-    if (
-      resource.status.phase !== "attention" ||
-      attempt?.failureReason !== "previous-runtime-attempt-not-recoverable" ||
-      attempt.attentionNotifiedAt
-    ) {
-      return [];
-    }
-    return [
-      {
-        taskId: resource.metadata.id,
-        summary:
-          resource.status.summary?.trim() ||
-          `Interrupted reconciliation ${resource.metadata.id} requires agent attention`,
-      },
-    ];
-  });
-}
-
-export function acknowledgeAppTaskRecoveryAttention(config: AppTaskContext, taskId: string): boolean {
-  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const attempt = Object.values(tree.attempts ?? {})
-    .filter((candidate) => candidate.taskId === taskId)
-    .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
-  if (!attempt || attempt.failureReason !== "previous-runtime-attempt-not-recoverable" || attempt.attentionNotifiedAt)
-    return false;
-  const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
-  attempt.metadata.resourceVersion += 1;
-  attempt.attentionNotifiedAt = new Date().toISOString();
-  commitTaskMutation(config, tree, {
-    resourceMutation: finishResourceMutationScope(mutationScope, tree),
-  });
-  return true;
 }
 
 function validateIntent(intent: AppTaskIntent): void {

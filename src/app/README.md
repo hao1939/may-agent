@@ -73,8 +73,13 @@ Component guides cover [inbox](core/inbox/README.md), [Tasks](core/tasks/README.
 4. Verify its failure or absence leaves unrelated work and accepted state correct.
 
 Core imports contracts and foundational helpers; composition selects concrete
-adapters and conversational handlers. ESLint protects this direction. Internal
-loaders import owning modules directly: `../lib/index.ts` also exports the loader,
+adapters and conversational handlers. ESLint protects this direction. Executor
+adapters may import lifecycle types, but cannot import Task runtime or
+store mutation implementations. The persisted executor/recovery identity lives
+beside the small `core/tasks/session-binding.ts` contract. Event admission and
+inbox dispatch receive the same conversational App selection from composition.
+
+Internal loaders import owning modules directly: `../lib/index.ts` also exports the loader,
 so importing back through it creates a cycle. The public SDK and control exports
 remain the App/client boundaries. New database callers prefer focused `../lib/db/`
 modules over the historical `../lib/requests.ts` compatibility facade.

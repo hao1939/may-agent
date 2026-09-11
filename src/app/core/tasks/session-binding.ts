@@ -1,3 +1,6 @@
+/** Persisted identity used by executors and startup recovery; keep stable across releases. */
+export const APP_TASK_RECOVERY_OWNER = "app-task-reconciler";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }

@@ -18,7 +18,6 @@ import {
   completeAppTask,
   deferAppTask as deferCanonicalAppTask,
   failAppTaskAttempt,
-  acknowledgeAppTaskRecoveryAttention,
   listHandlerExecutionFailedAppTasks,
   listHandlerUnavailableAppTasks,
   markAppTaskAttention,
@@ -32,7 +31,6 @@ import {
   readPendingAppTaskTrigger,
   readAppTaskTrigger,
   recordAppTaskTrigger,
-  pendingAppTaskRecoveryAttention,
   appTaskQueueEntries,
   AppTaskActionStaleError,
   repairPreviousRuntimeRecoveryAttention,
@@ -3855,8 +3853,6 @@ describe("App task reconciler state", () => {
       status: { phase: "pending" },
     });
     expect(released.resources?.[claim.taskId].status.currentAttemptId).toBeUndefined();
-    expect(pendingAppTaskRecoveryAttention(config, [claim.taskId])).toEqual([]);
-    expect(acknowledgeAppTaskRecoveryAttention(config, claim.taskId)).toBe(false);
   });
 
   it("requeues running tasks whose current attempt record is missing", () => {
@@ -4342,12 +4338,6 @@ describe("App task reconciler state", () => {
     );
 
     const resourceConfig = state.config;
-    expect(pendingAppTaskRecoveryAttention(resourceConfig, [claim.taskId])).toEqual([
-      { taskId: claim.taskId, summary: `old attention ${claim.taskId}` },
-    ]);
-    expect(acknowledgeAppTaskRecoveryAttention(resourceConfig, claim.taskId)).toBe(true);
-    expect(pendingAppTaskRecoveryAttention(resourceConfig, [claim.taskId])).toEqual([]);
-
     expect(repairPreviousRuntimeRecoveryAttention(resourceConfig, [claim.taskId])).toMatchObject([
       { taskId: "evaluate:session-1", disposition: "requeued" },
     ]);

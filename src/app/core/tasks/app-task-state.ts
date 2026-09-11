@@ -107,7 +107,6 @@ export type AppTaskAttempt = {
   finishedAt?: string;
   summary?: string;
   failureReason?: string;
-  attentionNotifiedAt?: string;
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
