@@ -18,7 +18,7 @@ export type TaskConversationRunner = {
     app: Readonly<AppDefinition>;
     registry: AppRegistrySnapshot;
     signal: AbortSignal;
-    getFollowUpApp(appId: string): { app: Readonly<AppDefinition>; config: AppTaskContext };
+    getTaskApp(appId: string): { app: Readonly<AppDefinition>; config: AppTaskContext };
   }): Promise<ConversationTaskProposal>;
   snapshot?(): TaskConversationRunner;
 };

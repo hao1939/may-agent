@@ -707,7 +707,7 @@ describe("Human Task service", () => {
     const service = new HumanTaskService(db, registry("alpha"));
 
     const maintain = service.getTask({ ref: taskReferenceDigest("alpha", "maintain").slice(0, 8) });
-    expect(maintain).toMatchObject({ appId: "alpha", taskId: "maintain", cancellable: false, terminal: false });
+    expect(maintain).toMatchObject({ appId: "alpha", taskId: "maintain", cancellable: true, terminal: false });
     const finished = service.getTask({ ref: taskReferenceDigest("alpha", "finished").slice(0, 8) });
     expect(finished).toMatchObject({
       appId: "alpha",
@@ -1056,21 +1056,27 @@ describe("Human Task service", () => {
     expect(cancelAppTask(taskConfig(db, store, "alpha"), control).applied).toBeFalse();
   });
 
-  test("refuses generic cancellation for maintained responsibilities", () => {
+  test.each(["achieve", "maintain"] as const)("owner cancellation uses the same contract for %s work", (mode) => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10, mode: "maintain" });
+    insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10, mode });
     const service = new HumanTaskService(db, registry("alpha"));
     const current = service.getTask({ appId: "alpha", taskId: "watch" });
-    if (!current) throw new Error("expected maintained Task");
+    if (!current) throw new Error("expected open Task");
+    expect(current).toMatchObject({ terminal: false, cancellable: true });
     const store = AppTaskResourceStore.fromDb(db, "alpha");
-    expect(() =>
-      cancelAppTask(taskConfig(db, store, "alpha"), {
-        appId: "alpha",
-        taskId: "watch",
-        expectedGeneration: current.generation,
-        expectedResourceVersion: current.resourceVersion,
-        reason: "stop",
-      }),
-    ).toThrow("does not allow generic cancellation");
+    const control = {
+      appId: "alpha",
+      taskId: "watch",
+      expectedGeneration: current.generation,
+      expectedResourceVersion: current.resourceVersion,
+      reason: "stop",
+    };
+    expect(cancelAppTask(taskConfig(db, store, "alpha"), control).applied).toBe(true);
+    expect(service.getTask({ appId: "alpha", taskId: "watch" })).toMatchObject({
+      status: "cancelled",
+      terminal: true,
+      cancellable: false,
+    });
+    expect(cancelAppTask(taskConfig(db, store, "alpha"), control).applied).toBe(false);
   });
 });

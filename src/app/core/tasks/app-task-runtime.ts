@@ -1583,9 +1583,9 @@ async function reconcileTask(input: {
               app: descriptor.app,
               registry,
               signal: attempt.signal,
-              getFollowUpApp(appId) {
+              getTaskApp(appId) {
                 const entry = registry.entries.find(({ definition }) => definition.id === appId);
-                if (!entry?.definition.tasks || !entry.definition.task || !opts.persistDir)
+                if (!entry?.definition.tasks || !opts.persistDir)
                   throw new Error(`App ${appId} has no installed Task capability`);
                 const target = appId === descriptor.id
                   ? descriptor
@@ -1852,6 +1852,7 @@ async function reconcileTask(input: {
             primaryResult.conversation
               ? completeConversationTaskTurn(config, primary, primaryResult.conversation.decision, {
                   followUp: primaryResult.conversation.followUp,
+                  taskControls: primaryResult.conversation.taskControls,
                   acceptanceBasis,
                 })
               : completeAppTask(config, primary, {
@@ -1893,6 +1894,7 @@ async function reconcileTask(input: {
             workflowRunId: primaryResult.runId,
           });
           if (apply.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, appliedDisposition);
+          for (const cancelled of apply.cancelledTasks ?? []) publishTaskCancellation(opts.bus, cancelled);
           if (apply.admittedTasks) {
             for (const admitted of apply.admittedTasks) {
               // This post-commit hint also crosses the existing worker event
@@ -2877,9 +2879,23 @@ export function cancelLoadedAppTask(input: {
     reason: input.reason,
     ...(input.controlKey ? { controlKey: input.controlKey } : {}),
   });
+  publishTaskCancellation(input.bus, result);
+  return result;
+}
+
+/** Publish only after the caller's complete state transaction has committed. */
+function publishTaskCancellation(bus: EventBus, result: ReturnType<typeof cancelAppTask>): void {
   if (result.applied) {
-    if (result.parentTaskId) wakeLoadedAppTasks({ bus: input.bus, appId, taskIds: [result.parentTaskId] });
-    input.bus.emit({
+    const { appId, taskId } = result.cancellation;
+    if (result.parentTaskId)
+      bus.emit({
+        type: "app.task.ready",
+        source: "app-task-reconciler",
+        owner: "human:operator",
+        target: { appId, taskId: result.parentTaskId },
+        data: { appId, taskId: result.parentTaskId },
+      });
+    bus.emit({
       type: "app.task.cancelled",
       source: "app-task-reconciler",
       owner: "human:operator",
@@ -2892,14 +2908,13 @@ export function cancelLoadedAppTask(input: {
         reason: result.cancellation.reason,
       },
     });
-    input.bus.emit({
+    bus.emit({
       type: "app.dependency.updated",
       source: "app-task-reconciler",
       owner: "human:operator",
       data: { kind: "task", id: taskId, appId },
     });
   }
-  return result;
 }
 
 function enqueueAppTask(

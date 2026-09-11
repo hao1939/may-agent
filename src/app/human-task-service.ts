@@ -263,7 +263,7 @@ function taskStatusDetail(
     case "attention":
       return "The App needs review or recovery.";
     case "up-to-date":
-      return "Current work is reconciled; this maintained Task will wake when relevant facts change.";
+      return "Current work is reconciled; this Task will wake when relevant facts change.";
     case "done":
       return "Completed.";
     case "cancelled":
@@ -500,7 +500,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     ...(observationIsCurrent && resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
     terminal: false,
-    cancellable: resource.spec.mode !== "maintain",
+    cancellable: true,
     ...(resource.status.currentAttemptId
       ? {
           execution: {

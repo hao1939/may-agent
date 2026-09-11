@@ -13,9 +13,11 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   assertAppTaskClaimCurrent,
+  cancelAppTask,
   completeAppTask,
   stopAppTaskAttempt,
   type AppTaskClaim,
+  type AppTaskCancellationResult,
 } from "../tasks/app-task-reconciler.js";
 import { admitTaskRequest } from "./inbox.js";
 import {
@@ -46,6 +48,12 @@ export function isConversationTask(config: AppTaskContext, taskId: string): bool
 export type ConversationTaskProposal = {
   decision: ConversationTurnResult;
   followUp?: { config: AppTaskContext; attachment: AppTaskAttachment };
+  taskControls?: Array<{
+    config: AppTaskContext;
+    taskId: string;
+    generation: number;
+    resourceVersion: number;
+  }>;
 };
 
 /** Stop exactly the input considered by this Turn. Newer input remains pending. */
@@ -220,11 +228,16 @@ export function completeConversationTaskTurn(
   options: {
     now?: number;
     followUp?: ConversationTaskProposal["followUp"];
+    taskControls?: ConversationTaskProposal["taskControls"];
     acceptanceBasis?: TaskAcceptanceBasis;
   } = {},
-): ReturnType<typeof completeAppTask> & { admittedTasks?: Array<{ appId: string; taskId: string }> } {
+): ReturnType<typeof completeAppTask> & {
+  admittedTasks?: Array<{ appId: string; taskId: string }>;
+  cancelledTasks?: AppTaskCancellationResult[];
+} {
   if (!Check(conversationTurnResultSchema, decision)) throw new Error("Invalid Conversation decision");
-  if (decision.taskControls?.length) throw new Error("Conversation Task controls are not yet integrated");
+  if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
+    throw new Error("Conversation Task controls must be prepared");
   if (Boolean(decision.followUp) !== Boolean(options.followUp))
     throw new Error("Conversation follow-up must be prepared");
   const db = config.resourceStore.db;
@@ -232,6 +245,8 @@ export function completeConversationTaskTurn(
   return stateTransaction(db, () => {
     const items = readConversationTaskInputs(config, claim);
     const item = items.at(-1)!;
+    if (decision.taskControls?.length && (item.source.kind !== "human" || decision.followUp))
+      throw new Error("Task controls require a direct human Turn without a follow-up handoff");
     if (
       !decision.response?.trim() &&
       (items.some((entry) => entry.source.kind === "human") || decision.followUp || decision.requestUpdates?.length)
@@ -281,6 +296,25 @@ export function completeConversationTaskTurn(
       now,
     });
     const admittedTasks: Array<{ appId: string; taskId: string }> = [];
+    const cancelledTasks: AppTaskCancellationResult[] = [];
+    for (const [index, control] of (decision.taskControls ?? []).entries()) {
+      const prepared = options.taskControls![index]!;
+      if (
+        prepared.config.resourceStore.db !== db ||
+        prepared.config.resourceStore.appId !== control.appId ||
+        prepared.taskId !== control.taskId ||
+        (control.appId === item.appId && control.taskId === claim.taskId)
+      )
+        throw new Error("Conversation Task control has a mismatched or self-owned target");
+      cancelledTasks.push(
+        cancelAppTask(prepared.config, {
+          ...control,
+          expectedGeneration: prepared.generation,
+          expectedResourceVersion: prepared.resourceVersion,
+          controlKey: `conversation-control:${claim.attemptId}:${index}`,
+        }),
+      );
+    }
     if (decision.followUp && options.followUp) {
       if (!topicId) throw new Error("Conversation follow-up requires a Topic");
       const { config: target, attachment } = options.followUp;
@@ -322,7 +356,7 @@ export function completeConversationTaskTurn(
       ).changes;
       if (changed !== 1) throw new Error("Conversation input changed during settlement");
     }
-    return { ...accepted, admittedTasks };
+    return { ...accepted, admittedTasks, cancelledTasks };
   });
 }
 

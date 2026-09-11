@@ -5,6 +5,7 @@ import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/ap
 import { readConversationTaskInputs, type ConversationTaskProposal } from "../core/state/conversation-task-turns.js";
 import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 import { prepareConversationInput } from "../conversations/context.js";
+import { readConversationTopic } from "../core/state/conversations.js";
 import type { AppInputResolver } from "../conversations/turn-handler.js";
 
 /** Prepare a judgment under the Task claim. The common runtime alone settles it. */
@@ -14,7 +15,7 @@ export async function prepareConversationTaskTurn(input: {
   app: Readonly<AppDefinition>;
   resolveRequest: AppInputResolver;
   readDependency?: AppDependencyReader;
-  getFollowUpApp?: (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
+  getTaskApp?: (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
   signal: AbortSignal;
 }): Promise<ConversationTaskProposal> {
   const { config, claim, app, signal } = input;
@@ -42,22 +43,50 @@ export async function prepareConversationTaskTurn(input: {
     },
   });
   signal.throwIfAborted();
+  const selectedTopic =
+    decision.topic.kind === "existing"
+      ? readConversationTopic(config.resourceStore.db, app.id, item.conversationId!, decision.topic.id)
+      : null;
+  const knownTask = (appId: string, taskId: string) =>
+    (request.focusedTask?.appId === appId && request.focusedTask.task.id === taskId) ||
+    request.referencedTasks?.some((entry) => entry.appId === appId && entry.task.id === taskId) ||
+    selectedTopic?.taskRefs.some((entry) => entry.appId === appId && entry.taskId === taskId) ||
+    request.conversation?.topics?.some((topic) =>
+      topic.taskRefs.some((entry) => entry.appId === appId && entry.taskId === taskId),
+    );
+  const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
+  for (const control of decision.taskControls ?? []) {
+    if (item.source.kind !== "human" || !decision.response?.trim() || decision.followUp)
+      throw new Error("Task controls require an explained direct human Turn without a follow-up handoff");
+    if (!knownTask(control.appId, control.taskId))
+      throw new Error("Task control target is absent from Conversation context");
+    if (control.appId === app.id && control.taskId === claim.taskId)
+      throw new Error("A Conversation worker cannot close its own Task");
+    if (
+      taskControls.some(
+        (prior) => prior.config.resourceStore.appId === control.appId && prior.taskId === control.taskId,
+      )
+    )
+      throw new Error("Conversation decision repeats a Task control");
+    const target = input.getTaskApp?.(control.appId);
+    const task = target?.config.resourceStore.readTask(control.taskId);
+    if (!target || !task) throw new Error("Task control requires an installed Task App and exact Task");
+    taskControls.push({
+      config: target.config,
+      taskId: control.taskId,
+      generation: task.metadata.generation,
+      resourceVersion: task.metadata.resourceVersion,
+    });
+  }
   let followUp: { config: AppTaskContext; attachment: AppTaskAttachment } | undefined;
   if (decision.followUp) {
     const desired = decision.followUp;
-    const target = input.getFollowUpApp?.(desired.appId);
+    const target = input.getTaskApp?.(desired.appId);
     if (!target?.app.task || !target.app.tasks || target.app.id !== desired.appId)
       throw new Error("Conversation follow-up requires an installed Task App");
     if (!Check(target.app.inputSchema, desired.input)) throw new Error("Invalid follow-up App input");
     if (desired.task) {
-      const known =
-        request.referencedTasks?.some(
-          (entry) => entry.appId === desired.task!.appId && entry.task.id === desired.task!.taskId,
-        ) ||
-        request.conversation?.topics?.some((topic) =>
-          topic.taskRefs.some((entry) => entry.appId === desired.task!.appId && entry.taskId === desired.task!.taskId),
-        );
-      if (desired.task.appId !== target.app.id || !known)
+      if (desired.task.appId !== target.app.id || !knownTask(desired.task.appId, desired.task.taskId))
         throw new Error("Follow-up Task is absent from Conversation context");
     }
     const attachment = desired.task
@@ -66,5 +95,5 @@ export async function prepareConversationTaskTurn(input: {
     if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
     followUp = { config: target.config, attachment };
   }
-  return { decision, followUp };
+  return { decision, followUp, taskControls };
 }

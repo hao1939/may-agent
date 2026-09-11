@@ -1,6 +1,5 @@
 import { createConversationInbox } from "./conversation-inbox.js";
 import type { AppInputResolver } from "../conversations/turn-handler.js";
-import type { AppRequestTaskController } from "../conversations/turn-handler.js";
 import { recordConversationTaskOutcome } from "../core/state/conversation-outcomes.js";
 import { listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
@@ -108,7 +107,6 @@ export type StartAppInboxRuntimeOptions = {
   admitConversationChange?: AppTaskCapability["admitConversationChange"];
   stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   resolveRequest?: AppInputResolver;
-  controlTask?: AppRequestTaskController;
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -453,7 +451,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     admitConversation: options.admitConversation,
     stopConversationTurn: options.stopConversationTurn,
     resolveRequest: options.resolveRequest,
-    controlTask: options.controlTask,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);

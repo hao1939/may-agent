@@ -21,7 +21,7 @@ import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-
 import { createConversationInbox } from "../../composition/conversation-inbox.js";
 import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
 import { createAppInboxItem, claimAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { readAppConversationResource, linkConversationTopicTask } from "./conversations.js";
+import { readAppConversationResource, linkConversationTopicTask, createConversationTopic } from "./conversations.js";
 import { readConversationRequest } from "./conversation-requests.js";
 import {
   admitConversationTaskInput,
@@ -36,7 +36,7 @@ const roots: string[] = [];
 // State fixtures supply the claim. Installed-runtime tests exercise its owner.
 async function executeConversationTaskTurn(input: Parameters<typeof prepareConversationTaskTurn>[0]) {
   const proposal = await prepareConversationTaskTurn(input);
-  return completeConversationTaskTurn(input.config, input.claim, proposal.decision, { followUp: proposal.followUp });
+  return completeConversationTaskTurn(input.config, input.claim, proposal.decision, proposal);
 }
 afterEach(() =>
   roots.splice(0).forEach((root) => {
@@ -379,6 +379,136 @@ test("a system turn can stay quiet without hiding the accepted Task evidence", a
   expect(f.store.listRecoveryCandidates().items).toEqual([]);
 });
 
+function cancellationFixture(source: "human" | "system" = "human") {
+  const f = fixture();
+  const worker = defineApp({ ...app, id: "worker", tasks: {} });
+  const store = AppTaskResourceStore.fromDb(f.db, worker.id);
+  store.bootstrapSnapshot(
+    {
+      project: worker.id,
+      project_lifecycle: "active",
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null } },
+    },
+    "control-fixture",
+  );
+  const config = appTaskContext({ ...f.context(), resourceStore: store });
+  const intent = { id: "job", parentId: "root", outcome: "Measure the sample", acceptance: ["Return evidence"] };
+  observeAppTaskIntent(config, { appAgent: worker.id, intent: { ...intent, mode: "maintain" } });
+  createConversationTopic(f.db, {
+    id: "work",
+    appId: app.id,
+    conversationId: "chat",
+    title: "Sample",
+    openedBy: "human",
+    originMessageId: "first",
+  });
+  linkConversationTopicTask(f.db, "work", worker.id, "job");
+  const admitted = admitConversationTaskInput(f.context(), {
+    ...f.input("first", 1, "Cancel the measurement task"),
+    topicId: "work",
+    source: { kind: source, id: "first" },
+  });
+  const claim = f.claim(admitted.taskId);
+  const answer: ConversationTurnResult = {
+    summary: "Cancelled the measurement task",
+    response: "I cancelled the measurement task.",
+    topic: { kind: "existing", id: "work" },
+    taskControls: [{ kind: "cancel", appId: worker.id, taskId: "job", reason: "Human withdrew the assignment" }],
+  };
+  return {
+    f,
+    worker,
+    store,
+    config,
+    intent,
+    claim,
+    answer,
+    prepare: (decision = answer) =>
+      prepareConversationTaskTurn({
+        config: f.context(),
+        claim,
+        app,
+        signal: new AbortController().signal,
+        getTaskApp: () => ({ app: worker, config }),
+        resolveRequest: async () => decision,
+      }),
+  };
+}
+
+test("human cancellation, reply and accepted Turn commit together across Apps and survive reopen", async () => {
+  const c = cancellationFixture();
+  const targetClaim = claimObservedAppTask(c.config, { taskId: "job", appAgent: "worker", handler: "executor:test" });
+  expect(targetClaim.kind).toBe("claimed");
+  const proposal = await c.prepare();
+  c.f.db.exec(`CREATE TRIGGER reject_cancel_reply BEFORE UPDATE OF result ON app_inbox_items
+    WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'reply rejected'); END`);
+  const settle = () => completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, proposal);
+  expect(settle).toThrow("reply rejected");
+  expect(c.store.readCancellation("job")).toBeNull();
+  expect(c.store.readTask("job")?.status.currentAttemptId).toBeDefined();
+  expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeUndefined();
+  c.f.db.exec("DROP TRIGGER reject_cancel_reply");
+  const result = settle();
+  expect(result.cancelledTasks).toMatchObject([{ applied: true, cancellation: { appId: "worker", taskId: "job" } }]);
+  expect(c.store.isCancelled("job")).toBe(true);
+  expect(c.f.store.isCancelled(c.claim.taskId)).toBe(false);
+  expect(getAppInboxItem(c.f.db, "first")?.result?.response).toBe(c.answer.response);
+  if (targetClaim.kind !== "claimed") throw new Error("Expected running target");
+  expect(completeAppTask(c.config, targetClaim, { summary: "Late answer", evidence: [] }).status).toBe("stale");
+  c.f.reopen();
+  expect(AppTaskResourceStore.fromDb(c.f.db, "worker").readCancellation("job")?.reason).toBe(
+    "Human withdrew the assignment",
+  );
+  expect(getAppInboxItem(c.f.db, "first")?.result?.response).toBe(c.answer.response);
+});
+
+test("a target revision after preparation rolls back the proposed cancellation and reply", async () => {
+  const c = cancellationFixture();
+  const proposal = await c.prepare();
+  observeAppTaskIntent(c.config, {
+    appAgent: c.worker.id,
+    intent: { ...c.intent, outcome: "Measure another sample", mode: "maintain" },
+  });
+  expect(() => completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, proposal)).toThrow(
+    "generation changed",
+  );
+  expect(c.store.isCancelled("job")).toBe(false);
+  expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(getAppInboxItem(c.f.db, "first")?.status).not.toBe("done");
+});
+
+test("a newer human input prevents the old Turn from applying cancellation", async () => {
+  const c = cancellationFixture();
+  const proposal = await c.prepare();
+  c.f.admit("correction", 2, "Keep it running");
+  completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, proposal);
+  expect(c.store.isCancelled("job")).toBe(false);
+  expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(getAppInboxItem(c.f.db, "first")?.status).not.toBe("done");
+});
+
+test("Conversation control preparation requires human authority and an exact contextual target", async () => {
+  const system = cancellationFixture("system");
+  await expect(system.prepare()).rejects.toThrow("direct human Turn");
+  expect(system.store.isCancelled("job")).toBe(false);
+  const human = cancellationFixture();
+  await expect(
+    human.prepare({ ...human.answer, taskControls: [{ ...human.answer.taskControls![0]!, taskId: "invented" }] }),
+  ).rejects.toThrow("absent from Conversation context");
+  await expect(
+    human.prepare({ ...human.answer, taskControls: [...human.answer.taskControls!, ...human.answer.taskControls!] }),
+  ).rejects.toThrow("repeats a Task control");
+  linkConversationTopicTask(human.f.db, "work", app.id, human.claim.taskId);
+  await expect(
+    human.prepare({
+      ...human.answer,
+      taskControls: [{ ...human.answer.taskControls![0]!, appId: app.id, taskId: human.claim.taskId }],
+    }),
+  ).rejects.toThrow("cannot close its own Task");
+  expect(human.store.isCancelled("job")).toBe(false);
+});
+
 test("one controller returns B through A to the real Conversation after intervening input and restart", async () => {
   const f = fixture();
   const first = f.admit("first", 1, "Get the sample measurement in the background and report it here.");
@@ -423,7 +553,7 @@ test("one controller returns B through A to the real Conversation after interven
             claim,
             app,
             signal: new AbortController().signal,
-            getFollowUpApp: () => ({ app: workerApp, config: f.context() }),
+            getTaskApp: () => ({ app: workerApp, config: f.context() }),
             resolveRequest: async ({ request }) => {
               judgments.push(request.id);
               if (request.id === "first")

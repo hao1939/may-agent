@@ -6,7 +6,6 @@ import type { AppEvent, AppInput } from "@may-agent/sdk";
 import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
-import { stateTransaction } from "../lib/db/transaction.js";
 import type { AppReporting } from "./composition/reporting.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./composition/app-inbox-runtime.js";
@@ -43,7 +42,7 @@ import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } f
 import { createTaskAdmissionProcess } from "./composition/workers/task-admission-process.js";
 import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
-import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
+import { attachTaskControlEventRoute } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
@@ -303,21 +302,6 @@ export async function runAppRuntime(opts: {
     admitConversation: appTasks.admitConversation,
     admitConversationChange: appTasks.admitConversationChange,
     stopConversationTurn: appTasks.stopTurn,
-    controlTask: async ({ control, authorize }) => {
-      if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);
-      const task = humanTasks.getTask({ appId: control.appId, taskId: control.taskId });
-      if (!task) throw new Error(`Task ${control.appId}/${control.taskId} was not found`);
-      const receipt = stateTransaction(getDb(opts.persistDir), () => {
-        authorize();
-        return events.publish(taskCancelRequestedEvent(task, control.reason), {
-          source: "app-inbox",
-          inputSource: { kind: "human", id: "app-inbox" },
-        });
-      });
-      if (receipt.delivery !== "accepted") {
-        throw new Error(`Task ${control.appId}/${control.taskId} cancellation was recorded but not accepted`);
-      }
-    },
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     createTaskAdmissionWorker: () =>

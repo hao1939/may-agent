@@ -487,6 +487,86 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
   };
 }
 
+test("a human Conversation decision cancels the exact running Task after its reply commits", async () => {
+  const started = Promise.withResolvers<TaskAttempt>();
+  const release = Promise.withResolvers<void>();
+  let humanTurns = 0;
+  const f = await fixture(
+    async (_definition, prompt) => {
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      if (context.source.kind !== "human")
+        return {
+          status: "done",
+          structuredResult: { summary: "Cancellation already explained", topic: { kind: "none" } },
+        };
+      if (++humanTurns === 1) return { status: "done", structuredResult: delegated };
+      expect(context.conversation?.topics?.flatMap((topic) => topic.taskRefs)).toContainEqual(
+        expect.objectContaining({
+          appId: background.id,
+          taskId: "sample",
+        }),
+      );
+      return {
+        status: "done",
+        structuredResult: {
+          summary: "Cancelled the measurement",
+          response: "I cancelled the measurement Task as requested.",
+          topic: { kind: "existing", id: context.conversation!.topics![0]!.id },
+          taskControls: [
+            { kind: "cancel", appId: background.id, taskId: "sample", reason: "Human withdrew the assignment" },
+          ],
+        },
+      };
+    },
+    (root, appDir) => ({
+      ...withBackground(root, appDir),
+      hostCapacity: new HostCapacity(2),
+      executors: {
+        measure: async (attempt) => {
+          started.resolve(attempt);
+          await release.promise;
+          return { state: "converged", summary: "Late measurement", evidence: [] };
+        },
+      },
+    }),
+  );
+  const ingress = await startConversationIngress(f);
+  try {
+    ingress.publish("ask", "Get the measurement");
+    const executing = await started.promise;
+    const source = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
+    const aborted = new Promise<void>((resolve) =>
+      executing.signal.addEventListener("abort", () => resolve(), { once: true }),
+    );
+    const cancelled = eventAfter(f.bus, (event) => {
+      if (event.type !== "app.task.cancelled") return false;
+      expect(
+        readAppConversationResource(f.db, app.id, "primary").messages.some(
+          (message) => message.text === "I cancelled the measurement Task as requested.",
+        ),
+      ).toBe(true);
+      return event.data.taskId === "sample";
+    });
+    ingress.publish("cancel", "Cancel that measurement Task");
+    await cancelled;
+    await aborted;
+    expect(source.isCancelled("sample")).toBe(true);
+    const ended = settled(f.bus, "sample");
+    release.resolve();
+    await ended;
+    expect(source.readAttempt(executing.attemptId)?.acceptedResult).toBeUndefined();
+    expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
+    expect(f.store.isCancelled(listAppInboxItems(f.db, { appId: app.id })[0]!.executionTaskId!)).toBe(false);
+    expect(ingress.oldExecutions).toBe(0);
+    expect(humanTurns).toBe(2);
+  } finally {
+    release.resolve();
+    ingress.runtime.close();
+  }
+});
+
 test("normal event ingress admits and executes one Conversation Task and notifies the interface", async () => {
   let judgments = 0;
   const f = await fixture(async () => {
