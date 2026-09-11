@@ -66,6 +66,9 @@ App accepts an input
    Review also found that failed publication restored previous descriptors using
    rejected candidate options. Save and restore the accepted options with those
    descriptors; keep the previous publication callback disabled during rollback.
+   When no runtime was previously installed, clear the rejected options after
+   rollback. A regression checks that session inspection and explicit recovery
+   stay inactive, and a later installation reuses the existing listener.
 2. **Separate definition preparation from attempt orchestration.** Move existing
    descriptor construction, seed-authority discovery and project read-model
    projection into `core/tasks/runtime-definition.ts`. The admission worker
@@ -80,13 +83,14 @@ remains separate.
 
 | Source slice | Local verification |
 | --- | --- |
-| [Host #145](https://github.com/hao1939/may-agent/pull/145), `ec609863`: current session adapters and rejected-reload rollback | Full CI: 2,701 pass, three installation-only skips, no failures; reload, close/reinstall and rejected-reload regressions pass. The added rejection case fails on the preceding implementation |
+| [Host #145](https://github.com/hao1939/may-agent/pull/145), `148acd7f`: current session adapters and rejected-publication rollback | Full CI: 2,702 pass, three installation-only skips, no failures; reload, close/reinstall, rejected-reload and rejected-initial-publication regressions pass. The initial rejection case reproduced both rejected session reads and explicit recovery calls before the fix, and verifies successful later installation |
 | [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`, merged as `e1a0005e`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
 
 Browser coverage ran in both suites. #145's complete local CI includes merged
-#146 and the rejected-publication regression. Hosted Quality and Container checks
-passed on `ec609863`; #146's checks also passed on its reviewed revision. Canonical
-design integrity, examples and App checks passed against #145's updated source.
+#146 and both rejected-publication regressions. Hosted Quality and Container
+checks are pending on `148acd7f`; they passed on the preceding `ec609863` revision.
+#146's checks also passed on its reviewed revision. Canonical design integrity,
+examples and App checks passed against #145's updated source.
 No installation or model-backed tests ran.
 
 **Value/cost decision:** Fix the observable adapter mismatch with one current

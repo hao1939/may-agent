@@ -85,6 +85,8 @@ adapters and descriptors together, subject to exact Task ownership checks. A
 process-scoped subscription must not retain a second, obsolete runtime selection.
 If replacement publication is rejected, rollback reinstalls the accepted runtime
 options with its descriptors and does not invoke the previous publication callback.
+If no runtime was previously installed, rollback leaves no selected options;
+later session events and recovery calls cannot use the rejected adapters.
 The [lifecycle review](../proposals/task-runtime-organization.md#task-lifecycle-review)
 records the reproduced listener gap and its source fix separately from this contract.
 
