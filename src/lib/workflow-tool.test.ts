@@ -43,7 +43,6 @@ export async function execute(ctx) {
     const runner = createWorkflowRunner({ manager: {} as any, workflowDir, agentName: "owner", read });
 
     await expect(runner.run("read", "test")).resolves.toMatchObject({ type: "done", summary: "resource task" });
-
   });
 
   it("cancels the active step when its owning Task attempt is aborted", async () => {
@@ -184,6 +183,162 @@ export async function execute(ctx) {
 
     const result = await runner.run("slow", "test");
     expect(result).toMatchObject({ type: "done" });
+  });
+
+  it.each(["caller", "deadline"] as const)(
+    "passes %s cancellation into nested helpers, without extending the parent bound",
+    async (cause) => {
+      const root = workflowRoot("workflow-nested-cancel-");
+      writeFileSync(
+        join(root, "parent.ts"),
+        `
+      export const name = "parent";
+      export const description = "Parent bound fixture";
+      export async function execute(ctx) { return await ctx.workflows.run("child", {}); }
+    `,
+      );
+      writeFileSync(
+        join(root, "child.ts"),
+        `
+      export const name = "child";
+      export const description = "Longer child bound fixture";
+      export const executionTimeoutMs = 1000;
+      export async function execute(ctx) {
+        await ctx.read.execution(ctx.signal);
+        return ctx.done("must not finish");
+      }
+    `,
+      );
+      const entered = Promise.withResolvers<AbortSignal>();
+      const childFailed = Promise.withResolvers<void>();
+      const controller = new AbortController();
+      const events: any[] = [];
+      const runner = createWorkflowRunner({
+        manager: { status: () => [] } as any,
+        workflowDir: root,
+        signal: controller.signal,
+        executionTimeoutMs: cause === "deadline" ? 100 : 5000,
+        read: {
+          execution: (signal: AbortSignal) => {
+            entered.resolve(signal);
+            return new Promise((_, reject) =>
+              signal.addEventListener("abort", () => reject(signal.reason), { once: true }),
+            );
+          },
+        } as any,
+        runtimeCtx: {
+          emit(event: any) {
+            events.push(event);
+            if (event.type === "workflow.failed" && event.data.workflow === "child") childFailed.resolve();
+          },
+        } as any,
+      });
+      const pending = runner.run("parent", "test");
+      const signal = await entered.promise;
+      expect(signal.aborted).toBe(false);
+      if (cause === "caller") controller.abort(new Error("Owner cancelled"));
+      const result = await pending;
+      await childFailed.promise;
+      const reason = cause === "caller" ? "Owner cancelled" : 'Workflow "parent" timed out after 100ms';
+      expect(result).toMatchObject({ type: "error", error: reason });
+      expect(signal.aborted).toBe(true);
+      expect(signal.reason.message).toBe(reason);
+      expect(
+        events
+          .filter((e) => e.type === "workflow.failed")
+          .map((e) => e.data.workflow)
+          .sort(),
+      ).toEqual(["child", "parent"]);
+      expect(events.some((e) => e.type === "workflow.completed")).toBe(false);
+    },
+  );
+
+  it("does not enter authored code when already cancelled", async () => {
+    const root = workflowRoot("workflow-already-cancelled-");
+    writeFileSync(
+      join(root, "skip.ts"),
+      `
+      export const name = "skip";
+      export const description = "Already cancelled fixture";
+      export async function execute() { throw new Error("must not enter"); }
+    `,
+    );
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      signal: AbortSignal.abort(new Error("already stopped")),
+    });
+    expect(await runner.run("skip", "test")).toMatchObject({ type: "error", error: "already stopped" });
+  });
+
+  it("settles cancellation even if step cleanup fails and authored code catches it", async () => {
+    const root = workflowRoot("workflow-cancel-cleanup-");
+    writeFileSync(
+      join(root, "catch.ts"),
+      `
+      export const name = "catch";
+      export const description = "Noncooperative fixture";
+      export async function execute(ctx) {
+        try { await ctx.read.execution(ctx.signal); } catch {}
+        ctx.log.info("late evidence");
+        return ctx.done("late result", {wrong: true});
+      }
+    `,
+    );
+    const controller = new AbortController();
+    const runner = createWorkflowRunner({
+      manager: {
+        status() {
+          throw new Error("cleanup failed");
+        },
+      } as any,
+      workflowDir: root,
+      signal: controller.signal,
+      read: {
+        execution: (signal: AbortSignal) => {
+          controller.abort(new Error("synchronous caller cancellation"));
+          signal.throwIfAborted();
+        },
+      } as any,
+    });
+    expect(await runner.run("catch", "test")).toMatchObject({
+      type: "error",
+      error: "synchronous caller cancellation",
+    });
+  });
+
+  it("ends a settled run's signal without cancelling the parent or independent work", async () => {
+    const root = workflowRoot("workflow-settled-signal-");
+    writeFileSync(
+      join(root, "finish.ts"),
+      `
+      export const name = "finish";
+      export const description = "Signal lifetime fixture";
+      export async function execute(ctx) {
+        await ctx.read.execution(ctx.signal);
+        return ctx.done("finished");
+      }
+    `,
+    );
+    const signals: AbortSignal[] = [];
+    const controller = new AbortController();
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      signal: controller.signal,
+      read: {
+        execution: (signal: AbortSignal) => {
+          expect(signal.aborted).toBe(false);
+          signals.push(signal);
+        },
+      } as any,
+    });
+    expect((await runner.run("finish", "first")).type).toBe("done");
+    expect(signals[0]?.aborted).toBe(true);
+    expect(controller.signal.aborted).toBe(false);
+    expect((await runner.run("finish", "second")).type).toBe("done");
+    expect(signals).toHaveLength(2);
+    expect(signals[0]).not.toBe(signals[1]);
   });
 });
 

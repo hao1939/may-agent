@@ -58,6 +58,7 @@ export interface WorkflowStep {
   lastAssistantText: string | null;
 }
 import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
+import { retainWorkflowPayload } from "./workflow-payload.js";
 import { log } from "./log.js";
 import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
@@ -1008,6 +1009,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     previousRun?: WorkflowRun,
     authoredInput?: { value: unknown },
     runId = generateRunId(),
+    parentSignal = opts.signal,
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     const localSteps: CompletedStep[] = [];
     let stepCounter = 0;
@@ -1037,6 +1039,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       taskBinding: opts.taskBinding,
     };
     const taskEventUnsubscribers = new Set<() => void>();
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const abortFromParent = () => controller.abort(parentSignal?.reason);
+    parentSignal?.addEventListener("abort", abortFromParent, { once: true });
+    if (parentSignal?.aborted) abortFromParent();
     try {
       if (persistDir) {
         insertWorkflowRun(persistDir, {
@@ -1100,12 +1107,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
       const injectedStepCount = { value: 0 };
       const guardWarnings: string[] = [];
-      let executionExpired = false;
       const executionTimeoutMs = workflow.executionTimeoutMs ?? opts.executionTimeoutMs;
       const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
       const assertExecutionActive = (): void => {
-        opts.signal?.throwIfAborted();
-        if (executionExpired) throw new Error(executionTimeoutMessage);
+        signal.throwIfAborted();
       };
       const cancelActiveStepSessions = (): void => {
         for (const session of manager.status()) {
@@ -1394,6 +1399,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           steeringQueue,
           undefined,
           nestedInput,
+          undefined,
+          signal,
         );
         assertExecutionActive();
         if (sub.result.type === "done") {
@@ -1416,7 +1423,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const recordDiagnostic = createWorkflowDiagnostics(persistDir, runId);
       const workflowLog = (level: "debug" | "info" | "warn" | "error", message: string) => {
         // Late asynchronous code must not append evidence to a settled attempt.
-        if (run.status !== "running") return;
+        if (run.status !== "running" || signal.aborted) return;
         const safe = recordDiagnostic(level, message);
         try {
           opts.runtimeCtx?.log(`[workflow:${runId}] [${level}] ${safe}`);
@@ -1427,6 +1434,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
       const ctx: AppWorkflowContext = {
         input: authoredInput ? authoredInput.value : task,
+        signal,
         ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
         read: appRead,
 
@@ -1539,7 +1547,25 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         }),
       };
 
-      opts.signal?.throwIfAborted();
+      assertExecutionActive();
+      let stopForAbort!: () => void;
+      const stopped = new Promise<never>((_, reject) => {
+        stopForAbort = () => {
+          try {
+            cancelActiveStepSessions();
+          } catch {
+            // Best-effort cleanup must not prevent cancellation from settling.
+          } finally {
+            reject(signal.reason);
+          }
+        };
+        signal.addEventListener("abort", stopForAbort, { once: true });
+      });
+      const executionTimer = executionTimeoutMs
+        ? setTimeout(() => controller.abort(new Error(executionTimeoutMessage)), executionTimeoutMs)
+        : undefined;
+      // Register cancellation before invoking authored code, which may itself
+      // synchronously trigger its caller's cancellation.
       const execution = (async () => {
         const authoredResult = await workflow.execute(ctx);
         assertExecutionActive();
@@ -1569,35 +1595,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         assertExecutionActive();
         return result;
       })();
-      let executionTimer: ReturnType<typeof setTimeout> | undefined;
-      let stopForAbort: (() => void) | undefined;
-      const stops: Array<Promise<never>> = [];
-      if (executionTimeoutMs) {
-        stops.push(
-          new Promise<never>((_, reject) => {
-            executionTimer = setTimeout(() => {
-              executionExpired = true;
-              cancelActiveStepSessions();
-              reject(new Error(executionTimeoutMessage));
-            }, executionTimeoutMs);
-          }),
-        );
-      }
-      if (opts.signal) {
-        stops.push(
-          new Promise<never>((_, reject) => {
-            stopForAbort = () => {
-              cancelActiveStepSessions();
-              reject(opts.signal?.reason ?? new Error(`Workflow "${workflow.name}" was cancelled`));
-            };
-            opts.signal!.addEventListener("abort", stopForAbort, { once: true });
-            if (opts.signal!.aborted) stopForAbort();
-          }),
-        );
-      }
-      const result = await Promise.race([execution, ...stops]).finally(() => {
+      const result = await Promise.race([execution, stopped]).finally(() => {
         if (executionTimer) clearTimeout(executionTimer);
-        if (stopForAbort) opts.signal?.removeEventListener("abort", stopForAbort);
+        signal.removeEventListener("abort", stopForAbort);
       });
 
       // Finalize the workflow run
@@ -1610,6 +1610,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           endedAt: run.endedAt,
           result_summary: run.result.summary,
           result_reason: run.result.reason,
+          result_payload:
+            result.type === "done"
+              ? retainWorkflowPayload("output", result.output)
+              : retainWorkflowPayload("evidence", result.context),
         });
       if (result.type !== "done" && depth === 1 && !opts.taskBinding) {
         emitWorkflowBlockedOwnerWake({
@@ -1692,6 +1696,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       }
       throw err;
     } finally {
+      parentSignal?.removeEventListener("abort", abortFromParent);
+      controller.abort(new Error(`Workflow "${workflow.name}" has ended`));
       for (const unsubscribe of taskEventUnsubscribers) unsubscribe();
     }
   }

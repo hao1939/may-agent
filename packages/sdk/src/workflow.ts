@@ -390,6 +390,12 @@ export type TaskReconciliationContext<TInput = unknown> = {
 
 export type WorkflowContext<TInput = unknown> = {
   input: WorkflowInput<TInput>;
+  /**
+   * Aborted on caller cancellation, the run/parent deadline, or run completion.
+   * Pass to cooperative I/O helpers and check before starting another operation.
+   * Does not preempt arbitrary JavaScript or undo completed external effects.
+   */
+  signal: AbortSignal;
   /** Present only when a durable App task owns this workflow attempt. */
   reconciliation?: TaskReconciliationContext<TInput>;
   read: AppRead;

@@ -12,6 +12,7 @@ import {
   readWorkflowDiagnostics,
 } from "./workflow-diagnostics.js";
 import { SubagentManager } from "./manager.js";
+import { MAX_WORKFLOW_PAYLOAD_BYTES } from "./workflow-payload.js";
 
 const roots: string[] = [];
 function fixture() {
@@ -29,6 +30,86 @@ afterEach(() => {
 });
 
 describe("workflow evidence without reporting", () => {
+  it.each(["done", "blocked"] as const)(
+    "retains %s output with redaction and integrity checks after storage reopen",
+    async (status) => {
+      const { root, workflows } = fixture();
+      const secret = "synthetic-credential-".repeat(4);
+      writeFileSync(
+        join(workflows, "packet.ts"),
+        `
+      export const name = "packet";
+      export const description = "Evidence fixture";
+      export async function execute(ctx) {
+        return ctx.${status}("collected", {
+          revision: "v1", attempts: [{status: 503}, {status: 200}],
+          token: ${JSON.stringify(secret)}, detail: ${JSON.stringify(`token=${secret}`)}
+        });
+      }
+    `,
+      );
+      const runner = createWorkflowRunner({ manager: {} as SubagentManager, workflowDir: workflows, persistDir: root });
+      const result = await runner.run("packet", "test");
+      expect(result.type).toBe(status);
+      if (!("workflowRunId" in result) || !result.workflowRunId) throw new Error("Missing run identity");
+      const path = join(root, "workflow-runs", result.workflowRunId, "run.json");
+      expect(readFileSync(path, "utf8")).not.toContain(secret);
+      closeDb(root);
+      const retained = readWorkflowEvidence(root, result.workflowRunId)!;
+      expect(retained.run.result_payload).toEqual({
+        kind: status === "done" ? "output" : "evidence",
+        state: "available",
+        redacted: true,
+        value: {
+          revision: "v1",
+          attempts: [{ status: 503 }, { status: 200 }],
+          token: "[REDACTED]",
+          detail: "token=[REDACTED]",
+        },
+      });
+      // Inspection sanitizes its own copy; the immediate caller still gets the authored value.
+      expect(
+        status === "done" && result.type === "done" ? result.output : result.type === "blocked" ? result.context : null,
+      ).toMatchObject({ token: secret });
+      writeFileSync(path, JSON.stringify({ ...retained.run, result_payload: { value: "tampered" } }));
+      expect(readWorkflowEvidence(root, result.workflowRunId)?.run).toMatchObject({
+        artifact_error: "workflow artifact integrity mismatch",
+      });
+      expect(readWorkflowEvidence(root, result.workflowRunId)?.run.result_payload).toBeUndefined();
+      rmSync(path);
+      expect(readWorkflowEvidence(root, result.workflowRunId)?.run).toMatchObject({
+        artifact_error: "workflow artifact missing",
+      });
+    },
+  );
+
+  it.each([
+    ["oversize", `"长".repeat(${MAX_WORKFLOW_PAYLOAD_BYTES})`, "too-large"],
+    ["circular", "(() => { const a = {}; a.self = a; return a; })()", "not-json"],
+    ["bigint", "{ count: 1n }", "not-json"],
+    ["throwing", "{ toJSON() { throw new Error('private data'); } }", "not-json"],
+  ])("keeps completed work when its inspection payload is %s", async (_name, expression, reason) => {
+    const { root, workflows } = fixture();
+    writeFileSync(
+      join(workflows, "payload.ts"),
+      `
+      export const name = "payload";
+      export const description = "Bad output fixture";
+      export async function execute(ctx) { return ctx.done("finished", ${expression}); }
+    `,
+    );
+    const runner = createWorkflowRunner({ manager: {} as SubagentManager, workflowDir: workflows, persistDir: root });
+    const result = await runner.run("payload", "test");
+    expect(result.type).toBe("done");
+    if (result.type !== "done") throw new Error("Expected completed run");
+    closeDb(root);
+    expect(readWorkflowEvidence(root, result.workflowRunId)?.run.result_payload).toEqual({
+      kind: "output",
+      state: "unavailable",
+      reason,
+    });
+  });
+
   it.each(["insert", "started-event", "finalize"] as const)(
     "reports honest evidence when workflow setup or persistence fails: %s",
     async (failure) => {
