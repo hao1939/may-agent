@@ -1,45 +1,20 @@
 # Recovery against the continuing-Task design
 
-**Status:** Source investigation, September 12, 2026. The common-lifecycle PoC
-remains incomplete and unmerged. This review applies the
+**Status:** Critical-path source PoC reviewed, September 12, 2026; unmerged and
+undeployed. This review applies the
 [accepted proposal](conversation-input-unification.md#recovery-keeps-the-same-task)
 to PRs #153, #154 and #155; it does not merge or deploy them.
 The current review artifact is [draft Host PR #158](https://github.com/hao1939/may-agent/pull/158).
 
-**Current assessment:** Focused lifecycle and managed-model recovery checks
-support the design. The source now removes the old Conversation executor and
-supervisor reply path; the paired App candidate removes its supervisor declaration.
-The [real-daemon cutover](#real-daemon-cutover) now passes for an isolated old
-Host and candidate pair, including the current revision after integration with
-main. Installation adoption remains separate; historical readers and the final
-acceptance audit remain under review. Full local CI at `682ba127` passes **2,894 tests**, with
-**3 skipped and zero failures**. GitHub Quality and Container also pass at
-that same revision.
-New human input now permits a fresh attempt
-without resetting failure counts; source responsiveness checks pass below.
-Receipt and open-state conversion now have old-source import evidence below;
-mixed ordinary/Conversation input and supervisor retirement also pass source
-cutover and runtime checks.
-The [critical-path trial](#critical-path-through-real-workers) now also passes
-through real Task workers with a local scripted provider. Task A handles human
-input and delegates to B; these are roles within one lifecycle.
-The [live May trials](#live-may-on-the-shared-loop) also pass this path using the
-paired App declaration and instructions unchanged, including a below-threshold
-case held back from the first run. No production fix was needed for these trials.
-The later [three-Task trials](#nested-delegation-uses-the-same-task-loop)
-also pass with actual model judgment after simplifying same-App admission and
-result return. A saved wait no longer starts an unnecessary caller attempt.
-The branch adds 506 net production lines against current main `49272b5a`
-(counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
-The [receipt-authority retirement](#historical-receipts-no-longer-decide-execution)
-removes another runtime path and fixes stale dependency readiness. Finish the
-historical reader review and acceptance audit before expanding the design.
-The [runtime/input checks](#runtime-outcomes-and-input-continuation) now pass,
-as do [isolated daemon restarts](#daemon-restart-with-retained-outcomes).
-The [Stop/admission checks](#public-stop-and-admission-ownership) now pass.
-The [last failure fixtures](#failure-handling-uses-the-shared-task-lifecycle)
-now exercise the shared runtime. The [current inventory](#current-simplification-inventory)
-separates removed execution owners, ongoing code and offline migration cost.
+**Recommendation:** Proceed with human review of one Task model, controller and
+lifecycle. A can take human input, delegate to B, and B can delegate to C:
+**A → B → C → B → A**. Context and capabilities vary; execution ownership does
+not. The old independent inbox executor and supervisor reply path are removed,
+and the paired App removes its supervisor declaration. Source checks, two live
+nested trials and an isolated real-daemon cutover support this critical path.
+The [acceptance audit](#critical-path-acceptance-audit) states what is proved and
+what remains outside it. Earlier sections below retain dated intermediate
+failures and limitations; they do not describe the current candidate.
 
 The worker decides **how to do the assigned work**. The assigning App, parent
 agent or human decides **whether to keep assigning it**, revise its scope or
@@ -50,6 +25,86 @@ a worker's honest failure report nor a core retry counter may abandon the work.
 This corrects the earlier review's suggestion that accepting a give-up judgment
 could leave unfinished work quiet until an explicit owner unblock. That would
 preserve the Task record while still letting the worker end the effort.
+
+## Critical-path acceptance audit
+
+The four implementation checkpoints in the proposal now have source evidence:
+one lifecycle, nested composition, result routes/App conventions, and isolated
+retained-state cutover with the old execution owners removed. This completes
+the critical-path source experiment requested by the human. It is a
+recommendation for review, not merge or deployment approval.
+
+| Requirement | Evidence and boundary |
+| --- | --- |
+| Outcome without closure; later input; exact answer | `app-task-accepted-result.test.ts` and `app-task-common-lifecycle.test.ts` check accepted attempt identity, atomic rollback, later generations, out-of-order callers and reopen. An old success cannot satisfy a newer assignment. |
+| Owner closure; repeated control; late output | Common-lifecycle tests check exact-result closure, duplicate close, closure while running, stale settlement and late wakes. Closing a parent does not silently close independent children. |
+| Duplicate and during-run wakes | `controller.test.ts` checks deduplicated keys, a fresh pass after a during-run wake, shared capacity and drained shutdown. There is one current claim per Task. |
+| A → B → C → B → A; human input while C works | Two [live nested trials](#nested-delegation-uses-the-same-task-loop), at Host `64cd4d1b` / App `b73886ab05`, each use seven attempts and one measurement read, with zero tool errors or extra supervisory attempts. All three Tasks stay open; the original Request closes and fresh input works after reopen. |
+| Stop, later input and background pause | `conversation-runtime.test.ts` and `conversation-task-turns.test.ts` exercise the same Task attempt through public control, queued input, restart, atomic reply/control settlement and source-aware capacity. Telegram coordinates stay with the actually claimed input. |
+| Failure reports and retry without a failure-count stop | `app-task-retry.test.ts` and common-lifecycle tests retain original input, waits and failure evidence; seven consecutive failures and 24 independently failing Tasks recover. Real due timers and restart preserve backoff and release capacity. [Live failure trials](#recovery-evidence-and-remaining-gap) report failure, then answer after the fixture repairs the source. |
+| App-owned judgment and owner-owned scope | Source tests reject worker self-revision/closure and accept an owner's scope change or closure during cooldown. The next worker receives retained evidence and the current assignment. App guidance owns uncertain recovery judgment. |
+| Empty or interrupted synthesis | [Managed recovery](#managed-conversation-recovery) and [failure checks](#failure-handling-uses-the-shared-task-lifecycle) continue from retained input/evidence through bounded attempts; unaccepted work may be redone. Accepted effects are fenced and preserved. |
+| Missed notification, late links and quiet timers | Runtime/state tests route accepted results and closures through durable input, recover missed delivery after reopen, page bounded discovery and retain Stop. Saved waits and self-links do not cause extra model calls. [Daemon tests](#daemon-restart-with-retained-outcomes) also execute without optional schedules. |
+| Capability removal, cleanup and shutdown | Runtime tests leave unavailable-handler work visible and executable again after restoration. Controller and workspace checks release capacity, drain attempts and preserve required work evidence. An open idle Task alone does not require a running process; failed work may retain an affordable recovery workspace. |
+| Historical reads | [Reader review](#historical-reader-review) retains exact results and closed history, distinguishes owner closure from cancellation, and keeps archive readers outside runtime authority. |
+| Real old-version cutover | Clean old `a8f65188` → candidate `682ba127`: four observed old processes exit, retained input continues, measurement 17 is accepted, earlier reply appears once, supervisor stays closed, and fresh input executes on the same open Task. Four scripted provider calls; no real model calls. |
+
+The source checks named above live under Host `src/app/core/tasks/`,
+`src/app/core/state/` and `src/app/adapters/workspaces/`; current full-CI evidence
+is recorded with the [reader checkpoint](#historical-reader-review). This audit
+inspected assertions and retained reports; it did not repeat successful model
+trials or claim those older trials ran against a newer revision.
+
+**Value versus cost:** one execution/settlement/retry authority replaces the
+independent inbox and supervisor paths. At the reader checkpoint, production
+code against main `49272b5a` is **526 net lines larger**: **517** in three offline
+converters and **9** in ongoing code. This is a reduction in competing paths,
+not a substantial reduction in line count. Keep typed message/Request/Topic
+operations and archive reads: they preserve useful context and evidence without
+adding another lifecycle. Do not build a generic controller framework or merge
+tables merely to make every capability look identical.
+
+Accept planned upgrade downtime, bounded attempts, safe redo of unaccepted work,
+and conventional human capacity without general preemption. Retained evidence
+has a storage cost; this PoC does not add automatic deletion of referenced
+outcomes. Optional discovery has latency and cannot replace required recovery.
+
+**Deferred beyond the critical path:** a controlled old-versus-new model cost
+comparison; unprompted decomposition; live owner withdrawal after repeated costly
+failure; autonomous repair of real services; long-running scale/retention
+measurement; full installed tool/transport trials; and installation-specific
+rollout/rollback. Source authority checks and small live judgment samples do not
+prove those broader behaviors. Follow the human's critical-path-first decision:
+record these limits instead of adding mechanisms or extending the PoC indefinitely.
+Host/App adoption still requires human review and a separate rollout plan.
+
+## Historical reader review
+
+Host `c50f56f4` fixes two current projection errors: an explicit owner
+closure appeared as cancellation, and restored closed history disappeared from
+the SDK Task list. Human views now show `closed` separately from `cancelled`;
+SDK lists retain closed resources with their existing `closed` flag and evidence.
+Active outcome reports exclude closed work. Child history retains the legacy
+`cancelled` field name but carries the actual closure kind; closure alone proves
+neither success nor failure. No claim, retry or storage lifecycle was added.
+
+New checks exercise real owner closure after an accepted result, withdrawal of
+unfinished work, historical receipt conversion, pagination, App isolation and
+active-versus-history reporting. The focused readers/reporting suite passes
+47 tests. Full local `bun run ci` at Host `c50f56f4` passes Host/SDK types,
+the App boundary and lint: **2,896 passed, 3 skipped, zero failures**
+(2,899 tests / 291 files; 136.97 seconds). The skips require separately installed
+App/agent configuration. The last real-daemon cutover remains `682ba127`;
+the reader changes do not modify conversion, claims or execution.
+
+Archive readers and their pre-cutover read projections remain deliberately.
+They are needed for offline inspection, including old cancellation records
+without a retained executable spec. Runtime preparation rejects unconverted
+history, and accepted attempts/retained Tasks control all current execution
+decisions. Removing those readers would require more migration work without
+removing another execution owner. Compatibility names such as `achieve`,
+`maintain` and SDK `done` also remain; they do not select different lifecycles.
+Any later naming cleanup should have its own concrete value.
 
 ## PR assessment
 
@@ -1575,6 +1630,9 @@ apply; the successful live judgment trials retain their original source revision
 
 ## Current simplification inventory
 
+The [final audit](#critical-path-acceptance-audit) updates the totals after reader
+corrections. The inventory below records the preceding checkpoint.
+
 At `682ba127`, compared with current main `49272b5a`, non-test files under `src/`
 and `packages/` add **2,880** lines and remove **2,374**: **506 net added lines**.
 This excludes tests, fixtures, scripts and Markdown. The three offline cutover
@@ -1599,9 +1657,9 @@ retry counter or lifetime policy. The ongoing implementation is slightly smaller
 total production code including conversion is still larger. Neither line counts
 nor fewer execution owners establish overall maintenance cost or operational reliability.
 The real-daemon fixture above now proves old-version cutover for its stated
-scope. Historical reader retirement and the final integration audit remain.
-Keep the next work on those gaps instead of adding a framework
-to eliminate ordinary handler-specific code.
+scope. At this checkpoint, historical reader review and the final audit were still
+pending. The [reader review](#historical-reader-review) now resolves those gaps
+without adding a framework to eliminate ordinary handler-specific code.
 
 ## Verification and cost
 
@@ -1639,6 +1697,7 @@ results are retained here; passing focused tests does not clear the migration ga
 | `9d819d53` | 2,861 / 3 / 0 | 2,864 / 289 | 166.47 | Runtime receipt authority removed; old success cannot satisfy a newer assignment; activation requires converted history |
 | `ff3b852b` | 2,893 / 3 / 1 | 2,897 / 291 | 169.91 | Current main integrated; one upstream Topic fixture still invokes the retired inbox executor |
 | `682ba127` | 2,894 / 3 / 0 | 2,897 / 291 | 134.74 | Topic fixture uses actual Task execution; local/remote CI and clean old-to-new daemon cutover pass |
+| `c50f56f4` | 2,896 / 3 / 0 | 2,899 / 291 | 136.97 | Owner closure reads and filters are truthful; closed results remain discoverable without appearing as active work |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite

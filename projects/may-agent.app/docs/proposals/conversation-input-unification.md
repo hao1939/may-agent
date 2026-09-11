@@ -5,8 +5,10 @@ is under review in [draft Host PR #158](https://github.com/hao1939/may-agent/pul
 it is unmerged and undeployed. Use one Task model, controller and lifecycle:
 explicit outcomes, rest between inputs, owner-controlled closure. Human
 conversation, delegated work and maintenance describe roles and inputs within
-that model. Full local CI and an isolated old-to-new daemon cutover pass;
-compatibility retirement and the overall simplification remain unfinished.
+that model. Full local CI, live nested delegation and an isolated old-to-new
+daemon cutover pass. The [critical-path acceptance audit](controller-poc-recovery-review.md#critical-path-acceptance-audit)
+supports the shared model and records retained compatibility costs and deferred
+usage checks. Human review and installation adoption remain separate.
 This supersedes the earlier recommendation to
 share only scheduling while keeping two execution lifecycles.
 
@@ -445,6 +447,10 @@ No new metric service, transport or user acknowledgment protocol is required.
 
 ## Implementation order
 
+The [critical-path audit](controller-poc-recovery-review.md#critical-path-acceptance-audit)
+now maps evidence to these four source checkpoints. They describe the migration
+sequence; installation-specific rollout remains separate.
+
 1. **Prove the revised Task lifecycle.** Using supplied decisions and temporary
    SQLite, cover a result while the Task stays open, later input, exact-result
    correlation, owner closure during execution, and duplicate wakes after
@@ -576,8 +582,11 @@ The [outcome-route checks](controller-poc-recovery-review.md#returning-linked-ou
 cover live delivery, missed notifications, failed admission, honest failure and
 bounded discovery. The [current evidence record](controller-poc-recovery-review.md)
 adds closure checks, retirement of the old execution owners, full passing CI
-and an isolated daemon cutover. Historical compatibility paths and the overall
-maintenance cost still need review before claiming whole-system simplification.
+and an isolated daemon cutover. The [final source audit](controller-poc-recovery-review.md#critical-path-acceptance-audit)
+supports the critical path: one execution owner replaces the old inbox and
+supervisor paths. Historical readers remain deliberately, outside runtime
+authority. Ongoing code size is roughly unchanged; lower long-term maintenance
+cost and broad operational reliability remain judgments to test in usage.
 
 Check documentation integrity, executable examples, local Markdown links/anchors
 and whitespace. The linked source PoC implements the shared loop for review;
