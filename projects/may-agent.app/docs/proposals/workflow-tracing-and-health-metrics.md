@@ -1,8 +1,8 @@
 # Workflow tracing by default and useful health metrics
 
 **Design status:** Draft for review, September 11, 2026.
-**Implementation status:** First bounded source slice in Host #143, at
-`1526e063`, is under review. It implements the evidence foundation and basic
+**Implementation status:** First bounded source slice merged in Host #143 as
+`939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
 [candidate section](#first-implementation-candidate) states what remains.
 
@@ -392,8 +392,8 @@ tracing backend or automatic repair.
 
 ## First implementation candidate
 
-Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `1526e063`,
-keeps this first PR independently useful:
+Host [PR #143](https://github.com/hao1939/may-agent/pull/143) merged as `939698ad`
+from verified head `1526e063`. The first slice is independently useful:
 
 - Ordinary workflow errors return a run ID only when its terminal error record
   and artifact are readable. Setup failures share the existing finalization
@@ -430,8 +430,8 @@ was used for validation.
 
 Local `bun run ci` passed at that revision: 2,693 passed, three installation-only
 skips and zero failures, including browser tests (121 seconds for the test phase).
-Hosted checks and review remain
-the PR's gate. Regression tests fail if diagnostic persistence and failed-run
+Hosted Quality and Container passed on that exact head before merge.
+Regression tests fail if diagnostic persistence and failed-run
 identity are removed; no killed live worker or deployed installation was used.
 
 Review follow-up adds a scheduled query/command failure test that closes and
