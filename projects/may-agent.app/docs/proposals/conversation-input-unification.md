@@ -129,8 +129,11 @@ back an exact accepted attempt as system input. The later
 routes human messages through that Task and stops only the observed Turn.
 The [result-route checkpoint](controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
 also returns accepted outcomes through live events and missed-result discovery.
-Closure without an accepted attempt and old-owner retirement remain to migrate;
-live model use of this actual Conversation path is still unproved.
+The [closure checkpoint](controller-poc-recovery-review.md#returning-owner-closure-through-conversation-input)
+returns the owner's saved closure through that same input route, including
+closure without a result. It leaves Request resolution to the Conversation.
+Old-owner retirement remains to migrate; live model use of this actual
+Conversation path is still unproved.
 The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 also exercises human replies beside running background work and inside a paused
 App, including restart and the storage claim fence.

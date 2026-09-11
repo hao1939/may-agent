@@ -464,11 +464,51 @@ historical rows examined. The query remains scoped to one App's links but its
 cost grows with their retained history. This local measurement is acceptable
 for the existing infrequent discovery tick; it is not a scale or latency guarantee.
 
-Owner closure without an accepted attempt still needs its own factual return
-through the common route. Per-input pacing, retry failure/effect context,
-Conversation Task controls, the actual managed-model trial, and retirement of
+The closure checkpoint below extends this common route. Per-input pacing,
+retry failure/effect context, Conversation Task controls, the actual managed-model trial, and retirement of
 the old execution and follow-up owners remain required. No installed state or
 Host main changed.
+
+## Returning owner closure through Conversation input
+
+Source [checkpoint `1b43c973`](https://github.com/hao1939/may-agent/commit/1b43c973)
+extends the same route to the owner's saved
+closure. The worker owns how to pursue its assignment; the owner decides
+whether to continue, revise or close it. Code applies that decision and returns
+the fact to the linked Conversation. Closing a Task does not manufacture a
+successful result or resolve the human's Request.
+
+Accepted results name an exact attempt; closures name an exact Task generation.
+Admission checks the saved source and Topic link in one transaction. The
+existing cancellation event supplies the committed generation; notification text
+alone cannot stop an attempt or create a closure input. Cancellation uses the
+stored reason and rejects late results from the interrupted attempt.
+
+The existing review timer discovers both missing outcomes and closures, then
+emits the same `conversation.task.changed` event. Existing input identities
+deduplicate admission and preserve Stop across restart. There is no new table,
+scheduler, model role or delivery cursor. If the stable Conversation Task remains
+but its App removes Conversation capability, retained work cannot fall back to
+the old routing owner.
+
+Five new supplied-decision checks cover live closure, missed notification and
+restart, Stop of the closure-review Turn, exact source validation with atomic
+admission rollback, and capability removal. The runtime cases leave the Request
+open after Task closure; a later human withdrawal closes it explicitly while
+the Conversation Task stays open. All **36 Conversation tests** pass.
+
+The updated local discovery fixture contains 2,001 accepted attempts, one
+closure and 1,980 handled references. It returns 22 pending changes; twenty
+selections average **9.4 ms**. Both query branches use existing indexes and are
+scoped to the recipient App. The limit bounds returned work, not history read;
+the measurement is not a scale guarantee.
+
+Live closure is proved through the existing `cancelLoadedAppTask` path. Direct
+state/App-action closures still need their notification path reviewed; discovery
+can find saved closures without a live event. All closures currently become
+facts, including closure after success. Measure any extra quiet-review model
+cost in the managed trial before adding suppression policy. This checkpoint
+does not prove live-model understanding or retire the legacy execution owner.
 
 ## Verification and cost
 
@@ -527,6 +567,13 @@ Conversation suites pass **31 tests**. Full CI finishes with **2,660 passes,
 Five added checks pass, with no new or removed failure names relative to
 `86455d13`. The full migration gate remains red; no live model trial ran.
 
+At `1b43c973`, Host/SDK types, App-boundary checks and lint pass. The two
+Conversation suites pass **36 tests**. Full CI finishes with **2,665 passes,
+3 skips and 129 failures**, across 2,797 tests in 282 files (136.9 seconds).
+All five new cases pass in the full run; no failure entries were added or
+removed relative to `faba34f7`. The full migration gate remains red. These are
+source/runtime checks with supplied decisions; no live model trial ran.
+
 The remaining failures include old receipt/deletion and failure-count
 expectations, Conversation/Request outcome readers, and real worker/restart
 fixtures. These are unresolved migration and runtime checks, not evidence that
@@ -576,6 +623,11 @@ query over existing records. It reuses the Conversation input transaction,
 Task controller, source event and optional review timer. The old supervisor
 is bypassed for Task-owned Conversations, but its code and declaration still
 need retirement; total code reduction is not established.
+The closure-route checkpoint adds **67 net production lines** (138 added,
+71 removed), excluding tests. It extends the same capability and discovery
+query to saved closures, and checks durable cancellation before aborting an
+attempt. It adds no table, index, scheduler or model decision. This remains
+intermediate code until the old Conversation execution and follow-up paths retire.
 
 Recovery still uses the existing controller, queue, Task resource and due
 queries. Retirement at `3d3f5a73` removes **449 net production lines**; respecting
