@@ -10,14 +10,17 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`26dce52f` has 138 unresolved failures. New human input now permits a fresh attempt
+`4bff7813` has 138 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
 mixed ordinary/Conversation input and supervisor retirement also pass source
 cutover and runtime checks.
+The [critical-path trial](#critical-path-through-real-workers) now also passes
+through real Task workers with a local scripted provider. Task A handles human
+input and delegates to B; these are roles within one lifecycle.
 The branch adds 632 net production lines against baseline main `a8f65188`
-(counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Finish cutover and examine those
-failures before expanding the design.
+(counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Prove the shared loop with actual App guidance and model decisions, then resolve
+regression and operational-cutover gaps before expanding the design.
 The latest live evidence is
 [below](#managed-conversation-recovery).
 
@@ -999,6 +1002,46 @@ guidance or provide an upgrade runner. The operator must account for relevant
 pending commands before retirement; failure is an incomplete cutover, not
 permission to delete a command or its accepted work. Complete process
 shutdown/activation and full regression convergence remain required.
+
+## Critical path through real workers
+
+At Host `4bff7813`, this trial follows the shared loop, with additional corner
+cases deferred:
+
+```text
+human -> Task A -> delegates Task B
+human -> Task A -> answers while B runs
+         Task B -> accepts outcome -> event/input -> Task A -> replies
+```
+
+Both Tasks execute through the normal controller and worker process. The
+App's conversational handler supplies A's response and Request decisions;
+the workflow handler supplies B's measurement. No second executor owns A.
+
+[task-interaction-scenario.ts](../../../may-agent/test/integration/fixtures/task-interaction-scenario.ts) uses temporary SQLite,
+normal App discovery, HTTP provider requests, `finish` tool validation and
+private worker IPC. One scenario handles two human inputs on the same Task
+across storage reopen and rejects duplicate dispatch as a reason for another
+model call. Another publishes human messages through normal ingress: A admits
+B and an open Request, answers a second human message while B waits for an HTTP
+measurement, then receives B's exact accepted attempt through the normal event
+route. A reports 17 and fulfills the Request. Both Tasks remain open. After
+closing and reinstalling the runtime and reopening SQLite, A answers from the
+retained discussion without creating another Task or leaving an unreported result.
+
+The worker boundary suite passes **11 tests**, including these two scenarios.
+This checkpoint changes only test code and reuses the existing worker harness;
+it adds no production mechanism. The scripted provider proves the plumbing and
+structured-result contract, not independent model judgment. The reopen check
+does not restart the full daemon or perform an operational upgrade. Next,
+exercise actual App guidance and unscripted model decisions on this same path
+before adding further recovery scenarios.
+
+Full `bun run ci` passes Host/SDK types, the App boundary and lint, then reports
+**2,729 passed, 3 skipped and 138 failed** across 2,870 tests in 289 files
+(157.9 seconds). Both new trials pass in the full suite; failure names are
+unchanged from `26dce52f`. Net production growth remains 632 lines against
+`a8f65188`. Design integrity, examples and all 44 changed-document links pass.
 
 ## Verification and cost
 

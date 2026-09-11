@@ -22,6 +22,13 @@ owns the target lifecycle and distinguishes it from the implemented protocol.
 release execution. Run again for relevant pending input or justified recovery.
 An authorized owner decides when to close the Task.**
 
+Conversation describes a Task's interaction with the human. It is not a second
+execution category beside Task. For example, Task A handles human input and
+delegates work to Task B. Both use the same controller and lifecycle;
+their handlers interpret different inputs and produce different results.
+Messages, Topics and Requests preserve the human context without owning another
+execution loop.
+
 ```text
 Human input / child result / relevant fact / optional timer
                             |
@@ -134,19 +141,29 @@ returns the owner's saved closure through that same input route, including
 closure without a result. It leaves Request resolution to the Conversation.
 The [managed Conversation trials](controller-poc-recovery-review.md#managed-conversation-recovery)
 now pass empty-response, interrupted-effect and restart recovery with real
-models and a synthetic App. They use normal prior-attempt context. Old-owner
-cutover, live child-chain follow-through and the Conversation worker subprocess remain
-unproved. The old execution paths have been removed from the candidate source;
+models and a synthetic App. They use normal prior-attempt context.
+The [shared-loop worker trial](controller-poc-recovery-review.md#critical-path-through-real-workers)
+now passes A delegating to B, A answering while B runs, B's outcome waking A,
+Request fulfillment and runtime/storage reopen. Both use the normal Task worker;
+the model responses in this trial are scripted. Operational old-owner cutover
+and current-source live-model child-chain follow-through remain unproved.
+The old execution paths have been removed from the candidate source;
 [current CI and migration evidence](controller-poc-recovery-review.md) still leave
 whole-system simplification unproved.
 The [Task-worker process checks](controller-poc-recovery-review.md#workspace-and-worker-process-boundaries)
 now verify retained input and effects across worker loss, plus workspace release
-while Tasks stay open. These use deterministic workflows; Conversation subprocess
-execution and operational cutover still need their own proof.
+while Tasks stay open. These use deterministic workflows; operational cutover
+still needs its own proof.
 The [human-control checkpoint](controller-poc-recovery-review.md#human-task-controls-through-conversation)
 also applies conversational Task cancellation atomically with its reply and
 removes the old daemon callback. Source checks cover user authority, stale
 decisions, rollback and interruption of the exact running Task.
+
+Prioritize the critical path before additional corner cases: human input to A,
+delegation to B, continued discussion with A, B's accepted outcome returning to A,
+and a useful reply. Then exercise the same path with actual App guidance and
+model decisions. Keep the basic reopen check; defer further fault injection and
+unusual migration combinations until this shared loop earns the design's cost.
 The [capacity and pause checkpoint](controller-poc-recovery-review.md#conversation-capacity-and-background-pause)
 also exercises human replies beside running background work and inside a paused
 App, including restart and the storage claim fence.
