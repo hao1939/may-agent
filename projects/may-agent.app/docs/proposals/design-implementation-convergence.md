@@ -12,9 +12,8 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
-| Current-turn redirection | [Core review plan](task-runtime-organization.md#3-validate-redirection-and-request-follow-through): start with Stop then a correction; add immediate steering only when its value is demonstrated |
-| Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [controller proposal](task-controller-pattern.md#remaining-implementation-and-review): extend bounded evidence for correction, restart, scope and truthful closure; storage, retry and finite Task stop mechanics are merged |
-| Correlated failure evidence | [Core review plan](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events): identify exact work, stage and disposition through existing events/reads; investigation does not gate settlement |
+| Current-turn redirection | [Request follow-through review](task-runtime-organization.md#request-follow-through-review): Stop then correction survives SQLite reopen in fixtures; add immediate steering only when its value is demonstrated |
+| Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [Request follow-through review](task-runtime-organization.md#request-follow-through-review): core correction, non-success and closure boundaries pass deterministic checks; live recognition, scope and truthful closure still need usage evidence |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |
 | External capability scope and complexity | [External component plan](external-components-simplification.md#conditional-follow-ups): Scout credential fix landed on workspace main; Host #132/#133 merged as `23968acd`/`39a23f22`; further features/migrations require demonstrated value |
 | System path reduction and readable code ownership | [System simplification review](authority-boundary-simplification.md#design-choices-before-code-moves): compare Task-only conversational delegation, evaluation UI reduction and affordable redo; selected import/navigation and foreground-App changes are in review; larger deletions remain conditional |
@@ -24,6 +23,10 @@ of the remaining contract and its acceptance criteria.
 Input containment and Esc/Stop bindings merged in #121. Dispatch-failure pacing
 and cancellation of pending capacity waits merged in #127 (`743aa5de`). These
 are source fixes; their deployment is a separate operating decision.
+Correlated failure events are also implemented; the
+[core review](task-runtime-organization.md#4-improve-failure-evidence-through-existing-events)
+records their existing publishers and containment checks. Further diagnostics
+should answer a demonstrated operating question.
 
 ## Remaining metric ownership migration
 

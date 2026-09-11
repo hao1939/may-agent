@@ -654,6 +654,13 @@ or excess cost; this refinement does not change their values or add auto-retry.
 
 ### Live validation and remaining checks
 
+The [September 11 Request follow-through review](../proposals/task-runtime-organization.md#request-follow-through-review)
+checks Stop plus queued correction across SQLite reopen, linked Task non-success,
+recovery of missing explanation, stale-scope rejection and atomic closure. These
+are deterministic checks of Host mechanics with supplied App decisions; they do
+not establish the model judgments below. Candidate source and validation status
+remain in the review.
+
 The September 10 local May/Scout trial verified a new ask staying open through
 handoff to the exact existing HN Task, a new source-grounded cycle, and May
 returning its result before closing that ask. The standing Task retained its

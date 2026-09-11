@@ -6,9 +6,10 @@ for the intended outcome and [System Model](2a-design/system-model.md) for how
 the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
 
-**Source baseline:** The consolidated Host checkout is `main` at `e1a0005e`
+**Source baseline:** The consolidated Host checkout is `main` at `5857529e`
 (September 11, 2026), including directory organization, core policy cleanup and
-workflow failure evidence and Task definition preparation (#146). Dated reviews
+workflow failure evidence, Task definition preparation (#146) and runtime adapter
+publication cleanup (#145). Dated reviews
 retain the revision they examined;
 this baseline does not imply a fresh review of every subsystem or identify the
 deployed release. Candidate behavior and validation stay in linked proposals
@@ -40,8 +41,10 @@ Codex executor/observer grouping landed in #142 (`427d4ea1`). The
 merged in #144 (`8e242c11`): it removes obsolete recovery escalation and keeps
 conversational selection in composition.
 The [Task lifecycle review](proposals/task-runtime-organization.md#task-lifecycle-review)
-traces admission through restart and tracks the focused reload fix in #145.
-Definition preparation merged in #146 (`e1a0005e`). HTTP handler extraction remains separate.
+traces admission through restart; the focused reload fix merged in #145 (`5857529e`).
+Definition preparation merged in #146 (`e1a0005e`). The
+[Request follow-through review](proposals/task-runtime-organization.md#request-follow-through-review)
+checks correction, non-success and closure across storage reopen. HTTP handler extraction remains separate.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
 

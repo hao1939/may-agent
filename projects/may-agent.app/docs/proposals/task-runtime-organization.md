@@ -77,13 +77,13 @@ App accepts an input
    Add a short Task lifecycle reading table beside the code.
 
 Definition preparation merged in #146 as `e1a0005e` on September 11. The #145
-review fix incorporates that main revision and remains open for human review.
+review fix merged as `5857529e`, including rejected initial-publication cleanup.
 No SDK, persisted format or App declaration changes are needed; deployment
 remains separate.
 
 | Source slice | Local verification |
 | --- | --- |
-| [Host #145](https://github.com/hao1939/may-agent/pull/145), `148acd7f`: current session adapters and rejected-publication rollback | Full CI: 2,702 pass, three installation-only skips, no failures; reload, close/reinstall, rejected-reload and rejected-initial-publication regressions pass. The initial rejection case reproduced both rejected session reads and explicit recovery calls before the fix, and verifies successful later installation |
+| [Host #145](https://github.com/hao1939/may-agent/pull/145), `148acd7f`, merged as `5857529e`: current session adapters and rejected-publication rollback | Full CI: 2,702 pass, three installation-only skips, no failures; reload, close/reinstall, rejected-reload and rejected-initial-publication regressions pass. The initial rejection case reproduced both rejected session reads and explicit recovery calls before the fix, and verifies successful later installation |
 | [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`, merged as `e1a0005e`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
 
 Browser coverage ran in both suites. #145's complete local CI includes merged
@@ -112,7 +112,7 @@ Conversation/Request validation remain independent work.
 | Core responsibility | Current assessment | Next useful work |
 | --- | --- | --- |
 | App registration and input admission | Validated registration, generation publication and atomic Task attachment exist | Preserve the boundary; no new loader service |
-| Events | Durable admission, declared routes and change hints connect components | Reuse exact turn control and improve failure correlation |
+| Events | Durable admission, declared routes, exact turn control and correlated failure facts are implemented | Preserve those boundaries; choose further diagnostics from an operating question |
 | State and storage | SQLite fences, accepted results, Request revisions and closure are implemented | Merged in #129: Conversation/Request/Topic reads and decision commits use the [storage slice](storage-state-service.md#conversation-state-and-handler-extraction) |
 | Work runtime | Controller, settlement, retries, waits, finite stop and input containment exist | Merged in #129: generic dispatch and selected handler are separate; preserve the existing model/tool loop |
 
@@ -154,6 +154,10 @@ owns the contract and the separate steering gap.
 
 ### 3. Validate redirection and Request follow-through
 
+**Source status:** The existing mechanics pass the bounded review below. Remaining
+work is App judgment and interaction validation; add runtime behavior only for a
+demonstrated missing guarantee.
+
 Start with Stop, then a new correction in the same Conversation. Ordinary input
 currently queues behind a running turn; do not present that as immediate steering.
 If this two-step interaction is insufficient in use, add a way to save the
@@ -172,33 +176,62 @@ Tests of stored decisions do not prove the model's judgment in every discussion.
 silently reviving a stopped turn; accepted obligations stay visible until an
 explicit outcome. Add implementation only for a demonstrated missing boundary.
 
+#### Request follow-through review
+
+**Reviewed September 11 against Host `5857529e`.** The 89 existing focused tests
+passed. Candidate `60bd90d9` strengthens existing tests without changing runtime or
+storage behavior; its 14 affected tests pass. Full local CI passed: 2,705 tests,
+three installation-only skips, zero failures; browser coverage ran. Canonical
+design integrity, examples and App checks passed against that source. Hosted
+checks and human review remain pending.
+
+| Scenario | Checked boundary and source evidence |
+| --- | --- |
+| Stop, then correct the same ask | `app-turn-control.test.ts` persists Stop before abort, rejects late output, then reopens SQLite with the correction still queued. Its text and original Request reach the new handler; the same Request is revised once and the stopped turn stays stopped. Independent background work is unchanged. |
+| Linked work succeeds, exhausts retries, is cancelled by the human, or is stopped by its App | `core/state/conversation-requests.test.ts` uses real Task transitions. The accepted Request remains open and keeps its exact link in every case. Recovery finds it after reopening, including terminal linked work. |
+| The Task is finished but its explanation is missing | The same test obtains the normal supervision wake from reopened storage. A failed explanation write rolls back closure and links. An old scope cannot close a newer Request; a valid replay stores one explanation and closure. |
+| An explicit decision closes an unfulfilled ask | Fixture decisions use `unfulfilled` with an explanation. Closure does not change the linked Task, its attempts or its retained outcome. An exhausted Task still requiring attention remains independently reviewable after the ask closes. |
+
+The existing `failed completion rolls back closure` test also proves that a saved
+frontend decision survives a failed result write and can finish after reopen
+without another resolver call. `app-inbox-failure.test.ts` covers interrupted and
+failed frontend execution without automatic model replay.
+
+**Decision:** Keep the implementation. This review found a coverage gap, not a
+reproduced runtime defect. The candidate adds three non-success cases to the
+existing closure fixture and moves correction handling across the reopen boundary.
+No new Request worker, recovery mechanism or steering command is justified.
+
+These fixtures supply App decisions; they do not prove that a live model will
+recognize corrections or choose truthful closure. Verify those judgments in a
+separately authorized usage trial. Current Stop-then-correction remains the
+supported redirection path; immediate steering remains conditional on need.
+
 ### 4. Improve failure evidence through existing events
 
-**Value:** Runtime handling keeps work moving; later investigation identifies
-which failure repeats and whether repair is worth its cost.
+**Source status:** Implemented; the earlier TODO was stale. At `5857529e`, Task
+controller errors publish `handler.failed` with `source: "app-task-controller"`,
+App/Task identity, stage, disposition and retry intent. Inbox failures use
+`source: "app-inbox"` with available input, Conversation and claim identity.
+Execution reporters retain an independent diagnostic fallback.
 
-The controller already has a best-effort `onError`. Its current runtime wiring
-uses `handler.failed` with `source: "cron"` and embeds identity/retry details in
-strings; input failures use free-form `info`. Add useful work identity, stage,
-reason and disposition to existing event payloads/readers. Report the actual
-origin when known; do not label all Task controller failures as schedule work.
-Choose measurements only when they answer an operating question, for example
-failure frequency or repeated execution cost.
+`controller.test.ts` and `app-inbox-containment.test.ts` cover failures in the
+reporter itself. Keep reporting independent of cleanup and settlement. Apps/LLMs
+judge repair, scope and stop; the Host enforces mechanics.
 
-**Accept when:** An operator can follow a failure to its exact work and subsequent
-disposition without parsing prose. Diagnostic failure cannot prevent cleanup or
-settlement. Apps/LLMs judge repair, scope and stop; the Host enforces mechanics.
-A new core collector or investigation service is not required. This small change
-does not reopen the paused error-App/metrics placement decision.
+Further measurements or presentation changes need an operating question, such as
+which failure repeats or costs the most. The remaining question is usefulness in
+operation, not another event schema, core collector or investigation service.
+The error-App/metrics placement discussion remains deferred.
 
 ## Code homes and boundaries
 
 | Change | Existing home | Responsibility |
 | --- | --- | --- |
-| Dispatch, recovery and reporting containment | `app-inbox-runtime.ts`; ownership rules in `app-inbox-host.ts` | Own detached work and cleanup; keep execution control with its adapter |
+| Dispatch, recovery and reporting containment | `composition/app-inbox-runtime.ts`; ownership rules in `core/inbox/app-inbox-host.ts` | Own detached work and cleanup; keep execution control with its adapter |
 | Esc, buttons and command help | `packages/terminal`, `src/app/transport/telegram.ts`, relevant browser adapter | Capture exact work identity and render control outcome |
 | Durable turn Stop | Existing turn-control event route and inbox state | Reuse persisted disposition and exact execution fences |
-| Accepted Request meaning and storage | `conversations/requests.ts`, `projects/may.app/app.ts` | App judges; Host stores and checks revisions |
+| Accepted Request meaning and storage | `core/state/conversation-requests.ts`, `conversations/turn-handler.ts`, `projects/may.app/app.ts` | App judges; Host stores and checks revisions |
 | Correlated failure facts | Existing event contract, runtime publishers and read projections | Best-effort evidence independent of work settlement |
 | Further atomic state operations | `core/state/` and existing resource stores | One transaction owner for each coherent change |
 
