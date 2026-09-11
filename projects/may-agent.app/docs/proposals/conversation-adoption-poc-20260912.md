@@ -1,7 +1,8 @@
 # Teaching May through conversation: next-phase results
 
-**Status:** Isolated experiment completed, September 12, 2026. Source PRs are
-under review; no live installation, guidance, Task state or deployment changed.
+**Status:** Isolated experiment completed, September 12, 2026. Both source PRs
+have passing exact-head checks and resolved review threads and are ready for
+maintainer review. No live installation, guidance, Task state or deployment changed.
 
 ## Bottom line
 
@@ -43,7 +44,7 @@ The conversation path came from Host `49272b5a`, with the predecessor workflow
 candidate `11d7fe04`. The local audit branch is
 `poc/conversational-guidance-adoption`, commit `44da2238`. Its GitHub-shaped
 collector remains local. The independently reviewable teaching harness is
-[Host #160](https://github.com/hao1939/may-agent/pull/160), `9ca0aa96`, based on
+[Host #160](https://github.com/hao1939/may-agent/pull/160), `dbb39fee`, based on
 `49272b5a`; it additionally includes formatting, correlated reload observation
 and offline preflight regressions. The fourteen model turns ran on the audit
 revision above, not the final public PR head; final-head checks are listed below.
@@ -144,7 +145,7 @@ changed, so the capture is historical evidence, not current merge readiness.
 | PR | Scope and evidence |
 | --- | --- |
 | [#159](https://github.com/hao1939/may-agent/pull/159), `576b6a92` | Cooperative workflow cancellation and returned evidence in the existing artifact. Exact-head local CI: 2,776 pass, 3 installation-only skips, zero failures. GitHub [Quality and Container pass](https://github.com/hao1939/may-agent/actions/runs/34655489155). |
-| [#160](https://github.com/hao1939/may-agent/pull/160), `9ca0aa96` | Portable conversation-teaching trial, README and no-model/confinement tests. Exact-head local CI: 2,767 pass, 3 installation-only skips, zero failures. GitHub [Quality and Container pass](https://github.com/hao1939/may-agent/actions/runs/34656223913). |
+| [#160](https://github.com/hao1939/may-agent/pull/160), `dbb39fee` | Portable conversation-teaching trial, README and no-model/confinement tests. Exact-head local CI: 2,768 pass, 3 installation-only skips, zero failures. GitHub [Quality and Container pass](https://github.com/hao1939/may-agent/actions/runs/34657204389). |
 
 Review of #159 found that checking size after full serialization could run
 authored getters and allocate an oversized string. The revision uses a
@@ -166,13 +167,21 @@ not failed. Enclosing test bounds cover startup, both reload observations and
 shutdown without adding retries. Further review added cancellation propagation
 to each Git subprocess, reused the existing tolerant transcript reader for a
 still-running timed-out session, and routed preflight through the source tool
-itself. The three owning tests pass in about 3.4 seconds, including real Git
-cancellation and rejected path/action/cancelled-commit checks. No new runtime
-or transcript parser was added.
+itself. A final test-only correction puts the harness and daemon in one isolated
+process group and cleans it and the exact temporary folder on failure. The
+regression also deliberately interrupts the harness and verifies no running
+process survives. The four owning tests pass in about 3.7 seconds, including
+real Git cancellation and rejected path/action/cancelled-commit checks. No new
+runtime, signal handler or transcript parser was added. Another review clarified
+that inbox `done` also includes failed/stopped input handling. After saving the
+turn evidence, the trial now requires a `decided` handling state before continuing.
+A decision truthfully reporting rejected activation is still valid; an execution
+failure is not. Rechecking all fourteen original records with that guard passed.
 A standalone exact-head preflight also recorded correlated successful/rejected
 reloads and zero model sessions; failed validation preserved the prior active
-definition. All five threads were answered and resolved; final rereview is tracked
-on the PR.
+definition. All seven threads were answered and resolved; exact-head Copilot
+rereview returned a positive assessment with zero new comments. This is not
+independent human approval or deployed acceptance.
 
 ## Minimal next step
 
