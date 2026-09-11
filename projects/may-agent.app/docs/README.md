@@ -38,7 +38,9 @@ Codex executor/observer grouping landed in #142 (`427d4ea1`). The
 [core policy cleanup](proposals/authority-boundary-simplification.md#core-policy-cleanup)
 merged in #144 (`8e242c11`): it removes obsolete recovery escalation and keeps
 conversational selection in composition.
-HTTP handler extraction remains separate.
+The [Task lifecycle review](proposals/task-runtime-organization.md#task-lifecycle-review)
+traces admission through restart and tracks a focused reload fix and definition
+preparation extraction. HTTP handler extraction remains separate.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
 

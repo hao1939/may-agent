@@ -28,6 +28,66 @@ to decide which execution/recovery paths should remain. It also records the
 September 11 source-layout findings and small import/composition improvements;
 it does not replace the accepted inbox/state sequence below.
 
+## Task lifecycle review
+
+**Reviewed September 11 against Host `8e242c11`.** Core/external layout and the
+#143/#144 fixes are merged. The companion source-map and workflow-evidence
+updates are consolidated on workspace `main`; this is a source baseline, not
+installation verification.
+
+The common path already has useful boundaries:
+
+```text
+App accepts an input
+  -> admission stores/attaches the Task
+  -> controller obtains execution capacity
+  -> reconciler claims the current Task attempt in SQLite
+  -> selected executor proposes a result
+  -> runtime checks the result and any App verifier
+  -> reconciler commits accepted output, a wait, retry, attention, or stop
+```
+
+| Question | Source and finding |
+| --- | --- |
+| Can admission lose its Task link? | `core/state/inbox.ts: attachRequestToTask()` commits the inbox claim, Task admission and applicable links in one transaction. Event admission retains its idempotency identity. Keep those boundaries. |
+| Do capacity and claim duplicate authority? | `core/tasks/controller.ts` limits local execution and schedules queue hints. `claimObservedAppTask()` plus resource-store fences owns the exact attempt. The two mechanisms protect different facts. |
+| Who can say the outcome is done? | The executor proposes; `establishTaskAcceptance()` checks any verifier; `completeAppTask()` rechecks identity and newer evidence before committing output/actions. A successful executor call alone is insufficient. |
+| Can failure loop forever? | `failAppTaskAttempt()` retains unaccepted input and a durable failure count. Invalid results or rejected acceptance need attention/new evidence; cancellation and App stop remain distinct from success. Controller retries are scheduling, not a second durable retry allowance. |
+| Does restart need another controller? | No. `recoverInstalledAppTasks()` repairs known interrupted state and queues the same Task. Retained terminal direct-agent output uses existing admission; task-bound sessions bypass generic session resumption. Indexed safety/due recovery restores lost queue hints. |
+| Is reload internally consistent? | Attempts pin execution definitions and installation publishes one generation. The session-event listener nevertheless captured the first runtime's adapters while reading current descriptors. A focused regression reproduced stale adapter use after both reload and close/reinstall. |
+
+### Small source changes from this review
+
+1. **Fix the reproduced reload mismatch.** Keep the process-scoped listener;
+   resolve its options from the published runtime when handling each event.
+   Do not register another listener or change how an already running attempt
+   retains its execution definitions. The regression checks both session start
+   cleanup and terminal-session inspection, with no duplicate subscriber.
+2. **Separate definition preparation from attempt orchestration.** Move existing
+   descriptor construction, seed-authority discovery and project read-model
+   projection into `core/tasks/runtime-definition.ts`. The admission worker
+   imports its descriptor preparation there. Keep publication, rollback,
+   controllers and all reconciliation transitions with their existing owners.
+   Add a short Task lifecycle reading table beside the code.
+
+These are separate source candidates based on `8e242c11`, so either can be
+reviewed independently. No SDK, persisted format or App declaration changes are
+needed. The source PRs will record their exact revisions and validation here.
+
+**Value/cost decision:** Fix the observable adapter mismatch with one current
+runtime lookup. Extract the preparation code because it is a cohesive concern
+with ordinary typed inputs and no execution callbacks; it removes about 180
+lines from the orchestration file. This improves reading structure without
+claiming to reduce total behavior or prove production performance. Eight moved
+function bodies remain unchanged. Existing full CI, including reload/rollback,
+admission workers, Task cancellation and SQLite restart tests, is the gate.
+
+Do not split recovery and settlement merely to meet a line-count target: startup
+and normal completion intentionally share result admission. Do not replace
+atomic mutation with events or add a second registry. Further extraction should
+follow a concrete reading or correctness problem; HTTP organization and live
+Conversation/Request validation remain independent work.
+
 ## Design against implementation
 
 | Core responsibility | Current assessment | Next useful work |

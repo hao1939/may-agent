@@ -79,6 +79,13 @@ a lost in-memory wake without scanning an App tree.
 The queue is an in-memory hint. The persisted task, trigger, Condition, and
 attempt state are sufficient to recover it.
 
+App reload publishes one selected runtime generation. A running attempt retains
+its execution definitions; a later session event uses the currently published
+adapters and descriptors together, subject to exact Task ownership checks. A
+process-scoped subscription must not retain a second, obsolete runtime selection.
+The [lifecycle review](../proposals/task-runtime-organization.md#task-lifecycle-review)
+records the reproduced listener gap and its source fix separately from this contract.
+
 An explicitly blocked workflow retains its bounded diagnostic context in Task
 evidence so parent reconciliation can investigate the actual failure, not only
 a generic attention summary. Context larger than the Task evidence budget
