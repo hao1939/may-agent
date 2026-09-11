@@ -216,10 +216,11 @@ service, service framework or uniform folder template is needed.
 
 ### Directory organization for code review
 
-**Status September 11:** Core/composition moves are in
-[Host #141](https://github.com/hao1939/may-agent/pull/141); concrete Codex/observer
-grouping is stacked in [#142](https://github.com/hao1939/may-agent/pull/142).
-Both preserve runtime behavior and are awaiting human review.
+**Status September 11:** Core/composition moves merged in
+[Host #141](https://github.com/hao1939/may-agent/pull/141) as `48254267`.
+Concrete Codex/observer grouping in [#142](https://github.com/hao1939/may-agent/pull/142)
+is rebased onto that merge as `b8297fad` and awaits human review.
+The rebase preserves the previously tested tree exactly.
 It does not depend on retiring child waits, evaluation controls or workflow resume.
 The intended reading order is composition -> inbox -> Task runtime -> state,
 then the concrete capability involved.
@@ -335,7 +336,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Retire conversational child waits | Merged in #140; unfinished legacy waits fail visibly while admitted work and accepted asks remain. Deployment is separate. |
-| Reorganize directories for code review | Core/composition (#141) and concrete capabilities (#142) are prepared for review; HTTP extraction remains a separate slice of the [layout map](#directory-organization-for-code-review). |
+| Reorganize directories for code review | Core/composition (#141) is merged; concrete capabilities (#142) await review. HTTP extraction remains a separate slice of the [layout map](#directory-organization-for-code-review). |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
@@ -436,8 +437,8 @@ required by this proposal.
 
 The workspace branch `docs/core-directory-layout` updates the canonical source
 map, local source links and the design-example checker's two internal Host imports.
-Validate it against #142, which includes #141. Integrate it after both Host
-layout PRs land and the source checkout advances; its new imports deliberately
+Validate it against #142, which includes merged #141. Integrate it after #142
+lands and the source checkout advances; its new imports deliberately
 do not add fallbacks or forwarding modules for older layouts. Historical source
 links remain pinned evidence. Source organization does not change the deployed
 installation.
@@ -460,3 +461,7 @@ links in the changed documentation resolve. Earlier validation exposed and fixed
 a moved test's temporary-database path, then the synchronous compiler stall noted
 above. Failed/stalled runs are not reported as passes. Human review and deployment
 remain separate from these source checks.
+
+PR #142 was rebased onto the squash merge of #141 on September 11. Candidate
+`b8297fad` has the same source tree as `7754e376`; only its ancestry changes.
+The PR now targets `main` directly, without replaying the merged core commits.

@@ -34,9 +34,9 @@ The [system simplification review](proposals/authority-boundary-simplification.m
 tracks the merged removal of conversational child waits in Host #140, with
 visible retirement of old waits and preservation of accepted Requests and Task
 work. Import/navigation and foreground-App selection landed in #138/#139.
-Directory organization is prepared in Host #141 (core/composition) and #142
-(Codex executor/observers), with an aligned documentation companion. HTTP
-handler extraction remains a separate follow-up.
+Core/composition directory organization landed in Host #141 (`48254267`).
+Codex executor/observer grouping remains in #142, rebased onto that merge, with
+an aligned documentation companion. HTTP handler extraction remains separate.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
 

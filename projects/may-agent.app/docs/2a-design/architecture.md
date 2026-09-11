@@ -154,9 +154,9 @@ configuration or unavailable authoritative store an acceptable silent skip.
 ## Code organization
 
 Paths are relative to `projects/may-agent`. This map follows the directory-layout
-candidates [#141](https://github.com/hao1939/may-agent/pull/141) and
-[#142](https://github.com/hao1939/may-agent/pull/142), based on merged Host #140
-(`335bf178`). The move preserves existing transitions and transaction boundaries;
+merge [#141](https://github.com/hao1939/may-agent/pull/141) (`48254267`) and
+its remaining adapter candidate [#142](https://github.com/hao1939/may-agent/pull/142),
+rebased onto that merge as `b8297fad`. The move preserves existing transitions and transaction boundaries;
 its review and validation are tracked in the
 [simplification proposal](../proposals/authority-boundary-simplification.md#directory-organization-for-code-review).
 
