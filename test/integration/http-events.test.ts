@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
 import { createQueryService } from "../../src/lib/query-service.js";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
+import type { SubagentManager } from "../../src/lib/manager.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 
 describe("HTTP event reads", () => {
   let root: string;
@@ -54,6 +57,7 @@ describe("HTTP event reads", () => {
     child?.kill("SIGKILL");
     await stopped;
     db?.close();
+    if (root) closeDb(root);
     if (root) rmSync(root, { recursive: true, force: true });
   });
 
@@ -62,6 +66,27 @@ describe("HTTP event reads", () => {
     expect(response.status).toBe(200);
     return response.json();
   }
+
+  it("opens failed workflow evidence through HTTP without a daemon or metric collector", async () => {
+    const workflows = join(root, "workflows");
+    mkdirSync(workflows);
+    writeFileSync(join(workflows, "report.ts"), `
+      export const name = "report";
+      export const description = "Fixture report";
+      export async function execute(ctx) {
+        ctx.log.info("prepared partial report");
+        throw new Error("upload unavailable");
+      }`);
+    const runner = createWorkflowRunner({ manager: {} as SubagentManager, workflowDir: workflows, persistDir: root });
+    const result = await runner.run("report", "fixture");
+    if (result.type !== "error" || !result.workflowRunId) throw new Error("Expected failed workflow identity");
+    const trace = await read(`/api/loop-trace?workflowRunId=${result.workflowRunId}`);
+    expect(trace.workflowEvidence.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
+    expect(trace.workflowEvidence.diagnostics).toMatchObject({ state: "available", truncated: false,
+      entries: [{ level: "info", message: "prepared partial report" }] });
+    expect(trace.workflowEvidence.stepsTruncated).toBe(false);
+    expect((await read("/api/loop-trace?workflowRunId=wr_missing")).workflowEvidence).toBeNull();
+  });
 
   function event(
     type: string,

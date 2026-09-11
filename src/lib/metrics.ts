@@ -62,6 +62,8 @@ export interface Metric {
   project: string | null;
   alert_op: string | null;
   config?: string | null;
+  observation?: { value: number; measuredAt: number; sampleSize: number | null; note: string | null } | null;
+  measure_interval?: number | null;
 }
 
 export interface MetricEvaluationResult {
@@ -609,7 +611,14 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
   }
 
   function get(id: string): Metric | null {
-    return options.getDb().prepare("SELECT * FROM metrics WHERE id = ?").get(id) as Metric | null;
+    const db = options.getDb();
+    const metric = db.prepare("SELECT * FROM metrics WHERE id = ?").get(id) as Metric | null;
+    if (!metric) return null;
+    const sample = db
+      .prepare(`SELECT value, measured_at AS measuredAt, sample_size AS sampleSize, note
+        FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT 1`)
+      .get(id) as Metric["observation"];
+    return { ...metric, observation: sample ?? null };
   }
 
   function list(filter?: MetricFilter): Metric[] {

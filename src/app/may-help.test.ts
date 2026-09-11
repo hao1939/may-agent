@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { execFile, spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -14,21 +14,19 @@ const PACKAGE_IDENTITY = JSON.parse(readFileSync(resolve(import.meta.dir, "../..
 };
 
 describe("may CLI help", () => {
-  it("exits successfully without starting recovery or mutating state", () => {
+  it("exits successfully without starting recovery or mutating state", async () => {
     const stateDir = mkdtempSync(join(tmpdir(), "may-help-state-"));
     const markerPath = join(stateDir, "existing-state.txt");
     writeFileSync(markerPath, "unchanged\n");
 
     try {
-      const result = spawnSync(process.execPath, [ENTRYPOINT, "--help"], {
+      const result = await execFileAsync(process.execPath, [ENTRYPOINT, "--help"], {
         cwd: resolve(import.meta.dir, "../.."),
         env: { ...process.env, STATE_DIR: stateDir },
         encoding: "utf8",
         timeout: 10_000,
       });
 
-      expect(result.error).toBeUndefined();
-      expect(result.status).toBe(0);
       expect(result.stdout).toContain("Usage: may-agent [options]");
       expect(result.stderr).not.toContain("handler-recovery");
       expect(result.stderr).not.toContain("workflow-recovery");
@@ -39,18 +37,16 @@ describe("may CLI help", () => {
     }
   });
 
-  it("prints package identity without starting runtime state", () => {
+  it("prints package identity without starting runtime state", async () => {
     const stateDir = mkdtempSync(join(tmpdir(), "may-version-state-"));
     try {
-      const result = spawnSync(process.execPath, [ENTRYPOINT, "--version"], {
+      const result = await execFileAsync(process.execPath, [ENTRYPOINT, "--version"], {
         cwd: resolve(import.meta.dir, "../.."),
         env: { ...process.env, STATE_DIR: stateDir },
         encoding: "utf8",
         timeout: 10_000,
       });
 
-      expect(result.error).toBeUndefined();
-      expect(result.status).toBe(0);
       expect(result.stdout).toMatch(
         new RegExp(`^${PACKAGE_IDENTITY.name} v${PACKAGE_IDENTITY.version.replaceAll(".", "\\.")} \\([0-9a-f]+\\)\\n$`),
       );
@@ -108,7 +104,7 @@ describe("may CLI help", () => {
     }
   });
 
-  it("keeps a running instance identity unchanged for --status", () => {
+  it("keeps a running instance identity unchanged for --status", async () => {
     const stateDir = mkdtempSync(join(tmpdir(), "may-status-state-"));
     const instanceDir = join(stateDir, "instances", "background");
     mkdirSync(instanceDir, { recursive: true });
@@ -117,15 +113,13 @@ describe("may CLI help", () => {
     writeFileSync(identityPath, runningIdentity);
 
     try {
-      const result = spawnSync(process.execPath, [ENTRYPOINT, "--status"], {
+      await execFileAsync(process.execPath, [ENTRYPOINT, "--status"], {
         cwd: resolve(import.meta.dir, "../.."),
         env: { ...process.env, STATE_DIR: stateDir, INSTANCE: "background" },
         encoding: "utf8",
         timeout: 10_000,
       });
 
-      expect(result.error).toBeUndefined();
-      expect(result.status).toBe(0);
       expect(readFileSync(identityPath, "utf8")).toBe(runningIdentity);
     } finally {
       rmSync(stateDir, { recursive: true, force: true });

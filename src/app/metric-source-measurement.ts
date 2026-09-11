@@ -4,6 +4,8 @@ import { log } from "../lib/log.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
+import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
+import { redactTranscriptSecrets } from "../lib/persistence.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
 export const SUBSCRIBER_FAILED_COUNT_METRIC_ID = "infra.bus.subscriber-failed-count-1h";
@@ -20,6 +22,7 @@ export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "project.task.executor.progress",
   "handler.routed",
   "metric.breach",
+  "metric.measurement.failed",
   "conversation.updated",
   "gym.review.filtered",
   "project.approval.resolved",
@@ -131,6 +134,7 @@ async function executeCommand(command: string): Promise<CommandSample | null> {
 async function executeBatches(rows: SourceMetric[]): Promise<{
   samples: Map<string, CommandSample>;
   handled: Set<string>;
+  failures: Map<string, string>;
 }> {
   const groups = new Map<string, Array<{ rowId: string; metricId: string }>>();
   for (const row of rows) {
@@ -144,6 +148,7 @@ async function executeBatches(rows: SourceMetric[]): Promise<{
 
   const samples = new Map<string, CommandSample>();
   const handled = new Set<string>();
+  const failures = new Map<string, string>();
   for (const [scriptPath, group] of groups) {
     if (group.length < 2) continue;
     for (const item of group) handled.add(item.rowId);
@@ -159,11 +164,15 @@ async function executeBatches(rows: SourceMetric[]): Promise<{
         const sample = commandSample(parsed[item.metricId]);
         if (sample) samples.set(item.rowId, sample);
       }
-    } catch {
-      // Keep every omitted/failed batch member stale; never fabricate a sample.
+    } catch (error) {
+      for (const item of group) failures.set(item.rowId, measurementError(error));
     }
   }
-  return { samples, handled };
+  return { samples, handled, failures };
+}
+
+function measurementError(error: unknown): string {
+  return redactTranscriptSecrets(error instanceof Error ? error.message : String(error)).slice(0, 2_000);
 }
 
 /**
@@ -180,7 +189,7 @@ export async function measureSourceMetrics(options: {
   measuredAt?: number;
   isDue?: (metric: SourceMetric) => boolean;
   onAttempt?: (metric: SourceMetric) => void;
-}): Promise<{ measured: string[]; skipped: string[] }> {
+}): Promise<{ measured: string[]; skipped: string[]; failures: Array<{ id: string; reason: string }> }> {
   const db = getDb(options.persistDir);
   const metrics = createMetricService({
     getDb: () => db,
@@ -202,6 +211,25 @@ export async function measureSourceMetrics(options: {
   const dueRows = options.isDue ? rows.filter(options.isDue) : rows;
   const measured: string[] = [];
   const skipped: string[] = [];
+  const failures: Array<{ id: string; reason: string }> = [];
+  const failed = (id: string, reason: string) => {
+    skipped.push(id);
+    failures.push({ id, reason });
+    // The scheduled caller does not consume this return value. Keep the
+    // bounded explanation in the existing Event journal, not a fake sample
+    // or an alert. Diagnostic storage failure must not stop other sources.
+    try {
+      options.bus.emit({
+        type: "metric.measurement.failed",
+        source: "runtime:metric-source-measurement",
+        owner: "agent:may",
+        data: { metricId: id, reason, triggerEventId: options.triggerEventId },
+      });
+    } catch (error) {
+      log("warn", `[metrics:${id}] Could not retain failure diagnostic: ${measurementError(error)}`);
+    }
+    log("warn", `[metrics:${id}] ${reason}`);
+  };
   const defaultMeasuredAt = options.measuredAt ?? Date.now();
   const queryNote = options.triggerEventId ? `source-query; trigger-event:${options.triggerEventId}` : "source-query";
   const commandNote = options.triggerEventId
@@ -217,7 +245,7 @@ export async function measureSourceMetrics(options: {
       let note = queryNote;
       if (row.source_query) {
         if (!isReadOnlySourceQuery(row.source_query)) {
-          skipped.push(row.id);
+          failed(row.id, "Source query must be a single read-only query");
           continue;
         }
         sample = sourceQuerySample(db.prepare(row.source_query).get() as Record<string, unknown> | null);
@@ -230,7 +258,7 @@ export async function measureSourceMetrics(options: {
         }
       }
       if (!sample) {
-        skipped.push(row.id);
+        failed(row.id, batches.failures.get(row.id) ?? "Source returned no finite numeric sample");
         continue;
       }
       metrics.record(row.id, sample.value, {
@@ -241,8 +269,8 @@ export async function measureSourceMetrics(options: {
       });
       metrics.evaluate(row.id);
       measured.push(row.id);
-    } catch {
-      skipped.push(row.id);
+    } catch (error) {
+      failed(row.id, measurementError(error));
     } finally {
       // Recording and evaluating one observation remains a synchronous durable
       // boundary. Yield before the next metric so a large snapshot cannot keep
@@ -252,7 +280,7 @@ export async function measureSourceMetrics(options: {
     }
   }
 
-  return { measured, skipped };
+  return { measured, skipped, failures };
 }
 
 export const measureSourceQueryMetrics = measureSourceMetrics;
@@ -267,6 +295,7 @@ export function attachMetricSourceMeasurement(options: {
 }): MetricSourceMeasurementRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
+  metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
   const subscriberFailureSource = {
     source: "rolling one-hour subscriber.failed event count",
     sourceQuery: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,

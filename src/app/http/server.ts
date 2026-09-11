@@ -34,6 +34,7 @@ import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event
 import { loadProjectReadModel } from "../core/tasks/app-task-runtime-state.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
+import { readWorkflowEvidence } from "../../lib/workflow-evidence.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
@@ -3094,7 +3095,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({ error: "one of eventId, alertId, metricId, workflowRunId, or sessionId is required" }, 400);
     }
 
-    return json(buildLoopTrace(_db(), target));
+    return json({
+      ...buildLoopTrace(_db(), target),
+      ...("workflowRunId" in target ? { workflowEvidence: readWorkflowEvidence(STATE_DIR, target.workflowRunId) } : {}),
+    });
   }
 
   function handleEventGraph(_url: URL, eventIdText: string): Response {

@@ -10,6 +10,7 @@
  */
 
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
+import { readWorkflowEvidence } from "./workflow-evidence.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
 import { prepareAgentExecution } from "./agent-execution.js";
 import { extractFinishParams } from "./agent-result.js";
@@ -1490,6 +1491,11 @@ export class SubagentManager {
         type: "workflow",
         id: run.runId,
         label: run.workflow,
+        status: run.status,
+        startedAt: run.startedAt,
+        endedAt: run.endedAt,
+        summary: run.result_summary,
+        reason: run.result_reason,
         depth: run.depth,
         isTarget: run.runId === targetId,
         children,
@@ -1522,6 +1528,7 @@ export class SubagentManager {
 
     return {
       targetId,
+      evidence: readWorkflowEvidence(this._persistDir, targetId),
       tree: {
         type: "session",
         id: rootSessionId,
