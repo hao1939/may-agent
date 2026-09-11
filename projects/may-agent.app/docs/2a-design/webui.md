@@ -172,10 +172,13 @@ metric definitions, not only selected Host observations, and shows list limits.
 Agent overviews and individual project cards also show incomplete metric
 coverage, including when their subset is empty; counts describe shown metrics,
 not complete totals. See [reporting bounds](metrics.md#bounded-reporting-reads).
-Overview shows at most 20 open alerts. Its summary reads one extra row and
-reports truncation: exactly 20 and more than 20 must not look like the same
-total. A Host observation outside a truncated alert list has unknown alert
-state; opening its exact metric detail reads that metric's alerts directly.
+Overview previews the newest four open alerts from a read capped at 20; its
+badge states how many are shown when the preview is partial. The summary reads
+one extra row to distinguish exactly 20 from more than 20. Metrics previews
+the newest 20 alerts from a read capped at 500 and likewise distinguishes
+exactly 500 from more than 500. Neither preview promises an exhaustive list.
+A Host observation outside a truncated alert list has unknown alert state;
+opening its exact metric detail reads that metric's alerts directly.
 
 ## Project Surface
 
