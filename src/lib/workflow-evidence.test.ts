@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb } from "./db/connection.js";
+import { closeDb, getDb } from "./db/connection.js";
+import { listWorkflowRunIds } from "./db/workflows.js";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import { readWorkflowEvidence } from "./workflow-evidence.js";
 import {
@@ -28,6 +29,61 @@ afterEach(() => {
 });
 
 describe("workflow evidence without reporting", () => {
+  it.each(["insert", "started-event", "finalize"] as const)(
+    "reports honest evidence when workflow setup or persistence fails: %s",
+    async (failure) => {
+      const { root, workflows } = fixture();
+      writeFileSync(
+        join(workflows, "setup.ts"),
+        `
+        export const name = "setup";
+        export const description = "Fixture setup failure";
+        export async function execute(ctx) { return ctx.done("executed"); }
+      `,
+      );
+      const db = getDb(root);
+      if (failure === "insert")
+        db.run(`CREATE TRIGGER fail_insert BEFORE INSERT ON workflow_runs
+        BEGIN SELECT RAISE(ABORT, 'fixture insert failed'); END`);
+      if (failure === "finalize")
+        db.run(`CREATE TRIGGER fail_update BEFORE UPDATE ON workflow_runs
+        BEGIN SELECT RAISE(ABORT, 'fixture finalize failed'); END`);
+      const seen: string[] = [];
+      const runner = createWorkflowRunner({
+        manager: {} as SubagentManager,
+        workflowDir: workflows,
+        persistDir: root,
+        runtimeCtx: {
+          emit(event: { type: string }) {
+            seen.push(event.type);
+            if (failure === "started-event") throw new Error(`fixture ${event.type} failed`);
+          },
+        } as never,
+      });
+      const result = await runner.run("setup", "test setup");
+      expect(result).toMatchObject({
+        type: "error",
+        error: `fixture ${failure === "started-event" ? "workflow.started" : failure} failed`,
+      });
+      closeDb(root);
+      const runIds = listWorkflowRunIds(root);
+      if (failure === "started-event") {
+        expect(runIds).toHaveLength(1);
+        expect(result).toMatchObject({ workflowRunId: runIds[0] });
+        const evidence = readWorkflowEvidence(root, runIds[0]!)!;
+        expect(evidence.run).toMatchObject({ status: "error", result_reason: "fixture workflow.started failed" });
+        expect(evidence.run.endedAt).toBeGreaterThanOrEqual(evidence.run.startedAt);
+        expect(evidence.run.artifact_error).toBeUndefined();
+        expect(evidence.steps).toEqual([]);
+        expect(seen).not.toContain("workflow.completed");
+      } else {
+        expect(result).not.toHaveProperty("workflowRunId");
+        expect(runIds).toHaveLength(failure === "insert" ? 0 : 1);
+        if (failure === "finalize") expect(readWorkflowEvidence(root, runIds[0]!)?.run.status).toBe("running");
+      }
+    },
+  );
+
   it("retains a recovered child failure and scoped logs after reopening storage", async () => {
     const { root, workflows } = fixture();
     writeFileSync(
