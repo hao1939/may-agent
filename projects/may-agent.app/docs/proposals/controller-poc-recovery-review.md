@@ -10,10 +10,11 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
 Adoption remains unproved: retained work still needs cutover and full CI at
-`127c3ab2` has 138 unresolved failures. New human input now permits a fresh attempt
+`dfd78b06` has 138 unresolved failures. New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
-The branch adds 176 net production lines against current main `a8f65188` (counting `src/`
-and `packages/`, excluding tests and fixtures). Finish cutover and examine those
+The receipt-conversion checkpoint `dfd78b06` now adds verified old-source import
+below. The branch adds 362 net production lines against current main `a8f65188`
+(counting `src/` and `packages/`, excluding tests, fixtures and Markdown). Finish cutover and examine those
 failures before expanding the design.
 The latest live evidence is
 [below](#managed-conversation-recovery).
@@ -810,6 +811,53 @@ previously failing workspace/process cases and the new effect-retention case
 pass; no failure entries were added. This checkpoint changes tests and fixtures
 only. The whole branch remains at **176 net production lines added** against
 `a8f65188`, excluding tests and fixtures.
+
+## Historical completion receipt cutover
+
+Checkpoint `dfd78b06` imports an old completion receipt as an
+explicitly historical accepted outcome, links matching admission keys by Task,
+generation and specification hash, and records closure on the retained Task.
+It does not guess which old worker attempt produced a receipt. The original
+receipt, worker attempts and compacted-history digests remain unchanged. Attempt
+history gains a labeled receipt-import entry; the execution count excludes it.
+
+The conversion preserves existing human/owner closure and leaves newer Task
+generations unchanged. It fences obsolete live
+claims when a receipt already establishes completion. A closed child's history
+can be restored under a closed parent, without admitting new executable work.
+Replay is a no-op, and failure rolls back the complete App-scoped conversion.
+The source remains an offline helper, not an operational upgrade runner.
+
+Eight conversion tests and the owning storage/accepted-result suites pass
+**46 tests**. The reproducible
+[`task-receipt-cutover.ts`](../../../may-agent/scripts/poc/task-receipt-cutover.ts)
+trial additionally writes a fresh SQLite database through old Host `a8f65188`,
+closes it, runs the candidate's normal Host schema upgrade and imports its real
+receipt. The original ask returns the original measurement, its old attempt
+remains intact, and the closed Task performs no new execution. This is an
+old-source-to-new-source storage trial with supplied execution results, not a
+Host restart or live-model trial.
+
+Full `bun run ci` at `dfd78b06` passes Host/SDK types, App boundary and lint,
+then reports **2,709 passed, 3 skipped and 138 failed** across 2,850 tests in
+287 files (144.1 seconds). It adds eight passing checks with no new failure
+names versus `127c3ab2`. The remaining failures still require individual review.
+
+The schema upgrade must precede the state conversion: the standalone Task test
+store does not upgrade old inbox columns before creating the new indexes. As
+with Conversation cutover, `oldRuntimeStopped` is an operator assertion; it
+cannot prove process quiescence. Receipt-only history also lacks a complete
+executable specification. Its reconstructed Task is an inert closed projection;
+the original receipt remains the historical record, including unavailable or
+compacted details. No lost evidence or acceptance check is invented.
+
+Maintained-cycle outcomes, unfinished failure/wait inputs, worker self-stops,
+supervisor retirement and the operational cutover remain required. This helper
+does not yet permit removing all historical receipt readers. It adds **186 net
+production lines**: 169 in the offline conversion and 17 in storage/history
+projection. It adds no table, scheduler or execution authority. The original
+receipts remain archival evidence while consumers move to accepted outcomes
+and explicit closure; this is not a completed compatibility retirement.
 
 ## Verification and cost
 

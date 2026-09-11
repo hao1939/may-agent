@@ -456,6 +456,14 @@ stopped; the upgrade procedure must establish that before activating the new
 owner. The [source evidence](controller-poc-recovery-review.md#offline-conversation-cutover)
 distinguishes the tested state operation from the unfinished operational cutover.
 
+The [historical receipt conversion](controller-poc-recovery-review.md#historical-completion-receipt-cutover)
+now proves completed-work import against a database written by the old Host.
+It preserves original results and matching caller links, retains human closure,
+and does not close a newer Task generation. It requires the normal schema upgrade
+before state conversion. Maintained outcomes, unfinished failure/wait inputs,
+worker self-stops and supervisor retirement still need migration evidence; the
+source helper is not an operational upgrade procedure.
+
 ## Acceptance and cost evidence
 
 Reuse [PR #149's follow-through fixtures](task-runtime-organization.md#request-follow-through-review)
