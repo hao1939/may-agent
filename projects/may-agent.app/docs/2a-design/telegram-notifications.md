@@ -354,10 +354,13 @@ chat/message identity, renders the single `runtime.reload.finished` result in
 the originating chat/topic, and appends it to Conversation only after the send
 succeeds. It does not ask May to interpret reload or maintain another work
 tracker.
-Provider redelivery restores reply correlation before retrying admission and
-reads an already-recorded completion by its exact parent event. It does not
-rerun an accepted reload merely to regenerate its reply. Reply display remains
-best effort and may repeat after restart; it is not an exactly-once receipt.
+Provider redelivery restores reply correlation and checks for a saved completion
+by its exact parent event before retrying admission. A saved success or failure
+is returned even if the request's acceptance write failed and it still says
+pending. Only a request without completion evidence can reach admission retry.
+It does not rerun a completed reload merely to regenerate its reply. Reply
+display remains best effort and may repeat after restart; it is not an
+exactly-once receipt.
 
 ## Secrets And Presentation
 

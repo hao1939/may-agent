@@ -3,8 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `b49233c2`, with
-review refinements following the verified `fea62dee` checkpoint.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `5527df51`, with
+review refinements following the verified `b49233c2` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -386,3 +386,12 @@ result with and without a Task wake, and existing stale/unauthorized Stop checks
 Canonical design integrity, examples and App checks passed. Full current-head
 local and hosted verification is tracked on the PR; no live Telegram/model
 trial or deployment was performed.
+
+At `5527df51`, reload redelivery checks its exact parent's saved completion
+before retrying admission. A completed request can still say pending when its
+acceptance write failed; previously that caused a second reload. A saved success
+or failure is now returned without reexecution. The regression injects a real
+SQLite acceptance-write failure and reopens storage, preserving one request,
+one execution and one completion. Both new cases failed before the fix; all 56
+focused Telegram tests pass. Full local and hosted verification is tracked on
+the PR. No live reload or deployment was performed.
