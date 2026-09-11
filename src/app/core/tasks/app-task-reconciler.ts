@@ -597,6 +597,41 @@ function finishAttempt(
   resource.status.currentAttemptId = undefined;
 }
 
+/** Capture accepted evidence inside the same mutation as attempt settlement. */
+function acceptedAttemptResult(
+  tree: TaskTree,
+  taskId: string,
+  state: "converged" | "waiting",
+  input: {
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    evidence?: string[];
+    acceptedLiveEventIds?: number[];
+  },
+  acceptanceBasis: AppTaskAcceptanceBasis,
+): NonNullable<AppTaskAttempt["acceptedResult"]> {
+  const acceptedIds = new Set(input.acceptedLiveEventIds ?? []);
+  const trigger = tree.taskTriggers?.[taskId];
+  const acceptedLiveEventIds = [
+    ...new Set(
+      (trigger ? taskTriggerEvents(trigger) : []).flatMap(({ event }) => {
+        const id = Number(event.eventId);
+        return Number.isSafeInteger(id) && id > 0 && acceptedIds.has(id) ? [id] : [];
+      }),
+    ),
+  ];
+  return structuredClone({
+    state,
+    summary: input.summary,
+    ...(input.response !== undefined ? { response: input.response } : {}),
+    ...(input.result ? { result: input.result } : {}),
+    evidence: input.evidence ?? [],
+    acceptanceBasis,
+    ...(acceptedLiveEventIds.length ? { acceptedLiveEventIds } : {}),
+  });
+}
+
 function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, appAgent: string) {
   const receipt = tree.receipts?.[resource.metadata.id];
   if (
@@ -4078,6 +4113,14 @@ export function completeAppTask(
     );
   }
   const now = new Date().toISOString();
+  const maintainHasLiveChildren = claim.mode === "maintain" && liveChildren.length > 0;
+  match.attempt.acceptedResult = acceptedAttemptResult(
+    tree,
+    claim.taskId,
+    maintainHasLiveChildren ? "waiting" : "converged",
+    input,
+    acceptanceBasis,
+  );
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   unlinkTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
@@ -4098,7 +4141,6 @@ export function completeAppTask(
       ? recordExecutableParentTrigger(tree, claim.taskId, "converged", input.summary, input.evidence, now)
       : undefined;
   trackResourceMutationTask(mutationScope, tree, parentTaskId);
-  const maintainHasLiveChildren = claim.mode === "maintain" && liveChildren.length > 0;
   const dependentTaskIds = [
     ...new Set([
       ...reconcileActionTaskIds,
@@ -4224,6 +4266,13 @@ export function deferAppTask(
       reason: "newer Task evidence is pending",
     });
   }
+  const acceptedResult = acceptedAttemptResult(
+    tree,
+    claim.taskId,
+    "waiting",
+    input,
+    defaultTaskAcceptance(claim, input.evidence ?? []),
+  );
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
@@ -4266,6 +4315,7 @@ export function deferAppTask(
     throw new Error(`Waiting task ${claim.taskId} requires an exact Condition or live direct child`);
   }
   const now = new Date().toISOString();
+  match.attempt.acceptedResult = acceptedResult;
   finishAttempt(tree, resource, "completed", input.summary, now);
   if (conditions?.length) {
     materializeWaitingConditions(tree, claim.taskId, conditions, now);

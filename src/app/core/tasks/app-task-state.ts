@@ -101,6 +101,17 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
+  /** Accepted evidence from this exact attempt; later cycles do not replace it. */
+  acceptedResult?: {
+    state: "converged" | "waiting";
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    evidence: string[];
+    acceptanceBasis: TaskAcceptanceBasis;
+    /** Additional durable input actually incorporated after the initial batch. */
+    acceptedLiveEventIds?: number[];
+  };
   /** Legacy/synthetic trigger retained only when no durable event batch exists. */
   trigger?: Record<string, unknown>;
   startedAt: string;
