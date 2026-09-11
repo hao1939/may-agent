@@ -8,6 +8,7 @@ import type { CallOptions, SubagentDefinition } from "../../../lib/types.js";
 import { getDb, closeDb } from "../../../lib/requests.js";
 import { EventBus, EVENT_DELIVERY_RESULT, EVENT_ROW_ID, type AgentEvent } from "../events/bus.js";
 import { DbWriter } from "../../../lib/db-writer.js";
+import { createEventInterface } from "../events/interface.js";
 import { AppRegistry } from "../apps/registry.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
@@ -1371,6 +1372,178 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
     releaseFirst.resolve();
     releaseSecond.resolve();
     ingress.runtime.close();
+  }
+});
+
+test("public Stop commits before abort and preserves queued input across Task runtime reopen", async () => {
+  const entered = Promise.withResolvers<CallOptions>();
+  const finish = Promise.withResolvers<void>();
+  const correction = "Discuss costs before implementing";
+  let calls = 0;
+  let committedBeforeAbort = false;
+  const f = await fixture(
+    async (_definition, prompt, options) => {
+      calls++;
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      if (calls === 1) {
+        options.signal!.addEventListener(
+          "abort",
+          () => {
+            committedBeforeAbort = getAppInboxItem(f.db, context.id)?.handling?.phase === "stopped";
+          },
+          { once: true },
+        );
+        entered.resolve(options);
+        await finish.promise;
+        return { status: "done", structuredResult: answer };
+      }
+      expect(context.input.data.message).toBe(correction);
+      expect(context.conversation?.requests).toContainEqual(
+        expect.objectContaining({ id: "compare", revision: 1, status: "open", scope: "Compare A and B" }),
+      );
+      return {
+        status: "done",
+        structuredResult: {
+          summary: "Scope corrected",
+          response: "Let's discuss the costs first.",
+          topic: { kind: "none" },
+          requestUpdates: [{ id: "compare", expectedRevision: 1, scope: correction, disposition: "open" }],
+        },
+      };
+    },
+    { installControllers: false },
+  );
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.agent!,
+    intent: {
+      id: "independent",
+      parentId: "root",
+      mode: "achieve",
+      outcome: "Independent work",
+      acceptance: ["Verified"],
+    },
+  });
+  const independent = f.store.readTask("independent");
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id,
+    conversationId: "primary",
+    updateKey: "accepted",
+    now: Date.now(),
+    updates: [{ id: "compare", expectedRevision: 0, scope: "Compare A and B", disposition: "open" }],
+  });
+  const ingress = await startConversationIngress(f);
+  const events = createEventInterface({
+    bus: f.bus,
+    db: f.db,
+    acceptsAppInput: () => true,
+    hasApp: (id) => id === app.id,
+    hasAgent: () => true,
+    hasSession: () => true,
+  });
+  ingress.publish("first", "Compare A and B");
+  const first = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.id === "first")!;
+  const work = f.run(first.executionTaskId!);
+  const running = await entered.promise;
+  const target = {
+    appId: app.id,
+    conversationId: "primary",
+    turnId: running.taskBinding!.attemptId,
+    expectedRevision: running.taskBinding!.generation,
+  };
+  const control = {
+    type: "conversation.turn.stop.requested",
+    target: { appId: app.id },
+    data: { conversationId: target.conversationId, turnId: target.turnId, expectedRevision: target.expectedRevision },
+    idempotencyKey: "stop-first",
+  };
+  try {
+    const aborted = new Promise<void>((resolve) =>
+      running.signal!.addEventListener("abort", () => resolve(), { once: true }),
+    );
+    expect(events.publish(control, { source: "fixture-human" }).delivery).toBe("accepted");
+    await aborted;
+    expect(committedBeforeAbort).toBe(true);
+    expect(events.publish(control, { source: "fixture-human" }).delivery).toBe("accepted");
+    expect(f.store.readTask("independent")).toEqual(independent);
+    ingress.publish("correction", correction);
+    const next = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.id === "correction")!;
+    expect(next.status).not.toBe("done");
+    finish.resolve();
+    await work;
+    expect(getAppInboxItem(f.db, first.id)?.result?.response).toContain("Stopped this turn");
+    expect(
+      readAppConversationResource(f.db, app.id, "primary").messages.some((message) => message.text === answer.response),
+    ).toBe(false);
+    ingress.runtime.close();
+    await f.reopen();
+    expect(readAppConversationResource(f.db, app.id, "primary").messages).toContainEqual(
+      expect.objectContaining({ author: { kind: "human", id: "correction" }, text: correction }),
+    );
+    expect(getAppInboxItem(f.db, next.id)?.executionTaskId).toBe(first.executionTaskId);
+    await f.run(first.executionTaskId!);
+    const tasks = createAppTaskCapability({ bus: f.bus });
+    expect(tasks.stopTurn(target).changed).toBe(false);
+    expect(() => tasks.stopTurn({ ...target, conversationId: "wrong" })).toThrow();
+    expect(getAppInboxItem(f.db, first.id)?.handling?.phase).toBe("stopped");
+    expect(getAppInboxItem(f.db, next.id)?.result?.response).toBe("Let's discuss the costs first.");
+    expect(readConversationRequest(f.db, app.id, "primary", "compare")).toMatchObject({
+      status: "open",
+      revision: 2,
+      scope: correction,
+    });
+    expect(f.store.isCancelled(first.executionTaskId!)).toBe(false);
+    await f.run(first.executionTaskId!);
+    expect(calls).toBe(2);
+  } finally {
+    finish.resolve();
+    await work;
+    ingress.runtime.close();
+  }
+});
+
+test("failed Task Stop persistence cannot abort execution or change accepted output", async () => {
+  const entered = Promise.withResolvers<CallOptions>();
+  const finish = Promise.withResolvers<void>();
+  const f = await fixture(
+    async (_definition, _prompt, options) => {
+      entered.resolve(options);
+      await finish.promise;
+      return { status: "done", structuredResult: answer };
+    },
+    { installControllers: false },
+  );
+  const input = f.admit();
+  const work = f.run(input.taskId);
+  const running = await entered.promise;
+  const tasks = createAppTaskCapability({ bus: f.bus });
+  const target = {
+    appId: app.id,
+    conversationId: "primary",
+    turnId: running.taskBinding!.attemptId,
+    expectedRevision: running.taskBinding!.generation,
+  };
+  try {
+    const before = readTaskSnapshot(f.context());
+    f.db.exec(`CREATE TRIGGER no_stop BEFORE UPDATE ON app_inbox_items
+      WHEN json_extract(NEW.handling, '$.phase') = 'stopped'
+      BEGIN SELECT RAISE(ABORT, 'fixture Stop persistence failure'); END`);
+    expect(() => tasks.stopTurn(target)).toThrow("fixture Stop persistence failure");
+    expect(readTaskSnapshot(f.context())).toEqual(before);
+    expect(running.signal?.aborted).toBe(false);
+    expect(() => tasks.stopTurn({ ...target, expectedRevision: target.expectedRevision + 1 })).toThrow();
+    f.db.exec("DROP TRIGGER no_stop");
+    finish.resolve();
+    await work;
+    const accepted = f.store.readAttempt(target.turnId);
+    expect(() => tasks.stopTurn(target)).toThrow("stale");
+    expect(f.store.readAttempt(target.turnId)).toEqual(accepted);
+    expect(getAppInboxItem(f.db, input.item.id)?.result?.response).toBe(answer.response);
+    expect(running.signal?.aborted).toBe(false);
+  } finally {
+    finish.resolve();
+    await work;
   }
 });
 

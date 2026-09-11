@@ -46,10 +46,26 @@ one stable Task owns execution. Closed-target correction uses the common retry
 with prior evidence, rather than two model calls in one inbox callback. These
 are intentional contract changes, not reinstated legacy behavior.
 
-This migration covers those fourteen callback tests only. Remaining CI failures,
-including other old execution fixtures and daemon tests, require separate
-investigation. Neither these deterministic checks nor the passing synthetic
-model trials certify operational cutover or deployment.
+That table covers the original fourteen callback tests. The later migrations
+below preserve control and admission guarantees. Remaining saved-decision and
+failure fixtures still require investigation; neither these deterministic checks
+nor the passing synthetic model trials certify operational cutover or deployment.
+
+The two old `app-turn-control.test.ts` cases now run in
+`core/tasks/conversation-runtime.test.ts`. Public Stop commits before abort,
+rejects late output and preserves queued input plus accepted Requests across
+runtime reopen. Failed Stop persistence leaves execution live; stale Stop cannot
+alter an accepted result. A repeated committed Stop is an idempotent read.
+
+Admission containment and ownership checks remain in the inbox suites. They
+use typed Task attachment and dependency reads instead of a model callback.
+Containment uses fake Task storage to isolate real queue, claim, capacity and
+reporting behavior; ownership checks call the real attachment transaction.
+A failed renewal revokes local authority even while the saved lease is fresh.
+That authority is checked inside the transaction before new attachment effects;
+replaying an already committed attachment preserves its exact result without
+requiring the expired owner to act again. Storage tests retain lost-reply and
+changed-input checks. The common Task runtime owns model execution and recovery.
 
 The core reconciler's retry and worker-report checks now use persisted backoff
 and explicit owner closure. They retain duplicate-failure accounting, stale
