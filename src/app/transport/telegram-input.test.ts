@@ -63,9 +63,9 @@ function attachTelegramBot(
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
+  const deadline = performance.now() + timeoutMs;
   while (!predicate()) {
-    if (Date.now() >= deadline) throw new Error("Timed out waiting for Telegram adapter");
+    if (performance.now() >= deadline) throw new Error("Timed out waiting for Telegram adapter");
     await Bun.sleep(10);
   }
 }
