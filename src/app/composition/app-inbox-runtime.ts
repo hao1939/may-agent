@@ -1129,7 +1129,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
               ? metadata.channelMessageId
               : undefined;
-          const context = record(data.context);
+          // Preserve the surface's Topic as input context, not a committed turn decision.
+          const context: Record<string, unknown> = {
+            ...record(data.context),
+            ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
+              ? { conversationTopicId: metadata.topicId.trim() }
+              : {}),
+          };
           const focusedTask = record(context.focusedTask);
           const focusedAppId =
             typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
@@ -1142,9 +1148,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               kind: "message",
               data: {
                 message: text,
-                ...(data.context && typeof data.context === "object" && !Array.isArray(data.context)
-                  ? { context: data.context }
-                  : {}),
+                ...(Object.keys(context).length ? { context } : {}),
               },
             },
             originEventId: persistedEventId,

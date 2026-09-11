@@ -458,7 +458,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const shownTodoActions = new Map<string, Map<string, string>>();
   const nextTaskPageBySurface = new Map<string, { appId?: string; includeDone: boolean; cursor: string }>();
   const nextTopicPageBySurface = new Map<string, string>();
-  const lastRenderedMayMessageBySurface = new Map<string, string>();
   const pendingReloads = new Map<
     string,
     { chatId: string; topicId?: number; conversationId: string; command: string }
@@ -713,9 +712,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         }),
       });
       if (!delivered || !running) return;
-      if (message.author.kind === "agent") {
-        lastRenderedMayMessageBySurface.set(surface, message.id);
-      }
       rememberRenderedConversationMessage(message.id);
       const watched = watchedTasks.get(surface);
       if (
@@ -1152,7 +1148,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       topicId,
       conversationId,
       replyToMsgId,
-      replyToSourceId ?? lastRenderedMayMessageBySurface.get(surface),
+      replyToSourceId,
       replyTopicId ?? conversationTopic?.id,
     );
     // Presentation after durable recording cannot turn a saved input into a retry.
@@ -1452,9 +1448,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!task) {
         deliverCommandView(`Task ${rest[0]} was not found.`);
       } else if (task.terminal) {
-        stopWatching(surface);
         deliverCommandView(
-          `${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched.`,
+          `${renderTelegramTask(task)}\n\nThis Task is terminal, so it was not watched. Your current selection is unchanged.`,
           representedTaskIdentities(task),
           undefined,
           { appId: task.appId, taskId: task.taskId },
@@ -1466,7 +1461,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           : null;
         if (topic) selectedTopics.set(surface, topic);
         else selectedTopics.delete(surface);
-        lastRenderedMayMessageBySurface.delete(surface);
         selectedApps.set(surface, task.appId);
         watchedTasks.set(surface, {
           appId: task.appId,
