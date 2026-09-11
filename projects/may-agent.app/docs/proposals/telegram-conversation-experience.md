@@ -3,8 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `5527df51`, with
-review refinements following the verified `b49233c2` checkpoint.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `6d3ec44e`, with
+review refinements following the verified `5527df51` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -395,3 +395,19 @@ SQLite acceptance-write failure and reopens storage, preserving one request,
 one execution and one completion. Both new cases failed before the fix; all 56
 focused Telegram tests pass. Full local and hosted verification is tracked on
 the PR. No live reload or deployment was performed.
+
+At `6d3ec44e`, accepted reloads without completion can reenter their original
+route on provider redelivery. A process-local in-flight guard shares concurrent
+deliveries of that event; persisted completion remains the authority after
+execution. Result-write failures are logged without inventing an execution
+failure and release the guard for later retry. This permits safe redo of an
+unfinished definition load, not exactly-once execution or recovery after
+Telegram has already acknowledged the command.
+
+Two probes failed before the fix: a stored accepted request without completion
+never resumed after storage reopen, and repeated in-flight delivery started
+three reloads. The restart matrix models the accepted-before-execution crash
+boundary; it is not a live process-kill trial. All 64 focused Telegram/router
+tests pass, including result-write failure and existing completed-success/failure
+cases. Current full local, hosted and requested Copilot review evidence is tracked
+on the PR. No live reload, model call or deployment was performed.

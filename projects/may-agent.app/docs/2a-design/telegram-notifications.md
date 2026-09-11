@@ -94,9 +94,10 @@ recording or admission keeps that update and its suffix eligible for provider
 redelivery. May execution and outbound delivery do not gate the offset. A
 redelivered recorded input loads its original journal event and retries only the
 existing idempotent admission route, without rebuilding context from today's
-focus or replaying ordinary side-effect listeners. Cancellation and reload
-use stable provider-message keys so a lost receipt cannot repeat a mutation with
-new state. Lookup uses a partial Telegram type/key index rather than scanning
+focus or replaying ordinary side-effect listeners. Cancellation uses a stable
+provider-message key to retain the original control. Reload uses the same request
+and saved result, but may redo an interrupted definition load as described below.
+Lookup uses a partial Telegram type/key index rather than scanning
 retained Conversation history. This is not a new Telegram queue.
 Provider retention bounds the retry window for unadmitted updates; accepted
 Tasks do not depend on that retention. Host recovery remains responsible for
@@ -358,6 +359,16 @@ Provider redelivery restores reply correlation and checks for a saved completion
 by its exact parent event before retrying admission. A saved success or failure
 is returned even if the request's acceptance write failed and it still says
 pending. Only a request without completion evidence can reach admission retry.
+Reload acceptance schedules an asynchronous operation; it is not proof of
+completion. A redelivered request without a saved result reenters the reload
+route even when marked accepted. Concurrent deliveries of the same event share
+one process-local in-flight execution. That guard ends after result recording
+or its failure; failed recording remains visible in the Host log and does not
+fabricate an execution failure. After restart, the same unfinished request may
+load current definitions again. This is deliberate at-least-once execution,
+not an exactly-once effect guarantee or a new durable work tracker. Recovery
+here depends on provider redelivery; it does not scan already-acknowledged
+administrative commands for missing replies.
 It does not rerun a completed reload merely to regenerate its reply. Reply
 display remains best effort and may repeat after restart; it is not an
 exactly-once receipt.
