@@ -216,8 +216,9 @@ service, service framework or uniform folder template is needed.
 
 ### Core policy cleanup
 
-**Status:** Candidate `7d80cc45` in [Host #144](https://github.com/hao1939/may-agent/pull/144)
-on `fix/core-policy-boundaries`, based on `427d4ea1`; human review and deployment remain separate.
+**Status:** Merged in [Host #144](https://github.com/hao1939/may-agent/pull/144)
+as `8e242c11` on September 11, from reviewed candidate `7d80cc45`.
+Deployment remains separate.
 
 The core/external review found two small policy leaks and unnecessary imports.
 Use the existing boundaries instead of adding another extension mechanism:
@@ -252,7 +253,8 @@ tests verify forbidden value imports, allowed contract/type imports, focused
 database imports and composition/test exemptions. The alias regression
 reproduced a bypass before the fix; the focused admission/lint suite passes all 21 tests.
 Canonical design integrity, examples and App checks passed against this source.
-Hosted checks are tracked on the PR. No installation or model-backed test ran.
+Hosted Quality and Container checks passed on `7d80cc45`. No installation or
+model-backed test ran.
 
 ### Directory organization for code review
 

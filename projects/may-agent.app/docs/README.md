@@ -6,13 +6,12 @@ for the intended outcome and [System Model](2a-design/system-model.md) for how
 the system works. Use [INDEX.md](INDEX.md) to find the document that owns a
 specific contract.
 
-**Source baseline:** Current implementation descriptions refer to Host `main`
-at `b81a5d62` (reviewed September 10, 2026), including finite Task stop (#111)
-and conversational ownership, bounded failure, Requests and durable turn Stop (#112).
-Later focused reviews state a newer revision on their owning page: Conversation
-and storage were reviewed against `99bc1a31`. Candidate-branch behavior and its
-validation stay in the linked proposals until merged. Source baselines do not
-identify the deployed release.
+**Source baseline:** The consolidated Host checkout is `main` at `8e242c11`
+(September 11, 2026), including directory organization, core policy cleanup and
+workflow failure evidence. Dated reviews retain the revision they examined;
+this baseline does not imply a fresh review of every subsystem or identify the
+deployed release. Candidate behavior and validation stay in linked proposals
+until merged.
 
 Conversation is the default for discussion and joint work. A **Request** is an
 accepted ask May must close the loop on. An independent **Task** can run in the
@@ -37,8 +36,8 @@ work. Import/navigation and foreground-App selection landed in #138/#139.
 Core/composition directory organization landed in Host #141 (`48254267`).
 Codex executor/observer grouping landed in #142 (`427d4ea1`). The
 [core policy cleanup](proposals/authority-boundary-simplification.md#core-policy-cleanup)
-removes obsolete recovery escalation and keeps conversational selection in
-composition. Its candidate evidence is separate from the merged directory work.
+merged in #144 (`8e242c11`): it removes obsolete recovery escalation and keeps
+conversational selection in composition.
 HTTP handler extraction remains separate.
 Evaluation feature reduction and workflow redo remain conditional. Candidate
 validation and merge status live in the proposal; deployment remains separate.
@@ -73,8 +72,8 @@ Completed separation and recovery reviews live in the [archive](archive/README.m
 The [workflow tracing and health metrics proposal](proposals/workflow-tracing-and-health-metrics.md)
 reopens the discussion with a narrower direction: keep evidence with each run
 and derive balanced health summaries through replaceable components, with a
-stronger path for investigating failures. A bounded first source slice is under
-review; the proposal records its limits and remaining work. It is not deployed.
+stronger path for investigating failures. The bounded first source slice merged in #143 (`939698ad`); the proposal
+records its limits and remaining work. Deployment has not been verified.
 The earlier error-routing alternatives and App consolidation remain
 [archived](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
 
