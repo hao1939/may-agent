@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -62,6 +62,76 @@ describe("source-query metric measurement", () => {
     rmSync(persistDir, { recursive: true, force: true });
     if (originalAppRoot === undefined) delete process.env.APP_ROOT;
     else process.env.APP_ROOT = originalAppRoot;
+  });
+
+  it("registers metrics after a short competing startup writer without losing samples or calibration", async () => {
+    const db = getDb(persistDir);
+    db.run("UPDATE metrics SET threshold = 7 WHERE id = ?", [SUBSCRIBER_FAILED_COUNT_METRIC_ID]);
+    createMetricService({ getDb: () => db }).record(SUBSCRIBER_FAILED_COUNT_METRIC_ID, 2);
+    const writer = Bun.spawn(
+      [
+        process.execPath,
+        "-e",
+        `import { Database } from "bun:sqlite";
+       const db = new Database(process.argv[1]);
+       db.exec("BEGIN IMMEDIATE");
+       console.log("locked");
+       await Bun.stdin.text();
+       db.exec("COMMIT");
+       db.close();`,
+        join(persistDir, "may.db"),
+      ],
+      { stdin: "pipe", stdout: "pipe", stderr: "pipe", timeout: 5_000 },
+    );
+    const run = db.run.bind(db);
+    let busyErrors = 0;
+    const runSpy = spyOn(db, "run").mockImplementation((sql, params) => {
+      try {
+        return run(sql, params);
+      } catch (error) {
+        if (error instanceof Error && "code" in error && error.code === "SQLITE_BUSY") {
+          // Release only after a real registration write encountered the lock.
+          // Rethrow unchanged so production retry must recover the operation.
+          if (++busyErrors === 1) writer.stdin.end();
+        }
+        throw error;
+      }
+    });
+    try {
+      const reader = writer.stdout.getReader();
+      try {
+        const decoder = new TextDecoder();
+        let signal = "";
+        while (!signal.includes("locked\n")) {
+          const { value, done } = await reader.read();
+          if (done) throw new Error("Lock holder exited before its readiness marker");
+          signal += decoder.decode(value, { stream: true });
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      // The lock holder is a separate process: it can release its transaction
+      // while the synchronous startup write follows the existing busy policy.
+      const runtime = attachMetricSourceMeasurement({ bus: new EventBus(), persistDir });
+      await runtime.idle();
+      expect(busyErrors).toBeGreaterThan(0);
+      expect(await writer.exited).toBe(0);
+      expect(db.prepare("SELECT threshold FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID)).toEqual({
+        threshold: 7,
+      });
+      expect(
+        db
+          .prepare("SELECT COUNT(*) AS count FROM metric_snapshots WHERE metric_id = ?")
+          .get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
+      ).toEqual({ count: 1 });
+      expect(
+        db.prepare("SELECT COUNT(*) AS count FROM metrics WHERE id = ?").get(WORKFLOW_OUTCOME_METRICS[0]!.id),
+      ).toEqual({ count: 1 });
+    } finally {
+      runSpy.mockRestore();
+      writer.kill();
+      await writer.exited;
+    }
   });
 
   it("preserves live alert calibration while restoring the subscriber failure source", () => {
