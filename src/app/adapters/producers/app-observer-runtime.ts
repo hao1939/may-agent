@@ -39,29 +39,59 @@ function validFact(value: unknown): value is AppEvent {
 }
 
 function copySnapshot(value: unknown): ObserverSnapshot {
-  // Bound traversal as well as encoded size. Deep/cyclic objects and huge
-  // collections must not monopolize the Host before the byte check runs.
-  let nodes = 0;
-  const validate = (item: unknown, depth: number): void => {
-    if (++nodes > MAX_OBSERVER_SNAPSHOT_BYTES || depth > 32) throw new Error("observer snapshot is too complex");
-    if (item === null || typeof item === "boolean" || typeof item === "string") return;
-    if (typeof item === "number" && Number.isFinite(item)) return;
+  let remaining = MAX_OBSERVER_SNAPSHOT_BYTES;
+  const charge = (bytes: number): void => {
+    if (bytes > remaining) throw new Error(`observer snapshot exceeds ${MAX_OBSERVER_SNAPSHOT_BYTES} bytes`);
+    remaining -= bytes;
+  };
+  const chargeString = (item: string): void => {
+    // UTF-16 length is a lower bound on JSON UTF-8 size. Reject huge strings
+    // before encoding; only input bounded by the budget reaches this encoder.
+    charge(item.length);
+    charge(Buffer.byteLength(JSON.stringify(item), "utf8") - item.length);
+  };
+  const copyProperty = (item: object, key: string, depth: number): ObserverSnapshot => {
+    const property = Object.getOwnPropertyDescriptor(item, key);
+    if (!property || !("value" in property))
+      throw new Error("observer snapshot must contain only JSON data properties");
+    return copy(property.value, depth);
+  };
+  const copy = (item: unknown, depth: number): ObserverSnapshot => {
+    if (depth > 32) throw new Error("observer snapshot is too complex");
+    if (typeof item === "string") {
+      chargeString(item);
+      return item;
+    }
+    if (item === null || typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item))) {
+      charge(JSON.stringify(item).length);
+      return item;
+    }
     if (typeof item !== "object" || item === null) throw new Error("observer snapshot must contain only JSON values");
-    if (
-      !Array.isArray(item) &&
-      Object.getPrototypeOf(item) !== Object.prototype &&
-      Object.getPrototypeOf(item) !== null
-    ) {
+    charge(2); // Brackets/braces; every child and separator also consumes budget.
+    if (Array.isArray(item)) {
+      const result: ObserverSnapshot[] = [];
+      for (let i = 0; i < item.length; i++) {
+        if (i > 0) charge(1);
+        result.push(copyProperty(item, String(i), depth + 1));
+      }
+      return result;
+    }
+    if (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) {
       throw new Error("observer snapshot must contain only plain JSON objects");
     }
-    for (const child of Array.isArray(item) ? item : Object.values(item)) validate(child, depth + 1);
+    const result: Record<string, ObserverSnapshot> = Object.create(null);
+    let first = true;
+    // Do not materialize all values or invoke getters/toJSON on App objects.
+    for (const key in item) {
+      if (!Object.hasOwn(item, key)) continue;
+      charge(first ? 1 : 2); // Colon and, after the first member, comma.
+      first = false;
+      chargeString(key);
+      result[key] = copyProperty(item, key, depth + 1);
+    }
+    return result;
   };
-  validate(value, 0);
-  const json = JSON.stringify(value);
-  if (Buffer.byteLength(json, "utf8") > MAX_OBSERVER_SNAPSHOT_BYTES) {
-    throw new Error(`observer snapshot exceeds ${MAX_OBSERVER_SNAPSHOT_BYTES} bytes`);
-  }
-  return JSON.parse(json) as ObserverSnapshot;
+  return copy(value, 0);
 }
 
 /**
@@ -116,7 +146,9 @@ export function createAppObserverRuntime(options: {
       if (closed || states.get(key) !== state) return;
       const facts = Array.isArray(result) ? result : result?.events;
       if (!Array.isArray(facts) || facts.some((fact) => !validFact(fact))) {
-        throw new Error("observer must return an array of canonical App events");
+        throw new Error(
+          "observer must return AppEvent[] or { events: AppEvent[], nextObservation }; events must be canonical App events",
+        );
       }
       // Validate and detach before publishing any fact. Never retain an
       // App-owned mutable object as the last successfully published state.

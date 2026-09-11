@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import {
   MAX_OBSERVER_SNAPSHOT_BYTES,
   type AppDefinition,
@@ -341,6 +341,76 @@ describe("publication-coupled observation memory", () => {
       expect(seen.slice(1)).toEqual(Array(8).fill("valid"));
       expect(published.filter((type) => type === "sample.fact")).toHaveLength(2);
       expect(published.filter((type) => type === "app.observer.failed")).toHaveLength(7);
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("rejects oversized ASCII values and keys before serializing the oversized input", async () => {
+    const huge = "a".repeat(MAX_OBSERVER_SNAPSHOT_BYTES * 16);
+    let snapshot: ObserverSnapshot = huge;
+    const f = fixture(async () => ({ events: [{ type: "sample.fact", data: {} }], nextObservation: snapshot }));
+    const events: string[] = [];
+    f.bus.subscribe((event) => events.push(event.type));
+    const stringify = spyOn(JSON, "stringify");
+    try {
+      for (snapshot of [huge, { value: huge }, { [huge]: null }]) {
+        stringify.mockClear();
+        await f.scan();
+        expect(stringify.mock.calls.some(([value]) => value === snapshot || value === huge)).toBe(false);
+      }
+      expect(events).toEqual(Array(3).fill("app.observer.failed"));
+    } finally {
+      stringify.mockRestore();
+      f.runtime.close();
+    }
+  });
+
+  it("accounts for JSON escaping, UTF-8, keys and collection overhead within one size budget", async () => {
+    let snapshot: ObserverSnapshot = null;
+    let previous: ObserverSnapshot | undefined;
+    const f = fixture(async (ctx) => {
+      previous = ctx.previousObservation;
+      return { events: [], nextObservation: snapshot };
+    });
+    const cases: Array<[ObserverSnapshot, boolean]> = [
+      ["a".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 2), true],
+      ["a".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 1), false],
+      ['"'.repeat((MAX_OBSERVER_SNAPSHOT_BYTES - 2) / 2), true],
+      ['"'.repeat(MAX_OBSERVER_SNAPSHOT_BYTES / 2), false],
+      ["界".repeat(21_844), true],
+      ["界".repeat(21_845), false],
+      [{ ["k".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 9)]: null }, true],
+      [{ ["k".repeat(MAX_OBSERVER_SNAPSHOT_BYTES - 8)]: null }, false],
+      [Array(32_767).fill(0), true],
+      [Array(32_768).fill(0), false],
+      [JSON.parse('{"__proto__":{"safe":true},"values":[null,false,1]}'), true],
+    ];
+    try {
+      await f.scan();
+      for (const [candidate, accepted] of cases) {
+        snapshot = candidate;
+        await f.scan();
+        snapshot = null;
+        await f.scan();
+        expect(previous).toEqual(accepted ? candidate : null);
+      }
+    } finally {
+      f.runtime.close();
+    }
+  });
+
+  it("describes both supported result shapes for malformed stateful results", async () => {
+    const f = fixture(async () => ({ events: null, nextObservation: "invalid" }) as never);
+    const errors: string[] = [];
+    f.bus.subscribe((event) => {
+      if (event.type === "app.observer.failed") errors.push((event.data as { error: string }).error);
+    });
+    try {
+      await f.scan();
+      expect(errors).toEqual([
+        "observer must return AppEvent[] or { events: AppEvent[], nextObservation }; events must be canonical App events",
+      ]);
     } finally {
       f.runtime.close();
     }
