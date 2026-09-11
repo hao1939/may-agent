@@ -84,8 +84,8 @@ remains separate.
 | [Host #146](https://github.com/hao1939/may-agent/pull/146), `11df5e12`, merged as `e1a0005e`: definition preparation | Full CI: 2,698 pass, three installation-only skips, no failures; all eight moved function bodies are unchanged |
 
 Browser coverage ran in both suites. #145's complete local CI includes merged
-#146 and the rejected-publication regression. Its new hosted checks are pending;
-#146's Quality and Container checks passed on its reviewed revision. Canonical
+#146 and the rejected-publication regression. Hosted Quality and Container checks
+passed on `ec609863`; #146's checks also passed on its reviewed revision. Canonical
 design integrity, examples and App checks passed against #145's updated source.
 No installation or model-backed tests ran.
 
