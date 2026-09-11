@@ -282,7 +282,9 @@ Details preserves the clicked message's Topic without changing selection.
 Follow updates selects that Task's App and the clicked Topic when available;
 an unrelated previously selected Topic or implicit answer anchor is cleared.
 Automatic progress cards retain the selected Conversation Topic only when it
-links the exact Task. The adapter captures that context before sending and
+links the exact Task. Before checking membership, the adapter reloads the
+selected Topic by ID so Tasks admitted after selection are not missed; a missing
+Topic clears only that local selection. It captures that context before sending and
 stores the same value in the message link and shown Conversation view, even
 when selection changes during delivery.
 

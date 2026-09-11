@@ -3,7 +3,7 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `c85f4f8b`, with
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `7bfb7f08`, with
 review refinements following the verified `5527df51` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
@@ -417,3 +417,10 @@ Stop test's eight-second wait after observing an early wall-clock timeout.
 The timeout and assertions are unchanged; its focused tests pass. The known
 separate controller-retry instability and all full-run outcomes remain disclosed
 on the PR rather than being hidden by test retries or skipped coverage.
+
+The requested Copilot review identified stale selected-Topic Task links in its
+summary. At `7bfb7f08`, Task views and progress reread that Topic by ID before
+checking membership and refresh the local cache. The existing progress-context
+test now links the Task after Topic selection; it reproduced a lost Topic before
+the fix and passes afterward, retaining its delayed-send, reply and button checks.
+No new subscription or state authority is added.
