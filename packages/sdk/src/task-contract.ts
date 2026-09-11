@@ -588,19 +588,22 @@ export function admitTaskReconcileResult(
     };
   }
 
-  return {
-    ok: true,
-    result: {
-      state: output.state,
-      summary: output.summary.trim(),
-      ...(response.value ? { response: response.value } : {}),
-      ...(result ? { result: structuredClone(result) } : {}),
-      evidence,
-      ...(output.state === "stopped" ? {} : { actions }),
-      ...(conditions.length > 0 ? { conditions } : {}),
-      ...(dependencies.length > 0 ? { dependencies } : {}),
-    },
+  const report = {
+    summary: output.summary.trim(),
+    ...(result ? { result: structuredClone(result) } : {}),
+    evidence,
   };
+  if (output.state === "waiting") {
+    return { ok: true, result: {
+      ...report, state: "waiting", actions,
+      ...(conditions.length ? { conditions } : {}),
+      ...(dependencies.length ? { dependencies } : {}),
+    } };
+  }
+  const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
+  return { ok: true, result: output.state === "stopped"
+    ? { ...answer, state: "stopped" }
+    : { ...answer, state: "converged", actions } };
 }
 
 export function admitTaskVerificationResult(

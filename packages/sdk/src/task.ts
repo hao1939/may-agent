@@ -108,18 +108,44 @@ export type TaskAction =
     };
 
 export type TaskReconcileResult = {
-  state: TaskReconcileState;
   summary: string;
-  /** Caller-facing semantic answer, when this task fulfills an addressed request. */
-  response?: string;
-  /** App-defined machine-readable state/result. The runtime carries it without interpreting domain meaning. */
-  result?: Record<string, unknown>;
   evidence: string[];
-  actions?: TaskAction[];
-  conditions?: Condition[];
-  /** Runtime-admitted child App requests. Valid only while waiting. */
-  dependencies?: TaskAppDependency[];
-};
+} & (
+  | {
+      state: "converged";
+      /** Caller-facing answer for the addressed input; does not close the Task. */
+      response?: string;
+      result?: Record<string, unknown>;
+      actions?: TaskAction[];
+      conditions?: never;
+      dependencies?: never;
+    }
+  | {
+      state: "waiting";
+      response?: never;
+      result?: Record<string, unknown>;
+      actions?: TaskAction[];
+      conditions?: Condition[];
+      /** New child App requests; code retains unchanged waits. */
+      dependencies?: TaskAppDependency[];
+    }
+  | {
+      state: "stopped";
+      response?: string;
+      result?: Record<string, unknown>;
+      actions?: never;
+      conditions?: never;
+      dependencies?: never;
+    }
+  | {
+      state: "needs-agent";
+      response?: never;
+      result?: never;
+      actions?: never;
+      conditions?: never;
+      dependencies?: never;
+    }
+);
 
 export type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";
