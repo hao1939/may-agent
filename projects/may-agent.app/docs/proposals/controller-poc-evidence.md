@@ -9,8 +9,9 @@ Herdr goals or delegated development workers. Models below are test subjects.
 ## What has been exercised
 
 Host base: `3037c4b9` (including #149). Candidate branch:
-`poc/unified-task-lifecycle`; evidence retention is `c757b950`, and the opt-in
-agent experiment is `5da7b4af`.
+`poc/unified-task-lifecycle` in [draft Host PR #150](https://github.com/hao1939/may-agent/pull/150).
+Evidence retention is `c757b950`, the opt-in agent experiment is `5da7b4af`, and
+durable parent result references are `072901fc`. Human review remains required.
 
 The first source slice retains an accepted result in its exact attempt's
 existing SQLite JSON record. It captures the admitted disposition, structured
@@ -19,11 +20,14 @@ table, model prompt or agent-managed reference. Rejected, stale and cancelled
 outputs do not become accepted results. Current parent downgrades to waiting
 are retained as waiting, not misreported as completed work.
 
-Nine focused tests use the production reconciler and temporary SQLite. They
+Ten focused tests use the production reconciler and temporary SQLite. They
 cover later cycles beyond the 16-attempt context window, reopen, atomic rollback
 on an injected storage failure, correction, duplicate/stale output, waiting,
 live input correlation, finite receipts, cancellation and the parent wait rule.
-The focused evidence/parent suite passed 14 tests. Full Host CI also runs for
+The added regression reproduced two distinct results with identical summaries
+collapsing into one parent wake. The existing durable event now carries the
+producing attempt reference, so code can read both exact outcomes after reopen.
+The focused reconciler/runtime suite passed 320 tests. Full Host CI also runs for
 the review candidate; its PR owns the exact revision/check status.
 
 The new evidence currently has an experimental reader only. It is a prerequisite
@@ -75,6 +79,12 @@ transfer. There is no current-contract model comparison yet. The agent executor
 keeps its normal bounded finish/provider handling; the controller experiment
 does not automatically retry failed model judgments.
 
+After adding the durable return reference, both returned-result cases were run
+again with unchanged judgment context. Code resolved the saved event reference
+after SQLite reopen; both agents answered correctly in one `finish` call.
+Both parents remained waiting under the current liveness rule. These two extra
+runs verify the new evidence path, not the missing lifecycle transition.
+
 ## What this changes in the proposal
 
 Agent usability is now an explicit acceptance gate. A controller that works
@@ -87,6 +97,12 @@ as live, so a maintained parent with adequate returned evidence is still waiting
 Both measurement trials hit it. Finite completion also requires no live children
 and deletes the live resource. Changing prompts or asking agents to close
 children merely to unlock their parents would preserve the wrong contract.
+
+The current wait prompt also tells agents to preserve waits by `requestId` and
+distinguish the original target from a later resolved Task ID. This is a concrete
+comparison point for the next slice: retained waits should survive by default;
+the agent judges an intentional change, while code resolves its correlation.
+Prove that behavior before removing the current instructions.
 
 **Next gate:** separate accepted assignment outcome from resource closure and
 make one real caller consume that exact outcome while the child stays open.
