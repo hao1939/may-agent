@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { Type, type Static } from "typebox";
 import { Check } from "typebox/value";
+import { admitTaskReconcileResult, taskAgentResultSchema } from "../../../packages/sdk/src/task-contract.js";
+import { appTaskAgentProtocol } from "../../../src/app/adapters/executors/managed-agent.js";
 import { runDirectAgent } from "../../../src/app/direct-agent.js";
 import { createModelRegistry } from "../../../src/app/model-registry.js";
 import { AppTaskController } from "../../../src/app/core/tasks/controller.js";
@@ -48,10 +50,24 @@ function argument(name: string): string | undefined {
 const model = argument("--model");
 const output = argument("--out");
 const scenariosPath = argument("--scenarios");
+const hostContract = process.argv.includes("--host-contract");
 if (!process.argv.includes("--live") || !model || !output || !scenariosPath) {
   throw new Error("Use --live --model NAME --out DIRECTORY --scenarios FILE; this experiment spends model tokens.");
 }
-const scenarios: Scenario[] = JSON.parse(readFileSync(resolve(scenariosPath), "utf8"));
+const cases = argument("--cases")?.split(",");
+const availableScenarios: Scenario[] = JSON.parse(readFileSync(resolve(scenariosPath), "utf8"));
+if (cases?.some((id) => !availableScenarios.some((scenario) => scenario.id === id))) {
+  throw new Error("Every --cases ID must exist in the supplied scenarios file.");
+}
+const scenarios = availableScenarios.filter((scenario) => !cases || cases.includes(scenario.id));
+if (
+  hostContract &&
+  scenarios.some((scenario) => scenario.acceptable.some((choice) => choice !== "answer" && choice !== "give-up"))
+) {
+  throw new Error(
+    "The Host-contract smoke covers answer and give-up cases; cross-App dependency execution is not implemented by this harness.",
+  );
+}
 const models = createModelRegistry();
 if (!models[model]) throw new Error("The selected model is not configured in the Host registry.");
 const outputRoot = resolve(output);
@@ -67,7 +83,9 @@ writeFileSync(
 );
 writeFileSync(
   join(agentDir, "AGENTS.md"),
-  `Judge the current ask using the supplied evidence. Explain a useful answer or the next useful work.
+  hostContract
+    ? appTaskAgentProtocol("fixture")
+    : `Judge the current ask using the supplied evidence. Explain a useful answer or the next useful work.
 Only claim what the evidence supports. Weigh another attempt against its value and cost.
 Return your judgment through finish().result. The finish status describes this judgment step.
 Code owns recording, delegated execution and returning results; this trial tests that boundary.
@@ -156,19 +174,48 @@ for (const scenario of scenarios) {
       }
       const run = await runDirectAgent({
         agentName: "fixture-judge",
-        task: JSON.stringify({ ask: scenario.ask, evidence: evidence.map((item) => item.fact) }),
+        task: JSON.stringify({
+          ask: scenario.ask,
+          evidence: evidence.map((item) => item.fact),
+          ...(hostContract
+            ? {
+                appId: "fixture",
+                taskId: "owner",
+                generation: claim.generation,
+                outcome: scenario.ask,
+                acceptance: ["Answer from evidence; do not claim unsupported success"],
+                events: readAppTaskReconciliationEvents(store, claim),
+                context:
+                  "Isolated fixture. Existing App policy authorizes a give-up decision when the ask explicitly allows it. No real service is affected.",
+              }
+            : {}),
+        }),
         projectRoot: root,
         workRoot: root,
         agentsRoot,
         sharedRoot: join(root, "shared"),
         outputRoot,
         models,
-        outputSchema: decisionSchema,
+        outputSchema: hostContract ? taskAgentResultSchema : decisionSchema,
         timeoutMs: 90_000,
         sessionId: scenario.id,
       });
-      const valid = run.status === "done" && Check(decisionSchema, run.structuredResult);
-      const decision = valid ? (run.structuredResult as Decision) : undefined;
+      const hostAdmission =
+        hostContract && run.status === "done"
+          ? admitTaskReconcileResult(run.structuredResult, { allowNeedsAgent: false, defaultParentId: "owner" })
+          : undefined;
+      const hostResult = hostAdmission?.ok ? hostAdmission.result : undefined;
+      const valid =
+        run.status === "done" && (hostContract ? Boolean(hostResult) : Check(decisionSchema, run.structuredResult));
+      const decision: Decision | undefined = hostResult
+        ? {
+            decision: hostResult.state === "converged" ? "answer" : hostResult.state === "stopped" ? "give-up" : "wait",
+            response: hostResult.response ?? hostResult.summary,
+            reason: hostResult.summary,
+          }
+        : valid
+          ? (run.structuredResult as Decision)
+          : undefined;
       // Retain the evidence given to this judgment. Correlation is a code responsibility;
       // this records considered evidence, not a claim that every fact was cited or verified.
       const evidenceReferences = evidence.map((item) => item.id);
@@ -176,19 +223,27 @@ for (const scenario of scenarios) {
       if (!decision) {
         settlement = failAppTaskAttempt(context(), claim, "Model trial returned invalid or unsupported judgment");
       } else if (decision.decision === "answer") {
-        settlement = completeAppTask(context(), claim, {
-          summary: decision.reason,
-          response: decision.response,
-          result: decision,
-          evidence: evidenceReferences,
-        });
+        settlement = completeAppTask(
+          context(),
+          claim,
+          hostResult ?? {
+            summary: decision.reason,
+            response: decision.response,
+            result: decision,
+            evidence: evidenceReferences,
+          },
+        );
       } else if (decision.decision === "give-up") {
-        settlement = stopAppTask(context(), claim, {
-          summary: decision.reason,
-          response: decision.response,
-          result: decision,
-          evidence: evidenceReferences,
-        });
+        settlement = stopAppTask(
+          context(),
+          claim,
+          hostResult ?? {
+            summary: decision.reason,
+            response: decision.response,
+            result: decision,
+            evidence: evidenceReferences,
+          },
+        );
       } else if (decision.decision === "delegate" && decision.work) {
         settlement = deferAppTask(context(), claim, {
           disposition: "waiting",
@@ -217,19 +272,29 @@ for (const scenario of scenarios) {
           : [],
       );
       const usage = run.messages.flatMap((message) => (message.role === "assistant" ? [message.usage] : []));
+      const acceptedState = store.readAttempt(claim.attemptId)?.acceptedResult?.state;
+      const settlementPass = decision?.decision === "answer"
+        ? acceptedState === "converged"
+        : decision?.decision === "give-up"
+          ? acceptedState === "stopped"
+          : decision?.decision === "delegate"
+            ? Boolean(store.readTask("follow-up"))
+            : undefined; // Ask/wait cases only measure judgment in this harness.
       const item = {
         scenario: scenario.id,
         model,
+        contract: hostContract ? "host" : "experimental-judgment",
         status: run.status,
         valid,
         expectedDecision: scenario.acceptable,
         decisionPass: Boolean(decision && scenario.acceptable.includes(decision.decision)),
+        settlementPass,
         decision,
         durationMs: run.durationMs,
         attemptedTools,
         usage,
         settlement,
-        acceptedState: store.readAttempt(claim.attemptId)?.acceptedResult?.state,
+        acceptedState,
         sourcePhase: store.readTask("owner")?.status.phase,
         childStillOpen: scenario.childOpen ? Boolean(store.readTask("measurement")) : undefined,
         originalAttemptId,
@@ -244,6 +309,7 @@ for (const scenario of scenarios) {
           scenario: item.scenario,
           decision: decision?.decision,
           decisionPass: item.decisionPass,
+          settlementPass: item.settlementPass,
           acceptedState: item.acceptedState,
           durationMs: item.durationMs,
         }),
@@ -261,4 +327,4 @@ for (const scenario of scenarios) {
     store.close();
   }
 }
-if (report.some((item) => !item.decisionPass)) process.exitCode = 1;
+if (report.some((item) => !item.decisionPass || item.settlementPass === false)) process.exitCode = 1;

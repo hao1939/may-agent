@@ -11,6 +11,22 @@ bun scripts/poc/controller-judgment/run.ts --live --model MODEL --out /tmp/contr
 bun scripts/poc/controller-judgment/run.ts --live --model MODEL --out /tmp/controller-transfer --scenarios scripts/poc/controller-judgment/transfer.json
 ```
 
+Use `--host-contract` to exercise the actual Task protocol and SDK result schema
+on the same answer/give-up cases. Select cases from the committed fixtures:
+
+```sh
+bun scripts/poc/controller-judgment/run.ts --live --host-contract --model MODEL --out /tmp/controller-host-development --scenarios scripts/poc/controller-judgment/development.json --cases answer-from-returned-evidence,affordable-give-up
+bun scripts/poc/controller-judgment/run.ts --live --host-contract --model MODEL --out /tmp/controller-host-transfer --scenarios scripts/poc/controller-judgment/transfer.json --cases reject-returned-measurement
+```
+
+This mode changes instructions and result admission; it still uses the direct
+executor, fixture evidence and restricted tools. It does not test the full
+managed adapter, installed App or cross-App dependency calls. A valid `stopped`
+judgment must survive `finish(status: "failure")` as completed execution and
+be accepted without automatic retry. Check `settlementPass` as well as
+`decisionPass`; either failing makes the experiment exit nonzero. The harness
+does not score source settlement for its judgment-only ask/wait cases.
+
 Run development before the held-back transfer set; do not tune the contract to
 transfer answers. Each case starts a fresh agent with ordinary work and fixture
 evidence, using the real direct-agent executor. It has no coding, task-control,
@@ -30,7 +46,7 @@ Read `report.json` and the local transcripts. `decisionPass` scores only the
 choice of action; inspect response accuracy and usefulness separately. Reports
 include duration, attempted tools, provider usage, source settlement and SQLite
 paths. Provider cost metadata is not a verified bill. A nonzero exit indicates
-a bad/invalid action choice or experiment failure. A zero exit does not certify
+a bad/invalid action choice, rejected source settlement or experiment failure. A zero exit does not certify
 all lifecycle gates. No response-to-user delivery or deployed May agent is used.
 
 `ask` and `wait` are judgment-only cases in this harness; their interface and
