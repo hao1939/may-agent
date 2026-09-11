@@ -5,8 +5,9 @@ is under review in [draft Host PR #158](https://github.com/hao1939/may-agent/pul
 it is unmerged and undeployed. Use one Task model, controller and lifecycle:
 explicit outcomes, rest between inputs, owner-controlled closure. Human
 conversation, delegated work and maintenance describe roles and inputs within
-that model. The candidate's full local CI passes; operational cutover and the
-overall simplification remain unproved. This supersedes the earlier recommendation to
+that model. Full local CI and an isolated old-to-new daemon cutover pass;
+compatibility retirement and the overall simplification remain unfinished.
+This supersedes the earlier recommendation to
 share only scheduling while keeping two execution lifecycles.
 
 May should discuss and work with the human while delegated work progresses,
@@ -110,8 +111,9 @@ For example, the agent asks for a measurement and states the acceptance rule.
 Code records and runs that work, then returns its accepted evidence to the
 caller. The caller judges whether the measurement answers the ask. It never
 has to poll the child, register a subscription, copy a lease/version, or remember
-to revisit the work later. Closing ordinary completed children is an App
-convention applied by code; it requires no extra model turn.
+to revisit the work later. If the assigning App has a convention to close a
+child after consuming its result, code can apply that owner decision without
+an extra model turn.
 
 Do not call the model to implement a known state transition or repeatedly ask
 whether an unchanged Task should keep waiting. Do not make the controller
@@ -436,15 +438,16 @@ No new metric service, transport or user acknowledgment protocol is required.
    closure. Remove mode-based decisions in the exercised path. Inventory readers,
    receipts, workspaces and caller dependencies that currently equate completion
    with closure; settle their small replacement contracts before wider migration.
-2. **Run Conversation -> A -> B through that same lifecycle.** One stable Task
-   executes Conversation; its Turn consumes retained ordered input and commits
+2. **Run A -> B -> C -> B -> A through that same lifecycle.** A handles human
+   input; its attempt consumes retained ordered input and commits
    message/Request changes with the fenced outcome. Prove human input while
    children wait, exact Stop, bounded failures and source-aware capacity. Delete
    replaced conversation execution/claim/retry code; retain input correlation.
 3. **Finish result routes, fallback discovery and App conventions.** Route Task
    facts and timer-selected reviews into the same handler, with quiet handling.
-   Ordinary Apps close completed work by convention; Conversation and maintenance
-   keep receiving input. Remove the old follow-up declaration and response path.
+   Every Task remains available for input until its owner closes it. An assigning
+   App may supply that closure convention; Task role does not choose a different
+   lifetime. Remove the old follow-up declaration and response path.
 4. **Migrate retained state and remove compatibility branches.** Link Host/SDK/App
    revisions and integration order in reviewed PRs. Map completed finite work to
    a closed Task with its original accepted result; map quiet maintained work to
@@ -460,9 +463,11 @@ separate. The candidate's normal owner-close operation can retire a maintained
 supervisor; it needs no separate retirement lifecycle. The
 [source retirement proof](controller-poc-recovery-review.md#retiring-the-old-supervisor)
 drains its frozen admission command into storage before closing it, then proves
-result return through Conversation after storage reopen. Actual process shutdown
-and activation remain unverified. Any rollback must preserve evidence and the
-same single-owner property.
+result return after storage reopen. The later
+[real-daemon trial](controller-poc-recovery-review.md#real-daemon-cutover)
+also proves old-process exit, offline conversion and candidate activation for
+its temporary App. Installation rollout and rollback remain separate; any
+rollback must preserve evidence and the same single-owner property.
 
 For the first Conversation cutover, accept planned downtime: stop the old Host
 and all workers, preserve prior execution evidence, and admit unfinished input
@@ -471,7 +476,8 @@ Do not restore the old handler's internal process or replay a saved decision as
 newly accepted work. Lease expiry alone cannot prove that an old process has
 stopped; the upgrade procedure must establish that before activating the new
 owner. The [source evidence](controller-poc-recovery-review.md#offline-conversation-cutover)
-distinguishes the tested state operation from the unfinished operational cutover.
+owns state-conversion guarantees; the real-daemon trial verifies the exercised
+process shutdown and activation sequence.
 
 The [historical receipt conversion](controller-poc-recovery-review.md#historical-completion-receipt-cutover)
 now proves completed-work import against a database written by the old Host.
@@ -488,9 +494,9 @@ uses the existing `requests.inputKinds` declaration to distinguish Conversation
 input from ordinary Task input sharing its Conversation. Source tests now cover
 their admission, execution, result return and storage reopen without mutual
 blocking. Supervisor retirement also has a source proof using existing admission
-and owner-close operations. These helpers and tests are not an operational
-upgrade procedure; stopping every old process and activating the new Host/App
-still require verification.
+and owner-close operations. The real-daemon trial now verifies stopping the
+old processes and activating the new Host/App for its fixture. These helpers
+and tests do not replace an installation-specific rollout procedure.
 
 ## Acceptance and cost evidence
 

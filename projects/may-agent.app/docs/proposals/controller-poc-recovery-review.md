@@ -9,8 +9,11 @@ The current review artifact is [draft Host PR #158](https://github.com/hao1939/m
 **Current assessment:** Focused lifecycle and managed-model recovery checks
 support the design. The source now removes the old Conversation executor and
 supervisor reply path; the paired App candidate removes its supervisor declaration.
-Adoption remains unproved: retained work still needs operational cutover. Full
-local CI at `bf402899` passes **2,859 tests**, with **3 skipped and zero failures**.
+The [real-daemon cutover](#real-daemon-cutover) now passes for an isolated old
+Host and candidate pair. Installation adoption and compatibility retirement
+remain unfinished. Full local CI at `2b13943f` passes **2,860 tests**, with
+**3 skipped and zero failures**. Both GitHub checks passed at `bf402899`;
+the newer revision has its own checks.
 New human input now permits a fresh attempt
 without resetting failure counts; source responsiveness checks pass below.
 Receipt and open-state conversion now have old-source import evidence below;
@@ -27,7 +30,7 @@ also pass with actual model judgment after simplifying same-App admission and
 result return. A saved wait no longer starts an unnecessary caller attempt.
 The branch adds 648 net production lines against baseline main `a8f65188`
 (counting `src/` and `packages/`, excluding tests, fixtures and Markdown).
-Resolve the remaining cutover and integration gaps before expanding the design.
+Finish compatibility retirement and the acceptance audit before expanding the design.
 The [runtime/input checks](#runtime-outcomes-and-input-continuation) now pass,
 as do [isolated daemon restarts](#daemon-restart-with-retained-outcomes).
 The [Stop/admission checks](#public-stop-and-admission-ownership) now pass.
@@ -1433,6 +1436,78 @@ then reports **2,859 passed, 3 skipped and zero failures** (2,862 tests across
 or agent configuration. The draft remains unmerged and undeployed; passing
 portable CI does not certify old-version cutover or the whole installation.
 
+## Real daemon cutover
+
+The committed [`task-runtime-cutover.ts`](../../../may-agent/scripts/poc/task-runtime-cutover.ts)
+trial passes from clean old Host **`a8f65188`** to clean candidate **`d2e1e2dc`**.
+It starts actual daemon entrypoints and workflow workers using temporary App
+files, SQLite and a local scripted provider. It calls no real model or installed
+service. This extends the earlier source-only conversion checks across the
+process boundary without adding a production migration service.
+
+Before cutover, the old daemon accepts a reply and Request, starts measurement
+and supervisor workflow workers, then holds the next human input in its real
+inbox executor. The harness stops the parent before taking its process census,
+kills it, and verifies all **four observed processes** are exited before opening
+the database for conversion. Linux process start times protect the census from
+PID reuse. This proves the fixture's shutdown; `oldRuntimeStopped` itself remains
+an operator assertion rather than a process detector in core.
+
+The existing receipt/open-state/input conversions run inside one SQLite
+transaction with normal owner closure of the old supervisor. Before the old
+inbox lease would expire, its exact owner/generation is rejected. The accepted
+reply and open Request survive; independent measurement work remains present.
+The candidate then proves:
+
+- the original unfinished input is answered by the stable Task and its Request
+  is fulfilled;
+- the measurement keeps its original generation, its interrupted attempt stays
+  readable, and a new accepted attempt returns the value **17**;
+- the supervisor remains closed and its workflow does not execute again;
+- fresh human input executes on the same Task, with no inbox execution lease;
+  and
+- the earlier reply appears once, with the executing Task and measurement Task
+  both still open.
+
+The report records **four scripted provider calls**: old accepted reply, old
+held execution, candidate continuation and fresh candidate input. There are
+**zero real model calls**. Startup reports the retired inbox session as
+nonresumable; the existing startup policy leaves continuation to the Task.
+No extra provider call resumes that session. The first development run omitted
+the public event's required App target; correcting the harness was sufficient.
+No production change was needed. The committed run is clean.
+
+This is one exercised Linux upgrade with a synthetic App. It does not prove
+arbitrary installation state, automatic process discovery during deployment,
+rollback to the old lifecycle or production activation. Existing source checks
+separately cover frozen supervisor command admission, receipt import, owner
+closure and conversion rollback. The broader live trials remain the evidence
+for actual App/agent judgment; this trial supplies decisions to isolate migration.
+Local reports and daemon logs are retained outside the repository.
+
+The small dispatch-backoff probe also passes again at this checkpoint: its
+200 ms retry waits **201 ms** normally and **202 ms** after an ordinary wake.
+Its README incorrectly retained the original failure claim after the controller
+fix; that text now distinguishes the initial failure from current behavior.
+
+Full CI at `d2e1e2dc` passed types, the App boundary and lint, then reported
+**2,858 passed, 3 skipped and one failed** (2,862 tests across 287 files,
+121.32 seconds). The existing waiting-daemon restart check reported a five-second
+shutdown timeout during a test lasting 3.78 seconds. Its helper measured elapsed
+time with `Date.now()`. A new deterministic regression reproduces premature
+timeout after a forward wall-clock correction: the unmodified helper reports a
+one-second timeout after only 4.77 ms. Host `2b13943f` changes that test helper to
+monotonic elapsed time without increasing the deadline. The regression and both
+real daemon restart cases then pass (**three checks**). This fixes the helper's
+demonstrated clock sensitivity; the originating CI clock change was not captured.
+No Host shutdown behavior changes.
+
+Full local CI at `2b13943f` passes Host/SDK types, App-boundary checks and lint:
+**2,860 passed, 3 skipped and zero failures** (2,863 tests across 288 files,
+121.31 seconds). The added test is the clock regression; the three installation
+configuration skips are unchanged. The clean cutover report remains tied to
+`d2e1e2dc`; its successor changes only the polling test helper and regression.
+
 ## Current simplification inventory
 
 At `bf402899`, compared with baseline `a8f65188`, non-test files under `src/`
@@ -1453,8 +1528,9 @@ Handler-specific context and reply settlement remain necessary: messages,
 Topics and Requests have product meaning. They do not introduce another claim,
 retry counter or lifetime policy. This is evidence of fewer execution owners,
 not a claim of fewer production lines or proven operational reliability.
-Old-version cutover, historical reader retirement and the final integration
-audit remain. Keep the next work on those gaps instead of adding a framework
+The real-daemon fixture above now proves old-version cutover for its stated
+scope. Historical reader retirement and the final integration audit remain.
+Keep the next work on those gaps instead of adding a framework
 to eliminate ordinary handler-specific code.
 
 ## Verification and cost
@@ -1488,6 +1564,8 @@ results are retained here; passing focused tests does not clear the migration ga
 | `a9252e96` | 2,837 / 3 / 27 | 2,867 / 289 | 159.50 | Real daemon restart and scheduled workflow checks read accepted attempts on retained Tasks |
 | `ae83b416` | 2,853 / 3 / 11 | 2,867 / 288 | 124.99 | Public Stop uses Task attempts; admission checks retain containment and fence revoked ownership |
 | `bf402899` | 2,859 / 3 / 0 | 2,862 / 287 | 140.66 | Retires the last independent inbox failure fixtures; retained input, atomic settlement and affordable redo run through the shared lifecycle |
+| `d2e1e2dc` | 2,858 / 3 / 1 | 2,862 / 287 | 121.32 | Clean old-to-new daemon cutover passes; full suite exposes premature wall-clock timeout in an existing test helper |
+| `2b13943f` | 2,860 / 3 / 0 | 2,863 / 288 | 121.31 | Monotonic polling fixes the demonstrated test-helper deadline fault; all portable checks pass |
 
 Failure entries are unchanged from `6aa80877` through `03618081`. The earlier
 `650b019e` test follow-up has focused verification, not a separate full-suite
