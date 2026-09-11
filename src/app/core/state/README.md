@@ -1,0 +1,27 @@
+# Durable state
+
+This directory owns typed operations on the shared Host SQLite database.
+Callers supply the connection; operations retain their existing transactions and
+revision checks. Schema upgrades and foundational transaction helpers remain in
+`src/lib/db/`. Execution and model judgment happen outside these transactions.
+
+| Start here | Owns |
+| --- | --- |
+| `app-task-resource-store.ts` | Canonical Tasks, attempts, Conditions, results and fenced mutations |
+| `app-inbox-store.ts` | Admitted input, claims, waits and turn handling records |
+| `app-event-admission-store.ts` | Recorded routing decisions and delivery progress |
+| `inbox.ts` | Atomic Task attachment and input completion with Request closure |
+| `conversations.ts` | Conversation reads and Topic links |
+| `conversation-requests.ts` | Accepted asks and scoped revision checks |
+| `conversation-turns.ts` | Decision acceptance with Topics and Request updates |
+| `conversation-outcomes.ts` | Supervised outcomes with links, explanation and Request updates |
+| `task-reference-index.ts` | Lookup/display of exact Task references |
+
+The Task runtime decides transitions; these operations enforce their storage
+boundaries. Events announce meaningful changes and accelerate discovery, while
+durable state remains authoritative. There is no extra server or storage queue.
+
+Colocated store tests cover claims, revisions, transactions and reopen behavior.
+`inbox.test.ts` covers cross-resource attachment; `conversation-requests.test.ts`
+covers accepted-ask fences and closure. `retired-conversation-waits.test.ts` checks
+upgrades preserve admitted work and expose unfinished legacy turns as failed.

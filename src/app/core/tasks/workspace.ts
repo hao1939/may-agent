@@ -1,4 +1,4 @@
-import type { AppTaskWorkspace } from "../../app-task-state.js";
+import type { AppTaskWorkspace } from "./app-task-state.js";
 
 export type PreparedTaskWorkspace = {
   repoDir: string;

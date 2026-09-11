@@ -27,7 +27,7 @@ Start storage reads at `readAppConversationResource()` in
 [`core/state/conversations.ts`](../core/state/conversations.ts). It owns message
 projection, Topic creation/search/pagination and exact Topic-to-Task links in
 the same Host database. It reads typed input evidence through
-`listAppInboxConversationItems()` in `app-inbox-store.ts`. That store retains
+`listAppInboxConversationItems()` in [`core/state/app-inbox-store.ts`](../core/state/app-inbox-store.ts). That store retains
 input admission and claim primitives; projection has no scheduler or lifecycle.
 
 [`core/state/conversation-requests.ts`](../core/state/conversation-requests.ts)
@@ -88,7 +88,7 @@ the shared Conversation over HTTP; it no longer selects a default session.
 Stopping, then sending a correction can update the same accepted Request;
 seamless current-turn steering remains separate follow-up work.
 
-`app-inbox-runtime.ts` attaches cleanup before dispatch/readiness reads and
+[`composition/app-inbox-runtime.ts`](../composition/app-inbox-runtime.ts) attaches cleanup before dispatch/readiness reads and
 contains detached recovery failures. Structured `handler.failed` diagnostics
 retain known work identity, stage, error and disposition. Failed diagnostic
 persistence falls back to the independent logger, without replaying execution.

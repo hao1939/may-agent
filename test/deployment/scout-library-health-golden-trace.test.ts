@@ -8,7 +8,7 @@ import type { AppDefinition, AppDependencyObservation, AppEvent } from "@may-age
 import { matchesEventSelector } from "@may-agent/sdk";
 import { openDatabase } from "../../src/lib/db.js";
 import { applyDbSchema } from "../../src/lib/db/schema.js";
-import { AppInboxHost } from "../../src/app/app-inbox-host.js";
+import { AppInboxHost } from "../../src/app/core/inbox/app-inbox-host.js";
 
 const { default: scoutApp } = await import(pathToFileURL(resolve(APP_ROOT, "projects/scout-knowledge-lib.app/app.ts")).href);
 

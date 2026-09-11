@@ -1,6 +1,6 @@
 import type { AppRegistry } from "./core/apps/registry.js";
-import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./app-task-state.js";
-import type { TaskCompletionReceipt } from "./app-task-store.js";
+import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./core/tasks/app-task-state.js";
+import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import {
   displayTaskReferences,
@@ -8,7 +8,7 @@ import {
   resolveTaskReference,
   taskReferenceDigest,
   type ResolvedTaskReference,
-} from "./task-reference-index.js";
+} from "./core/state/task-reference-index.js";
 
 export type HumanTaskStatus = "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "cancelled";
 

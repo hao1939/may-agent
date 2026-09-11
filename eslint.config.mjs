@@ -92,7 +92,7 @@ export default [
   },
 
   {
-    files: ["src/app/core/**/*.ts", "src/app/app-task-runtime.ts", "src/app/app-inbox-host.ts"],
+    files: ["src/app/core/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: {
       "no-restricted-imports": [

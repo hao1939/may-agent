@@ -1,11 +1,11 @@
 import type { AppDefinition, AppRead, TaskAttempt, TaskVerifier } from "@may-agent/sdk";
 import type { EventEnvelope } from "../events/bus.js";
-import type { AppTaskEvents } from "../../app-task-emitter.js";
-import type { AppTaskExecutionPaths } from "../../app-task-output-paths.js";
-import type { AppTaskChildContext, AppTaskClaim, AppTaskLiveSnapshot } from "../../app-task-reconciler.js";
+import type { AppTaskEvents } from "./app-task-emitter.js";
+import type { AppTaskExecutionPaths } from "./app-task-output-paths.js";
+import type { AppTaskChildContext, AppTaskClaim, AppTaskLiveSnapshot } from "./app-task-reconciler.js";
 import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { TaskCapabilityRun } from "./result.js";
-import type { AppTaskAttempt } from "../../app-task-state.js";
+import type { AppTaskAttempt } from "./app-task-state.js";
 
 /** Read-only App declaration, never its mutable Task store. */
 export type TaskExecutionApp = { id: string; appDir: string; projectDir: string; app: AppDefinition };

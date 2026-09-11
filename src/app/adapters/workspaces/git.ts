@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
-import type { AppTaskWorkspace } from "../../app-task-state.js";
+import type { AppTaskWorkspace } from "../../core/tasks/app-task-state.js";
 import type { TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace } from "../../core/tasks/workspace.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };

@@ -9,8 +9,8 @@ import { Type, defineApp, type AppRequestDecision, type AppConversationRequestUp
 import { getDb, closeDb } from "../../../lib/requests.js";
 import { openDatabase } from "../../../lib/db.js";
 import { DbWriter } from "../../../lib/db-writer.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
-import { appTaskContext, claimObservedAppTask, completeAppTask } from "../../app-task-reconciler.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { appTaskContext, claimObservedAppTask, completeAppTask } from "../tasks/app-task-reconciler.js";
 import { admitTaskRequest } from "./inbox.js";
 import {
   createConversationTopic,
@@ -20,10 +20,10 @@ import {
   readConversationTopic,
 } from "./conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "./conversation-requests.js";
-import { startAppInboxRuntime } from "../../app-inbox-runtime.js";
+import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../apps/registry.js";
 import { EventBus, type AgentEvent } from "../events/bus.js";
-import { HostCapacity } from "../../host-capacity.js";
+import { HostCapacity } from "../scheduling/host-capacity.js";
 
 const roots: string[] = [];
 afterEach(() =>

@@ -24,8 +24,8 @@ import {
   parseTaskWorkerDefinitionSource,
   runTaskAttemptWorker,
   runTaskRecoveryWorker,
-} from "./task-attempt-process.js";
-import { runTaskAdmissionWorker } from "./task-admission-process.js";
+} from "./composition/workers/task-attempt-process.js";
+import { runTaskAdmissionWorker } from "./composition/workers/task-admission-process.js";
 
 declare const __MAY_AGENT_BUILD_COMMIT__: string | undefined;
 

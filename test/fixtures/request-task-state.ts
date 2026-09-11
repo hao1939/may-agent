@@ -1,13 +1,13 @@
 import type { AppTaskAttachment } from "@may-agent/sdk";
 import { openDatabase } from "../../src/lib/db.js";
-import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import {
   appTaskContext,
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
-} from "../../src/app/app-task-reconciler.js";
-import { getAppInboxItem } from "../../src/app/app-inbox-store.js";
+} from "../../src/app/core/tasks/app-task-reconciler.js";
+import { getAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
 import { admitTaskRequest, attachRequestToTask } from "../../src/app/core/state/inbox.js";
 
 export const testAttachment = (taskId = "work/one"): AppTaskAttachment => ({

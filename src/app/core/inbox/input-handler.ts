@@ -1,5 +1,5 @@
 import type { AppDefinition, AppInputContext, AppResult } from "@may-agent/sdk";
-import type { AppInboxClaim } from "../../app-inbox-store.js";
+import type { AppInboxClaim } from "../state/app-inbox-store.js";
 
 /** Selected execution supplied by composition; inbox ownership stays with the Host. */
 export type AppInputHandler = (input: {

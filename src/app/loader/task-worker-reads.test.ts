@@ -6,11 +6,11 @@ import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 import type { AgentConfig } from "./agent-config.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import { EventBus } from "../core/events/bus.js";
-import { HostCapacity } from "../host-capacity.js";
-import { AppTaskResourceStore } from "../app-task-resource-store.js";
-import { appTaskTestContext } from "../app-task-test-support.js";
-import { observeAppTaskIntent } from "../app-task-reconciler.js";
-import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../app-task-runtime.js";
+import { HostCapacity } from "../core/scheduling/host-capacity.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
+import { observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
+import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../core/tasks/app-task-runtime.js";
 import { closeDb, getDb } from "../../lib/requests.js";
 import type { TaskAgentRunner } from "../core/tasks/execution.js";
 

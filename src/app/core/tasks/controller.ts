@@ -1,5 +1,5 @@
 import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./queue.js";
-import type { HostCapacity } from "../../host-capacity.js";
+import type { HostCapacity } from "../scheduling/host-capacity.js";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
 let hostPumpScheduled = false;

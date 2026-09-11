@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
-import { appTaskContext } from "../../app-task-reconciler.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { appTaskContext } from "../tasks/app-task-reconciler.js";
 import { createConversationInbox } from "../../composition/conversation-inbox.js";
 import {
   assertAppInboxClaim,
@@ -15,7 +15,7 @@ import {
   createAppInboxItem,
   getAppInboxItem,
   waitAppInboxClaim,
-} from "../../app-inbox-store.js";
+} from "./app-inbox-store.js";
 import { attachRequestToTask } from "./inbox.js";
 import {
   createConversationTopic,

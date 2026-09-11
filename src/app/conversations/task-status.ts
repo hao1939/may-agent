@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { SqliteDb } from "../../lib/db.js";
 import type { EventBus } from "../core/events/bus.js";
-import { listHumanAppInboxItemsWaitingOnTask, type AppInboxItem } from "../app-inbox-store.js";
+import { listHumanAppInboxItemsWaitingOnTask, type AppInboxItem } from "../core/state/app-inbox-store.js";
 
 /** The frontend's conventional follow-up Task must not wake itself through its Topic links. */
 export function isConversationFollowUpTask(

@@ -1,8 +1,8 @@
 import type { AppRead, ExecutionView, TaskDetail, TaskListOptions, TaskPage, TaskView } from "@may-agent/sdk/app";
-import type { AppTaskContext, TaskTree } from "../../app-task-store.js";
+import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
-import { getAppInboxItem } from "../../app-inbox-store.js";
+import { getAppInboxItem } from "../state/app-inbox-store.js";
 
 export type RuntimeAppReadOptions = {
   getDb(): SqliteDb;

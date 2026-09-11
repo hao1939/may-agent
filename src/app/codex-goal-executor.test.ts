@@ -167,7 +167,7 @@ class FakeClient implements CodexGoalClient {
                   state: "converged",
                   summary: "The model matches the cited runtime boundary.",
                   response: "The review found no material mismatch.",
-                  evidence: ["projects/may-agent/src/app/app-task-runtime.ts:2025"],
+                  evidence: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025"],
                 }),
               },
             ],
@@ -282,7 +282,7 @@ describe("codex-goal Task executor", () => {
     expect(first).toMatchObject({
       state: "converged",
       response: "The review found no material mismatch.",
-      evidence: ["projects/may-agent/src/app/app-task-runtime.ts:2025", "codex-thread:thread-1"],
+      evidence: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", "codex-thread:thread-1"],
     });
     expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
       version: 1,
@@ -464,7 +464,7 @@ describe("codex-goal Task executor", () => {
 
       await expect(executor(attempt({ attemptId: "r_2_retry" }))).resolves.toMatchObject({
         state: "converged",
-        evidence: ["projects/may-agent/src/app/app-task-runtime.ts:2025", `codex-thread:thread-${limitStatus}`],
+        evidence: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", `codex-thread:thread-${limitStatus}`],
       });
       expect(resumed.calls).toContain(`resume:thread-${limitStatus}`);
       expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({

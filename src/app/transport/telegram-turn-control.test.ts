@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getDb, closeDb } from "../../lib/requests.js";
-import { createAppInboxItem, claimNextAppInboxItem, stopAppInboxTurn } from "../app-inbox-store.js";
+import { createAppInboxItem, claimNextAppInboxItem, stopAppInboxTurn } from "../core/state/app-inbox-store.js";
 import { EventBus } from "../core/events/bus.js";
 import { attachTelegramBot } from "./telegram.js";
 

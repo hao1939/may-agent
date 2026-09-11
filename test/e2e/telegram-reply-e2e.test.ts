@@ -7,7 +7,7 @@ import {
   claimAppInboxItem,
   completeAppInboxClaim,
   createAppInboxItem,
-} from "../../src/app/app-inbox-store.js";
+} from "../../src/app/core/state/app-inbox-store.js";
 import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { HumanTaskService } from "../../src/app/human-task-service.js";

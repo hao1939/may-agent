@@ -11,7 +11,7 @@ let settle!: () => void;
 const recovery = new Promise<void>((resolve, reject) => {
   settle = process.argv[2] === "reject" ? () => reject(new Error("fixture recovery failure")) : resolve;
 });
-mock.module("../../src/app/app-task-runtime.js", () => ({
+mock.module("../../src/app/core/tasks/app-task-runtime.js", () => ({
   recoverInstalledAppTasks: () => {
     order.push("recovery");
     return recovery;

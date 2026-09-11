@@ -4,20 +4,20 @@ import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
-import { AppTaskResourceStore } from "../../../src/app/app-task-resource-store.js";
+import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
 import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
-import { appTaskContext, cancelAppTask } from "../../../src/app/app-task-reconciler.js";
+import { appTaskContext, cancelAppTask } from "../../../src/app/core/tasks/app-task-reconciler.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { EventBus } from "../../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
-import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/app-task-runtime.js";
-import { HostCapacity } from "../../../src/app/host-capacity.js";
+import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
+import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
   type TaskAttemptProcessRequest,
-} from "../../../src/app/task-attempt-process.js";
+} from "../../../src/app/composition/workers/task-attempt-process.js";
 
 const roots: string[] = [];
 const children: Array<{ child: ChildProcess; closed: Promise<void> }> = [];
@@ -134,7 +134,7 @@ function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output
         [
           "-e",
           `
-        const { ${worker} } = await import(${JSON.stringify(new URL("../../../src/app/task-attempt-process.ts", import.meta.url).href)});
+        const { ${worker} } = await import(${JSON.stringify(new URL("../../../src/app/composition/workers/task-attempt-process.ts", import.meta.url).href)});
         await ${worker}({
           request: ${JSON.stringify(f.request)},
           definitionSource: ${JSON.stringify(f.request.definitionSource)},

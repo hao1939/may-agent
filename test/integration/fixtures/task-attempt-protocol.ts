@@ -7,7 +7,7 @@ import {
   parseTaskAttemptProcessRequest,
   parseTaskWorkerDefinitionSource,
   type TaskAttemptProcessRequest,
-} from "../../../src/app/task-attempt-process.js";
+} from "../../../src/app/composition/workers/task-attempt-process.js";
 
 const request: TaskAttemptProcessRequest = {
   appId: "sample",

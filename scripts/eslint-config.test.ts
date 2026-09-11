@@ -30,19 +30,19 @@ it("enforces bounded imports with and without extensions, but allows neutral hel
     const forbidden: string[] = [];
     if (filePath.startsWith("src/lib/")) {
       const libModules = ["requests", "persistence", "metrics", "manager"];
-      const appModules = ["event-bus", "app-task-runtime", "cron"];
+      const appModules = ["core/events/bus", "core/tasks/app-task-runtime", "cron"];
       forbidden.push(...libModules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `./${name}${ext}`)));
       forbidden.push(...appModules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `../app/${name}${ext}`)));
       forbidden.push("bun:sqlite");
       forbidden.push("../app/core/events/bus.js", "../app/core/tasks/controller.js");
     } else {
-      const rel = filePath === "src/app/app-runtime.ts" ? "./app-task-runtime" : "../app-task-runtime";
+      const rel = filePath === "src/app/app-runtime.ts" ? "./core/tasks/app-task-runtime" : "../core/tasks/app-task-runtime";
       forbidden.push(...["", ".js", ".ts"].map((ext) => `${rel}${ext}`));
     }
     const allowed = filePath.startsWith("src/lib/")
       ? "./manager-utils.js"
       : filePath === "src/app/app-runtime.ts"
-        ? "./app-task-capability.js"
+        ? "./core/tasks/app-task-capability.js"
         : "../../../packages/control/src/server.js";
     // Multiline imports caught incorrectly by the old line-text tests, and
     // extensionless imports that previously bypassed the new lint rule.
@@ -71,8 +71,8 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     "src/app/core/tasks/controller.ts",
     "src/app/core/inbox/input-context.ts",
     "src/app/core/state/inbox.ts",
-    "src/app/app-inbox-host.ts",
-    "src/app/app-task-runtime.ts",
+    "src/app/core/inbox/app-inbox-host.ts",
+    "src/app/core/tasks/app-task-runtime.ts",
   ]) {
     const [result] = await eslint.lintText(source, { filePath });
     expect(result.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual([
@@ -89,7 +89,7 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     "src/app/core/tasks/controller.test.ts",
     "src/app/core/inbox/input-context.test.ts",
     "src/app/core/state/inbox.test.ts",
-    "src/app/app-inbox-host.test.ts",
+    "src/app/core/inbox/app-inbox-host.test.ts",
   ]) {
     const [result] = await eslint.lintText(source, { filePath });
     expect(result.messages).toEqual([]);

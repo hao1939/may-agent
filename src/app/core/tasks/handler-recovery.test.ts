@@ -5,9 +5,9 @@ import {
   markAppTaskAttention,
   observeAppTaskIntent,
   retryFailedAppTask,
-} from "../../app-task-reconciler.js";
-import { appTaskTestContext } from "../../app-task-test-support.js";
-import { AppTaskResourceStore } from "../../app-task-resource-store.js";
+} from "./app-task-reconciler.js";
+import { appTaskTestContext } from "./app-task-test-support.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

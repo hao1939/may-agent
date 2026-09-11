@@ -6,11 +6,11 @@ import { pathToFileURL } from "node:url";
 import { APP_ROOT } from "./installation.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { AppTaskResourceStore } from "../../src/app/app-task-resource-store.js";
-import { createAppTaskEmitter } from "../../src/app/app-task-emitter.js";
-import { appTaskContext, renewAppTaskAttemptLease, type AppTaskClaim } from "../../src/app/app-task-reconciler.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { createAppTaskEmitter } from "../../src/app/core/tasks/app-task-emitter.js";
+import { appTaskContext, renewAppTaskAttemptLease, type AppTaskClaim } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
-import type { TaskTree } from "../../src/app/app-task-store.js";
+import type { TaskTree } from "../../src/app/core/tasks/app-task-store.js";
 
 const gymUrl = (path: string) => pathToFileURL(join(APP_ROOT, "projects/gym.app", path)).href;
 const { taskForGymInput } = await import(gymUrl("app.ts"));

@@ -10,7 +10,7 @@ import {
   completeAppInboxClaim,
   waitAppInboxClaim,
   wakeAppInboxItemsWaitingOn,
-} from "../../app-inbox-store.js";
+} from "./app-inbox-store.js";
 import {
   createConversationTopic,
   findConversationTopics,

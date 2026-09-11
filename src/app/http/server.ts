@@ -31,12 +31,12 @@ import {
   type SocketResponse,
 } from "../../../packages/control/src/client.js";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
-import { loadProjectReadModel } from "../app-task-runtime-state.js";
+import { loadProjectReadModel } from "../core/tasks/app-task-runtime-state.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
-import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../app-inbox-store.js";
+import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
 import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 
 // ── Public API ────────────────────────────────────────────────────────

@@ -52,7 +52,7 @@ neither those experiments nor a production restart belongs in PR CI.
 For the local edit loop, run the affected contract directly, for example:
 
 ```sh
-bun test src/app/app-task-runtime-policy.test.ts
+bun test src/app/core/tasks/app-task-runtime-policy.test.ts
 bun run test:changed
 ```
 
