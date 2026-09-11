@@ -46,7 +46,8 @@ describe("workflow finish recovery", () => {
   it("mentions transient failure and schema payload in the corrective prompt", () => {
     const prompt = workflowFinishRecoveryPrompt(Type.Object({ state: Type.String() }), RESPONSES_STREAM_TERMINAL_ERROR);
     expect(prompt).toContain("transient runtime/provider failure");
-    expect(prompt).toContain("Do not repeat prior reads");
+    expect(prompt).toContain("Continue the original bounded assignment");
+    expect(prompt).toContain("App's instructions");
     expect(prompt).toContain("schema-validated result payload");
   });
 

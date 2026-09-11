@@ -60,6 +60,42 @@ its normal bounded finish/provider handling; inspect all calls in the transcript
 Private artifacts and temporary SQLite remain outside the checkout for review;
 do not publish raw transcripts or endpoint errors.
 
+## Managed Conversation recovery
+
+`managed-conversation.ts` uses actual human-event admission, a stable Conversation
+Task, the installed controller, `SubagentManager`, model/tool execution, and
+Conversation settlement. Its only domain tool reads a synthetic measurement or
+appends a record in temporary storage. A repeated write really creates another
+record, so the trial can detect duplicate effects.
+
+```sh
+bun scripts/poc/controller-judgment/managed-conversation.ts --live --model MODEL --out /tmp/conversation-empty --fault empty
+bun scripts/poc/controller-judgment/managed-conversation.ts --live --model MODEL --out /tmp/conversation-effect --fault after-effect
+bun scripts/poc/controller-judgment/managed-conversation.ts --live --model MODEL --out /tmp/conversation-restart --fault attempt-loss --value 0.78
+```
+
+Run the lower-value case without changing instructions. `empty` injects an empty
+initial assistant response. `after-effect` injects the known stream-terminal
+failure after the record commits. `attempt-loss` loses the managed result before
+Task settlement, reopens SQLite and reinstalls the runtime; the normal recovery
+timer supplies another attempt with the saved failure and session reference.
+The harness does not construct a recovery prompt or supply a previous report.
+
+The gate checks actual fault injection, one recorded value, one input and Task,
+a stored answer containing the value, retained Request updates, no legacy
+execution, and no additional work from a quiet review tick. The restart case
+also checks two attempts and the exact earlier failed session in the new context.
+Inspect the answer's comparison with the minimum separately; a passing mechanical
+gate does not score all prose or prove general agent judgment. Reports retain
+model steps, tool errors, stream calls, usage metadata and elapsed time; backend
+internal retries and billing are not independently measured.
+
+This is the real managed **in-process** path with a synthetic App, not a Task
+worker subprocess, installed May App, or transport-delivery trial. Child chains,
+input during background waits, full migration and retirement of the old owner
+still need their own proof. The trial bounds its own model calls, attempts and
+elapsed time; those fixture limits are not a Task lifetime policy.
+
 ## Follow-through across attempts
 
 The separate `follow-through.ts` trial uses three fresh model executions under
