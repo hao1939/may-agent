@@ -132,6 +132,11 @@ current-design list.
 
 Active reviews are:
 
+- [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md)
+  — proposed conversational teaching, scoped adoption and verified activation;
+  [guidance PoC](proposals/agent-adoption-poc-20260912.md) and
+  [workflow process-stability follow-up](proposals/workflow-stability-poc-20260912.md) and
+  [real-daemon teaching / natural procedure selection](proposals/conversation-adoption-poc-20260912.md);
 - [Telegram: a natural conversation with reliable follow-through](proposals/telegram-conversation-experience.md)
   — candidate fixes for five reproduced defects, contextual follow-up and
   compact progress; source verification and separate live experience trial;

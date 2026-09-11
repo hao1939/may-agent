@@ -31,6 +31,17 @@ small shared state boundary.
 
 ## Current focus
 
+The [agent extension proposal](proposals/agent-behavior-and-capability-extension.md)
+follows a human correction through scoped guidance, verified activation and
+use in later ordinary work. Instructions, skills, tools and workflows use
+existing conventions. The [focused local PoC](proposals/agent-adoption-poc-20260912.md)
+supports guidance adoption. The [workflow follow-up](proposals/workflow-stability-poc-20260912.md)
+evaluates process stability rather than smarter or faster judgment. The
+[real-daemon teaching trial](proposals/conversation-adoption-poc-20260912.md)
+now verifies scoped agent-authored guidance and later Conversation adoption in
+isolation. Installed authority/catalog and background Task adoption remain
+separate checks; focused Host PRs #159/#160 are under review.
+
 The [Telegram experience proposal](proposals/telegram-conversation-experience.md)
 tracks candidate fixes for five reproduced reliability defects alongside
 conversation-first presentation and guidance. It reuses existing context and

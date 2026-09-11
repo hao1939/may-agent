@@ -264,6 +264,35 @@ required execution-state persistence remains required. This needs neither a
 metric collector nor an error subscriber. The proposal owns candidate limits,
 verification and remaining input/output, retention and presentation gaps.
 
+The later [stability PoC candidate](../proposals/workflow-stability-poc-20260912.md#local-source-candidate),
+now extracted into [Host PR #159](https://github.com/hao1939/may-agent/pull/159),
+adds two narrow contracts, not yet a released capability:
+
+- `ctx.signal` is aborted on caller cancellation, the run or parent deadline,
+  and settlement. Pass it to cooperative I/O and check it before another
+  operation. Child runs inherit the parent signal; their own longer timeout
+  cannot extend the parent bound. It cannot preempt arbitrary JavaScript,
+  interrupt synchronous work, or undo external effects.
+- Returned `done` output or `blocked` evidence gets a bounded JSON inspection
+  copy in the existing run artifact (`result_payload`), including its kind and
+  availability. Inspected source strings/keys and the compact encoded value each
+  have a cumulative 64 KiB budget, with a depth limit of 32, sufficient for small
+  evidence packets; larger bodies should use existing artifact references.
+  Known secret patterns and credential fields are redacted with a visible flag.
+  A secret-bearing property name makes the payload unavailable (`sensitive-key`)
+  rather than leaking it or collapsing multiple redacted names into one key.
+  This is best effort, not permission to return credentials. The encoder avoids
+  authored getters, serializer hooks and proxy traps. Unsupported data, including
+  nested undefined values and sparse arrays, or oversized/deep structures is
+  explicitly unavailable and does not change the execution
+  outcome. No field means no captured payload, not proof of no source evidence.
+
+Existing artifact integrity checks cover that copy. Missing or corrupt artifacts
+remain explicit failures of inspection; required run-state persistence remains
+required. Only returned data is captured, not a stream of every helper response.
+Cancellation before return may therefore leave logs but no packet. This adds no
+SQL migration, background collector, new result authority, or retry mechanism.
+
 ## Durable waits
 
 Do not keep a workflow open across human replies, approval, long timers,

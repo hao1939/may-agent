@@ -1,0 +1,5608 @@
+{
+  "hostBaseline": "49272b5ac545aa2c4b7ab887c10183f5a76a8bd0",
+  "priorHarness": "dc4a2530",
+  "date": "2026-09-12",
+  "model": "gpt-5.6-sol",
+  "note": "Synthetic loopback provider only; no real PRs. The workflow arm is caller-selected, not natural discovery. Agent done is distinct from collection status. Offline driver runs supplement the 27 matrix test executions and cancellation test.",
+  "live": [
+    {
+      "fault": "stable",
+      "arm": "direct",
+      "repeat": 0,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` names before calling `.trim()`.** The function explicitly accepts `string | null`, and comments confirm anonymous users pass `null`. The current implementation will throw at runtime. For example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation preference conflicts with the project formatter and does not warrant a change.\n\nEvidence collection is complete for stable head **v1**: change and complete comments matched `v1`, and checks passed for `v1`. Despite passing checks, the concrete null-handling defect means the PR is **not ready to merge**.",
+      "durationMs": 15960,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 55,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 35,
+          "totalTokens": 835,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.0011,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00422
+          }
+        },
+        {
+          "input": 858,
+          "output": 88,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 9,
+          "totalTokens": 946,
+          "cost": {
+            "input": 0.0034319999999999997,
+            "output": 0.00176,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.005192
+          }
+        },
+        {
+          "input": 3,
+          "output": 29,
+          "cacheRead": 0,
+          "cacheWrite": 1064,
+          "reasoning": 9,
+          "totalTokens": 1096,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00058,
+            "cacheRead": 0,
+            "cacheWrite": 0.00532,
+            "total": 0.005912
+          }
+        },
+        {
+          "input": 3,
+          "output": 222,
+          "cacheRead": 1064,
+          "cacheWrite": 52,
+          "reasoning": 60,
+          "totalTokens": 1341,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00444,
+            "cacheRead": 0.00042560000000000005,
+            "cacheWrite": 0.00026,
+            "total": 0.0051376
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "stable",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789162977629_ijf7",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `.trim()`.** The function explicitly accepts `string | null`, and comments confirm anonymous-user callers pass `null`. As written, `initials(null)` throws at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation request conflicts with the formatter’s two-space convention and should not block merging.\n\n**Readiness:** Not ready until the null-handling defect is fixed. Evidence collection is complete and coherent for stable revision `v1`; checks passed for that revision, but they do not cover or detect this confirmed runtime failure.",
+      "durationMs": 5439,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 250,
+          "cacheRead": 0,
+          "cacheWrite": 1037,
+          "reasoning": 81,
+          "totalTokens": 1290,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.005,
+            "cacheRead": 0,
+            "cacheWrite": 0.005185,
+            "total": 0.010197000000000001
+          }
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789162977629_ijf7/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789162977660,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789162977662,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789162977663,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789162977663,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789162977664,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "transient",
+      "arm": "direct",
+      "repeat": 0,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Not ready to merge:** `initials(name: string | null)` calls `name.trim()` unconditionally. Since callers pass `null` for anonymous users, this will throw at runtime. Handle `null` explicitly, for example by returning an empty string or an agreed anonymous-user fallback.\n\n## Optional suggestions\n\n- None. The four-space indentation comment conflicts with the formatter’s two-space convention and should not drive a code change.\n\nEvidence was collected coherently for revision **`v1`**: change and complete comments matched `v1`; checks passed for `v1` after one permitted retry of a transient 503; the final head remained `v1`. The passing check does not resolve the concrete null-handling defect.",
+      "durationMs": 15070,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 57,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 37,
+          "totalTokens": 837,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.0011400000000000002,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00426
+          }
+        },
+        {
+          "input": 860,
+          "output": 91,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 12,
+          "totalTokens": 951,
+          "cost": {
+            "input": 0.00344,
+            "output": 0.0018200000000000002,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00526
+          }
+        },
+        {
+          "input": 3,
+          "output": 35,
+          "cacheRead": 0,
+          "cacheWrite": 1064,
+          "reasoning": 10,
+          "totalTokens": 1102,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0007000000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.00532,
+            "total": 0.006032
+          }
+        },
+        {
+          "input": 3,
+          "output": 29,
+          "cacheRead": 1064,
+          "cacheWrite": 62,
+          "reasoning": 9,
+          "totalTokens": 1158,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00058,
+            "cacheRead": 0.00042560000000000005,
+            "cacheWrite": 0.00031,
+            "total": 0.0013276
+          }
+        },
+        {
+          "input": 3,
+          "output": 214,
+          "cacheRead": 1126,
+          "cacheWrite": 52,
+          "reasoning": 55,
+          "totalTokens": 1395,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00428,
+            "cacheRead": 0.00045040000000000005,
+            "cacheWrite": 0.00026,
+            "total": 0.0050024
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "transient",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789162998198_cysb",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 503,
+                  "error": "HTTP 503"
+                },
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` names.** The signature permits `name: string | null`, and reviewers confirm anonymous users pass `null`. Calling `name.trim()` will throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- No indentation change is needed. The formatter’s two-space indentation should take precedence over a personal four-space preference.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed. Evidence collection is complete and coherent for stable revision `v1`; checks passed for that exact revision after one permitted retry of a 503.",
+      "durationMs": 5169,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 239,
+          "cacheRead": 0,
+          "cacheWrite": 1047,
+          "reasoning": 76,
+          "totalTokens": 1289,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00478,
+            "cacheRead": 0,
+            "cacheWrite": 0.005235,
+            "total": 0.010027000000000001
+          }
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789162998198_cysb/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789162998222,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789162998224,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789162998225,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789162998225,
+            "level": "info",
+            "message": "checks: status=200, attempts=2"
+          },
+          {
+            "at": 1789162998226,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "denied",
+      "arm": "direct",
+      "repeat": 0,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Not ready to merge:** `initials` accepts `string | null` but unconditionally calls `name.trim()`. Anonymous users passing `null`, as reported in the comments, will cause a runtime `TypeError`. Handle `null` explicitly, such as returning an empty string or the intended anonymous-user fallback.\n\n## Optional suggestions\n\n- The four-space indentation comment is cosmetic and conflicts with the configured two-space formatter; no change is needed unless the project’s formatting policy changes.\n\n## Evidence status\n\n- Reviewed stable revision **`v1`**; head remained `v1` after collection.\n- Change: collected for `v1`.\n- Comments: complete for `v1`.\n- Checks: unavailable due to **HTTP 403** and were not retried. Therefore, there is no current CI evidence; checks must not be considered passed. This evidence gap is separate from the concrete null-handling defect above.",
+      "durationMs": 13044,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 38,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 18,
+          "totalTokens": 818,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.00076,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.0038799999999999998
+          }
+        },
+        {
+          "input": 841,
+          "output": 93,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 14,
+          "totalTokens": 934,
+          "cost": {
+            "input": 0.003364,
+            "output": 0.00186,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.0052239999999999995
+          }
+        },
+        {
+          "input": 3,
+          "output": 36,
+          "cacheRead": 0,
+          "cacheWrite": 1047,
+          "reasoning": 16,
+          "totalTokens": 1086,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00072,
+            "cacheRead": 0,
+            "cacheWrite": 0.005235,
+            "total": 0.005967
+          }
+        },
+        {
+          "input": 3,
+          "output": 346,
+          "cacheRead": 1047,
+          "cacheWrite": 59,
+          "reasoning": 149,
+          "totalTokens": 1455,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.006920000000000001,
+            "cacheRead": 0.00041880000000000004,
+            "cacheWrite": 0.000295,
+            "total": 0.007645800000000001
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "denied",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163016463_hxdq",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 403,
+                  "error": "HTTP 403"
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The signature permits `name: string | null`, and reviewers confirm anonymous users pass `null`. The current implementation will throw at runtime. Define the desired fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- The four-space indentation preference is cosmetic and conflicts with the repository formatter’s two-space output. Follow the formatter; this should not block merging.\n\n## Readiness and evidence\n\n**Not ready to merge** because of the concrete null-handling defect.\n\nThe change and complete comments both correspond to stable head revision `v1`, and the final head recheck remained `v1`. However, checks returned **HTTP 403**, so current CI status is unknown and the evidence packet is incomplete. No checks should be considered passing based on the available evidence.",
+      "durationMs": 8125,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 278,
+          "cacheRead": 0,
+          "cacheWrite": 1034,
+          "reasoning": 71,
+          "totalTokens": 1315,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.005560000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.00517,
+            "total": 0.010742000000000002
+          }
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163016463_hxdq/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163016488,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163016489,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163016490,
+            "level": "info",
+            "message": "checks: status=403, attempts=1"
+          },
+          {
+            "at": 1789163016491,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163016493,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "moves",
+      "arm": "direct",
+      "repeat": 0,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` in `initials`.** The parameter allows `string | null`, and comments confirm anonymous users pass `null`. Calling `name.trim()` will throw at runtime. Add explicit null handling, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation preference conflicts with the project formatter and does not warrant a change.\n\n**Readiness:** Not ready to merge due to the null-handling defect, despite passing checks.\n\n**Evidence:** The head changed from `v1` during collection, so evidence was recollected for `v2`. Final head remained `v2`; change, passing checks, and complete comments all identify `v2`.",
+      "durationMs": 19696,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 32,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 12,
+          "totalTokens": 812,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.00064,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00376
+          }
+        },
+        {
+          "input": 835,
+          "output": 91,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 12,
+          "totalTokens": 926,
+          "cost": {
+            "input": 0.0033399999999999997,
+            "output": 0.0018200000000000002,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00516
+          }
+        },
+        {
+          "input": 3,
+          "output": 28,
+          "cacheRead": 0,
+          "cacheWrite": 1044,
+          "reasoning": 8,
+          "totalTokens": 1075,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0005600000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.00522,
+            "total": 0.005792
+          }
+        },
+        {
+          "input": 3,
+          "output": 112,
+          "cacheRead": 1044,
+          "cacheWrite": 51,
+          "reasoning": 33,
+          "totalTokens": 1210,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0022400000000000002,
+            "cacheRead": 0.0004176,
+            "cacheWrite": 0.000255,
+            "total": 0.0029246000000000003
+          }
+        },
+        {
+          "input": 3,
+          "output": 30,
+          "cacheRead": 1095,
+          "cacheWrite": 233,
+          "reasoning": 10,
+          "totalTokens": 1361,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0006000000000000001,
+            "cacheRead": 0.000438,
+            "cacheWrite": 0.001165,
+            "total": 0.002215
+          }
+        },
+        {
+          "input": 3,
+          "output": 252,
+          "cacheRead": 1328,
+          "cacheWrite": 53,
+          "reasoning": 71,
+          "totalTokens": 1636,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00504,
+            "cacheRead": 0.0005312,
+            "cacheWrite": 0.000265,
+            "total": 0.0058482
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "change",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ]
+    },
+    {
+      "fault": "moves",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163044352_r0xj",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v2"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Head changed or final head unavailable"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The signature permits `name: string | null`, and review comments confirm callers pass `null` for anonymous users. `name.trim()` will therefore throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- No indentation change is needed. The four-space request is personal preference, while the project formatter uses two spaces.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed. I recollected a complete, coherent packet for stable head `v2`; its checks pass and comments are complete, but passing checks do not negate the concrete runtime failure.",
+      "durationMs": 14689,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 3,
+          "output": 63,
+          "cacheRead": 0,
+          "cacheWrite": 1039,
+          "reasoning": 43,
+          "totalTokens": 1105,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00126,
+            "cacheRead": 0,
+            "cacheWrite": 0.005195,
+            "total": 0.0064670000000000005
+          }
+        },
+        {
+          "input": 3,
+          "output": 91,
+          "cacheRead": 1039,
+          "cacheWrite": 86,
+          "reasoning": 12,
+          "totalTokens": 1219,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0018200000000000002,
+            "cacheRead": 0.0004156,
+            "cacheWrite": 0.00043,
+            "total": 0.0026776
+          }
+        },
+        {
+          "input": 3,
+          "output": 28,
+          "cacheRead": 1125,
+          "cacheWrite": 212,
+          "reasoning": 8,
+          "totalTokens": 1368,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0005600000000000001,
+            "cacheRead": 0.00045000000000000004,
+            "cacheWrite": 0.00106,
+            "total": 0.002082
+          }
+        },
+        {
+          "input": 3,
+          "output": 264,
+          "cacheRead": 1337,
+          "cacheWrite": 51,
+          "reasoning": 87,
+          "totalTokens": 1655,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.005280000000000001,
+            "cacheRead": 0.0005348000000000001,
+            "cacheWrite": 0.000255,
+            "total": 0.006081800000000001
+          }
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163044352_r0xj/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163044398,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163044401,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163044405,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163044406,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163044416,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "change",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ]
+    },
+    {
+      "fault": "stale",
+      "arm": "direct",
+      "repeat": 0,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle anonymous users safely.** `initials()` accepts `string | null` but unconditionally calls `name.trim()`, causing a runtime exception when callers pass `null`. Return an appropriate fallback (such as `\"\"`) or otherwise handle `null` before trimming.\n\n## Optional suggestions\n\n- The four-space indentation comment is cosmetic and conflicts with the formatter’s two-space convention; it should not block merging.\n\n## Readiness and evidence\n\n- Head was `v1` before and after collection, so the reviewed revision remained stable.\n- Change and complete comments were collected for `v1`.\n- Checks returned `passed` for revision `old`, not `v1`. Therefore, **current CI status is missing and cannot be treated as passing**.\n- The PR is **not ready to merge** because of the concrete null-handling defect. The incomplete current-check evidence is a separate evidence gap, not itself the merge verdict.",
+      "durationMs": 14234,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 63,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 43,
+          "totalTokens": 843,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.00126,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00438
+          }
+        },
+        {
+          "input": 866,
+          "output": 89,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 10,
+          "totalTokens": 955,
+          "cost": {
+            "input": 0.0034639999999999996,
+            "output": 0.0017800000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.0052439999999999995
+          }
+        },
+        {
+          "input": 3,
+          "output": 38,
+          "cacheRead": 0,
+          "cacheWrite": 1072,
+          "reasoning": 18,
+          "totalTokens": 1113,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00076,
+            "cacheRead": 0,
+            "cacheWrite": 0.00536,
+            "total": 0.006132
+          }
+        },
+        {
+          "input": 3,
+          "output": 417,
+          "cacheRead": 1072,
+          "cacheWrite": 61,
+          "reasoning": 218,
+          "totalTokens": 1553,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00834,
+            "cacheRead": 0.0004288,
+            "cacheWrite": 0.000305,
+            "total": 0.0090858
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "stale",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163073373_w180",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "old",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` in `initials`.** The signature permits `null`, and comments confirm anonymous-user callers pass it. Calling `name.trim()` will throw at runtime. Define the expected anonymous-user result and guard accordingly, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n- **Current CI status is unknown.** The only reported passing check belongs to revision `old`, not the stable current head `v1`, so it is not valid evidence for this PR revision. This is an evidence gap, not itself proof that the change fails CI.\n\n## Optional suggestions\n\n- The four-space indentation comment is cosmetic and conflicts with the formatter’s established two-space output. Follow the formatter rather than changing indentation manually.\n\n**Readiness:** Not ready to merge because the confirmed nullable-input path can cause a runtime exception. Head remained at `v1`, and change/comments evidence is coherent for that revision, but current check evidence is incomplete.",
+      "durationMs": 9840,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 392,
+          "cacheRead": 0,
+          "cacheWrite": 1037,
+          "reasoning": 166,
+          "totalTokens": 1432,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.007840000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.005185,
+            "total": 0.013037000000000002
+          }
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163073373_w180/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163073398,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163073400,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163073402,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163073402,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163073404,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "stable",
+      "arm": "workflow",
+      "repeat": 1,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163083264_tjev",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` names.** The function accepts `string | null`, and review evidence confirms anonymous-user callers pass `null`. Calling `name.trim()` will throw at runtime. Add explicit null handling, such as returning an empty string or the intended anonymous-user initials.\n\n## Optional suggestions\n\n- None. The four-space indentation preference conflicts with the project formatter’s two-space output and should not block the PR.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed. Evidence is complete and coherent for revision `v1`; checks passed for that exact revision, comments were complete, and the head remained `v1`. Passing checks do not negate the demonstrated runtime failure.",
+      "durationMs": 5080,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 227,
+          "cacheRead": 0,
+          "cacheWrite": 1036,
+          "reasoning": 76,
+          "totalTokens": 1266,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.004540000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.00518,
+            "total": 0.009732000000000001
+          }
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163083264_tjev/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163083289,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163083290,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163083291,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163083292,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163083293,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "stable",
+      "arm": "direct",
+      "repeat": 1,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `.trim()`.** The function accepts `string | null`, and reviewers confirm anonymous-user callers pass `null`. The current implementation will throw at runtime. Define the desired fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation comment conflicts with the project formatter’s two-space output and should not block the PR.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed.\n\n**Evidence:** Collection is complete and coherent for current head `v1`: change and complete comments were retrieved for `v1`, checks passed for `v1`, and the final head recheck remained `v1`. The passing checks do not detect the concrete null-input failure.",
+      "durationMs": 10887,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 33,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 13,
+          "totalTokens": 813,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.0006600000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00378
+          }
+        },
+        {
+          "input": 836,
+          "output": 90,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 11,
+          "totalTokens": 926,
+          "cost": {
+            "input": 0.0033439999999999998,
+            "output": 0.0018000000000000002,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.005144
+          }
+        },
+        {
+          "input": 3,
+          "output": 28,
+          "cacheRead": 0,
+          "cacheWrite": 1044,
+          "reasoning": 8,
+          "totalTokens": 1075,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0005600000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.00522,
+            "total": 0.005792
+          }
+        },
+        {
+          "input": 3,
+          "output": 246,
+          "cacheRead": 1044,
+          "cacheWrite": 51,
+          "reasoning": 53,
+          "totalTokens": 1344,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.004920000000000001,
+            "cacheRead": 0.0004176,
+            "cacheWrite": 0.000255,
+            "total": 0.0056046
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "transient",
+      "arm": "workflow",
+      "repeat": 1,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163099288_akmd",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 503,
+                  "error": "HTTP 503"
+                },
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` names.** The function accepts `string | null`, and callers pass `null` for anonymous users, but `name.trim()` throws at runtime. Return an appropriate fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation preference should not override the project formatter’s two-space style.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed. Evidence collection is complete and coherent for stable revision `v1`; checks passed for that exact revision after one permitted retry.",
+      "durationMs": 5754,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 249,
+          "cacheRead": 0,
+          "cacheWrite": 1047,
+          "reasoning": 96,
+          "totalTokens": 1299,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00498,
+            "cacheRead": 0,
+            "cacheWrite": 0.005235,
+            "total": 0.010227
+          }
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163099288_akmd/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163099312,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163099313,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163099314,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163099315,
+            "level": "info",
+            "message": "checks: status=200, attempts=2"
+          },
+          {
+            "at": 1789163099316,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "transient",
+      "arm": "direct",
+      "repeat": 1,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `.trim()`.** The signature permits `name: string | null`, and review comments confirm anonymous users pass `null`. The current implementation will throw a runtime `TypeError`. Return an appropriate fallback for `null`, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation comment conflicts with the formatter’s two-space convention and does not require a change.\n\n## Readiness\n\n**Not ready to merge** until the null-handling defect is fixed.\n\nEvidence collection is complete for unchanged head **`v1`**:\n\n- Change: retrieved for `v1`\n- Checks: passed for `v1` after one permitted retry of a transient 503\n- Comments: complete for `v1`\n- Final head recheck: still `v1`",
+      "durationMs": 15309,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 58,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 38,
+          "totalTokens": 838,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.00116,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00428
+          }
+        },
+        {
+          "input": 861,
+          "output": 77,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 938,
+          "cost": {
+            "input": 0.003444,
+            "output": 0.0015400000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.004984000000000001
+          }
+        },
+        {
+          "input": 3,
+          "output": 33,
+          "cacheRead": 0,
+          "cacheWrite": 1051,
+          "reasoning": 8,
+          "totalTokens": 1087,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0006600000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.005255,
+            "total": 0.005927
+          }
+        },
+        {
+          "input": 3,
+          "output": 29,
+          "cacheRead": 1051,
+          "cacheWrite": 60,
+          "reasoning": 9,
+          "totalTokens": 1143,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00058,
+            "cacheRead": 0.00042040000000000003,
+            "cacheWrite": 0.0003,
+            "total": 0.0013124
+          }
+        },
+        {
+          "input": 3,
+          "output": 284,
+          "cacheRead": 1111,
+          "cacheWrite": 52,
+          "reasoning": 76,
+          "totalTokens": 1450,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00568,
+            "cacheRead": 0.0004444,
+            "cacheWrite": 0.00026,
+            "total": 0.0063964
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "denied",
+      "arm": "workflow",
+      "repeat": 1,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163120407_986e",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 403,
+                  "error": "HTTP 403"
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` names before calling `.trim()`.** The function accepts `string | null`, and comments confirm anonymous users pass `null`. The current implementation will throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- The four-space indentation comment is cosmetic and conflicts with the formatter’s established two-space output. Follow the formatter rather than changing this manually.\n\nThe evidence is coherent for revision `v1`: the change and complete comments identify `v1`, and the head remained `v1`. However, checks returned **HTTP 403**, so current CI status is unknown and the evidence packet is incomplete. This is separate from the merge verdict: the confirmed null-handling defect itself means the PR is **not ready to merge**.",
+      "durationMs": 7000,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 274,
+          "cacheRead": 0,
+          "cacheWrite": 1034,
+          "reasoning": 74,
+          "totalTokens": 1311,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0054800000000000005,
+            "cacheRead": 0,
+            "cacheWrite": 0.00517,
+            "total": 0.010662000000000001
+          }
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163120407_986e/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163120440,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163120443,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163120445,
+            "level": "info",
+            "message": "checks: status=403, attempts=1"
+          },
+          {
+            "at": 1789163120446,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163120448,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "denied",
+      "arm": "direct",
+      "repeat": 1,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function accepts `string | null`, and complete review comments confirm anonymous-user callers pass `null`. Calling `name.trim()` will then throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n  This defect makes revision `v1` **not ready to merge**.\n\n## Optional suggestions\n\n- None. The four-space indentation comment is cosmetic and conflicts with the formatter’s two-space convention, so no change is warranted.\n\n## Evidence status\n\n- Initial head: `v1`\n- Change: collected for `v1`\n- Comments: collected completely for `v1`\n- Checks: unavailable due to HTTP 403; not retried as required\n- Final head: `v1`, so the collected evidence is revision-coherent\n\nCI cannot be considered passing because current check evidence was inaccessible.",
+      "durationMs": 11916,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 50,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 30,
+          "totalTokens": 830,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.001,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00412
+          }
+        },
+        {
+          "input": 853,
+          "output": 87,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 940,
+          "cost": {
+            "input": 0.0034119999999999997,
+            "output": 0.0017400000000000002,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.005152
+          }
+        },
+        {
+          "input": 3,
+          "output": 36,
+          "cacheRead": 0,
+          "cacheWrite": 1053,
+          "reasoning": 16,
+          "totalTokens": 1092,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00072,
+            "cacheRead": 0,
+            "cacheWrite": 0.005265,
+            "total": 0.005997
+          }
+        },
+        {
+          "input": 3,
+          "output": 356,
+          "cacheRead": 1053,
+          "cacheWrite": 59,
+          "reasoning": 138,
+          "totalTokens": 1471,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0071200000000000005,
+            "cacheRead": 0.00042120000000000005,
+            "cacheWrite": 0.000295,
+            "total": 0.0078482
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "moves",
+      "arm": "workflow",
+      "repeat": 1,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163139401_ie61",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v2"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Head changed or final head unavailable"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function accepts `string | null`, and comments confirm callers pass `null` for anonymous users. The current implementation will throw `TypeError` at runtime. Return the intended anonymous-user fallback, for example:\n  ```ts\n  return name?.trim().slice(0, 2) ?? \"\";\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation comment is cosmetic and conflicts with the formatter’s two-space convention, so it should not drive a code change.\n\n**Readiness:** Not ready to merge due to the null-handling defect. I recollected a complete, coherent packet for current head `v2`: change and complete comments identify `v2`, checks passed for `v2`, and the final head remained `v2`. The passing checks do not invalidate the concrete runtime failure.",
+      "durationMs": 14550,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 3,
+          "output": 97,
+          "cacheRead": 0,
+          "cacheWrite": 1037,
+          "reasoning": 77,
+          "totalTokens": 1137,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00194,
+            "cacheRead": 0,
+            "cacheWrite": 0.005185,
+            "total": 0.007137000000000001
+          }
+        },
+        {
+          "input": 3,
+          "output": 77,
+          "cacheRead": 1037,
+          "cacheWrite": 120,
+          "reasoning": 0,
+          "totalTokens": 1237,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0015400000000000001,
+            "cacheRead": 0.00041480000000000005,
+            "cacheWrite": 0.0006,
+            "total": 0.0025668
+          }
+        },
+        {
+          "input": 3,
+          "output": 18,
+          "cacheRead": 1157,
+          "cacheWrite": 198,
+          "reasoning": 0,
+          "totalTokens": 1376,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00036,
+            "cacheRead": 0.00046280000000000003,
+            "cacheWrite": 0.00099,
+            "total": 0.0018248000000000001
+          }
+        },
+        {
+          "input": 3,
+          "output": 368,
+          "cacheRead": 1355,
+          "cacheWrite": 41,
+          "reasoning": 181,
+          "totalTokens": 1767,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00736,
+            "cacheRead": 0.0005420000000000001,
+            "cacheWrite": 0.000205,
+            "total": 0.008119000000000001
+          }
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163139401_ie61/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163139425,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163139427,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163139428,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163139429,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163139430,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "change",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ]
+    },
+    {
+      "fault": "moves",
+      "arm": "direct",
+      "repeat": 1,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The signature permits `name: string | null`, and comments confirm anonymous users pass `null`. Calling `name.trim()` will throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- No indentation change is needed. The formatter’s two-space indentation should remain authoritative over personal preference.\n\n## Readiness and evidence\n\n**Not ready to merge** due to the null-handling defect, despite passing checks.\n\nThe initial head changed from `v1` to `v2` during collection, so evidence was recollected coherently. Final head remained `v2`:\n\n- Change: revision `v2`, expected code present\n- Checks: revision `v2`, `passed`\n- Comments: revision `v2`, complete, with both comments included\n- Final head recheck: revision `v2`",
+      "durationMs": 23422,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v2"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 51,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 31,
+          "totalTokens": 831,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.00102,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00414
+          }
+        },
+        {
+          "input": 854,
+          "output": 88,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 9,
+          "totalTokens": 942,
+          "cost": {
+            "input": 0.0034159999999999998,
+            "output": 0.00176,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.005176
+          }
+        },
+        {
+          "input": 3,
+          "output": 28,
+          "cacheRead": 0,
+          "cacheWrite": 1060,
+          "reasoning": 8,
+          "totalTokens": 1091,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.0005600000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.0053,
+            "total": 0.0058720000000000005
+          }
+        },
+        {
+          "input": 3,
+          "output": 111,
+          "cacheRead": 1060,
+          "cacheWrite": 51,
+          "reasoning": 32,
+          "totalTokens": 1225,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00222,
+            "cacheRead": 0.00042400000000000006,
+            "cacheWrite": 0.000255,
+            "total": 0.002911
+          }
+        },
+        {
+          "input": 3,
+          "output": 31,
+          "cacheRead": 1111,
+          "cacheWrite": 232,
+          "reasoning": 11,
+          "totalTokens": 1377,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00062,
+            "cacheRead": 0.0004444,
+            "cacheWrite": 0.00116,
+            "total": 0.0022364
+          }
+        },
+        {
+          "input": 3,
+          "output": 333,
+          "cacheRead": 1343,
+          "cacheWrite": 54,
+          "reasoning": 108,
+          "totalTokens": 1733,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00666,
+            "cacheRead": 0.0005372,
+            "cacheWrite": 0.00027,
+            "total": 0.0074792
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "change",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v2",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ]
+    },
+    {
+      "fault": "stale",
+      "arm": "workflow",
+      "repeat": 1,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163177428_c487",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "old",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` names.** The signature accepts `string | null`, and reviewers confirm anonymous users pass `null`. Calling `name.trim()` will then throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- None. The four-space indentation preference conflicts with the repository formatter’s two-space style and should not block the PR.\n\n## Readiness and evidence\n\n**Not ready to merge** because of the concrete null-handling defect.\n\nEvidence for head `v1` is coherent for the change and complete comments, and the final head remained `v1`. However, CI status is **unknown**: the supplied passing check belongs to revision `old`, not `v1`, so it is not current evidence. The review packet is therefore incomplete, but that evidence gap is separate from the merge-blocking code defect.",
+      "durationMs": 8195,
+      "tools": [],
+      "usage": [
+        {
+          "input": 3,
+          "output": 332,
+          "cacheRead": 0,
+          "cacheWrite": 1037,
+          "reasoning": 116,
+          "totalTokens": 1372,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.006640000000000001,
+            "cacheRead": 0,
+            "cacheWrite": 0.005185,
+            "total": 0.011837
+          }
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163177428_c487/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163177453,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163177454,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163177455,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163177456,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163177456,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "stale",
+      "arm": "direct",
+      "repeat": 1,
+      "beforeJudge": [],
+      "status": "done",
+      "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function accepts `string | null`, and comments confirm anonymous users pass `null`. The current implementation will throw at runtime:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n  Use the project’s intended fallback if it should be something other than an empty string.\n\n- **Current CI evidence is missing.** The collected check reports `passed` for revision `old`, not the current revision `v1`; it is therefore stale and cannot establish that this change passes checks. This evidence gap is separate from the code defect and is not itself proof of failure.\n\n## Optional suggestions\n\n- No indentation change is needed. The four-space preference is cosmetic and conflicts with the formatter’s two-space output.\n\n## Readiness\n\n**Not ready to merge** because the nullable input can cause a runtime exception.\n\nEvidence collection remained coherent: initial and final head were both `v1`; change and complete comments were for `v1`. Checks were returned for the wrong revision (`old`), so current-revision check collection is incomplete.",
+      "durationMs": 14851,
+      "tools": [
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "change",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "checks",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "comments",
+            "revision": "v1"
+          }
+        },
+        {
+          "name": "review_source",
+          "arguments": {
+            "operation": "head"
+          }
+        }
+      ],
+      "usage": [
+        {
+          "input": 780,
+          "output": 32,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 12,
+          "totalTokens": 812,
+          "cost": {
+            "input": 0.00312,
+            "output": 0.00064,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00376
+          }
+        },
+        {
+          "input": 835,
+          "output": 91,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 12,
+          "totalTokens": 926,
+          "cost": {
+            "input": 0.0033399999999999997,
+            "output": 0.0018200000000000002,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.00516
+          }
+        },
+        {
+          "input": 3,
+          "output": 31,
+          "cacheRead": 0,
+          "cacheWrite": 1043,
+          "reasoning": 11,
+          "totalTokens": 1077,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.00062,
+            "cacheRead": 0,
+            "cacheWrite": 0.005215,
+            "total": 0.005847
+          }
+        },
+        {
+          "input": 3,
+          "output": 360,
+          "cacheRead": 1043,
+          "cacheWrite": 54,
+          "reasoning": 109,
+          "totalTokens": 1460,
+          "cost": {
+            "input": 0.000012,
+            "output": 0.007200000000000001,
+            "cacheRead": 0.00041720000000000006,
+            "cacheWrite": 0.00027,
+            "total": 0.0078992
+          }
+        }
+      ],
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    }
+  ],
+  "offline": [
+    {
+      "fault": "stable",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247568_q0gx",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247568_q0gx/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247602,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247603,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247604,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247605,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247605,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "transient",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247621_qqd2",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 503,
+                  "error": "HTTP 503"
+                },
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247621_qqd2/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247642,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247643,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247644,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247644,
+            "level": "info",
+            "message": "checks: status=200, attempts=2"
+          },
+          {
+            "at": 1789163247645,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "denied",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247659_usu5",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 403,
+                  "error": "HTTP 403"
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247659_usu5/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247679,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247680,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247681,
+            "level": "info",
+            "message": "checks: status=403, attempts=1"
+          },
+          {
+            "at": 1789163247681,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247682,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 403,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "moves",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247696_15o4",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v2"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Head changed or final head unavailable"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247696_15o4/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247716,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247717,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247718,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247718,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247719,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v2"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v2"
+        }
+      ]
+    },
+    {
+      "fault": "stale",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247734_8hxn",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "old",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247734_8hxn/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247753,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247754,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247755,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247755,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247756,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "partial",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247774_a8t4",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "passed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": false,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Comments missing, malformed, wrong revision or incomplete"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247774_a8t4/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247793,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247794,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247795,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247796,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247796,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "malformed",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247810_wczc",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "unexpected": true
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247810_wczc/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247830,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247831,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247832,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247833,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247834,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "persistent",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "blocked",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247848_opgh",
+        "reason": "Cannot certify a complete coherent evidence packet",
+        "context": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 503,
+                  "error": "HTTP 503"
+                },
+                {
+                  "status": 503,
+                  "error": "HTTP 503"
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": [
+            "Checks missing, malformed or wrong revision"
+          ]
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "blocked",
+        "summary": null,
+        "reason": "Cannot certify a complete coherent evidence packet"
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247848_opgh/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247868,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247870,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247870,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247871,
+            "level": "info",
+            "message": "checks: status=503, attempts=2"
+          },
+          {
+            "at": 1789163247871,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 503,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    },
+    {
+      "fault": "failed-checks",
+      "arm": "workflow",
+      "repeat": 0,
+      "packet": {
+        "type": "done",
+        "workflow": "stable-review-evidence",
+        "workflowRunId": "wr_1789163247885_tv7z",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "output": {
+          "revision": "v1",
+          "evidence": [
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "change",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "code": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "checks",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "result": "failed"
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "comments",
+              "revision": "v1",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1",
+                    "complete": true,
+                    "items": [
+                      "Callers pass null for anonymous users.",
+                      "I prefer four-space indentation; the formatter uses two."
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "operation": "head",
+              "attempts": [
+                {
+                  "status": 200,
+                  "data": {
+                    "revision": "v1"
+                  }
+                }
+              ]
+            }
+          ],
+          "problems": []
+        },
+        "steps": []
+      },
+      "beforeJudge": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ],
+      "stored": {
+        "status": "done",
+        "summary": "Required evidence collected at one stable revision; readiness remains agent judgment",
+        "reason": null
+      },
+      "diagnostics": {
+        "ref": "workflow-runs/wr_1789163247885_tv7z/diagnostics.json",
+        "state": "available",
+        "truncated": false,
+        "entries": [
+          {
+            "at": 1789163247905,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247905,
+            "level": "info",
+            "message": "change: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247906,
+            "level": "info",
+            "message": "checks: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247907,
+            "level": "info",
+            "message": "comments: status=200, attempts=1"
+          },
+          {
+            "at": 1789163247908,
+            "level": "info",
+            "message": "head: status=200, attempts=1"
+          }
+        ]
+      },
+      "sourceLog": [
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "change",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "checks",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "comments",
+          "revision": "v1",
+          "status": 200,
+          "head": "v1"
+        },
+        {
+          "operation": "head",
+          "revision": null,
+          "status": 200,
+          "head": "v1"
+        }
+      ]
+    }
+  ]
+}

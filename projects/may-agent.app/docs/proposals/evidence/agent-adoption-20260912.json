@@ -1,0 +1,1920 @@
+{
+  "date": "2026-09-12",
+  "hostCommit": "49272b5ac545aa2c4b7ab887c10183f5a76a8bd0",
+  "model": "gpt-5.6-sol",
+  "executionTimeoutMs": 90000,
+  "note": "Synthetic fixtures only. Fresh executions. Source commits identify fixture releases, not Host code. See the evidence report for prompt revisions and limitations. Usage costs are provider/library estimates, not billing proof.",
+  "runs": {
+    "pilot": [
+      {
+        "case": "mixed-review",
+        "arm": "baseline",
+        "sourceCommit": "fb3a0cceffee4091c475eb712fc55dd241fac986",
+        "promptHash": "395893cb1b2b1c5f33adf3582c5ead66d71d2fac5255ba97814d4ef412a48c85",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 6025,
+        "answer": "### Needs action\n\n- **`null-input`** — Valid correctness issue. The function accepts `string | null`, but `name.trim()` throws when `name` is `null`. Anonymous-user callers are confirmed to pass `null`.\n\n### No action needed\n\n- **`indent`** — Personal preference conflicts with the repository’s two-space formatter.\n- **`rename`** — Pure naming preference; `name` is unambiguous in this one-line function.\n\nCI passes for the current head, but it does not cover the valid `null` case.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 494,
+            "output": 50,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 29,
+            "totalTokens": 544,
+            "cost": {
+              "input": 0.001976,
+              "output": 0.001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.002976
+            }
+          },
+          {
+            "input": 729,
+            "output": 160,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 40,
+            "totalTokens": 889,
+            "cost": {
+              "input": 0.0029159999999999998,
+              "output": 0.0032,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.006116
+            }
+          }
+        ]
+      },
+      {
+        "case": "mixed-review",
+        "arm": "memory-only",
+        "sourceCommit": "240bf0eef276b730379c59508e8c175973ce3f40",
+        "promptHash": "b46f2156707b51425a8fbb032e07fae3ea3d60f29e6007327b137de046515ee6",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 5650,
+        "answer": "### Needs action\n\n- **`null-input` — must fix:** The signature allows `null`, but `name.trim()` throws at runtime. Handle `null` explicitly or change the type and ensure callers cannot pass it.\n\n### No action needed\n\n- **`indent`:** Personal preference conflicts with the repository’s two-space formatter.\n- **`rename`:** Optional stylistic suggestion; `name` is already clear in this function.\n\nCI passed for the current head, but it does not catch the nullable-input bug.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 495,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 525,
+            "cost": {
+              "input": 0.00198,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00258
+            }
+          },
+          {
+            "input": 710,
+            "output": 109,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 819,
+            "cost": {
+              "input": 0.00284,
+              "output": 0.00218,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00502
+            }
+          }
+        ]
+      },
+      {
+        "case": "mixed-review",
+        "arm": "identity",
+        "sourceCommit": "2ea9dd7f8e282d93e73c7a1ceb49db5835f563cf",
+        "promptHash": "f80c07fcf52fe27902252d2a10d837aae0e188d559cd8134f23e42ac2ec5a274",
+        "hasCorrection": true,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 4988,
+        "answer": "## Required changes\n\n- **`null-input` — needs action.** The function accepts `string | null`, but calling `trim()` on `null` throws at runtime. This affects anonymous users, which are known to pass `null`. Handle `null` explicitly or narrow the parameter type and update callers.\n\n## Optional suggestions\n\n- **`indent` — no action needed.** The repository formatter uses two-space indentation, so a personal four-space preference should not override it.\n- **`rename` — no action needed.** `name` is unambiguous in this one-line function; renaming it would not materially improve correctness or readability.\n\nCI is reported as passed for the current head (`abc123`), but that does not invalidate the concrete null-input defect.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 579,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 609,
+            "cost": {
+              "input": 0.002316,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.002916
+            }
+          },
+          {
+            "input": 794,
+            "output": 200,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 37,
+            "totalTokens": 994,
+            "cost": {
+              "input": 0.003176,
+              "output": 0.004,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.007176
+            }
+          }
+        ]
+      },
+      {
+        "case": "mixed-review",
+        "arm": "skill",
+        "sourceCommit": "13db184fdb3d34a52deb56aec18d653aa29a1530",
+        "promptHash": "ff52b536fe5c2a1389c25bbe2a697043497b5e7a038dea2bca2bd5d664241014",
+        "hasCorrection": false,
+        "advertisedSkill": true,
+        "status": "done",
+        "durationMs": 8282,
+        "answer": "## Required changes\n\n- **`null-input`** — Needs action. The function accepts `string | null`, but `name.trim()` throws when `name` is `null`. Since callers pass `null` for anonymous users, handle it explicitly or narrow the parameter type if that contract is incorrect.\n\n## Optional suggestions\n\n- **`indent`** — No action needed. The repository formatter uses two spaces, which should override personal preference.\n- **`rename`** — No action needed. `name` is unambiguous in this one-line function, with no correctness or maintainability issue identified.\n\nCI passed for the current PR head (`abc123`).",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/13db184fdb3d34a52deb56aec18d653aa29a1530-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 671,
+            "output": 120,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 15,
+            "totalTokens": 791,
+            "cost": {
+              "input": 0.0026839999999999998,
+              "output": 0.0024000000000000002,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005084
+            }
+          },
+          {
+            "input": 3,
+            "output": 209,
+            "cacheRead": 0,
+            "cacheWrite": 1091,
+            "reasoning": 70,
+            "totalTokens": 1303,
+            "cost": {
+              "input": 0.000012,
+              "output": 0.0041800000000000006,
+              "cacheRead": 0,
+              "cacheWrite": 0.005455,
+              "total": 0.009647
+            }
+          }
+        ]
+      }
+    ],
+    "adoption": [
+      {
+        "case": "mixed-review",
+        "arm": "skill",
+        "sourceCommit": "0fc933419ed86d858ffc19036956e33d942ed03d",
+        "promptHash": "49a2b03a5cfea0f4cb4d8b2e05904cce85dcf4137f46691e71f8264d7829f5a5",
+        "hasCorrection": false,
+        "advertisedSkill": true,
+        "status": "done",
+        "durationMs": 9675,
+        "answer": "## Required changes\n\n- **`null-input`** — Needs action. The function accepts `string | null`, but calls `name.trim()`, which throws when anonymous users pass `null`. Handle `null` or narrow the declared type if callers truly cannot pass it.\n\n## Optional suggestions\n\n- **`indent`** — No action needed. The repository formatter uses two spaces, which should take precedence over personal preference.\n- **`rename`** — No action needed. `name` is unambiguous in this one-line function; renaming has no concrete correctness or usability benefit.\n\nCI passed for the current PR head (`abc123`), but that does not negate the documented null-input runtime failure.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/0fc933419ed86d858ffc19036956e33d942ed03d-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 667,
+            "output": 84,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 12,
+            "totalTokens": 751,
+            "cost": {
+              "input": 0.002668,
+              "output": 0.00168,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0043479999999999994
+            }
+          },
+          {
+            "input": 871,
+            "output": 19,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 890,
+            "cost": {
+              "input": 0.0034839999999999997,
+              "output": 0.00038,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.003864
+            }
+          },
+          {
+            "input": 3,
+            "output": 211,
+            "cacheRead": 0,
+            "cacheWrite": 1072,
+            "reasoning": 62,
+            "totalTokens": 1286,
+            "cost": {
+              "input": 0.000012,
+              "output": 0.004220000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0.00536,
+              "total": 0.009592
+            }
+          }
+        ]
+      },
+      {
+        "case": "mixed-review",
+        "arm": "identity",
+        "sourceCommit": "6d03fb87b32cedb08dd1e12255b0eb1f08629971",
+        "promptHash": "61c2ef5b8ed8b750681ee46c65ebea4297386d7f93563b8bb302b8560567e073",
+        "hasCorrection": true,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 8036,
+        "answer": "## Required changes\n\n- **`null-input` — action required.** The function declares `name` as `string | null`, but calls `name.trim()`, which throws when anonymous users pass `null`. Handle `null`, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n## Optional suggestions\n\n- **`indent` — no action needed.** The requested four-space indentation conflicts with the repository’s two-space formatter.\n- **`rename` — no action needed.** `name` is unambiguous in this small function; renaming it is cosmetic.\n\nCI is reported as passed for the current PR head (`abc123`).",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 577,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 607,
+            "cost": {
+              "input": 0.0023079999999999997,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.002908
+            }
+          },
+          {
+            "input": 792,
+            "output": 241,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 78,
+            "totalTokens": 1033,
+            "cost": {
+              "input": 0.003168,
+              "output": 0.0048200000000000005,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.007988
+            }
+          }
+        ]
+      },
+      {
+        "case": "mixed-review",
+        "arm": "memory-only",
+        "sourceCommit": "41f894566c478e06fc764471c845766d2f4be280",
+        "promptHash": "a069a14a8ddc8a9fbf86d916c121d71db9b11304325381183adb35dba8ab3d5c",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 5051,
+        "answer": "### Needs action\n\n- **`null-input`** — Valid correctness issue. The function accepts `string | null`, but calls `name.trim()` unconditionally, causing a runtime error for anonymous users. Add explicit null handling or narrow the parameter type if null is truly unsupported.\n\n### No action needed\n\n- **`indent`** — Personal preference conflicts with the repository’s two-space formatter.\n- **`rename`** — Subjective naming suggestion with no demonstrated ambiguity or maintainability benefit.\n\nCI passing on the current head does not invalidate the null-handling bug; it indicates missing coverage for that case.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 495,
+            "output": 45,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 24,
+            "totalTokens": 540,
+            "cost": {
+              "input": 0.00198,
+              "output": 0.0009000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00288
+            }
+          },
+          {
+            "input": 725,
+            "output": 168,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 40,
+            "totalTokens": 893,
+            "cost": {
+              "input": 0.0029,
+              "output": 0.00336,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00626
+            }
+          }
+        ]
+      },
+      {
+        "case": "mixed-review",
+        "arm": "baseline",
+        "sourceCommit": "8ad74dba2fc3cefca71b6970a4375a3db0e1da14",
+        "promptHash": "f619a20a76f1308518bc987b978147ca98f33a85013b146226564be5d01ee319",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 7819,
+        "answer": "### Needs action\n\n- **`null-input`** — Valid correctness issue. The function accepts `null`, and callers reportedly pass it, but `name.trim()` will throw. Either handle `null` explicitly or change the type and all callers if `null` should be prohibited. Passing CI at the same head does not invalidate this issue.\n\n### No action needed\n\n- **`indent`** — Personal preference conflicting with the repository’s two-space formatter.\n- **`rename`** — Optional style preference with no clear readability benefit in this small function.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 500,
+            "output": 44,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 23,
+            "totalTokens": 544,
+            "cost": {
+              "input": 0.002,
+              "output": 0.00088,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00288
+            }
+          },
+          {
+            "input": 729,
+            "output": 181,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 63,
+            "totalTokens": 910,
+            "cost": {
+              "input": 0.0029159999999999998,
+              "output": 0.0036200000000000004,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.006536
+            }
+          }
+        ]
+      },
+      {
+        "case": "cosmetic-review",
+        "arm": "skill",
+        "sourceCommit": "0fc933419ed86d858ffc19036956e33d942ed03d",
+        "promptHash": "4d79d5a6a7ba1eee56e55928165d3160a026a4e4c5a6ed04c78d52738dd77378",
+        "hasCorrection": false,
+        "advertisedSkill": true,
+        "status": "done",
+        "durationMs": 7991,
+        "answer": "## Required changes\n\nNone. The PR only fixes a documentation typo, and CI passed on the current head (`def456`).\n\n## Optional suggestions\n\n- **`heading`**: Non-blocking. Title case is a stylistic preference and would conflict with the guide’s existing sentence-case convention. It should not block this typo fix.\n\n**Recommendation:** Approve and merge.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/0fc933419ed86d858ffc19036956e33d942ed03d-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 668,
+            "output": 118,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 15,
+            "totalTokens": 786,
+            "cost": {
+              "input": 0.002672,
+              "output": 0.00236,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005032
+            }
+          },
+          {
+            "input": 1015,
+            "output": 118,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 36,
+            "totalTokens": 1133,
+            "cost": {
+              "input": 0.00406,
+              "output": 0.00236,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00642
+            }
+          }
+        ]
+      },
+      {
+        "case": "cosmetic-review",
+        "arm": "identity",
+        "sourceCommit": "6d03fb87b32cedb08dd1e12255b0eb1f08629971",
+        "promptHash": "7780a2788eb4e48f6704a172626ba8a7e1e911aaeee24441126484edfcee03df",
+        "hasCorrection": true,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 4546,
+        "answer": "## Required changes\n\nNone. The PR fixes a documentation typo, changes no executable source, and CI passed on the current head (`def456`).\n\n## Optional suggestions\n\nThe title-case comment is a stylistic preference and conflicts with the guide’s existing sentence-case convention. It should not block the PR and can be declined or handled separately as a broader style change.\n\n**Recommendation:** Approve and merge.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 578,
+            "output": 31,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 10,
+            "totalTokens": 609,
+            "cost": {
+              "input": 0.002312,
+              "output": 0.00062,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0029319999999999997
+            }
+          },
+          {
+            "input": 720,
+            "output": 129,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 42,
+            "totalTokens": 849,
+            "cost": {
+              "input": 0.0028799999999999997,
+              "output": 0.0025800000000000003,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00546
+            }
+          }
+        ]
+      },
+      {
+        "case": "cosmetic-review",
+        "arm": "memory-only",
+        "sourceCommit": "41f894566c478e06fc764471c845766d2f4be280",
+        "promptHash": "cfaf638b026fba523293100b522072aeae87ab1f3d02c48644d733ffc31860cb",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 6344,
+        "answer": "**Recommendation: Do not block; approve the PR.**\n\n- The change only corrects `recieve` to `receive`; no executable source changed.\n- CI passed on the current head (`def456`).\n- The remaining title-case comment is a subjective preference, unrelated to this typo fix, and conflicts with the guide’s established sentence-case convention.\n\nThe comment can be closed or handled separately if the documentation style is reconsidered globally.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/41f894566c478e06fc764471c845766d2f4be280-definitions-v4/agents/reviewer/AGENTS.md"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 496,
+            "output": 129,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 30,
+            "totalTokens": 625,
+            "cost": {
+              "input": 0.001984,
+              "output": 0.0025800000000000003,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.004564
+            }
+          },
+          {
+            "input": 798,
+            "output": 134,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 40,
+            "totalTokens": 932,
+            "cost": {
+              "input": 0.003192,
+              "output": 0.00268,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0058720000000000005
+            }
+          }
+        ]
+      },
+      {
+        "case": "cosmetic-review",
+        "arm": "baseline",
+        "sourceCommit": "8ad74dba2fc3cefca71b6970a4375a3db0e1da14",
+        "promptHash": "b771115ed2a4277a4abfc45c5fba6866b78a4f9f584a1f516096e9b72076b6dd",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 5288,
+        "answer": "**Recommendation: Approve; the remaining comment should not block.**\n\n- The PR only corrects a typo (`recieve` → `receive`).\n- No executable source changed.\n- CI passed for the current head (`def456`).\n- The remaining title-case comment is a non-blocking stylistic preference and conflicts with the guide’s existing sentence-case convention.\n\nIt can be declined or handled separately if the documentation style is intentionally changed later.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 501,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 531,
+            "cost": {
+              "input": 0.0020039999999999997,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0026039999999999995
+            }
+          },
+          {
+            "input": 642,
+            "output": 94,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 736,
+            "cost": {
+              "input": 0.002568,
+              "output": 0.0018800000000000002,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0044480000000000006
+            }
+          }
+        ]
+      },
+      {
+        "case": "stale-ci",
+        "arm": "skill",
+        "sourceCommit": "0fc933419ed86d858ffc19036956e33d942ed03d",
+        "promptHash": "f3cac8608feaff408702c6849f5f1d1973eed9462359837f1e1c130333846259",
+        "hasCorrection": false,
+        "advertisedSkill": true,
+        "status": "done",
+        "durationMs": 6026,
+        "answer": "## Required changes\n\n- **Run CI against the current head `new789`.** The only passing result applies to stale revision `old012`.\n- Because `new789` changes request validation and has no test result, its correctness and reliability are unverified.\n\n**Readiness:** Not ready to merge based on the available evidence. The stale CI result must not be treated as passing for the current revision.\n\n## Optional suggestions\n\n- None.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/0fc933419ed86d858ffc19036956e33d942ed03d-definitions-v4/agents/reviewer/skills/review-change/SKILL.md"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/work/stale-ci/evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 659,
+            "output": 130,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 11,
+            "totalTokens": 789,
+            "cost": {
+              "input": 0.002636,
+              "output": 0.0026000000000000003,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005236
+            }
+          },
+          {
+            "input": 983,
+            "output": 180,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 86,
+            "totalTokens": 1163,
+            "cost": {
+              "input": 0.003932,
+              "output": 0.0036000000000000003,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0075320000000000005
+            }
+          }
+        ]
+      },
+      {
+        "case": "stale-ci",
+        "arm": "identity",
+        "sourceCommit": "6d03fb87b32cedb08dd1e12255b0eb1f08629971",
+        "promptHash": "d831a49fa47c72581e78977a05ddaf75bdfbca71379a92b515df9e251ba688d9",
+        "hasCorrection": true,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 8100,
+        "answer": "## Required changes\n\n- Run CI/tests against the current PR head, `new789`. The only passing result is for stale revision `old012`, so it does not validate the request-validation changes in this PR. No current test result is available; readiness cannot be confirmed.\n\n## Optional suggestions\n\n- None based on the supplied evidence.\n\n**Readiness:** Not ready until CI passes on `new789`.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usedReviewHeadings": true,
+        "usage": [
+          {
+            "input": 569,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 599,
+            "cost": {
+              "input": 0.002276,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.002876
+            }
+          },
+          {
+            "input": 675,
+            "output": 243,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 156,
+            "totalTokens": 918,
+            "cost": {
+              "input": 0.0026999999999999997,
+              "output": 0.004860000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.007560000000000001
+            }
+          }
+        ]
+      },
+      {
+        "case": "stale-ci",
+        "arm": "memory-only",
+        "sourceCommit": "41f894566c478e06fc764471c845766d2f4be280",
+        "promptHash": "c75158fad57cfdddeaf1d147ab6b94f8c557980308bafbc6fb5d66f7fd4ccc89",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 7223,
+        "answer": "## Readiness: **Not ready to merge**\n\n**Blocking issue:** CI passed for commit `old012`, but the PR head is now `new789`. The new revision changes request validation, and no test result is available for it.\n\n**Required action:** Run CI against `new789` and confirm all required checks pass before merging.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/41f894566c478e06fc764471c845766d2f4be280-definitions-v4/agents/reviewer/AGENTS.md"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/41f894566c478e06fc764471c845766d2f4be280-definitions-v4/shared/common-sense.md"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 487,
+            "output": 194,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 36,
+            "totalTokens": 681,
+            "cost": {
+              "input": 0.0019479999999999999,
+              "output": 0.00388,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005828
+            }
+          },
+          {
+            "input": 842,
+            "output": 104,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 30,
+            "totalTokens": 946,
+            "cost": {
+              "input": 0.003368,
+              "output": 0.0020800000000000003,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005448
+            }
+          }
+        ]
+      },
+      {
+        "case": "stale-ci",
+        "arm": "baseline",
+        "sourceCommit": "8ad74dba2fc3cefca71b6970a4375a3db0e1da14",
+        "promptHash": "e2ab07f115ee09ace0068b06de16b1e20cc4e51277ce8bc791988c38d0bfdd64",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 5555,
+        "answer": "## Readiness: **Not ready to merge**\n\n- PR head is `new789`.\n- The passing CI result applies to stale revision `old012`, not the current head.\n- `new789` changes request validation, but no test result is available for that revision.\n\n**Required:** Run CI and relevant request-validation tests against `new789`; merge only after they pass.",
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "<fixture-root>/state/releases/app-definitions/8ad74dba2fc3cefca71b6970a4375a3db0e1da14-definitions-v4/agents/reviewer/AGENTS.md"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "shared/common-sense.md"
+            }
+          }
+        ],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 492,
+            "output": 130,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 622,
+            "cost": {
+              "input": 0.0019679999999999997,
+              "output": 0.0026000000000000003,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.004568
+            }
+          },
+          {
+            "input": 801,
+            "output": 116,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 34,
+            "totalTokens": 917,
+            "cost": {
+              "input": 0.003204,
+              "output": 0.00232,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005523999999999999
+            }
+          }
+        ]
+      },
+      {
+        "case": "unrelated",
+        "arm": "skill",
+        "sourceCommit": "0fc933419ed86d858ffc19036956e33d942ed03d",
+        "promptHash": "c255f497bec3b2f988e604f4ed20806a8016bdfa24f6945acd7c11f7afa60722",
+        "hasCorrection": false,
+        "advertisedSkill": true,
+        "status": "done",
+        "durationMs": 2854,
+        "answer": "Welcome to the team—we’re excited to have you with us!",
+        "tools": [],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 672,
+            "output": 17,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 689,
+            "cost": {
+              "input": 0.002688,
+              "output": 0.00034,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.003028
+            }
+          }
+        ]
+      },
+      {
+        "case": "unrelated",
+        "arm": "identity",
+        "sourceCommit": "6d03fb87b32cedb08dd1e12255b0eb1f08629971",
+        "promptHash": "92a5f950e11649d1f12493a1df40a335180e443eee28ec22f8253595ba2d29cc",
+        "hasCorrection": true,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 2060,
+        "answer": "Welcome to the team—we’re excited to have you with us!",
+        "tools": [],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 582,
+            "output": 17,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 599,
+            "cost": {
+              "input": 0.0023279999999999998,
+              "output": 0.00034,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.002668
+            }
+          }
+        ]
+      },
+      {
+        "case": "unrelated",
+        "arm": "memory-only",
+        "sourceCommit": "41f894566c478e06fc764471c845766d2f4be280",
+        "promptHash": "fbb7550cac944a6a4713f9fc31f9e9f373c17b8431eb0ac12913b31a73d8d3cb",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 2296,
+        "answer": "Welcome to the team—we’re excited to have you here!",
+        "tools": [],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 500,
+            "output": 16,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 516,
+            "cost": {
+              "input": 0.002,
+              "output": 0.00032,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00232
+            }
+          }
+        ]
+      },
+      {
+        "case": "unrelated",
+        "arm": "baseline",
+        "sourceCommit": "8ad74dba2fc3cefca71b6970a4375a3db0e1da14",
+        "promptHash": "728fae3e38b01d6db71e73f91f4f35ebbe8a5303aa696bcfb20c0f1b0518eed5",
+        "hasCorrection": false,
+        "advertisedSkill": false,
+        "status": "done",
+        "durationMs": 1605,
+        "answer": "Welcome to the team—we’re excited to have you with us!",
+        "tools": [],
+        "usedReviewHeadings": false,
+        "usage": [
+          {
+            "input": 505,
+            "output": 17,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 522,
+            "cost": {
+              "input": 0.00202,
+              "output": 0.00034,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.00236
+            }
+          }
+        ]
+      }
+    ],
+    "workflowPilot": [
+      {
+        "case": "stale",
+        "arm": "direct",
+        "sourceCommit": "46c70928ce1193243ff887672905711629941f35",
+        "collectorMs": 50.23332199999999,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146330199_p86b",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "data": {
+                  "head": "old012",
+                  "result": "passed"
+                }
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The signature permits `null`, and reviewers confirm anonymous-user callers pass it, so the current implementation will throw at runtime. Define the expected fallback and test it, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n- **Run checks against the current commit.** The PR head is `new789`, but the passing result belongs to `old012`. Therefore, there is no valid CI evidence for the current change; the PR should not be considered ready until current-head checks pass.\n\n## Optional suggestions\n\n- The indentation comment is not a blocker and appears internally inconsistent: it requests four spaces while saying the repository formatter uses two. Follow the repository formatter rather than making a manual style change.\n\n**Readiness:** Not ready due to the confirmed null crash and stale CI evidence.",
+        "durationMs": 12400,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "pr.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "checks.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "comments.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 578,
+            "output": 76,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 12,
+            "totalTokens": 654,
+            "cost": {
+              "input": 0.002312,
+              "output": 0.00152,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.003832
+            }
+          },
+          {
+            "input": 750,
+            "output": 504,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 300,
+            "totalTokens": 1254,
+            "cost": {
+              "input": 0.003,
+              "output": 0.01008,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.013080000000000001
+            }
+          }
+        ]
+      },
+      {
+        "case": "stale",
+        "arm": "optional",
+        "sourceCommit": "46c70928ce1193243ff887672905711629941f35",
+        "collectorMs": 50.23332199999999,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146330199_p86b",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "data": {
+                  "head": "old012",
+                  "result": "passed"
+                }
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read",
+          "workflow"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function accepts `string | null`, and reviewer evidence says anonymous users pass `null`; the current implementation will throw at runtime. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n- **Obtain current CI evidence.** The passing checks are for head `old012`, while the PR head is `new789`. Therefore, this PR’s current revision has not been shown to pass CI.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed and checks run successfully against `new789`.\n\n## Optional suggestions\n\n- The four-space indentation comment is not actionable as written because it conflicts with the stated repository formatter, which uses two spaces. Follow the repository formatter rather than manually changing to four spaces.",
+        "durationMs": 17529,
+        "tools": [
+          {
+            "name": "workflow",
+            "arguments": {
+              "action": "list"
+            }
+          },
+          {
+            "name": "workflow",
+            "arguments": {
+              "action": "run",
+              "name": "collect-review-evidence",
+              "task": "{}"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 796,
+            "output": 36,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 17,
+            "totalTokens": 832,
+            "cost": {
+              "input": 0.0031839999999999998,
+              "output": 0.00072,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.003904
+            }
+          },
+          {
+            "input": 922,
+            "output": 28,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 950,
+            "cost": {
+              "input": 0.003688,
+              "output": 0.0005600000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.004248
+            }
+          },
+          {
+            "input": 3,
+            "output": 330,
+            "cacheRead": 0,
+            "cacheWrite": 1180,
+            "reasoning": 130,
+            "totalTokens": 1513,
+            "cost": {
+              "input": 0.000012,
+              "output": 0.006600000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0.0059,
+              "total": 0.012512
+            }
+          }
+        ]
+      },
+      {
+        "case": "stale",
+        "arm": "predispatched",
+        "sourceCommit": "46c70928ce1193243ff887672905711629941f35",
+        "collectorMs": 50.23332199999999,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146330199_p86b",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "data": {
+                  "head": "old012",
+                  "result": "passed"
+                }
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function accepts `string | null`, but `name.trim()` throws for anonymous users passing `null`. The first reviewer comment is valid. Define the expected fallback—such as an empty string—and add coverage for `null`.\n- **Validate the current commit.** The reported passing checks belong to `old012`, while the PR head is `new789`. Therefore, checks for the current PR version are unknown and must not be treated as passing.\n\n## Optional suggestions\n\n- The indentation comment is not actionable as written: it recommends four spaces while stating the repository formatter uses two. Follow the repository formatter; no change is warranted unless the actual code violates it.\n\n**Readiness:** Not ready due to the concrete null crash. After fixing it, obtain checks for head `new789` before approval.",
+        "durationMs": 11061,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "pr.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "checks.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "comments.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 729,
+            "output": 84,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 20,
+            "totalTokens": 813,
+            "cost": {
+              "input": 0.0029159999999999998,
+              "output": 0.00168,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.004595999999999999
+            }
+          },
+          {
+            "input": 909,
+            "output": 374,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 191,
+            "totalTokens": 1283,
+            "cost": {
+              "input": 0.003636,
+              "output": 0.0074800000000000005,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.011116000000000001
+            }
+          }
+        ]
+      },
+      {
+        "case": "missing",
+        "arm": "predispatched",
+        "sourceCommit": "46c70928ce1193243ff887672905711629941f35",
+        "collectorMs": 38.57165299999906,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146371231_f0wg",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "error": "unavailable"
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The declared type permits `null`, and reviewer evidence confirms anonymous-user callers pass it. The current implementation will throw at runtime. For example, if empty initials are intended:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n  Confirm the expected anonymous-user fallback.\n\n- **CI/check status is unknown.** `checks.json` is unavailable, so no checks can be considered passed. Obtain current check results before merging.\n\n## Optional suggestions\n\n- The “prefer four spaces” comment should not block the PR. It conflicts with the same comment’s statement that the repository formatter uses two spaces, and this one-line change presents no meaningful indentation issue.\n\n**Readiness:** Not ready to merge until the null-handling defect is fixed and check results are available.",
+        "durationMs": 8912,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "pr.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "checks.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "comments.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 722,
+            "output": 151,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 87,
+            "totalTokens": 873,
+            "cost": {
+              "input": 0.002888,
+              "output": 0.00302,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.005908
+            }
+          },
+          {
+            "input": 989,
+            "output": 296,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 99,
+            "totalTokens": 1285,
+            "cost": {
+              "input": 0.0039559999999999994,
+              "output": 0.005920000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.009876
+            }
+          }
+        ]
+      },
+      {
+        "case": "missing",
+        "arm": "optional",
+        "sourceCommit": "46c70928ce1193243ff887672905711629941f35",
+        "collectorMs": 38.57165299999906,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146371231_f0wg",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "error": "unavailable"
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read",
+          "workflow"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The signature permits `name: null`, and reviewer evidence confirms anonymous users pass `null`; the current implementation will throw at runtime. Return an agreed fallback such as `\"\"`, or change the contract and all callers if `null` should be prohibited.\n\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n- **Verification evidence is unavailable.** `checks.json` is missing, so no CI checks can be considered passed. Confirm the required checks have run successfully before merging.\n\n## Optional suggestions\n\n- The “prefer four spaces” comment should not be acted on: it is cosmetic and conflicts with the stated repository formatter configuration of two spaces.\n\n**Readiness:** Not ready to merge until the null crash is fixed and required CI status is verified.",
+        "durationMs": 9064,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "pr.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "checks.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "comments.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 796,
+            "output": 77,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 13,
+            "totalTokens": 873,
+            "cost": {
+              "input": 0.0031839999999999998,
+              "output": 0.0015400000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.004724
+            }
+          },
+          {
+            "input": 989,
+            "output": 342,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 146,
+            "totalTokens": 1331,
+            "cost": {
+              "input": 0.0039559999999999994,
+              "output": 0.006840000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.010796
+            }
+          }
+        ]
+      },
+      {
+        "case": "missing",
+        "arm": "direct",
+        "sourceCommit": "46c70928ce1193243ff887672905711629941f35",
+        "collectorMs": 38.57165299999906,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146371231_f0wg",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "error": "unavailable"
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Not ready to merge:** `initials()` accepts `string | null` but unconditionally calls `name.trim()`. Anonymous users passing `null` will cause a runtime exception. The first reviewer comment is valid and blocking. Handle `null` explicitly according to the intended UI behavior, such as returning an empty/fallback value.\n- **Checks are unavailable:** `checks.json` is missing, so no CI, type-check, test, or lint status can be verified. This is an evidence gap—not a passed check.\n\n## Optional suggestions\n\n- The indentation comment is internally contradictory (“Prefer four spaces” while saying the repository formatter uses two) and does not identify an issue in this one-line change. It should be clarified or dismissed as non-blocking.\n\n**Overall:** The PR is not ready because of the concrete null-handling defect; CI readiness also cannot be assessed from the supplied evidence.",
+        "durationMs": 9308,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "pr.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "checks.json"
+            }
+          },
+          {
+            "name": "read",
+            "arguments": {
+              "path": "comments.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 578,
+            "output": 72,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 8,
+            "totalTokens": 650,
+            "cost": {
+              "input": 0.002312,
+              "output": 0.00144,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.003752
+            }
+          },
+          {
+            "input": 766,
+            "output": 357,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 165,
+            "totalTokens": 1123,
+            "cost": {
+              "input": 0.003064,
+              "output": 0.0071400000000000005,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.010204000000000001
+            }
+          }
+        ]
+      }
+    ],
+    "scope": [
+      {
+        "arm": "temporary",
+        "sourceCommit": "5a73a8c046c973f741b82993a45cee9620209e32",
+        "hasStandingCorrection": false,
+        "hasAmendedCorrection": false,
+        "status": "done",
+        "answer": "## Required changes\n\n- **`null-input`** — Action needed. The signature permits `null`, but `name.trim()` throws at runtime. Handle `null` explicitly, likely by returning an empty string or the agreed anonymous-user fallback.\n\n## Optional suggestions\n\n- **`indent`** — No action needed. Follow the repository’s two-space formatter rather than a reviewer’s personal preference.\n- **`rename`** — No action needed. `name` is clear and unambiguous in this small function.",
+        "durationMs": 11449,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 523,
+            "output": 45,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 24,
+            "totalTokens": 568,
+            "cost": {
+              "input": 0.002092,
+              "output": 0.0009000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0029920000000000003
+            }
+          },
+          {
+            "input": 753,
+            "output": 237,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 127,
+            "totalTokens": 990,
+            "cost": {
+              "input": 0.003012,
+              "output": 0.00474,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.007752
+            }
+          }
+        ]
+      },
+      {
+        "arm": "later-fresh",
+        "sourceCommit": "5a73a8c046c973f741b82993a45cee9620209e32",
+        "hasStandingCorrection": false,
+        "hasAmendedCorrection": false,
+        "status": "done",
+        "answer": "Only **`null-input`** needs action.\n\n- **Action required — `null-input`:** The signature permits `null`, and callers use it, but `name.trim()` will throw. Handle `null`, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n\n- **No action — `indent`:** Personal preference conflicts with the repository’s two-space formatter.\n- **No action — `rename`:** Purely stylistic; `name` is unambiguous in this small function.\n\nCI passed for the current head, but it does not invalidate the clear null-handling defect.",
+        "durationMs": 5714,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 497,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 527,
+            "cost": {
+              "input": 0.0019879999999999997,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.002588
+            }
+          },
+          {
+            "input": 712,
+            "output": 193,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 41,
+            "totalTokens": 905,
+            "cost": {
+              "input": 0.002848,
+              "output": 0.00386,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.006708
+            }
+          }
+        ]
+      },
+      {
+        "arm": "amended",
+        "sourceCommit": "21921241d090661e178226855dcb4cb20fa19520",
+        "hasStandingCorrection": false,
+        "hasAmendedCorrection": true,
+        "status": "done",
+        "answer": "## Must fix\n\n- **`null-input` — action required.** The function declares `name` as `string | null`, but calls `name.trim()` unconditionally. Anonymous-user callers passing `null` will trigger a runtime error. Handle `null` explicitly or narrow the parameter type if `null` is not valid.\n\n## Non-blocking\n\n- **`indent` — no action needed.** The repository formatter uses two spaces, so personal preference should not override project formatting.\n- **`rename` — no action needed.** `name` is unambiguous in this short function; renaming it has no concrete correctness or usability benefit.\n\nCI is shown as **passed for the current head `abc123`**, but it does not invalidate the demonstrated null-input defect.",
+        "durationMs": 6182,
+        "tools": [
+          {
+            "name": "read",
+            "arguments": {
+              "path": "evidence.json"
+            }
+          }
+        ],
+        "usage": [
+          {
+            "input": 573,
+            "output": 30,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 9,
+            "totalTokens": 603,
+            "cost": {
+              "input": 0.0022919999999999998,
+              "output": 0.0006000000000000001,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0028919999999999996
+            }
+          },
+          {
+            "input": 788,
+            "output": 204,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 39,
+            "totalTokens": 992,
+            "cost": {
+              "input": 0.003152,
+              "output": 0.00408,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.007232000000000001
+            }
+          }
+        ]
+      }
+    ],
+    "packetRepeat": [
+      {
+        "case": "stale",
+        "arm": "predispatched",
+        "sourceCommit": "87901041db29ddc5a14d5a316fae5520187ae53a",
+        "collectorMs": 49.508264999999994,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146437961_k9zp",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "data": {
+                  "head": "old012",
+                  "result": "passed"
+                }
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function accepts `string | null`, but `name.trim()` throws at runtime when anonymous users pass `null`. The reviewer comment is valid. Define the intended fallback, for example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n- **Obtain CI results for the current head.** The PR head is `new789`, while the passing checks are for `old012`. Therefore, the current change has no valid passing CI evidence; the stale result must not be treated as a passed check.\n\n## Optional suggestions\n\n- **Do not request four-space indentation.** The repository formatter reportedly uses two spaces, so the formatting comment conflicts with repository convention and should be dismissed or corrected.\n\n**Readiness:** Not ready to merge until null handling is fixed and checks pass on `new789`.",
+        "durationMs": 6763,
+        "tools": [],
+        "usage": [
+          {
+            "input": 724,
+            "output": 319,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 113,
+            "totalTokens": 1043,
+            "cost": {
+              "input": 0.0028959999999999997,
+              "output": 0.00638,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.009276
+            }
+          }
+        ]
+      },
+      {
+        "case": "missing",
+        "arm": "predispatched",
+        "sourceCommit": "87901041db29ddc5a14d5a316fae5520187ae53a",
+        "collectorMs": 28.092165000000023,
+        "collectorResult": {
+          "type": "done",
+          "workflow": "collect-review-evidence",
+          "workflowRunId": "wr_1789146444766_p3a4",
+          "summary": "Collected available evidence; missing sources are explicit. No readiness judgment made.",
+          "output": {
+            "sources": [
+              {
+                "source": "pr.json",
+                "data": {
+                  "head": "new789",
+                  "change": "export function initials(name: string | null) { return name.trim().slice(0, 2); }"
+                }
+              },
+              {
+                "source": "checks.json",
+                "error": "unavailable"
+              },
+              {
+                "source": "comments.json",
+                "data": [
+                  {
+                    "text": "Callers pass null for anonymous users; trim() crashes."
+                  },
+                  {
+                    "text": "Prefer four spaces; repository formatter uses two."
+                  }
+                ]
+              }
+            ]
+          },
+          "steps": []
+        },
+        "toolsAvailable": [
+          "read"
+        ],
+        "status": "done",
+        "answer": "## Required changes\n\n- **Handle `null` before calling `trim()`.** The function explicitly accepts `string | null`, but `name.trim()` throws when anonymous users pass `null`.\n  \n  For example:\n  ```ts\n  export function initials(name: string | null) {\n    return name?.trim().slice(0, 2) ?? \"\";\n  }\n  ```\n  Add or update a test covering `null`.\n\n- **CI readiness is unknown.** `checks.json` was unavailable, so there is no evidence that automated checks passed. This should not be treated as a successful check run; verify CI before merging.\n\n## Optional suggestions\n\n- The indentation comment should not block the PR. “Prefer four spaces” conflicts with the stated repository formatter convention of two spaces, and the shown one-line change has no relevant indentation issue.\n\n**Readiness:** Not ready to merge until the `null` crash is fixed. Afterward, confirm CI status.",
+        "durationMs": 9623,
+        "tools": [],
+        "usage": [
+          {
+            "input": 718,
+            "output": 274,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 73,
+            "totalTokens": 992,
+            "cost": {
+              "input": 0.002872,
+              "output": 0.0054800000000000005,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.008352
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
