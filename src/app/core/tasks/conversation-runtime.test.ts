@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, type ConversationTurnResult } from "@may-agent/sdk";
+import { Type, defineApp, type AppInputContext, type ConversationTurnResult } from "@may-agent/sdk";
 import type { SubagentManager } from "../../../lib/index.js";
 import type { CallOptions, SubagentDefinition } from "../../../lib/types.js";
 import { getDb, closeDb } from "../../../lib/requests.js";
@@ -13,7 +13,7 @@ import { createAppTaskCapability } from "./app-task-capability.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { admitConversationTaskInput } from "../state/conversation-task-turns.js";
+import { admitConversationTaskInput, listPendingConversationTaskOutcomes } from "../state/conversation-task-turns.js";
 import { getAppInboxItem, claimAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { readAppConversationResource } from "../state/conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "../state/conversation-requests.js";
@@ -335,7 +335,7 @@ const delegated: ConversationTurnResult = {
     acceptance: ["Measurement obtained"],
   },
 };
-function withBackground(root: string, appDir: string): Partial<AppTaskRuntimeOptions> {
+function withBackground(root: string, appDir: string, conversation = app): Partial<AppTaskRuntimeOptions> {
   const targetDir = join(root, "measurement.app");
   mkdirSync(join(targetDir, "tasks"), { recursive: true });
   writeFileSync(
@@ -350,7 +350,7 @@ function withBackground(root: string, appDir: string): Partial<AppTaskRuntimeOpt
       id: "delegation",
       generation: 1,
       entries: [
-        { appDir, definition: app },
+        { appDir, definition: conversation },
         { appDir: targetDir, definition: background },
       ],
     },
@@ -442,6 +442,7 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     conversationAppId: app.id,
     schedulesEnabled: false,
     admitConversation: tasks.admitConversation,
+    admitConversationOutcome: tasks.admitConversationOutcome,
     stopConversationTurn: tasks.stopTurn,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       tasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
@@ -510,6 +511,243 @@ test("normal event ingress admits and executes one Conversation Task and notifie
     expect(judgments).toBe(1);
     expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
   } finally {
+    ingress.runtime.close();
+  }
+});
+
+function measurementReply(context: AppInputContext): ConversationTurnResult {
+  const ask = context.conversation!.requests!.find((request) => request.id === "measurement")!;
+  const input = context.input.data as {
+    appId: string;
+    taskId: string;
+    attemptId: string;
+    outcome: { state: string; result?: { value: number } };
+  };
+  expect(context.source.kind).toBe("system");
+  expect(context.humanRequested).toBeUndefined();
+  expect(input.appId).toBe(background.id);
+  expect(input.taskId).toBe("sample");
+  expect(input.attemptId).toBeTruthy();
+  if (input.outcome.state === "stopped")
+    return {
+      summary: "Observed failed measurement attempt",
+      response: "The measurement is unavailable. Its Task is still trying.",
+      topic: { kind: "existing", id: context.conversation!.current!.topicId! },
+    };
+  expect(input.outcome.result?.value).toBe(17);
+  return {
+    summary: "Reported measurement",
+    response: "The measurement is 17.",
+    topic: { kind: "existing", id: context.conversation!.current!.topicId! },
+    requestUpdates: [
+      {
+        id: ask.id,
+        scope: ask.scope,
+        expectedRevision: ask.revision,
+        disposition: "fulfilled",
+        reason: "Returned the measured value",
+      },
+    ],
+  };
+}
+
+test.each(["live", "restart", "admission-write-failure"])(
+  "linked outcomes enter the Conversation controller (%s)",
+  async (route) => {
+    const missed = route === "restart";
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const contexts: AppInputContext[] = [];
+    const legacy = defineApp({
+      ...app,
+      tasks: {
+        subscriptions: [{ type: "conversation.task.changed" }],
+        resolve: () => ({
+          id: "legacy-review",
+          parentId: "root",
+          mode: "maintain",
+          outcome: "Old follow-up owner",
+          acceptance: ["Review Task update"],
+          executor: "legacy",
+        }),
+      },
+    });
+    const f = await fixture(
+      async (_definition, prompt) => {
+        const context = JSON.parse(
+          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+        ) as AppInputContext;
+        contexts.push(context);
+        return {
+          status: "done",
+          structuredResult: context.source.kind === "human" ? delegated : measurementReply(context),
+        };
+      },
+      (root, appDir) => ({
+        ...withBackground(root, appDir, legacy),
+        executors: {
+          legacy: async () => {
+            throw new Error("The old follow-up Task must not execute");
+          },
+          measure: async () => {
+            started.resolve();
+            await release.promise;
+            return { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] };
+          },
+        },
+      }),
+    );
+    let ingress = await startConversationIngress(f);
+    try {
+      const replyObserved = () =>
+        eventAfter(
+          f.bus,
+          (event) =>
+            event.type === "conversation.updated" &&
+            readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
+        );
+      let replied = route === "live" ? replyObserved() : undefined;
+      ingress.publish("ask", "Get the measurement and report it here");
+      await started.promise;
+      const topicId = readAppConversationResource(f.db, app.id, "primary").topics[0]!.id;
+      const unknown = f.bus.emit({
+        type: "conversation.task.changed",
+        source: "fixture",
+        data: {
+          appId: app.id,
+          conversationId: "primary",
+          topicId,
+          taskRef: { appId: background.id, taskId: "sample" },
+          summary: "Legacy summary without an outcome",
+        },
+      });
+      expect(unknown[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+      expect(f.store.readTask("legacy-review")).toBeNull();
+      if (route === "admission-write-failure")
+        f.db.exec(`
+      CREATE TRIGGER reject_outcome_input BEFORE INSERT ON app_inbox_items
+      WHEN NEW.input_kind = 'task-outcome' BEGIN SELECT RAISE(ABORT, 'outcome input unavailable'); END`);
+      if (missed) ingress.runtime.close();
+      const childSettled = settled(f.bus, "sample");
+      release.resolve();
+      await childSettled;
+      if (missed) {
+        expect(contexts).toHaveLength(1);
+        expect(listPendingConversationTaskOutcomes(f.db, app.id)).toHaveLength(1);
+        await f.reopen();
+        ingress = await startConversationIngress(f);
+        replied = replyObserved();
+      }
+      if (route === "admission-write-failure") {
+        expect(contexts).toHaveLength(1);
+        f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 1 } });
+        expect(listPendingConversationTaskOutcomes(f.db, app.id)).toHaveLength(1);
+        f.db.exec("DROP TRIGGER reject_outcome_input");
+        replied = replyObserved();
+      }
+      if (route !== "live")
+        f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 1 } });
+      await replied;
+      expect(contexts).toHaveLength(2);
+      expect(ingress.oldExecutions).toBe(0);
+      expect(f.store.readTask("legacy-review")).toBeNull();
+      const input = listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.kind === "system")!;
+      expect(input.input.kind).toBe("task-outcome");
+      expect(input.status).toBe("done");
+      expect(input.lease).toBeUndefined();
+      const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
+      expect(child.isCancelled("sample")).toBe(false);
+      expect(f.store.isCancelled(input.executionTaskId!)).toBe(false);
+      expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe("The measurement is 17.");
+      expect(listPendingConversationTaskOutcomes(f.db, app.id)).toEqual([]);
+      // Replayed notifications carry no result authority; both routes read the same saved outcome.
+      const original = contexts[1]!.input.data as { attemptId: string };
+      const replay = f.bus.emit({
+        type: "conversation.task.changed",
+        source: "fixture",
+        data: {
+          appId: app.id,
+          conversationId: "primary",
+          topicId: input.topicId,
+          taskRef: { appId: background.id, taskId: "sample" },
+          attemptId: original.attemptId,
+          summary: "Forged alternate result",
+          result: { value: 999 },
+        },
+      });
+      expect(replay[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+      for (let index = 0; index < 3; index++)
+        f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 1 } });
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      expect(listAppInboxItems(f.db, { appId: app.id })).toHaveLength(2);
+      expect(contexts).toHaveLength(2);
+      expect(f.store.listRecoveryCandidates().items).toEqual([]);
+    } finally {
+      release.resolve();
+      ingress.runtime.close();
+    }
+  },
+);
+
+test("a failed child report returns to Conversation without closing its assignment or human Request", async () => {
+  const repair = Promise.withResolvers<void>();
+  let runs = 0;
+  const f = await fixture(
+    async (_definition, prompt) => {
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      return {
+        status: "done",
+        structuredResult: context.source.kind === "human" ? delegated : measurementReply(context),
+      };
+    },
+    (root, appDir) => ({
+      ...withBackground(root, appDir),
+      executors: {
+        measure: async () => {
+          if (++runs === 1)
+            return {
+              state: "stopped",
+              summary: "Could not obtain measurement: source offline",
+              evidence: ["measurement source: unavailable"],
+            };
+          await repair.promise;
+          return { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] };
+        },
+      },
+    }),
+  );
+  const ingress = await startConversationIngress(f);
+  try {
+    const reported = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        readAppConversationResource(f.db, app.id, "primary").messages.some((message) =>
+          message.text.includes("still trying"),
+        ),
+    );
+    ingress.publish("ask", "Get the measurement and report it here");
+    await reported;
+    expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
+    const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
+    expect(child.isCancelled("sample")).toBe(false);
+    expect(child.readTask("sample")?.status.executionFailures).toBe(1);
+    const finished = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
+    );
+    repair.resolve();
+    await finished;
+    expect(runs).toBe(2);
+    expect(ingress.oldExecutions).toBe(0);
+    expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(2);
+    expect(child.isCancelled("sample")).toBe(false);
+  } finally {
+    repair.resolve();
     ingress.runtime.close();
   }
 });

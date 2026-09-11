@@ -10,9 +10,11 @@ import type {
 import type { AppTaskAttacher } from "../inbox/app-inbox-host.js";
 import type { EventBus } from "../events/bus.js";
 import type { AppRegistrySnapshot } from "../apps/registry.js";
+import type { ConversationTaskOutcomeRef } from "../state/conversation-task-turns.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitLoadedConversationInput,
+  admitLoadedConversationOutcome,
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
@@ -38,6 +40,7 @@ export type AppTaskCapability = {
   admitConversation(
     item: Parameters<typeof admitLoadedConversationInput>[0]["item"],
   ): ReturnType<typeof admitLoadedConversationInput>;
+  admitConversationOutcome(input: ConversationTaskOutcomeRef): ReturnType<typeof admitLoadedConversationOutcome>;
   stopTurn(
     target: Parameters<typeof stopLoadedConversationTurn>[0]["target"],
   ): ReturnType<typeof stopLoadedConversationTurn>;
@@ -105,6 +108,7 @@ export function createAppTaskCapability(options: {
     },
     attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitConversation: (item) => admitLoadedConversationInput({ bus: options.bus, item }),
+    admitConversationOutcome: (input) => admitLoadedConversationOutcome({ ...input, bus: options.bus }),
     stopTurn: (target) => stopLoadedConversationTurn({ bus: options.bus, target }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),

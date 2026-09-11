@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Check } from "typebox/value";
+import type { SqliteDb } from "../../../lib/db.js";
 import {
   conversationTurnResultSchema,
   type AppTaskAttachment,
@@ -326,9 +327,55 @@ export function completeConversationTaskTurn(
 }
 
 /** A linked Task's accepted attempt becomes ordinary, durable Conversation input. */
+export type ConversationTaskOutcomeRef = {
+  appId: string;
+  conversationId: string;
+  topicId: string;
+  taskAppId: string;
+  taskId: string;
+  attemptId: string;
+};
+
+/** Successful admissions remove themselves from this bounded discovery query. */
+export function listPendingConversationTaskOutcomes(
+  db: SqliteDb,
+  appId: string,
+  limit = 100,
+): ConversationTaskOutcomeRef[] {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
+    throw new Error("Conversation outcome limit must be an integer from 1 to 100");
+  return db
+    .prepare(
+      `
+    SELECT topic.app_id AS appId, topic.conversation_id AS conversationId, topic.id AS topicId,
+      linked.app_id AS taskAppId, linked.task_id AS taskId, attempt.attempt_id AS attemptId
+    FROM conversation_topics topic
+    JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
+    JOIN app_task_attempts attempt ON attempt.app_id = linked.app_id AND attempt.task_id = linked.task_id
+    WHERE topic.app_id = ? AND json_extract(attempt.attempt_json, '$.acceptedResult') IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM app_inbox_items input
+        JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
+        WHERE input.app_id = topic.app_id AND input.conversation_id = topic.conversation_id
+          AND NOT (linked.app_id = owner.app_id AND linked.task_id = owner.task_id)
+          AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
+            WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM app_inbox_items handled
+        WHERE handled.id = 'conversation-result:' || topic.app_id || ':' || topic.conversation_id || ':' ||
+          topic.id || ':' || linked.app_id || ':' || attempt.attempt_id
+      )
+    ORDER BY attempt.started_at, attempt.app_id, attempt.attempt_id, topic.id
+    LIMIT ?
+  `,
+    )
+    .all(appId, limit) as ConversationTaskOutcomeRef[];
+}
+
 export function admitConversationTaskOutcome(
   target: AppTaskContext,
-  source: AppTaskContext,
+  source: Pick<AppTaskContext, "resourceStore">,
   input: { conversationId: string; topicId: string; taskId: string; attemptId: string },
 ) {
   const db = target.resourceStore.db;
@@ -347,6 +394,8 @@ export function admitConversationTaskOutcome(
       throw new Error("Task result must name an accepted attempt of the linked Task");
     const task = target.resourceStore.readTask(conversationTaskId(appId, input.conversationId));
     if (!task) throw new Error("Conversation has no execution Task");
+    if (source.resourceStore.appId === appId && input.taskId === task.metadata.id)
+      throw new Error("A Conversation cannot consume its own outcome as new input");
     const id = `conversation-result:${appId}:${input.conversationId}:${input.topicId}:${source.resourceStore.appId}:${input.attemptId}`;
     return admitConversationTaskInput(target, {
       id,

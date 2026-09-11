@@ -18,9 +18,12 @@ import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
 import {
   admitConversationTaskInput,
+  admitConversationTaskOutcome,
+  conversationTaskId,
   completeConversationTaskTurn,
   isConversationTask,
   stopConversationTaskTurn,
+  type ConversationTaskOutcomeRef,
 } from "../state/conversation-task-turns.js";
 import type { AppInboxClaim, AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import {
@@ -143,6 +146,8 @@ function publishAppTaskTiming(
 ): void {
   const finishedAt = Date.now();
   const timer = setTimeout(() => {
+    // Execution can drain and release its database before this optional report runs.
+    if (!appRouterOptionsByBus.has(opts.bus)) return;
     opts.bus.emit({
       type: "project.task.reconcile.profiled",
       source: `app-task:${descriptor.id}:observer`,
@@ -2486,6 +2491,25 @@ export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTu
   });
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [result.taskId] });
   return result;
+}
+
+/** Notification text is a hint. Only the exact stored outcome can become input. */
+export function admitLoadedConversationOutcome(input: ConversationTaskOutcomeRef & { bus: EventBus }) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  const taskId = conversationTaskId(input.appId, input.conversationId);
+  if (!descriptor?.app.requests || !descriptor.resourceStore.readTask(taskId)) return null;
+  const source = AppTaskResourceStore.activeFromDb(descriptor.resourceStore.db, input.taskAppId);
+  const attempt = source?.readAttempt(input.attemptId);
+  if (
+    descriptor.resourceStore.isCancelled(taskId) ||
+    (input.taskAppId === descriptor.id && input.taskId === taskId) ||
+    attempt?.taskId !== input.taskId ||
+    !attempt?.acceptedResult
+  )
+    return { taskId, created: false };
+  const admitted = admitConversationTaskOutcome(appTaskConfig(descriptor), { resourceStore: source! }, input);
+  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
+  return { taskId: admitted.taskId, created: admitted.created };
 }
 
 /** Bounded exact-identity check used before asynchronously admitting feedback. */

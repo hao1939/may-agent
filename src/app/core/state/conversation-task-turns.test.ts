@@ -13,6 +13,7 @@ import {
   deferAppTask,
   recordAppTaskTrigger,
   readAppTaskAdmissionOutcome,
+  observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
 import { AppTaskController } from "../tasks/controller.js";
 import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
@@ -20,7 +21,7 @@ import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-
 import { createConversationInbox } from "../../composition/conversation-inbox.js";
 import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
 import { createAppInboxItem, claimAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { readAppConversationResource } from "./conversations.js";
+import { readAppConversationResource, linkConversationTopicTask } from "./conversations.js";
 import { readConversationRequest } from "./conversation-requests.js";
 import {
   admitConversationTaskInput,
@@ -28,6 +29,7 @@ import {
   completeConversationTaskTurn,
   stopConversationTaskTurn,
   readConversationTaskInputs,
+  listPendingConversationTaskOutcomes,
 } from "./conversation-task-turns.js";
 
 const roots: string[] = [];
@@ -799,4 +801,78 @@ test("pending human input leads a bounded mixed batch inside a paused App", () =
   expect(getAppInboxItem(f.db, "review-30")?.result).toBeUndefined();
   expect(getAppInboxItem(f.db, "review-31")?.status).not.toBe("done");
   expect(f.store.allowsTaskExecution(human.taskId)).toBe(false);
+});
+
+test("bounded outcome discovery advances across Conversations, retains Stop and finds late links", () => {
+  const f = fixture();
+  const first = f.admit();
+  const firstClaim = f.claim(first.taskId);
+  completeConversationTaskTurn(f.context(), firstClaim, decision);
+  const topic = readAppConversationResource(f.db, app.id, "chat").topics[0]!;
+  const other = admitConversationTaskInput(f.context(), { ...f.input("other"), conversationId: "other-chat" });
+  completeConversationTaskTurn(f.context(), f.claim(other.taskId), decision);
+  const otherTopic = readAppConversationResource(f.db, app.id, "other-chat").topics[0]!;
+  for (let index = 0; index < 3; index++) {
+    const taskId = `sample-${index}`;
+    observeAppTaskIntent(f.context(), {
+      appAgent: app.id,
+      intent: {
+        id: taskId,
+        parentId: "root",
+        mode: "achieve",
+        outcome: "Measure sample",
+        acceptance: ["Observed value"],
+      },
+    });
+    completeAppTask(f.context(), f.claim(taskId), { summary: `Value ${index}`, evidence: [`measurement:${index}`] });
+    if (index < 2) linkConversationTopicTask(f.db, topic.id, app.id, taskId);
+  }
+  linkConversationTopicTask(f.db, otherTopic.id, app.id, "sample-0");
+  // A self-link must not turn every Conversation reply into another model call.
+  linkConversationTopicTask(f.db, topic.id, app.id, first.taskId);
+  expect(() =>
+    admitConversationTaskOutcome(f.context(), f.context(), {
+      conversationId: "chat",
+      topicId: topic.id,
+      taskId: first.taskId,
+      attemptId: firstClaim.attemptId,
+    }),
+  ).toThrow("own outcome");
+  const handled: string[] = [];
+  for (let index = 0; index < 3; index++) {
+    const page = listPendingConversationTaskOutcomes(f.db, app.id, 1);
+    expect(page).toHaveLength(1);
+    const ref = page[0]!;
+    const admitted = admitConversationTaskOutcome(f.context(), f.context(), ref);
+    handled.push(admitted.item.id);
+    const claim = f.claim(admitted.taskId);
+    if (index === 0) {
+      stopConversationTaskTurn(f.context(), {
+        appId: app.id,
+        conversationId: ref.conversationId,
+        turnId: claim.attemptId,
+        expectedRevision: claim.generation,
+      });
+    } else
+      completeConversationTaskTurn(f.context(), claim, {
+        summary: "Reviewed",
+        topic: { kind: "existing", id: ref.topicId },
+      });
+    f.reopen();
+  }
+  expect(new Set(handled).size).toBe(3);
+  expect(listPendingConversationTaskOutcomes(f.db, app.id)).toEqual([]);
+  expect(getAppInboxItem(f.db, handled[0]!)?.handling?.phase).toBe("stopped");
+  // Adding the link after acceptance must still return that exact stored outcome.
+  linkConversationTopicTask(f.db, topic.id, app.id, "sample-2");
+  expect(listPendingConversationTaskOutcomes(f.db, app.id).map((item) => item.taskId)).toEqual(["sample-2"]);
+  const current = f.store.readTask(first.taskId)!;
+  closeAppTask(f.context(), {
+    appId: app.id,
+    taskId: first.taskId,
+    expectedGeneration: current.metadata.generation,
+    expectedResourceVersion: current.metadata.resourceVersion,
+    reason: "Owner ended the Conversation",
+  });
+  expect(listPendingConversationTaskOutcomes(f.db, app.id)).toEqual([]);
 });

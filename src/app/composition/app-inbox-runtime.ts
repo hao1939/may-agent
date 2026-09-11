@@ -2,6 +2,8 @@ import { createConversationInbox } from "./conversation-inbox.js";
 import type { AppInputResolver } from "../conversations/turn-handler.js";
 import type { AppRequestTaskController } from "../conversations/turn-handler.js";
 import { recordConversationTaskOutcome } from "../core/state/conversation-outcomes.js";
+import { listPendingConversationTaskOutcomes } from "../core/state/conversation-task-turns.js";
+import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
 import { createHash } from "node:crypto";
@@ -103,6 +105,7 @@ export type StartAppInboxRuntimeOptions = {
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
   admitConversation?: AppInboxHostOptions["admitConversation"];
+  admitConversationOutcome?: AppTaskCapability["admitConversationOutcome"];
   stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   resolveRequest?: AppInputResolver;
   controlTask?: AppRequestTaskController;
@@ -401,6 +404,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       disposition?: string;
       summary?: string;
       reason?: string;
+      attemptId?: string;
     },
   ): void => {
     // Live updates and recovery share this boundary. The owning Conversation
@@ -422,6 +426,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         topicId: link.topicId,
         followUpId: change.followUpId,
         taskRef,
+        ...(change.attemptId ? { attemptId: change.attemptId } : {}),
         ...(change.disposition ? { disposition: change.disposition } : {}),
         ...(change.summary ? { summary: change.summary } : {}),
         ...(change.reason ? { reason: change.reason } : {}),
@@ -1251,6 +1256,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const minQuietMs = Math.max(60_000, Math.floor(Number(data.minQuietMs) || 900_000));
         const limit = Math.min(100, Math.max(1, Math.floor(Number(data.limit) || 100)));
         if (!appId) throw new Error("Conversation supervision review requires its App");
+        if (options.admitConversationOutcome) {
+          const outcomes = listPendingConversationTaskOutcomes(options.db, appId, limit);
+          for (const outcome of outcomes) {
+            emitConversationTaskChanged(
+              outcome,
+              { appId: outcome.taskAppId, taskId: outcome.taskId },
+              {
+                attemptId: outcome.attemptId,
+                followUpId: outcome.attemptId,
+                idempotencyKey: `conversation-outcome-review:${eventRowId(event)}:${outcome.topicId}:${outcome.taskAppId}:${outcome.attemptId}`,
+              },
+            );
+          }
+          return {
+            accepted: true,
+            by: `conversation-outcomes:${appId}`,
+            route: "direct",
+            note: `${outcomes.length} missing outcome input(s) selected`,
+          };
+        }
         const links = listStaleConversationTopicTasks(options.db, appId, {
           updatedBefore: now() - minQuietMs,
           limit,
@@ -1273,6 +1298,32 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           route: "direct",
           note: `${links.length} quiet linked Task(s) selected for bounded review`,
         };
+      }
+      if (String(event.type) === "conversation.task.changed" && options.admitConversationOutcome) {
+        const ref = record(data.taskRef);
+        if (
+          [data.appId, data.conversationId, data.topicId, ref.appId, ref.taskId].every(
+            (value) => typeof value === "string" && value.trim(),
+          )
+        ) {
+          const admitted = options.admitConversationOutcome({
+            appId: String(data.appId),
+            conversationId: String(data.conversationId),
+            topicId: String(data.topicId),
+            taskAppId: String(ref.appId),
+            taskId: String(ref.taskId),
+            attemptId: typeof data.attemptId === "string" ? data.attemptId : "",
+          });
+          if (admitted)
+            return {
+              accepted: true,
+              by: `conversation-task:${admitted.taskId}`,
+              route: "direct",
+              note: admitted.created
+                ? "Accepted outcome admitted as Conversation input"
+                : "Outcome already handled or unavailable",
+            };
+        }
       }
       if (event.type === "app.input.requested") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
@@ -1359,6 +1410,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                 followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
                 disposition,
                 summary,
+                ...(typeof data.attemptId === "string" ? { attemptId: data.attemptId } : {}),
                 idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
               },
             );
