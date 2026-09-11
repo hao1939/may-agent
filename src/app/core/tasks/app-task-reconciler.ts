@@ -3830,6 +3830,7 @@ function recordExecutableParentTrigger(
   summary: string,
   evidence: string[] | undefined,
   now: string,
+  resultAttemptId?: string,
 ): string | undefined {
   const child = tree.resources?.[childId];
   const parentTaskId = child?.spec.parentId ?? undefined;
@@ -3843,6 +3844,7 @@ function recordExecutableParentTrigger(
     target: { taskId: parentTaskId },
     taskId: parentTaskId,
     childTaskId: childId,
+    ...(resultAttemptId ? { resultAttemptId } : {}),
     disposition,
     summary,
     evidence: [...(evidence ?? [])],
@@ -4138,7 +4140,15 @@ export function completeAppTask(
   ];
   const parentTaskId =
     claim.mode === "maintain" || !pendingSelfTrigger
-      ? recordExecutableParentTrigger(tree, claim.taskId, "converged", input.summary, input.evidence, now)
+      ? recordExecutableParentTrigger(
+          tree,
+          claim.taskId,
+          "converged",
+          input.summary,
+          input.evidence,
+          now,
+          claim.attemptId,
+        )
       : undefined;
   trackResourceMutationTask(mutationScope, tree, parentTaskId);
   const dependentTaskIds = [

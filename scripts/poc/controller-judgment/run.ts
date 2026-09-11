@@ -126,7 +126,12 @@ for (const scenario of scenarios) {
     });
     store.close();
     store = AppTaskResourceStore.openStandalone(databasePath, "fixture");
-    const retained = store.readAttempt(originalAttemptId)?.acceptedResult;
+    const returnedAttemptId = store.readTrigger("owner")?.event.resultAttemptId;
+    if (returnedAttemptId !== originalAttemptId)
+      throw new Error("Durable return link did not identify the accepted attempt");
+    const returnedAttempt = store.readAttempt(String(returnedAttemptId));
+    if (returnedAttempt?.taskId !== "measurement") throw new Error("Return link names another child's attempt");
+    const retained = returnedAttempt.acceptedResult;
     if (retained?.state !== "converged") throw new Error("Exact child outcome was not retained across restart");
     evidence = retained.result?.evidence as Scenario["evidence"];
   }
