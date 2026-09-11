@@ -308,6 +308,13 @@ existing 40-handoff test reproduces a wall-clock jump during execution; it faile
 before the helper change and passes afterward, preserving its timeout and yield
 assertion. Production scheduling is unchanged. Full validation is tracked on
 the PR; these corrections introduce no new migration or recovery behavior.
+Full local CI at `ed1192c1` passes: 2,764 tests passed, three existing
+installation-only skips, zero failures; browser tests executed. Host/SDK types,
+App-boundary checks and lint passed. All 73 focused Telegram/controller tests
+and canonical design checks pass. Hosted Quality and Container passed on the
+same revision in run `34620436328`, including the isolated built-image smoke
+check. Copilot was explicitly requested again on that exact head. Prior failed
+runs above remain evidence, not a claim that unrelated flaky assertions are fixed.
 
 ### Existing candidate evidence
 
