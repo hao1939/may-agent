@@ -4,6 +4,8 @@
 **Implementation status:** The static route-based operator UI is implemented.
 The default project/task surface still uses older path-based projections and
 has not completed migration to the shared App-ID Task reader.
+The workflow health refinement below is planned, not shipped: Host #143 added
+evidence and SDK reads, but the browser does not yet render all those fields.
 
 ## Purpose
 
@@ -111,6 +113,36 @@ Liveness uses existing facts:
 Empty standalone heartbeat tracks are not an App failure. An App
 is alive when its schedules or Events reach Tasks and produce current project
 or Task evidence.
+
+## Overview, Metrics and Run Inspection
+
+Refine the existing routes, not a second monitoring UI. The
+[workflow health proposal](../proposals/workflow-tracing-and-health-metrics.md#3-present-health-with-a-path-back-to-evidence)
+tracks implementation; [Metrics](metrics.md#metric-semantics-and-persistence)
+owns calculation and persistence semantics.
+
+| Surface | Primary content |
+| --- | --- |
+| Overview (`/`, currently Live) | Last-24h finished top-level runs and all four outcomes with a shared denominator; running executions and current Task states separately; recent failures, explicit attention items and collection problems; a few verified Host observations |
+| Metrics (`/metrics`) | App/workflow and time filters; comparable execution counts, success share and named duration statistics; searchable measurements with value, unit, sample time and coverage |
+| Metric detail (`/metrics/:id`) | Definition/source, actual time-axis history, sample size, collection errors, optional warning rule and links to matching evidence |
+| Existing run/trace detail | Recorded outcome/reason, steps, exact child links, bounded diagnostics and artifacts; missing, redacted, truncated or expired evidence |
+
+Keep failure investigation easy without hiding successes. Empty activity means
+no executions; no open alerts does not mean the Host is healthy. Show observation
+freshness, collection errors and threshold state separately. Priority is urgency,
+not a substitute for an explicit alert/watch policy.
+
+Read shared server calculations and retained observations, not cached values
+paired with definition-update times. Summary and drill-down carry the same
+fixed time bounds, scope and outcomes. If retention or later settlement changes
+available records, refresh the summary with the detail and explain the change;
+do not promise an immutable historical population that was never saved.
+
+Charts use actual sample times, visible collection gaps and explicit units and
+windows. A missing or failed read is not a zero value. Load bounded summaries
+on entry and detail/history on demand, not one request and graph for every
+metric. Render names, errors and notes as untrusted text, never executable HTML.
 
 ## Project Surface
 

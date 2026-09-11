@@ -8,10 +8,12 @@ not yet moved to their Apps. That remaining authority gap is tracked in the
 convergence tracker. The expanded default core-metrics proposal and later
 App-subscriber alternative are [archived](../archive/reviews/error-handling-and-conversation-discussion-20260910.md).
 The narrower [workflow tracing and health metrics proposal](../proposals/workflow-tracing-and-health-metrics.md)
-is now under review; it does not change the accepted contract or activation.
-Its [first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
-at Host `b071e651` adds optional workflow outcome observations and richer metric
-reads. It is not deployed; the existing contract below remains the baseline.
+remains partly unimplemented. Its
+[first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
+merged in Host #143 as `939698ad`, adding optional workflow outcome observations,
+richer SDK reads and retained source errors. Deployment is unverified. The
+SQLite-first storage and measurement rules below guide the next slice; they do
+not claim new metric types, client integration or dashboard behavior is shipped.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation
 or reporting requirements. The existing metric service contract below remains
@@ -36,7 +38,7 @@ means the alert rule no longer matches, not “all related work is complete.”
 
 ## Default failure visibility
 
-The candidate keeps measurements outside core execution: the optional source
+The merged source keeps measurements outside core execution: the optional source
 sampler installs done/error/blocked/interrupted run-count definitions, without
 new timers or automatic alerts. Each sample states its time, retained finished
 cohort and denominator; zero sample size is no activity, not proven health.
@@ -110,7 +112,8 @@ ctx.metrics.define({
   id: "scout.source-check-failures",
   owner: "scout",
   project: "scout-knowledge-lib",
-  type: "counter",
+  type: "gauge",
+  description: "Failures among checks in this observer pass; not a lifetime total",
   threshold: 3,
   alertOp: ">",
   priority: "P1",
@@ -142,7 +145,11 @@ Every useful metric should make these points clear:
 - whether it should alert or only be observed; and
 - what evidence explains or closes an alert.
 
-Supported metric kinds are `gauge`, `counter`, `health`, and `derived`.
+Current metric kinds are `gauge`, `counter`, `health`, and `derived`. These
+describe intent and select some alert behavior; `record(id, value, options)`
+stores a scalar observation. It does not enforce monotonic counters, handle
+resets or store histograms. `health` and `derived` are May classifications,
+not additional Prometheus numeric types.
 Threshold evaluation is below (`<`) or above (`>`). More specialized rate,
 stall, sustained, or consecutive-failure behavior belongs in the definition's
 typed configuration and is evaluated by the same service.
@@ -150,6 +157,72 @@ typed configuration and is evaluated by the same service.
 A change in meaning requires a new metric ID or an explicit cutover. Retiring
 a metric preserves its history, stops new measurement, and resolves or
 explains its open alerts.
+
+## Metric semantics and persistence
+
+Use standard metric meanings while keeping the existing SQLite history. A
+Prometheus-compatible type is not a requirement to install a Prometheus server.
+Run records remain execution truth; `metric_snapshots` retain observations for
+graphs. Both survive normal process restarts within their retention limits.
+The cached `metrics.current` value is not evidence of a fresh measurement.
+
+| Meaning | Initial use | Recording and graph rule |
+| --- | --- | --- |
+| Gauge: a value that can rise or fall | Current queue size, disk headroom, rolling-24h outcome counts | Store value and actual sample time. Do not sum overlapping windows as new events. |
+| Counter: a cumulative total that only rises until reset | A later, explicitly process-lifetime Host measurement | State lifetime and reset boundary. Only calculate rates across understood resets; pruning retained runs must not reduce a purported counter. |
+| Histogram: a distribution of observations | Later duration aggregation, if raw queries become too costly | Preserve bucket boundaries, bucket counts, total count and sum together. State unit, scope and interval/cumulative lifetime. The scalar API cannot yet represent this. |
+| Derived value: a calculation over a stated population | Successful executions / finished executions | Calculate numerator and denominator from the same cohort; zero denominator means no percentage. |
+
+The four `workflow.<outcome>-count-24h` definitions are correctly **gauges**.
+Do not rename them to cumulative counters or apply counter-rate formulas to
+their history. Their independent samples are not one atomic population.
+For an exact outcome summary, reporting reads all outcomes and the denominator
+from one database snapshot with fixed `[start, end)` bounds and scope.
+
+Initially calculate run duration from retained start/end timestamps, excluding
+invalid or missing pairs with the exclusion count visible. Label any statistic
+precisely (for example, mean duration), not as an unexplained performance score.
+Historical samples and retained runs can support useful time-axis graphs now;
+do not add generic bucket storage or rollups just to draw them. A graph of a
+rolling count must say so; it is not a count of new events per chart interval.
+
+If a measured need later warrants histogram persistence, design that one
+storage/read extension first. Merge only compatible boundaries and scopes;
+do not sum successive cumulative snapshots or average stored percentiles.
+An average alone loses the distribution. Each observation must enter an
+aggregate once, including across refresh or restart; replaying retained runs
+into an ever-growing registry would double-count them.
+
+Keep series few and predictable. Use bounded dimensions such as declared App,
+workflow and outcome; inspect individual runs through evidence links, not
+run-ID labels. Prompts, free-form errors, personal paths and credentials must
+not become labels or metric names. Existing definitions/documentation can
+state meaning; this does not introduce a generic label or type framework.
+
+### Prometheus client: useful helper, not the database
+
+When recording a real cumulative/distribution measurement or supplying a
+Prometheus export, prefer a maintained client over hand-written bucket or
+exposition code. As checked on September 11, 2026, the former `prom-client`
+project publishes as [`@prometheus-io/client`](https://github.com/prometheus/client_js)
+(version `0.16.1`; [rename and runtime requirements](https://github.com/prometheus/client_js/blob/v0.16.1/CHANGELOG.md)).
+Its registry lives in memory. JSON/text export does not persist a time series
+or provide restart recovery. A short-lived worker may exit before collection.
+
+Keep any client private to the optional reporting adapter, with its own
+registry. Apps retain `MetricService`; core execution imports no client types
+and never depends on a registry update. For workflow metrics, derive from
+stored run facts rather than dual-writing completion into an independent
+counter. Do not serialize private registry internals or add worker/cluster
+registry coordination to imitate durable storage.
+
+The first page refinement needs neither a client dependency nor another
+service: SQLite already records the gauges and source evidence it needs.
+Add the client with a concrete histogram/export consumer and verify Bun
+compatibility, reset behavior, cardinality and cost for that use. Do not
+enable all default process collectors without checking their relevance and
+runtime support. Prometheus/Grafana remain optional future readers/backends,
+not prerequisites for running May or viewing its current history.
 
 ## Ownership and routing
 

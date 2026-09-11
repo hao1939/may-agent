@@ -1,6 +1,7 @@
 # Workflow tracing by default and useful health metrics
 
-**Design status:** Draft for review, September 11, 2026.
+**Design status:** SQLite-first direction agreed; page refinement and remaining
+implementation scope below are for review, September 11, 2026.
 **Implementation status:** First bounded source slice merged in Host #143 as
 `939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
@@ -58,6 +59,20 @@ This is the narrower continuation of the
 It does not require the earlier core collector or an `onError` subscriber
 before failure evidence becomes available. App consolidation and automatic
 investigation remain outside this proposal.
+
+### Keep the next step small
+
+Keep SQLite for run evidence and metric history, and improve the existing
+Overview/Live, Metrics and trace pages. Use standard counter, gauge and histogram
+meanings without installing Prometheus or Grafana. The current rolling outcome
+counts are gauges; duration initially comes from recorded timestamps.
+
+A Prometheus client can later supply standard recording/export where it saves
+code. It is not a history store and is not required for these pages. Keep it
+inside optional reporting, not in core or every workflow. The owning
+[metric contract](../2a-design/metrics.md#metric-semantics-and-persistence)
+defines storage, type semantics and the client boundary. Do not build another
+metric framework, queue or service to prepare for a possible future backend.
 
 ## Expected experience
 
@@ -222,15 +237,43 @@ work, not something an internal heartbeat alone provides.
 
 ## 3. Present health with a path back to evidence
 
-Start with existing metric and execution views: an overview and a per-workflow
-breakdown of activity, outcome distribution, duration and available cost. Show
-window/sample count, trend where available, last measurement and evidence link.
-These balanced views remain useful even when nothing is failing. Opening a run
-shows its history and linked artifacts; expired detail is explicit.
+The [Web UI contract](../2a-design/webui.md#overview-metrics-and-run-inspection)
+owns the page split. Reuse the current routes and SQLite-backed reads:
 
-The UI reads shared calculations; it does not implement a second metric formula.
-Run links can reuse the existing trace view without requiring a graph redesign.
-No single opaque score claims the whole system is healthy.
+- **Overview (`/`, currently Live):** a last-24h finished top-level execution
+  summary, all four outcomes and their shared denominator. Show running
+  executions and current queued/running/waiting Tasks separately, followed by
+  recent failures, explicit attention items and collection problems. Add only
+  Host facts with verified sources; no composite health score.
+- **Metrics (`/metrics`):** selected time window and recorded App/workflow
+  filters; a comparable workflow table with finished count, successful share,
+  error/blocked/interrupted counts, mean duration and slowest run. State the
+  duration population and exclusions; keep per-outcome filtering available so
+  quick failures do not masquerade as faster successful work. Below it, a
+  searchable measurement list leads to definition, history and evidence.
+- **Run details:** render the existing `workflowEvidence` read, including
+  exact outcome/reason, steps, children, bounded logs and artifact links.
+  Expired, missing or truncated detail remains visible. No new incident page.
+
+Keep three questions distinct: when was the last observation, did collection
+fail, and did a configured rule match? A stale sample may also breach a rule.
+No alert means no open alert, not proven health. Zero executions has no success
+percentage; a failed read must not appear as zero executions.
+
+Reporting calculates summary and breakdown from a shared bounded read with
+fixed `[start, end)` bounds and the same scope. The four independently sampled
+24h metrics are useful trend observations, not an exact combined dashboard
+cohort. A drill-down freezes the selection's time window rather than moving
+"now" on every click. If late settlement or retention changes the records,
+refresh counts with the detail and show the coverage change; saving another
+immutable cohort store is not part of this design.
+
+Graph positions use actual sample times. Show units, window, sample size and
+gaps; do not space irregular samples evenly or carry old values across a
+collection outage. Fetch detail/history on selection, not every metric's chart
+at page load. Names, errors and notes must render safely as text. Both pages
+consume shared calculations and source freshness, not their own formulas,
+cached `current` values or definition-edit timestamps.
 
 ### Give failures a useful investigation path
 
@@ -324,24 +367,47 @@ does not claim a proven performance budget or retention duration.
 
 ## Existing implementation and focused gaps
 
-Source reviewed at Host `0bedd93a9eb2`:
+Source rechecked at Host `8e242c11`, including merged #143:
 
-| Existing home | Starting point / gap to inspect |
+| Existing home | Present capability / remaining gap |
 | --- | --- |
 | `src/lib/db/workflows.ts` | Run records, entry hash, Task binding, parent/resume links, artifacts and step sessions exist. Reuse them; an entry hash alone does not identify all imported dependencies. |
-| `src/lib/workflow-tool.ts` | Run boundaries, child calls and terminal failures are recorded. Scoped logs forward message text to runtime logging; verify run correlation and retained debug detail before claiming a self-contained trace. |
-| `src/lib/workflow.ts`, execution/trace reads | Workflow/session trace types and result reads exist. Verify access to partial outputs and child errors without unrelated searches. |
-| `src/lib/metrics.ts`, `src/app/metric-source-measurement.ts` | Definitions, history and source measurement exist. Per-source exceptions currently become skipped IDs without their error explanation in the returned result. |
-| `src/app/adapters/reporting/metric-read.ts`, `src/app/composition/reporting.ts` | Metric reads/definition installation use optional reporting. The narrow read omits sample time and coverage; expose only what the health consumer needs. |
+| `src/lib/workflow-tool.ts`, `workflow-diagnostics.ts`, `workflow-evidence.ts` | Failure identity, bounded retained logs and linked evidence now exist. Input/partial-output coverage and artifact retention still need review. |
+| `src/lib/metrics.ts`, `src/app/metric-source-measurement.ts` | Scalar snapshots and retained source-error events exist. Counter resets and structured histograms are not implemented. |
+| `src/app/adapters/reporting/metric-read.ts`, `workflow-metrics.ts`, `src/app/composition/reporting.ts` | Optional reporting exposes sample time/size/note/cadence and four rolling outcome gauges. Their independent queries are not one atomic summary. |
+| `src/app/http/server.ts` metric/liveness reads | Browser reads still use cached values; latest-sample joins need deterministic tie handling. Reuse observation semantics and shared cohort calculations. |
+| `packages/webui/static/pages/live.js`, `metrics.js`, `system.js` | Existing views still infer health from alerts/cache, graph samples by index and do not render new workflow evidence. Replace those projections before expanding the dashboard. |
 
 These are source observations, not a live health audit. The
 [earlier PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested
 recomputation and metric failure containment, not this workflow-first proposal.
 Do not promote its patch unchanged or reorganize directories first.
 
-## First trial and acceptance
+## Next implementation: one useful page refinement
 
-After review, use a disposable installation and a controlled workflow that
+The evidence foundation is merged; the next bounded source change should:
+
+1. Supply shared outcome-summary reads and truthful metric observations to HTTP
+   consumers. Keep source errors separate from last good samples. Use bounded
+   indexed queries, explicit filters and a deterministic latest-sample tie-break.
+2. Refine the existing Overview and Metrics pages as above, and render the
+   existing run evidence. Start with counts, duration and sample history; defer
+   monetary estimates, automated failure ranking and new metric types.
+3. Verify with synthetic records: the six-done/two-error/one-blocked/one-interrupted
+   cohort, nested runs, later success, no data, stale/failed collection, equal
+   sample timestamps, late samples, expired evidence and safe text rendering.
+   Check consistent drill-down and irregular-time graphs in the real browser.
+4. Measure query/page cost and request count. Page entry must not fetch every
+   metric's history, and absence of reporting must not break unrelated execution
+   or turn missing measurements into healthy zeroes.
+
+No service, production dependency, schema-wide metric framework or deployment
+is needed just to implement that slice. The wider evidence/cost checks below
+remain rollout gates, not a reason to implement every future metric now.
+
+## Trial and acceptance
+
+Use a disposable installation and a controlled workflow that
 prepares output, calls a child execution and fails during upload. Inspect the
 existing trace first, then fill only the gaps that prevent understanding it.
 
@@ -384,9 +450,9 @@ executions, suppressed errors or missing observations are not proof of improveme
 Stop expanding instrumentation when the evidence is sufficient to make that
 decision; add detail only when an actual investigation is blocked by its absence.
 
-Before implementation, review whether this slice is sufficient and which health
-questions deserve the next investment. On acceptance, update the owning Workflow,
-Metrics, Architecture and relevant storage/read contracts together. This draft does not
+Before expanding implementation, review whether this slice is sufficient and
+which health questions deserve the next investment. Update owning contracts
+when their behavior changes; preserve explicit implementation gaps. This proposal does not
 authorize deployment, a new App, an error framework, a telemetry queue, a new
 tracing backend or automatic repair.
 
@@ -411,7 +477,7 @@ from verified head `1526e063`. The first slice is independently useful:
   observations for done/error/blocked/interrupted top-level runs. Each carries
   its actual observation time and eligible sample size. Nested failures remain
   inspectable without inflating parent outcomes. The queries use an indexed
-  retained, finished-time cohort; no workflow updates these counters.
+  retained, finished-time cohort; no workflow maintains parallel outcome totals.
 - Metric reads expose the latest retained sample's value, timestamp, sample
   size, note and cadence. Definition edits and late older samples cannot make
   it appear fresh. Missing samples are unknown. Source failures retain a bounded
@@ -461,7 +527,25 @@ Remaining: complete input/partial-output capture and artifact-retention review;
 full failure injection and responsiveness measurement; exact historical cohort
 drill-down and per-workflow UI; duration/cost/recovery summaries; source coverage
 gaps and additional Host/App health facts. Four independent samples are not an
-atomic dashboard snapshot: compare their times before combining them, and do not
-sum rolling-window samples. No automatic investigation, repair or new controller
-was introduced. Land compatible Host source before relying on the new fields;
-these documentation changes do not activate or deploy it.
+atomic dashboard snapshot: use a shared cohort read for an exact summary, and
+do not sum rolling-window samples. No automatic investigation, repair or new
+controller was introduced. The source is merged; deployment of compatible Host
+code and browser consumption remain separate. These documentation changes do
+not activate or deploy it.
+
+### Prometheus client compatibility check
+
+On September 11, 2026, an isolated test of `@prometheus-io/client@0.16.1`
+passed under Node `24.20.0` and Bun `1.3.14`. It used a private registry and
+verified counter increments and negative-increment rejection, a decreasing
+gauge, histogram bucket/count/sum results, and JSON/text exposition. Observing
+0.2 and 2.5 seconds with bounds 1 and 5 produced cumulative bucket counts
+1/2/2 (including infinity), count 2 and sum 2.7. A fresh child process started
+with a zero counter: the client itself retained no history.
+
+This supports using the library for a concrete recording/export need, not a
+claim of production Bun coverage, durable collection or measured overhead.
+Default process collectors, worker aggregation and service deployment were not
+tested. No dependency was added to May. The
+[client decision](../2a-design/metrics.md#prometheus-client-useful-helper-not-the-database)
+keeps this reuse available without adding a second state store now.

@@ -74,8 +74,12 @@ Completed separation and recovery reviews live in the [archive](archive/README.m
 The [workflow tracing and health metrics proposal](proposals/workflow-tracing-and-health-metrics.md)
 reopens the discussion with a narrower direction: keep evidence with each run
 and derive balanced health summaries through replaceable components, with a
-stronger path for investigating failures. The bounded first source slice merged in #143 (`939698ad`); the proposal
-records its limits and remaining work. Deployment has not been verified.
+stronger path for investigating failures. The bounded first source slice merged
+in #143 (`939698ad`); deployment has not been verified. The next slice keeps
+SQLite history and refines the existing Overview, Metrics and run-evidence
+pages. Standard metric semantics apply; a Prometheus client is an optional
+recording/export helper, not a history store or new core dependency. The
+proposal records the source gaps and bounded next implementation.
 The earlier error-routing alternatives and App consolidation remain
 [archived](archive/reviews/error-handling-and-conversation-discussion-20260910.md).
 
