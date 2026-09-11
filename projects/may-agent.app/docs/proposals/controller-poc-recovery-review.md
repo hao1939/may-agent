@@ -53,6 +53,8 @@ The source checks named above live under Host `src/app/core/tasks/`,
 `src/app/core/state/` and `src/app/adapters/workspaces/`; current full-CI evidence
 is recorded with the [reader checkpoint](#historical-reader-review), with the
 latest comment and guide changes recorded under [review preparation](#review-preparation).
+The subsequent [PR consolidation](#consolidation-of-earlier-prs) records the
+remaining execution fixes carried into the candidate.
 This audit inspected assertions and retained reports; it did not repeat successful
 model trials or claim those older trials ran against a newer revision.
 
@@ -100,6 +102,44 @@ design links. [GitHub Quality and Container](https://github.com/hao1939/may-agen
 both pass on that exact revision. The previous full local CI result at `54c1b5b4`
 retains its exact source revision. No model or daemon-cutover trial was repeated
 for these comment and guide edits. Host and App remain unmerged and undeployed.
+
+## Consolidation of earlier PRs
+
+Host `10060de7` addresses the two outstanding #153 review concerns and carries
+the useful recovery follow-up from #155. `c6b8a348` separately brings over #155's
+bounded Pi-startup fixture subprocesses and isolated synthetic environment.
+
+| Earlier PR | Disposition in #158 |
+| --- | --- |
+| #150 | All three commits are already in #158's history; exact accepted evidence and judgment experiments remain |
+| #153 | Structured non-success judgments remain valid attempt evidence. A committed finish survives a later direct timeout, and cancellation cannot erase missing-result validation |
+| #154 | Individual Task backoff removes the motivating bulk-unblock recovery path. The 256-action/64-KiB proposal is not included; existing bounded action validation remains |
+| #155 | Recovery preserves successful work and committed effects, uses App guidance for the next step, and retains read/write evidence. Pi-startup tests use bounded asynchronous subprocesses |
+
+The new regressions reproduced five failures on `c1a2e48e`: two direct-timeout
+cases, cancellation hiding a required-result error, and the read/write recovery
+guidance cases. After the fixes, all **77 focused tests pass** across five files.
+The timeout regression runs the real agent/tool loop, holds cleanup after the
+finish receipt, and observes the real deadline. Managed-session checks verify
+persisted status and one terminal publication. Task claim and owner-closure
+fences remain in force; preserving an executor result cannot waive them.
+
+The recovery tests also retain the original assignment after an empty response
+and a successful write receipt after a final-synthesis failure. Their synthetic
+model verifies available context and guidance, not guaranteed model compliance
+or permission to repeat an uncertain external effect. No model trial or installed
+service was used for this follow-up.
+
+Full local `bun run ci` with these changes passes **2,901 tests**, with **3
+installation-dependent skips** and **0 failures** across 291 files (168.12 seconds).
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/34651919594)
+both pass at `c6b8a348`; hosted tests report the same counts (124.73 seconds).
+Design integrity, executable design examples, canonical App checks and changed
+document links also pass. No new skips or automatic retries were added.
+
+PRs #150, #153, #154 and #155 are closed with supersession notes pointing to
+#158; #150 was already closed when this follow-up finished. #158 remains the
+single open review target. Host and paired App remain unmerged and undeployed.
 
 ## Historical reader review
 
