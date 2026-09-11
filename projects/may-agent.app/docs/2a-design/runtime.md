@@ -138,6 +138,15 @@ use background capacity, while at most one May decision may use the reserved
 foreground slot. Apps do not configure either mechanical limit. Delivery is
 passive and consumes neither.
 
+The accepted [conversation input unification](../proposals/conversation-input-unification.md)
+requires a refinement: choose these existing lanes by admitted input origin so
+linked Task/timer reviews use background capacity even when May handles them.
+Current dispatch selects foreground by conversational App identity; changing
+the subscription alone would give all such reviews foreground treatment.
+This source-aware selection is pending implementation. It adds no capacity
+service and does not promise preemption; a single-slot Host cannot reserve a
+second slot for human execution.
+
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
 

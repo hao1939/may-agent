@@ -108,7 +108,9 @@ inbox item -> Task owned by the App -> accepted result
 
 A conversational frontend may finish authorized work directly or admit durable
 intent/feedback. [Message Lifecycle](message-lifecycle.md) owns May's policy and
-Topic-linked supervision; it does not add another Task lifecycle.
+Topic-linked follow-up through the same conversation handler; it does not add
+another Task lifecycle. This shared-input route is accepted but
+[not yet implemented](../proposals/conversation-input-unification.md).
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:
@@ -139,6 +141,12 @@ If no route matches, the fact remains a fact. The Host does not guess an owner.
 A schedule has one destination: create an App input or publish a fact. An
 observer reads external state and returns facts. A metric records what
 happened; it does not become work state.
+
+For conversational follow-up, a timer fact asks Host routing to check stored
+links and handled outcomes. Only qualifying work enters the same durable inbox
+as human input and linked Task facts, with system origin preserved. The App
+judges the response; it does not implement the scan, queue or retry mechanism.
+This optional discovery tick is separate from required Host recovery.
 
 ## Execution
 

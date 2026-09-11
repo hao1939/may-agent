@@ -198,6 +198,7 @@ one execution authority for each duty.
 | Every due slot requires independent judgment/result           | Input schedule                                    |
 | Time wakes one standing desired outcome                       | Event schedule -> exact task/Condition            |
 | Time publishes a diagnostic/lifecycle fact                    | Event schedule -> observation only                |
+| Time checks for missed conversational follow-up                | Event schedule -> bounded state query -> eligible conversation input (accepted, pending implementation) |
 | Time must first read an external provider                     | Observer -> facts                                 |
 | Time inspects Runtime-owned ledgers or repairs host mechanics | Host-private scheduled maintenance handler        |
 | Time repairs generic runtime mechanics                        | Internal runtime maintenance, not an App schedule |
@@ -206,6 +207,12 @@ A scheduled “owner request” that deterministically selects the same standing
 task is a task-wake event, not caller input. Conversely, a real periodic
 review whose result must be tracked independently is an input schedule even if
 the source is the system rather than a human.
+
+The [conversation follow-up design](message-lifecycle.md#timer-safety-net)
+reuses an App event schedule as a safety net. An empty pending-work query
+creates no model work, and repeated ticks reuse already admitted reviews.
+Removing this schedule degrades fallback discovery; required Task and inbox
+recovery still use Host-owned timing. It introduces no standalone reconciler.
 
 ## Coalescing and backpressure
 

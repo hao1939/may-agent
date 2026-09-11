@@ -7,7 +7,9 @@ merged in Host #141/#142. The [boundary cleanup](../proposals/authority-boundary
 tracks subsequent candidate changes separately.
 Task activation and startup recovery are independent of optional schedules.
 [Open work](../proposals/task-runtime-organization.md) is tracked separately;
-this page does not identify the deployed release.
+this page does not identify the deployed release. The accepted
+[unified conversation-input design](../proposals/conversation-input-unification.md)
+is pending implementation; current follow-up still uses a separate May Task.
 
 The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 records the state/handler extraction, merged in #129 as `0bedd93a`, and its
@@ -87,7 +89,9 @@ Worker Events are persisted once and relayed by identity to the parent.
 Conversational turns reuse bounded execution without creating a Task.
 
 One `HostCapacity` limit governs execution with App limits and an interactive
-reserve. Reads and admission need no execution slot. Conversation ordering
+reserve. Unified system reviews must use the existing background lane;
+source-aware selection is a pending change described in [Runtime](runtime.md#capacity).
+Reads and admission need no execution slot. Conversation ordering
 belongs to input handling; Task ordering belongs to its controller.
 
 Reload publishes one validated definition generation. A rejected reload retains
@@ -106,7 +110,7 @@ uses the existing four core responsibilities; it is not a fifth core component.
 | Bounded execution, cancellation and failure containment | The agent/model, tools and conversational prompt |
 | Conversation/Request/Topic reads and consistent writes in State and storage | Context selection, Topic choice and presentation |
 | Version-checked Request acceptance/closure with evidence and exact Task links | May's judgment of scope, fulfillment, repair and stopping |
-| Task execution and declared event routing | May's ordinary supervision Task and its policy |
+| Task execution and declared event routing | Linked Task facts routed to the selected conversation handler; May judges the response |
 
 Core owns the stored fact that an ask is open and rejects a stale closure; May
 judges whether the ask has been addressed. State operations validate a proposed
@@ -114,8 +118,9 @@ decision without reading chat text to infer intent or calling a model.
 
 Without a conversational frontend, new chat handling is unavailable but unrelated
 Tasks and Events continue. Retained messages, Requests and Task links remain
-readable; open asks do not silently disappear or close. Removing supervision
-removes proactive follow-through, not Task correctness or the stored obligation.
+readable; open asks do not silently disappear or close. Removing the Task-event
+route makes automatic follow-through unavailable while preserving Task
+correctness and the stored obligation.
 Restoring a compatible capability can use the same state. Supported removal may
 require draining active work; arbitrary live unloading is not a requirement.
 
@@ -128,6 +133,14 @@ outside the stable core. Composition selects it through a narrow input-handler
 contract; core storage imports neither that frontend nor May policy. The
 [storage contract](storage.md#conversation-state-api) owns the small local API,
 and [Message Lifecycle](message-lifecycle.md) owns interactive behavior.
+
+In the accepted shared-input design, composition maps saved Task links to
+system inputs; the same conversation handler handles human messages and those
+facts. A scheduled signal performs a bounded pending-follow-up query before
+admitting review. Reuse the existing inbox and state operations; no dedicated
+adapter service, supervisor lifecycle or database is needed. Task controllers
+remain independent of Conversation. The [unification review](../proposals/conversation-input-unification.md)
+records the code changes and retirement of the current separate consumer.
 
 ## Behavior when a capability is absent
 
@@ -144,7 +157,8 @@ resources must have an owner and cleanup path.
 | Observer | Its external facts are not discovered | Waits stay unsatisfied until actual evidence arrives; unrelated work proceeds |
 | Selected executor | Affected work cannot execute | Exact Task/evidence remain in visible attention; no false completion, silent substitution or retry storm |
 | App | New work for its responsibility is unavailable | Reject newly addressed input; preserve existing obligations and identities |
-| Conversational frontend or May supervision | Chat handling or proactive follow-through is unavailable | Retained asks and links remain visible; unrelated Tasks continue; no false closure |
+| Conversation handler or its Task-event route | Chat handling or automatic follow-through is unavailable | Retained asks and links remain visible; unrelated Tasks continue; no false closure |
+| Optional conversation review schedule | Missed-event follow-up may wait for another relevant input | Normal event-driven responses and required Task/inbox recovery continue; no false closure |
 
 App removal is currently rejected while unfinished Tasks exist. Drain those
 obligations before removal; this contract does not authorize discarding them.

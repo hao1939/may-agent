@@ -3,6 +3,8 @@
 **Design status:** Accepted.
 **Implementation status:** App Tasks, bounded conversational work, shared reads,
 and event-driven follow-through are implemented at the [source baseline](../README.md).
+The accepted shared conversation-input path below replaces the separate
+supervision Task; that routing change is [not yet implemented](../proposals/conversation-input-unification.md).
 The focused Conversation review at Host `99bc1a31` confirms accepted Request
 storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
 [open](human-control-surfaces.md#current-turn-control); App judgment
@@ -22,7 +24,7 @@ work needs independent execution.**
 | --- | --- |
 | Conversation | The shared discussion: human, May, command and tool messages |
 | Request | An accepted ask that May must close the loop on |
-| Turn | One interactive execution, including repeated model calls, tool use and verification |
+| Turn | One bounded conversation execution for admitted human or system input, including model calls, tool use and verification |
 | Task | An App-owned outcome that can progress independently across attempts |
 | Attempt | One bounded execution of a Task, returning evidence and a proposed result |
 | Event | Input or a reported change; declared routes determine what wakes |
@@ -75,7 +77,8 @@ Human: "Help me compare these two approaches."
   -> executor works, checks evidence and repairs within its budget
   -> executor returns a proposed result
   -> Host validates and commits the result under the App's acceptance rules
-  -> May brings the findings back, explains the comparison and closes the Request
+  -> Task event routes through its saved Conversation link into the inbox
+  -> the conversation handler explains the comparison and closes the Request
 ```
 
 The comparison can finish entirely in Conversation if no independent work is
@@ -101,8 +104,14 @@ effects before repeating them. SQLite cannot make arbitrary provider actions
 exactly once. A process exit or an agent's success claim is evidence, not
 accepted completion.
 
-May's existing supervision Task observes exact Topic-linked Tasks and can
-return updates or steer work. It neither parents nor copies those Tasks.
+The accepted design uses one conversation handler for human messages and
+linked Task facts. An ordinary timer signal first runs a bounded database check
+for missed follow-up; qualifying reviews enter the same inbox. The handler
+reads current Task evidence and Request scope, then responds or completes
+quietly. It owns no waiting parent or separate supervision Task. Human input
+has priority over pending system reviews; an active review remains bounded.
+[Message Lifecycle](message-lifecycle.md#one-conversation-input-path) owns the
+routing, authority and replay rules.
 Stopping a conversational turn, cancelling a Task and ending a watch have
 [separate effects](human-control-surfaces.md#current-turn-control).
 
@@ -123,7 +132,7 @@ state and let unrelated work continue. Optional schedules do not control Task
 activation or required recovery.
 
 For Conversation, core preserves input ownership and the consistency of messages,
-accepted Requests and exact links. The frontend, May's judgment/supervision and
+accepted Requests and exact links. The conversation handler, May's judgment and
 presentation are replaceable. Removing them may remove chat or proactive
 follow-through, while retained asks remain visible and unrelated Tasks continue.
 The [component split](architecture.md#conversation-core-and-capability-boundary)

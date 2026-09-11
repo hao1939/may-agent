@@ -1,5 +1,11 @@
 # May
 
+**Implementation note:** This README describes the current separate supervision
+Task in `app.ts`. The accepted [shared conversation-input design](../may-agent.app/docs/2a-design/message-lifecycle.md#one-conversation-input-path)
+will handle linked Task and timer reviews through the conversation inbox.
+That change is [pending implementation](../may-agent.app/docs/proposals/conversation-input-unification.md);
+this documentation update does not change the running App.
+
 People talk to **May** (`app:may`). May understands each turn and can answer,
 investigate, edit, and verify directly within the authorized scope. An ordinary
 Task records work needing continuation or later steering. May may own it;

@@ -12,6 +12,7 @@ of the remaining contract and its acceptance criteria.
 
 | Gap or open decision | Owner and next proof |
 | --- | --- |
+| Unified conversation input handling | [Conversation input review](conversation-input-unification.md): route linked Task and timer reviews through the existing handler; verify origin, quiet completion, priority, handled-evidence queries and retirement of the old supervision consumer |
 | Current-turn redirection | [Request follow-through review](task-runtime-organization.md#request-follow-through-review): Stop then correction survives SQLite reopen in fixtures; add immediate steering only when its value is demonstrated |
 | Request and owner-decision behavior in use | [Message Lifecycle](../2a-design/message-lifecycle.md#current-implementation-and-gaps) and [Request follow-through review](task-runtime-organization.md#request-follow-through-review): core correction, non-success and closure boundaries pass deterministic checks; live recognition, scope and truthful closure still need usage evidence |
 | Recovery query cost | [Core review plan](task-runtime-organization.md): measure realistic scan and responsiveness cost before optimizing |

@@ -339,8 +339,13 @@ In the current Host, a Task result completes linked Task-based caller records
 through their exact stored identities. A bounded frontend's handling record
 instead completes after its direct result or durable follow-up admission.
 Topics retain the responsible Task links, and semantic changes may wake May's
-supervision Task. These are input-handling completion rules, not proof that the
-conversational Request's accepted ask has been fulfilled.
+supervision Task. The accepted [shared-input design](message-lifecycle.md#one-conversation-input-path)
+will route those Task facts and timer-discovered reviews into the conversation
+inbox instead; that change is not implemented yet. System origin, exact saved
+links and change identity must survive admission. Reuse the meaningful Task
+event rather than wrapping it in a generic wake event. These are input-handling
+completion rules, not proof that the conversational Request's accepted ask has
+been fulfilled.
 [Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure) owns
 Request recognition, refinement and closure, response identity, and the
 remaining implementation gap. Transport admission stays deterministic and does

@@ -10,6 +10,8 @@ guarantees; #129 extracted their shared state operations. The focused source rev
 The [inbox/Conversation implementation review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
 records the state/handler extraction, merged in #129 as `0bedd93a`, and its
 actual code map. This updates the source boundary; deployment remains separate.
+The [unified conversation-input change](../proposals/conversation-input-unification.md)
+needs the extensions identified below; they are not yet source guarantees.
 
 ## Decision
 
@@ -153,17 +155,26 @@ Group the API by what the caller needs to accomplish:
 
 | Operation | Required contract |
 | --- | --- |
-| Read Conversation | Return bounded messages, active Turn and related context; paging must use stable identities |
+| Read Conversation | Return bounded messages, active Turn with its human/system origin, and related context; paging must use stable identities |
 | Read/list accepted Requests | Scope by App/Conversation; page open asks and read an exact full scope, revision, links and closure |
 | Find/read Topics | Return bounded context and exact Task references; Topic has no work status |
 | Accept a Turn decision | Check the current inbox claim; save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
 | Admit Task with conversation links | Commit Task admission and supplied Topic/Request links together, checking current authority and Request revision |
 | Complete a Turn | Commit input result, completion and any Request closure with durable answer evidence; failure/Stop never implies fulfillment |
-| Record a Task's conversational outcome | Check the exact Task attempt and referenced Request versions; persist the message and closure together under existing Task settlement |
+| Admit a linked Task review (pending) | Validate saved links and source; reuse identity for the same Task change and Conversation/Topic, distinguishing a newly linked or revised Request |
+| Complete a system review (pending) | Use normal Turn completion, recording handled evidence and the observed Request revision; allow a quiet outcome without a message or closure |
+| Find missed follow-up (pending) | Return a bounded, progressing page of unhandled linked outcomes/decisions; honor pending, handled, stopped and exhausted input dispositions |
 
-These are operation families, not new exported signatures. Stop uses the existing
-exact-turn operation. Topic creation and Request updates join their enclosing
-operation; callers must not sequence independent saves to manufacture atomicity.
+These are operation families, not new exported signatures. The pending review
+operations extend the existing inbox and result evidence, not a new queue or
+subscription table. The current `recordConversationTaskOutcome` operation
+still commits the supervision Task's explanation and Request updates together;
+its exclusive projection path retires only when the unified consumer replaces
+it. Retain any shared transaction helpers used by ordinary completion.
+
+Stop uses the existing exact-turn operation. Topic creation and Request updates
+join their enclosing operation; callers must not sequence independent saves to
+manufacture atomicity.
 Task admission remains valid without conversation links. App mapping, model/tool
 execution and judgment run outside short transactions; state rechecks their
 authority and expected versions at commit.
@@ -175,10 +186,19 @@ not require a new messages table or an independently successful adapter send.
 Repeated accepted operations reuse existing identity/version checks. Retain one
 writer for each fact, and never reconstruct accepted asks by guessing from chat.
 
-Events admit human input and announce meaningful changes. After commit,
+Events admit human input and, under the pending shared-input route, linked
+Task reviews. They also announce meaningful changes. After commit,
 `conversation.updated` tells readers to reread state. Losing a presentation hint
 must not lose the result. A wake that creates work must retain its existing
 durable admission/recovery guarantee; it is not merely a best-effort UI callback.
+
+A review's durable result must identify which linked change and Request
+revision it considered, even when the decision was quiet. Reuse retained input
+and result evidence before adding fields; add only the minimal indexed
+reference required by the pending-work query. Do not mirror Task status.
+Retention must preserve enough handled/stopped evidence to avoid replaying an
+old outcome after pruning. An event notification or wall-clock age alone is
+not proof that follow-up succeeded or that a fresh model call is needed.
 
 Keep page sizes and payloads bounded and inspect query plans for common reads.
 A response limit alone does not prove bounded query cost. Reuse current evidence

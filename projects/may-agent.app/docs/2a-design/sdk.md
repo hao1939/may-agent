@@ -98,17 +98,22 @@ for the input kinds handled in a bounded turn. It may finish authorized work
 using supplied tools or admit durable intent. An optional `conversationId`
 sets the Conversation for non-channel requests; those inputs are not presented
 as human Turns. Other kinds use normal Task mapping.
-[Message Lifecycle](message-lifecycle.md) owns May's direct-work and supervision
+[Message Lifecycle](message-lifecycle.md) owns May's direct-work and follow-up
 policy. Source compatibility for retained requests does not create a second
 work lifecycle.
+
+The accepted [shared-input refinement](../proposals/conversation-input-unification.md)
+adds source-marked linked Task reviews to that same conversation handling path,
+including a quiet result. Its input/result contracts are pending implementation;
+system facts must retain their origin and cannot be presented as human asks.
 
 ### Fact Event policy
 
 A subscription combines a stable ID, selector, and pure `toInput(event)`
-translator. The translated input uses the same `task(input)` resolver as every
-other App input. A fact that already identifies a task or satisfies one of its
-Conditions wakes that task directly; it does not pass through a second
-subscription or execution model.
+translator. The translated input follows the App's declared bounded-input
+handler or ordinary `task(input)` mapping. A fact that already identifies a
+task or satisfies one of its Conditions wakes that task directly; it does not
+pass through a second subscription or execution model.
 
 No SDK callback receives a generic mutable event context. App policy cannot
 launch an agent or workflow while deciding how a fact routes.

@@ -17,6 +17,7 @@ archive.
 | What wins when design preferences conflict? | [Fundamental tradeoff rules](1-principles/design-philosophy.md#how-to-decide-a-tradeoff) |
 | What is the whole mental model? | [system-model.md](2a-design/system-model.md) |
 | What are the four core components, their dependencies and code homes? | [architecture.md](2a-design/architecture.md) |
+| How do human messages, Task results and timer reviews enter Conversation? | [One conversation input path](2a-design/message-lifecycle.md#one-conversation-input-path) |
 | How does May track and close an accepted ask? | [message-lifecycle.md](2a-design/message-lifecycle.md#requests-acceptance-and-closure) |
 | How do Message, inbox item, Turn, Request and model step differ? | [Message vocabulary](2a-design/message-lifecycle.md#mental-model) |
 | Which Conversation guarantees are core and which behavior is replaceable? | [Conversation boundary](2a-design/architecture.md#conversation-core-and-capability-boundary) |
@@ -127,6 +128,10 @@ current-design list.
 ## Tier 3 — Active proposals and trackers
 
 Active reviews are:
+
+- [One conversation input flow](proposals/conversation-input-unification.md)
+  — accepted human/Task/timer handling unification, whole-system review, scope
+  tradeoffs and pending replacement of the separate supervision Task;
 
 - [Workflow tracing by default and useful health metrics](proposals/workflow-tracing-and-health-metrics.md)
   — first source slice under review: run diagnostics, replaceable outcome

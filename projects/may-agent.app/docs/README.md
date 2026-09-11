@@ -31,6 +31,13 @@ small shared state boundary.
 
 ## Current focus
 
+The [conversation input unification review](proposals/conversation-input-unification.md)
+accepts one handler for human messages, linked Task facts and timer-discovered
+follow-up. The timer first checks stored pending work; it does not poll every
+Conversation with the model. This replaces the separate supervision Task and
+reduces default age-based investigation. The [owning contract](2a-design/message-lifecycle.md#one-conversation-input-path)
+is updated; source implementation and old-consumer retirement remain pending.
+
 The [system simplification review](proposals/authority-boundary-simplification.md#design-choices-before-code-moves)
 tracks the merged removal of conversational child waits in Host #140, with
 visible retirement of old waits and preservation of accepted Requests and Task

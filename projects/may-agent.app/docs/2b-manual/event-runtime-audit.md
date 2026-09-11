@@ -141,7 +141,8 @@ WHERE p.status = 'closed'
   AND ot.trace_id != ct.trace_id;
 ```
 
-For human-rooted work, verify the trace plus durable App lineage. One trace is
+For human-rooted work on the current implementation, verify the trace plus
+durable App lineage. One trace is
 not expected to own every asynchronous attempt:
 
 ```text
@@ -162,6 +163,12 @@ presentation only.
 Direct-agent
 persistent-chat turns, if used, must have distinct traces unless reply context
 links them.
+
+The accepted [unified route](../2a-design/message-lifecycle.md#one-conversation-input-path)
+will replace the supervision hop with a source-marked conversation inbox item.
+Audit that path only after its implementation lands. Verify Task/timer input
+identity, quiet completion and Request closure; do not interpret a system
+review as another human request or require another Task to handle it.
 
 For Conversation reads, also verify that non-human semantic messages create no
 May request and transient messages do not replay. A command/tool view is

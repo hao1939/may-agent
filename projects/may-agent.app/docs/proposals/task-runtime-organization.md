@@ -28,6 +28,12 @@ to decide which execution/recovery paths should remain. It also records the
 September 11 source-layout findings and small import/composition improvements;
 it does not replace the accepted inbox/state sequence below.
 
+The [conversation input unification review](conversation-input-unification.md)
+now owns the accepted replacement of the separate follow-up Task with typed
+system inputs to the conversation handler. It preserves the proven core
+claims and Request closure mechanics below; the shared route, selective timer
+query and old-consumer retirement are pending implementation.
+
 ## Task lifecycle review
 
 **Reviewed September 11 against Host `8e242c11`.** Core/external layout and the
