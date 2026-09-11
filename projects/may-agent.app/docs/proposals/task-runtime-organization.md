@@ -179,11 +179,14 @@ explicit outcome. Add implementation only for a demonstrated missing boundary.
 #### Request follow-through review
 
 **Reviewed September 11 against Host `5857529e`.** The 89 existing focused tests
-passed. Candidate `60bd90d9` strengthens existing tests without changing runtime or
-storage behavior; its 14 affected tests pass. Full local CI passed: 2,705 tests,
+passed. [Host #149](https://github.com/hao1939/may-agent/pull/149), `60bd90d9`,
+strengthens existing tests without changing runtime or storage behavior; its 14
+affected tests pass. Full local CI passed: 2,705 tests,
 three installation-only skips, zero failures; browser coverage ran. Canonical
-design integrity, examples and App checks passed against that source. Hosted
-checks and human review remain pending.
+design integrity, examples and App checks passed against that source, including
+after integrating the concurrent documentation update. Hosted Quality passed;
+Container correctly reported no build needed for this tests-only change. Human
+review remains pending.
 
 | Scenario | Checked boundary and source evidence |
 | --- | --- |
