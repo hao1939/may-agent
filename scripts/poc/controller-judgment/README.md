@@ -62,6 +62,32 @@ do not publish raw transcripts or endpoint errors.
 
 ## Managed Conversation recovery
 
+For the critical shared loop with actual App policy and live worker execution:
+
+```sh
+bun scripts/poc/controller-judgment/shared-loop.ts --live --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/shared-loop-development
+bun scripts/poc/controller-judgment/shared-loop.ts --live --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/shared-loop-transfer --value 0.78
+```
+
+Run the first before the second without tuning to the second measurement.
+The trial copies `may.app`'s declaration/seed, May's role instructions and shared
+common sense into temporary state. The only configuration changes select the
+model and limit tool presets to local coding and finish; no installed Apps,
+optional skills or CLI delegation are provided. Both A (human interaction) and
+B (measurement) use the normal Task controller, real workers and live model.
+The HTTP fixture holds B's observation until A answers an intervening discussion.
+Code checks the accepted Request, exact outcome return, open Tasks and retained
+context after runtime/SQLite reopen. The model chooses delegation and all replies.
+
+Read the final and resumed answers to assess judgment, including the minimum
+comparison. A passing mechanical gate does not score every sentence. Reports
+retain source revisions/hashes, dispatches, model steps, tool calls/errors,
+usage metadata, events and local transcripts. The eight-dispatch and six-minute
+limits bound the experiment, not Task lifetime. This uses a reduced tool catalog
+and a controlled observation source; it does not certify full installation,
+transport delivery, operational migration or every recovery case. Raw reports
+and provider logs remain local.
+
 `managed-conversation.ts` uses actual human-event admission, a stable Conversation
 Task, the installed controller, `SubagentManager`, model/tool execution, and
 Conversation settlement. Its only domain tool reads a synthetic measurement or
