@@ -577,12 +577,24 @@ describe("Telegram durable input and natural follow-up", () => {
     const f = durableTelegramFixture();
     try {
       f.message(100, "", { photo: [{ file_id: "fixture" }], caption: "What is this error?" });
-      f.message(101, "/help");
-      await waitFor(() => f.sends().length === 2);
+      const content = ["game", "paid_media", "story", "checklist", "invoice", "rich_message", "live_photo",
+        "giveaway", "giveaway_winners", "passport_data", "web_app_data", "users_shared", "chat_shared"];
+      let id = 100;
+      for (const field of content) f.message(++id, "", { [field]: { fixture: true }, message_thread_id: 7 });
+      f.message(++id, "", { new_chat_members: [{ id: 42 }], pinned_message: { text: "Earlier message" } });
+      f.message(++id, "", { game: { fixture: true }, chat: { id: 999 } });
+      f.message(++id, "/help");
+      await waitFor(() => f.polls().includes(id + 1));
+      await waitFor(() => f.sends().length === content.length + 3);
       expect(f.inputs()).toHaveLength(0);
       expect(f.sends()[0].body.text).toContain("can't read this attachment");
-      expect(f.sends()[1].body.text).toContain("Reply to an update to follow up");
-      expect(f.polls()).toContain(102);
+      for (const messageId of content.map((_, index) => 101 + index)) {
+        expect(f.sends().find((call) => call.body.reply_parameters?.message_id === messageId)?.body)
+          .toMatchObject({ chat_id: "123", message_thread_id: 7,
+            text: expect.stringContaining("can't read this attachment") });
+      }
+      expect(f.sends().find((call) => call.body.chat_id === "999")?.body.text).toContain("Unauthorized");
+      expect(f.sends().at(-1)!.body.text).toContain("Reply to an update to follow up");
     } finally { await f.close(); }
   });
 

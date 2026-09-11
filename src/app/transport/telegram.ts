@@ -39,6 +39,20 @@ import { taskCancelRequestedEvent } from "../task-control-events.js";
 const TASK_PAGE_SIZE = 10;
 const TODO_PAGE_SIZE = 50;
 
+// Non-text content in https://core.telegram.org/bots/api#message (reviewed 2026-09-12).
+// Also acknowledge explicit user shares/Web App data; passive service notices stay quiet.
+// Keep this provider list current when adding Telegram content support, not another work route.
+const TELEGRAM_CONTENT_FIELDS = [
+  "animation", "audio", "document", "live_photo", "paid_media", "photo", "sticker", "story",
+  "video", "video_note", "voice", "caption", "checklist", "contact", "dice", "game", "poll",
+  "venue", "location", "rich_message", "invoice", "giveaway", "giveaway_winners", "passport_data",
+  "users_shared", "chat_shared", "web_app_data",
+] as const;
+
+function hasTelegramContent(message: Record<string, unknown>): boolean {
+  return TELEGRAM_CONTENT_FIELDS.some((field) => message[field] != null);
+}
+
 // Stored channel coordinates are transport-neutral text. Use the same
 // no-thread fallback for delivery, controls and watch bookkeeping.
 function telegramThreadId(value?: string): number | undefined {
@@ -1052,10 +1066,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (!text) {
       // Reject unsupported content honestly; delivery is not input acceptance.
-      if (
-        msg.photo || msg.voice || msg.audio || msg.document || msg.video || msg.animation || msg.video_note ||
-        msg.sticker || msg.contact || msg.location || msg.venue || msg.poll || msg.dice || msg.caption
-      ) {
+      if (hasTelegramContent(msg)) {
         void sendMessage(
           String(chatId),
           "I can't read this attachment yet. Please paste the question or error text.",
