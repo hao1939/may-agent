@@ -96,7 +96,8 @@ redelivered recorded input loads its original journal event and retries only the
 existing idempotent admission route, without rebuilding context from today's
 focus or replaying ordinary side-effect listeners. Cancellation and reload
 use stable provider-message keys so a lost receipt cannot repeat a mutation with
-new state. This is not a new Telegram queue.
+new state. Lookup uses a partial Telegram type/key index rather than scanning
+retained Conversation history. This is not a new Telegram queue.
 Provider retention bounds the retry window for unadmitted updates; accepted
 Tasks do not depend on that retention. Host recovery remains responsible for
 accepted work and saved admission plans, not arbitrary unadmitted journal rows.
@@ -269,6 +270,10 @@ state or a subscription. Missing links explain that current status is needed.
 Details preserves the clicked message's Topic without changing selection.
 Follow updates selects that Task's App and the clicked Topic when available;
 an unrelated previously selected Topic or implicit answer anchor is cleared.
+Automatic progress cards retain the selected Conversation Topic only when it
+links the exact Task. The adapter captures that context before sending and
+stores the same value in the message link and shown Conversation view, even
+when selection changes during delivery.
 
 - `/apps [app]`;
 - `/topics` and `/topic [ref|clear]`;

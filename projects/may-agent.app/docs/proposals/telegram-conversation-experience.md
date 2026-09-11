@@ -3,8 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `c0b98c12`, with
-review refinements following the verified `67f0600f` checkpoint.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `676162ad`, with
+review refinements following the verified `c0b98c12` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -346,3 +346,18 @@ passing, zero failures, and the same three installation-specific skips across
 and lint passed. Canonical design integrity, examples and App checks passed.
 Hosted checks are tracked on the PR. No deployment or live model/Telegram trial
 was performed.
+
+The next review identified two narrower gaps. Automatic progress cards omitted
+the matching selected Conversation Topic, and recorded-input lookup could only
+narrow by event type before scanning history. At `676162ad`, progress captures
+the matching Topic before sending and retains it in both the provider-message
+link and shown Conversation view. A partial index covers Telegram input type
+and provider key without reconstructing the original Task scope. It costs one
+index entry per keyed Telegram event and a one-time build for existing storage;
+it adds no new state authority or retry process.
+
+Both regressions failed before the fix. The progress test covers delayed sends,
+changed selection, replies, Details and Follow; the lookup test inspects the
+actual production query plan before and after storage reopen. Existing schema
+tests verify index creation on old databases. Full current-revision checks and
+hosted results are tracked on the PR; live interaction validation remains pending.
