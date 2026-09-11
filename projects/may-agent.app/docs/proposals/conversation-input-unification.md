@@ -135,10 +135,14 @@ closure without a result. It leaves Request resolution to the Conversation.
 The [managed Conversation trials](controller-poc-recovery-review.md#managed-conversation-recovery)
 now pass empty-response, interrupted-effect and restart recovery with real
 models and a synthetic App. They use normal prior-attempt context. Old-owner
-cutover, live child-chain follow-through and the worker subprocess remain
+cutover, live child-chain follow-through and the Conversation worker subprocess remain
 unproved. The old execution paths have been removed from the candidate source;
 [current CI and migration evidence](controller-poc-recovery-review.md) still leave
 whole-system simplification unproved.
+The [Task-worker process checks](controller-poc-recovery-review.md#workspace-and-worker-process-boundaries)
+now verify retained input and effects across worker loss, plus workspace release
+while Tasks stay open. These use deterministic workflows; Conversation subprocess
+execution and operational cutover still need their own proof.
 The [human-control checkpoint](controller-poc-recovery-review.md#human-task-controls-through-conversation)
 also applies conversational Task cancellation atomically with its reply and
 removes the old daemon callback. Source checks cover user authority, stale
