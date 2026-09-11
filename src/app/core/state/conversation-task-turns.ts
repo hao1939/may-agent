@@ -298,8 +298,11 @@ export function completeConversationTaskTurn(
         now,
       });
     }
-    if (topicId && !readConversationTopic(db, item.appId, conversationId, topicId))
-      throw new Error("Conversation decision selected an unavailable Topic");
+    if (topicId) {
+      const topic = readConversationTopic(db, item.appId, conversationId, topicId);
+      if (!topic) throw new Error("Conversation decision selected an unavailable Topic");
+      topicId = topic.id;
+    }
     const result = {
       summary: decision.summary,
       response: decision.response,

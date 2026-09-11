@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,10 +15,10 @@ import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitConversationTaskInput, listPendingConversationTaskChanges } from "../state/conversation-task-turns.js";
 import { getAppInboxItem, claimAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
-import { readAppConversationResource } from "../state/conversations.js";
+import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../state/conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "../state/conversation-requests.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
-import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
+import { appTaskContext, cancelAppTask, observeAppTaskIntent } from "./app-task-reconciler.js";
 import { readTaskSnapshot } from "./app-task-store.js";
 import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 import {
@@ -32,6 +32,7 @@ import {
 
 const dispose: Array<() => Promise<void>> = [];
 afterEach(async () => {
+  setSystemTime();
   for (const close of dispose.splice(0)) await close();
 });
 
@@ -150,6 +151,13 @@ async function fixture(
     },
     get store() {
       return store;
+    },
+    run(taskId: string) {
+      const now = Date.now();
+      return reconcileLoadedAppTaskOnce({
+        bus, appId: app.id, taskId,
+        dispatch: { lane: "human", enqueuedAt: now, startedAt: now, readyWaitMs: 0 },
+      });
     },
     async reopen() {
       await closeInstalledAppTaskRuntimes(bus);
@@ -1740,4 +1748,254 @@ test("a subscribed App input executes in the default Conversation without a supe
   } finally {
     ingress.runtime.close();
   }
+});
+
+// Context and handoff contracts formerly exercised an independently executing
+// inbox callback. These checks use real Task claims, preparation and settlement.
+const contextTaskApp = defineApp({
+  ...app,
+  requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+  tasks: {},
+  task: ({ id }) => ({
+    kind: "desired",
+    intent: {
+      id: `work/${id}`,
+      parentId: "root",
+      mode: "achieve",
+      outcome: "Review the current evidence",
+      acceptance: ["Return supported findings"],
+    },
+  }),
+});
+const manualContextTasks = (_root: string, appDir: string): Partial<AppTaskRuntimeOptions> => ({
+  installControllers: false,
+  appRegistrySnapshot: { id: "context-tasks", generation: 1, entries: [{ appDir, definition: contextTaskApp }] },
+});
+const olderReview = {
+  id: "work/older",
+  parentId: "root",
+  mode: "achieve" as const,
+  outcome: "Review earlier evidence",
+  acceptance: ["Return supported findings"],
+};
+
+test.each(["focus", "command"])(
+  "Task-backed advice reads canonical %s context without changing the referenced work",
+  async (source) => {
+    let calls = 0;
+    const f = await fixture(async (_definition, prompt) => {
+      calls++;
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      const observed = source === "focus" ? context.focusedTask : context.referencedTasks?.[0];
+      expect(observed).toMatchObject({ appId: app.id, task: { id: olderReview.id, outcome: olderReview.outcome } });
+      if (source === "command") expect(observed?.ref).toMatch(/^[0-9a-f]{8}$/);
+      return {
+        status: "done",
+        structuredResult: {
+          summary: "Explained the existing work",
+          response: "That review is still open.",
+          topic: { kind: "none" },
+        },
+      };
+    }, manualContextTasks);
+    observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
+    const original = f.store.readTask(olderReview.id);
+    if (source === "command")
+      f.db
+        .prepare(
+          `INSERT INTO events (id, event_type, source, owner, data, timestamp)
+     VALUES (10, 'conversation.message.created', 'console', 'app:chat', ?, 10)`,
+        )
+        .run(
+          JSON.stringify({
+            appId: app.id,
+            conversationId: "primary",
+            author: { kind: "command", id: "console" },
+            text: "The earlier review is open",
+            metadata: { command: "/tasks", taskRefs: [{ appId: app.id, taskId: olderReview.id }] },
+          }),
+        );
+    const admitted = createAppTaskCapability({ bus: f.bus }).admitConversation({
+      id: "advice",
+      appId: app.id,
+      conversationId: "primary",
+      conversationSequence: 11,
+      source: { kind: "human", id: "advice" },
+      input: {
+        kind: "message",
+        data: {
+          message: "Explain that review",
+          ...(source === "focus" ? { context: { focusedTask: { appId: app.id, taskId: olderReview.id } } } : {}),
+        },
+      },
+    });
+    await f.run(admitted.taskId);
+    expect(calls).toBe(1);
+    expect(f.store.readTask(olderReview.id)).toEqual(original);
+    expect(Object.keys(f.store.readSnapshot().resources!).sort()).toEqual([olderReview.id, admitted.taskId].sort());
+    expect(getAppInboxItem(f.db, "advice")).toMatchObject({
+      status: "done",
+      result: { response: "That review is still open." },
+    });
+    expect(readAppConversationResource(f.db, app.id, "primary").topics).toEqual([]);
+  },
+);
+
+test("a selected old Topic steers its exact Task even outside the bounded prompt context", async () => {
+  const topicId = "topic_00000000abcdef0123456789";
+  const f = await fixture(async (_definition, prompt) => {
+    const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!) as AppInputContext;
+    expect(context.conversation?.topics?.some((topic) => topic.id === topicId)).toBe(false);
+    return {
+      status: "done",
+      structuredResult: {
+        summary: "Continued the earlier review",
+        response: "I will include the new evidence in that review.",
+        topic: { kind: "existing", id: "00000000" },
+        followUp: {
+          appId: app.id,
+          task: { appId: app.id, taskId: olderReview.id },
+          outcome: "Include the new evidence",
+          acceptance: ["Review the new evidence"],
+          input: { kind: "goal", data: { message: "Include the latest sample" } },
+        },
+      },
+    };
+  }, manualContextTasks);
+  observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
+  for (let i = 0; i < 13; i++)
+    createConversationTopic(f.db, {
+      id: `topic_${i.toString(16).padStart(8, "0")}abcdef0123456789`,
+      appId: app.id,
+      conversationId: "primary",
+      title: `Review ${i}`,
+      openedBy: "human",
+      originMessageId: `old-${i}`,
+      now: i,
+    });
+  linkConversationTopicTask(f.db, topicId, app.id, olderReview.id);
+  const admitted = f.admit("continue-old", "Continue review 00000000");
+  await f.run(admitted.taskId);
+  expect(getAppInboxItem(f.db, "continue-old"), f.store.readTask(admitted.taskId)?.status.summary).toMatchObject({
+    status: "done",
+    topicId,
+  });
+  expect(Object.keys(f.store.readSnapshot().resources!).sort()).toEqual([olderReview.id, admitted.taskId].sort());
+  expect(f.store.readSnapshot().taskTriggers?.[olderReview.id]?.event).toMatchObject({
+    data: { request: { input: { kind: "goal", data: { message: "Include the latest sample" } } } },
+  });
+  expect(
+    readAppConversationResource(f.db, app.id, "primary", { topicId }).topics?.find((topic) => topic.id === topicId)
+      ?.taskRefs,
+  ).toEqual([expect.objectContaining({ appId: app.id, taskId: olderReview.id })]);
+});
+
+test("an existing Task outside human context cannot receive a guessed handoff", async () => {
+  const f = await fixture(
+    async () => ({
+      status: "done",
+      structuredResult: {
+        summary: "Tried a guessed handoff",
+        response: "I continued it.",
+        topic: { kind: "new", title: "Guessed review" },
+        followUp: {
+          appId: app.id,
+          task: { appId: app.id, taskId: olderReview.id },
+          outcome: "Continue the review",
+          acceptance: ["Review the evidence"],
+          input: { kind: "goal", data: {} },
+        },
+      },
+    }),
+    manualContextTasks,
+  );
+  observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
+  const original = f.store.readTask(olderReview.id);
+  const admitted = f.admit("unknown-target", "Continue it");
+  await f.run(admitted.taskId);
+  expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("absent from Conversation context");
+  expect(f.store.readTask(admitted.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
+  expect(f.store.readTask(olderReview.id)).toEqual(original);
+  expect(getAppInboxItem(f.db, "unknown-target")?.status).not.toBe("done");
+  const discussion = readAppConversationResource(f.db, app.id, "primary");
+  expect(discussion.topics).toEqual([]);
+  expect(discussion.messages.some((message) => message.author.kind === "agent")).toBe(false);
+});
+
+test("closed Task reuse retains the caller input for a corrected attempt after reopen", async () => {
+  let calls = 0;
+  const f = await fixture(async (_definition, prompt) => {
+    const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!) as AppInputContext;
+    calls++;
+    expect(context.conversation?.topics?.find((topic) => topic.id === "old-review")?.taskRefs).toContainEqual(
+      expect.objectContaining({ appId: app.id, taskId: olderReview.id }),
+    );
+    if (calls > 1) expect(JSON.stringify(context.previousAttempt)).toContain("cancelled");
+    return {
+      status: "done",
+      structuredResult: {
+        summary: calls === 1 ? "Tried to reuse closed work" : "Recognized a new review",
+        response: calls === 1 ? "I will reuse that review." : "That review is closed; I will start a new review.",
+        topic: { kind: "existing", id: "old-review" },
+        followUp: {
+          appId: app.id,
+          ...(calls === 1 ? { task: { appId: app.id, taskId: olderReview.id } } : {}),
+          outcome: "Review the current evidence",
+          acceptance: ["Return supported findings"],
+          input: { kind: "goal", data: {} },
+        },
+      },
+    };
+  }, manualContextTasks);
+  observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: olderReview });
+  const prior = f.store.readTask(olderReview.id)!;
+  cancelAppTask(f.context(), {
+    appId: app.id,
+    taskId: olderReview.id,
+    expectedGeneration: prior.metadata.generation,
+    expectedResourceVersion: prior.metadata.resourceVersion,
+    reason: "The earlier assignment ended",
+  });
+  const closure = f.store.readCancellation(olderReview.id);
+  createConversationTopic(f.db, {
+    id: "old-review",
+    appId: app.id,
+    conversationId: "primary",
+    title: "Earlier review",
+    openedBy: "human",
+    originMessageId: "earlier",
+    now: 1,
+  });
+  linkConversationTopicTask(f.db, "old-review", app.id, olderReview.id);
+  const admitted = createAppTaskCapability({ bus: f.bus }).admitConversation({
+    id: "new-review",
+    appId: app.id,
+    conversationId: "primary",
+    topicId: "old-review",
+    source: { kind: "human", id: "new-review" },
+    input: { kind: "message", data: { message: "Review the current evidence" } },
+  });
+  await f.run(admitted.taskId);
+  expect(calls, f.store.readTask(admitted.taskId)?.status.summary).toBe(1);
+  expect(getAppInboxItem(f.db, "new-review")?.status).not.toBe("done");
+  expect(
+    readAppConversationResource(f.db, app.id, "primary").messages.some((message) => message.author.kind === "agent"),
+  ).toBe(false);
+  const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+  expect(due).toBeGreaterThan(Date.now());
+  await f.run(admitted.taskId);
+  expect(calls, f.store.readTask(admitted.taskId)?.status.summary).toBe(1);
+  await f.reopen();
+  setSystemTime(new Date(due));
+  await f.run(admitted.taskId);
+  expect(calls).toBe(2);
+  expect(getAppInboxItem(f.db, "new-review"), f.store.readTask(admitted.taskId)?.status.summary).toMatchObject({
+    status: "done",
+    result: { response: "That review is closed; I will start a new review." },
+  });
+  expect(f.store.readTask("work/new-review")).not.toBeNull();
+  expect(f.store.readCancellation(olderReview.id)).toEqual(closure);
+  expect(f.store.isCancelled(admitted.taskId)).toBe(false);
 });

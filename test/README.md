@@ -21,6 +21,36 @@ external Telegram/Console effects and indefinite loops. Recovery probes hold
 the real startup caller's recovery dependency pending, then settle it. They do
 not claim live Telegram, model, or deployed-App acceptance.
 
+## Shared Task execution coverage
+
+Conversation is a Task's human-facing role. Tests exercise its handler through
+the same Task claim, attempt and recovery used for delegated work.
+
+Fourteen inbox tests previously called the removed `resolveRequest`,
+`onRequestFollowUp`, `onRequestMessage` or `controlTask` execution callbacks.
+Their useful behavior now has these owners; generic inbox admission, attachment,
+readiness and caller-context checks remain in `app-inbox-host.test.ts`.
+
+| Retired callback-test behavior | Current executable coverage |
+| --- | --- |
+| Direct answer without additional work; visible reply; default Conversation for a subscribed input | `core/tasks/conversation-runtime.test.ts`: normal event ingress, interface notification and subscribed-input checks |
+| One durable handoff with an immediate explanation | Same runtime file: atomic reply rollback and same-App delegation across reopen |
+| Mixed answer and steering; later Topic reuse | Same runtime file: same-App delegation/steering, plus exact old-Topic alias selection outside bounded context |
+| Advice about a focused Task; command Task references | Same runtime file: canonical focus/command observations with no mutation of referenced work |
+| Attempted reuse of closed work | Same runtime file: closed-target rejection retains input, observes backoff, then corrects the handoff after reopen |
+| Human cancellation; rejection of an unavailable control | `core/state/conversation-task-turns.test.ts`: exact contextual authority, atomic cancellation/reply and revision fencing; runtime check interrupts the exact running Task |
+| Rejection of a guessed handoff; old Topic alias resolution | Runtime checks preserve the input on rejection and steer only the canonically linked Task |
+
+The old “no May Task” expectation now means no additional Task per message;
+one stable Task owns execution. Closed-target correction uses the common retry
+with prior evidence, rather than two model calls in one inbox callback. These
+are intentional contract changes, not reinstated legacy behavior.
+
+This migration covers those fourteen callback tests only. Remaining CI failures,
+including other old execution fixtures and daemon tests, require separate
+investigation. Neither these deterministic checks nor the passing synthetic
+model trials certify operational cutover or deployment.
+
 ## SDK export contract
 
 The SDK root test runs the installed compiler CLI and compares its emitted

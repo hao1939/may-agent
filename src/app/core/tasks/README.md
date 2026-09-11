@@ -1,8 +1,11 @@
 # Task lifecycle
 
-This directory owns durable Task execution: queue work, claim one bounded attempt,
-check its proposed result, and settle it or wait for another wake. Apps define
-outcomes and acceptance; concrete executors are supplied by composition.
+This directory owns one execution lifecycle for every Task: queue work, claim a
+bounded attempt, check its proposed result, commit evidence and release execution.
+Conversation is a Task's human-facing role. Apps define meaning and acceptance;
+composition supplies handlers. The assigning App, parent or human owns closure.
+An accepted outcome leaves the Task open for later relevant input. Unfinished
+work retains its input and evidence and retries with backoff or an exact wait.
 
 Read in this order:
 
@@ -27,22 +30,25 @@ live in `adapters/` and are selected in `composition/task-execution.ts`.
 ```text
 admitted input -> stored Task -> queue hint -> capacity -> fenced claim
   -> bounded executor -> result/evidence checks -> fenced settlement
-  -> accepted result, exact wait, another attempt, attention, or stop
+  -> accepted outcome and rest, exact wait, or retained input with paced retry
+
+authorized owner -> close Task -> fence running execution and future wakes
 ```
 
 | Stage | Follow in source | Durable authority |
 | --- | --- | --- |
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: attachRequestToTask()` or `admitTaskRequest()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
 | Dispatch | `controller.ts` -> `reconcileTask()` (or the composition-supplied worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
-| Execute | `reconcileTask()` -> agent/workflow/registered executor via `execution.ts` | The executor proposes a result; it cannot accept Task completion |
-| Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; execution exceptions use `failAppTaskAttempt()` | The reconciler checks current identity/evidence; `commitTaskMutation()` -> resource-store `commit()` fences and commits the write set |
-| Cancel or stop | `cancelLoadedAppTask()` -> `cancelAppTask()`; an App stop result uses `stopAppTask()` | Cancellation ends the exact owned attempt; a late result cannot revive it. Stop does not claim success |
+| Execute | `reconcileTask()` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
+| Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; exceptions use `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
+| Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. The legacy-named `stopAppTask()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Recover the same Task; retained terminal agent output uses existing result admission. Missing output permits safe redo, not a completion claim |
 
 These entry points are in `app-task-runtime.ts` or `app-task-reconciler.ts`
-unless a path is given. New evidence can require another attempt; an unchanged
-invalid result/verifier rejection stays visible for review. Queues and events
-help discover work, while stored Tasks, attempts and Conditions retain it.
+unless a path is given. Result rejection retains unfinished work and paces its
+next attempt. Queues and events help discover work, while stored Tasks, attempts
+and Conditions retain it. A timer rediscovers eligible work; it does not create
+a separate maintenance lifecycle.
 
 Definition preparation does not publish a generation. The runtime still owns
 one publication/rollback boundary and pins execution definitions for attempts.

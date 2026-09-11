@@ -1,20 +1,31 @@
-# Input handling
+# Input admission and caller receipts
 
-This directory owns generic input admission and dispatch, independent of how a
-Conversation chooses an answer. An inbox item records input handling; an accepted
-Request and a background Task have their own state and lifetimes.
+An inbox item records accepted input and its result correlation. The owning
+Task executes it through the [Task runtime](../tasks/README.md). Conversation
+is a Task's human-facing role; this directory does not run a second agent loop.
 
-Start at `app-inbox-host.ts`: admission -> durable claim -> selected input handler
--> completion or exact wait. It enforces ordering, claim ownership and Stop.
-`input-handler.ts` is the handler contract; `input-context.ts` reads and freezes
-the context for that claim.
+Start at [`app-inbox-host.ts`](app-inbox-host.ts): validate input, resolve its
+Task, persist attachment and expose the correlated result. Declared human-facing
+input goes directly to its stable Task through `admitConversation`. Other typed
+App input uses a claimed admission step to attach work to its responsible Task.
+Those admission claims do not authorize model execution.
 
-[`core/state`](../state/README.md) persists claims and commits coordinated changes.
-[`composition/app-inbox-runtime.ts`](../../composition/app-inbox-runtime.ts) wires
-routes, scheduling and notifications. `composition/conversation-inbox.ts` selects
-the replaceable Conversation handler. Core does not import that handler.
+[`input-context.ts`](input-context.ts) reads and freezes caller context.
+[`composition/conversation-inbox.ts`](../../composition/conversation-inbox.ts)
+adds human context to admission. Execution context and judgment are prepared in
+[`composition/conversation-task-turn.ts`](../../composition/conversation-task-turn.ts)
+under the Task's claim.
 
-`app-inbox-host.test.ts` covers admission, handoff and completion.
-`app-inbox-ownership.test.ts` checks stale claims and aborts;
-`app-inbox-failure.test.ts` checks bounded failures and preserved accepted asks.
-Runtime and containment tests live beside their composition owner.
+[`core/state`](../state/README.md) owns durable input, attachment and result
+transactions. [`composition/app-inbox-runtime.ts`](../../composition/app-inbox-runtime.ts)
+wires event routes, admission scheduling and notifications, including linked
+Task outcomes and missed-change discovery. It delegates Turn Stop to the Task
+runtime.
+
+`app-inbox-host.test.ts` owns generic admission, attachment, readiness and caller
+context. Human replies, handoffs, controls and retry are tested through actual
+Task execution in `core/tasks/conversation-runtime.test.ts` and atomic settlement
+in `core/state/conversation-task-turns.test.ts`. See the
+[coverage map](../../../../test/README.md#shared-task-execution-coverage).
+Other legacy inbox-execution tests still require migration; their failures
+remain visible in the candidate's CI.
