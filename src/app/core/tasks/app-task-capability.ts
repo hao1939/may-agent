@@ -12,6 +12,7 @@ import type { EventBus } from "../events/bus.js";
 import type { AppRegistrySnapshot } from "../apps/registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
+  admitLoadedConversationInput,
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
@@ -25,6 +26,7 @@ import {
   readLoadedAppTaskView,
   readLoadedAppTaskInputResult,
   retryLoadedFailedAppTask,
+  stopLoadedConversationTurn,
   wakeLoadedAppTasks,
   type AppTaskRuntimeOptions,
 } from "./app-task-runtime.js";
@@ -33,6 +35,12 @@ export type AppTaskGenerationResult = { apps: number };
 
 export type AppTaskCapability = {
   close(): Promise<void>;
+  admitConversation(
+    item: Parameters<typeof admitLoadedConversationInput>[0]["item"],
+  ): ReturnType<typeof admitLoadedConversationInput>;
+  stopTurn(
+    target: Parameters<typeof stopLoadedConversationTurn>[0]["target"],
+  ): ReturnType<typeof stopLoadedConversationTurn>;
   attach(input: Parameters<AppTaskAttacher>[0] & { appDir: string }): ReturnType<AppTaskAttacher>;
   admitEvent(input: {
     appId: string;
@@ -96,6 +104,8 @@ export function createAppTaskCapability(options: {
       await closeInstalledAppTaskRuntimes(options.bus);
     },
     attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
+    admitConversation: (item) => admitLoadedConversationInput({ bus: options.bus, item }),
+    stopTurn: (target) => stopLoadedConversationTurn({ bus: options.bus, target }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEventRoutes: (input) => previewLoadedCanonicalAppTaskEventRoutes({ ...input, bus: options.bus }),

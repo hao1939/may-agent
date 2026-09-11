@@ -32,6 +32,7 @@ import {
   type AppInboxFailure,
   type AppInboxReconcileResult,
   type AppTaskAttacher,
+  type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
 import {
   listAppInboxItemsWaitingOnTask,
@@ -101,6 +102,8 @@ export type StartAppInboxRuntimeOptions = {
   db: SqliteDb;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
+  admitConversation?: AppInboxHostOptions["admitConversation"];
+  stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   resolveRequest?: AppInputResolver;
   controlTask?: AppRequestTaskController;
   admitTaskEvent?: (input: {
@@ -440,6 +443,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
     attachTask,
+    admitConversation: options.admitConversation,
+    stopConversationTurn: options.stopConversationTurn,
     resolveRequest: options.resolveRequest,
     controlTask: options.controlTask,
     readDependency: options.readDependency
@@ -883,7 +888,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           originEventId: plan.eventId,
           idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
         });
-        schedule(admitted.item.appId);
+        if (!admitted.item.executionTaskId) schedule(admitted.item.appId);
       }
       if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
         if (!entry.definition.tasks) {
@@ -1124,6 +1129,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const routeSnapshot = registrySnapshot;
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);
+      // These facts signal state already committed by the Task runtime. They
+      // must not become new input through generic exact-target admission.
+      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped")
+        return { accepted: true, by: "task-runtime-notification", route: "direct" };
+      if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
+        const row = options.db
+          .prepare("SELECT conversation_id FROM app_inbox_items WHERE app_id = ? AND execution_task_id = ? LIMIT 1")
+          .get(String(data.project ?? ""), String(data.taskId ?? ""));
+        if (typeof row?.conversation_id === "string")
+          notifyConversationUpdated(String(data.project), row.conversation_id);
+      }
       let dependencyWakeDelivery: DeliveryResult | undefined;
       if (event.type === "conversation.turn.stop.requested") {
         host.stopTurn({
@@ -1150,7 +1166,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             channel: `agent:${message.sender}`,
             idempotencyKey: message.identity,
           });
-          schedule(admitted.item.appId);
+          if (!admitted.item.executionTaskId) schedule(admitted.item.appId);
           return {
             accepted: true,
             by: `app-inbox:${admitted.item.appId}:message`,
@@ -1218,7 +1234,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                 ? data.idempotencyKey.trim()
                 : eventIdentity(event),
           });
-          schedule(admitted.item.appId);
+          if (!admitted.item.executionTaskId) schedule(admitted.item.appId);
           notifyConversationUpdated(admitted.item.appId, admitted.item.conversationId);
           return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
         }
@@ -1286,7 +1302,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               ? data.idempotencyKey.trim()
               : identity,
         });
-        schedule(admitted.item.appId);
+        if (!admitted.item.executionTaskId) schedule(admitted.item.appId);
         return {
           accepted: true,
           by: `app-inbox:${admitted.item.appId}`,

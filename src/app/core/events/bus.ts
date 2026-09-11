@@ -237,7 +237,7 @@ export type SystemEvent =
   | {
       /** Wake-only resource notification. Consumers re-read Conversation truth. */
       type: "conversation.updated";
-      source: "app-inbox";
+      source: "app-inbox" | "app-task-reconciler";
       owner: string;
       data: { appId: string; conversationId: string };
     }
@@ -662,7 +662,7 @@ export type SystemEvent =
       };
     }
   | {
-      type: "app.task.cancelled";
+      type: "app.task.cancelled" | "app.task.attempt.stopped";
       source: "app-task-reconciler";
       owner: "human:operator";
       target: { appId: string; taskId: string };

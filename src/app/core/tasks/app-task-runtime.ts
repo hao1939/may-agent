@@ -16,8 +16,13 @@ import type {
 import { appTaskSessionBinding } from "./session-binding.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
-import { completeConversationTaskTurn, isConversationTask } from "../state/conversation-task-turns.js";
-import type { AppInboxClaim } from "../state/app-inbox-store.js";
+import {
+  admitConversationTaskInput,
+  completeConversationTaskTurn,
+  isConversationTask,
+  stopConversationTaskTurn,
+} from "../state/conversation-task-turns.js";
+import type { AppInboxClaim, AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
@@ -578,7 +583,12 @@ function runtimeTaskAttempt(input: {
   const controller = new AbortController();
   let closed = false;
   const unsubscribeCancellation = events.onEvent((incoming) => {
-    if (incoming.type !== "app.task.cancelled") return;
+    if (incoming.type !== "app.task.cancelled" && incoming.type !== "app.task.attempt.stopped") return;
+    if (
+      incoming.type === "app.task.attempt.stopped" &&
+      descriptor.resourceStore.readAttempt(claim.attemptId)?.failureReason !== "owner-stopped"
+    )
+      return;
     const data = eventData(incoming) as Record<string, unknown>;
     if (data.attemptId !== claim.attemptId) return;
     const reason = typeof data.reason === "string" ? data.reason : "Task was cancelled";
@@ -2141,24 +2151,28 @@ async function reconcileTask(input: {
       }`;
       try {
         const retry = persistResult(() => failAppTaskAttempt(failedConfig, failedClaim, summary));
-        if (retry.status !== "superseded") {
-          emitTaskReconciliationEvent(
-            opts,
-            descriptor,
-            failedClaim.trigger as EventEnvelope | undefined,
-            "project.task.reconciled",
-            failedClaim.taskId,
-            {
-              generation: failedClaim.generation,
-              attemptId: failedClaim.attemptId,
-              handler: failedClaim.handler,
-              disposition: retry.status,
-              summary: retry.summary,
-            },
-          );
-          emitAppTaskDependencyChange(opts, descriptor, failedClaim.taskId, "attention");
-          return retry.parentTaskId ? [retry.parentTaskId] : [];
+        if (retry.status === "superseded") {
+          // The stored owner decision already ended this attempt. Its late
+          // executor error must not become a dispatch failure or another retry.
+          timing.outcome = "completed";
+          return [];
         }
+        emitTaskReconciliationEvent(
+          opts,
+          descriptor,
+          failedClaim.trigger as EventEnvelope | undefined,
+          "project.task.reconciled",
+          failedClaim.taskId,
+          {
+            generation: failedClaim.generation,
+            attemptId: failedClaim.attemptId,
+            handler: failedClaim.handler,
+            disposition: retry.status,
+            summary: retry.summary,
+          },
+        );
+        emitAppTaskDependencyChange(opts, descriptor, failedClaim.taskId, "attention");
+        return retry.parentTaskId ? [retry.parentTaskId] : [];
       } catch {
         // Preserve the original failure. Recovery still fences attempts whose
         // persistence boundary itself is unavailable.
@@ -2420,6 +2434,58 @@ export function wakeLoadedAppTasks(input: {
   for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
     enqueueAppTask(controller, config, taskId, { promote: true });
   }
+}
+
+/** Normal Conversation admission uses a conventional Task, never an inbox execution lease. */
+export function admitLoadedConversationInput(input: {
+  bus: EventBus;
+  item: CreateAppInboxItem & { conversationId: string };
+}) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.item.appId);
+  const requests = descriptor?.app.requests;
+  if (!descriptor || !requests || (requests.inputKinds && !requests.inputKinds.includes(input.item.input.kind)))
+    throw new Error(`App ${input.item.appId} has no loaded Conversation capability for this input`);
+  if (!Check(descriptor.app.inputSchema, input.item.input)) throw new Error("Invalid Conversation input");
+  const root = descriptor.resourceStore.rootTaskId();
+  if (!root) throw new Error("Conversation App has no structural root");
+  const admitted = admitConversationTaskInput(appTaskConfig(descriptor), {
+    ...input.item,
+    intent: {
+      parentId: root,
+      mode: "maintain",
+      executor: "conversation",
+      outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
+      acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
+    },
+  });
+  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
+  return admitted;
+}
+
+export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTurnTarget }) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.target.appId);
+  if (!descriptor?.app.requests) throw new Error("Conversation runtime is unavailable");
+  const result = stopConversationTaskTurn(appTaskConfig(descriptor), input.target);
+  input.bus.emit({
+    type: "app.task.attempt.stopped",
+    source: "app-task-reconciler",
+    owner: "human:operator",
+    target: { appId: descriptor.id, taskId: result.taskId },
+    data: {
+      appId: descriptor.id,
+      taskId: result.taskId,
+      attemptId: input.target.turnId,
+      reason: "Human stopped this turn",
+    },
+  });
+  input.bus.emit({
+    type: "conversation.updated",
+    source: "app-task-reconciler",
+    owner: `app:${descriptor.id}`,
+    data: { appId: descriptor.id, conversationId: input.target.conversationId },
+  });
+  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [result.taskId] });
+  return result;
 }
 
 /** Bounded exact-identity check used before asynchronously admitting feedback. */

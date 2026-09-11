@@ -15,7 +15,6 @@ import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/disco
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
-import { createConversationAgentResolver } from "./conversations/turn-agent.js";
 import { readAppConversationResource } from "./core/state/conversations.js";
 import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
@@ -301,7 +300,8 @@ export async function runAppRuntime(opts: {
     conversationAppId,
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
-    resolveRequest: createConversationAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
+    admitConversation: appTasks.admitConversation,
+    stopConversationTurn: appTasks.stopTurn,
     controlTask: async ({ control, authorize }) => {
       if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);
       const task = humanTasks.getTask({ appId: control.appId, taskId: control.taskId });

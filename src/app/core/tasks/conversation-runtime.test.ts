@@ -6,13 +6,17 @@ import { Type, defineApp, type ConversationTurnResult } from "@may-agent/sdk";
 import type { SubagentManager } from "../../../lib/index.js";
 import type { CallOptions, SubagentDefinition } from "../../../lib/types.js";
 import { getDb, closeDb } from "../../../lib/requests.js";
-import { EventBus, type AgentEvent } from "../events/bus.js";
+import { EventBus, EVENT_DELIVERY_RESULT, EVENT_ROW_ID, type AgentEvent } from "../events/bus.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { AppRegistry } from "../apps/registry.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
+import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitConversationTaskInput } from "../state/conversation-task-turns.js";
-import { getAppInboxItem, claimAppInboxItem } from "../state/app-inbox-store.js";
+import { getAppInboxItem, claimAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { readAppConversationResource } from "../state/conversations.js";
-import { readConversationRequest } from "../state/conversation-requests.js";
+import { readConversationRequest, applyConversationRequestUpdates } from "../state/conversation-requests.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
 import { readTaskSnapshot } from "./app-task-store.js";
@@ -419,4 +423,200 @@ test("one-App worker resolves follow-up from its pinned registry and emits a pos
   );
   expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
   expect(getAppInboxItem(f.db, admitted.item.id)?.result?.response).toBe(delegated.response);
+});
+
+async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) {
+  const registry = new AppRegistry(async () => f.options.appRegistrySnapshot!.entries);
+  await registry.reload();
+  const writer = new DbWriter(f.root);
+  f.bus.setPersistenceSubscriber(writer.handler);
+  f.bus.setDeliveryRecorder(writer.recordDelivery);
+  const tasks = createAppTaskCapability({ bus: f.bus });
+  let oldExecutions = 0;
+  const runtime = await startAppInboxRuntime({
+    registry,
+    db: f.db,
+    bus: f.bus,
+    persistDir: f.root,
+    hostCapacity: f.options.hostCapacity,
+    conversationAppId: app.id,
+    schedulesEnabled: false,
+    admitConversation: tasks.admitConversation,
+    stopConversationTurn: tasks.stopTurn,
+    admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
+      tasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
+    hasTaskTarget: (input) => tasks.has(input),
+    previewTaskEvent: ({ appId, event, targetedTaskId }) => tasks.previewEvent({ appId, event, targetedTaskId }),
+    previewTaskEventRoutes: (input) => tasks.previewEventRoutes(input),
+    resolveRequest: async () => {
+      oldExecutions++;
+      throw new Error("Old inbox must not execute Conversation input");
+    },
+  });
+  const publish = (id: string, text: string) =>
+    f.bus.emit({
+      type: "conversation.message.created",
+      source: "fixture",
+      owner: "human:fixture",
+      data: {
+        appId: app.id,
+        conversationId: "primary",
+        author: { kind: "human", id },
+        text,
+        idempotencyKey: `message:${id}`,
+      },
+    });
+  return {
+    runtime,
+    tasks,
+    publish,
+    get oldExecutions() {
+      return oldExecutions;
+    },
+  };
+}
+
+test("normal event ingress admits and executes one Conversation Task and notifies the interface", async () => {
+  let judgments = 0;
+  const f = await fixture(async () => {
+    judgments++;
+    return { status: "done", structuredResult: answer };
+  });
+  const ingress = await startConversationIngress(f);
+  try {
+    const replied = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        readAppConversationResource(f.db, app.id, "primary").messages.some(
+          (message) => message.text === answer.response,
+        ),
+    );
+    const admitted = ingress.publish("first", "Compare A and B");
+    expect(admitted[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
+    await replied;
+    // A duplicate returns its original durable receipt without routing again.
+    const replay = ingress.publish("first", "Compare A and B");
+    expect(replay[EVENT_ROW_ID]).toBe(admitted[EVENT_ROW_ID]);
+    expect(
+      f.db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(replay[EVENT_ROW_ID]!)?.delivery_status,
+    ).toBe("accepted");
+    const items = listAppInboxItems(f.db, { appId: app.id });
+    expect(items).toHaveLength(1);
+    expect(items[0]?.executionTaskId).toBeDefined();
+    expect(items[0]?.status).toBe("done");
+    expect(items[0]?.lease).toBeUndefined();
+    expect(ingress.oldExecutions).toBe(0);
+    expect(judgments).toBe(1);
+    expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("closed");
+  } finally {
+    ingress.runtime.close();
+  }
+});
+
+test("normal Stop fences only the observed Turn, preserves newer input and survives reopen", async () => {
+  const firstStarted = Promise.withResolvers<CallOptions>();
+  const releaseFirst = Promise.withResolvers<void>();
+  const secondStarted = Promise.withResolvers<CallOptions>();
+  const releaseSecond = Promise.withResolvers<void>();
+  const batches: string[][] = [];
+  const f = await fixture(async (_definition, prompt, options) => {
+    const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+    batches.push(context.inputs.map((input: { source: { id: string } }) => input.source.id));
+    if (batches.length === 1) {
+      firstStarted.resolve(options);
+      await releaseFirst.promise;
+      return { status: "done", structuredResult: answer };
+    }
+    secondStarted.resolve(options);
+    await releaseSecond.promise;
+    return {
+      status: "done",
+      structuredResult: {
+        summary: "Answered newer input",
+        response: "A threshold is a comparison boundary.",
+        topic: { kind: "none" },
+      },
+    };
+  });
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id,
+    conversationId: "primary",
+    updateKey: "accepted-before-turn",
+    now: Date.now(),
+    updates: [{ id: "compare", expectedRevision: 0, scope: "Compare A and B", disposition: "open" }],
+  });
+  const ingress = await startConversationIngress(f);
+  const failures: AgentEvent[] = [];
+  const unsubscribeFailures = f.bus.subscribe((event) => {
+    if (event.type === "handler.failed") failures.push(event);
+  });
+  try {
+    ingress.publish("first", "Compare A and B");
+    const first = await firstStarted.promise;
+    const observed = readAppConversationResource(f.db, app.id, "primary").activeTurn!;
+    expect(observed).toEqual({ id: first.taskBinding!.attemptId, revision: first.taskBinding!.generation });
+    // A notification cannot grant control authority or become fresh input.
+    const notification = eventAfter(f.bus, (event) => event.type === "app.task.attempt.stopped");
+    f.bus.emit({
+      type: "app.task.attempt.stopped",
+      source: "app-task-reconciler",
+      owner: "human:operator",
+      target: { appId: app.id, taskId: first.taskBinding!.taskId },
+      data: {
+        appId: app.id,
+        taskId: first.taskBinding!.taskId,
+        attemptId: observed.id,
+        reason: "Uncommitted notification",
+      },
+    });
+    await notification;
+    expect(first.signal?.aborted).toBe(false);
+    expect(listAppInboxItems(f.db, { appId: app.id })).toHaveLength(1);
+    ingress.publish("second", "What is a threshold?");
+    const aborted = new Promise<void>((resolve) =>
+      first.signal!.addEventListener("abort", () => resolve(), { once: true }),
+    );
+    f.bus.emit({
+      type: "conversation.turn.stop.requested",
+      source: "fixture",
+      owner: "human:fixture",
+      data: { appId: app.id, conversationId: "primary", turnId: observed.id, expectedRevision: observed.revision },
+    });
+    await aborted;
+    expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("open");
+    expect(f.store.isCancelled(first.taskBinding!.taskId)).toBe(false);
+    releaseFirst.resolve();
+    const second = await secondStarted.promise;
+    expect(batches).toEqual([["first"], ["second"]]);
+    const replay = ingress.tasks.stopTurn({
+      appId: app.id,
+      conversationId: "primary",
+      turnId: observed.id,
+      expectedRevision: observed.revision,
+    });
+    expect(replay.changed).toBe(false);
+    expect(second.signal?.aborted).toBe(false);
+    const finished = settled(f.bus, second.taskBinding!.taskId);
+    releaseSecond.resolve();
+    await finished;
+    const messages = readAppConversationResource(f.db, app.id, "primary").messages;
+    expect(messages.some((message) => message.text === answer.response)).toBe(false);
+    expect(messages.some((message) => message.text === "A threshold is a comparison boundary.")).toBe(true);
+    expect(readAppConversationResource(f.db, app.id, "primary").activeTurn).toBeUndefined();
+    expect(ingress.oldExecutions).toBe(0);
+    expect(failures).toEqual([]);
+    ingress.runtime.close();
+    await f.reopen();
+    expect(f.store.listRecoveryCandidates().items).toEqual([]);
+    expect(listAppInboxItems(f.db, { appId: app.id }).find((item) => item.source.id === "first")?.handling?.phase).toBe(
+      "stopped",
+    );
+    expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("open");
+  } finally {
+    unsubscribeFailures();
+    releaseFirst.resolve();
+    releaseSecond.resolve();
+    ingress.runtime.close();
+  }
 });

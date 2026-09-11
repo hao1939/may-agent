@@ -2736,7 +2736,7 @@ export function claimObservedAppTask(
   const supersededSessionIds = new Set<string>();
   const pendingTrigger = tree.taskTriggers?.[input.taskId];
   const previousUnacceptedEvents =
-    previousAttempt && previousAttempt.state !== "completed"
+    previousAttempt && previousAttempt.state !== "completed" && previousAttempt.failureReason !== "owner-stopped"
       ? previousAttempt.events?.length
         ? previousAttempt.events
         : previousAttempt.trigger
@@ -3089,6 +3089,43 @@ export function releaseStaleAppTaskResult(
     },
   });
   return { status: "released", taskId: claim.taskId };
+}
+
+/** An assigning owner can stop this attempt's input without closing the Task. */
+export function stopAppTaskAttempt(
+  config: AppTaskContext,
+  input: { taskId: string; attemptId: string; expectedGeneration: number; reason: string },
+) {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
+  const resource = tree.resources?.[input.taskId];
+  const attempt = config.resourceStore.readAttempt(input.attemptId);
+  if (!resource || !attempt || attempt.taskId !== input.taskId || attempt.taskGeneration !== input.expectedGeneration)
+    throw new Error("Attempt stop is stale or mismatched");
+  const inputKeys = taskInputAdmissionKeys(attempt.events ?? [], attempt.continuedInputKeys);
+  if (attempt.failureReason === "owner-stopped") return { changed: false, inputKeys };
+  if (
+    resource.metadata.generation !== input.expectedGeneration ||
+    resource.status.currentAttemptId !== input.attemptId ||
+    attempt.state !== "running"
+  )
+    throw new Error("Attempt stop is stale or mismatched");
+  const scope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
+  const current = tree.attempts![input.attemptId]!;
+  finishAttempt(tree, resource, "interrupted", input.reason, new Date().toISOString());
+  current.failureReason = "owner-stopped";
+  for (const key of inputKeys) delete resource.status.inputWaits?.[key];
+  if (resource.status.inputWaits && Object.keys(resource.status.inputWaits).length === 0)
+    delete resource.status.inputWaits;
+  touchResource(resource, {
+    phase: "attention",
+    observedGeneration: resource.metadata.generation,
+    currentAttemptId: undefined,
+    executionRetryAt: undefined,
+    executionFailures: undefined,
+    summary: input.reason,
+  });
+  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(scope, tree) });
+  return { changed: true, inputKeys };
 }
 
 /** Attach observed workspace lineage to the current attempt without changing desired task state. */

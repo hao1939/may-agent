@@ -38,6 +38,7 @@ import {
   type AppInboxItem,
   type AppInboxWaitKind,
   type AppInboxTaskDependencyKey,
+  type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
 import { ConversationRequestConflict } from "../state/conversation-requests.js";
 
@@ -123,6 +124,11 @@ export type AppInboxHostOptions = {
   apps: AppDefinition[];
   readDependency?: AppDependencyReader;
   attachTask?: AppTaskAttacher;
+  admitConversation?: (input: CreateAppInboxItem & { conversationId: string }) => {
+    item: AppInboxItem;
+    created: boolean;
+  };
+  stopConversationTurn?: (target: AppTurnTarget) => unknown;
   /** Optional context enrichment; Task-only operation does not require it. */
   prepareInput?: (item: AppInboxItem, input: Readonly<AppInputContext>) => Promise<AppInputContext>;
   handleInput?: AppInputHandler;
@@ -194,6 +200,8 @@ export class AppInboxHost {
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
   readonly #prepareInput?: AppInboxHostOptions["prepareInput"];
+  readonly #admitConversation?: AppInboxHostOptions["admitConversation"];
+  readonly #stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   readonly #handleInput?: AppInputHandler;
   readonly #workerId: string;
   readonly #leaseMs: number;
@@ -206,6 +214,8 @@ export class AppInboxHost {
   #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
+    this.#admitConversation = options.admitConversation;
+    this.#stopConversationTurn = options.stopConversationTurn;
     this.#db = options.db;
     this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
@@ -385,13 +395,24 @@ export class AppInboxHost {
     const defaultConversationId = app.requests?.conversationId?.trim();
     const useDefaultConversation =
       input.conversationId === undefined && defaultConversationId !== undefined && input.originEventId !== undefined;
-    return createAppInboxItem(this.#db, {
+    const prepared = {
       ...input,
       ...(useDefaultConversation
         ? { conversationId: defaultConversationId, conversationSequence: input.originEventId }
         : {}),
       now: this.#now(),
-    });
+    };
+    if (
+      this.#admitConversation &&
+      app.requests &&
+      (!app.requests.inputKinds || app.requests.inputKinds.includes(input.input.kind))
+    ) {
+      return this.#admitConversation({
+        ...prepared,
+        conversationId: prepared.conversationId ?? defaultConversationId ?? `${app.id}:primary`,
+      });
+    }
+    return createAppInboxItem(this.#db, prepared);
   }
 
   get(id: string): AppInboxItem | null {
@@ -400,6 +421,10 @@ export class AppInboxHost {
 
   stopTurn(target: AppTurnTarget): void {
     const app = this.#requiredApp(target.appId);
+    if (this.#stopConversationTurn) {
+      this.#stopConversationTurn(target);
+      return;
+    }
     const item = this.get(target.turnId);
     if (!item || !app.requests || (app.requests.inputKinds && !app.requests.inputKinds.includes(item.input.kind))) {
       throw new Error("Stop this turn requires conversational input, not a Task request");

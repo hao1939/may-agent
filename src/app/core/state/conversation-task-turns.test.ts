@@ -26,6 +26,7 @@ import {
   admitConversationTaskInput,
   admitConversationTaskOutcome,
   completeConversationTaskTurn,
+  stopConversationTaskTurn,
 } from "./conversation-task-turns.js";
 
 const roots: string[] = [];
@@ -696,4 +697,35 @@ test("a substituted input identity cannot settle another Conversation", () => {
   expect(() => completeConversationTaskTurn(f.context(), forged, decision)).toThrow("does not belong");
   expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
   expect(readConversationRequest(f.db, app.id, "other-chat", "comparison")).toBeNull();
+});
+
+test("Turn Stop rolls back as one transaction and its input stays stopped across restart", () => {
+  const f = fixture();
+  const input = f.admit();
+  const claim = f.claim(input.taskId);
+  const target = { appId: app.id, conversationId: "chat", turnId: claim.attemptId, expectedRevision: claim.generation };
+  f.db.exec(`CREATE TRIGGER refuse_stop BEFORE UPDATE OF handling ON app_inbox_items
+    BEGIN SELECT RAISE(ABORT, 'cannot record Stop'); END`);
+  expect(() => stopConversationTaskTurn(f.context(), target)).toThrow("cannot record Stop");
+  expect(f.store.readTask(input.taskId)?.status.currentAttemptId).toBe(claim.attemptId);
+  expect(f.store.readAttempt(claim.attemptId)?.state).toBe("running");
+  expect(getAppInboxItem(f.db, input.item.id)?.status).not.toBe("done");
+  f.db.exec("DROP TRIGGER refuse_stop");
+  expect(() => stopConversationTaskTurn(f.context(), { ...target, conversationId: "another" })).toThrow();
+  expect(() => stopConversationTaskTurn(f.context(), { ...target, expectedRevision: claim.generation + 1 })).toThrow();
+  expect(stopConversationTaskTurn(f.context(), target).changed).toBe(true);
+  expect(() => completeConversationTaskTurn(f.context(), claim, decision)).toThrow();
+  f.reopen();
+  expect(stopConversationTaskTurn(f.context(), target).changed).toBe(false);
+  expect(f.store.isCancelled(input.taskId)).toBe(false);
+  expect(f.store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+  expect(readAppTaskAdmissionOutcome(f.context(), input.taskId, input.item.taskAdmissionKey!)).toBeNull();
+  expect(f.admit().created).toBe(false);
+  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+  const later = f.admit("later", 2);
+  const next = f.claim(later.taskId);
+  completeConversationTaskTurn(f.context(), next, decision);
+  expect(getAppInboxItem(f.db, input.item.id)?.handling?.phase).toBe("stopped");
+  expect(getAppInboxItem(f.db, later.item.id)?.status).toBe("done");
 });

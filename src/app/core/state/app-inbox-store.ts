@@ -230,6 +230,17 @@ export function readActiveAppTurn(
   appId: string,
   conversationId: string,
 ): { id: string; revision: number } | undefined {
+  const attempt = db
+    .prepare(
+      `SELECT a.attempt_id, a.task_generation FROM app_tasks t
+     JOIN app_task_attempts a ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
+     WHERE t.app_id = ? AND t.task_id = (
+       SELECT execution_task_id FROM app_inbox_items
+       WHERE app_id = ? AND conversation_id = ? AND execution_task_id IS NOT NULL LIMIT 1
+     ) AND a.state = 'running'`,
+    )
+    .get(appId, appId, conversationId);
+  if (attempt) return { id: String(attempt.attempt_id), revision: Number(attempt.task_generation) };
   const row = db
     .prepare(
       `SELECT id, lease_generation FROM app_inbox_items

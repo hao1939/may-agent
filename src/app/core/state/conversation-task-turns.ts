@@ -10,9 +10,20 @@ import {
 } from "@may-agent/sdk";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
-import { assertAppTaskClaimCurrent, completeAppTask, type AppTaskClaim } from "../tasks/app-task-reconciler.js";
+import {
+  assertAppTaskClaimCurrent,
+  completeAppTask,
+  stopAppTaskAttempt,
+  type AppTaskClaim,
+} from "../tasks/app-task-reconciler.js";
 import { admitTaskRequest } from "./inbox.js";
-import { createAppInboxItem, getAppInboxItem, listAppInboxItems, type CreateAppInboxItem } from "./app-inbox-store.js";
+import {
+  createAppInboxItem,
+  getAppInboxItem,
+  listAppInboxItems,
+  type CreateAppInboxItem,
+  type AppTurnTarget,
+} from "./app-inbox-store.js";
 import { createConversationTopic, readConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import { stableTopicId } from "./conversation-turns.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
@@ -35,6 +46,59 @@ export type ConversationTaskProposal = {
   decision: ConversationTurnResult;
   followUp?: { config: AppTaskContext; attachment: AppTaskAttachment };
 };
+
+/** Stop exactly the input considered by this Turn. Newer input remains pending. */
+export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurnTarget, now = Date.now()) {
+  if (
+    target.appId !== config.resourceStore.appId ||
+    !Number.isSafeInteger(target.expectedRevision) ||
+    target.expectedRevision < 1
+  )
+    throw new Error("Conversation Turn stop is stale or mismatched");
+  const taskId = conversationTaskId(target.appId, target.conversationId);
+  const reason = "Human stopped this turn";
+  return stateTransaction(config.resourceStore.db, () => {
+    const result = stopAppTaskAttempt(config, {
+      taskId,
+      attemptId: target.turnId,
+      expectedGeneration: target.expectedRevision,
+      reason,
+    });
+    if (result.changed) {
+      for (const key of result.inputKeys) {
+        const item = key.startsWith("conversation-input:")
+          ? getAppInboxItem(config.resourceStore.db, key.slice("conversation-input:".length))
+          : null;
+        if (
+          !item ||
+          item.executionTaskId !== taskId ||
+          item.conversationId !== target.conversationId ||
+          item.appId !== target.appId
+        )
+          throw new Error("Stopped input does not belong to the Conversation");
+        config.resourceStore.db.run(
+          `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?, available_at = NULL,
+           completed_at = ?, changed_at = ?, updated_at = ? WHERE id = ?`,
+          [
+            JSON.stringify({ phase: "stopped", reason }),
+            key === result.inputKeys.at(-1)
+              ? JSON.stringify({
+                  summary: reason,
+                  response:
+                    "Stopped this turn. The ask remains unresolved; already admitted background Tasks continue.",
+                })
+              : null,
+            now,
+            now,
+            now,
+            item.id,
+          ],
+        );
+      }
+    }
+    return { ...result, taskId };
+  });
+}
 
 /** Source PoC boundary: input and its Task admission become visible in one commit. */
 export function admitConversationTaskInput(
@@ -63,6 +127,14 @@ export function admitConversationTaskInput(
       : input.id
         ? getAppInboxItem(db, input.id)
         : null;
+    if (input.source.kind === "human" && input.conversationSequence === undefined) {
+      const latest = db
+        .prepare(
+          "SELECT MAX(conversation_seq) AS sequence FROM app_inbox_items WHERE app_id = ? AND conversation_id = ?",
+        )
+        .get(input.appId, input.conversationId);
+      input = { ...input, conversationSequence: prior?.conversationSequence ?? Number(latest?.sequence ?? 0) + 1 };
+    }
     if (
       prior &&
       (prior.appId !== input.appId ||
@@ -74,6 +146,7 @@ export function admitConversationTaskInput(
         (input.topicId !== undefined && input.topicId !== prior.topicId))
     )
       throw new Error("Conversation input identity was reused for different input");
+    if (prior?.status === "done") return { item: prior, taskId, created: false };
     const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
