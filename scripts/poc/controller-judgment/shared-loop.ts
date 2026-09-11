@@ -65,9 +65,11 @@ const out = arg("--out");
 const value = Number(arg("--value") ?? "0.92");
 const nested = process.argv.includes("--nested");
 const natural = process.argv.includes("--natural");
+const withdraw = process.argv.includes("--withdraw");
 assert(!(natural && nested), "Choose either the natural ask or the explicitly nested trial");
+assert(!(withdraw && nested), "Withdrawal probes one assigned child, not recursive cancellation");
 if (!process.argv.includes("--live") || !appRoot || !modelName || !out || !Number.isFinite(value))
-  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural]");
+  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural] [--withdraw]");
 assert(createModelRegistry()[modelName], "Selected model must be configured");
 const hostRoot = resolve(import.meta.dir, "../../..");
 const output = resolve(out);
@@ -250,6 +252,44 @@ try {
         assert(measurementAdmission?.taskAdmissionKey, "Code must retain the reviewer's exact measurement input");
       assert.equal(store().readTask(taskC ?? taskB)?.status.phase, "running");
       assert.equal(ask.status, "open");
+      if (withdraw) {
+        const withdrawn = nextEvent(
+          (event) => event.type === "conversation.updated" &&
+            readConversationRequest(db, "may", "may:primary", ask.id)?.status === "closed",
+        );
+        publish("withdraw", "Cancel the sample measurement. I no longer need that result; do not keep trying. Tell me what you've stopped.");
+        await withdrawn;
+        const closedAsk = readConversationRequest(db, "may", "may:primary", ask.id)!;
+        assert.equal(closedAsk.closure?.disposition, "withdrawn");
+        assert.equal(store().isCancelled(taskB), true, "Withdrawal must close the exact assigned Task");
+        assert.equal(store().isCancelled(taskA), false, "Human interaction must remain available");
+        const answer = conversation().messages.find((message) => message.id === closedAsk.closure!.messageId)!;
+        const closure = store().readCancellation(taskB);
+        // Release late source output only after the durable owner decision.
+        releaseMeasurement.resolve();
+        ingress!.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        const attemptsBeforeRestart = store().readSnapshot().attempts;
+        closeDb(paths.persistDir);
+        db = getDb(paths.persistDir);
+        bus = new EventBus();
+        await start();
+        const priorAnswers = answerCount();
+        const resumed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers);
+        publish("reopen", "What did we decide about the measurement? Keep it cancelled.");
+        await resumed;
+        assert.equal(store().isCancelled(taskB), true);
+        assert.deepEqual(store().readCancellation(taskB), closure);
+        const childAttempts = (attempts: typeof attemptsBeforeRestart) =>
+          Object.values(attempts ?? {}).filter((attempt) => attempt.taskId === taskB);
+        assert.deepEqual(childAttempts(store().readSnapshot().attempts), childAttempts(attemptsBeforeRestart));
+        assert(childAttempts(store().readSnapshot().attempts).every((attempt) => !attempt.acceptedResult),
+          "Late output must not become accepted evidence after closure");
+        assert.equal(readConversationRequest(db, "may", "may:primary", ask.id)?.closure?.disposition, "withdrawn");
+        report = { taskA, taskB, ask: closedAsk, closure, reply: answer.text, measurementReads,
+          resumedReply: conversation().messages.filter((message) => message.author.kind === "agent").at(-1)?.text };
+        return;
+      }
       const priorAnswers = answerCount();
       const discussed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers);
       publish(
@@ -381,6 +421,7 @@ try {
     value,
     nested,
     natural,
+    withdraw,
     root,
     durationMs: Date.now() - startedAt,
     dispatches,
