@@ -50,6 +50,20 @@ describe("workflow finish recovery", () => {
     expect(prompt).toContain("schema-validated result payload");
   });
 
+  it.each([RESPONSES_STREAM_TERMINAL_ERROR, "Agent ended with an empty assistant turn"])(
+    "continues interrupted work instead of forcing an unsupported judgment: %s",
+    (reason) => {
+      const prompt = workflowFinishRecoveryPrompt(Type.Object({ state: Type.String() }), reason);
+      expect(prompt).toContain("Continue the original bounded assignment");
+      expect(prompt).toContain("remaining budget");
+      expect(prompt).toContain("If no work has been done, begin the assigned work");
+      expect(prompt).toContain("not itself a domain blocker");
+      expect(prompt).toContain("inspect current state before repeating an uncertain effect");
+      expect(prompt).not.toContain("call finish() now");
+      expect(prompt).toContain("schema-validated result payload");
+    },
+  );
+
   it("recovers the captured aborted finish through schema and semantic execution", async () => {
     const messages = [
       abortedFinish({

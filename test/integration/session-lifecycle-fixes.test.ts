@@ -505,6 +505,42 @@ describe("workflow call empty final turn recovery", () => {
     return { sessionId, session, messages, prompts };
   }
 
+  it("keeps the original assignment available after an empty initial response", async () => {
+    const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
+      if (promptText === "review owner message") {
+        transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
+        transcript.push({ role: "assistant", stopReason: "stop", content: [] } as any);
+        return;
+      }
+      expect(promptText).toContain("Continue the original bounded assignment");
+      expect(promptText).not.toContain("call finish() now");
+      expect(transcript).toHaveLength(1);
+      expect(transcript[0]).toMatchObject({ role: "user", content: [{ type: "text", text: "review owner message" }] });
+      // The model boundary is synthetic; the real manager must allow continued
+      // work on this same call, rather than demand a judgment with no evidence.
+      transcript.push({
+        role: "assistant",
+        content: [{ type: "toolCall", id: "read-after-empty", name: "read", arguments: { path: "proof.txt" } }],
+      } as any);
+      transcript.push({
+        role: "toolResult", toolCallId: "read-after-empty", toolName: "read",
+        content: [{ type: "text", text: "Current source inspected" }], isError: false,
+      } as any);
+      transcript.push(finishCall("finish-after-empty", {
+        status: "success", summary: "Completed after inspecting current source",
+        result: { state: "converged", summary: "Inspection complete", evidence: ["Current source inspected"] },
+      }));
+      transcript.push(finishResult("finish-after-empty", "SUCCESS: Inspection complete"));
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result).toMatchObject({ sessionId, status: "done", structuredResult: { evidence: ["Current source inspected"] } });
+    expect(prompts).toHaveLength(2);
+    expect(messages.filter((message: any) => message.toolCallId === "read-after-empty")).toHaveLength(1);
+    expect(events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toHaveLength(1);
+  });
+
   it("preserves tool evidence and recovers structured finish after the final prompt throws 429", async () => {
     const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
       if (promptText === "review owner message") {
