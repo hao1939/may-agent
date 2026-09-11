@@ -16,8 +16,9 @@ Read in this order:
    read models; installation/publication and rollback stay in the runtime.
 4. `app-task-reconciler.ts` checks identity/revisions and applies state transitions
    through [`core/state`](../state/README.md).
-5. `app-task-recovery.ts` schedules recovery; `startup-recovery.ts` and the
-   handler/session helpers decide which retained work can safely run again.
+5. `app-task-recovery.ts` schedules recovery; `startup-recovery.ts` checks
+   retained session eligibility. `adapters/executors/session-recovery.ts`
+   reads terminal agent evidence for the same result-admission path.
 
 `app-task-state.ts` defines persisted Task facts. `app-task-store.ts` provides
 snapshot/mutation helpers, not another database authority. Context, Conditions,
@@ -49,6 +50,20 @@ unless a path is given. Result rejection retains unfinished work and paces its
 next attempt. Queues and events help discover work, while stored Tasks, attempts
 and Conditions retain it. A timer rediscovers eligible work; it does not create
 a separate maintenance lifecycle.
+
+## Read the retained names correctly
+
+| Name in code | Meaning in this lifecycle |
+| --- | --- |
+| `achieve` / `maintain` | Retained App intent labels; neither selects a different lifetime |
+| `converged` / SDK `done` | An accepted outcome; later input can run the same open Task |
+| Worker result `stopped` / `stopAppTask()` | Unsuccessful attempt evidence; unfinished work retries with backoff |
+| Turn Stop / `stopAppTaskAttempt()` | Stop the observed attempt; keep the Task and accepted Requests |
+| `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained evidence remains readable |
+
+Task attempt failures persist their retry deadline. A dispatch or storage error
+before that write uses `controller.ts`'s local retry timer; the installed runtime
+sets its retry limit to infinity. Neither path decides to abandon the Task.
 
 Definition preparation does not publish a generation. The runtime still owns
 one publication/rollback boundary and pins execution definitions for attempts.

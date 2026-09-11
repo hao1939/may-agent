@@ -14,6 +14,7 @@ export type TaskView = {
   id: string;
   /** Owner ended execution; a prior accepted result alone does not close the Task. */
   closed?: boolean;
+  /** Current work phase. `done` means an accepted outcome; inspect `closed` for owner closure. */
   status: "pending" | "running" | "waiting" | "attention" | "done";
   generation: number;
   outcome: string;

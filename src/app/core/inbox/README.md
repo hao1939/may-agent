@@ -27,5 +27,5 @@ context. Human replies, handoffs, controls and retry are tested through actual
 Task execution in `core/tasks/conversation-runtime.test.ts` and atomic settlement
 in `core/state/conversation-task-turns.test.ts`. See the
 [coverage map](../../../../test/README.md#shared-task-execution-coverage).
-Other legacy inbox-execution tests still require migration; their failures
-remain visible in the candidate's CI.
+That map records the retired callback tests and the current owner of each
+retained guarantee, including public Stop, failed settlement and restart.

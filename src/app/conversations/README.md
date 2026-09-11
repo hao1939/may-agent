@@ -65,7 +65,9 @@ Closing the stable Task is a separate authorized owner action.
 Omitting this handler leaves its input visible and prevents execution through
 an old inbox owner; other Task handlers continue to work. The candidate refuses
 cutover when unfinished legacy input still has a different execution owner.
-Operational upgrade and restart proof remain pending.
+The isolated old-to-new daemon fixture verifies shutdown, conversion and fresh
+input after restart. Its [procedure and limits](../../../test/README.md#shared-task-execution-coverage)
+do not certify an installation-specific rollout or rollback.
 
 Start verification at `core/tasks/conversation-runtime.test.ts` for actual
 execution and `core/state/conversation-task-turns.test.ts` for atomic effects and

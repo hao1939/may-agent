@@ -35,6 +35,7 @@ export type AppTaskControllerOptions = {
   reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
   /** Best-effort diagnostics; never holds capacity or gates retries. */
   onError?(taskId: string, error: unknown, willRetry: boolean): void | Promise<void>;
+  /** Dispatch-error retries only. The installed runtime uses Infinity; Task attempt backoff is persisted separately. */
   maxRetries?: number;
   retryDelayMs?: (attempt: number) => number;
   /** Do not claim work until the controller instance being replaced has drained. */

@@ -1,6 +1,7 @@
 import type { AppEvent } from "./event.js";
 import type { AppInput } from "./app.js";
 
+/** Retained App intent labels; both use the same lifecycle and require owner closure. */
 export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 /** Stable executor adapter name selected by durable Task intent. */
@@ -41,7 +42,11 @@ export type Condition = {
   reviewAfterMs?: number;
 };
 
-/** `stopped` reports an unsuccessful attempt; unfinished work remains pending until owner closure. */
+/**
+ * Attempt judgment, not Task lifetime. `converged` accepts an outcome and leaves
+ * the Task open. `stopped` reports an unsuccessful attempt; unfinished work retries
+ * with backoff until progress or owner closure.
+ */
 export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "stopped";
 
 /** One child App outcome required by the current task. */
