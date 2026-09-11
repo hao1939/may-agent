@@ -808,7 +808,8 @@ test("a returned outcome keeps its exact App, Task and attempt identity across A
   expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: "missing" })).toThrow(
     "accepted attempt",
   );
-  const wake = admitConversationTaskChange(f.context(), worker, returned);
+  createAppInboxItem(f.db, { ...f.input("ordinary", 2), input: { kind: "goal", data: {} } });
+  const wake = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
   expect(wake.taskId).toBe(first.taskId);
   expect(wake.item.input.data).toMatchObject({
     appId: "worker",
@@ -817,7 +818,7 @@ test("a returned outcome keeps its exact App, Task and attempt identity across A
     outcome: { result: { value: 17 } },
   });
   expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
-  expect(admitConversationTaskChange(f.context(), worker, returned).created).toBe(false);
+  expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
 });
 
 test("cutover refuses unhandled legacy input even with an expired lease", () => {
@@ -825,7 +826,12 @@ test("cutover refuses unhandled legacy input even with an expired lease", () => 
   createAppInboxItem(f.db, f.input("old", 1));
   expect(claimAppInboxItem(f.db, "old", "legacy", 1, Date.now())).not.toBeNull();
   f.db.run("UPDATE app_inbox_items SET lease_expires_at = 1 WHERE id = 'old'");
-  expect(() => f.admit("new", 2)).toThrow("drain before cutover");
+  expect(() =>
+    admitConversationTaskInput(f.context(), {
+      ...f.input("new", 2),
+      conversationInputKinds: ["message"],
+    }),
+  ).toThrow("drain before cutover");
   expect(getAppInboxItem(f.db, "new")).toBeNull();
   expect(f.db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
 });

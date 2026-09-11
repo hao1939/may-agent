@@ -552,6 +552,8 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     hostCapacity: f.options.hostCapacity,
     conversationAppId: app.id,
     schedulesEnabled: false,
+    attachTask: tasks.attach,
+    readDependency: tasks.readDependency,
     admitConversation: tasks.admitConversation,
     admitConversationChange: tasks.admitConversationChange,
     stopConversationTurn: tasks.stopTurn,
@@ -580,6 +582,95 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     publish,
   };
 }
+
+test("ordinary inbox work and Conversation input share a Conversation without blocking across reopen", async () => {
+  const calls: string[] = [];
+  const goals: string[] = [];
+  const mixed = defineApp({
+    ...app,
+    requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    tasks: { maxConcurrent: 2 },
+    task: ({ id }) => ({
+      kind: "desired",
+      intent: {
+        id: `goal/${id}`,
+        parentId: "root",
+        mode: "achieve",
+        executor: "measure",
+        outcome: "Collect a measurement",
+        acceptance: ["Return the measured value"],
+      },
+    }),
+  });
+  const f = await fixture(
+    async (_definition, prompt) => {
+      const context = JSON.parse(
+        prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+      ) as AppInputContext;
+      expect(context.input.kind).toBe("message");
+      calls.push(context.id);
+      return {
+        status: "done",
+        structuredResult: { summary: "Discussed", response: "I am here.", topic: { kind: "none" } },
+      };
+    },
+    (_root, appDir) => ({
+      hostCapacity: new HostCapacity(2),
+      appRegistrySnapshot: { id: "mixed", generation: 1, entries: [{ appDir, definition: mixed }] },
+      executors: {
+        measure: async (attempt) => {
+          goals.push(attempt.task.id);
+          return { state: "converged", summary: "Measured", evidence: [], result: { value: 17 } };
+        },
+      },
+    }),
+  );
+  let ingress = await startConversationIngress(f);
+  try {
+    for (const id of ["before", "after"]) {
+      if (id === "after") {
+        ingress.runtime.close();
+        await f.reopen();
+        ingress = await startConversationIngress(f);
+      }
+      const ordinary = ingress.runtime.host.admit({
+        id: `ordinary-${id}`,
+        appId: app.id,
+        conversationId: "primary",
+        source: { kind: "system", id },
+        input: { kind: "goal", data: {} },
+      });
+      const returned = eventAfter(
+        f.bus,
+        (event) =>
+          event.type === "conversation.updated" &&
+          getAppInboxItem(f.db, ordinary.item.id)?.status === "done" &&
+          getAppInboxItem(f.db, id)?.status === "done",
+      );
+      ingress.tasks.admitConversation({
+        id,
+        appId: app.id,
+        conversationId: "primary",
+        source: { kind: "human", id },
+        input: { kind: "message", data: { text: "Keep discussing while the measurement runs" } },
+      });
+      expect(ingress.runtime.host.readyCount(app.id)).toBe(1);
+      expect(ingress.runtime.host.readyAppIds()).toContain(app.id);
+      ingress.runtime.scanNow();
+      await returned;
+      expect(getAppInboxItem(f.db, ordinary.item.id)).toMatchObject({
+        status: "done",
+        result: { result: { value: 17 } },
+      });
+      expect(getAppInboxItem(f.db, ordinary.item.id)?.executionTaskId).toBeUndefined();
+      expect(f.store.isCancelled(`goal/${ordinary.item.id}`)).toBe(false);
+    }
+    expect(calls).toEqual(["before", "after"]);
+    expect(goals).toEqual(["goal/ordinary-before", "goal/ordinary-after"]);
+  } finally {
+    ingress.runtime.close();
+  }
+});
 
 test("a human Conversation decision cancels the exact running Task after its reply commits", async () => {
   const started = Promise.withResolvers<TaskAttempt>();

@@ -21,7 +21,7 @@ import {
   assertAppInboxClaim,
   claimNextAppInboxItem,
   createAppInboxItem,
-  excludeExecutingConversations,
+  appInboxCandidateFilter,
   getAppInboxItem,
   listAppInboxTaskDependencyKeys,
   releaseAppInboxClaim,
@@ -416,15 +416,16 @@ export class AppInboxHost {
 
   readyCount(appId: string): number {
     const app = this.#requiredApp(appId);
+    if (app.requests && !app.requests.inputKinds) return 0;
     const now = this.#now();
-    const executingIds = [...this.#executions.keys()];
+    const filter = appInboxCandidateFilter([...this.#executions.keys()], app.requests?.inputKinds);
     const row = this.#db
       .prepare(
         `SELECT 1 AS ready FROM (
            SELECT candidate.app_id
              FROM app_inbox_items candidate INDEXED BY idx_app_inbox_available
              WHERE candidate.app_id = ? AND candidate.status != 'done' AND candidate.lease_owner IS NULL
-               ${excludeExecutingConversations(executingIds)}
+               ${filter.sql}
                AND candidate.available_at IS NOT NULL AND candidate.available_at <= ?
                AND (candidate.conversation_id IS NULL OR NOT EXISTS (
                  SELECT 1 FROM app_inbox_items active
@@ -438,7 +439,7 @@ export class AppInboxHost {
            SELECT candidate.app_id
              FROM app_inbox_items candidate INDEXED BY idx_app_inbox_expired
              WHERE candidate.app_id = ? AND candidate.status != 'done'
-               ${excludeExecutingConversations(executingIds)}
+               ${filter.sql}
                AND candidate.lease_expires_at IS NOT NULL AND candidate.lease_expires_at <= ?
                AND (candidate.conversation_id IS NULL OR NOT EXISTS (
                  SELECT 1 FROM app_inbox_items active
@@ -450,7 +451,7 @@ export class AppInboxHost {
                ))
          ) LIMIT 1`,
       )
-      .get(app.id, ...executingIds, now, now, app.id, ...executingIds, now, now);
+      .get(app.id, ...filter.params, now, now, app.id, ...filter.params, now, now);
     return row ? 1 : 0;
   }
 
@@ -490,11 +491,7 @@ export class AppInboxHost {
       )
       .all(now, now, now, now) as Array<{ app_id?: unknown }>;
     return rows.flatMap((row) =>
-      typeof row.app_id === "string" &&
-      loaded.has(row.app_id) &&
-      (this.#executions.size === 0 || this.readyCount(row.app_id))
-        ? [row.app_id]
-        : [],
+      typeof row.app_id === "string" && loaded.has(row.app_id) && this.readyCount(row.app_id) ? [row.app_id] : [],
     );
   }
 
@@ -597,9 +594,16 @@ export class AppInboxHost {
 
   async reconcileOnce(appId: string): Promise<AppInboxReconcileResult> {
     const app = this.#requiredApp(appId);
-    const claim = claimNextAppInboxItem(this.#db, app.id, this.#workerId, this.#leaseMs, this.#now(), [
-      ...this.#executions.keys(),
-    ]);
+    if (app.requests && !app.requests.inputKinds) return { claimed: 0, admitted: 0, released: 0, errors: [] };
+    const claim = claimNextAppInboxItem(
+      this.#db,
+      app.id,
+      this.#workerId,
+      this.#leaseMs,
+      this.#now(),
+      [...this.#executions.keys()],
+      app.requests?.inputKinds,
+    );
     if (!claim) return { claimed: 0, admitted: 0, released: 0, errors: [] };
     this.#notifyConversationChanges([claim.item]);
 

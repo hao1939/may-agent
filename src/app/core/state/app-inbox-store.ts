@@ -676,21 +676,29 @@ export function claimAppInboxItem(
   );
 }
 
-/** `candidate` is the ready input; IDs are bound parameters, never SQL text. */
-export function excludeExecutingConversations(executingIds: string[]): string {
-  const taskOwned = `AND NOT EXISTS (
+/** The loaded App routes declared Conversation kinds to Tasks, never inbox claims. */
+export function appInboxCandidateFilter(executingIds: string[], conversationInputKinds?: readonly string[]) {
+  // Callers without an App declaration retain the conservative legacy fence.
+  const routeFilter = conversationInputKinds
+    ? `AND candidate.input_kind NOT IN (${conversationInputKinds.map(() => "?").join(",")})`
+    : `AND NOT EXISTS (
     SELECT 1 FROM app_inbox_items owned
     WHERE owned.app_id = candidate.app_id AND owned.conversation_id = candidate.conversation_id
       AND owned.execution_task_id IS NOT NULL
   )`;
-  return taskOwned + (executingIds.length
-    ? `AND NOT EXISTS (
+  return {
+    sql:
+      `AND candidate.execution_task_id IS NULL ${routeFilter}` +
+      (executingIds.length
+        ? `AND NOT EXISTS (
     SELECT 1 FROM app_inbox_items local
     WHERE local.id IN (${executingIds.map(() => "?").join(",")})
       AND (local.id = candidate.id OR
         (local.app_id = candidate.app_id AND local.conversation_id = candidate.conversation_id))
   )`
-    : "");
+        : ""),
+    params: [...(conversationInputKinds ?? []), ...executingIds],
+  };
 }
 
 export function claimNextAppInboxItem(
@@ -700,11 +708,12 @@ export function claimNextAppInboxItem(
   leaseMs: number,
   now = Date.now(),
   executingIds: string[] = [],
+  conversationInputKinds?: readonly string[],
 ): AppInboxClaim | null {
   requiredText(appId, "appId");
   requiredText(owner, "lease owner");
   if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
-
+  const filter = appInboxCandidateFilter(executingIds, conversationInputKinds);
   const row = db
     .prepare(
       `UPDATE app_inbox_items
@@ -721,8 +730,7 @@ export function claimNextAppInboxItem(
          SELECT candidate.id
          FROM app_inbox_items candidate
          WHERE candidate.app_id = ?
-           AND candidate.execution_task_id IS NULL
-           ${excludeExecutingConversations(executingIds)}
+           ${filter.sql}
            AND candidate.status != 'done'
            AND (
              (candidate.lease_owner IS NULL
@@ -747,7 +755,7 @@ export function claimNextAppInboxItem(
        )
        RETURNING *`,
     )
-    .get(now, now, owner, now + leaseMs, now, appId, ...executingIds, now, now, now);
+    .get(now, now, owner, now + leaseMs, now, appId, ...filter.params, now, now, now);
   if (!row) return null;
   const item = rowToItem(row);
   return { item, generation: item.lease!.generation, owner };

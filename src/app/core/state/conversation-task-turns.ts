@@ -129,7 +129,12 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
 /** Source PoC boundary: input and its Task admission become visible in one commit. */
 export function admitConversationTaskInput(
   config: AppTaskContext,
-  input: CreateAppInboxItem & { conversationId: string; intent: Omit<TaskIntent, "id"> },
+  input: CreateAppInboxItem & {
+    conversationId: string;
+    intent: Omit<TaskIntent, "id">;
+    /** The loaded App's declaration; absent means all input is conversational. */
+    conversationInputKinds?: readonly string[];
+  },
 ) {
   const db = config.resourceStore.db;
   return stateTransaction(db, () => {
@@ -142,9 +147,11 @@ export function admitConversationTaskInput(
       db
         .prepare(
           `SELECT 1 FROM app_inbox_items WHERE app_id = ? AND conversation_id = ?
-      AND execution_task_id IS NULL AND status != 'done' LIMIT 1`,
+      AND execution_task_id IS NULL AND status != 'done'
+      ${input.conversationInputKinds ? `AND input_kind IN (${input.conversationInputKinds.map(() => "?").join(",")})` : ""}
+      LIMIT 1`,
         )
-        .get(input.appId, input.conversationId)
+        .get(input.appId, input.conversationId, ...(input.conversationInputKinds ?? []))
     ) {
       throw new Error("Conversation still has unhandled legacy input; drain before cutover");
     }
@@ -453,6 +460,7 @@ export function admitConversationTaskChange(
   target: AppTaskContext,
   source: Pick<AppTaskContext, "resourceStore">,
   input: { conversationId: string; topicId: string; taskId: string } & ConversationTaskChange,
+  conversationInputKinds?: readonly string[],
 ) {
   const db = target.resourceStore.db;
   if (source.resourceStore.db !== db) throw new Error("Conversation result belongs to another Host state");
@@ -506,6 +514,7 @@ export function admitConversationTaskChange(
       source: { kind: "system", id },
       input: fact,
       intent: task.spec,
+      conversationInputKinds,
     });
   });
 }

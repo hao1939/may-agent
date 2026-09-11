@@ -245,6 +245,26 @@ test("cutover requires explicit offline operation even after legacy lease expiry
   expect(() => f.migrate(false)).toThrow("old Host and all workers to be stopped");
   expect(f.store.readTask(conversationTaskId(app.id, "primary"))).toBeNull();
   expect(getAppInboxItem(f.db, "primary:executing")?.executionTaskId).toBeUndefined();
+  const host = new AppInboxHost({ db: f.db, apps: [app] });
+  expect(host.readyCount(app.id)).toBe(0);
+  expect(host.readyAppIds()).toEqual([]);
+});
+
+test("cutover leaves ordinary Task input in the same Conversation with its original owner", () => {
+  const f = fixture();
+  f.seed("executing");
+  const ordinary = createAppInboxItem(f.db, {
+    id: "ordinary",
+    appId: app.id,
+    conversationId: "primary",
+    source: { kind: "system", id: "ordinary" },
+    input: { kind: "goal", data: { text: "Collect the measurements" } },
+  }).item;
+  expect(f.migrate()).toMatchObject({ migrated: 1, pending: 1 });
+  expect(getAppInboxItem(f.db, ordinary.id)).toEqual(ordinary);
+  f.reopen();
+  expect(f.migrate()).toMatchObject({ migrated: 0, pending: 0 });
+  expect(getAppInboxItem(f.db, ordinary.id)).toEqual(ordinary);
 });
 
 test("failed evidence import rolls the whole cutover back without invalidating the old claim", () => {

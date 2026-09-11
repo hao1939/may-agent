@@ -2462,6 +2462,7 @@ export function admitLoadedConversationInput(input: {
   const admitted = admitConversationTaskInput(config, {
     ...input.item,
     intent: conversationTaskIntent(config),
+    conversationInputKinds: requests.inputKinds,
   });
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return admitted;
@@ -2511,7 +2512,12 @@ export function admitLoadedConversationChange(input: ConversationTaskChangeRef &
     if (attempt?.taskId !== input.taskId || !attempt.acceptedResult) return { taskId, created: false };
   } else if (source.readCancellation(input.taskId)?.generation !== input.closedGeneration)
     return { taskId, created: false };
-  const admitted = admitConversationTaskChange(appTaskConfig(descriptor), { resourceStore: source }, input);
+  const admitted = admitConversationTaskChange(
+    appTaskConfig(descriptor),
+    { resourceStore: source },
+    input,
+    descriptor.app.requests.inputKinds,
+  );
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return { taskId: admitted.taskId, created: admitted.created };
 }

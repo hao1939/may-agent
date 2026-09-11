@@ -101,7 +101,12 @@ export function migrateConversationInputs(
       throw new Error("Conversation cutover lost its Task fence");
     for (const item of items) {
       if (getAppInboxItem(db, item.id)!.status === "done") continue;
-      admitConversationTaskInput(config, { ...item, conversationId, intent: conversationTaskIntent(config) });
+      admitConversationTaskInput(config, {
+        ...item,
+        conversationId,
+        intent: conversationTaskIntent(config),
+        conversationInputKinds: app.requests!.inputKinds,
+      });
     }
     return { taskId, migrated: items.length, pending };
   });
