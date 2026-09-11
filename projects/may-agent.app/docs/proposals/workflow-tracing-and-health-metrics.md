@@ -392,7 +392,7 @@ tracing backend or automatic repair.
 
 ## First implementation candidate
 
-Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `676b3692`,
+Host [PR #143](https://github.com/hao1939/may-agent/pull/143), at `15b88dbd`,
 keeps this first PR independently useful:
 
 - Workflow errors return the attempted run ID. Run inspection includes stored
@@ -412,7 +412,11 @@ keeps this first PR independently useful:
 - Metric reads expose the latest retained sample's value, timestamp, sample
   size, note and cadence. Definition edits and late older samples cannot make
   it appear fresh. Missing samples are unknown. Source failures retain a bounded
-  explanation and leave previous observations intact, without a new error store.
+  explanation in the existing Event journal (`metric.measurement.failed`),
+  linked to the metric and snapshot-trigger event when present. They leave
+  previous observations intact, without a new error store or automatic alert.
+  Journal write failure is logged and does not stop other sources; normal Event
+  retention applies, so this is not an independent permanent audit store.
 
 Candidate bounds are 16 KiB per diagnostic snapshot, 2,000 characters per message
 and 100 linked executions per read, with explicit truncation. Diagnostic snapshots
@@ -421,10 +425,18 @@ crash or write failure. Existing secret patterns are not a general PII guarantee
 authors must still avoid logging secrets or personal configuration. No live data
 was used for validation.
 
-Local `bun run ci` passed at that revision: 2,688 passed, three installation-only
+Local `bun run ci` passed at the initial `676b3692` revision: 2,688 passed, three installation-only
 skips and zero failures, including browser tests. Hosted checks and review remain
 the PR's gate. Regression tests fail if diagnostic persistence and failed-run
 identity are removed; no killed live worker or deployed installation was used.
+
+Review follow-up adds a scheduled query/command failure test that closes and
+reopens the database, verifies bounded redacted explanations, and checks that
+the last valid sample remains unchanged. A diagnostic-storage failure test
+verifies that other sources continue. The existing real workflow steering test
+now reopens storage and checks the exact multiline reason and returned run ID;
+removing the interruption-reason write reproduces its failure. Current-head
+local and hosted validation are recorded on the PR.
 
 A local synthetic trial used 40 runs with 20 messages each: median logging time
 was 0.06 ms without persistence versus 12.75 ms with persistence, with 2,614 bytes

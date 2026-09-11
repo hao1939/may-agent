@@ -10,7 +10,7 @@ App-subscriber alternative are [archived](../archive/reviews/error-handling-and-
 The narrower [workflow tracing and health metrics proposal](../proposals/workflow-tracing-and-health-metrics.md)
 is now under review; it does not change the accepted contract or activation.
 Its [first source slice](../proposals/workflow-tracing-and-health-metrics.md#first-implementation-candidate)
-at Host `676b3692` adds optional workflow outcome observations and richer metric
+at Host `15b88dbd` adds optional workflow outcome observations and richer metric
 reads. It is not deployed; the existing contract below remains the baseline.
 An [isolated PoC](../archive/reviews/default-error-metrics-poc-20260909.md) tested a
 Task-attempt collector; it is unpublished and does not change current activation
@@ -44,7 +44,13 @@ SDK metric reads expose the latest retained observation's value, `measuredAt`,
 `sampleSize`, `note` and `measureInterval`. With no retained observation, value
 and evidence are null rather than presenting a cached number as freshly measured.
 The definition's `status` remains its lifecycle, not a health verdict. Source
-errors preserve prior samples and retain a bounded diagnostic explanation.
+errors preserve prior samples. The sampler emits `metric.measurement.failed`
+into the existing Event journal with the metric ID, snapshot-trigger event ID
+when present, and a known-secret-redacted reason capped at 2,000 characters.
+This is an observation, not a sample, alert, or automatic request for work;
+it follows normal Event retention. If journal storage itself fails, the sampler
+logs that limitation and continues with other sources. It cannot promise durable
+diagnostics without working Event persistence.
 
 Users should get useful error handling and visibility without assembling a
 complex system. This remains a product goal. Whether default collection and
