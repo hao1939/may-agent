@@ -92,9 +92,9 @@ statements that every actionable App input goes through a Task.
 The September 8 decision in
 [One Fact, One Owner](../../proposals/authority-boundary-simplification.md) explicitly permits
 May to investigate, edit, and verify self-contained authorized work directly.
-Current [request execution](../../../../may-agent/src/app/app-request-agent.ts)
+Current [request execution](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-request-agent.ts)
 contains that instruction and supplies bounded App tools. Its
-[tests](../../../../may-agent/src/app/app-request-agent.test.ts) exercise direct
+[tests](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-request-agent.test.ts) exercise direct
 file work and interrupted execution. This is a source-backed documentation
 mismatch, not merely an unimplemented idea.
 
@@ -159,9 +159,9 @@ deadline and renewing it when due.
 The Task engine has another internal contradiction: mechanism selection puts
 rejected handler results in attention, but the Result Contract groups invalid
 results with exceptions and says they are retried. Current
-[Task runtime](../../../../may-agent/src/app/app-task-runtime.ts) distinguishes
+[Task runtime](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-task-runtime.ts) distinguishes
 `HandlerResultInvalid` attention from execution failure retries, with a
-[regression](../../../../may-agent/src/app/app-task-runtime.test.ts) covering
+[regression](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-task-runtime.test.ts) covering
 recovery of rejected results.
 
 Replace these scattered statements with one outcome table: valid result,
@@ -178,10 +178,10 @@ results/receipts, Conditions, requests, frozen admission records, and
 Conversation/Topic relationships. The Host README calls SQLite a durable index,
 and the user guide labels `may.db` a query/projection store.
 
-The actual [Task resource store](../../../../may-agent/src/app/app-task-resource-store.ts),
-[request store](../../../../may-agent/src/app/app-inbox-store.ts),
-[admission store](../../../../may-agent/src/app/app-event-admission-store.ts), and
-[Conversation store](../../../../may-agent/src/app/conversations/store.ts) contain
+The actual [Task resource store](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-task-resource-store.ts),
+[request store](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-inbox-store.ts),
+[admission store](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/app-event-admission-store.ts), and
+[Conversation store](https://github.com/hao1939/may-agent/blob/de2c1699a2df7d5391ffb277b7b490687a6c60e7/src/app/conversations/store.ts) contain
 authoritative durable state. An operator must not infer that the database can
 be discarded and rebuilt from transcripts.
 

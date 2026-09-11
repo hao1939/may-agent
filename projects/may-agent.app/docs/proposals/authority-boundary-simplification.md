@@ -214,9 +214,53 @@ families into their existing component homes so reviewers can find the whole
 responsibility together. Use existing ESLint import rules; no dependency-analysis
 service, service framework or uniform folder template is needed.
 
+### Core policy cleanup
+
+**Status:** Candidate `7d80cc45` in [Host #144](https://github.com/hao1939/may-agent/pull/144)
+on `fix/core-policy-boundaries`, based on `427d4ea1`; human review and deployment remain separate.
+
+The core/external review found two small policy leaks and unnecessary imports.
+Use the existing boundaries instead of adding another extension mechanism:
+
+- Composition supplies one conversational App identity to both event admission
+  and inbox dispatch. Core enforces durable admission for that selection without
+  naming May. The comparison includes the canonical `.app` alias; unrelated
+  direct-agent input remains available.
+- Remove the obsolete recovery owner-review fallback and notification helpers.
+  Its selector followed a synchronous repair pass that already requeued every
+  matching legacy attention record. Keep that repair, exact Task/generation,
+  prior evidence and its existing observational event. Other blockers retain
+  attention. No new App input, event type or recovery decision is introduced.
+- Put the unchanged persisted recovery-owner constant beside the session-binding
+  contract. Executor adapters import it without loading the reconciler. Core
+  database callers use the connection module directly.
+- Extend existing import restrictions to prevent core from regaining App-input
+  helpers or the database compatibility facade, and prevent executor adapters
+  from importing lifecycle/state mutation implementations. Type-only imports
+  remain allowed; they confer no execution authority.
+
+Regression coverage reopens legacy state with and without old notification
+metadata, runs startup recovery twice, preserves an unrelated domain blocker,
+and completes the same repaired Tasks without an owner-review input. Admission
+coverage selects a differently named conversational App and omits it entirely.
+This is a source cleanup; no App schema migration or new runtime service is needed.
+Larger runtime/reconciler and HTTP file splits remain separate work.
+
+Validation at `7d80cc45`: full local CI passed with 2,687 tests passed, three
+installation-only skips and zero failures; browser coverage ran. Committed ESLint
+tests verify forbidden value imports, allowed contract/type imports, focused
+database imports and composition/test exemptions. The alias regression
+reproduced a bypass before the fix; the focused admission/lint suite passes all 21 tests.
+Canonical design integrity, examples and App checks passed against this source.
+Hosted checks are tracked on the PR. No installation or model-backed test ran.
+
 ### Directory organization for code review
 
-**Priority updated September 11:** This is the next implementation milestone.
+**Status September 11:** Core/composition moves merged in
+[Host #141](https://github.com/hao1939/may-agent/pull/141) as `48254267`.
+Concrete Codex/observer grouping in [#142](https://github.com/hao1939/may-agent/pull/142)
+merged as `427d4ea1` from candidate `b8297fad`.
+The rebase and merge preserve the previously tested tree exactly.
 It does not depend on retiring child waits, evaluation controls or workflow resume.
 The intended reading order is composition -> inbox -> Task runtime -> state,
 then the concrete capability involved.
@@ -258,8 +302,8 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. #138/#139 are merged (`ca6c9d7f`, `b725f546`). Build the layout slices on
-   those ownership boundaries; keep #140's behavioral removal independently reviewable.
+1. #138/#139/#140 are merged (`ca6c9d7f`, `b725f546`, `335bf178`). Build the
+   move-only slices on those ownership boundaries.
 2. Reorganize core Task, inbox, state and shared scheduling files in one cohesive
    move-only slice. Put the mixed inbox orchestration and worker entry points in
    composition. Move tests, update imports, lint boundaries, worker/build paths
@@ -267,9 +311,8 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 3. Group concrete executors and producers in a separate slice. Then extract
    existing HTTP route families where that makes the server readable. Preserve
    their behavior; evaluation feature deletion remains a separate decision.
-4. Implement the accepted child-wait retirement in a separate behavioral PR.
-   Affordable workflow redo remains a separate review. Neither blocks directory
-   organization.
+4. Child-wait retirement landed separately in #140. Affordable workflow redo
+   remains a separate review and does not block directory organization.
 
 For every source slice, run the existing affected tests and full Host CI,
 including subprocess and browser coverage where paths change. Do not add a
@@ -297,15 +340,14 @@ Task attachment and accepted Requests remain in place. Those two PRs did not
 retire child waits; that change is isolated in #140.
 
 The accepted retirement is implemented in [Host #140](https://github.com/hao1939/may-agent/pull/140),
-candidate `f050b1a3` rebased onto `b725f546`. It removes the frontend child protocol
+merged as `335bf178` from reviewed candidate `f050b1a3`. It removes the frontend child protocol
 and upgrades retained parents to visible failed handling while preserving asks
 and admitted work. Frozen install and full local CI passed: 2,682 tests passed,
 three installation-only checks skipped, zero failures; browser coverage ran.
 Two new storage regressions cover file-backed restart, exact/aggregate/reclaimed/
 saved waits, stale claims, unchanged Task evidence and continued Task execution.
 The canonical design check passed against that SDK. This is source/fixture
-evidence; human review and deployment remain outstanding. Directory moves are
-not part of #140.
+evidence; deployment remains separate. Directory moves are not part of #140.
 
 Child-wait removal is now accepted as a separate source change. The earlier
 #138/#139 scope above did not include it. The remaining reductions are:
@@ -322,16 +364,19 @@ Child-wait removal is now accepted as a separate source change. The earlier
   Keep existing paths until redo cost and effect safety have been measured.
 
 Evaluation and workflow redo remain explicit deferrals under the value/cost
-rule. The directory milestone above is newly prioritized; its source moves
-have not yet been implemented.
+rule. The core/composition directory candidate moves 42 files with their tests,
+updates source and fixture imports, retains all runtime algorithms and storage
+formats, and adds short component reading guides. The agent-facing Task tool
+remains outside core. Concrete executor/producer grouping is implemented in the separate 13-file
+slice #142. HTTP extraction remains a separate follow-up.
 Task algorithm rewrites and the remaining feature reductions require separate decisions.
 
 ## Remaining work
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Retire conversational child waits | Accepted; source candidate removes the protocol and fails retained parents visibly. Follow [one durable delegation path](#1-one-durable-delegation-path). Human review and deployment remain separate. |
-| Reorganize directories for code review | Apply the [layout map](#directory-organization-for-code-review) and [bounded milestone](#recommended-next-milestone), preserving behavior and moving tests with their owners. |
+| Retire conversational child waits | Merged in #140; unfinished legacy waits fail visibly while admitted work and accepted asks remain. Deployment is separate. |
+| Reorganize directories for code review | Core/composition (#141) and concrete capabilities (#142) are merged. HTTP extraction remains a separate slice of the [layout map](#directory-organization-for-code-review). |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
@@ -427,3 +472,40 @@ The review should settle which remaining slice comes next and its acceptance
 contract. Completed slices move to their owning design and dated archive;
 unfinished work must remain explicit. Herdr or a new workflow framework is not
 required by this proposal.
+
+### Directory companion and landing order
+
+The workspace directory companion updates the canonical source
+map, local source links and the design-example checker's two internal Host imports.
+Host #141/#142 are merged. Integrate the companion after the source checkout
+advances to that layout; its new imports deliberately
+do not add fallbacks or forwarding modules for older layouts. Historical source
+links remain pinned evidence. Source organization does not change the deployed
+installation.
+
+Workspace branch `docs/core-policy-boundaries` includes that companion and the
+candidate cleanup notes above. Validate it against the matching Host candidate;
+land the Host change before describing its implementation as current.
+
+The core PR also includes a separate test-harness commit: compiled status checks
+use bounded asynchronous subprocesses. During validation, the existing synchronous
+compiler call left an exited child and a spinning test worker; the run was stopped,
+not counted as a pass. The four status checks pass with the corrected harness.
+The runtime move and harness change remain separate commits for review.
+
+### Directory validation
+
+| Candidate | Verified evidence |
+| --- | --- |
+| Core/composition #141, `18f9af01` | Node 24 / Bun 1.3.14 frozen install and full local CI: 2,682 pass, three installation-only skips, zero failures; browser and real worker coverage ran. Runtime changes are moves/path updates. The separate asynchronous status-test fix passes all four original behavior cases. Hosted Quality and Container passed on `18f9af01` (run `34516157559`). |
+| Codex/observers #142, `7754e376` | Full local CI before inheriting the test-only parent fix (`4cde38ce`): 2,682 pass, three installation-only skips, zero failures; browser coverage ran. Refreshed candidate source checks and all four status cases pass. Hosted Quality and Container passed on `7754e376` (run `34516184910`). |
+
+The canonical design check passes against the combined candidate; all 178 local
+links in the changed documentation resolve. Earlier validation exposed and fixed
+a moved test's temporary-database path, then the synchronous compiler stall noted
+above. Failed/stalled runs are not reported as passes. Human review and deployment
+remain separate from these source checks.
+
+PR #142 was rebased onto the squash merge of #141 on September 11. Candidate
+`b8297fad` has the same source tree as `7754e376`; only its ancestry changes.
+The PR now targets `main` directly, without replaying the merged core commits.

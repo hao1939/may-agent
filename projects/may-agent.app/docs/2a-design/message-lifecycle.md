@@ -621,7 +621,7 @@ are not automatically converted into accepted Requests.
 The Host uses `AppInputContext` and `app_inbox_items` for accepted input
 handling; `AppRequest` remains a deprecated compatibility alias. These rows are
 created before May understands the input. The
-[request handler](../../../may-agent/src/app/app-inbox-host.ts) completes a
+[request handler](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) completes a
 frontend row after a direct answer or durable follow-up admission; Task-based
 caller rows may instead wait for a Task result. Neither row's `done` status is
 proof of human fulfillment. The separate accepted Request stores that judgment

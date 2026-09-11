@@ -2,7 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** The four responsibilities below are implemented at
-the [source baseline](../README.md), with partial extraction into `core/`.
+the [source baseline](../README.md). The source map follows the directory moves
+merged in Host #141/#142. The [boundary cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
+tracks subsequent candidate changes separately.
 Task activation and startup recovery are independent of optional schedules.
 [Open work](../proposals/task-runtime-organization.md) is tracked separately;
 this page does not identify the deployed release.
@@ -152,32 +154,34 @@ configuration or unavailable authoritative store an acceptable silent skip.
 
 ## Code organization
 
-Paths are relative to `projects/may-agent`. Folder ownership is visible, but
-transaction-critical modules retain their current homes where extraction has
-not yet earned its cost:
+Paths are relative to `projects/may-agent`. This map follows the directory-layout
+merge [#141](https://github.com/hao1939/may-agent/pull/141) (`48254267`) and
+the adapter merge [#142](https://github.com/hao1939/may-agent/pull/142) (`427d4ea1`).
+The moves preserve existing transitions and transaction boundaries;
+its review and validation are tracked in the
+[simplification proposal](../proposals/authority-boundary-simplification.md#directory-organization-for-code-review).
 
 ```text
 src/app/
   core/
     apps/                 validated registry and generations
     events/               publication, admission and observation
-    state/inbox.ts        atomic input-to-Task attachment and completion
-    state/conversation*.ts Conversation/Request/Topic reads and coordinated writes
-    tasks/                controller and executor/recovery contracts
-    scheduling/timer.ts   shared timing mechanics
+    inbox/                generic input claims, ordering, Stop and handler contract
+    state/                durable stores and atomic Task/Conversation/Request operations
+    tasks/                Task runtime, transitions, controller and recovery
+    scheduling/           shared capacity and timer mechanics
     reads/                canonical Task/request/result reads
   adapters/
     discovery/            conventional App source loading
     executors/            agent, workflow and native backends
-    producers/            App schedule production
+      codex/              Codex goal client, packet, progress and result handling
+    producers/            App schedule and observer production
     workspaces/           worktree backends
     maintenance/          named, bounded Host maintenance
     reporting/            optional projections
-  composition/            select and wire the above; own activation/cleanup
+  composition/            inbox orchestration, capability selection and cleanup
+    workers/              concrete admission, attempt and recovery process entry points
   app-runtime.ts          main composition, reload and shutdown
-  app-task-*.ts           remaining Task runtime, transitions and stores
-  app-inbox-*.ts          input handling, admission and stores
-  app-observer-runtime.ts observer registration and execution
   conversations/         replaceable context, turn handler and agent integration
   transport/, http/      existing interface adapter homes
 src/lib/db/              shared schema and transaction primitives
@@ -190,8 +194,9 @@ projects/<id>.app/       App-owned policy, agents and workflows (workspace)
 ```
 
 The [storage proposal](../proposals/storage-state-service.md#code-organization)
-considers further meaningful operations in `core/state/`. It does not claim all
-Task stores have moved there or require a separate API server.
+owns meaningful operations in `core/state/`; it does not require a separate API
+server. Task snapshot/mutation helpers stay beside the Task runtime; canonical
+SQLite persistence lives in `core/state/app-task-resource-store.ts`.
 Its [conversation slice](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
 landed in #129 and separates core state operations from replaceable frontend
 handling. ESLint prevents core imports of concrete conversational handlers.
@@ -202,6 +207,11 @@ handling. ESLint prevents core imports of concrete conversational handlers.
 | Adapter | Uses existing public contracts and narrowly supplied capabilities; does not own private Task stores or queues |
 | Composition | Imports both sides and wires them; contains no domain decisions or duplicate transition logic |
 | App | Imports the SDK and its own domain modules; never Host-private implementation |
+
+Composition supplies the same conversational App identity to event admission
+and inbox dispatch. Core enforces durable input handling without naming May.
+Executors share persisted session identities through the small session-binding
+contract; importing a lifecycle type does not grant state mutation authority.
 
 Put an extension beside its existing capability family, use its typed contract,
 and attach it through composition or an App declaration. Keep activation and
