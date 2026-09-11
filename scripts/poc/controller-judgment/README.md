@@ -181,24 +181,22 @@ refined contract leaves evidence correlation to code and asks the model only
 for its decision and explanation. Retained references identify evidence given
 to the judgment; they do not assert that every fact was independently verified.
 
-Remaining acceptance: actual Conversation -> A -> B execution and result return,
-non-success dispositions, exact assignment reuse, human input during a wait,
-Stop and pause, missed notifications, quiet timers, migration with one execution
-owner, and a measured reduction in source paths. Compare against the current
-contract on the same work before claiming simpler or more reliable operation.
+The later shared-loop trials above exercise A → B → C → B → A with human
+discussion and real model judgment. They have broader scope than this early
+judgment probe. Runtime, state, process and cutover coverage are mapped in
+[test coverage ownership](../../../test/README.md). No one probe establishes
+the whole lifecycle or lower maintenance cost.
 
 ## Recovery and backoff
 
 `bun scripts/poc/controller-judgment/backoff.ts` probes whether a normal wake
 can bypass the controller's retry delay. It uses the real controller and real
 timers without a model or database. It exits nonzero if either the ordinary
-retry or the wake-during-cooldown case runs early. The current source fails the
-second case: a timer schedules a retry, but does not fence earlier queue input.
-This controller-only dispatch probe still exposes that early callback. The Task
-state boundary now enforces a durable retry deadline before claiming an actual
-attempt, so an early callback cannot execute a cooling Task. Dispatch failures
-that cannot persist Task state remain a separate retry-timer gap; this script
-is retained unchanged and still exits nonzero. Do not count it as passing.
+retry or the wake-during-cooldown case runs early. The initial source failed the
+second case before dispatch timers were enforced. Both cases now pass: ordinary
+wakes respect the controller's existing retry deadline. Task state separately
+enforces its durable deadline before claiming an actual attempt. This small
+dispatch probe adds no evidence about model judgment or cross-process recovery.
 
 `app-task-retry.test.ts` exercises file-backed SQLite reopen and the actual due
 scheduler/controller, including an early wake, no capacity held while waiting,

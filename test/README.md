@@ -109,7 +109,27 @@ atomic result/closure wakes. The daemon checks verify accepted attempts on
 retained Tasks after graceful shutdown while waiting and a crash during workflow
 execution, with optional schedules disabled. Scheduled workflow discovery also
 checks the accepted attempt while its Task stays open. These are isolated
-candidate-to-candidate restarts; old-version cutover still needs verification.
+candidate-to-candidate restarts. The separate old-version trial below crosses
+the actual daemon boundary.
+
+For an opt-in old-source cutover trial, use a clean, dependency-installed Host
+checkout with the prior lifecycle:
+
+```sh
+bun scripts/poc/task-runtime-cutover.ts --legacy-source /path/to/old-host --out /tmp/task-cutover-report
+```
+
+This Linux harness starts the old daemon with temporary Apps and a local
+scripted provider. It retains an accepted reply/Request, holds the next human
+input in real inbox execution and holds measurement/supervisor workflow workers.
+It stops the old parent before taking its process census, terminates it, and
+verifies every observed child has exited before converting state. The candidate
+daemon must answer the original input, complete the same measurement generation,
+preserve history, retire the supervisor and accept fresh input on the same Task.
+The obsolete inbox claim is checked before its old expiry so expiry cannot hide
+missing ownership fencing. No installed state or real model endpoint is used.
+This requires an explicit old source checkout and is outside ordinary CI; it
+proves the exercised fixture upgrade, not an arbitrary installation or rollback.
 
 Human Task detail reads include structured results from retained Task state and
 historical receipts. Their tests keep those results out of compact cards and
