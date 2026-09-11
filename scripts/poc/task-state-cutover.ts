@@ -22,6 +22,7 @@ import {
   appTaskContext,
   claimObservedAppTask,
   completeAppTask,
+  closeAppTask,
   readAppTaskAdmissionOutcome,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
 
@@ -48,7 +49,7 @@ try {
     appDir: root,
     databasePath: path,
     agent: "worker",
-    maxConcurrent: 1,
+    maxConcurrent: 2,
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "worker" } } },
   });
   oldStore = old.resourceStore;
@@ -145,6 +146,7 @@ try {
   });
   const humanClosure = oldStore.readCancellation("cancelled");
   const inflight = oldClaim("inflight");
+  const supervisor = oldClaim("conversation/follow-up", "maintain");
   oldStore.close();
   oldStore = undefined;
 
@@ -182,11 +184,11 @@ try {
     linkedInputs: 0,
   });
   assert.deepEqual(migrateOpenTaskState(current, { oldRuntimeStopped: true }), {
-    tasks: 5,
+    tasks: 6,
     outcomes: 2,
-    continued: 3,
+    continued: 4,
     workerStops: 1,
-    inputs: 5,
+    inputs: 6,
   });
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "maintained", "maintained")?.result, { value: 23 });
   assert.equal(store.readTask("maintained")?.status.observedAttemptId, maintained.attemptId);
@@ -194,6 +196,23 @@ try {
   assert.deepEqual(store.readAttempt(stopped.attemptId)?.retiredCancellation, selfStop);
   assert.deepEqual(store.readCancellation("cancelled"), humanClosure);
   assert.equal(completeAppTask(current, inflight, { summary: "Obsolete result" }).status, "stale");
+  // The assigning owner retires the former supervision role using normal closure.
+  // Nothing closes the other maintained or unfinished Tasks as a side effect.
+  const retired = store.readTask(supervisor.taskId)!;
+  closeAppTask(current, {
+    appId: "sample",
+    taskId: supervisor.taskId,
+    expectedGeneration: retired.metadata.generation,
+    expectedResourceVersion: retired.metadata.resourceVersion,
+    reason: "Owner moved follow-through into Conversation",
+  });
+  assert.equal(store.readCancellation(supervisor.taskId)?.kind, "closed");
+  assert.equal(completeAppTask(current, supervisor, { summary: "Obsolete supervisor output" }).status, "stale");
+  assert.equal(
+    claimObservedAppTask(current, { taskId: supervisor.taskId, appAgent: "worker", handler: "agent" }).kind,
+    "completed",
+  );
+  assert.equal(store.isCancelled("maintained"), false);
   assert.deepEqual(migrateOpenTaskState(current, { oldRuntimeStopped: true }), {
     tasks: 0,
     outcomes: 0,
@@ -239,6 +258,7 @@ try {
       maintainedOutcomes: 1,
       continuedTasks: 4,
       humanClosurePreserved: true,
+      retiredSupervisor: true,
     }),
   );
 } finally {
