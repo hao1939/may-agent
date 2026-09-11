@@ -51,42 +51,77 @@ an authority distinction, not a requirement for another model or service.
 
 ## Recovery evidence and remaining gap
 
-Source [checkpoint `c1c9f72b`](https://github.com/hao1939/may-agent/commit/c1c9f72b)
-adds two tests using real Task storage and the controller:
+Source [checkpoint `5b65d155`](https://github.com/hao1939/may-agent/commit/5b65d155)
+implements persisted retry eligibility in the existing Task resource JSON and
+indexed due column. It removes the four-failure gate. Failed execution, an
+accepted failure report and rejected handler output retain unfinished input
+and schedule a later attempt. A failure report remains accepted attempt evidence
+without binding it as the final answer to the caller's original assignment.
+Owner closure fences late results and now also rejects subsequent wake writes.
 
-- **24 independent Tasks** each encounter one supplied retry-safe execution
-  failure, then complete on their second attempt. No model generates an action
-  batch or unblock command. They remain open with their results after SQLite
-  reopen. This proves mechanics for the fixture, not retry safety for every
-  failure in #154's reported incident.
-- **Exhausted execution retries** leave the Task open and failure evidence
-  intact across reopen. The intended ordinary-wake assertion had an incorrect
-  call signature in this checkpoint; its uncommitted correction needs a rerun.
-  This records the old failure-count gate, which now conflicts with the target.
-  It does not prove continued recovery or fresh human input isolation.
+The focused source suite passed **31 tests**, including:
 
-The portable [backoff probe](https://github.com/hao1939/may-agent/blob/c1c9f72b/scripts/poc/controller-judgment/backoff.ts)
-found a separate defect. With a configured 200 ms retry delay, the final run
-waited **202 ms** without another wake, but retried after **1 ms** when a wake
-arrived from the failure callback. It exits nonzero to keep that acceptance
-gap visible. The existing timer schedules a future retry but does not prevent
-earlier queue input. It is a controller/timer probe, not a model or SQLite
-restart test; restart-safe cooldown remains to implement and verify.
+- **24 independent Tasks** each fail once and recover through the actual
+  controller and due scheduler without an agent-generated unblock batch.
+- **Seven consecutive failures** retain the same Task and original input,
+  respecting backoff across reopen and duplicate wakes before succeeding.
+- **An accepted failure report, then success** preserves the first report and
+  binds the eventual answer to the original ask. A parent can read a child's
+  failure while that child's unfinished work retains continuation.
+- **Real timer and restart:** an early wake cannot claim during cooldown,
+  capacity is released, and the reopened store's deadline starts the retry.
+- **Atomic failure settlement:** a rejected storage write leaves the attempt
+  running without a half-written retry deadline. Indexed hint updates cannot
+  clear a future deadline. Owner revision can replace the assignment; closure
+  prevents future claims and rejects late failure settlement.
 
-The next mechanism is a persisted retry-eligibility deadline checked before
-claiming and indexed by the existing recovery scan. Its initial uncommitted
-source patch passes TypeScript checking but has not passed behavioral checks;
-it still retains the four-failure stop and handles execution errors only.
-Neither that patch nor this checkpoint implements the revised baseline.
+The 24-Task test first failed because a deadline could become overdue during
+other synchronous state transitions. The existing scheduler then deferred it
+to the long safety scan. The checkpoint fixes this by querying overdue work
+once after a state change, without recursively re-arming against unchanged
+rows. The earlier test's incorrectly called wake assertion was replaced by
+actual three-argument wakes and deadline assertions in the seven-failure case.
 
-The next acceptance checks must cover an accepted failure report followed by
-useful continuation on the same assignment, more than four failed attempts
-followed by recovery without unblock, duplicate wakes/restart during cooldown,
-and owner revision or closure. Include a real model that learns from its prior
-failure without deciding whether to keep the assignment. Verify that failure
-reports reach the parent without falsely completing its Request, and that
-later progress remains discoverable. Never manufacture success or closure to
-make the retry machinery settle.
+The original [controller-only backoff probe](https://github.com/hao1939/may-agent/blob/5b65d155/scripts/poc/controller-judgment/backoff.ts)
+is retained unchanged. It previously measured **202 ms** for a 200 ms retry
+and **1 ms** with a failure-callback wake. The new Task eligibility check stops
+such an early callback from claiming a cooling Task. That does not repair the
+probe's separate dispatch-timer behavior when no Task failure can be persisted;
+it remains a failing acceptance gap, not a passing test. Re-running it at
+`5b65d155` measured **201 ms** normally and **1 ms** after the callback wake.
+
+A [live worker trial](https://github.com/hao1939/may-agent/blob/5b65d155/scripts/poc/controller-judgment/continuing-failure.ts)
+uses the real Task protocol/schema and a read-only tool. The first model
+attempt reads an unavailable measurement and reports failure. The fixture
+repairs the source and reopens SQLite; the ordinary recovery scheduler starts
+a fresh model attempt, without a new ask or unblock. The next attempt must read
+the current source and answer the original question. Both trials ran on clean
+`5b65d155` with `gpt-5.6-sol`:
+
+| Repaired observation | Final answer | Executions | Execution time | Reported tokens |
+| --- | --- | --- | --- | --- |
+| 0.92, minimum 0.90 | Meets the minimum | 2 | 16.1 s | 12,397 |
+| 0.78, minimum 0.90 | Does not meet the minimum | 2 | 12.5 s | 12,447 |
+
+Both first attempts returned an honest failure, followed by a completed answer
+on the same assignment after restart. Each execution used only `read` and
+`finish`; neither model managed a retry or copied a runtime identifier. The
+second case distinguishes a failed attempt to obtain evidence from a successful
+answer reporting an unfavorable measurement. Both final results remain readable
+while the Task stays open and quiet. Reported token counts include repeated
+prompt input and cached tokens; they are not a verified bill.
+
+This exercises direct-agent execution under the controller; it is not an
+installed App or the full managed Conversation runtime. The fixture repairs
+the source; it does not prove autonomous diagnosis or repair of a real service.
+
+Remaining recovery work includes scoped cooldown so a failed conversational
+ask cannot delay unrelated fresh human input, migration of old failure/receipt
+readers, and dispatch failures that cannot persist state. Initial pacing reuses
+250 ms exponential delay capped at 30 seconds; that is an experimental default,
+not evidence of acceptable long-term cost under sustained failures. The retained
+SDK spelling `stopped` is also misleading for a continuing unsuccessful attempt;
+public vocabulary and consumers still need a coordinated migration.
 
 PR #153's earlier live Host-contract trials already showed that a model can
 return an honest give-up and have it accepted after the execution fix. The
@@ -127,21 +162,30 @@ execution still need integration. Do not describe it as a completed cutover.
 
 ## Verification and cost
 
-The latest direct Conversation, common-lifecycle and Conversation-agent checks
-passed **42 tests**. Host/SDK types, App-boundary checks and lint passed. The
-backoff acceptance probe deliberately remains failing as described above.
+At `5b65d155`, Host/SDK types, App-boundary checks and lint passed. The focused
+recovery/common-lifecycle suite passed 31 tests. The full portable run finished
+with **2,621 passes, 3 skips and 147 failures**, across 2,771 tests in 282 files
+(288.8 seconds). Full CI is not green. The failures include removed
+`isComplete()` calls in startup fixtures, old receipt/deletion assertions,
+fixed-count recovery expectations and handler-repair paths that no longer find
+new failures in `attention`. Five stale-handler tests time out while waiting
+for that old repair path. These need migration and regression review, not
+blanket expectation updates or skipped checks.
 
-A broader Conversation/inbox/schema run had **86 passes and 3 failures**.
-Running the affected old Request suite on unmodified `a66f0073` reproduced
-the same three failures: two require completed-task receipts, and one expects
-an App-stopped Task to disappear from stale follow-up discovery. These remain
-migration work; they were not waived or hidden. The previous broader Task
-[audit](controller-poc-input-continuation.md#evidence) is also not green.
-No full-CI, production cutover or overall simplification claim is made.
+Earlier Conversation checks had 86 passes and 3 failures; the previous broader
+Task [audit](controller-poc-input-continuation.md#evidence) also remained red.
+Those are historical observations, not a fresh result for this checkpoint.
+No production cutover or overall simplification claim is made.
 
 The Conversation slice adds an execution link on retained inputs, a state
 operation composing existing transactions, and a composition entry. There is
 no new table, scheduler, model role or inbox execution lease. It adds code
 without yet deleting the old runtime path, so net simplification is unproven.
-The source is committed on `poc/task-outcomes-and-closure`; Host main and the
+This recovery checkpoint adds no table, controller or recovery role. Its
+production source diff is 32 lines smaller in this checkpoint: it removes the
+fixed-count gate and simplifies failure settlement while adding one durable
+deadline and an overdue-timer correction. This excludes tests and the live
+harness, and does not establish whole-system simplification. Legacy handler
+recovery/read paths still need retirement. The source is committed on
+`poc/task-outcomes-and-closure`; Host main and the
 installation remain unchanged. Human review is still required for Host PRs.

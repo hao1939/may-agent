@@ -162,7 +162,8 @@ A saved failure report is accepted evidence, but it does not mark the original
 assignment fulfilled or erase its future retry eligibility.
 
 The [review of PRs #153–#155](controller-poc-recovery-review.md) applies these
-rules to their actual changes and records an observed backoff bypass.
+rules to their actual changes and records the durable-retry source checks,
+live worker trials and remaining gaps.
 
 ## One lifecycle, explicit outcomes
 
