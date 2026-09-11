@@ -7,7 +7,7 @@ activation API.
 ## Run
 
 ```sh
-# Real daemon, committed fixture source, reload and query preflight; no model.
+# Real daemon, successful/rejected reload and query preflight; no model.
 bun scripts/poc/conversation-adoption.ts
 bun test scripts/poc/conversation-adoption.test.ts
 
@@ -39,6 +39,9 @@ after the audit when it is no longer needed.
   `definition_source` adapter restricts Git to explicitly listed guidance and
   requests the existing reload over the temporary socket. It is experimental
   wiring, not an automatically installed production capability.
+  Reload inspection follows the exact request event to its durable completion
+  link; a 30-second observation bound or unavailable read is pending evidence,
+  not a failed activation. The active source is checked separately.
 - The agent has no shell, external-PR mutation, dependency installation or
   deployment tool. Runtime still writes its ordinary session evidence. The
   write adapter permits only the synthetic agent's identity and skill files;
