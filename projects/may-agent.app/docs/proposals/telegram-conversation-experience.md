@@ -3,7 +3,7 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `15c8ea2e`, with
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `cc8d967f`, with
 the simplicity correction below following the verified `7bfb7f08` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
@@ -289,10 +289,15 @@ store, queue, retry path or migration work is needed. The two regressions exerci
 real admission and prepared agent input, delayed delivery, storage reopen,
 redelivery, explicit replies, cleared selection and out-of-scope Topic hints.
 This is source evidence with a fake provider/model, not a live conversation trial.
-At `15c8ea2e`, 106 affected tests and canonical design checks pass; current full
-local and hosted validation is tracked on the PR. Runtime changes add 11 net
-lines across three files and remove the last-answer map. No migration changes
-were made in this correction.
+At `15c8ea2e`, 106 affected tests and canonical design checks pass. Runtime
+changes add 11 net lines across three files and remove the last-answer map.
+No migration changes were made in this correction. The test-only follow-up
+`cc8d967f` measures waits monotonically: an injected wall-clock jump reproduced
+an early retry-test timeout before the change and passed afterward, with the
+same timeout and assertions. The subsequent full local run had 2,763 passes,
+three existing installation-only skips and one early timeout in an unchanged
+controller test; its 24-test owning suite passes in isolation. Hosted checks and
+review status remain on the PR. This is not a clean local full-suite claim.
 
 ### Existing candidate evidence
 
