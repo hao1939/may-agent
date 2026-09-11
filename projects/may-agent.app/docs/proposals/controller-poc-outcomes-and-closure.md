@@ -105,6 +105,11 @@ the complete managed Task adapter or installed App. The harness now separately
 checks the judgment choice and its accepted source outcome, so a correct answer
 misclassified by the controller cannot make the experiment pass.
 
+The independently reviewable fix at `edd368ac` also passed full local
+`bun run ci`: **2,736 tests passed, 3 installation-dependent skips, 0 failures**.
+That check used current Host main plus the execution fix. It does not make the
+larger lifecycle branch's migration failures green.
+
 The broader affected-suite audit is **not green**: 300 passed, 77 failed, with
 3 asynchronous errors across 377 tests. Many assertions and polling fixtures
 still depend on Task deletion, a completion receipt, or the old stop semantics;
