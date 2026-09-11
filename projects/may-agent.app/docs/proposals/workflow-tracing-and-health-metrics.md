@@ -6,7 +6,7 @@ remaining expansion below is for review, September 11, 2026.
 `939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
 [first candidate](#first-implementation-candidate) records that evidence. The
-page refinement is implemented in Host #147 (`a481ea32`), not yet merged or
+page refinement is implemented in Host #147 (`24fffb42`), not yet merged or
 deployed; [page candidate](#page-refinement-candidate) records its verification
 and remaining scope.
 
@@ -371,7 +371,7 @@ does not claim a proven performance budget or retention duration.
 ## Existing implementation and focused gaps
 
 Source baseline is Host `e1a0005e`, including merged #143. Page candidate
-`a481ea32` fills the reporting/UI gaps as follows:
+`24fffb42` fills the reporting/UI gaps as follows:
 
 | Existing home | Present capability / remaining gap |
 | --- | --- |
@@ -411,7 +411,7 @@ remain rollout gates, not a reason to implement every future metric now.
 
 ## Page refinement candidate
 
-Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `a481ea32`,
+Host [PR #147](https://github.com/hao1939/may-agent/pull/147), head `24fffb42`,
 implements the bounded page scope above. It is not merged or deployed.
 
 - Overview exposes balanced finished outcomes, current running executions,
@@ -428,12 +428,13 @@ implements the bounded page scope above. It is not merged or deployed.
 The owning [Metrics](../2a-design/metrics.md#bounded-reporting-reads) and
 [Web UI](../2a-design/webui.md#overview-metrics-and-run-inspection) contracts
 record exact semantics and interactive limits. Reporting stays outside core;
-the only storage addition is an end-time index. No metric client, service,
+storage additions are a workflow end-time index and two open-alert indexes.
+No metric client, service,
 new sampler or lifecycle is introduced. The unchanged scalar metric API does
 not gain monotonic counters or histograms merely because those types are useful.
 
-Local `bun run ci` passed on exact head `a481ea32`: 2,708 tests passed, three
-installation-only checks skipped and zero failed (108.33 seconds for tests),
+Local `bun run ci` passed on exact head `24fffb42`: 2,709 tests passed, three
+installation-only checks skipped and zero failed (105.52 seconds for tests),
 plus type, boundary and lint checks. The browser test exercises served code
 against a synthetic file-backed HTTP installation, including Overview to
 selected errors to exact run evidence, irregular history, safe text rendering,
@@ -445,11 +446,26 @@ when the global list hit its cap. The 503-alert regression fails before the
 fix; exact detail now selects that metric's latest alert, while a truncated
 list leaves unobserved alert state unknown. All three HTTP/browser checks pass.
 Hosted Quality and Container passed on the same head in
-[run 34559259844](https://github.com/hao1939/may-agent/actions/runs/34559259844),
-including the actual image build and isolated smoke execution. The PR is ready
-for review, with no review threads outstanding when checked. Design integrity,
-checked examples and canonical App-boundary checks also pass. Merge and
+[run 34560590572](https://github.com/hao1939/may-agent/actions/runs/34560590572),
+including the actual image build and isolated smoke execution. Design integrity,
+checked examples and canonical App-boundary checks also passed. Merge and
 deployment remain separate.
+
+Review follow-up `24fffb42` fixes the separate Overview 20-alert cap and missing
+alert-query indexes. HTTP and browser tests distinguish no alerts, exactly 20
+and more than 20; the 503-alert case keeps unseen alert state unknown. A schema
+test verifies both ordered partial indexes, no temporary sort, and repeatable
+upgrade of retained rows. The regressions failed before the fixes; all 11
+affected checks and the full current-head local/hosted gates pass. Both review
+comments are addressed; source is ready for review, not merged or deployed.
+
+A local probe extracted the actual joined alert queries from the HTTP source.
+With 200,000 resolved and 1,000 open synthetic alerts, median query times before
+and after indexing were 8.45/0.024 ms for Overview, 9.03/0.98 ms for global
+Metrics and 7.76/0.48 ms for exact metric detail. Plans changed from alert-table
+scans and temporary sorting to the respective partial indexes. This is
+in-memory query evidence, not deployed latency or a constant-time claim for
+arbitrarily many unresolved alerts or project joins.
 
 A synthetic in-memory trial used 100,000 runs, 500 metric definitions,
 100,000 samples and 10,000 collection failures. Median/p95 query time was
