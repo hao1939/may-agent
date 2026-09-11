@@ -3167,9 +3167,14 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
   }
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
-  opts.bus.listen(
+  const bus = opts.bus;
+  bus.listen(
     (rawEvent): void => {
       if (rawEvent.type !== "session.start" && rawEvent.type !== "session.end") return;
+      // The listener outlives reloads and close/reinstall. Read adapters from
+      // the same published generation as the descriptors for this event.
+      const opts = appRouterOptionsByBus.get(bus);
+      if (!opts) return;
       const event = flattenEvent(rawEvent);
       const startedSessionId =
         event.type === "session.start" && typeof event.sessionId === "string" ? event.sessionId.trim() : "";
@@ -3362,6 +3367,7 @@ export async function installAppTaskRuntimes(
 ): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
   const prepared = await prepareAppTaskRuntimeDescriptors(opts);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
+  const previousOptions = appRouterOptionsByBus.get(opts.bus);
   let published = false;
   try {
     return await commitAppTaskRuntimeDescriptors(
@@ -3383,10 +3389,15 @@ export async function installAppTaskRuntimes(
     // generation backward. Normal indexed recovery will retry the work.
     if (published) throw error;
     try {
-      await commitAppTaskRuntimeDescriptors({ ...opts, afterCommit: undefined }, previous, {
+      // Restore the accepted adapters and source roots with their descriptors.
+      // A rejected candidate cannot supply the options for the old generation.
+      await commitAppTaskRuntimeDescriptors({ ...(previousOptions ?? opts), afterCommit: undefined }, previous, {
         includeFreshLeases: false,
         deferred: false,
       });
+      // No accepted runtime existed: leave the process-scoped listener inert
+      // and prevent later recovery from using the rejected candidate's options.
+      if (!previousOptions) appRouterOptionsByBus.delete(opts.bus);
     } catch (rollbackError) {
       throw new AggregateError(
         [error, rollbackError],
