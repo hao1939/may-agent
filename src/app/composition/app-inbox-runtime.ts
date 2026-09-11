@@ -128,6 +128,7 @@ export type StartAppInboxRuntimeOptions = {
     appId: string;
     appDir: string;
     dependency: { kind: "task"; id: string };
+    admissionKey?: string;
   }) => Promise<AppDependencyObservation | null>;
   /** Shared Host capacity used by both request decisions and Task attempts. */
   hostCapacity: HostCapacity;

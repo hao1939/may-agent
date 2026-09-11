@@ -245,7 +245,7 @@ describe("App inbox host", () => {
     ]);
   });
 
-  it("reconsiders a terminal historical Task before promising to reuse it", async () => {
+  it("reconsiders a closed historical Task before promising to reuse it", async () => {
     const may = defineApp({
       id: "may",
       version: 1,
@@ -271,7 +271,7 @@ describe("App inbox host", () => {
     const host = createConversationInbox({
       db,
       apps: [may, app()],
-      readDependency: async ({ dependency }) => ({ ...dependency, status: "done" }),
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "done", closed: true }),
       resolveRequest: async ({ request }) => {
         calls += 1;
         if (calls === 1) {
@@ -290,7 +290,7 @@ describe("App inbox host", () => {
         }
         expect(request.referencedTasks).toContainEqual({
           appId: "evaluation",
-          task: { kind: "task", id: "probe/old-review", status: "done" },
+          task: { kind: "task", id: "probe/old-review", status: "done", closed: true },
         });
         return {
           summary: "The old review is complete, so this is new work.",
@@ -702,7 +702,7 @@ describe("App inbox host", () => {
     });
   });
 
-  it("wakes an attention Task but does not silently apply input to a terminal Task", async () => {
+  it("accepts input after attention or an answer, but refuses a closed Task", async () => {
     const attachments: AppTaskAttachment[] = [];
     const completed: unknown[] = [];
     const host = createConversationInbox({
@@ -711,6 +711,7 @@ describe("App inbox host", () => {
       readDependency: async ({ dependency }) => ({
         ...dependency,
         status: dependency.id === "probe/attention" ? "attention" : "done",
+        closed: dependency.id === "probe/closed",
       }),
       attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
         attachments.push(attachment);
@@ -721,6 +722,7 @@ describe("App inbox host", () => {
     for (const [id, taskId] of [
       ["feedback-attention", "probe/attention"],
       ["feedback-done", "probe/done"],
+      ["feedback-closed", "probe/closed"],
     ] as const) {
       host.admit({
         id,
@@ -733,18 +735,22 @@ describe("App inbox host", () => {
 
     expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
     expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
-    expect(attachments).toEqual([{ kind: "existing", taskId: "probe/attention" }]);
+    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
+    expect(attachments).toEqual([{ kind: "existing", taskId: "probe/attention" }, { kind: "existing", taskId: "probe/done" }]);
     expect(host.get("feedback-attention")).toMatchObject({
       status: "handling",
       waitingOn: { kind: "task", id: "probe/attention" },
     });
     expect(host.get("feedback-done")).toMatchObject({
+      status: "handling", waitingOn: { kind: "task", id: "probe/done" },
+    });
+    expect(host.get("feedback-closed")).toMatchObject({
       status: "done",
       result: { summary: expect.stringContaining("new input was not applied") },
     });
     expect(completed).toEqual([
       {
-        id: "feedback-done",
+        id: "feedback-closed",
         result: { summary: expect.stringContaining("must be reconsidered as distinct follow-up work") },
       },
     ]);
@@ -965,7 +971,7 @@ describe("App inbox host", () => {
     expect(host.get("fast")).toMatchObject({ status: "done", result: { summary: "Already complete" } });
   });
 
-  it("re-observes each canonical Task dependency once and wakes only its App", async () => {
+  it("re-observes each waiting input and wakes only its App", async () => {
     const constantTaskApp = (id: string) =>
       defineApp({
         ...app(id),
@@ -1001,7 +1007,7 @@ describe("App inbox host", () => {
       wokenAppIds: ["evaluation"],
       errors: [],
     });
-    expect(reads).toEqual(["alpha-project/runtime/owner-review", "evaluation/runtime/owner-review"]);
+    expect(reads).toEqual(["alpha-project/runtime/owner-review", "evaluation/runtime/owner-review", "evaluation/runtime/owner-review"]);
     expect(host.get("evaluation-1")?.availableAt).toBeDefined();
     expect(host.get("evaluation-2")?.availableAt).toBeDefined();
     expect(host.get("aks-1")?.availableAt).toBeUndefined();

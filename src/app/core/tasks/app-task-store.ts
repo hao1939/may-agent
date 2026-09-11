@@ -136,6 +136,8 @@ export type AppTaskAdmission = {
   taskGeneration: number;
   specHash: string;
   admittedAt: string;
+  /** Exact accepted answer for this input; later Task outcomes do not replace it. */
+  resultAttemptId?: string;
 };
 
 export type TaskTree = {

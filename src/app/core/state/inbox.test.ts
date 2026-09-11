@@ -268,12 +268,13 @@ describe("request-to-Task state operation", () => {
     expect(readTaskSnapshot(config).resources?.recomputed).toBeDefined();
   });
 
-  it("leaves a request ready when matching work completed before attachment", () => {
+  it("does not satisfy a new input with an earlier answer from the same Task", () => {
     const { db, config, input } = fixture();
     admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
     finishTask(config);
     attachRequestToTask(config, input);
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    expect(getAppInboxItem(db, input.request.id)?.taskAdmissionKey).toBe(input.idempotencyKey);
     expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
   });
 

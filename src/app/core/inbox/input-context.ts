@@ -5,6 +5,7 @@ import { getAppInboxItem, type AppInboxItem } from "../state/app-inbox-store.js"
 export type AppDependencyReader = (input: {
   appId: string;
   dependency: { kind: "task"; id: string };
+  admissionKey?: string;
 }) => Promise<AppDependencyObservation | null>;
 
 export function freezeInputContext<T>(value: T): T {
@@ -17,8 +18,9 @@ export async function observeTaskDependency(
   readDependency: AppDependencyReader | undefined,
   appId: string,
   dependency: { kind: "task"; id: string },
+  admissionKey?: string,
 ): Promise<AppDependencyObservation | null> {
-  const observed = await readDependency?.({ appId, dependency });
+  const observed = await readDependency?.({ appId, dependency, ...(admissionKey ? { admissionKey } : {}) });
   if (observed && (observed.kind !== dependency.kind || observed.id !== dependency.id)) {
     throw new Error(`Dependency reader returned a mismatched observation for ${dependency.kind}:${dependency.id}`);
   }
@@ -70,7 +72,7 @@ export async function readInputContext(
   if (waitingOn.kind !== "task") return freezeInputContext(request);
   const dependency = { kind: "task", id: waitingOn.id } as const;
 
-  const observed = await observeTaskDependency(readDependency, item.appId, dependency);
+  const observed = await observeTaskDependency(readDependency, item.appId, dependency, item.taskAdmissionKey);
   request.dependency = observed ?? { ...dependency, status: "unknown" };
   return freezeInputContext(request);
 }

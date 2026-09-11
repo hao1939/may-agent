@@ -310,7 +310,7 @@ describe("App inbox store", () => {
     expect(claimAppInboxItem(db, "retry-wait", "worker-3", 50, 10_001)).not.toBeNull();
   });
 
-  it("deduplicates Task recovery keys and scopes a wake to the canonical App", () => {
+  it("pages exact input links even when several await the same Task", () => {
     const waitForTask = (id: string, appId: string) => {
       createAppInboxItem(db, {
         id,
@@ -328,11 +328,16 @@ describe("App inbox store", () => {
 
     const first = listAppInboxTaskDependencyKeys(db, { limit: 1 });
     expect(first).toEqual({
-      items: [{ appId: "alpha-project", taskId: "runtime/owner-review" }],
-      nextCursor: { appId: "alpha-project", taskId: "runtime/owner-review" },
+      items: [{ appId: "alpha-project", taskId: "runtime/owner-review", inputId: "aks-1" }],
+      nextCursor: { appId: "alpha-project", taskId: "runtime/owner-review", inputId: "aks-1" },
     });
-    expect(listAppInboxTaskDependencyKeys(db, { after: first.nextCursor, limit: 1 })).toEqual({
-      items: [{ appId: "evaluation", taskId: "runtime/owner-review" }],
+    const second = listAppInboxTaskDependencyKeys(db, { after: first.nextCursor, limit: 1 });
+    expect(second).toEqual({
+      items: [{ appId: "evaluation", taskId: "runtime/owner-review", inputId: "evaluation-1" }],
+      nextCursor: { appId: "evaluation", taskId: "runtime/owner-review", inputId: "evaluation-1" },
+    });
+    expect(listAppInboxTaskDependencyKeys(db, { after: second.nextCursor, limit: 1 })).toEqual({
+      items: [{ appId: "evaluation", taskId: "runtime/owner-review", inputId: "evaluation-2" }],
     });
 
     expect(wakeAppInboxItemsWaitingOnApp(db, "evaluation", { kind: "task", id: "runtime/owner-review" }, 120)).toBe(2);

@@ -31,6 +31,7 @@ export function readRuntimeTaskView(
         id: condition.metadata.id,
         ...structuredClone(condition.spec),
       })),
+      current.closed,
     );
   }
   const receipt = store.readReceipt(taskId);
@@ -40,6 +41,7 @@ export function readRuntimeTaskView(
 function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
   return {
     id: receipt.metadata.id,
+    closed: true,
     status: "done",
     generation: receipt.metadata.generation,
     outcome: receipt.outcome,
@@ -53,9 +55,11 @@ function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): Ta
 function resourceTaskView(
   resource: NonNullable<TaskTree["resources"]>[string],
   phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
+  closed = false,
 ): TaskView {
   return {
     id: resource.metadata.id,
+    ...(closed ? { closed: true } : {}),
     status: phase === "converged" ? "done" : phase,
     generation: resource.metadata.generation,
     outcome: resource.spec.outcome,
@@ -85,9 +89,10 @@ function resourceTaskDetail(
   resource: NonNullable<TaskTree["resources"]>[string],
   phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
   conditions: TaskDetail["conditions"],
+  closed = false,
 ): TaskDetail {
   return {
-    ...resourceTaskView(resource, phase),
+    ...resourceTaskView(resource, phase, closed),
     parentId: resource.spec.parentId,
     mode: resource.spec.mode,
     acceptance: [...resource.spec.acceptance],
@@ -137,7 +142,7 @@ export function listRuntimeTaskViews(
   return {
     items: pageIds.flatMap((id) => {
       const current = store.readTaskForView(id);
-      if (current) return [resourceTaskView(current.resource, current.phase)];
+      if (current) return [resourceTaskView(current.resource, current.phase, current.closed)];
       const receipt = store.readReceipt(id);
       return receipt ? [receiptTaskView(receipt)] : [];
     }),

@@ -15,7 +15,7 @@ export type AppInboxHandling =
 
 export type AppTurnTarget = { appId: string; conversationId: string; turnId: string; expectedRevision: number };
 
-export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
+export type AppInboxTaskDependencyKey = { appId: string; taskId: string; inputId: string; admissionKey?: string };
 
 export type AppInboxTaskDependencyPage = {
   items: AppInboxTaskDependencyKey[];
@@ -43,6 +43,8 @@ export type AppInboxItem = {
   status: AppInboxStatus;
   sessionId?: string;
   waitingOn?: { kind: AppInboxWaitKind; id: string };
+  /** Admission whose exact outcome this input awaits; independent of later Task cycles. */
+  taskAdmissionKey?: string;
   result?: AppResult;
   handling?: AppInboxHandling;
   availableAt?: number;
@@ -162,6 +164,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     status: requiredText(row.status, "status") as AppInboxStatus,
     sessionId: optionalText(row.session_id),
     waitingOn: waitingKind && waitingId ? { kind: waitingKind, id: waitingId } : undefined,
+    taskAdmissionKey: optionalText(row.task_admission_key),
     result: result ? parseJson<AppResult>(result, "result") : undefined,
     handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
     availableAt: optionalNumber(row.available_at),
@@ -422,7 +425,7 @@ export function associateAppInboxClaimTopic(
   );
 }
 
-/** One bounded page of distinct canonical Task dependencies awaiting review. */
+/** One bounded page of input-to-Task links awaiting their exact results. */
 export function listAppInboxTaskDependencyKeys(
   db: SqliteDb,
   options: { after?: AppInboxTaskDependencyKey; limit?: number } = {},
@@ -434,24 +437,26 @@ export function listAppInboxTaskDependencyKeys(
   const after = options.after;
   const rows = db
     .prepare(
-      `SELECT app_id, waiting_on_id
+      `SELECT app_id, waiting_on_id, id, task_admission_key
        FROM app_inbox_items INDEXED BY idx_app_inbox_task_wait_recovery
        WHERE status = 'handling'
          AND lease_owner IS NULL
          AND waiting_on_kind = 'task'
          AND waiting_on_id IS NOT NULL
-         ${after ? "AND (app_id, waiting_on_id) > (?, ?)" : ""}
-       GROUP BY app_id, waiting_on_id
-       ORDER BY app_id, waiting_on_id
+         ${after ? "AND (app_id, waiting_on_id, id) > (?, ?, ?)" : ""}
+       ORDER BY app_id, waiting_on_id, id
        LIMIT ?`,
     )
     .all(
-      ...(after ? [requiredText(after.appId, "after.appId"), requiredText(after.taskId, "after.taskId")] : []),
+      ...(after ? [requiredText(after.appId, "after.appId"), requiredText(after.taskId, "after.taskId"),
+        requiredText(after.inputId, "after.inputId")] : []),
       limit + 1,
     )
     .map((row) => ({
       appId: requiredText(row.app_id, "app_id"),
       taskId: requiredText(row.waiting_on_id, "waiting_on_id"),
+      inputId: requiredText(row.id, "id"),
+      ...(optionalText(row.task_admission_key) ? { admissionKey: optionalText(row.task_admission_key) } : {}),
     }));
   const items = rows.slice(0, limit);
   return {

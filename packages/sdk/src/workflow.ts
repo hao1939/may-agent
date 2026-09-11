@@ -12,6 +12,8 @@ export type Logger = {
 
 export type TaskView = {
   id: string;
+  /** Owner ended execution; a prior accepted result alone does not close the Task. */
+  closed?: boolean;
   status: "pending" | "running" | "waiting" | "attention" | "done";
   generation: number;
   outcome: string;

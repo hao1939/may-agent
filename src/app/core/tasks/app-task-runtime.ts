@@ -84,12 +84,11 @@ import {
   listHandlerExecutionFailedAppTasks,
   markAppTaskAttention,
   isAppTaskActionStaleError,
-  isAppTaskConverged,
   observeAppTaskIntent,
   appTaskQueueEntries,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
-  readAppTaskTrigger,
+  readAppTaskAdmissionOutcome,
   readPendingAppTaskTrigger,
   recordAppTaskTrigger,
   releaseHandlerExecutionFailedAppTask,
@@ -2790,7 +2789,7 @@ export function attachLoadedAppTask(input: {
   authorize?: () => void;
   topicId?: string;
   requestLink?: { appId: string; conversationId: string; id: string; revision: number };
-}): { taskId: string; isComplete: () => Promise<boolean> } {
+}): { taskId: string } {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => resolve(candidate.appDir) === normalizedAppDir,
@@ -2820,12 +2819,18 @@ export function attachLoadedAppTask(input: {
       lane: humanRequested ? "human" : "normal",
     });
   }
-  return {
-    taskId: observation.taskId,
-    isComplete: async () =>
-      isAppTaskConverged(config, observation.taskId, observation.generation) &&
-      !readAppTaskTrigger(config, observation.taskId),
-  };
+  return { taskId: observation.taskId };
+}
+
+/** Read one input's accepted answer without using a later Task cycle's result. */
+export function readLoadedAppTaskInputResult(input: {
+  bus: EventBus; appDir: string; taskId: string; admissionKey: string;
+}) {
+  const appDir = resolve(input.appDir);
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((entry) => resolve(entry.appDir) === appDir);
+  return descriptor
+    ? readAppTaskAdmissionOutcome(appTaskConfig(descriptor), input.taskId, input.admissionKey)
+    : null;
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */

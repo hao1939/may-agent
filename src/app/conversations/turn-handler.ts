@@ -3,6 +3,7 @@ import {
   type AppDefinition,
   type AppInput,
   type AppInputContext,
+  type AppDependencyObservation,
   type ConversationTurnResult,
   type AppRequestFollowUp,
   type AppRequestTaskControl,
@@ -20,7 +21,7 @@ import { readConversationRequest, ConversationRequestConflict } from "../core/st
 import { observeTaskDependency, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 import type { AppInputHandler } from "../core/inbox/input-handler.js";
 
-const TERMINAL_TASK_INPUT_STATUSES = new Set(["done", "error", "interrupted", "unknown"]);
+const TERMINAL_TASK_INPUT_STATUSES = new Set(["error", "interrupted", "unknown"]);
 const APP_REQUEST_RECONSIDERATION_MAX = 2;
 
 export type AppInputResolver = (input: {
@@ -183,10 +184,10 @@ export function createConversationTurnHandler(options: ConversationHandlerOption
         }
         if (followUp.task && options.readDependency && saved?.phase !== "decided") {
           const taskId = followUp.task.taskId.trim();
-          const observed =
+          const observed: AppDependencyObservation =
             (await observeTaskDependency(options.readDependency, target.id, { kind: "task", id: taskId })) ??
             ({ kind: "task", id: taskId, status: "unknown" } as const);
-          if (TERMINAL_TASK_INPUT_STATUSES.has(observed.status)) {
+          if (observed.closed || TERMINAL_TASK_INPUT_STATUSES.has(observed.status)) {
             if (reconsiderations >= APP_REQUEST_RECONSIDERATION_MAX) {
               throw new Error(
                 `App ${app.id} repeatedly selected unavailable Task ${target.id}/${taskId}; retry with current Task evidence`,

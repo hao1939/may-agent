@@ -487,11 +487,13 @@ export class AppTaskResourceStore {
   }
 
   /** Read accepted content and its current display phase from the same row. */
-  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"] } | null {
+  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"]; closed: boolean } | null {
     const row = this.db
-      .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase FROM app_tasks WHERE app_id = ? AND task_id = ?`)
-      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"] } | null;
-    return row ? { resource: parseJson<AppTaskResource>(row.resource_json), phase: row.phase } : null;
+      .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase,
+        EXISTS(SELECT 1 FROM app_task_cancellations c WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id) AS closed
+        FROM app_tasks WHERE app_id = ? AND task_id = ?`)
+      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closed: number } | null;
+    return row ? { resource: parseJson<AppTaskResource>(row.resource_json), phase: row.phase, closed: Boolean(row.closed) } : null;
   }
 
   readTrigger(taskId: string): AppTaskTrigger | null {

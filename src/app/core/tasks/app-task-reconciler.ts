@@ -632,6 +632,45 @@ function acceptedAttemptResult(
   });
 }
 
+/** Bind only admitted input actually considered by this terminal judgment. */
+function acceptedInputAdmissions(
+  config: AppTaskContext,
+  tree: TaskTree,
+  claim: AppTaskClaim,
+  acceptedLiveEventIds: number[] = [],
+) {
+  const liveIds = new Set(acceptedLiveEventIds);
+  const events = [
+    ...claim.events,
+    ...(tree.taskTriggers?.[claim.taskId] ? taskTriggerEvents(tree.taskTriggers[claim.taskId]) : [])
+      .filter(({ event }) => liveIds.has(Number(event.eventId))),
+  ];
+  const keys = [...new Set(events.flatMap(({ event }) => {
+    const data = event.data;
+    return event.type === "app.task.requested" && isRecord(data) && typeof data.idempotencyKey === "string"
+      ? [data.idempotencyKey] : [];
+  }))];
+  if (!keys.length) return [];
+  const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
+  return keys.flatMap((key) => {
+    const admission = admissions?.[key];
+    if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration !== claim.generation ||
+      admission.resultAttemptId) return [];
+    return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
+  });
+}
+
+/** Read one input's accepted answer, independently of the Task's current state or lifetime. */
+export function readAppTaskAdmissionOutcome(config: AppTaskContext, taskId: string, admissionKey: string) {
+  const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
+    .appTaskAdmissions?.[admissionKey];
+  if (admission?.taskId !== taskId || !admission.resultAttemptId) return null;
+  const attempt = config.resourceStore.readAttempt(admission.resultAttemptId);
+  if (attempt?.taskId !== taskId || attempt.taskGeneration !== admission.taskGeneration ||
+    !attempt.acceptedResult || attempt.acceptedResult.state === "waiting") return null;
+  return { attemptId: attempt.metadata.id, generation: attempt.taskGeneration, ...attempt.acceptedResult };
+}
+
 function matchingCompletionReceipt(tree: TaskTree, resource: AppTaskResource, appAgent: string) {
   const receipt = tree.receipts?.[resource.metadata.id];
   if (
@@ -2539,6 +2578,7 @@ export function stopAppTask(
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
+  const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   unlinkTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", summary, now);
@@ -2555,7 +2595,7 @@ export function stopAppTask(
   });
   const parentTaskId = recordExecutableParentTrigger(tree, claim.taskId, "attention", summary, input.evidence, now, claim.attemptId);
   trackResourceMutationTask(mutationScope, tree, parentTaskId);
-  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+  commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
   return { status: "applied", summary, ...(parentTaskId ? { parentTaskId } : {}) };
 }
 
@@ -4089,6 +4129,7 @@ export function completeAppTask(
   }
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
+  const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) =>
@@ -4140,7 +4181,7 @@ export function completeAppTask(
   });
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   input.prepareSupersededSessions?.(supersededSessionIds);
-  commitTaskMutation(config, tree, { resourceMutation });
+  commitTaskMutation(config, tree, { resourceMutation: { ...resourceMutation, admissions } });
   return {
     status: "applied",
     actionsApplied,

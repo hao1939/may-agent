@@ -17,7 +17,7 @@ import { openDatabase } from "../../../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
-import { attachRequestToTask } from "../state/inbox.js";
+import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
 import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "../state/app-inbox-store.js";
 import { AppRegistry } from "../apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
@@ -1085,7 +1085,7 @@ describe("canonical App task runtime", () => {
     ).toEqual([intent.id]);
   });
 
-  it("carries a deterministic cross-App result back as the parent's next Event", async () => {
+  it.each(["event", "recovery"])("returns the exact cross-App answer after a later Task cycle through %s", async (wake) => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -1228,20 +1228,7 @@ describe("canonical App task runtime", () => {
         attachedDependencyTaskCount += 1;
         return attachLoadedAppTask({ ...input, bus });
       },
-      readDependency: async ({ appDir, dependency }) => {
-        const task = readLoadedAppTaskView({ bus, appDir, taskId: dependency.id });
-        return task
-          ? {
-              kind: "task",
-              id: dependency.id,
-              status: task.status,
-              summary: task.summary,
-              response: task.response,
-              result: task.result,
-              evidence: task.evidence,
-            }
-          : null;
-      },
+      readDependency: createAppTaskCapability({ bus }).readDependency,
       previewTaskEvent: ({ appId, event, targetedTaskId }) => {
         const taskIds = previewLoadedCanonicalAppTaskEvent({ bus, appId, event, targetedTaskId });
         if (event.type === "app.dependency.completed") conditionPreviews.push(taskIds);
@@ -1492,12 +1479,30 @@ describe("canonical App task runtime", () => {
         result: { disposition: "accepted", score: 0.92 },
         evidence: ["review:accepted"],
       });
-      bus.emit({
-        type: "app.dependency.completed",
-        source: "test:evaluation-task",
-        owner: "app:evaluation",
-        data: { kind: "task", id: attachedDependencyTaskId },
+      // The original caller has not read its answer yet. Reuse the same Task
+      // and prove that neither its latest result nor its retained wait replaces it.
+      admitTaskRequest(evaluationConfig, {
+        appId: "evaluation", attachment: { kind: "existing", taskId: attachedDependencyTaskId },
+        idempotencyKey: "task:later-input",
+        request: { id: "later-input", source: { kind: "app", id: "another-caller" },
+          input: { kind: "deep-scan", data: { reason: "a later independent question" } } },
       });
+      const later = claimObservedAppTask(evaluationConfig, { taskId: attachedDependencyTaskId,
+        appAgent: "evaluator", handler: "agent:evaluator" });
+      if (later.kind !== "claimed") throw new Error("Expected later input claim");
+      completeAppTask(evaluationConfig, later, { summary: "Later result", result: { score: 0.1 }, evidence: ["later:0.1"] });
+      expect(readLoadedAppTaskView({ bus, appDir: evaluationDir, taskId: attachedDependencyTaskId })).toMatchObject({
+        status: "waiting", result: { score: 0.1 },
+      });
+      if (wake === "event") bus.emit({
+          type: "app.dependency.completed", source: "test:evaluation-task", owner: "app:evaluation",
+          data: { kind: "task", id: attachedDependencyTaskId },
+        });
+      else {
+        const recovered = await inbox.host.recoverTaskDependencies();
+        expect(recovered.woken).toBe(1);
+        inbox.scanNow();
+      }
       const deadline = Date.now() + 5_000;
       while (!readTaskSnapshot(config).taskTriggers?.[initial.taskId] && Date.now() < deadline) {
         await Bun.sleep(5);

@@ -330,6 +330,7 @@ export async function runAppRuntime(opts: {
       appTasks.readDependency({
         appDir: input.appDir,
         dependency: input.dependency,
+        admissionKey: input.admissionKey,
       }),
     observerContext: (appId, appDir) => {
       const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;

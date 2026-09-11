@@ -23,6 +23,7 @@ import {
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
+  readLoadedAppTaskInputResult,
   retryLoadedFailedAppTask,
   wakeLoadedAppTasks,
   type AppTaskRuntimeOptions,
@@ -51,6 +52,7 @@ export type AppTaskCapability = {
   readDependency(input: {
     appDir: string;
     dependency: { kind: "task"; id: string };
+    admissionKey?: string;
   }): Promise<AppDependencyObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
@@ -110,8 +112,22 @@ export function createAppTaskCapability(options: {
       });
       return { apps: result.installed.length };
     },
-    async readDependency({ appDir, dependency }) {
+    async readDependency({ appDir, dependency, admissionKey }) {
       const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
+      if (admissionKey) {
+        const accepted = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey });
+        if (accepted) return {
+          kind: "task", id: dependency.id, status: accepted.state === "converged" ? "done" : "attention",
+          ...(task?.closed ? { closed: true } : {}),
+          summary: accepted.summary, response: accepted.response, result: accepted.result, evidence: accepted.evidence,
+        };
+        // A later cycle or an unrelated retained wait cannot answer this input.
+        return { kind: "task", id: dependency.id,
+          ...(task?.closed ? { closed: true } : {}),
+          status: task ? (task.status === "done" ? "waiting" : task.status) : "unknown",
+          summary: task?.closed ? "The Task closed without an accepted outcome for this input" : "This input has no accepted outcome yet",
+        };
+      }
       return task
         ? {
             kind: "task",

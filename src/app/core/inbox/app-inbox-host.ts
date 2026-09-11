@@ -157,7 +157,6 @@ const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["st
   "unknown",
 ]);
 const TERMINAL_TASK_INPUT_STATUSES = new Set<AppDependencyObservation["status"]>([
-  "done",
   "error",
   "interrupted",
   "unknown",
@@ -560,64 +559,34 @@ export class AppInboxHost {
       page = listAppInboxTaskDependencyKeys(this.#db);
     }
     this.#taskDependencyRecoveryCursor = page.nextCursor;
-    const taskIdsByApp = new Map<string, string[]>();
-    for (const dependency of page.items) {
-      const taskIds = taskIdsByApp.get(dependency.appId) ?? [];
-      taskIds.push(dependency.taskId);
-      taskIdsByApp.set(dependency.appId, taskIds);
-    }
-    for (const [appId, taskIds] of taskIdsByApp) {
-      for (const taskId of taskIds) {
-        const taskDependency = { kind: "task", id: taskId } as const;
-        const app = this.#apps.get(appId);
-        const agent = app?.agent ?? app?.owner;
-        try {
-          const observed = (await observeTaskDependency(this.#readDependency, appId, taskDependency)) ?? {
-            ...taskDependency,
-            status: "unknown" as const,
-          };
-          if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) {
-            const app = this.#requiredApp(appId);
-            const rows = this.#db
-              .prepare(
-                `SELECT id FROM app_inbox_items
-                 WHERE app_id = ? AND status = 'handling' AND lease_owner IS NULL
-                   AND waiting_on_kind = 'task' AND waiting_on_id = ?
-                 ORDER BY created_at, id`,
-              )
-              .all(appId, taskId) as Array<{ id?: unknown }>;
-            for (const row of rows) {
-              if (typeof row.id !== "string") continue;
-              const item = getAppInboxItem(this.#db, row.id);
-              if (!item || !this.#replacementTaskAttachment(app, item, taskId)) continue;
-              if (wakeAppInboxItem(this.#db, item.id, this.#now())) {
-                outcome.linked += 1;
-                outcome.woken += 1;
-                wokenApps.add(appId);
-              }
-            }
-            continue;
-          }
-          const woken = wakeAppInboxItemsWaitingOnApp(this.#db, appId, taskDependency, this.#now());
-          if (woken > 0) {
-            outcome.woken += woken;
-            wokenApps.add(appId);
-          }
-        } catch (error) {
-          outcome.errors.push(`App ${appId} task ${taskDependency.id}: ${errorMessage(error)}`);
-          (outcome.failures ??= []).push({
-            appId,
-            agent,
-            taskId,
-            stage: "dependency-recovery",
-            error: errorMessage(error),
-            disposition: "recovery-pending",
-          });
-        } finally {
-          // Dependency reads can resolve synchronously. Yield after each one
-          // so a large App cannot starve control-socket and human-message I/O.
-          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    for (const { appId, taskId, inputId, admissionKey } of page.items) {
+      const taskDependency = { kind: "task", id: taskId } as const;
+      const app = this.#apps.get(appId);
+      const agent = app?.agent ?? app?.owner;
+      try {
+        const observed = (await observeTaskDependency(this.#readDependency, appId, taskDependency, admissionKey)) ?? {
+          ...taskDependency,
+          status: "unknown" as const,
+        };
+        const item = getAppInboxItem(this.#db, inputId);
+        if (!item || item.status !== "handling" || item.lease || item.waitingOn?.id !== taskId) continue;
+        const replacement = !REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status) &&
+          this.#replacementTaskAttachment(this.#requiredApp(appId), item, taskId);
+        if (!replacement && !REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
+        if (wakeAppInboxItem(this.#db, inputId, this.#now())) {
+          if (replacement) outcome.linked += 1;
+          outcome.woken += 1;
+          wokenApps.add(appId);
         }
+      } catch (error) {
+        outcome.errors.push(`App ${appId} task ${taskId}: ${errorMessage(error)}`);
+        (outcome.failures ??= []).push({
+          appId, agent, taskId, stage: "dependency-recovery",
+          error: errorMessage(error), disposition: "recovery-pending",
+        });
+      } finally {
+        // Yield between bounded input-link reads so recovery does not monopolize I/O.
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
     }
     outcome.wokenAppIds = [...wokenApps].sort();
@@ -824,9 +793,9 @@ export class AppInboxHost {
         kind: "task",
         id: claim.item.targetTaskId,
       })) ?? { kind: "task", id: claim.item.targetTaskId, status: "unknown" };
-      if (TERMINAL_TASK_INPUT_STATUSES.has(target.status)) {
+      if (target.closed || TERMINAL_TASK_INPUT_STATUSES.has(target.status)) {
         return this.#completeRequest(claim, {
-          summary: `Task ${target.id} is already ${target.status}; the new input was not applied and must be reconsidered as distinct follow-up work if it still matters.`,
+          summary: `Task ${target.id} is already ${target.closed ? "closed" : target.status}; the new input was not applied and must be reconsidered as distinct follow-up work if it still matters.`,
           ...(target.evidence ? { evidence: target.evidence } : {}),
         });
       }

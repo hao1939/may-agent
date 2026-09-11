@@ -12,7 +12,7 @@ import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { getAppInboxItem, waitAppInboxClaim, wakeAppInboxItem, type AppInboxClaim } from "./app-inbox-store.js";
 import {
-  isAppTaskConverged,
+  readAppTaskAdmissionOutcome,
   observeAppTaskIntent,
   readAppTaskIntent,
   readAppTaskTrigger,
@@ -160,11 +160,13 @@ export function attachRequestToTask(
     if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: observation.taskId }, { now })) {
       throw new Error("claim is stale");
     }
+    const resultKey = continuing ? (current.taskAdmissionKey ?? admissionKey) : admissionKey;
+    db.prepare("UPDATE app_inbox_items SET task_admission_key = ? WHERE id = ?").run(resultKey, current.id);
     if (current.topicId) linkConversationTopicTask(db, current.topicId, input.appId, observation.taskId, now);
     const hasPendingInput = Boolean(readAppTaskTrigger(config, observation.taskId));
     if (
       isTaskAttentionReadyForReview(config.resourceStore.readTask(observation.taskId), hasPendingInput) ||
-      (!hasPendingInput && isAppTaskConverged(config, observation.taskId, observation.generation))
+      readAppTaskAdmissionOutcome(config, observation.taskId, resultKey)
     ) {
       wakeAppInboxItem(db, current.id, now);
     }
