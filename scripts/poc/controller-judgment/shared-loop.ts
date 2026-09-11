@@ -64,8 +64,10 @@ const modelName = arg("--model");
 const out = arg("--out");
 const value = Number(arg("--value") ?? "0.92");
 const nested = process.argv.includes("--nested");
+const natural = process.argv.includes("--natural");
+assert(!(natural && nested), "Choose either the natural ask or the explicitly nested trial");
 if (!process.argv.includes("--live") || !appRoot || !modelName || !out || !Number.isFinite(value))
-  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested]");
+  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural]");
 assert(createModelRegistry()[modelName], "Selected model must be configured");
 const hostRoot = resolve(import.meta.dir, "../../..");
 const output = resolve(out);
@@ -225,14 +227,16 @@ try {
       await start();
       publish(
         "measurement",
-        nested
+        natural
+          ? `Please find out whether the sample at ${sourceUrl} meets the 0.90 minimum and explain the result. The source can be slow. I'll have questions while you investigate.`
+          : nested
           ? `Please arrange a background review of the sample at ${sourceUrl} against a 0.90 minimum. Have the reviewer obtain the measurement from a separate worker, then assess that worker's returned evidence. Report the conclusion to me. The source may take some time to answer; keep our discussion available while they work.`
           : `Please check the sample at ${sourceUrl} in the background and tell me whether it meets the 0.90 minimum. The source may take some time to answer; keep our discussion available while it runs.`,
       );
       await measurementRequested.promise;
       const taskA = conversationTaskId("may", "may:primary");
       const ask = listConversationRequests(db, "may", "may:primary").find((request) => request.taskRefs.length > 0);
-      assert(ask, "The accepted ask must remain linked to the actual background Task");
+      assert(ask, "The agent read the slow source without first linking delegated work; responsive discussion is not established");
       const taskB = ask.taskRefs[0]!.taskId;
       const taskC = nested
         ? Object.keys(store().readSnapshot().resources!).find((id) => id !== taskA && id !== taskB)
@@ -376,6 +380,7 @@ try {
     model: modelName,
     value,
     nested,
+    natural,
     root,
     durationMs: Date.now() - startedAt,
     dispatches,
