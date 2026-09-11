@@ -6,9 +6,10 @@ import { runTaskWorkerProbe } from "../../test/integration/fixtures/run-task-wor
 describe("real Task worker boundary", () => {
   it.each([
     ["parentLoss", "stops with its parent and recovers the same unfinished Task"],
-    ["restoredHandler", "repairs an unavailable binding without running it in the recovery process"],
-    ["restoredAgent", "recovers a restored non-default agent without executing it"],
-    ["recoverySourceRace", "rejects availability from a release replaced during inspection"],
+    ["redoAfterParentLoss", "retains input and inspects an existing effect after the old worker exits"],
+    ["restoredHandler", "retries a restored workflow in a due attempt without a repair pass"],
+    ["restoredAgent", "uses a restored non-default agent on the same Task after backoff"],
+    ["recoveryLeavesHandlerJudgmentToAttempt", "recovery preserves input while the next attempt checks current code"],
     ["pinnedSource", "pins workflow and shared definitions across reload"],
     ["rejectedDisable", "keeps accepted Apps in recovery and attempts after rejected disable reload"],
     ["inheritedAgent", "runs an inherited non-default agent"],
