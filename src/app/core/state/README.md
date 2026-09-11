@@ -14,7 +14,7 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | `conversations.ts` | Conversation reads and Topic links |
 | `conversation-requests.ts` | Accepted asks and scoped revision checks |
 | `conversation-turns.ts`, `conversation-task-turns.ts` | Task-owned Turn admission, fenced decision acceptance and scoped Stop |
-| `conversation-cutover.ts`, `task-receipt-cutover.ts` | Offline import of prior Conversation execution and Task completion evidence |
+| `conversation-cutover.ts`, `task-receipt-cutover.ts`, `task-state-cutover.ts` | Offline import of prior Conversation execution, completed work and retained open Task state |
 | `task-reference-index.ts` | Lookup/display of exact Task references |
 
 The Task runtime decides transitions; these operations enforce their storage
@@ -25,8 +25,13 @@ Cutover helpers require the old Host and every worker to be stopped, after the
 normal database schema upgrade. They are source operations, not an operational
 upgrade runner. Receipt import preserves original historical receipts and links
 their exact generation/specification to accepted outcomes on closed Tasks;
-newer Task generations and existing human closure remain unchanged. Migration
-of old failures, maintained outcomes and input waits remains separate work.
+newer Task generations and existing human closure remain unchanged. Open-state
+import then preserves maintained outcomes, restores original input/wait links,
+and paces unfinished work with the existing retry deadline. Historical worker
+self-stops become failure evidence on the same Task; human closure and Turn
+Stop remain effective. Missing original input or conflicting accepted-attempt
+identity aborts import rather than inventing an answer. Supervisor retirement
+and an operational upgrade runner still need their own cutover work.
 
 Colocated store tests cover claims, revisions, transactions and reopen behavior.
 `inbox.test.ts` covers cross-resource attachment; `conversation-requests.test.ts`

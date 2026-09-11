@@ -127,7 +127,8 @@ export type AppTaskAttempt = {
     response?: string;
     result?: Record<string, unknown>;
     evidence: string[];
-    acceptanceBasis: TaskAcceptanceBasis;
+    /** Historical maintained outcomes did not retain the acceptance method. */
+    acceptanceBasis?: TaskAcceptanceBasis;
     /** Additional durable input actually incorporated after the initial batch. */
     acceptedLiveEventIds?: number[];
   };
@@ -140,6 +141,8 @@ export type AppTaskAttempt = {
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
+  /** Offline import preserves an old worker self-stop as evidence, not closure. */
+  retiredCancellation?: AppTaskCancellation;
 };
 
 /** Immutable closure evidence; historical records represent cancellation. */

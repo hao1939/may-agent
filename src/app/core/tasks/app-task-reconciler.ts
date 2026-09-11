@@ -348,7 +348,7 @@ export function assertAppTaskEffectFresh(
   }
 }
 
-function appendTaskTriggerEvent(
+export function appendTaskTriggerEvent(
   events: AppTaskTriggerEvent[],
   event: Record<string, unknown>,
   observedAt: string,
@@ -379,7 +379,7 @@ function appendTaskTriggerEvent(
   return [...events, { event: structuredClone(event), observedAt }];
 }
 
-function preferredTriggerFromEvents(events: AppTaskTriggerEvent[], taskAgent: string): Record<string, unknown> {
+export function preferredTriggerFromEvents(events: AppTaskTriggerEvent[], taskAgent: string): Record<string, unknown> {
   const [first, ...rest] = events;
   if (!first) throw new Error("Task trigger event batch cannot be empty");
   return rest.reduce((preferred, entry) => preferredTaskTrigger(preferred, entry.event, taskAgent), first.event);
