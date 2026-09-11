@@ -54,8 +54,8 @@ wait transitions are not exercised. `give-up` records an accepted non-success
 outcome without closing the Task. Its unfinished input now retains a retry deadline; this one-decision harness does not run that retry. Delegation admits a real child
 but does not run that child or route its result in this harness. Likewise,
 discussion cases test the agent's choice, not concurrent inbox availability.
-Each `run.ts` case stops after one decision. Controller callbacks have no automatic
-retry here, so invalid output is visible. The underlying agent executor retains
+Each `run.ts` case stops after one decision. The fixture closes its controller on
+a dispatch error, so invalid output is visible. The underlying agent executor retains
 its normal bounded finish/provider handling; inspect all calls in the transcript.
 Private artifacts and temporary SQLite remain outside the checkout for review;
 do not publish raw transcripts or endpoint errors.
@@ -108,6 +108,31 @@ failure report or owner closure returns through the common input loop.
 A pending wait is preserved once its typed
 input is durably published; the worker need not obtain a synchronous receipt
 from the parent process. Publication does not claim that execution succeeded.
+
+For adoption and owner decisions, use `--natural` without `--nested`. Its human
+ask mentions a slow source and further questions, but gives no instruction to
+delegate or create background work. The same critical-path gates apply. A direct
+blocking source read fails the responsive-delegation gate; inspect that failure
+as an App judgment result rather than a broken Task claim.
+
+Add `--withdraw` to ask the human-facing Task to cancel the linked measurement
+while its worker is executing. The fixture releases source output after owner
+closure and reopens SQLite. It checks withdrawal rather than fulfillment, exact
+Task closure, no accepted late result, no new child attempt after reopen, and
+continued human interaction. It does not test recursive child cancellation or
+withdrawal after multiple paid failures.
+
+Alternatively add `--correction` to change the decision threshold from 0.90 to
+0.95 while the sample is being collected. The same Request must retain its new
+scope, with no replacement Task or second source read. The reply must name the
+new threshold; review its comparison and explanation in the retained report.
+The model's existing App instructions and tool catalog remain unchanged.
+
+```sh
+bun scripts/poc/controller-judgment/shared-loop.ts --live --natural --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/natural-loop
+bun scripts/poc/controller-judgment/shared-loop.ts --live --natural --withdraw --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/owner-withdrawal
+bun scripts/poc/controller-judgment/shared-loop.ts --live --natural --correction --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/owner-correction
+```
 
 ## Managed recovery with human input
 

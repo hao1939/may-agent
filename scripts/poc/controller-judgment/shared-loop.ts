@@ -66,10 +66,12 @@ const value = Number(arg("--value") ?? "0.92");
 const nested = process.argv.includes("--nested");
 const natural = process.argv.includes("--natural");
 const withdraw = process.argv.includes("--withdraw");
+const correction = process.argv.includes("--correction");
 assert(!(natural && nested), "Choose either the natural ask or the explicitly nested trial");
 assert(!(withdraw && nested), "Withdrawal probes one assigned child, not recursive cancellation");
+assert(!(withdraw && correction), "Choose withdrawal or correction");
 if (!process.argv.includes("--live") || !appRoot || !modelName || !out || !Number.isFinite(value))
-  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural] [--withdraw]");
+  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural] [--withdraw | --correction]");
 assert(createModelRegistry()[modelName], "Selected model must be configured");
 const hostRoot = resolve(import.meta.dir, "../../..");
 const output = resolve(out);
@@ -294,12 +296,19 @@ try {
       const discussed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers);
       publish(
         "discussion",
-        "While that runs, explain why one sample alone may not be enough for a decision. Just discuss it with me.",
+        correction
+          ? "Change the minimum for my decision to 0.95. Keep collecting that same sample; don't start a second measurement. While it runs, explain why one sample alone may not be enough for a decision."
+          : "While that runs, explain why one sample alone may not be enough for a decision. Just discuss it with me.",
       );
       await discussed;
       if (nested) assert.equal(store().readTask(taskB)?.status.conditionIds?.length, 1);
       assert.equal(store().readTask(taskC ?? taskB)?.status.phase, "running");
       assert.equal(readConversationRequest(db, "may", "may:primary", ask.id)?.status, "open");
+      if (correction) {
+        const revised = readConversationRequest(db, "may", "may:primary", ask.id)!;
+        assert(revised.revision > ask.revision, "The correction must revise the existing accepted ask");
+        assert(revised.scope.includes("0.95"), "The accepted scope must retain the new decision threshold");
+      }
       const discussion = conversation()
         .messages.filter((message) => message.author.kind === "agent")
         .at(-1)!;
@@ -314,6 +323,10 @@ try {
       assert.equal(fulfilled.closure?.disposition, "fulfilled");
       const reply = conversation().messages.find((message) => message.id === fulfilled.closure!.messageId)!;
       assert(reply.text.includes(String(value)), "The final reply must contain the observed measurement");
+      if (correction) {
+        assert(reply.text.includes("0.95"), "The reply must address the corrected threshold");
+        assert.equal(measurementReads, 1, "Rejudging the same observation needs no second measurement");
+      }
       assert.equal(conversation().messages.find((message) => message.id === discussion.id)?.text, discussion.text);
       const tasks = store().readSnapshot().resources!;
       assert.deepEqual(Object.keys(tasks).sort(), expectedTaskIds);
@@ -422,6 +435,7 @@ try {
     nested,
     natural,
     withdraw,
+    correction,
     root,
     durationMs: Date.now() - startedAt,
     dispatches,
