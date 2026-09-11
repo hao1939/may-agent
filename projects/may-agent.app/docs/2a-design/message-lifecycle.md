@@ -241,6 +241,10 @@ Code collects bounded structured context:
 
 The LLM decides meaning. Code validates identities and executes the decision.
 There is no keyword router or second intent classifier.
+Human input's `metadata.topicId` is preserved as `input.data.context.conversationTopicId`
+during admission. Context preparation validates its App/Conversation scope and
+prefers an explicit reply's Topic. This hint is distinct from the committed
+inbox Topic: the agent may choose another Topic or none.
 
 The frontend makes one of three decisions:
 

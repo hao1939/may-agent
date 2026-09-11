@@ -3,8 +3,8 @@
 **Design status:** Accepted for implementation, September 11, 2026.
 **Implementation status:** Candidate source on Host branch
 `fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `7bfb7f08`, with
-review refinements following the verified `5527df51` checkpoint.
+[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `15c8ea2e`, with
+the simplicity correction below following the verified `7bfb7f08` checkpoint.
 The five reproduced
 defects and existing-context presentation changes are implemented locally;
 verification results are recorded below. Not merged or deployed. The separately
@@ -273,6 +273,28 @@ The implementation updates the owning
 implementation and live deployment remain distinct.
 
 ## Implementation evidence
+
+### Simplicity correction
+
+The repeated review cycle exposed a testing gap: adapter-only checks verified
+Topic metadata without proving what May actually received. A full-boundary probe
+found that admission dropped the selected Topic and the adapter manufactured a
+reply to its last rendered answer. A second probe found that trying to follow
+completed work silently discarded an unrelated active watch.
+
+The correction removes last-answer tracking, carries the Topic hint through
+existing saved input context and leaves selection unchanged on rejected Follow.
+May still decides the Topic; ordinary continuation uses bounded history. No new
+store, queue, retry path or migration work is needed. The two regressions exercise
+real admission and prepared agent input, delayed delivery, storage reopen,
+redelivery, explicit replies, cleared selection and out-of-scope Topic hints.
+This is source evidence with a fake provider/model, not a live conversation trial.
+At `15c8ea2e`, 106 affected tests and canonical design checks pass; current full
+local and hosted validation is tracked on the PR. Runtime changes add 11 net
+lines across three files and remove the last-answer map. No migration changes
+were made in this correction.
+
+### Existing candidate evidence
 
 The candidate keeps one input path and moves only slow command delivery out of
 input handling. It acknowledges durable admission, not merely event recording.

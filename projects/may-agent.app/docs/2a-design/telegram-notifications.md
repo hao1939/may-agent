@@ -132,6 +132,13 @@ single-Task focus. These links are context, not approval or routing authority;
 May still judges intention and uses validated controls. The adapter never
 reconstructs a worker session or trace from a reply.
 
+Only an actual human reply creates a reply anchor. Rendering an answer does not
+silently attach later messages to it; ordinary continuation uses bounded history.
+The selected Topic travels through saved input context into May's prepared
+Conversation, scoped to that App and Conversation. It is a hint, not a committed
+Topic decision, so May can recognize a new subject. Selection is preserved for
+an admitted message across restart even though the adapter's local selection is not.
+
 May reads the same bounded Conversation available to Console, including the
 latest command view each surface actually showed. Task views carry exact Task
 references. Never choose the most recent session, latest event, or fuzzy text
@@ -280,7 +287,8 @@ and enforce the existing authorization boundary. They do not create approval
 state or a subscription. Missing links explain that current status is needed.
 Details preserves the clicked message's Topic without changing selection.
 Follow updates selects that Task's App and the clicked Topic when available;
-an unrelated previously selected Topic or implicit answer anchor is cleared.
+an unrelated previously selected Topic is cleared. A rejected Follow request,
+including a completed Task, leaves the current watch and selection unchanged.
 Automatic progress cards retain the selected Conversation Topic only when it
 links the exact Task. Before checking membership, the adapter reloads the
 selected Topic by ID so Tasks admitted after selection are not missed; a missing
@@ -428,6 +436,10 @@ proposal; fixtures alone cannot prove them:
 - native command output becomes cross-channel context without creating work;
 - transient presentation creates neither context nor work;
 - reply anchors add context while each inbound message keeps its own request;
+- selected Topic context reaches the actual agent input after admission and
+  restart, without forcing the agent's Topic decision;
+- delayed answers cannot create reply anchors or override a later selection;
+- a rejected Follow command or button preserves the existing watch;
 - ambiguous references clarify instead of guessing;
 - persisted direct answers close semantic work without delivery evidence;
 - child Task completion wakes and resumes its exact requester Task;
