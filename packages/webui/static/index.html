@@ -15,7 +15,7 @@
 <div class="header">
   <h1>may-agent</h1>
   <div class="tabs">
-    <div class="tab active" data-tab="live" data-route="/">Live</div>
+    <div class="tab active" data-tab="live" data-route="/">Overview</div>
     <div class="tab" data-tab="agents" data-route="/agents">Agents</div>
     <div class="tab" data-tab="projects" data-route="/projects">Projects</div>
     <div class="tab" data-tab="metrics" data-route="/metrics">Metrics</div>
@@ -30,6 +30,8 @@
 <div class="main">
   <!-- Dashboard -->
   <div id="dashboard">
+    <section id="workflow-overview" class="health-section" aria-live="polite"></section>
+    <section id="overview-tasks" class="health-section" aria-live="polite"></section>
     <div id="liveness-panel" class="liveness"></div>
     <details id="legacy-dashboard" style="margin-top:24px">
       <summary style="cursor:pointer;color:var(--fg2);font-size:12px;padding:8px 0">
@@ -116,6 +118,7 @@
 
   <!-- Metrics -->
   <div id="metrics" class="hidden">
+    <section id="metrics-workflows" class="health-section" aria-live="polite"></section>
     <div id="metrics-alerts" style="margin-bottom:16px"></div>
     <div id="metrics-by-owner"></div>
     <div id="metrics-recent" style="margin-top:20px"></div>

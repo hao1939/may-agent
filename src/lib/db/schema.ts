@@ -371,6 +371,9 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
   resolved_at INTEGER,
   created_at INTEGER
 );
+-- Interactive reads skip resolved history and stream the newest open alerts.
+CREATE INDEX IF NOT EXISTS idx_ma_open_created ON metric_alerts(created_at DESC, id DESC) WHERE resolved_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_ma_open_metric_created ON metric_alerts(metric_id, created_at DESC, id DESC) WHERE resolved_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS notification_messages (
   telegram_msg_id INTEGER PRIMARY KEY,
@@ -432,6 +435,7 @@ CREATE INDEX IF NOT EXISTS idx_wfr_status_started ON workflow_runs(status, start
 CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent_workflow ON workflow_runs(parentWorkflowRunId, startedAt);
 CREATE INDEX IF NOT EXISTS idx_wfr_parent_ended ON workflow_runs(parentWorkflowRunId, endedAt, status);
+CREATE INDEX IF NOT EXISTS idx_wfr_ended ON workflow_runs(endedAt, runId);
 CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, startedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_wfr_task_binding ON workflow_runs(app_id, task_id, task_generation, attempt_id);
 `;

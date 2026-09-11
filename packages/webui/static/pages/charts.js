@@ -1,54 +1,28 @@
-// Shared chart helpers used by the live and metrics pages.
-function renderSparklineWithValues(points, threshold, width, height, alertOp) {
-  if (!points || points.length === 0) return '<div style="color:var(--fg2);font-size:12px;height:' + height + 'px;display:flex;align-items:center;justify-content:center">Collecting data...</div>';
-  var values = points.map(function(p) { return p.value; });
-  var min = Math.min.apply(null, values.concat([threshold != null ? threshold * 0.8 : values[0]]));
-  var max = Math.max.apply(null, values.concat([threshold != null ? threshold * 1.2 : values[0]]));
-  var range = max - min || 1;
-  var padTop = 14; // space for labels above
-  var padBot = 4;
-  var chartH = height - padTop - padBot;
-  var xStep = width / Math.max(points.length - 1, 1);
-
-  function yPos(v) { return padTop + chartH - ((v - min) / range) * chartH; }
-
-  var coords = values.map(function(v, i) {
-    return (i * xStep).toFixed(1) + ',' + yPos(v).toFixed(1);
-  });
-
-  var latest = values[values.length - 1];
-  var breached = threshold != null && ((alertOp === 'above' || alertOp === '>') ? latest > threshold : latest < threshold);
-  var color = threshold == null ? 'var(--accent)' : (breached ? 'var(--red)' : 'var(--green)');
-  var lastX = ((values.length - 1) * xStep).toFixed(1);
-  var lastYVal = yPos(latest).toFixed(1);
-
-  var svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" style="display:block;width:100%;height:' + height + 'px;overflow:visible">';
-
-  // Threshold line
-  if (threshold != null) {
-    var threshY = yPos(threshold).toFixed(1);
-    svg += '<line x1="0" y1="' + threshY + '" x2="' + width + '" y2="' + threshY + '" stroke="var(--fg2)" stroke-dasharray="4,3" stroke-width="1" opacity="0.4"/>';
+// Samples are observations at real times, not evenly spaced chart indices.
+function renderSparklineWithValues(points, threshold, width, height, _alertOp, options = {}) {
+  const samples = (points || []).filter(p => Number.isFinite(p.value) && Number.isSafeInteger(p.measured_at) && p.measured_at >= 0 && p.measured_at <= 8.64e15).sort((a, b) => a.measured_at - b.measured_at);
+  if (!samples.length) return '<p class="health-note">No retained observations in this window.</p>';
+  const start = options.start ?? samples[0].measured_at;
+  const end = options.end ?? samples[samples.length - 1].measured_at;
+  const span = Math.max(1, end - start);
+  const values = samples.map(p => p.value);
+  if (Number.isFinite(threshold)) values.push(threshold);
+  let min = Math.min(...values), max = Math.max(...values);
+  if (min === max) { min -= 1; max += 1; }
+  const range = max - min;
+  const x = time => (50 + (time - start) / span * (width - 58)).toFixed(2);
+  const y = value => (height - 18 - (value - min) / range * (height - 36)).toFixed(2);
+  let svg = `<svg role="img" aria-label="Metric observations over time" viewBox="0 0 ${width} ${height}" style="width:100%;height:${height}px">`;
+  for (const value of [min, max]) svg += `<text x="2" y="${y(value)}" fill="var(--fg2)" font-size="11">${Number(value.toPrecision(4))}</text><line x1="50" x2="${width - 8}" y1="${y(value)}" y2="${y(value)}" stroke="var(--border)"/>`;
+  if (Number.isFinite(threshold)) svg += `<line x1="50" x2="${width - 8}" y1="${y(threshold)}" y2="${y(threshold)}" stroke="var(--fg2)" stroke-dasharray="4,3"/>`;
+  const failures = (options.failures || []).map(f => f.timestamp).filter(Number.isFinite);
+  let previous = null;
+  for (const point of samples) {
+    const gap = previous && (options.gapMs == null || point.measured_at - previous.measured_at > options.gapMs || failures.some(t => t >= previous.measured_at && t <= point.measured_at));
+    if (previous && !gap) svg += `<line x1="${x(previous.measured_at)}" y1="${y(previous.value)}" x2="${x(point.measured_at)}" y2="${y(point.value)}" stroke="var(--accent)"/>`;
+    svg += `<circle data-sample-time="${point.measured_at}" cx="${x(point.measured_at)}" cy="${y(point.value)}" r="2.5" fill="var(--accent)"><title>${point.value} at ${new Date(point.measured_at).toISOString()}</title></circle>`;
+    previous = point;
   }
-
-  // Line
-  svg += '<polyline points="' + coords.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-
-  // Value labels — only first and last to avoid clutter
-  var labelPairs = [[0, values[0]], [values.length - 1, latest]];
-  for (var li = 0; li < labelPairs.length; li++) {
-    var idx = labelPairs[li][0];
-    var val = labelPairs[li][1];
-    var lx = (idx * xStep).toFixed(1);
-    var ly = yPos(val);
-    // Place label above the point, clamped to not go above viewBox
-    var labelY = Math.max(10, ly - 4).toFixed(1);
-    var anchor = idx === 0 ? 'start' : 'end';
-    var label = val >= 100 ? Math.round(val).toString() : (val >= 1 ? val.toFixed(1) : val.toFixed(3));
-    svg += '<text x="' + lx + '" y="' + labelY + '" font-size="10" fill="var(--fg)" text-anchor="' + anchor + '" font-family="system-ui,sans-serif">' + label + '</text>';
-  }
-
-  // Current dot
-  svg += '<circle cx="' + lastX + '" cy="' + lastYVal + '" r="3" fill="' + color + '"/>';
-  svg += '</svg>';
-  return svg;
+  for (const time of failures) svg += `<line x1="${x(time)}" x2="${x(time)}" y1="8" y2="${height - 8}" stroke="var(--red)" stroke-dasharray="2,4"><title>Collection failed</title></line>`;
+  return svg + '</svg>';
 }
