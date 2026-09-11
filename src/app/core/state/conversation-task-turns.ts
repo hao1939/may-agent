@@ -65,7 +65,7 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
       reason,
     });
     if (result.changed) {
-      for (const key of result.inputKeys) {
+      const items = result.inputKeys.map((key) => {
         const item = key.startsWith("conversation-input:")
           ? getAppInboxItem(config.resourceStore.db, key.slice("conversation-input:".length))
           : null;
@@ -76,12 +76,16 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
           item.appId !== target.appId
         )
           throw new Error("Stopped input does not belong to the Conversation");
+        return item;
+      });
+      const responseItem = items.filter((item) => item.source.kind === "human").at(-1) ?? items.at(-1);
+      for (const item of items) {
         config.resourceStore.db.run(
           `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?, available_at = NULL,
            completed_at = ?, changed_at = ?, updated_at = ? WHERE id = ?`,
           [
             JSON.stringify({ phase: "stopped", reason }),
-            key === result.inputKeys.at(-1)
+            item.id === responseItem?.id
               ? JSON.stringify({
                   summary: reason,
                   response:
@@ -202,7 +206,9 @@ export function readConversationTaskInputs(config: AppTaskContext, claim: AppTas
     return item;
   });
   if (!items.length) throw new Error("Conversation attempt has no admitted input");
-  return items;
+  // The final item supplies the Turn's current ask and reply destination.
+  // Keep system evidence before human input, including retained input from an earlier attempt.
+  return items.sort((left, right) => Number(left.source.kind === "human") - Number(right.source.kind === "human"));
 }
 
 /** Task outcome, Topic, Request decisions and reply share the Task's single fence. */

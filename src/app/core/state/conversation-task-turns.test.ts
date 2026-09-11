@@ -27,6 +27,7 @@ import {
   admitConversationTaskOutcome,
   completeConversationTaskTurn,
   stopConversationTaskTurn,
+  readConversationTaskInputs,
 } from "./conversation-task-turns.js";
 
 const roots: string[] = [];
@@ -248,6 +249,10 @@ test("a fresh attempt considers retained and newer input together and publishes 
   const first = f.admit();
   const obsolete = f.claim(first.taskId);
   const correction = f.admit("correction", 2);
+  const system = admitConversationTaskInput(f.context(), {
+    ...f.input("review", 3, "A linked Task returned evidence"),
+    source: { kind: "system", id: "review" },
+  });
   completeConversationTaskTurn(f.context(), obsolete, decision);
   const claim = f.claim(first.taskId);
   await executeConversationTaskTurn({
@@ -257,20 +262,47 @@ test("a fresh attempt considers retained and newer input together and publishes 
     signal: new AbortController().signal,
     resolveRequest: async ({ request }) => {
       expect(request.id).toBe(correction.item.id);
-      expect(request.inputs?.map(({ id }) => id)).toEqual([first.item.id, correction.item.id]);
+      expect(request.inputs?.map(({ id }) => id)).toEqual([system.item.id, first.item.id, correction.item.id]);
       return decision;
     },
   });
-  for (const admitted of [first, correction]) {
+  for (const admitted of [first, correction, system]) {
     expect(getAppInboxItem(f.db, admitted.item.id)?.status).toBe("done");
     expect(readAppTaskAdmissionOutcome(f.context(), first.taskId, admitted.item.taskAdmissionKey!)?.attemptId).toBe(
       claim.attemptId,
     );
   }
   expect(f.store.readAttempt(obsolete.attemptId)?.acceptedResult).toBeUndefined();
+  expect(getAppInboxItem(f.db, correction.item.id)?.result?.response).toBe(decision.response);
+  expect(getAppInboxItem(f.db, system.item.id)?.result).toBeUndefined();
   expect(
     readAppConversationResource(f.db, app.id, "chat").messages.filter(({ author }) => author.kind === "agent"),
   ).toHaveLength(1);
+});
+
+test("Stop responds to the latest considered human input after a mixed-input retry", () => {
+  const f = fixture();
+  const first = f.admit();
+  const obsolete = f.claim(first.taskId);
+  const correction = f.admit("correction", 2);
+  admitConversationTaskInput(f.context(), {
+    ...f.input("review", 3, "A linked Task returned evidence"),
+    source: { kind: "system", id: "review" },
+  });
+  completeConversationTaskTurn(f.context(), obsolete, decision);
+  const claim = f.claim(first.taskId);
+  expect(claim.continuedInputKeys).toContain(first.item.taskAdmissionKey!);
+  const newer = f.admit("newer", 4);
+  stopConversationTaskTurn(f.context(), {
+    appId: app.id,
+    conversationId: "chat",
+    turnId: claim.attemptId,
+    expectedRevision: claim.generation,
+  });
+  expect(getAppInboxItem(f.db, correction.item.id)?.result?.response).toContain("Stopped this turn");
+  expect(getAppInboxItem(f.db, first.item.id)?.result).toBeUndefined();
+  expect(getAppInboxItem(f.db, "review")?.result).toBeUndefined();
+  expect(getAppInboxItem(f.db, newer.item.id)?.status).not.toBe("done");
 });
 
 test("follow-up admission rolls back with the explanation, Request and Task result", () => {
@@ -728,4 +760,43 @@ test("Turn Stop rolls back as one transaction and its input stays stopped across
   completeConversationTaskTurn(f.context(), next, decision);
   expect(getAppInboxItem(f.db, input.item.id)?.handling?.phase).toBe("stopped");
   expect(getAppInboxItem(f.db, later.item.id)?.status).toBe("done");
+});
+
+test("pending human input leads a bounded mixed batch inside a paused App", () => {
+  const f = fixture();
+  f.store.setProjectLifecycle("paused");
+  for (let index = 0; index < 35; index++) {
+    admitConversationTaskInput(f.context(), {
+      ...f.input(`review-${index}`, index + 1, `System fact ${index}`),
+      source: { kind: "system", id: `review-${index}` },
+    });
+  }
+  const human = f.admit("human", 100, "Discuss these facts with me");
+  const claim = f.claim(human.taskId);
+  expect(claim.events.map(({ event }) => (event.data as { request: { id: string } }).request.id)).toEqual([
+    ...Array.from({ length: 31 }, (_, index) => `review-${index}`),
+    "human",
+  ]);
+  const batch = readConversationTaskInputs(f.context(), claim);
+  expect(batch).toHaveLength(32);
+  expect(batch.at(-1)?.source).toEqual({ kind: "human", id: "human" });
+  expect(batch.slice(0, -1).map((item) => item.source.id)).toEqual(
+    Array.from({ length: 31 }, (_, index) => `review-${index}`),
+  );
+  expect(
+    f.store
+      .readTrigger(human.taskId)
+      ?.events?.map((entry) => (entry.event.data as { request: { id: string } }).request.id),
+  ).toEqual(["review-31", "review-32", "review-33", "review-34"]);
+  expect(f.store.projectLifecycle()).toBe("paused");
+  stopConversationTaskTurn(f.context(), {
+    appId: app.id,
+    conversationId: "chat",
+    turnId: claim.attemptId,
+    expectedRevision: claim.generation,
+  });
+  expect(getAppInboxItem(f.db, human.item.id)?.result?.response).toContain("Stopped this turn");
+  expect(getAppInboxItem(f.db, "review-30")?.result).toBeUndefined();
+  expect(getAppInboxItem(f.db, "review-31")?.status).not.toBe("done");
+  expect(f.store.allowsTaskExecution(human.taskId)).toBe(false);
 });

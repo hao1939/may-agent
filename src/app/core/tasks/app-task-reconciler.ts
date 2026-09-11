@@ -2747,8 +2747,18 @@ export function claimObservedAppTask(
   for (const entry of pendingTrigger ? taskTriggerEvents(pendingTrigger) : []) {
     pendingEvents = appendTaskTriggerEvent(pendingEvents, entry.event, entry.observedAt);
   }
-  const claimedEvents = pendingEvents.slice(0, MAX_TASK_EVENTS_PER_ATTEMPT);
-  const remainingEvents = pendingEvents.slice(MAX_TASK_EVENTS_PER_ATTEMPT);
+  // Include admitted human input before a system backlog fills the bounded batch.
+  // Keep admission order among selected events, including retained failure input.
+  const selected = new Set(
+    [...pendingEvents]
+      .sort(
+        (left, right) =>
+          Number(taskTriggerLane(left.event) !== "human") - Number(taskTriggerLane(right.event) !== "human"),
+      )
+      .slice(0, MAX_TASK_EVENTS_PER_ATTEMPT),
+  );
+  const claimedEvents = pendingEvents.filter((entry) => selected.has(entry));
+  const remainingEvents = pendingEvents.filter((entry) => !selected.has(entry));
   const hasTrigger = Boolean(pendingTrigger?.event ?? (previousAttempt ? attemptTrigger(previousAttempt) : undefined));
   if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
     const now = new Date().toISOString();
