@@ -74,9 +74,9 @@ export type AppTaskResource = {
   };
 };
 
-/** Quick transient retry, then up to 15 minutes between failures; never abandon work. */
+/** Quick transient retry, then up to one hour between failures; never abandon work. */
 export function taskExecutionRetryDelay(failures: number): number {
-  return Math.min(15 * 60_000, 250 * 2 ** Math.min(12, Math.max(0, failures - 1)));
+  return Math.min(60 * 60_000, 250 * 2 ** Math.min(14, Math.max(0, failures - 1)));
 }
 
 export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {
