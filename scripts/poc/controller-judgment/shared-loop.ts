@@ -67,11 +67,17 @@ const nested = process.argv.includes("--nested");
 const natural = process.argv.includes("--natural");
 const withdraw = process.argv.includes("--withdraw");
 const correction = process.argv.includes("--correction");
+const scenario = arg("--scenario") ?? "measurement";
+assert(["measurement", "manifest", "owner-repair"].includes(scenario), "Unknown scenario");
+assert(scenario === "measurement" || (!nested && !withdraw && !correction),
+  "Manifest and owner-repair scenarios use one delegated worker");
+const manifest = scenario === "manifest";
+const needsOwner = scenario === "owner-repair";
 assert(!(natural && nested), "Choose either the natural ask or the explicitly nested trial");
 assert(!(withdraw && nested), "Withdrawal probes one assigned child, not recursive cancellation");
 assert(!(withdraw && correction), "Choose withdrawal or correction");
 if (!process.argv.includes("--live") || !appRoot || !modelName || !out || !Number.isFinite(value))
-  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural] [--withdraw | --correction]");
+  throw Error("Use --live --app-root APP_CHECKOUT --model MODEL --out DIRECTORY [--value NUMBER] [--nested | --natural] [--withdraw | --correction] [--scenario measurement|manifest|owner-repair]");
 assert(createModelRegistry()[modelName], "Selected model must be configured");
 const hostRoot = resolve(import.meta.dir, "../../..");
 const output = resolve(out);
@@ -107,21 +113,37 @@ writeFileSync(
 mkdirSync(join(root, "shared/skills"), { recursive: true });
 symlinkSync(join(hostRoot, "node_modules"), join(root, "node_modules"));
 
-const measurementRequested = Promise.withResolvers<void>();
-const releaseMeasurement = Promise.withResolvers<void>();
-let measurementReads = 0;
+const sourceRequested = Promise.withResolvers<void>();
+const releaseSource = Promise.withResolvers<void>();
+let sourceReads = 0;
+let sourceAvailable = !needsOwner;
+let failedReads = 0;
+let firstSourceFailureAt: number | undefined;
 const source = createServer(async (_request, response) => {
-  measurementReads++;
-  measurementRequested.resolve();
-  await releaseMeasurement.promise;
+  sourceReads++;
+  sourceRequested.resolve();
+  await releaseSource.promise;
+  if (!sourceAvailable) {
+    failedReads++;
+    firstSourceFailureAt ??= Date.now();
+    response.writeHead(503, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ error: "The observation source is unavailable; an operator must restore it." }));
+    return;
+  }
   response.writeHead(200, { "Content-Type": "application/json" });
-  response.end(JSON.stringify({ sample: "trial", value, minimum: 0.9, evidence: "instrument:trial" }));
+  response.end(JSON.stringify(manifest ? {
+    release: "trial",
+    components: [
+      { name: "reader", compressedBytes: 1200, license: "MIT" },
+      { name: "parser", compressedBytes: 2000, license: null },
+    ],
+  } : { sample: "trial", value, minimum: 0.9, evidence: "instrument:trial" }));
 });
 await new Promise<void>((resolveListen, reject) => {
   source.once("error", reject);
   source.listen(0, "127.0.0.1", resolveListen);
 });
-const sourceUrl = `http://127.0.0.1:${(source.address() as AddressInfo).port}/measurement`;
+const sourceUrl = `http://127.0.0.1:${(source.address() as AddressInfo).port}/observation`;
 let bus = new EventBus();
 let db = getDb(paths.persistDir);
 let ingress: AppInboxRuntime | undefined;
@@ -148,7 +170,7 @@ const start = async () => {
     bus,
     timeoutMs: 180_000,
     spawnWorker(request) {
-      if (++dispatches > (nested ? 10 : 8)) {
+      if (++dispatches > (needsOwner ? 12 : nested ? 10 : 8)) {
         const error = Error("Trial dispatch allowance exhausted");
         allowanceExceeded.reject(error);
         throw error;
@@ -229,13 +251,17 @@ try {
       await start();
       publish(
         "measurement",
-        natural
+        manifest
+          ? `Please audit the release manifest at ${sourceUrl}: total its compressed bytes and identify any component missing a license. The source can be slow; I'll have questions while you investigate.`
+          : needsOwner
+          ? `Please find out whether the sample at ${sourceUrl} meets the 0.90 minimum. If the source is unavailable, tell me what needs my help and keep the original ask open. Only I can restore that source. The source can be slow; I'll have questions while you investigate.`
+          : natural
           ? `Please find out whether the sample at ${sourceUrl} meets the 0.90 minimum and explain the result. The source can be slow. I'll have questions while you investigate.`
           : nested
           ? `Please arrange a background review of the sample at ${sourceUrl} against a 0.90 minimum. Have the reviewer obtain the measurement from a separate worker, then assess that worker's returned evidence. Report the conclusion to me. The source may take some time to answer; keep our discussion available while they work.`
           : `Please check the sample at ${sourceUrl} in the background and tell me whether it meets the 0.90 minimum. The source may take some time to answer; keep our discussion available while it runs.`,
       );
-      await measurementRequested.promise;
+      await sourceRequested.promise;
       const taskA = conversationTaskId("may", "may:primary");
       const ask = listConversationRequests(db, "may", "may:primary").find((request) => request.taskRefs.length > 0);
       assert(ask, "The agent read the slow source without first linking delegated work; responsive discussion is not established");
@@ -266,7 +292,7 @@ try {
         const answer = conversation().messages.find((message) => message.id === closedAsk.closure!.messageId)!;
         const closure = store().readCancellation(taskB);
         // Release late source output only after the durable owner decision.
-        releaseMeasurement.resolve();
+        releaseSource.resolve();
         ingress!.close();
         await closeInstalledAppTaskRuntimes(bus);
         const attemptsBeforeRestart = store().readSnapshot().attempts;
@@ -286,15 +312,18 @@ try {
         assert(childAttempts(store().readSnapshot().attempts).every((attempt) => !attempt.acceptedResult),
           "Late output must not become accepted evidence after closure");
         assert.equal(readConversationRequest(db, "may", "may:primary", ask.id)?.closure?.disposition, "withdrawn");
-        report = { taskA, taskB, ask: closedAsk, closure, reply: answer.text, measurementReads,
+        report = { taskA, taskB, ask: closedAsk, closure, reply: answer.text, sourceReads,
           resumedReply: conversation().messages.filter((message) => message.author.kind === "agent").at(-1)?.text };
         return;
       }
+      report = { taskA, taskB, taskC, scenario };
       const priorAnswers = answerCount();
       const discussed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > priorAnswers);
       publish(
         "discussion",
-        correction
+        manifest
+          ? "While that runs, explain whether a license field alone establishes permission to redistribute a component. Just discuss it with me."
+          : correction
           ? "Change the minimum for my decision to 0.95. Keep collecting that same sample; don't start a second measurement. While it runs, explain why one sample alone may not be enough for a decision."
           : "While that runs, explain why one sample alone may not be enough for a decision. Just discuss it with me.",
       );
@@ -315,15 +344,41 @@ try {
           event.type === "conversation.updated" &&
           readConversationRequest(db, "may", "may:primary", ask.id)?.status === "closed",
       );
-      releaseMeasurement.resolve();
+      // The fixture represents an external operator. It restores the source only
+      // after the real human-facing Task has handled the worker's failure report.
+      const ownerFeedback = needsOwner ? nextEvent((event) => event.type === "conversation.updated" &&
+        listAppInboxItems(db, { appId: "may" }).some((item) => {
+          const data = item.input.data as { taskId?: string; outcome?: { state?: string } };
+          return item.input.kind === "task-outcome" && item.status === "done" &&
+            data.taskId === taskB && data.outcome?.state === "stopped";
+        })) : undefined;
+      releaseSource.resolve();
+      if (ownerFeedback) {
+        await ownerFeedback;
+        assert(failedReads > 0, "The fixture must actually fail before owner intervention");
+        const openAsk = readConversationRequest(db, "may", "may:primary", ask.id)!;
+        assert.equal(openAsk.status, "open", "A failure report must not close the original ask");
+        assert.equal(store().isCancelled(taskB), false, "The failed worker's assignment remains open");
+        const ownerReply = conversation().messages.filter((message) => message.author.kind === "agent").at(-1)?.text;
+        assert(ownerReply && /unavailable|restor|503|repair/i.test(ownerReply), "Owner must explain the source problem");
+        report = { ...report, ownerReply, ownerFeedbackDelayMs: Date.now() - firstSourceFailureAt!, failedReads };
+        sourceAvailable = true;
+        publish("source-restored", "I restored the same source. Continue the original measurement with the same worker; do not create replacement work. Report the result when it is ready.");
+      }
       await returned;
       const fulfilled = readConversationRequest(db, "may", "may:primary", ask.id)!;
       assert.equal(fulfilled.closure?.disposition, "fulfilled");
       const reply = conversation().messages.find((message) => message.id === fulfilled.closure!.messageId)!;
-      assert(reply.text.includes(String(value)), "The final reply must contain the observed measurement");
+      const assertAnswer = (text: string) => {
+        if (manifest) {
+          assert(/3[,.]?200/.test(text) && /parser/i.test(text) && /licen[cs]e/i.test(text),
+            "The answer must identify the missing license and report 3200 compressed bytes");
+        } else assert(text.includes(String(value)), "The answer must contain the observed measurement");
+      };
+      assertAnswer(reply.text);
       if (correction) {
         assert(reply.text.includes("0.95"), "The reply must address the corrected threshold");
-        assert.equal(measurementReads, 1, "Rejudging the same observation needs no second measurement");
+        assert.equal(sourceReads, 1, "Rejudging the same observation needs no second measurement");
       }
       assert.equal(conversation().messages.find((message) => message.id === discussion.id)?.text, discussion.text);
       const tasks = store().readSnapshot().resources!;
@@ -360,21 +415,21 @@ try {
       await start();
       const beforeReopenReply = answerCount();
       const resumed = nextEvent((event) => event.type === "conversation.updated" && answerCount() > beforeReopenReply);
-      publish("reopen", "Remind me of the sample result and the limitation we discussed.");
+      const recall = manifest ? "Remind me of the manifest findings and the license limitation we discussed."
+        : "Remind me of the sample result and the limitation we discussed.";
+      publish("reopen", recall);
       await resumed;
       const reopenedInput = listAppInboxItems(db, { appId: "may" }).find(
         (item) =>
           item.source.kind === "human" &&
           (item.input.data as { message?: string }).message ===
-            "Remind me of the sample result and the limitation we discussed.",
+            recall,
       );
       assert.equal(reopenedInput?.status, "done", "Reopen must execute and settle the new input");
-      assert(
-        reopenedInput?.result?.response?.includes(String(value)),
-        "The reopened reply must recall the observed value",
-      );
+      assertAnswer(reopenedInput?.result?.response ?? "");
       assert.deepEqual(Object.keys(store().readSnapshot().resources!).sort(), expectedTaskIds);
       report = {
+        ...report,
         taskA,
         taskB,
         taskC,
@@ -388,7 +443,7 @@ try {
           .messages.filter((message) => message.author.kind === "agent")
           .at(-1)?.text,
         inputs: listAppInboxItems(db, { appId: "may" }),
-        measurementReads,
+        sourceReads,
       };
     })(),
     new Promise<never>((_resolve, reject) => {
@@ -399,7 +454,7 @@ try {
   failure = error instanceof Error ? error.message : String(error);
 } finally {
   if (timer) clearTimeout(timer);
-  releaseMeasurement.resolve();
+  releaseSource.resolve();
   ingress?.close();
   for (const { child } of children) if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
   await Promise.all(children.map(({ closed }) => closed));
@@ -429,6 +484,8 @@ try {
     sources,
     copied,
     model: modelName,
+    scenario,
+    failedReads,
     value,
     nested,
     natural,

@@ -102,8 +102,10 @@ bun scripts/poc/controller-judgment/shared-loop.ts --live --nested --app-root /p
 
 The nested trial checks the exact C admission/result as well as B's return to
 A. It allows ten dispatches within the same six-minute experiment limit.
-Recorded waits remain readable but do not trigger a caller attempt: an answer,
-failure report or owner closure returns through the common input loop.
+Recorded waits remain readable but do not trigger a caller attempt. An exact
+answer or owner closure returns to a typed caller. Accepted failure reports
+currently return through Topic links; typed failures remain unfinished while
+the worker retries. That difference remains a convergence gap.
 A pending wait is preserved once its typed
 input is durably published; the worker need not obtain a synchronous receipt
 from the parent process. Publication does not claim that execution succeeded.
@@ -132,6 +134,33 @@ bun scripts/poc/controller-judgment/shared-loop.ts --live --natural --app-root /
 bun scripts/poc/controller-judgment/shared-loop.ts --live --natural --withdraw --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/owner-withdrawal
 bun scripts/poc/controller-judgment/shared-loop.ts --live --natural --correction --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/owner-correction
 ```
+
+## Capability and owner-help probes
+
+The same shared-loop harness can use an unfamiliar release manifest without
+changing May's App input mapping or role instructions:
+
+```sh
+bun scripts/poc/controller-judgment/shared-loop.ts --live --scenario manifest --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/manifest-loop
+bun scripts/poc/controller-judgment/shared-loop.ts --live --scenario owner-repair --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/owner-repair-loop
+```
+
+The manifest case checks a total of 3200 compressed bytes and the component
+missing a license, discussion while source work is pending, and recall after
+reopen. This tests use of the general `goal` input for unfamiliar work; it does
+not certify every App mapping or automatic executor selection.
+
+The owner-repair case holds the source until the human's discussion is answered,
+then returns HTTP 503 until the human-facing Task has handled the worker's
+accepted failure report. Only then does the fixture restore the source and send
+ordinary human input asking to continue the same assignment. The gate requires
+the original Request and worker to stay open, a useful problem report, the exact
+answer, unchanged Task identities and recall after reopen. It allows twelve
+dispatches within six minutes and records failed reads and time to owner feedback.
+This exercises Topic-linked owner feedback, not failure return to a nested typed
+caller. Both scenarios use one worker and cannot combine with nested, withdrawal
+or correction options. Reports include failure evidence; a failed trial remains
+a finding to investigate, not a reason to bypass the user scenario.
 
 ## Managed recovery with human input
 
