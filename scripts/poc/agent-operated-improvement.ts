@@ -15,6 +15,7 @@ import {
   type DirectAgentExecutionResult,
 } from "../../src/lib/agent-execution.js";
 import { createReadTool } from "../../src/lib/tools/read.js";
+import { createFinishTool } from "../../src/lib/tools/lifecycle.js";
 import { fixtureGit, fixtureRead, fixtureSource, fixtureWrite } from "./conversation-adoption-tools.js";
 
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -105,8 +106,7 @@ export async function runTrial(live = false) {
     assert.equal(result.status, "done", `Invalid execution ${id}; retained, no harness rerun`);
     return record;
   };
-  async function target(id: string, request: string) {
-    assert(++executions <= 12, "Model execution budget exhausted");
+  async function prepareTarget(id: string, request: string) {
     const release = store.current()!;
     const read = createReadTool(sb.root, {
       operations: {
@@ -137,7 +137,13 @@ export async function runTrial(live = false) {
       sessionId: id,
       requireFinish: true,
       outputSchema: answerSchema,
+      createFinish: () => createFinishTool({ agentName: "may", projectRoot: sb.root, persistDir: sb.stateDir }),
     });
+    return { prepared, release };
+  }
+  async function target(id: string, request: string) {
+    const { prepared, release } = await prepareTarget(id, request);
+    assert(++executions <= 12, "Model execution budget exhausted");
     const result = await executePreparedAgent(prepared, { timeoutMs: 60_000 });
     return recordExecution(id, result, {
       request,
@@ -199,7 +205,7 @@ export async function runTrial(live = false) {
       "setup.json",
       JSON.stringify(
         {
-        hostCommit: await fixtureGit(resolve(import.meta.dirname, "../.."), ["rev-parse", "HEAD"]),
+          hostCommit: await fixtureGit(resolve(import.meta.dirname, "../.."), ["rev-parse", "HEAD"]),
           harnessHash: hash(readFileSync(import.meta.filename, "utf8")),
           live,
           objective,
@@ -259,6 +265,8 @@ export async function runTrial(live = false) {
       },
     };
     if (!live) {
+      // Exercise real model/tool preparation without spending a provider call.
+      assert((await prepareTarget("preflight", "Ordinary fixture request")).prepared.requireFinish);
       assert.deepEqual(decoded(await list.execute("list", {})), { directories: ["agents", "shared", "evidence"] });
       const writer = fixtureWrite({ projectRoot: sb.root });
       await assert.rejects(writer.execute("denied", { path: "agents/may/agent.json", content: "{}" }));
