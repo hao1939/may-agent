@@ -19,7 +19,7 @@ describe("App dependency catalog", () => {
           id: "review",
           parentId: "evaluation",
           outcome: "Review facts",
-          acceptance: ["Facts is reviewed"],
+          acceptance: ["Facts are reviewed"],
         },
       }),
       tasks: {},

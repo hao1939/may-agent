@@ -117,7 +117,7 @@ function discoverAppTaskResourceStore(
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
     throw new Error(
-      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect that facts outside the Host or restore the canonical resource database`,
+      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect those facts outside the Host or restore the canonical resource database`,
     );
   }
 

@@ -328,9 +328,6 @@ export const conversationTurnResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
-/** @deprecated Use conversationTurnResultSchema; both names enforce the same contract. */
-export const appRequestAgentResultSchema = conversationTurnResultSchema;
-
 export type AppEventSubscription = {
   /** Stable identity combined with the source event id for idempotency. */
   id: string;

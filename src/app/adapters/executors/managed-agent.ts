@@ -103,7 +103,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Task actions only update or unblock existing Tasks, using the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Accepted outcomes remain facts; closure is a separate owner control.",
     "Keep facts concise and include the artifact/session paths needed to inspect the result. Code handles persistence, scheduling and result return; do not poll merely to keep follow-through alive.",
     "A Condition records a wait for a known fact; requestedAction does not contact its owner or perform that action. reviewAfterMs schedules reconsideration, not a notification or repair.",
-    "Treat new feedback as facts for this Task. Address the human's actual concern against its goal and Open Waits. Existing obligations remain recorded; create different work only when the changed goal requires it.",
+    "Treat new feedback as input, including preferences, corrections, or claims to verify. Address the human's actual concern against this Task's goal, observed facts and Open Waits. Existing obligations remain recorded; create different work only when the changed goal requires it.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");
 }

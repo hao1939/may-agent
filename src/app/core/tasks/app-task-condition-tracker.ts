@@ -243,7 +243,7 @@ export function matchesAppTaskCondition(
           Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))));
 }
 
-/** Recognize the facts that belongs to a wait, including an already observed fact. */
+/** Recognize the facts that belong to a wait, including an already observed fact. */
 export function matchesAppTaskConditionFacts(condition: unknown, event: Record<string, unknown>): condition is AppTaskCondition {
   return isCondition(condition) && (matches(condition, event) || isAppInputReport(condition, event));
 }

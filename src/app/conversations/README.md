@@ -35,14 +35,14 @@ A handler-specific result shape is not a second lifecycle.
 commits the reply, Topic selection, Request updates, Task result and any admitted
 work or authorized control in one fenced transaction. Failed settlement retains
 the input for normal Task retry. Rejected proposals do not publish a misleading
-reply. Previous-attempt facts lets the App correct its decision after backoff,
+reply. Previous-attempt facts let the App correct its decision after backoff,
 including after storage reopen; there is no extra conversational retry loop.
 
 A handoff links the responsible Task to the caller's Topic and, when declared,
 accepted Request. Linked answers, honest failure reports and owner closures
 return as durable input. Intermediate waits remain readable without executing
 the caller. Live events provide prompt return; bounded discovery finds missed
-changes. The agent judges whether the facts resolves the accepted ask.
+changes. The agent judges whether the facts resolve the accepted ask.
 Completing an attempt or an inbox item does not itself fulfill a Request.
 
 Task A can discuss with a human while B works, and B can delegate C. All use the

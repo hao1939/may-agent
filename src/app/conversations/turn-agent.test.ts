@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, appRequestAgentResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
+import { Type, conversationTurnResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import { executePreparedAgent, prepareAgentExecution } from "../../lib/agent-execution.js";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
@@ -197,7 +197,7 @@ describe("conversational attempt contract", () => {
     expect(Check(schema, answer)).toBe(true);
     const waiting = { ...answer, dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: {} } }] };
     expect(Check(schema, waiting)).toBe(false);
-    expect(Check(appRequestAgentResultSchema, waiting)).toBe(false);
+    expect(Check(conversationTurnResultSchema, waiting)).toBe(false);
     expect(Check(schema, { ...answer, dependencies: [] })).toBe(false);
     expect(prompt).toContain("The current Turn finishes after the handoff is admitted");
     expect(prompt).toContain("The Request remains open until its scope is resolved and explained");
@@ -468,7 +468,7 @@ describe("conversational attempt contract", () => {
   it("uses the same turn contract for an App without its own Task capability", async () => {
     const frontend = { ...may, conversation: { mode: "agent" as const }, task: undefined, tasks: undefined };
     const { prompt, options } = await attempt(request, frontend);
-    expect(options.outputSchema).toBe(appRequestAgentResultSchema);
+    expect(options.outputSchema).toBe(conversationTurnResultSchema);
     expect(options.toolPolicy).toBe("app-agent-full");
     expect(prompt).toContain("Do not return dependencies");
     const catalog = JSON.parse(prompt.split("## Installed Apps\n```json\n")[1].split("\n```")[0]);

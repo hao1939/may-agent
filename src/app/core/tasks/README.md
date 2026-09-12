@@ -135,7 +135,7 @@ A completed workflow call alone never establishes an accepted Task outcome.
 
 `app-task-emitter.ts` exposes scoped publication and exact publication reads.
 A workflow can read its original fact from `core/state/task-emissions.ts` after
-losing result acceptance, then propose the same outcome from that facts.
+losing result acceptance, then propose the same outcome from those facts.
 The local effect key follows admitted work, not attempt number. It remains
 App-owned; a new input on the same open Task may need a distinct key. A read
 proves publication only, and same-key/different-payload writes still fail.

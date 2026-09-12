@@ -37,7 +37,7 @@ Portable runtime tests do not claim to reproduce model judgment.
 Conversation is a Task's human-facing role. Tests exercise its handler through
 the same Task claim, attempt and recovery used for delegated work.
 
-Fourteen inbox tests previously called the removed `resolveConversationInput`,
+Fourteen inbox tests previously called the removed `resolveRequest`,
 `onRequestFollowUp`, `onRequestMessage` or `controlTask` execution callbacks.
 Their useful behavior now has these owners; generic inbox admission, immutable attachment,
 exact result projection and caller-identity checks remain in `app-inbox-host.test.ts`.

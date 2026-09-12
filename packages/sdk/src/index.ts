@@ -75,7 +75,7 @@ export type {
   WorkflowMetricCapability,
   AgentCallOptions,
 } from "./app.js";
-export { appRequestAgentResultSchema, conversationTurnResultSchema } from "./app.js";
+export { conversationTurnResultSchema } from "./app.js";
 export type {
   Condition,
   TaskAcceptanceBasis,
