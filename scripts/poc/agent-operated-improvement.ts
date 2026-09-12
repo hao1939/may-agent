@@ -112,7 +112,11 @@ export function reloadRecoveryEvidence(
             (reply.result.reload as { state?: string } | undefined)?.state === "succeeded",
         ),
     );
-  return { handled: !!retry, trace };
+  const pending = trace.some(
+    (entry) =>
+      entry.role === "toolResult" && (entry.result?.reload as { state?: string } | undefined)?.state === "pending",
+  );
+  return { handled: !!retry && !pending, trace };
 }
 
 export async function runTrial(live = false) {
@@ -157,7 +161,11 @@ export async function runTrial(live = false) {
     if (live) assert(configured.apiKey, "Configured model route lacks a credential binding");
     return { ...configured, maxTokens: 4096, fallbackModel: undefined };
   };
-  const recordExecution = (id: string, result: DirectAgentExecutionResult, extra: Record<string, unknown>) => {
+  const recordExecution = <T extends Record<string, unknown>>(
+    id: string,
+    result: DirectAgentExecutionResult,
+    extra: T,
+  ) => {
     const assistant = result.messages.filter((message) => message.role === "assistant");
     const record = {
       id,
@@ -357,7 +365,37 @@ export async function runTrial(live = false) {
     };
     if (!live) {
       // Exercise real model/tool preparation without spending a provider call.
-      assert((await prepareTarget("preflight", "Ordinary fixture request")).prepared.requireFinish);
+      const { prepared: targetPreflight } = await prepareTarget("preflight", "Ordinary fixture request");
+      assert(targetPreflight.requireFinish);
+      // Finish can append reported lessons as evidence. That evidence is not
+      // writable guidance, readable target context, or automatic learning.
+      const lessonMarker = "synthetic-target-lesson-not-active-guidance";
+      await targetPreflight.tools
+        .find((tool) => tool.name === "finish")!
+        .execute("finish-preflight", {
+          status: "success",
+          summary: "Synthetic completion",
+          verification_evidence: ["Fixture capability inspection"],
+          lessons: [{ category: "insight", content: lessonMarker }],
+          result: {
+            totalSlots: null,
+            limit: null,
+            eligible: null,
+            source: null,
+            deploymentAuthorized: false,
+            reply: "Fixture",
+          },
+        });
+      const memoryPath = join(sb.stateDir, "memory-stream.jsonl");
+      assert(readFileSync(memoryPath, "utf8").includes(lessonMarker));
+      await assert.rejects(
+        targetPreflight.tools.find((tool) => tool.name === "read")!.execute("read-memory", { path: memoryPath }),
+      );
+      assert(
+        !(await prepareTarget("next-preflight", "Ordinary fixture request")).prepared.systemPrompt.includes(
+          lessonMarker,
+        ),
+      );
       const packet = exposeEvidence({
         id: "preflight",
         status: "done",
@@ -423,7 +461,7 @@ export async function runTrial(live = false) {
         name: "try_agent",
         label: "Try a fresh target execution",
         description:
-          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. The target can read only its active definition snapshot; your evidence directory is not accessible to it. Returns actual revision, answer, tool-error count and a detailed evidence reference. Read-only target execution; at most six trials. Use results to judge your change; no hidden expected answers are supplied.",
+          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. The target can read only its active definition snapshot; your evidence directory is not accessible to it. Returns actual revision, answer, tool-error count and a detailed evidence reference. The target cannot edit guidance or policy; finish may record lessons as fixture evidence, not future guidance. At most six trials. Use results to judge your change; no hidden expected answers are supplied.",
         parameters: Type.Object({ request: Type.String({ minLength: 1, maxLength: 4000 }) }),
         execute: async (_id, input, signal) => {
           signal?.throwIfAborted();
@@ -463,6 +501,8 @@ export async function runTrial(live = false) {
       checks.reloadRecovery = recovery;
       checks.source = finalSource;
       save();
+      assertFinalSource(finalSource);
+      assert(recovery.handled, "No settled recovery at the final source; pending reloads cannot prove adoption");
       // Grading requests are withheld until the improver has finished. They are not tool results it can optimize against.
       const cases = [
         {
@@ -495,10 +535,16 @@ export async function runTrial(live = false) {
         const output = actual.result as Record<string, unknown> | undefined;
         outcomes.push({
           id: test.id,
-          passed: !!output && Object.entries(test.expected).every(([key, value]) => output[key] === value),
+          sourceCommit: actual.sourceCommit,
+          passed:
+            actual.sourceCommit === finalSource.head &&
+            !!output &&
+            Object.entries(test.expected).every(([key, value]) => output[key] === value),
         });
       }
       checks.holdouts = outcomes;
+      const sourceAfterHoldouts = await inspectSource(baseline!);
+      checks.sourceAfterHoldouts = sourceAfterHoldouts;
       const verifiedActive = records.some(
         (record) =>
           String(record.id).startsWith("agent-probe-") && record.sourceCommit === store.current()?.sourceCommit,
@@ -516,8 +562,8 @@ export async function runTrial(live = false) {
         "Holdout failure retained; review before retrying",
       );
       assert.notEqual(store.current()?.sourceCommit, baseline, "No activated source change");
-      assertFinalSource(finalSource);
-      assert(recovery.handled, "No successful retry requested in a later assistant turn after the failure result");
+      assertFinalSource(sourceAfterHoldouts);
+      assert.equal(sourceAfterHoldouts.head, finalSource.head, "Source changed during withheld checks");
       assert(verifiedActive, "No agent-operated verification of the active source observed");
     }
     save();
