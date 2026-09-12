@@ -529,6 +529,8 @@ it("recovers legacy attention as the same Tasks without inventing App review inp
 });
 
 it("keeps omitted workflows visible, continues unrelated work, and recovers with a supplied runner", async () => {
+  // Drive retry eligibility explicitly; fixture setup must not consume the backoff.
+  setSystemTime(new Date());
   const f = fixture();
   const bus = eventBus();
   const base = {
