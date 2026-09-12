@@ -315,6 +315,7 @@ test.each([
   let config = f.context(owner.id);
   let claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
   if (claim.kind !== "claimed") throw new Error("fixture claim");
+  const firstAttemptId = claim.attemptId;
   if (taskOutcome === "done") completeAppTask(config, claim, { summary: "Evidence collected" });
   else if (taskOutcome === "retrying") {
     for (let i = 0; i < 6; i++) {
@@ -343,17 +344,23 @@ test.each([
   const settledTask = config.resourceStore.readTaskContext({ taskIds: ["work"] });
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(accepted);
   expect(config.resourceStore.isCancelled("work")).toBe(taskOutcome === "human-cancel");
-  // Reopen and return only stored outcomes/closure. Repeated mechanical failure
-  // has no accepted result to announce; a human can still ask for a status.
+  // Reopen and return only stored outcomes/closure. Repeated execution failures
+  // supply one factual report, never an accepted answer or Request closure.
   f.reopen();
   config = f.context(owner.id);
   expect(config.resourceStore.readTaskContext({ taskIds: ["work"] })).toEqual(settledTask);
   const pending = listPendingConversationTaskChanges(f.db, app.id);
-  if (taskOutcome === "retrying") expect(pending).toEqual([]);
-  else {
-    const change = pending.find((change) => change.taskId === "work" && change.topicId === handoffTopic)!;
-    expect(change).toBeDefined();
-    admitConversationTaskChange(f.context(), config, change);
+  const change = pending.find((change) => change.taskId === "work" && change.topicId === handoffTopic)!;
+  expect(change).toBeDefined();
+  const returned = admitConversationTaskChange(f.context(), config, change);
+  if (taskOutcome === "retrying") {
+    expect(pending).toHaveLength(1);
+    expect(change.attemptId).toBe(firstAttemptId);
+    expect(config.resourceStore.readAttempt(firstAttemptId)?.acceptedResult).toBeUndefined();
+    expect(returned.item?.input.data).toMatchObject({
+      outcome: { state: "error", evidence: [`task-attempt:${firstAttemptId}`] },
+    });
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(accepted);
   }
   const extraRef = { appId: owner.id, taskId: "additional-evidence" };
   if (links === "add") linkConversationTopicTask(f.db, accepted.topicId!, extraRef.appId, extraRef.taskId);

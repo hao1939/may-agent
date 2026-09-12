@@ -3,13 +3,15 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { createHash } from "node:crypto";
 import { Type, defineApp, type AppInputContext, type ConversationTurnResult } from "@may-agent/sdk";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { SubagentManager } from "../../../src/lib/manager.js";
+import type { SubagentDefinition } from "../../../src/lib/types.js";
 import { createAgentRun } from "../../../src/lib/agent-runner.js";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../../src/lib/workflow-finish-recovery.js";
 import { createModelRegistry } from "../../../src/app/model-registry.js";
-import { EventBus } from "../../../src/app/core/events/bus.js";
+import { EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
 import { DbWriter } from "../../../src/lib/db-writer.js";
 import { getDb, closeDb } from "../../../src/lib/requests.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
@@ -21,8 +23,12 @@ import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
 import { listAppInboxItems } from "../../../src/app/core/state/app-inbox-store.js";
 import { readAppConversationResource } from "../../../src/app/core/state/conversations.js";
-import { readConversationRequest } from "../../../src/app/core/state/conversation-requests.js";
+import {
+  readConversationRequest,
+  listConversationRequests,
+} from "../../../src/app/core/state/conversation-requests.js";
 import { conversationTaskId } from "../../../src/app/core/state/conversation-task-turns.js";
+import { appTaskContext, readAppTaskAdmissionOutcome } from "../../../src/app/core/tasks/app-task-reconciler.js";
 
 const arg = (name: string) => {
   const i = process.argv.indexOf(name);
@@ -31,23 +37,29 @@ const arg = (name: string) => {
 const modelName = arg("--model");
 const output = arg("--out");
 const fault = arg("--fault");
+const callerFeedback = fault === "caller-feedback";
 const value = Number(arg("--value") ?? "0.92");
 if (
   !process.argv.includes("--live") ||
   !modelName ||
   !output ||
-  !["empty", "after-effect", "attempt-loss"].includes(fault ?? "") ||
+  !["empty", "after-effect", "attempt-loss", "caller-feedback"].includes(fault ?? "") ||
   !Number.isFinite(value)
 )
-  throw Error("Use --live --model NAME --out DIRECTORY --fault empty|after-effect|attempt-loss [--value NUMBER]");
+  throw Error(
+    "Use --live --model NAME --out DIRECTORY --fault empty|after-effect|attempt-loss|caller-feedback [--value NUMBER]",
+  );
 const model = createModelRegistry()[modelName];
 if (!model) throw Error("Selected model is not configured");
 const outputRoot = resolve(output);
 mkdirSync(outputRoot, { recursive: true });
 const git = promisify(execFile);
-const gitOptions = { cwd: resolve(import.meta.dir, "../../.."), timeout: 5_000 };
+const gitOptions = { cwd: resolve(import.meta.dirname, "../../.."), timeout: 5_000 };
 const sourceRevision = (await git("git", ["rev-parse", "HEAD"], gitOptions)).stdout.trim();
 const sourceDirty = Boolean((await git("git", ["status", "--porcelain"], gitOptions)).stdout.trim());
+const sourcePatchHash = createHash("sha256")
+  .update((await git("git", ["diff", "HEAD"], gitOptions)).stdout)
+  .digest("hex");
 const root = mkdtempSync(join(tmpdir(), "may-managed-conversation-"));
 const appDir = join(root, "chat.app");
 mkdirSync(appDir);
@@ -63,6 +75,34 @@ const definition = defineApp({
   requests: { mode: "agent" },
   inputSchema: Type.Object({ kind: Type.String(), data: Type.Object({}, { additionalProperties: true }) }),
 });
+const workerDir = join(root, "measurement.app");
+const worker = defineApp({
+  id: "measurement",
+  version: 1,
+  agent: "fixture-measure",
+  inputSchema: Type.Object({ kind: Type.Literal("collect"), data: Type.Object({ request: Type.String() }) }),
+  task: () => ({
+    kind: "desired",
+    intent: {
+      id: "sample",
+      parentId: "root",
+      mode: "achieve",
+      outcome: "Obtain the sample and compare it with the minimum",
+      acceptance: ["Return the actual measurement and comparison, preserving unfinished work if access is missing"],
+    },
+  }),
+  tasks: { subscriptions: [], resolve: () => null },
+});
+if (callerFeedback) {
+  mkdirSync(join(workerDir, "tasks"), { recursive: true });
+  writeFileSync(
+    join(workerDir, "tasks", "seed.json"),
+    JSON.stringify({ root_task_id: "root", groups: { root: { id: "root", parent_id: null } } }),
+  );
+}
+let accessReady = !callerFeedback;
+let deniedReads = 0;
+let successfulReads = 0;
 let injected = false;
 let calls = 0;
 let providerCalls = 0;
@@ -79,12 +119,15 @@ async function start() {
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const stopProfile = bus.listen((event) => {
-    if (event.type === "project.task.reconcile.profiled") {
+    if (String(event.type) === "project.task.reconcile.profiled") {
       profileCount++;
       notify?.();
     }
   });
-  const registry = new AppRegistry(async () => [{ appDir, definition }]);
+  const registry = new AppRegistry(async () => [
+    { appDir, definition },
+    ...(callerFeedback ? [{ appDir: workerDir, definition: worker }] : []),
+  ]);
   await registry.reload();
   const manager = new SubagentManager({
     persistDir: root,
@@ -122,13 +165,13 @@ async function start() {
             else stream.push({ type: "done", reason: "stop", message });
             return stream;
           }
-          if (++providerCalls > 12) throw Error("Fixture model-call allowance exhausted");
+          if (++providerCalls > (callerFeedback ? 24 : 12)) throw Error("Fixture model-call allowance exhausted");
           return actual(selected, context, options);
         },
       });
     },
   });
-  manager.register({
+  const agent: SubagentDefinition = {
     name: "fixture-chat",
     description: "Discuss and perform synthetic measurement work",
     domain: "fixture",
@@ -137,22 +180,44 @@ async function start() {
     projectRoot: root,
     workspace: root,
     timeoutMs: 90_000,
-    systemPrompt:
-      "Use current observations to help with the assigned measurement work. Only claim verified results. Inspect committed records before repeating effects. Choose how to make progress within the assignment; its assigning owner decides whether to revise or withdraw it.",
+    systemPrompt: callerFeedback
+      ? "Help the human with the assigned measurement work. Only claim verified results and preserve unresolved requests."
+      : "Use current observations to help with the assigned measurement work. Only claim verified results. Inspect committed records before repeating effects. Choose how to make progress within the assignment; its assigning owner decides whether to revise or withdraw it.",
     tools: [
       {
         name: "measurement",
         label: "Measurement service",
-        description:
-          "Read the current measurement, minimum and all committed records, or record a verified value. Each record call creates another record; inspect existing records when their state matters.",
-        parameters: Type.Union([
-          Type.Object({ action: Type.Literal("read") }, { additionalProperties: false }),
-          Type.Object({ action: Type.Literal("record"), value: Type.Number() }, { additionalProperties: false }),
-        ]),
+        description: callerFeedback
+          ? "Read the current measurement and its applicable minimum."
+          : "Read the current measurement, minimum and all committed records, or record a verified value. Each record call creates another record; inspect existing records when their state matters.",
+        parameters: callerFeedback
+          ? Type.Object({ action: Type.Literal("read") }, { additionalProperties: false })
+          : Type.Union([
+              Type.Object({ action: Type.Literal("read") }, { additionalProperties: false }),
+              Type.Object({ action: Type.Literal("record"), value: Type.Number() }, { additionalProperties: false }),
+            ]),
         async execute(_id, raw) {
           const command = raw as { action: "read" | "record"; value?: number };
           const state = readJournal();
+          if (!accessReady) {
+            deniedReads++;
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    available: false,
+                    error:
+                      "Access denied; no sample was obtained. Only the human requester can restore source permissions. The measurement App can read but cannot change permissions.",
+                  }),
+                },
+              ],
+              details: undefined,
+            };
+          }
+          if (command.action === "read") successfulReads++;
           if (command.action === "record") {
+            if (callerFeedback) throw Error("This trial offers only measurement reads");
             if (command.value !== state.value) throw Error("Only the observed measurement can be recorded");
             state.records.push(command.value);
             writeFileSync(journal, JSON.stringify(state));
@@ -161,12 +226,21 @@ async function start() {
         },
       },
     ],
-  });
+  };
+  manager.register({ ...agent, ...(callerFeedback ? { tools: [] } : {}) });
+  if (callerFeedback)
+    manager.register({
+      ...agent,
+      name: "fixture-measure",
+      systemPrompt:
+        "Obtain the requested measurement and comparison. A missing prerequisite does not finish that assignment. If caller action is needed, explain it and wait rather than polling. Source access changes are reported as measurement.access.changed with resource=sample and ready=true. Use the measurement tool for facts, including who can repair a denied read. Only claim what was measured.",
+    });
   const call = manager.callAgentDefinition.bind(manager);
   manager.callAgentDefinition = async (agent, prompt, options) => {
-    if (++calls > 3) throw Error("Fixture attempt allowance exhausted");
+    if (++calls > (callerFeedback ? 8 : 3)) throw Error("Fixture attempt allowance exhausted");
     console.log(JSON.stringify({ event: "managed-attempt", attempt: calls }));
-    contexts.push(JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!));
+    const context = prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/);
+    if (context) contexts.push(JSON.parse(context[1]!));
     const result = await call(agent, prompt, options);
     executions.push({
       sessionId: result.sessionId,
@@ -208,6 +282,8 @@ async function start() {
     bus,
     persistDir: root,
     schedulesEnabled: false,
+    attachTask: tasks.attach,
+    readDependency: tasks.readDependency,
     admitConversation: tasks.admitConversation,
     admitConversationChange: tasks.admitConversationChange,
     stopConversationTurn: tasks.stopTurn,
@@ -227,6 +303,135 @@ async function start() {
     },
   };
 }
+
+/** Same managed boundary, with a real model choosing report/wait and human replies. */
+async function trialCallerFeedback() {
+  const waitFor = async (ready: () => boolean) => {
+    while (!ready())
+      await new Promise<void>((done) => {
+        notify = done;
+      });
+    notify = undefined;
+  };
+  const store = () => AppTaskResourceStore.activeFromDb(runtime!.db, worker.id)!;
+  const context = () =>
+    appTaskContext({
+      appDir: workerDir,
+      projectDir: workerDir,
+      agent: worker.agent!,
+      maxConcurrent: 1,
+      resourceStore: store(),
+    });
+  let topicId: string | undefined;
+  const requests = () => listConversationRequests(runtime!.db, "chat", "primary", topicId);
+  const publishHuman = (id: string, text: string) =>
+    runtime!.bus.emit({
+      type: "conversation.message.created",
+      source: "fixture",
+      owner: "human:fixture",
+      data: {
+        appId: "chat",
+        conversationId: "primary",
+        author: { kind: "human", id: "caller" },
+        text,
+        idempotencyKey: id,
+      },
+    });
+  publishHuman(
+    "measurement-ask",
+    "Ask the measurement App to obtain the sample and compare it with the minimum. Keep this request open until you can tell me the actual result. Let me know if I need to help.",
+  );
+  await waitFor(() => Boolean(store()?.readTask("sample")?.status.observedAttemptId));
+  const first = store().readAttempt(store().readTask("sample")!.status.observedAttemptId!)!;
+  if (first.acceptedResult?.state !== "waiting" || !first.acceptedResult.report || deniedReads < 1)
+    throw Error("Agent did not report and wait after encountering denied access");
+  await waitFor(() =>
+    listAppInboxItems(runtime!.db, { appId: "chat" }).some(
+      (item) =>
+        item.input.kind === "task-outcome" &&
+        item.status === "done" &&
+        (item.input.data as { attemptId?: string }).attemptId === first.metadata.id,
+    ),
+  );
+  const before = readAppConversationResource(runtime!.db, "chat", "primary");
+  topicId = before.topics?.[0]?.id;
+  const open = requests();
+  const help = before.messages.filter((message) => message.author.kind === "agent").at(-1)?.text ?? "";
+  if (!open.length || open.some((request) => request.status !== "open") || !/access/i.test(help))
+    throw Error("Conversation did not communicate the access problem while retaining the original request");
+  const original = listAppInboxItems(runtime!.db, { appId: "chat" }).find((item) => item.source.kind === "human")!;
+  const key = `conversation-follow-up:chat:${original.id}`;
+  if (readAppTaskAdmissionOutcome(context(), "sample", key)) throw Error("Report was misclassified as an answer");
+  const requestIds = open.map((request) => request.id).sort();
+  const callsBeforeReopen = calls;
+  await runtime!.close();
+  runtime = await start();
+  if (store().readAttempt(first.metadata.id)?.acceptedResult?.summary !== first.acceptedResult.summary)
+    throw Error("Report changed across storage reopen");
+  accessReady = true;
+  publishHuman("source-repaired", "Source access is restored. Please continue the same measurement request.");
+  runtime.bus.emit({
+    type: "measurement.access.changed",
+    source: "fixture-source",
+    owner: "app:measurement",
+    target: { appId: worker.id, taskId: "sample" },
+    data: { resource: "sample", ready: true },
+  } as unknown as AgentEvent);
+  await waitFor(
+    () =>
+      Boolean(readAppTaskAdmissionOutcome(context(), "sample", key)) &&
+      requests().length > 0 &&
+      requests().every((request) => request.status === "closed") &&
+      listAppInboxItems(runtime!.db, { appId: "chat" }).every((item) => item.status === "done"),
+  );
+  const answer = readAppTaskAdmissionOutcome(context(), "sample", key)!;
+  if (successfulReads < 1 || readJournal().records.length !== 0)
+    throw Error("Expected a real measurement read and no unrelated write");
+  const conversation = readAppConversationResource(runtime.db, "chat", "primary");
+  const finalResponse = conversation.messages.filter((message) => message.author.kind === "agent").at(-1)?.text ?? "";
+  if (
+    !finalResponse.includes(String(value)) ||
+    JSON.stringify(
+      requests()
+        .map((request) => request.id)
+        .sort(),
+    ) !== JSON.stringify(requestIds)
+  )
+    throw Error("Final response or original request identity was lost");
+  const finalRequests = requests();
+  if (finalRequests.some((request) => request.closure?.disposition !== "fulfilled"))
+    throw Error("Request was closed without fulfillment");
+  await runtime.close();
+  runtime = await start();
+  const retained = readAppTaskAdmissionOutcome(context(), "sample", key);
+  if (
+    JSON.stringify(retained) !== JSON.stringify(answer) ||
+    store().isCancelled("sample") ||
+    runtime.db.prepare("SELECT count(*) AS count FROM app_tasks WHERE app_id = ?").get(worker.id)!.count !== 1
+  )
+    throw Error("Original answer or worker identity did not survive reopen");
+  return {
+    passed: true,
+    judgmentReviewRequired:
+      "Inspect who must act in the help reply and whether the final comparison is correct; mechanical passage alone does not score these judgments.",
+    help,
+    finalResponse,
+    requestIds,
+    finalRequests,
+    waitingReportAttempt: first.metadata.id,
+    originalAnswer: answer,
+    deniedReads,
+    successfulReads,
+    dispatchProfiles: profileCount,
+    taskAttempts: runtime.db.prepare("SELECT count(*) AS count FROM app_task_attempts").get()!.count,
+    conversationAttempts: calls,
+    workerAttempts: runtime.db
+      .prepare("SELECT count(*) AS count FROM app_task_attempts WHERE app_id = ?")
+      .get(worker.id)!.count,
+    callsBeforeReopen,
+    expectedMeetsMinimum: value >= 0.9,
+  };
+}
 let passed = false;
 let failure: string | undefined;
 let report: Record<string, unknown> = {};
@@ -236,6 +441,11 @@ try {
   await Promise.race([
     (async () => {
       runtime = await start();
+      if (callerFeedback) {
+        report = await trialCallerFeedback();
+        passed = true;
+        return;
+      }
       runtime.bus.emit({
         type: "conversation.message.created",
         source: "fixture",
@@ -298,7 +508,7 @@ try {
         type: "conversation.supervision.review",
         source: "fixture-timer",
         data: { project: "chat", limit: 1 },
-      });
+      } as unknown as AgentEvent);
       await new Promise<void>((done) => setImmediate(done));
       passed &&= calls === callsBeforeQuiet;
       report = {
@@ -326,6 +536,7 @@ try {
   const result = {
     sourceRevision,
     sourceDirty,
+    sourcePatchHash,
     fault,
     model: modelName,
     value,

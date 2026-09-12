@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -11,6 +11,7 @@ import {
   closeAppTask,
   completeAppTask,
   deferAppTask,
+  failAppTaskAttempt,
   recordAppTaskTrigger,
   readAppTaskAdmissionOutcome,
   observeAppTaskIntent,
@@ -38,12 +39,13 @@ async function executeConversationTaskTurn(input: Parameters<typeof prepareConve
   const proposal = await prepareConversationTaskTurn(input);
   return completeConversationTaskTurn(input.config, input.claim, proposal.decision, proposal);
 }
-afterEach(() =>
+afterEach(() => {
+  setSystemTime();
   roots.splice(0).forEach((root) => {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
-  }),
-);
+  });
+});
 const app = defineApp({
   id: "sample",
   version: 1,
@@ -735,84 +737,181 @@ test("the common controller returns a delegated answer to the real Conversation 
   }
 });
 
-test("a returned outcome keeps its exact App, Task and attempt identity across App boundaries", () => {
-  const f = fixture();
-  const first = f.admit();
-  const workers = AppTaskResourceStore.fromDb(f.db, "worker");
-  workers.bootstrapSnapshot(
-    {
-      project: "worker",
-      project_lifecycle: "active",
-      root_task_id: "root",
-      groups: { root: { id: "root", parent_id: null } },
-    },
-    "worker-fixture",
-  );
-  const worker = appTaskContext({ ...f.context(), resourceStore: workers });
-  const handedOff = completeConversationTaskTurn(
-    f.context(),
-    f.claim(first.taskId),
-    {
-      ...decision,
-      requestUpdates: [{ id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "open" }],
-      followUp: {
-        appId: "worker",
-        requestId: "comparison",
-        outcome: "Collect evidence",
-        acceptance: ["Measure"],
-        input: { kind: "measure", data: {} },
+test.each(["answer", "waiting-report", "execution-error"] as const)(
+  "a returned outcome keeps its exact App, Task and attempt identity across App boundaries (%s)",
+  (scenario) => {
+    const f = fixture();
+    const first = f.admit();
+    const workers = AppTaskResourceStore.fromDb(f.db, "worker");
+    workers.bootstrapSnapshot(
+      {
+        project: "worker",
+        project_lifecycle: "active",
+        root_task_id: "root",
+        groups: { root: { id: "root", parent_id: null } },
       },
-    },
-    {
-      followUp: {
-        config: worker,
-        attachment: {
-          kind: "desired",
-          intent: {
-            id: "measurement",
-            parentId: "root",
-            outcome: "Collect evidence",
-            acceptance: ["Measure"],
-            mode: "achieve",
+      "worker-fixture",
+    );
+    let worker = appTaskContext({ ...f.context(), resourceStore: workers });
+    const handedOff = completeConversationTaskTurn(
+      f.context(),
+      f.claim(first.taskId),
+      {
+        ...decision,
+        requestUpdates: [{ id: "comparison", scope: "Compare A and B", expectedRevision: 0, disposition: "open" }],
+        followUp: {
+          appId: "worker",
+          requestId: "comparison",
+          outcome: "Collect evidence",
+          acceptance: ["Measure"],
+          input: { kind: "measure", data: {} },
+        },
+      },
+      {
+        followUp: {
+          config: worker,
+          attachment: {
+            kind: "desired",
+            intent: {
+              id: "measurement",
+              parentId: "root",
+              outcome: "Collect evidence",
+              acceptance: ["Measure"],
+              mode: "achieve",
+            },
           },
         },
       },
-    },
-  );
-  expect(handedOff).toMatchObject({ admittedTasks: [{ appId: "worker", taskId: "measurement" }] });
-  expect(f.store.readTask("measurement")).toBeNull();
-  const claim = claimObservedAppTask(worker, {
-    taskId: "measurement",
-    appAgent: "worker",
-    handler: "executor:fixture",
-  });
-  if (claim.kind !== "claimed") throw new Error("Worker was not claimed");
-  const returned = {
-    conversationId: "chat",
-    topicId: getAppInboxItem(f.db, "first")!.topicId!,
-    taskId: "measurement",
-    attemptId: claim.attemptId,
-  };
-  expect(() => admitConversationTaskChange(f.context(), worker, returned)).toThrow("accepted attempt");
-  completeAppTask(worker, claim, { summary: "Measured", result: { value: 17 } });
-  expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, topicId: "unrelated" })).toThrow(
-    "no link",
-  );
-  expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: "missing" })).toThrow(
-    "accepted attempt",
-  );
-  createAppInboxItem(f.db, { ...f.input("ordinary", 2), input: { kind: "goal", data: {} } });
-  const wake = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
-  expect(wake.taskId).toBe(first.taskId);
-  expect(wake.item.input.data).toMatchObject({
-    appId: "worker",
-    taskId: "measurement",
-    attemptId: claim.attemptId,
-    outcome: { result: { value: 17 } },
-  });
-  expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
-  expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
-});
+    );
+    expect(handedOff).toMatchObject({ admittedTasks: [{ appId: "worker", taskId: "measurement" }] });
+    expect(f.store.readTask("measurement")).toBeNull();
+    const claim = claimObservedAppTask(worker, {
+      taskId: "measurement",
+      appAgent: "worker",
+      handler: "executor:fixture",
+    });
+    if (claim.kind !== "claimed") throw new Error("Worker was not claimed");
+    const returned = {
+      conversationId: "chat",
+      topicId: getAppInboxItem(f.db, "first")!.topicId!,
+      taskId: "measurement",
+      attemptId: claim.attemptId,
+    };
+    expect(() => admitConversationTaskChange(f.context(), worker, returned)).toThrow("accepted attempt");
+    if (scenario === "answer") completeAppTask(worker, claim, { summary: "Measured", result: { value: 17 } });
+    else if (scenario === "execution-error") failAppTaskAttempt(worker, claim, "Synthetic source unavailable");
+    else
+      deferAppTask(worker, claim, {
+        disposition: "waiting",
+        report: true,
+        summary: "Please restore source access",
+        evidence: ["source:denied"],
+        conditions: [
+          {
+            id: "source-ready",
+            type: "source.access",
+            subject: "resource:source",
+            expected: { field: "ready", equals: true },
+            owner: "app:worker",
+            reviewAfterMs: 300_000,
+          },
+        ],
+      });
+    expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, topicId: "unrelated" })).toThrow(
+      "no link",
+    );
+    expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: "missing" })).toThrow(
+      "accepted attempt",
+    );
+    createAppInboxItem(f.db, { ...f.input("ordinary", 2), input: { kind: "goal", data: {} } });
+    const wake = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
+    expect(wake.taskId).toBe(first.taskId);
+    expect(wake.item.input.data).toMatchObject({
+      appId: "worker",
+      taskId: "measurement",
+      attemptId: claim.attemptId,
+      outcome:
+        scenario === "answer"
+          ? { state: "converged", result: { value: 17 } }
+          : scenario === "waiting-report"
+            ? { state: "waiting", report: true, summary: "Please restore source access" }
+            : { state: "error", evidence: [`task-attempt:${claim.attemptId}`] },
+    });
+    expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
+    expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
+    if (scenario === "answer") return;
+
+    const inputKey = `conversation-follow-up:${app.id}:${first.item.id}`;
+    expect(readAppTaskAdmissionOutcome(worker, "measurement", inputKey)).toBeNull();
+    if (scenario === "execution-error") expect(workers.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+    // Skip delivery of one newer report. Recovery must select the latest saved
+    // report, not every historical attempt or a delayed notification's identity.
+    const reportIds: string[] = [];
+    for (const summary of ["Access repaired; waiting for data", "Please confirm the data source"]) {
+      setSystemTime(Date.now() + 300_001);
+      recordAppTaskTrigger(worker, "measurement", { type: "fixture.review", id: summary });
+      const next = claimObservedAppTask(worker, {
+        taskId: "measurement",
+        appAgent: "worker",
+        handler: "executor:fixture",
+      });
+      if (next.kind !== "claimed") throw new Error(`Expected report attempt, got ${next.kind}`);
+      deferAppTask(worker, next, {
+        disposition: "waiting",
+        report: true,
+        summary,
+        evidence: ["source:review"],
+        conditions: [
+          {
+            id: "source-ready",
+            type: "source.access",
+            subject: "resource:source",
+            expected: { field: "ready", equals: true },
+            owner: "app:worker",
+            reviewAfterMs: 300_000,
+          },
+        ],
+      });
+      reportIds.push(next.attemptId);
+    }
+    f.reopen();
+    worker = appTaskContext({ ...f.context(), resourceStore: AppTaskResourceStore.fromDb(f.db, "worker") });
+    expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([reportIds[1]!]);
+    expect(admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: reportIds[0]! }).created).toBe(
+      false,
+    );
+    if (scenario === "waiting-report") {
+      const latest = admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: reportIds[1]! }, [
+        "message",
+      ]);
+      expect(latest.item?.input.data).toMatchObject({ outcome: { summary: "Please confirm the data source" } });
+      expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+    }
+    setSystemTime(Date.now() + 300_001);
+    recordAppTaskTrigger(worker, "measurement", { type: "fixture.repaired" });
+    const finishing = claimObservedAppTask(worker, {
+      taskId: "measurement",
+      appAgent: "worker",
+      handler: "executor:fixture",
+    });
+    if (finishing.kind !== "claimed") throw new Error(`Expected final attempt, got ${finishing.kind}`);
+    completeAppTask(worker, finishing, { summary: "Measured", result: { value: 17 }, evidence: ["source:17"] });
+    expect(readAppTaskAdmissionOutcome(worker, "measurement", inputKey)).toMatchObject({
+      attemptId: finishing.attemptId,
+      result: { value: 17 },
+    });
+    // Undelivered reports must not be newly admitted after an answer. Prior
+    // Conversation input remains history; accepting an answer does not erase it.
+    expect(admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: reportIds[1]! }).created).toBe(
+      false,
+    );
+    expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([
+      finishing.attemptId,
+    ]);
+    expect(worker.resourceStore.isCancelled("measurement")).toBe(false);
+    expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
+  },
+);
 
 test("cutover refuses unhandled legacy input even with an expired lease", () => {
   const f = fixture();
@@ -1032,6 +1131,8 @@ test("closure input validates the exact source and rolls admission back without 
   const worker = appTaskContext({ ...f.context(), resourceStore: source });
   observeAppTaskIntent(worker, {
     appAgent: "measurement",
+    admissionKey: "measurement-input",
+    trigger: { type: "app.task.requested", data: { idempotencyKey: "measurement-input" } },
     intent: {
       id: "sample",
       parentId: "root",
@@ -1041,6 +1142,16 @@ test("closure input validates the exact source and rolls admission back without 
     },
   });
   linkConversationTopicTask(f.db, topic.id, source.appId, "sample");
+  const failed = claimObservedAppTask(worker, {
+    taskId: "sample",
+    appAgent: "measurement",
+    handler: "executor:fixture",
+  });
+  if (failed.kind !== "claimed") throw new Error("Expected measurement claim");
+  failAppTaskAttempt(worker, failed, "Source unavailable");
+  expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([
+    failed.attemptId,
+  ]);
   const task = source.readTask("sample")!;
   const closed = closeAppTask(worker, {
     appId: source.appId,
@@ -1055,6 +1166,17 @@ test("closure input validates the exact source and rolls admission back without 
     taskId: "sample",
     closedGeneration: closed.closure.generation,
   };
+  expect(
+    admitConversationTaskChange(f.context(), worker, {
+      conversationId: "chat",
+      topicId: topic.id,
+      taskId: "sample",
+      attemptId: failed.attemptId,
+    }).created,
+  ).toBe(false);
+  expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.closedGeneration)).toEqual([
+    closed.closure.generation,
+  ]);
   expect(() =>
     admitConversationTaskChange(f.context(), worker, { ...ref, closedGeneration: ref.closedGeneration + 1 }),
   ).toThrow("closed generation");

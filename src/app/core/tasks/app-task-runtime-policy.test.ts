@@ -40,6 +40,9 @@ describe("App Task agent prompt context", () => {
     expect(protocol).toContain("Finish exactly once with finish().result");
     expect(protocol).toContain("Runtime publishes and correlates it");
     expect(protocol).not.toContain("Converged example");
+    expect(protocol).toContain("report:true");
+    expect(protocol).toContain("omit for quiet waits");
+    expect(protocol).toContain("Execution errors are facts, not accepted results");
   });
 
   it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {

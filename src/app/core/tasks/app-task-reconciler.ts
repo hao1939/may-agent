@@ -701,13 +701,20 @@ export function readAppTaskAdmissionOutcome(
     ...(kind === "report" ? { reportRevision: admission.reportRevision ?? 1 } : {}) };
   const accepted = attempt.acceptedResult;
   if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
-  if (accepted?.state === "stopped" || (accepted?.state === "waiting" && accepted.report))
-    return { ...identity, ...accepted };
-  if (!accepted && attempt.state === "failed") return {
-    ...identity, state: "error",
-    summary: `Execution failed before an accepted result: ${(attempt.summary ?? attempt.failureReason ?? "Unknown execution failure").slice(0, 1024)}`,
-    evidence: [`task-attempt:${attempt.metadata.id}`],
-  };
+  const report = appTaskAttemptReport(attempt);
+  return report ? { ...identity, ...report } : null;
+}
+
+/** A report exposes accepted progress or execution facts, never an invented answer. */
+export function appTaskAttemptReport(attempt: AppTaskAttempt) {
+  const accepted = attempt.acceptedResult;
+  if (accepted?.state === "stopped" || (accepted?.state === "waiting" && accepted.report)) return accepted;
+  if (!accepted && attempt.state === "failed")
+    return {
+      state: "error" as const,
+      summary: `Execution failed before an accepted result: ${(attempt.summary ?? attempt.failureReason ?? "Unknown execution failure").slice(0, 1024)}`,
+      evidence: [`task-attempt:${attempt.metadata.id}`],
+    };
   return null;
 }
 

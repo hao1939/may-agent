@@ -1053,84 +1053,213 @@ test.each(["live", "restart", "admission-write-failure"])(
   },
 );
 
-test("a failed child report returns to Conversation without closing its assignment or human Request", async () => {
-  const repair = Promise.withResolvers<void>();
-  let runs = 0;
-  const priorAttempts: TaskAttempt["previousAttempt"][] = [];
+test("a waiting report reaches Conversation, survives reopen and finishes the same assignment after repair", async () => {
+  let ready = false;
+  const attempts: TaskAttempt[] = [];
+  const seen: AppInputContext[] = [];
   const f = await fixture(
     async (_definition, prompt) => {
       const context = JSON.parse(
         prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
       ) as AppInputContext;
+      seen.push(context);
       return {
         status: "done",
-        structuredResult: context.source.kind === "human" ? delegated : measurementReply(context),
+        structuredResult:
+          context.source.kind === "human"
+            ? delegated
+            : (context.input.data as { outcome: { state: string } }).outcome.state === "waiting"
+              ? {
+                  summary: "Asked for source repair",
+                  response: "Please restore source access; I will keep the measurement open.",
+                  topic: { kind: "existing", id: context.conversation!.current!.topicId! },
+                }
+              : measurementReply(context),
       };
     },
     (root, appDir) => ({
       ...withBackground(root, appDir),
       executors: {
         measure: async (attempt) => {
-          priorAttempts.push(attempt.previousAttempt);
-          if (++runs <= 3)
-            return {
-              state: "stopped",
-              summary: `Could not obtain measurement: source offline (${runs})`,
-              evidence: ["measurement source: unavailable"],
-            };
-          await repair.promise;
-          return { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] };
+          attempts.push(attempt);
+          return ready
+            ? { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] }
+            : {
+                state: "waiting",
+                report: true,
+                summary: "Please restore source access",
+                evidence: ["source:denied"],
+                conditions: [
+                  {
+                    id: "source-ready",
+                    type: "source.access",
+                    subject: "resource:sample",
+                    expected: { field: "ready", equals: true },
+                    owner: "app:measurement",
+                    reviewAfterMs: 300_000,
+                  },
+                ],
+              };
         },
       },
     }),
   );
-  const ingress = await startConversationIngress(f);
+  let ingress = await startConversationIngress(f);
   try {
-    const reported = eventAfter(
-      f.bus,
-      (event) =>
-        event.type === "conversation.updated" &&
-        readAppConversationResource(f.db, app.id, "primary").messages.some((message) =>
-          message.text.includes("still trying"),
-        ),
-    );
-    const repeated = eventAfter(f.bus, (event) => event.type === "project.task.reconciled" &&
-      event.data.taskId === "sample" && runs === 3);
+    const reported = eventAfter(f.bus, (event) => event.type === "conversation.updated" && seen.length === 2);
     ingress.publish("ask", "Get the measurement and report it here");
     await reported;
+    expect(seen[1]!.input.data).toMatchObject({
+      taskId: "sample",
+      attemptId: attempts[0]!.attemptId,
+      outcome: { state: "waiting", report: true, summary: "Please restore source access" },
+    });
+    expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toContain(
+      "Please restore source access",
+    );
     expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
-    const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
-    expect(child.isCancelled("sample")).toBe(false);
-    await repeated;
-    expect(child.readTask("sample")?.status.executionFailures).toBe(3);
+    ingress.runtime.close();
+    await f.reopen();
+    ingress = await startConversationIngress(f);
     f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 10 } });
+    await new Promise<void>((resolve) => setImmediate(resolve));
     expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
-    expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(1);
+    expect(seen).toHaveLength(2);
+    expect(attempts).toHaveLength(1);
+    const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
+    expect(child.readTask("sample")?.status.phase).toBe("waiting");
     const finished = eventAfter(
       f.bus,
       (event) =>
         event.type === "conversation.updated" &&
         readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
     );
-    repair.resolve();
+    ready = true;
+    const repaired = f.bus.emit({
+      type: "source.access",
+      source: "fixture",
+      owner: "app:measurement",
+      target: { appId: background.id, taskId: "sample" },
+      data: { resource: "sample", ready: true },
+    } as unknown as AgentEvent);
+    expect(repaired[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
     await finished;
-    expect(runs).toBe(4);
-    expect(priorAttempts[0]).toBeUndefined();
-    expect(priorAttempts[1]).toMatchObject({
-      state: "completed",
-      acceptedResult: {
-        state: "stopped",
-        summary: "Could not obtain measurement: source offline (1)",
-        evidence: ["measurement source: unavailable"],
-      },
-    });
-    expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(2);
+    expect(attempts).toHaveLength(2);
+    expect(seen).toHaveLength(3);
+    expect(new Set(attempts.map((attempt) => attempt.task.id))).toEqual(new Set(["sample"]));
     expect(child.isCancelled("sample")).toBe(false);
+    expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe("The measurement is 17.");
   } finally {
-    repair.resolve();
     ingress.runtime.close();
   }
 });
+
+test.each(["stopped", "execution-error"])(
+  "a failed child report returns to Conversation without closing its assignment or human Request (%s)",
+  async (failure) => {
+    const repair = Promise.withResolvers<void>();
+    let runs = 0;
+    const priorAttempts: TaskAttempt["previousAttempt"][] = [];
+    const f = await fixture(
+      async (_definition, prompt) => {
+        const context = JSON.parse(
+          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+        ) as AppInputContext;
+        return {
+          status: "done",
+          structuredResult:
+            context.source.kind === "human"
+              ? delegated
+              : (context.input.data as { outcome: { state: string } }).outcome.state === "error"
+                ? {
+                    summary: "Observed execution failure",
+                    response: "The measurement is unavailable. Its Task is still trying.",
+                    topic: { kind: "existing", id: context.conversation!.current!.topicId! },
+                  }
+                : measurementReply(context),
+        };
+      },
+      (root, appDir) => ({
+        ...withBackground(root, appDir),
+        executors: {
+          measure: async (attempt) => {
+            priorAttempts.push(attempt.previousAttempt);
+            if (++runs <= 3) {
+              if (failure === "execution-error") throw new Error(`Synthetic source offline (${runs})`);
+              return {
+                state: "stopped",
+                summary: `Could not obtain measurement: source offline (${runs})`,
+                evidence: ["measurement source: unavailable"],
+              };
+            }
+            await repair.promise;
+            return { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] };
+          },
+        },
+      }),
+    );
+    const ingress = await startConversationIngress(f);
+    try {
+      const reported = eventAfter(
+        f.bus,
+        (event) =>
+          event.type === "conversation.updated" &&
+          readAppConversationResource(f.db, app.id, "primary").messages.some((message) =>
+            message.text.includes("still trying"),
+          ),
+      );
+      const repeated = eventAfter(
+        f.bus,
+        (event) => event.type === "project.task.reconciled" && event.data.taskId === "sample" && runs === 3,
+      );
+      ingress.publish("ask", "Get the measurement and report it here");
+      await reported;
+      expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
+      const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
+      expect(child.isCancelled("sample")).toBe(false);
+      await repeated;
+      expect(child.readTask("sample")?.status.executionFailures).toBe(3);
+      f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 10 } });
+      expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+      expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(
+        1,
+      );
+      const finished = eventAfter(
+        f.bus,
+        (event) =>
+          event.type === "conversation.updated" &&
+          readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
+      );
+      repair.resolve();
+      await finished;
+      expect(runs).toBe(4);
+      expect(priorAttempts[0]).toBeUndefined();
+      expect(priorAttempts[1]).toMatchObject(
+        failure === "execution-error"
+          ? {
+              state: "failed",
+              summary: expect.stringContaining("Synthetic source offline (1)"),
+            }
+          : {
+              state: "completed",
+              acceptedResult: {
+                state: "stopped",
+                summary: "Could not obtain measurement: source offline (1)",
+                evidence: ["measurement source: unavailable"],
+              },
+            },
+      );
+      if (failure === "execution-error") expect(priorAttempts[1]?.acceptedResult).toBeUndefined();
+      expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(
+        2,
+      );
+      expect(child.isCancelled("sample")).toBe(false);
+    } finally {
+      repair.resolve();
+      ingress.runtime.close();
+    }
+  },
+);
 
 test.each(["live", "restart", "stop"])("owner closure returns without manufacturing a result (%s)", async (route) => {
   const started = Promise.withResolvers<TaskAttempt>();

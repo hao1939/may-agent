@@ -208,6 +208,13 @@ elapsed time; those fixture limits are not a Task lifetime policy.
 
 ## Earlier follow-through trial
 
+For report-plus-wait, `managed-conversation.ts --fault caller-feedback` extends
+the same managed harness with a temporary measurement App. Models choose the
+waiting report and Conversation replies; source repair and storage reopen are
+controlled by the fixture. See the [caller-feedback trial](../caller-feedback/README.md)
+for commands, limits and the distinction between conversation and total attempts.
+This opt-in mode does not change the three managed recovery fault cases above.
+
 The early `follow-through.ts` harness (available at Host revision `9d34e90b`)
 tested three fresh judgments: delegate measurement, answer an intervening
 question, then assess the returned value across SQLite reopen. It used raw

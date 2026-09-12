@@ -13,6 +13,7 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   assertAppTaskClaimCurrent,
+  appTaskAttemptReport,
   cancelAppTask,
   completeAppTask,
   stopAppTaskAttempt,
@@ -385,7 +386,7 @@ export function completeConversationTaskTurn(
   });
 }
 
-/** An exact accepted outcome or owner closure, never a notification's claimed result. */
+/** An exact saved answer, report or owner closure, never a notification's claimed result. */
 type ConversationTaskChange =
   { attemptId: string; closedGeneration?: never } | { closedGeneration: number; attemptId?: never };
 export type ConversationTaskChangeRef = {
@@ -397,22 +398,25 @@ export type ConversationTaskChangeRef = {
 } & ConversationTaskChange;
 
 /** Successful admissions remove themselves from discovery; the limit bounds returned work. */
-// Input-backed work reports its first accepted failure per input. Seeded work
-// has no input receipt; preserve its existing per-attempt Topic observations.
+// Input-backed work exposes its selected report until answered or closed.
+// Seeded work has no input receipt; preserve its per-attempt stopped observations.
 // Both event admission and recovery use this predicate (alias: attempt).
 const returnedAttemptSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
-  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'stopped' AND (
-    NOT EXISTS (SELECT 1 FROM app_task_admissions admission
+  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'stopped'
+    AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
-        AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation)
-    OR EXISTS (SELECT 1 FROM app_task_admissions admission
+        AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation))
+  OR (NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
+      WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)
+    AND EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
         AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
+        AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
         AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id)
-  ))
+  )
 )`;
 
 export function listPendingConversationTaskChanges(
@@ -505,13 +509,21 @@ export function admitConversationTaskChange(
     let fact: { kind: string; data: Record<string, unknown> };
     if (input.attemptId !== undefined) {
       const attempt = source.resourceStore.readAttempt(input.attemptId);
-      if (attempt?.taskId !== input.taskId || !attempt.acceptedResult)
-        throw new Error("Task result must name an accepted attempt of the linked Task");
+      if (attempt?.taskId !== input.taskId || (!attempt.acceptedResult && attempt.state !== "failed"))
+        throw new Error("Task result must name an accepted attempt or saved failure of the linked Task");
       // Match the saved selection used by recovery; retries remain in history.
-      if (!db.prepare(`SELECT 1 FROM app_task_attempts attempt
-          WHERE attempt.app_id = ? AND attempt.attempt_id = ? AND ${returnedAttemptSql}`)
-        .get(source.resourceStore.appId, input.attemptId))
+      if (
+        !db
+          .prepare(
+            `SELECT 1 FROM app_task_attempts attempt
+          WHERE attempt.app_id = ? AND attempt.attempt_id = ? AND ${returnedAttemptSql}`,
+          )
+          .get(source.resourceStore.appId, input.attemptId)
+      )
         return { taskId: task.metadata.id, created: false };
+      const outcome =
+        attempt.acceptedResult?.state === "converged" ? attempt.acceptedResult : appTaskAttemptReport(attempt);
+      if (!outcome) return { taskId: task.metadata.id, created: false };
       id = `conversation-result:${prefix}:${input.attemptId}`;
       fact = {
         kind: "task-outcome",
@@ -520,7 +532,7 @@ export function admitConversationTaskChange(
           taskId: input.taskId,
           generation: attempt.taskGeneration,
           attemptId: input.attemptId,
-          outcome: attempt.acceptedResult,
+          outcome,
         },
       };
     } else {
