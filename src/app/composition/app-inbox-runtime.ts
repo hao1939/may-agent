@@ -1,3 +1,4 @@
+import { appInputResultEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
@@ -340,22 +341,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     onFailure: (failure) => reportFailure(failure),
     onConversationChanged: notifyConversationUpdated,
     onRequestCompleted(item, result) {
-      if (item.source.kind !== "app") return;
-      options.bus.emit({
-        type: "app.dependency.completed",
-        source: `app-inbox:${item.appId}`,
-        owner: `app:${item.source.id}`,
-        data: {
-          kind: "app",
-          id: item.id,
-          status: "done",
-          summary: result.summary,
-          ...(result.response ? { response: result.response } : {}),
-          ...(result.result ? { result: result.result } : {}),
-          ...(result.evidence ? { evidence: result.evidence } : {}),
-          ...(item.waitingOn?.kind === "task" ? { taskId: item.waitingOn.id, appId: item.appId } : {}),
-        },
-      });
+      const event = appInputResultEvent(item, result);
+      if (event) options.bus.emit(event);
     },
   });
   let closed = false;

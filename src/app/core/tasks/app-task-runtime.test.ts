@@ -1259,7 +1259,6 @@ describe("canonical App task runtime", () => {
       registry,
       db,
       bus,
-      hostCapacity: new HostCapacity(2),
       attachTask: (input) => {
         const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
         const result = attachLoadedAppTask({ ...input, bus });
@@ -1644,6 +1643,190 @@ describe("canonical App task runtime", () => {
     expect(listAppInboxItems(getDb(persistDir), { appId: "sample" }).map((item) => item.input.data))
       .toEqual(expect.arrayContaining([{ sample: 1 }, { sample: 2 }]));
   });
+
+  it.each([false, true])(
+    "returns the exact saved App answer after its notification is lost (restart: %j)",
+    async (restart) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let host: AppInboxHost;
+      let requestId = "";
+      let workerCalls = 0;
+      const ownerInputs: Parameters<TaskExecutor>[0]["events"][] = [];
+      const app = defineApp({
+        ...definition(),
+        task: () => ({
+          kind: "desired",
+          intent: {
+            id: "work/reviewer",
+            parentId: "operations",
+            outcome: "Review the supplied sample",
+            acceptance: ["Return the measured score"],
+            mode: "achieve",
+            executor: "reviewer",
+          },
+        }),
+      });
+      const install = async () => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          appRegistrySnapshot: { id: "saved-answer", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+          executors: {
+            owner: async (attempt) => {
+              ownerInputs.push(structuredClone(attempt.events));
+              if (ownerInputs.length === 1)
+                return {
+                  state: "waiting",
+                  summary: "Waiting for the sample review",
+                  evidence: [],
+                  dependencies: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }],
+                };
+              const answer = attempt.events.items.find(({ event }) => event.type === "app.dependency.completed");
+              expect(answer?.event.data).toMatchObject({
+                kind: "app",
+                id: requestId,
+                status: "done",
+                response: "First sample: 0.92",
+                result: { score: 0.92 },
+                evidence: ["sample:1"],
+              });
+              return { state: "converged", summary: "Reviewed the original answer", evidence: ["sample:1"] };
+            },
+            reviewer: async () => {
+              workerCalls++;
+              return {
+                state: "converged",
+                summary: `Review ${workerCalls}`,
+                response: workerCalls === 1 ? "First sample: 0.92" : "Later sample: 0.50",
+                result: { score: workerCalls === 1 ? 0.92 : 0.5 },
+                evidence: [`sample:${workerCalls}`],
+              };
+            },
+          },
+        });
+        host = new AppInboxHost({
+          db: getDb(persistDir),
+          apps: [app],
+          attachTask: (input) => admitTaskRequest(loadedTaskConfig(f), input),
+          readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+          onRequestCompleted() {
+            throw new Error("Stopped before completion Event publication");
+          },
+        });
+        bus.subscribe((event) => {
+          if (event.type !== "app.input.requested") return;
+          const data = event.data;
+          requestId = String(data.requestId);
+          host.admit({
+            id: requestId,
+            appId: "sample",
+            source: { kind: "app", id: "sample" },
+            input: data.input as { kind: string; data: unknown },
+            idempotencyKey: String(data.idempotencyKey),
+          });
+          return { accepted: true, by: "fixture-admission", route: "direct" };
+        });
+      };
+      const run = (taskId: string) =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await install();
+      observeAppTaskIntent(loadedTaskConfig(f), {
+        appAgent: "sample-owner",
+        intent: {
+          id: "work/owner",
+          parentId: "operations",
+          outcome: "Judge the first sample",
+          acceptance: ["Use the exact requested review"],
+          mode: "achieve",
+          executor: "owner",
+        },
+      });
+      await run("work/owner");
+      await run("work/reviewer");
+      await host!.recoverTaskResults();
+      expect(host!.get(requestId)).toMatchObject({ status: "done", result: { result: { score: 0.92 } } });
+      expect(loadedTaskConfig(f).resourceStore.readTask("work/owner")?.status.phase).toBe("waiting");
+      expect(
+        getDb(persistDir)
+          .prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = 'app.dependency.completed'")
+          .get(),
+      ).toEqual({ n: 0 });
+
+      // The destination keeps running; its newer answer must not replace this caller's receipt.
+      host!.admit({
+        id: "later-input",
+        appId: "sample",
+        source: { kind: "system", id: "later" },
+        input: { kind: "review", data: { sample: 2 } },
+      });
+      await run("work/reviewer");
+      await host!.recoverTaskResults();
+      expect(workerCalls).toBe(2);
+      // A saved answer to a system input is not a return link to this App.
+      const config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: "work/unrelated",
+          parentId: "operations",
+          outcome: "Wait for an unrelated fact",
+          acceptance: ["Observe the authorized fact"],
+          mode: "achieve",
+          executor: "owner",
+        },
+      });
+      const unrelated = claimObservedAppTask(config, {
+        taskId: "work/unrelated",
+        appAgent: "sample-owner",
+        handler: "executor:owner",
+      });
+      if (unrelated.kind !== "claimed") throw new Error("Expected unrelated Task claim");
+      deferAppTask(config, unrelated, {
+        disposition: "waiting",
+        summary: "Waiting for an unrelated fact",
+        conditions: [
+          {
+            id: "not-the-caller",
+            type: "app.dependency.completed",
+            subject: "id:later-input",
+            expected: { field: "status", equals: "done" },
+            owner: "app:sample",
+            reviewAfterMs: 300_000,
+          },
+        ],
+      });
+      if (restart) {
+        host!.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      }
+      await recoverInstalledAppTasks(bus);
+      await recoverInstalledAppTasks(bus);
+      await run("work/owner");
+      expect(ownerInputs).toHaveLength(2);
+      expect(ownerInputs[1]!.items.filter(({ event }) => event.type === "app.dependency.completed")).toHaveLength(1);
+      expect(readAcceptedRuntimeAttempt(loadedTaskConfig(f), "work/owner")?.acceptedResult?.summary).toBe(
+        "Reviewed the original answer",
+      );
+      await recoverInstalledAppTasks(bus);
+      await run("work/owner");
+      expect(ownerInputs).toHaveLength(2);
+      expect(workerCalls).toBe(2);
+      expect(loadedTaskConfig(f).resourceStore.readTask("work/unrelated")?.status.phase).toBe("waiting");
+      expect(loadedTaskConfig(f).resourceStore.readTrigger("work/unrelated")).toBeNull();
+      expect(loadedTaskConfig(f).resourceStore.isCancelled("work/owner")).toBe(false);
+      host!.close();
+    },
+  );
 
   it("preserves one accepted App request across a rejected attempt and its retry", () => {
     const f = fixture();

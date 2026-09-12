@@ -16,6 +16,7 @@ import type {
 import { appTaskSessionBinding } from "./session-binding.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest } from "../state/inbox.js";
+import { appInputResultEvent } from "../inbox/input-result.js";
 import {
   admitConversationTaskInput,
   conversationTaskIntent,
@@ -1830,14 +1831,14 @@ async function reconcileTask(input: {
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
         });
-        const replayedTaskIds =
+        const recoveredTaskIds =
           apply.status === "applied"
-            ? replayPersistedConditionEvents(opts, descriptor, config, {
+            ? recoverTaskConditions(opts, descriptor, config, {
                 conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
               })
             : [];
         if (apply.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, "waiting");
-        return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
+        return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...recoveredTaskIds])];
       } catch (error) {
         if (cleanupFailed) throw error;
         const stale = recoverStaleTaskActionResult(config, primary, error);
@@ -2389,7 +2390,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
     .map(([appId, taskIds]) => ({ appId, taskIds: [...taskIds].sort() }));
 }
 
-function replayPersistedConditionEvents(
+function recoverTaskConditions(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
   config: AppTaskContext,
@@ -2445,12 +2446,33 @@ function replayPersistedConditionEvents(
     }
   }
 
+  // A completion notification can be lost before it reaches the journal.
+  // Read only each retained wait's exact receipt; a later Task result is not
+  // an answer to that input. Use the normal Condition transition and trigger.
   const allowed = new Set(resourceScope.taskIds);
+  const recoveredTaskIds = new Set<string>();
+  if (eventTypes.includes("app.dependency.completed")) {
+    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.completed")) {
+      if (input.conditionIds && !input.conditionIds.includes(condition.metadata.id)) continue;
+      if (!condition.spec.subject.startsWith("id:")) continue;
+      const item = getAppInboxItem(db, condition.spec.subject.slice(3));
+      if (item?.status !== "done" || !item.result || item.source.kind !== "app" || item.source.id !== descriptor.id)
+        continue;
+      const event = appInputResultEvent(item, item.result)!;
+      if (!matchesAppTaskCondition(condition, event)) continue;
+      for (const wake of trackAppTaskConditionEventForTasks(
+        config,
+        event,
+        taskIds.filter((id) => allowed.has(id)),
+      ))
+        recoveredTaskIds.add(wake.taskId);
+    }
+  }
   const wakes = events.flatMap((event) => {
     const taskIds = matchingAppTaskConditionTaskIds(config, event).filter((taskId) => allowed.has(taskId));
     return trackAppTaskConditionEventForTasks(config, event, taskIds);
   });
-  return [...new Set(wakes.map((wake) => wake.taskId))];
+  return [...new Set([...recoveredTaskIds, ...wakes.map((wake) => wake.taskId)])];
 }
 
 function installConventionTaskControllers(
@@ -3035,7 +3057,7 @@ function recoverInterruptedAppTasks(
         }
       }
     }
-    for (const taskId of replayPersistedConditionEvents(opts, descriptor, config)) {
+    for (const taskId of recoverTaskConditions(opts, descriptor, config)) {
       if (controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, taskId, { promote: true });
       }
