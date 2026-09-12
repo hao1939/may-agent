@@ -3,7 +3,6 @@ import type { SqliteDb } from "../../../lib/db.js";
 
 const HOUR_MS = 3_600_000;
 export const HOST_HEALTH_MAX_LOOKBACK_MS = 24 * HOUR_MS;
-export const HOST_HEALTH_DETAIL_LIMIT = 20;
 // Execution errors are counted from execution records below. These are the
 // additional Host boundaries which can fail without producing an execution.
 export const HOST_HEALTH_FAILURE_EVENTS = [
@@ -22,7 +21,6 @@ function executionHealth(
   start: number,
   end: number,
 ): HostExecutionHealth {
-  const id = table === "sessions" ? "sessionId" : "runId";
   const known = "'done', 'error', 'blocked', 'interrupted'";
   const counts = db
     .prepare(
@@ -42,14 +40,7 @@ function executionHealth(
     WHERE endedAt IS NULL AND status IN (${known}) AND startedAt >= ? AND startedAt < ?`,
     )
     .get(start, end)!.count as number;
-  const recentErrors = db
-    .prepare(
-      `SELECT ${id} AS executionId, endedAt FROM ${table}
-    WHERE status = 'error' AND endedAt >= ? AND endedAt < ?
-    ORDER BY endedAt DESC, ${id} DESC LIMIT ?`,
-    )
-    .all(start, end, HOST_HEALTH_DETAIL_LIMIT) as HostExecutionHealth["recentErrors"];
-  return { ...counts, running, undated, recentErrors, errorsTruncated: counts.error > recentErrors.length };
+  return { ...counts, running, undated };
 }
 
 /** Read-only optional report. Failure rejects the whole snapshot, never healthy zeros. */
@@ -75,18 +66,6 @@ export function readHostHealth(
       GROUP BY event_type ORDER BY event_type`,
       )
       .all(...HOST_HEALTH_FAILURE_EVENTS, start, now) as HostHealthSnapshot["runtimeFailures"]["byType"];
-    const recent = db
-      .prepare(
-        `SELECT id AS eventId, event_type AS type, timestamp FROM events
-      WHERE event_type IN (${types}) AND timestamp >= ? AND timestamp < ?
-      ORDER BY timestamp DESC, id DESC LIMIT ?`,
-      )
-      .all(
-        ...HOST_HEALTH_FAILURE_EVENTS,
-        start,
-        now,
-        HOST_HEALTH_DETAIL_LIMIT,
-      ) as HostHealthSnapshot["runtimeFailures"]["recent"];
     const total = byType.reduce((sum, row) => sum + row.count, 0);
     const snapshot: HostHealthSnapshot = {
       generatedAt: now,
@@ -96,7 +75,7 @@ export function readHostHealth(
         agents: executionHealth(db, "sessions", start, now),
         workflows: executionHealth(db, "workflow_runs", start, now),
       },
-      runtimeFailures: { total, byType, recent, truncated: total > recent.length },
+      runtimeFailures: { total, byType },
     };
     db.exec("RELEASE host_health_read");
     return snapshot;

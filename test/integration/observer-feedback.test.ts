@@ -1,6 +1,7 @@
 import { expect, it } from "bun:test";
 import type { AppDefinition, AppObserver, TaskReconcileResult } from "@may-agent/sdk";
 import { observerFeedbackFixture } from "../fixtures/observer-feedback.js";
+import { readHostHealth } from "../../src/app/adapters/reporting/host-health.js";
 
 const app: AppDefinition = { id: "sample", version: 1, agent: "worker", inputSchema: { type: "object" }, tasks: {} };
 const observer: AppObserver = {
@@ -21,6 +22,33 @@ const observer: AppObserver = {
     };
   },
 };
+
+it("the reusable observer fixture rejects absent health reporting and accepts an explicit reader", async () => {
+  const f = await observerFeedbackFixture(app, {
+    id: "health",
+    intervalMs: 100,
+    async run(ctx) {
+      return [{ type: "sample.health.observed", data: await ctx.read.hostHealth() }];
+    },
+  });
+  try {
+    await f.scan();
+    const failure = f.db.prepare("SELECT data FROM events WHERE event_type = 'app.observer.failed'").get() as {
+      data: string;
+    };
+    expect(JSON.parse(failure.data).error).toBe("Host health reporting is not installed");
+    expect(
+      f.db.prepare("SELECT count(*) AS count FROM events WHERE event_type = 'sample.health.observed'").get(),
+    ).toEqual({ count: 0 });
+    f.read.hostHealth = async (options) => readHostHealth(f.db, options);
+    await f.scan();
+    expect(
+      f.db.prepare("SELECT count(*) AS count FROM events WHERE event_type = 'sample.health.observed'").get(),
+    ).toEqual({ count: 1 });
+  } finally {
+    await f.close();
+  }
+});
 
 it("recovers persisted-but-unadmitted observer input on its original event and exact Task", async () => {
   const f = await observerFeedbackFixture(app, observer);

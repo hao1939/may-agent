@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import { readHostHealth, HOST_HEALTH_DETAIL_LIMIT, HOST_HEALTH_MAX_LOOKBACK_MS } from "./host-health.js";
+import { readHostHealth, HOST_HEALTH_MAX_LOOKBACK_MS } from "./host-health.js";
 
 let db: SqliteDb;
 const now = 2_000_000_000_000;
@@ -49,18 +49,17 @@ test("snapshot keeps all execution outcomes, cutoff boundaries and missing dates
       interrupted: 1,
       other: 1,
       undated: 1,
-      recentErrors: [{ executionId: "error", endedAt: now - 1 }],
-      errorsTruncated: false,
     });
   }
   expect(JSON.stringify(snapshot)).not.toContain("private task text");
   expect(JSON.stringify(snapshot)).not.toContain("fixture-worker");
 });
 
-test("detail caps never cap totals, leak payloads or imply complete failure visibility", () => {
-  const count = HOST_HEALTH_DETAIL_LIMIT + 3;
+test("aggregate-only facts retain full counts without disclosing dereferenceable IDs or payloads", () => {
+  const count = 23;
   for (let i = 0; i < count; i++) {
-    execution("workflow_runs", `run-${i}`, "error", now - i - 1);
+    execution("workflow_runs", `foreign-run-${i}`, "error", now - i - 1);
+    execution("sessions", `foreign-session-${i}`, "error", now - i - 1);
     db.prepare("INSERT INTO events(event_type, data, timestamp) VALUES ('subscriber.failed', ?, ?)").run(
       JSON.stringify({ error: "private provider text", credential: "not-for-the-report" }),
       now - i - 1,
@@ -70,15 +69,25 @@ test("detail caps never cap totals, leak payloads or imply complete failure visi
   db.prepare("INSERT INTO events(event_type, timestamp) VALUES ('sample.fact', ?)").run(now - 1);
   const snapshot = readHostHealth(db, {}, now);
   expect(snapshot.executions.workflows.error).toBe(count);
-  expect(snapshot.executions.workflows.recentErrors).toHaveLength(HOST_HEALTH_DETAIL_LIMIT);
-  expect(snapshot.executions.workflows.errorsTruncated).toBe(true);
-  expect(snapshot.runtimeFailures).toMatchObject({
+  expect(snapshot.executions.agents.error).toBe(count);
+  for (const report of Object.values(snapshot.executions)) {
+    expect(report).toEqual({
+      running: 0,
+      ended: count,
+      done: 0,
+      error: count,
+      blocked: 0,
+      interrupted: 0,
+      other: 0,
+      undated: 0,
+    });
+  }
+  expect(snapshot.runtimeFailures).toEqual({
     total: count,
     byType: [{ type: "subscriber.failed", count }],
-    truncated: true,
   });
-  expect(snapshot.runtimeFailures.recent).toHaveLength(HOST_HEALTH_DETAIL_LIMIT);
-  expect(snapshot.runtimeFailures.recent[0]).toEqual({ eventId: 1, type: "subscriber.failed", timestamp: now - 1 });
+  expect(Object.keys(snapshot).sort()).toEqual(["coverage", "executions", "generatedAt", "runtimeFailures", "window"]);
+  expect(JSON.stringify(snapshot)).not.toContain("foreign-");
   expect(JSON.stringify(snapshot)).not.toContain("private");
   expect(JSON.stringify(snapshot)).not.toContain("credential");
 });
@@ -115,5 +124,4 @@ test("selected failure events use the same half-open window as execution outcome
   const report = readHostHealth(db, { lookbackMs: 1000 }, now).runtimeFailures;
   expect(report.total).toBe(2);
   expect(report.byType).toEqual([{ type: "app.observer.failed", count: 2 }]);
-  expect(report.recent.map((row) => row.timestamp)).toEqual([now - 1, now - 1000]);
 });

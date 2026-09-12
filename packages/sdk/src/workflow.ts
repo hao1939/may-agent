@@ -184,9 +184,6 @@ export type HostExecutionHealth = {
   other: number;
   /** Terminal rows started in the window but missing endedAt; excluded above. */
   undated: number;
-  /** At most 20 error executions, newest first. No transcripts or private payloads. */
-  recentErrors: Array<{ executionId: string; endedAt: number }>;
-  errorsTruncated: boolean;
 };
 
 /** Observed Host facts, not a healthy/unhealthy verdict or a recovery command. */
@@ -199,8 +196,6 @@ export type HostHealthSnapshot = {
   runtimeFailures: {
     total: number;
     byType: Array<{ type: string; count: number }>;
-    recent: Array<{ eventId: number; type: string; timestamp: number }>;
-    truncated: boolean;
   };
 };
 
@@ -209,7 +204,7 @@ export type ObserverContext = {
   previousObservation?: ObserverSnapshot;
   read: AppRead & {
     /** Optional Host reporting; rejects when absent. Default last hour, at most one day.
-     * Observers receive aggregates and bounded diagnostic IDs, never global SQL. */
+     * Aggregates only: no resource IDs, private content or global SQL. */
     hostHealth(options?: { lookbackMs?: number }): Promise<HostHealthSnapshot>;
   };
   log: Logger;

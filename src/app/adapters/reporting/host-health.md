@@ -18,10 +18,13 @@ which started in the window; they are not a complete historical corruption
 audit. Retention may have removed older rows. No counts imply complete lifetime
 coverage or a healthy/unhealthy verdict.
 
-Each recent-error list and the recent-event list contains at most 20 diagnostic
-IDs. Totals are not capped; `errorsTruncated`/`truncated` expose omitted detail.
-Reports omit transcript text, task instructions, agent configuration, provider
-errors and raw event payloads. The failure-event vocabulary is the explicit
+The report is aggregate-only. It returns no execution, event, Task or App IDs;
+real IDs could be passed to existing readers to retrieve private content.
+Totals are not capped and no per-resource detail lists are provided. Reports
+omit transcript text, task instructions, agent configuration, provider errors
+and raw event payloads. Detailed investigation remains with separately
+authorized evidence access; this read does not add a global resource-discovery
+capability or change existing reader permissions. The failure-event vocabulary is the explicit
 `HOST_HEALTH_FAILURE_EVENTS` list in `host-health.ts`, not every domain event
 ending in `.failed`. Passive facts without a consumer are not counted as failures.
 

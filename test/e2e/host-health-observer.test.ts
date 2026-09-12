@@ -30,7 +30,7 @@ test("ordinary observer reads Host facts and its App owns the resulting work", a
       const snapshot = JSON.parse(event.data);
       expect(snapshot.coverage).toEqual({ retainedOnly: true, executionScope: "all" });
       expect(snapshot.executions.agents).toMatchObject({ running: 0, ended: 0, error: 0 });
-      expect(snapshot.runtimeFailures).toEqual({ total: 0, byType: [], recent: [], truncated: false });
+      expect(snapshot.runtimeFailures).toEqual({ total: 0, byType: [] });
     } finally {
       db.close();
     }
