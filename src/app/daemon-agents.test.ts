@@ -40,7 +40,8 @@ describe("daemon Task executor compatibility", () => {
         description: "Fixture",
         domain: "test",
         model: "fixture",
-        tools: [],
+        tools: ["coding"],
+        protectedFileWrites: ["shared/philosophy.md"],
       }),
     );
     writeFileSync(
@@ -48,6 +49,9 @@ describe("daemon Task executor compatibility", () => {
       'export default { id: "sample", version: 1, agent: "arc", inputSchema: { type: "object" }, tasks: {} };',
     );
     writeFileSync(join(globalDir, "last-session.md"), "Global history\n");
+    writeFileSync(join(localDir, "AGENTS.md"), "Own guidance");
+    writeFileSync(join(root, "shared", "philosophy.md"), "Original");
+    writeFileSync(join(root, "shared", "common-sense.md"), "Original");
     const sourceRoot = join(root, "release");
     cpSync(canonicalProjects, join(sourceRoot, "projects"), { recursive: true });
     const bus = new EventBus();
@@ -96,6 +100,14 @@ describe("daemon Task executor compatibility", () => {
         appLocal: true,
         projectId: "sample",
       });
+      const write = (path: string) => definition.tools.find(tool => tool.name === "write")!.execute("fixture", { path, content: "Updated" });
+      await write(join(localDir, "AGENTS.md"));
+      expect(readFileSync(join(localDir, "AGENTS.md"), "utf8")).toBe("Updated");
+      expect(readFileSync(join(definition.agentDir!, "AGENTS.md"), "utf8")).toBe("Own guidance");
+      await write(join(root, "shared", "philosophy.md"));
+      expect(readFileSync(join(root, "shared", "philosophy.md"), "utf8")).toBe("Updated");
+      await write(join(root, "shared", "common-sense.md"));
+      expect(readFileSync(join(root, "shared", "common-sense.md"), "utf8")).toBe("Original");
       writeFileSync(join(appDir, ".disabled"), "");
       const sessionId = manager.run("arc", "Complete accepted work");
       expect((await manager.waitFor(sessionId)).status).toBe("done");

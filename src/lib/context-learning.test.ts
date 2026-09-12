@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
 import { createContextUpdater, createLastSessionWriter } from "./session-subscribers.js";
 import { resolveRuntimeAgentDirectory } from "../app/loader/agent-discovery.js";
-import { buildAgentDefinition } from "../app/loader/agent-definition.js";
+import { agentFileWriteScope, buildAgentDefinition } from "../app/loader/agent-definition.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 
 let tmpDir: string;
@@ -131,6 +131,7 @@ describe("Context Learning", () => {
     const definition = await buildAgentDefinition({
       config,
       source,
+      fileWriteScope: agentFileWriteScope(tmpDir, source, config),
       model: fakeModel(),
       tools: [],
       projectRoot: tmpDir,
@@ -184,6 +185,7 @@ describe("Context Learning", () => {
       const globalDefinition = await buildAgentDefinition({
         config,
         source: globalSource,
+        fileWriteScope: agentFileWriteScope(tmpDir, globalSource, config),
         model: fakeModel(),
         tools: [],
         projectRoot: tmpDir,

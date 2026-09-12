@@ -223,7 +223,11 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   const root = options.executionRoot;
   if (!root && !options.bashProcessGroupOwner) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
-  const agentName = options.definition.name;
+  const fileWriteScope = {
+    ...options.definition.fileWriteScope,
+    agentName: options.definition.name,
+    projectRoot: options.definition.fileWriteScope?.installationRoot ?? options.projectRoot,
+  };
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
       case "read":
@@ -231,9 +235,9 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
       case "bash":
         return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
       case "edit":
-        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
+        return root ? createEditTool(executionRoot, fileWriteScope) : tool;
       case "write":
-        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
+        return root ? createWriteTool(executionRoot, fileWriteScope) : tool;
       default:
         return tool;
     }

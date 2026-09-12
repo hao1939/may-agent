@@ -9,13 +9,14 @@ import {
   type PreparedAgentExecution,
 } from "../lib/agent-execution.js";
 import { generateId } from "../lib/manager-utils.js";
+import type { AgentFileWriteScope } from "../lib/tools/cross-edit-guard.js";
 import { createCodingTools } from "../lib/tools/coding.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { createReadTool } from "../lib/tools/read.js";
 import { createBackgroundExecTool } from "../lib/background-exec.js";
 import { createScrapeTool } from "../lib/scrape.js";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { buildAgentDefinition } from "./loader/agent-definition.js";
+import { agentFileWriteScope, buildAgentDefinition } from "./loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
 import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
@@ -119,13 +120,14 @@ async function buildDirectTools(
   source: AgentDirectory,
   options: DirectAgentRunOptions,
   effectiveTools: string[],
+  fileWriteScope: Readonly<AgentFileWriteScope>,
 ): Promise<{ tools: AgentTool[]; cleanup: Array<() => void> }> {
   const tools: AgentTool[] = [];
   const cleanup: Array<() => void> = [];
   for (const capability of effectiveTools) {
     switch (capability) {
       case "coding":
-        tools.push(...createCodingTools(options.workRoot, { agentName: config.name }));
+        tools.push(...createCodingTools(options.workRoot, { agentName: config.name, ...fileWriteScope }));
         break;
       case "read-only":
         tools.push(createReadTool(options.workRoot) as AgentTool);
@@ -186,9 +188,13 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
   const executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
-  const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools);
+  const fileWriteScope = agentFileWriteScope(options.projectRoot, source, config);
+  const { tools, cleanup } = await buildDirectTools(
+    config, source, options, executionManifest.effectiveTools, fileWriteScope,
+  );
   const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
   const definition = await buildAgentDefinition({
+    fileWriteScope,
     config,
     source: definitionSource,
     model,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
@@ -230,4 +230,67 @@ describe("direct agent tool policy", () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+});
+
+test.each(["installation", "workspace"])("direct coding tools retain installation scope in %s", async (mode) => {
+  const root = await mkdtemp(join(tmpdir(), "may-direct-grants-"));
+  const agentDir = join(root, "agents", "profile");
+  const workRoot = mode === "installation" ? root : join(root, "work");
+  const visibleAgentDir = join(workRoot, "visible-profile");
+  let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+  try {
+    for (const dir of [
+      agentDir,
+      visibleAgentDir,
+      join(root, "shared"),
+      join(root, "projects", "other.app", "agents", "profile"),
+    ]) {
+      await mkdir(dir, { recursive: true });
+    }
+    const configPath = join(agentDir, "agent.json");
+    const config = JSON.stringify({
+      name: "profile",
+      description: "Fixture",
+      domain: "test",
+      model: "test",
+      tools: ["coding"],
+      protectedFileWrites: ["shared/philosophy.md"],
+    });
+    await writeFile(configPath, config);
+    const ownPath = join(agentDir, "AGENTS.md");
+    const foreignPath = join(root, "projects", "other.app", "agents", "profile", "AGENTS.md");
+    const allowedPath = join(root, "shared", "philosophy.md");
+    const deniedPath = join(root, "shared", "common-sense.md");
+    for (const path of [ownPath, foreignPath, allowedPath, deniedPath]) await writeFile(path, "Original");
+    direct = await prepareDirectAgentExecution({
+      agentName: "profile",
+      task: "Exercise grants",
+      projectRoot: root,
+      workRoot,
+      agentsRoot: join(root, "agents"),
+      sharedRoot: join(root, "shared"),
+      visibleAgentDir,
+      outputRoot: join(root, "output"),
+      models: { test: { id: "test-model" } as any },
+    });
+    const write = (path: string, content = "Updated") =>
+      direct!.prepared.tools.find((tool) => tool.name === "write")!.execute("fixture", { path, content });
+    await write(ownPath);
+    expect(await readFile(ownPath, "utf8")).toBe("Updated");
+    await write(foreignPath);
+    expect(await readFile(foreignPath, "utf8")).toBe("Original");
+    await write(configPath, config.replace('"test"', '"hack"'));
+    expect(await readFile(configPath, "utf8")).toBe(config);
+    await write(allowedPath);
+    expect(await readFile(allowedPath, "utf8")).toBe("Updated");
+    await direct.prepared.tools
+      .find((tool) => tool.name === "edit")!
+      .execute("fixture", { path: deniedPath, oldText: "Original", newText: "Unauthorized" });
+    expect(await readFile(deniedPath, "utf8")).toBe("Original");
+    await write("output.txt");
+    expect(await readFile(join(workRoot, "output.txt"), "utf8")).toBe("Updated");
+  } finally {
+    direct?.cleanup();
+    await rm(root, { recursive: true, force: true });
+  }
 });

@@ -14,9 +14,9 @@ import { checkCrossEditGuard } from "./cross-edit-guard.js";
 
 const PROJECT_ROOT = "/app";
 
-function guardPath(relativePath: string, agent: string) {
+function guardPath(relativePath: string, agent: string, protectedFileWrites?: string[]) {
   const absolutePath = resolve(PROJECT_ROOT, relativePath);
-  return checkCrossEditGuard(absolutePath, agent, PROJECT_ROOT);
+  return checkCrossEditGuard(absolutePath, agent, PROJECT_ROOT, { protectedFileWrites });
 }
 
 describe("P98 Evaluation Integrity — Immutable Ruler", () => {
@@ -65,7 +65,7 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
       const filename = path.split("/").pop();
 
       it(`allows evaluator to modify ${filename}`, () => {
-        const result = guardPath(path, "evaluator");
+        const result = guardPath(path, "evaluator", [path]);
         expect(result.blocked).toBe(false);
       });
     }
@@ -83,18 +83,18 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
       });
 
       it(`allows evaluator to modify app-local ${filename}`, () => {
-        const result = guardPath(path, "evaluator");
+        const result = guardPath(path, "evaluator", [path]);
         expect(result.blocked).toBe(false);
       });
     }
   });
 
-  describe("allows may to modify evaluation files (may is exempt)", () => {
+  describe("allows explicitly granted evaluation files, not a name exemption", () => {
     for (const path of PROTECTED_EVAL_PATHS) {
       const filename = path.split("/").pop();
 
       it(`allows may to modify ${filename}`, () => {
-        const result = guardPath(path, "may");
+        const result = guardPath(path, "may", [path]);
         expect(result.blocked).toBe(false);
       });
     }

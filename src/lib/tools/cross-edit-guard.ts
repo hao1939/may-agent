@@ -2,21 +2,20 @@
  * Cross-edit guard: prevents agents from modifying other agents' protected files.
  *
  * Protected files (per agent): AGENTS.md, agent.json, heartbeat.md
- * LESSONS.md is NOT protected — Coach and Bob need cross-agent access for Growth Cycle and consolidation.
- * Also protected: shared/philosophy.md and shared/common-sense.md (only "may" can write)
- *
- * Exception: Agent "may" is exempt from all restrictions.
+ * Protected-file grants come from trusted tool construction, never agent names.
+ * These lexical file-tool checks are not a shell or native-agent sandbox.
  */
 
-import { resolve, relative, sep } from "node:path";
+import { isAbsolute, resolve, relative, sep } from "node:path";
 
 const PROTECTED_FILENAMES = new Set(["AGENTS.md", "agent.json", "heartbeat.md"]);
 
 /**
  * P98 Evaluation Integrity — Immutable Ruler Principle.
  *
- * These evaluator paths are read-only to ALL agents except "may" and "evaluator" itself.
- * Prevents reward hacking (RewardHackingAgents: agents tamper with evaluation logic 50% of the time).
+ * Retain the legacy evaluation paths as a protection floor during adoption.
+ * No agent name exempts its caller; writes need explicit exact-file grants.
+ * File tools must not silently alter retained evaluation truth.
  *
  * Protected paths (relative to agents/evaluator/):
  *   - knowledge/criteria.md — scoring rubric
@@ -37,7 +36,27 @@ export interface CrossEditGuardResult {
   message?: string;
 }
 
+export interface FileWriteScope {
+  /** Exact installation-relative files, supplied by reviewed agent configuration. No globs or directory grants. */
+  protectedFileWrites?: readonly string[];
+  /** Canonical writable identity directory; a same-named agent elsewhere is not this agent. */
+  agentWriteDirectory?: string;
+}
+
+/** Permissions captured with one trusted agent definition, independent of execution cwd. */
+export interface AgentFileWriteScope extends FileWriteScope {
+  installationRoot: string;
+  agentWriteDirectory: string;
+}
+
+export function validProtectedFileWrites(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(path => typeof path === "string" && path.trim() === path &&
+    path.length > 0 && !isAbsolute(path) && !path.includes("\\") && !path.includes("\0") &&
+    !/[?*]/.test(path) && path.split("/").every(part => part !== ".." && part !== "." && part !== ""));
+}
+
 interface AgentTreePath {
+  directory: string;
   displayPrefix: string;
   relPath: string;
   parts: string[];
@@ -65,6 +84,7 @@ function agentTreePathFromRoot(
   if (parts.length < 2) return undefined;
 
   return {
+    directory: resolve(agentRoot, parts[0]),
     displayPrefix,
     relPath,
     parts,
@@ -109,7 +129,7 @@ function findAgentTreePath(absolutePath: string, projectRoot: string): AgentTree
  * Check if a write/edit to the given absolute path should be blocked.
  *
  * @param absolutePath - Resolved absolute path of the file being written/edited
- * @param agentName - Name of the calling agent (undefined = no guard)
+ * @param agentName - Calling identity for attribution; never a privileged role
  * @param projectRoot - Project root directory (agents/ and shared/ live here)
  * @returns { blocked: false } if allowed, { blocked: true, message } if denied
  */
@@ -117,12 +137,11 @@ export function checkCrossEditGuard(
   absolutePath: string,
   agentName: string | undefined,
   projectRoot: string,
+  scope: FileWriteScope = {},
 ): CrossEditGuardResult {
-  // No agent name = no guard (backwards compat, e.g. default tools)
-  if (!agentName) return { blocked: false };
-
-  // May is exempt from all restrictions
-  if (agentName.toLowerCase() === "may") return { blocked: false };
+  if (validProtectedFileWrites(scope.protectedFileWrites) && scope.protectedFileWrites.some(
+    path => resolve(projectRoot, path) === resolve(absolutePath),
+  )) return { blocked: false };
 
   const sharedDir = resolve(projectRoot, "shared");
 
@@ -131,7 +150,7 @@ export function checkCrossEditGuard(
     if (relSharedPath === "philosophy.md" || relSharedPath === "common-sense.md") {
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent "${agentName}" cannot modify shared/${relSharedPath}. Only May can edit shared system-level guidance.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
+        message: `⚠️ WRITE BLOCKED: Agent "${agentName}" cannot modify shared/${relSharedPath}. An explicit protected-file grant is required.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
     return { blocked: false };
@@ -144,9 +163,9 @@ export function checkCrossEditGuard(
   const displayPath = `${displayPrefix}${sep}${relPath}`;
 
   const targetDirLower = targetDir.toLowerCase();
-  const agentNameLower = agentName.toLowerCase();
+  const ownDirectory = Boolean(scope.agentWriteDirectory && resolve(scope.agentWriteDirectory) === agentPath.directory);
 
-  // Guard shared system-level prompt/philosophy files — only may can write (and may is already exempt above)
+  // Shared system guidance always needs an explicit protected-file grant.
   const protectedSharedFiles = new Set([
     ["shared", "philosophy.md"].join(sep),
     ["shared", "common-sense.md"].join(sep),
@@ -154,37 +173,34 @@ export function checkCrossEditGuard(
   if (targetDir === "shared" && protectedSharedFiles.has(relPath)) {
     return {
       blocked: true,
-      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPath}. Only May can edit shared system-level guidance.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
+      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPath}. An explicit protected-file grant is required.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
     };
   }
 
   // P98 Evaluation Integrity — Immutable Ruler
-  // Evaluator criteria/scoring files are read-only to all agents except evaluator itself (and may, already exempt above)
-  if (targetDir === "evaluator" && agentNameLower !== "evaluator") {
+  // Legacy evaluation truth stays protected even from an agent called evaluator.
+  if (targetDir === "evaluator") {
     // Get the path relative to agents/evaluator/
     const evalRelPath = parts.slice(1).join(sep);
     if (EVALUATOR_PROTECTED_PATHS.has(evalRelPath)) {
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify ${displayPrefix}${sep}evaluator${sep}${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
+        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify ${displayPrefix}${sep}evaluator${sep}${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. An explicit protected-file grant is required.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
   }
 
   // P70: Block self-edits to agent.json (Immutable Self-Config).
   // An agent editing its own agent.json can persist a jailbreak across restarts.
-  // Only May (exempt above) or tech-lead may edit agent.json files.
-  if (targetDirLower === agentNameLower && fileName === "agent.json") {
-    if (agentNameLower !== "tech-lead") {
-      return {
-        blocked: true,
-        message:
-          `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
-          `agent.json defines immutable agent identity/configuration. ` +
-          `Self-edits could persist a jailbreak across restarts. ` +
-          `Only May or tech-lead may modify agent.json files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
-      };
-    }
+  // An explicit protected-file grant is required, including for self-configuration.
+  if (ownDirectory && fileName === "agent.json") {
+    return {
+      blocked: true,
+      message:
+        `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
+        `An explicit protected-file grant is required for agent configuration. ` +
+        `If this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
+    };
   }
 
   // Allow writes to .lab/ directory (sandbox/fork for agent growth system)
@@ -192,16 +208,12 @@ export function checkCrossEditGuard(
 
   // Guard agents/<other-agent>/AGENTS.md, agent.json, heartbeat.md (at any depth)
   // Conservative: block protected filenames even in subdirectories to prevent leaks
-  if (targetDirLower !== "shared" && targetDirLower !== agentNameLower) {
+  if (targetDirLower !== "shared" && !ownDirectory) {
     // It's another agent's directory — check if it's a protected filename
     if (PROTECTED_FILENAMES.has(fileName)) {
-      // P70: tech-lead may edit other agents' agent.json (manages agent configs)
-      if (fileName === "agent.json" && agentNameLower === "tech-lead") {
-        return { blocked: false };
-      }
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPrefix}${sep}${targetDir}${sep}${fileName}. Only the owning agent, May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
+        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPrefix}${sep}${targetDir}${sep}${fileName}. An explicit protected-file grant is required for another agent's identity files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
   }

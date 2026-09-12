@@ -4,7 +4,7 @@ import type { TSchema } from "@earendil-works/pi-ai";
 import { mkdir as fsMkdir, readFile as fsReadFile, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
-import { checkCrossEditGuard } from "./cross-edit-guard.js";
+import { checkCrossEditGuard, type FileWriteScope } from "./cross-edit-guard.js";
 import { withAbortSignal } from "./abort-utils.js";
 import { isMemoryFile, sanitizeMemory, formatSanitizeWarning } from "../security/memory-sanitizer.js";
 import { generateDiffString } from "./edit-diff.js";
@@ -51,7 +51,7 @@ const defaultWriteOperations: WriteOperations = {
 	},
 };
 
-export interface WriteToolOptions {
+export interface WriteToolOptions extends FileWriteScope {
 	/** Custom operations for file writing. Default: local filesystem */
 	operations?: WriteOperations;
 	/** Allow writing content smaller than 50% of existing file. Default: false */
@@ -98,7 +98,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 			const dir = dirname(absolutePath);
 
 			// Cross-edit guard: block writes to other agents' protected files
-			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot, options);
 			if (guard.blocked) {
 				return {
 					content: [{ type: "text" as const, text: guard.message! }],
