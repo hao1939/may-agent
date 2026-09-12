@@ -169,7 +169,7 @@ describe("served workflow and metric health pages", () => {
     expect(facts.childRunIds).toEqual(["wr_10"]);
     expect(facts.steps[0]).toMatchObject({ sessionId: "step-upload", status: "error" });
     expect(facts.diagnostics.entries[0].message).toContain("Original upload failure");
-    expect((await read("/api/loop-trace?workflowRunId=wr_6")).workflowEvidence.diagnostics.state).toBe("unavailable");
+    expect((await read("/api/loop-trace?workflowRunId=wr_6")).workflowFacts.diagnostics.state).toBe("unavailable");
     await read("/api/workflow-health?days=100000", 400);
     await read("/api/metrics/example/history?days=NaN", 400);
   });

@@ -86,7 +86,7 @@ function parseTaskAttempt(value: unknown): AppTaskAttempt {
 
 function parseTaskReceipt(value: unknown): TaskCompletionReceipt {
   const receipt = storedResultFacts(parseJson<TaskCompletionReceipt>(value));
-  storedResultFacts(receipt.acceptanceBasis);
+  if (receipt.acceptanceBasis) storedResultFacts(receipt.acceptanceBasis);
   return receipt;
 }
 

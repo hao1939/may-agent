@@ -44,7 +44,7 @@ describe("App task output paths", () => {
   it("resolves relative outputs against the declared domain workspace", () => {
     const { projectDir, paths } = fixture();
     expect(resolveAppTaskOutputPaths(["evidence/result.json"], paths)).toEqual([
-      join(projectDir, "facts", "result.json"),
+      join(projectDir, "evidence", "result.json"),
     ]);
   });
 

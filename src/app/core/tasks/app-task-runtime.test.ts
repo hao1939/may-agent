@@ -4832,7 +4832,7 @@ describe("canonical App task runtime", () => {
       export const name = "read-fact";
       export const description = "Reuse complete publication facts after failed acceptance";
       export async function execute(ctx) {
-        const text = "facts ".repeat(1000);
+        const text = "fact-000 ".repeat(1000);
         const fact = await ctx.events.read("sample.observed", "large");
         if (!fact) {
           await ctx.events.emit({ type: "sample.observed", localKey: "large", data: { text } });

@@ -181,7 +181,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
   });
   await host.recoverTaskResults();
 
-  expect(getAppInboxItem(db, "running-child")?.result?.evidence).toEqual(["fixture:checked"]);
+  expect(getAppInboxItem(db, "running-child")?.result?.facts).toEqual(["fixture:checked"]);
   expect(getAppInboxItem(db, "finished-child")?.status).toBe("done");
 
   expect(modelCalls).toBe(0);
