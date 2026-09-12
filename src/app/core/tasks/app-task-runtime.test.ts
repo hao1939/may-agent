@@ -1845,21 +1845,12 @@ describe("canonical App task runtime", () => {
           executors: {
             caller: async (attempt) => {
               inputs.push(structuredClone(attempt.events));
-              expect(attempt.events.items.some(({ event }) => event.type === "app.task.requested" &&
-                (event.data as { request?: { id?: string } }).request?.id === "original-ask")).toBe(true);
               if (inputs.length === 1) return {
                 state: "waiting", summary: "Waiting for the assigned sample", evidence: [],
                 dependencies: [{ id: "sample", appId: "sample", input: { kind: "collect", data: { sample: 1 } } }],
               };
-              const feedback = attempt.events.items.find(({ event }) => event.type === "app.dependency.updated" &&
-                event.data.status === (inputs.length === 2 ? "blocked" : "done"));
-              if (inputs.length === 2) {
-                expect(feedback?.event.data).toMatchObject({
-                  id: requestId, status: "blocked", summary: "Source unavailable (1)", evidence: ["HTTP:503"],
-                });
+              if (inputs.length === 2)
                 return { state: "stopped", summary: "Need the owner to restore the source", evidence: ["HTTP:503"] };
-              }
-              expect(feedback?.event.data).toMatchObject({ id: requestId, status: "done", result: { score: 0.92 } });
               return { state: "converged", summary: "Reviewed exact evidence", evidence: ["sample:1"] };
             },
             collector: async () => succeed
@@ -1912,6 +1903,11 @@ describe("canonical App task runtime", () => {
       await recoverInstalledAppTasks(bus);
       await run("work/caller");
       expect(inputs).toHaveLength(2);
+      expect(inputs[1]!.items.find(({ event }) => event.type === "app.dependency.updated")?.event.data)
+        .toMatchObject({ id: requestId, status: "blocked", summary: "Source unavailable (1)", evidence: ["HTTP:503"] });
+      expect(readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId: "work/caller",
+        admissionKey: host!.get("original-ask")!.taskAdmissionKey!, kind: "report" })?.summary)
+        .toBe("Need the owner to restore the source");
       expect(loadedTaskConfig(f).resourceStore.readTask("work/caller")?.status.phase).toBe("pending");
       const conditionId = `app-request:${requestId}`;
       const condition = () => loadedTaskConfig(f).resourceStore.readTaskConditions("work/caller")
@@ -1939,6 +1935,15 @@ describe("canonical App task runtime", () => {
       expect(condition()?.status.state).toBe("true");
       await run("work/caller");
       expect(inputs).toHaveLength(3);
+      expect(inputs[2]!.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done")?.event.data)
+        .toMatchObject({ id: requestId, status: "done", result: { score: 0.92 } });
+      for (const input of inputs)
+        expect([...input.items, ...(input.continuedInputs ?? [])].some(({ event }) =>
+          event.type === "app.task.requested" && (event.data as { request?: { id?: string } }).request?.id === "original-ask"))
+          .toBe(true);
+      expect(readAcceptedRuntimeAttempt(loadedTaskConfig(f), "work/caller")?.acceptedResult?.summary)
+        .toBe("Reviewed exact evidence");
+      expect(loadedTaskConfig(f).resourceStore.readTask("work/caller")?.status.phase).toBe("converged");
       expect(host!.get(requestId)?.status).toBe("done");
       expect(exact()).toEqual(first);
       expect(loadedTaskConfig(f).resourceStore.isCancelled("work/collector")).toBe(false);
@@ -1946,6 +1951,22 @@ describe("canonical App task runtime", () => {
       await recoverInstalledAppTasks(bus);
       await run("work/caller");
       expect(inputs).toHaveLength(3);
+      // Later input on this still-open worker must not inherit the first input's report.
+      host!.admit({ id: "later-ask", appId: "sample", source: { kind: "system", id: "later" },
+        input: { kind: "collect", data: { sample: 2 } } });
+      const laterKey = host!.get("later-ask")!.taskAdmissionKey!;
+      const laterReport = () => readLoadedAppTaskInputResult({ bus, appDir: f.appDir,
+        taskId: "work/collector", admissionKey: laterKey, kind: "report" });
+      expect(laterReport()).toBeNull();
+      succeed = false;
+      await run("work/collector");
+      expect(laterReport()?.summary).toBe("Source unavailable (4)");
+      expect(laterReport()?.attemptId).not.toBe(first?.attemptId);
+      expect(exact()).toEqual(first);
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      expect(host!.get(requestId)?.result?.result).toEqual({ score: 0.92 });
+      expect(loadedTaskConfig(f).resourceStore.readTrigger("work/caller")).toBeNull();
       host!.close();
     },
   );

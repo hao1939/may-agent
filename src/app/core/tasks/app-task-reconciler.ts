@@ -15,6 +15,7 @@ import {
   commitTaskMutation,
   ResourceTaskMutationStaleError,
   type AppTaskContext,
+  type AppTaskAdmission,
   type AppTaskReadiness,
   type TaskTree,
 } from "./app-task-store.js";
@@ -655,13 +656,16 @@ function consideredInputKeys(
 
 /** Bind only admitted input actually considered by this accepted judgment. */
 function acceptedInputAdmissions(
-  config: AppTaskContext, tree: TaskTree, claim: AppTaskClaim, acceptedLiveEventIds: number[] = [],
+  config: AppTaskContext,
+  tree: TaskTree,
+  claim: AppTaskClaim,
+  acceptedLiveEventIds: number[] = [],
   kind: "answer" | "report" = "answer",
 ) {
   const keys = consideredInputKeys(config, tree, claim, acceptedLiveEventIds);
   if (!keys.length) return [];
   const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
-  const writes = keys.flatMap<{ taskId: string; value: NonNullable<TaskTree["appTaskAdmissions"]>[string] }>((key) => {
+  const writes = keys.flatMap<{ taskId: string; value: AppTaskAdmission }>((key) => {
     const admission = admissions?.[key];
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration !== claim.generation ||
       admission.resultAttemptId) return [];
@@ -676,7 +680,12 @@ function acceptedInputAdmissions(
 }
 
 /** Read one input's exact accepted answer or first report, independently of later Task cycles. */
-export function readAppTaskAdmissionOutcome(config: Pick<AppTaskContext, "resourceStore">, taskId: string, admissionKey: string, kind: "answer" | "report" = "answer") {
+export function readAppTaskAdmissionOutcome(
+  config: Pick<AppTaskContext, "resourceStore">,
+  taskId: string,
+  admissionKey: string,
+  kind: "answer" | "report" = "answer",
+) {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
   const attemptId = kind === "answer" ? admission?.resultAttemptId : admission?.reportAttemptId;
