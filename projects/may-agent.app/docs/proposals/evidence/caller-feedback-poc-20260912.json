@@ -296,9 +296,66 @@
       "Repair supplied human input and the exact source event; human text alone is not claimed to satisfy the wait.",
       "Full CI covered final product code/tests; later opt-in harness refinements also passed type/lint checks and paired live trials.",
       "Model cost, timer latency under load, arbitrary process death and all failure boundaries are not proved.",
-      "Canonical Task docs and Condition owner schema need alignment before promotion.",
+      "At this historical revision the Task docs and Condition owner schema still needed alignment; see ownerSchemaFollowUp for the correction.",
       "Automated passage does not replace manual review of who must act or the comparison.",
       "No push, PR or deployment."
+    ]
+  },
+  "ownerSchemaFollowUp": {
+    "candidate": "590b02444b11e393a0657b0459461139de91a85b",
+    "base": "9584ea5965c992c53e6ef6987467f28d267a0657",
+    "sourcePatchHash": "2216d7b99c8ffd1fed699451e11b7406f21df6ecab6353c90809977314dbfe1b",
+    "scope": "Align owner-format schema with admission and correct stale canonical Task lifecycle documentation; no new identity or routing model",
+    "regression": {
+      "initialResult": "failed: finish schema accepted invalid owner text",
+      "cases": 13,
+      "finalResult": "schema and admission agree, preserving supported identities and whitespace trimming",
+      "finishBoundary": "prepared finish tool rejects prose owner before execution, then accepts its correction in the same execution"
+    },
+    "liveTrial": {
+      "value": 0.92,
+      "minimum": 0.9,
+      "mechanicsPassed": true,
+      "manualJudgmentPassed": true,
+      "review": "Correctly asks human requester to restore access, then reports 0.92 above 0.90 by 0.02 and fulfills the original Request; worker remains open and exact answer survives reopen.",
+      "workerAttempts": 2,
+      "conversationAttempts": 4,
+      "taskAttempts": 6,
+      "dispatchProfiles": 7,
+      "modelStreamStarts": 8,
+      "deniedReads": 1,
+      "successfulReads": 1,
+      "writes": 0,
+      "durationMs": 85385,
+      "extraFailedTaskAttemptsForOwnerCorrection": 0,
+      "limitation": "One development value, synthetic source and repair; full CI was running concurrently. Not a reliability rate, speed comparison or deployment proof."
+    },
+    "validation": {
+      "focused": { "passed": 38, "failed": 0 },
+      "ci": {
+        "command": "bun run ci",
+        "exitCode": 0,
+        "passed": 2879,
+        "skipped": 3,
+        "failed": 0,
+        "files": 291,
+        "assertions": 12455,
+        "testDurationSeconds": 151.23,
+        "skipReason": "installation-only agent catalog checks"
+      },
+      "canonicalDesign": {
+        "initialResult": "failed: contract exceeded the existing 900-line limit by one line",
+        "correction": "removed duplicated historical guidance; retained size check",
+        "command": "bun run check:may-design",
+        "exitCode": 0,
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    "remaining": [
+      "Integrate newer main #163/#167: the latter shares the failure transition extended by this candidate; rerun report and Conversation regressions.",
+      "Remaining failure-boundary and publication/closure checks before production promotion.",
+      "No remote push, PR, rebase or deployment occurred."
     ]
   },
   "comparison": {
@@ -341,7 +398,7 @@
     "No installed May App or human-interface transport adoption proof; bounded managed-model trials are recorded under followThrough.",
     "No arbitrary process-death, timer-latency or load test.",
     "Condition ingress and dispatch are explicitly driven through production primitives.",
-    "Conversation discovery and managed-agent protocol are aligned in the follow-through candidate; canonical Task docs still need alignment before promotion.",
+    "Conversation discovery and managed-agent protocol are aligned in the follow-through candidate; ownerSchemaFollowUp corrects canonical Task docs without claiming the candidate is merged.",
     "Explicit updated reports are limited to waiting results.",
     "Latest selected feedback can supersede undelivered earlier reports; history preserves attempts.",
     "All failure boundaries and concurrent publication/closure still need review.",

@@ -57,11 +57,11 @@ Only the first accepted blocker per input is returned. That suppresses repeated
 notifications but can hide a later different need. This is an explicit limitation,
 not proof of complete progress reporting.
 
-The current [Task design](../2a-design/task-resource-engine.md#result-contract)
-still describes `stopped` as cancellation and implicit parent notification.
-That predates #158/#164. Current source retains the assignment and retries;
-structural parents do not imply a return route. These sections must be aligned
-before promotion; this proposal does not silently adopt their obsolete behavior.
+The [Task design](../2a-design/task-resource-engine.md#result-contract) previously
+described `stopped` as cancellation and implicit parent notification. The
+follow-up below corrects those pre-#158/#164 sections: source retains the
+assignment and retries; structural parents do not imply a return route.
+The canonical page distinguishes that merged baseline from this unmerged candidate.
 
 ## Small candidate contract
 
@@ -196,7 +196,8 @@ the complete Host gate. Model-backed adoption and deployment remain separate.
 Local branch: `poc/caller-feedback-wait-20260912`, based on the revision above.
 Initial Task-to-Task candidate: `0882cad717b3e2ff162a0133e9ea8bba7f53e606`.
 Conversation/live-trial extension: `9584ea5965c992c53e6ef6987467f28d267a0657`.
-Both are local commits, not pushed.
+Owner-schema follow-up: `590b02444b11e393a0657b0459461139de91a85b`.
+All are local commits, not pushed.
 The portable experiment extends `src/app/core/tasks/app-task-runtime.test.ts`
 under `caller feedback PoC`, reusing its real runtime/SQLite fixtures. Run it in
 that checkout with:
@@ -271,8 +272,9 @@ retains revisions, scenarios, failed trial findings, counts and limitations.
 - Reporting a thrown exception is proved; arbitrary process death, admission
   failure, verification rejection and unavailable workflow paths need their own
   contract checks before claiming all failure boundaries.
-- Compact managed-agent guidance now describes the candidate. Canonical Task docs
-  still need the baseline corrections noted above before production promotion.
+- Compact managed-agent guidance describes the candidate, and canonical Task docs
+  now describe the merged baseline separately. Integration with newer main and
+  the remaining failure-boundary checks are still required before promotion.
 - A report points to full attempt/workflow evidence; the runtime-failure summary
   is truncated to 1,024 characters. Safe presentation and evidence access still
   need review across the actual caller and human boundaries.
@@ -359,9 +361,9 @@ both the invalid result and failed trial in the evidence, not just the retry.
 
 This reveals a small existing usability gap: the finish schema describes
 Condition `owner` as a nonempty string, while result normalization requires
-`human` or `kind:identity`. Aligning that field's schema/guidance is a separate
-candidate improvement; do not turn one format error into another escalation
-lifecycle. The current PoC deliberately preserves validation and error feedback.
+`human` or `kind:identity`. The follow-up below aligns the field's schema and
+guidance without another escalation lifecycle. The earlier trials intentionally
+retain their validation failures and error feedback in the evidence.
 
 With the exact-report gate and clarified source facts, both final trials passed
 using unchanged prompts/code; only the measured value changed:
@@ -400,3 +402,48 @@ They bound this experiment, not Task lifetime. Conversation calls exclude worker
 attempts; dispatch profiles can also include no-op checks and must not be counted
 as attempts. Raw transcripts, configuration and temporary state remain private;
 the evidence summary keeps only portable findings and counts.
+
+### Owner-schema and design follow-up
+
+The smallest source correction is a shared owner-format pattern in the SDK's
+schema and normalizer, plus a field description. Existing `human` shorthand,
+canonical `kind:identity` values and surrounding-whitespace trimming remain
+supported. No owner lookup, identity system, repair authority or new routing is
+added. The runtime's existing defensive check remains unchanged.
+
+A regression first failed because the tool schema admitted invalid owner text.
+It now compares schema/admission across 13 valid and invalid values. An actual
+prepared finish-tool check rejects a prose owner before executing finish, then
+accepts its correction in the same execution. This establishes a bounded place
+to correct the format; it does not promise every model will choose correctly.
+
+One further local-model trial passed both the mechanical gate and manual review:
+May asked the human requester to restore access, waited, and reported `0.92`
+against `0.90` after repair, correctly fulfilling the original Request. It used
+two worker attempts, four Conversation attempts, eight model-stream starts,
+one denied read and one successful read, with no writes. Unlike the previous
+final pair, it needed no extra failed Task attempt for owner correction. The
+same input's accepted answer survived reopen; the worker stayed open.
+
+The trial took 85.4 seconds while the full suite was also running. Fewer attempts
+in this one sample are not proof of lower latency, cost or a general reliability
+rate. Earlier unsuccessful trials remain in the evidence.
+
+At this exact follow-up, `bun run ci` passed **2,879 tests**, with **three
+installation-only skips and zero failures**, across 291 files (151.23 seconds
+for tests). Type, boundary and lint checks passed. The focused SDK/finish/protocol
+run passed 38 tests. The live trial's saved source patch exactly matches the
+committed follow-up diff. Canonical design checks passed after their first run
+caught a 901-line contract; removing duplicated history brought it below the
+existing 900-line limit without weakening that check.
+
+Canonical Task documentation now reflects open Tasks after acceptance, paced
+unfinished failures rather than finite stop, explicit input-return links instead
+of parent subscriptions, and the possible executor cost of Condition checkpoints.
+It does not promote `waiting.report` or execution-error caller returns to released
+behavior.
+
+New main contains #163 and #167 after this PoC's base. #167 consolidates the
+failure transition this candidate extends. Reconcile the report-pointer update
+with that shared transition and rerun caller/Conversation regressions before
+promotion; the branch has not been rebased, pushed or deployed by this follow-up.

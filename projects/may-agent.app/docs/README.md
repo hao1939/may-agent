@@ -33,8 +33,11 @@ small shared state boundary.
 
 The [caller-feedback proposal](proposals/caller-feedback-and-waiting.md) explores
 returning problems to the exact caller without another escalation lifecycle.
-Its isolated mechanics PoC tests reporting while waiting and execution-failure
-feedback; source readiness, agent adoption and deployment remain separate.
+Its isolated PoC exercises Task and Conversation returns, reporting while
+waiting, and execution-failure feedback. Bounded live-agent trials now include
+human-help judgment and same-Task continuation after repair. The follow-up
+aligns Condition-owner schema guidance and the merged Task lifecycle docs;
+current-main integration, source promotion and deployment remain separate.
 
 The [unified-Task improvement trial](proposals/task-improvement-poc-20260912.md)
 extends agent-operated guidance work through a durable wait and Task-runtime/storage
