@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.0.0](https://github.com/hao1939/may-agent/compare/v2.0.0...v3.0.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** simplify Task contracts and runtime boundaries ([#168](https://github.com/hao1939/may-agent/issues/168))
+* **tasks:** replace implicit parent coordination with explicit returns ([#164](https://github.com/hao1939/may-agent/issues/164))
+
+### Features
+
+* **tasks:** return caller feedback while retaining durable waits ([#169](https://github.com/hao1939/may-agent/issues/169)) ([b1c7cbe](https://github.com/hao1939/may-agent/commit/b1c7cbef5a6efea5f494d2a44e4f9e861ab0dc59))
+
+
+### Bug Fixes
+
+* **recovery:** leave bounded call failures with their caller ([#178](https://github.com/hao1939/may-agent/issues/178)) ([7ee4aac](https://github.com/hao1939/may-agent/commit/7ee4aac642633753001199e30a1a5a057631f19f))
+* **scripts:** preserve truthful results and read-only inspection ([#172](https://github.com/hao1939/may-agent/issues/172)) ([f6a11d1](https://github.com/hao1939/may-agent/commit/f6a11d1c7d4dbbf9164fa99ba208b05670a6d6b4))
+* **tasks:** prevent duplicate wakes across workers and recovery ([#175](https://github.com/hao1939/may-agent/issues/175)) ([e38d286](https://github.com/hao1939/may-agent/commit/e38d2861f36803acaeadfaffe11b1efe3af749dd))
+* **tasks:** simplify workflow results and replay published facts ([#167](https://github.com/hao1939/may-agent/issues/167)) ([38a048d](https://github.com/hao1939/may-agent/commit/38a048da5c105bea91dc7163010d94483a60b747))
+
+
+### Code Refactoring
+
+* **core:** simplify Task contracts and runtime boundaries ([#168](https://github.com/hao1939/may-agent/issues/168)) ([c0cbb59](https://github.com/hao1939/may-agent/commit/c0cbb59e7245924e50ac0d2c6cd5a82232418964))
+* **tasks:** replace implicit parent coordination with explicit returns ([#164](https://github.com/hao1939/may-agent/issues/164)) ([8026aff](https://github.com/hao1939/may-agent/commit/8026aff97585edd7f728fa4ce360fdde71bc740a))
+
 ## [2.0.0](https://github.com/hao1939/may-agent/compare/v1.1.0...v2.0.0) (2026-09-12)
 
 
