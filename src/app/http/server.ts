@@ -40,6 +40,7 @@ import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "..
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
+import { getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -2715,6 +2716,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         ),
       );
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
+
+      // A recorded fact (including an App observation) does not promise work.
+      // Check the frozen route, also when a lost socket ack was recovered by ID.
+      const plan = trigger.eventId ? getAppEventAdmissionPlan(_db(), trigger.eventId) : null;
+      if (
+        !plan ||
+        plan.status === "superseded" ||
+        !plan.commands.some((route) => route.appId === projectId && route.status !== "superseded")
+      ) {
+        return json(
+          {
+            ok: false,
+            triggered: false,
+            eventId: trigger.eventId,
+            error: `App ${projectId} has no admitted route for project comments`,
+          },
+          503,
+        );
+      }
 
       return json(
         {

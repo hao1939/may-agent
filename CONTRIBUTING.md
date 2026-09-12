@@ -195,8 +195,8 @@ support branch protection or rulesets. These rules are therefore contributor
 policy, not enforced merge restrictions. Enabling paid-plan protection is an
 owner decision; never change visibility or billing to bypass that boundary.
 
-Deployment remains separate: use the installation's authorized maintenance App
-Task and documented deployment procedure. Current tooling still requires a
+Deployment remains separate: use the existing Host Operations App Task and
+documented deployment procedure. Current tooling still requires a
 canonical `may-agent` Task; no other App gains deployment authority from this
 wording. Never use the local production Compose file as a CI sandbox.
 

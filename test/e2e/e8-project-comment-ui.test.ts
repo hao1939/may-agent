@@ -8,8 +8,8 @@
  *      (`routeTo('/projects/' + 'platform')`) — not a full path.
  *   4. Clicking the row navigates to `/projects/platform` and resolves
  *      `_projectDetailPath` to `projects/platform`.
- *   5. Historical Markdown stays readable; comments without a loaded App are
- *      rejected visibly and the user's text is preserved.
+ *   5. Historical Markdown stays readable; comments without an admitted App
+ *      route are rejected visibly and the user's text is preserved.
  *   6. An ordinary App's declared subscription accepts a comment through HTTP
  *      and runs a Task. Repeating the same submission reuses its receipt.
  *   7. The shipped chat renderer handles Markdown/raw streaming, knowledge
@@ -83,7 +83,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
   beforeAll(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
-      fixtureProjects: ["comment.app"],
+      fixtureProjects: ["comment.app", "history.app"],
       fixtureWorkflows: { may: ["e2e-noop-workflow"] },
       cronJson: { may: [] },
       includePlatformUi: true,
@@ -242,6 +242,27 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       expect(readFileSync(PROJECT_FILE, "utf-8")).toBe(projectBefore);
       expect(readFileSync(DISC_FILE, "utf-8")).toBe(discussionBefore);
 
+      // A loaded App's observation is not an admission of the user's work.
+      await page.goto(`${base}/projects/history.app`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(
+        () => {
+          try { return _projectDetailPath === "projects/history.app" && !!document.getElementById("project-comment"); }
+          catch { return false; }
+        },
+        { timeout: 8000 },
+      );
+      await page.type("#project-comment", commentText);
+      const unownedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const unowned = await unownedResponse;
+      expect(unowned.status()).toBe(503);
+      expect(await unowned.json()).toMatchObject({ ok: false, triggered: false });
+      await page.waitForFunction(
+        () => /Failed:.*no admitted route/.test(document.getElementById("project-comment-status")?.textContent ?? ""),
+        { timeout: 5000 },
+      );
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(commentText);
+
       // 6. This App uses a declared comment subscription (like the maintenance
       // App), not generic message input. Keep that supported App policy path.
       await page.goto(`${base}/projects/comment.app`, { waitUntil: "domcontentloaded" });
@@ -286,9 +307,13 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
           metadata: { generation: 1 }, spec: { outcome: commentText },
         });
         const comments = queryEvents(db, { types: ["project.comment.created"] });
-        expect(comments).toHaveLength(1);
-        expect(comments[0].id).toBe(receipt.eventId);
-        expect(JSON.parse(comments[0].data!)).toMatchObject({ comment: commentText, project: "comment" });
+        expect(comments).toHaveLength(2);
+        const owned = comments.find((event) => event.id === receipt.eventId)!;
+        expect(JSON.parse(owned.data!)).toMatchObject({ comment: commentText, project: "comment" });
+        const unowned = comments.find((event) => event.id !== receipt.eventId)!;
+        expect(JSON.parse(unowned.data!)).toMatchObject({ comment: commentText, project: "history" });
+        expect(db.prepare("SELECT task_id FROM app_tasks WHERE app_id = ?").all("history")).toEqual([]);
+        expect(db.prepare("SELECT app_id FROM app_event_admission_commands WHERE event_id = ?").all(unowned.id)).toEqual([]);
         expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
         expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
       } finally { db.close(); }
