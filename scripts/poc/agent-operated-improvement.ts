@@ -530,7 +530,12 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
         executions += result.attemptCount - 1;
         assert(executions <= 12, "Model execution budget exhausted");
       }
-      recordExecution("improver", result, { objective, systemPrompt: prepared.systemPrompt });
+      recordExecution("improver", result, {
+        objective,
+        // Managed Tasks prepare their own prompt; the direct preparation is not
+        // execution evidence for them. Actual Task preparations live with their runs.
+        ...(operate ? { preparationEvidence: "task-trial.json" } : { systemPrompt: prepared.systemPrompt }),
+      });
       const finalSource = await inspectSource(baseline!);
       const recovery = reloadRecoveryEvidence(result.messages, injectedCallId, finalSource.head);
       checks.reloadRecovery = recovery;

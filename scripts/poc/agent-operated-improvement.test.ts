@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { reloadRecoveryEvidence } from "./agent-operated-improvement.js";
+import { validateActivationCondition } from "./task-improvement.js";
+import { normalizeTaskHandlerResult } from "../../src/app/core/tasks/result.js";
 
 function reloadRequests(...ids: string[]): AgentMessage {
   return {
@@ -130,11 +132,65 @@ for (const mode of ["direct", "task-resume", "task-withdraw"] as const)
         expect(task.restarted).toBe(true);
         expect(task.scopedToolsAfterPreparation).toBe(true);
         expect(task.noopWaitCheck).toBe(true);
+        expect(task.nonmatchingFactsIgnored).toBe(true);
         expect(task.controls.providerCalls).toBe(0);
         expect(task.controls.attempts).toBe(mode === "task-resume" ? 2 : 1);
-        expect(task.controls.forwardedReloadCalls).toBe(0); // Scripted judgment submits no reload.
-        if (mode === "task-withdraw") expect(task.lateTargetedWake).toBeNull();
-        else expect(task.inputs[0].status).toBe("done");
+        expect(task.controls.forwardedReloadCalls).toBe(mode === "task-resume" ? 1 : 0);
+        expect(task.executions).toHaveLength(task.controls.attempts);
+        expect(task.preparations).toHaveLength(task.controls.attempts);
+        for (const preparation of task.preparations) {
+          expect(typeof preparation.systemPrompt).toBe("string");
+          expect(preparation.tools).toEqual(
+            expect.arrayContaining(["fixture_read", "fixture_write", "definition_source", "finish"]),
+          );
+          expect(preparation.tools).not.toContain("write");
+          expect(preparation.tools).not.toContain("read");
+        }
+        expect(task.candidateSource.sourceCommit).not.toBe(task.initialSource.sourceCommit);
+        expect(task.candidateSource.activeCommit).toBe(task.initialSource.activeCommit);
+        // A wildcard or altered fixture-owned field must be rejected through the
+        // same result admission used by managed Tasks, not only by a test parser.
+        const first = task.executions[0].structuredResult;
+        const condition = first.conditions[0];
+        const closedWindow = task.executions[0].messages
+          .filter(
+            (message: { role: string; toolName?: string }) =>
+              message.role === "toolResult" && message.toolName === "definition_source",
+          )
+          .map((message: { content: { type: string; text: string }[] }) =>
+            JSON.parse(message.content.find((part) => part.type === "text")!.text),
+          )
+          .find((result: { state?: string }) => result.state === "waiting");
+        expect(closedWindow.condition).toEqual(condition);
+        expect(validateActivationCondition(condition)).toBeNull();
+        for (const patch of [
+          { expected: {} },
+          { expected: { field: "ready", equals: false } },
+          { type: "wrong" },
+          { subject: "id:another-window" },
+          { id: "other" },
+          { owner: "service:other" },
+          { reviewAfterMs: 60_000 },
+        ]) {
+          expect(
+            normalizeTaskHandlerResult(
+              { ...first, conditions: [{ ...condition, ...patch }] },
+              { type: "done", summary: "fixture", runId: null },
+              { validateCondition: validateActivationCondition },
+            ).resultRejected,
+          ).toBe(true);
+        }
+        if (mode === "task-withdraw") {
+          expect(task.lateTargetedWake).toBeNull();
+          expect(task.withdrawnSource).toEqual(task.candidateSource);
+        } else {
+          expect(task.inputs[0].status).toBe("done");
+          expect(task.inputs[0].result.result).toEqual({ accepted: true });
+          expect(task.finalSource).toEqual({
+            sourceCommit: task.candidateSource.sourceCommit,
+            activeCommit: task.candidateSource.sourceCommit,
+          });
+        }
       }
     } finally {
       try {

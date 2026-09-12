@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { defineApp, Type, type Condition } from "@may-agent/sdk";
+import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { HostCapacity } from "../../src/app/core/scheduling/host-capacity.js";
@@ -34,6 +36,10 @@ const condition: Condition = {
   reviewAfterMs: 3_600_000,
 };
 
+export function validateActivationCondition(value: Condition): string | null {
+  return isDeepStrictEqual(value, condition) ? null : "must use the exact fixture activation Condition";
+}
+
 export function taskImprover(withdraw = false): ImprovementRunner {
   return async ({ definition, objective, root, live }) => {
     // Separate state from the temporary source daemon; only this Task runtime is restarted.
@@ -58,7 +64,10 @@ export function taskImprover(withdraw = false): ImprovementRunner {
     };
     const read = () => JSON.parse(readFileSync(journalPath, "utf8")) as Controls;
     const change = (patch: Partial<Controls>) => writeFileSync(journalPath, JSON.stringify({ ...read(), ...patch }));
-    writeFileSync(journalPath, JSON.stringify({ ready: false, attempts: 0, providerCalls: 0, forwardedReloadCalls: 0 }));
+    writeFileSync(
+      journalPath,
+      JSON.stringify({ ready: false, attempts: 0, providerCalls: 0, forwardedReloadCalls: 0 }),
+    );
     const report: Record<string, unknown> = {
       live,
       withdraw,
@@ -66,6 +75,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       passed: false,
       events: [],
       executions: [],
+      preparations: [],
       harnessSha256: createHash("sha256")
         .update(readFileSync(import.meta.filename))
         .digest("hex"),
@@ -81,8 +91,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       inputSchema: Type.Object({ kind: Type.Literal("improve"), data: Type.Object({}) }),
       tasks: {
         maxConcurrent: 1,
-        validateCondition: (value) =>
-          value.type === condition.type && value.subject === condition.subject ? null : "has no fixture producer",
+        validateCondition: validateActivationCondition,
       },
       task: () => ({
         kind: "desired",
@@ -151,6 +160,19 @@ export function taskImprover(withdraw = false): ImprovementRunner {
     await assert.rejects(reader.execute("denied", { path: "improvement-runtime/fixture-controls.json" }));
     await assert.rejects(writer.execute("denied", { path: "evidence/accepted-policy.json", content: "{}" }));
     report.scopedToolsAfterPreparation = true;
+    const source = scoped.find((tool) => tool.name === "definition_source")!;
+    const inspectSource = async () => {
+      const result = await source.execute("inspect", { action: "status" });
+      const content = result.content.find((item) => item.type === "text");
+      assert(content?.type === "text");
+      const { sourceCommit, activeCommit, dirty } = JSON.parse(content.text);
+      assert.equal(typeof sourceCommit, "string");
+      assert.equal(typeof activeCommit, "string");
+      assert.equal(dirty, "");
+      return { sourceCommit, activeCommit };
+    };
+    const initialSource = await inspectSource();
+    report.initialSource = initialSource;
     const profiledAttempts = new Set<string>();
     let notify: (() => void) | undefined;
     async function start() {
@@ -176,9 +198,75 @@ export function taskImprover(withdraw = false): ImprovementRunner {
         projectRoot: work,
         bus,
         agentRunFactory(config) {
+          const attempt = read().attempts;
+          (report.preparations as unknown[]).push({
+            attempt,
+            systemPrompt: config.initialState?.systemPrompt,
+            tools: config.initialState?.tools?.map((tool) => tool.name),
+          });
+          // Substitute provider judgment only; execute the real managed tool loop,
+          // finish schema and result adapter in both live and no-model modes.
+          const scripted: { name: string; arguments: Record<string, unknown> }[] =
+            attempt === 1
+              ? [
+                  { name: "fixture_read", arguments: { path: "evidence/accepted-policy.json" } },
+                  {
+                    name: "fixture_write",
+                    arguments: {
+                      path: "agents/may/AGENTS.md",
+                      content: readFileSync(join(root, "agents/may/AGENTS.md"), "utf8") + "Synthetic Task candidate.\n",
+                    },
+                  },
+                  { name: "definition_source", arguments: { action: "commit", paths: ["agents/may/AGENTS.md"] } },
+                  { name: "definition_source", arguments: { action: "reload" } },
+                ]
+              : [{ name: "definition_source", arguments: { action: "reload" } }];
+          scripted.push({
+            name: "finish",
+            arguments: {
+              status: "success",
+              summary: "Scripted judgment, real managed execution",
+              verification_evidence: ["Fixture checks"],
+              result: {
+                state: attempt === 1 ? "waiting" : "converged",
+                summary: "Scripted judgment, real managed execution",
+                evidence: ["fixture"],
+                actions: [],
+                ...(attempt === 1
+                  ? { conditions: [condition], result: { checkpoint: "candidate saved" } }
+                  : { result: { accepted: true } }),
+              },
+            },
+          });
+          let step = 0;
           return createAgentRun({
             ...config,
             streamFn(selected, context, options) {
+              if (!live) {
+                const previous = context.messages.at(-1);
+                if (previous?.role === "toolResult") assert(!previous.isError, "Scripted capability call failed");
+                const call = scripted[step++];
+                const message: AssistantMessage = {
+                  role: "assistant",
+                  content: call ? [{ type: "toolCall", id: `script-${attempt}-${step}`, ...call }] : [],
+                  api: selected.api,
+                  provider: selected.provider,
+                  model: selected.id,
+                  usage: {
+                    input: 0,
+                    output: 0,
+                    cacheRead: 0,
+                    cacheWrite: 0,
+                    totalTokens: 0,
+                    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+                  },
+                  stopReason: call ? "toolUse" : "stop",
+                  timestamp: Date.now(),
+                };
+                const stream = createAssistantMessageEventStream();
+                stream.push({ type: "done", reason: call ? "toolUse" : "stop", message });
+                return stream;
+              }
               const used = read().providerCalls + 1;
               change({ providerCalls: used });
               if (used > 40) throw Error("Fixture improver provider allowance exhausted (retained across reopen)");
@@ -204,7 +292,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       };
       const backends = createTaskExecutionBackends({ manager, bus, persistDir });
       const agents = backends.agents!;
-      // Scripted preflight replaces judgment only. Live mode uses the shipped managed agent adapter.
+      // Both modes use the shipped managed adapter. Only provider judgment differs.
       const wrapped = {
         ...agents,
         snapshot() {
@@ -217,19 +305,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
           console.log(JSON.stringify({ event: "improvement-attempt", number, live }));
           // The Task adapter supplies its own timeout; registration alone does
           // not override that value. Apply the experiment's tighter bound here.
-          if (live) return agents.execute({ ...input, executionTimeoutMs: 300_000 });
-          return {
-            runId: null,
-            handlerResult: {
-              state: number === 1 ? ("waiting" as const) : ("converged" as const),
-              summary: "Scripted lifecycle check, not model evidence",
-              evidence: ["fixture"],
-              actions: [],
-              ...(number === 1
-                ? { conditions: [condition], result: { checkpoint: "candidate saved" } }
-                : { result: { accepted: true } }),
-            },
-          };
+          return agents.execute({ ...input, executionTimeoutMs: 300_000 });
         },
       };
       await installAppTaskRuntimes({
@@ -313,7 +389,11 @@ export function taskImprover(withdraw = false): ImprovementRunner {
         "waiting",
         "Agent must save a real wait instead of polling or claiming success",
       );
-      const candidate = await fixtureGit(root, ["rev-parse", "HEAD"]);
+      const candidateSource = await inspectSource();
+      report.candidateSource = candidateSource;
+      assert.notEqual(candidateSource.sourceCommit, initialSource.sourceCommit, "No committed candidate");
+      assert.equal(candidateSource.activeCommit, initialSource.activeCommit, "Candidate activated before readiness");
+      const candidate = candidateSource.sourceCommit;
       const before = read();
       assert.equal(before.forwardedReloadCalls, 0);
       await runtime.close();
@@ -326,7 +406,20 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       assert.equal(reopened.metadata.generation, task.metadata.generation);
       assert.equal(reopened.status.observedAttemptId, task.status.observedAttemptId);
       assert.deepEqual(reopened.status.result, task.status.result);
+      assert.deepEqual(await inspectSource(), candidateSource, "Reopen changed committed or active source");
       if (!live) {
+        // Neither the right subject with a false predicate nor another subject
+        // may open this Task's exact wait.
+        for (const data of [
+          { id: "guidance-window", ready: false },
+          { id: "another-window", ready: true },
+        ])
+          runtime.bus.emit({
+            type: condition.type,
+            source: "fixture-window",
+            owner: condition.owner,
+            data,
+          } as unknown as AgentEvent);
         // Exercise a real redundant wake while the Condition is still open.
         // Its profiling record must not satisfy the next attempt's barrier.
         await new Promise<void>((resolve, reject) => {
@@ -346,6 +439,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
         });
         assert.equal(read().attempts, 1);
         report.noopWaitCheck = true;
+        report.nonmatchingFactsIgnored = true;
       }
       if (withdraw) {
         report.withdrawal = runtime.tasks.cancel({
@@ -378,11 +472,14 @@ export function taskImprover(withdraw = false): ImprovementRunner {
         assert(runtime.store.isCancelled("improve-guidance"));
         assert.equal(read().attempts, 1);
         assert.equal(read().forwardedReloadCalls, 0);
+        report.withdrawnSource = await inspectSource();
+        assert.deepEqual(report.withdrawnSource, candidateSource, "Withdrawal must retain the inactive candidate");
       } else {
         await profiled(2);
         const finished = runtime.store.readTask("improve-guidance")!;
         report.finalTask = finished;
-        assert.equal(runtime.store.readAttempt(finished.status.observedAttemptId!)?.acceptedResult?.state, "converged");
+        const accepted = runtime.store.readAttempt(finished.status.observedAttemptId!)?.acceptedResult;
+        assert.equal(accepted?.state, "converged");
         assert.equal(finished.metadata.generation, task.metadata.generation);
         assert.notEqual(finished.status.observedAttemptId, task.status.observedAttemptId);
         assert(!runtime.store.isCancelled("improve-guidance"), "An accepted outcome must not close its Task");
@@ -391,6 +488,11 @@ export function taskImprover(withdraw = false): ImprovementRunner {
         assert.equal((report.inputs as unknown[]).length, 1, "Resume must not manufacture another ask");
         const input = listAppInboxItems(runtime.db, { appId: "lab" })[0]!;
         assert.equal(input.status, "done");
+        assert(input.result && accepted, "Accepted work must return a result to the original input");
+        assert.equal(input.result.summary, accepted.summary);
+        assert.equal(input.result.response, accepted.response);
+        assert.deepEqual(input.result?.result, accepted?.result, "Original input must receive the accepted payload");
+        if (!live) assert.deepEqual(input.result?.result, { accepted: true });
         assert.deepEqual(input.waitingOn, { kind: "task", id: "improve-guidance" });
         const admission = runtime.store.readTaskContext({ taskIds: [], admissionIds: [`task:${input.id}`] })
           .appTaskAdmissions?.[`task:${input.id}`];
@@ -413,6 +515,8 @@ export function taskImprover(withdraw = false): ImprovementRunner {
           controlKey: "accept-and-close",
         });
         assert(runtime.store.isCancelled("improve-guidance"));
+        report.finalSource = await inspectSource();
+        assert.deepEqual(report.finalSource, { sourceCommit: candidate, activeCommit: candidate });
       }
       report.controls = read();
       report.passed = true;

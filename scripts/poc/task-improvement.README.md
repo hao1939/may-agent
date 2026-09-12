@@ -57,11 +57,16 @@ reopen. Committed source is retained, not activated or deleted.
   one baseline: twelve model executions. Each improver attempt is bounded to
   300 seconds, each target to 60 seconds. Up to forty improver provider requests
   are counted across runtime reopen; this is not production spending policy.
-- No-model mode scripts judgment only. It verifies real lifecycle mechanics and
-  effective tool restrictions; it does not prove agent judgment or target adoption.
+- No-model mode substitutes scripted provider replies, not Task results. The
+  actual managed loop reads/writes guidance, commits, encounters the closed
+  activation window, finishes with a wait, then resumes and reloads. It proves
+  mechanics and binding, not agent judgment or useful target behavior.
 - Both `results.json` and `task-trial.json` matter. The latter covers Task
   mechanics; the former includes independent final behavior checks. Temporary
   artifacts are retained for review, not publication.
+- Task runs retain their actual prepared system prompts and tool names in
+  `task-trial.json`; their aggregate entry does not claim the unused direct
+  prompt. Each execution retains its own messages.
 - `forwardedReloadCalls` counts calls passed to the reload adapter, including
   its injected rejection, not successful activations. Source and target evidence
   in `results.json` establish activation and behavior separately.
@@ -75,6 +80,14 @@ assume its implementation survives workspace rebinding.
 Task recovery also profiles no-op wait checks. The harness waits for distinct
 actual attempt IDs, not arbitrary profiling events. The preflight exercises a
 real redundant wake while waiting to retain that regression.
+
+Readiness uses the exact Condition returned by the fixture, including its
+predicate. No-model checks reject altered/wildcard Conditions through normal
+result admission and publish false-predicate and wrong-subject facts before a
+no-op wake. Neither may start the next attempt. Source checks compare the
+committed candidate and active revision before and after reopen/withdrawal.
+The original input must return the accepted summary, response and result
+payload; the scripted success payload is exactly `{ accepted: true }`.
 
 ## Observed trials (September 12, 2026)
 
