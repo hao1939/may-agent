@@ -164,7 +164,10 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
   };
 }
 
-/** Canonical durable Task event envelope plus its event-journal identity. */
+/**
+ * Convert the live EVENT_ROW_ID symbol to serializable eventId before admission.
+ * Receipt lookup and pending-input comparisons below use this stored envelope.
+ */
 function canonicalTaskEvent(event: AgentEvent): Record<string, unknown> {
   const canonical = canonicalAppEvent(event) as Record<string, unknown>;
   const envelope = event as unknown as Record<string, unknown>;

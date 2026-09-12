@@ -4344,6 +4344,105 @@ describe("canonical App task runtime", () => {
     },
   );
 
+  it("admits the first broadcast Condition fact and retains its identity through settlement", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const writer = new DbWriter(join(f.root, "state"));
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const taskId = "work/broadcast-condition";
+    let calls = 0;
+    const { installed } = await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        receiver: async () => {
+          calls += 1;
+          return calls === 1
+            ? {
+                state: "waiting",
+                summary: "Await pipeline completion",
+                facts: [],
+                conditions: [
+                  {
+                    id: "pipeline",
+                    type: "pipeline-run.state",
+                    subject: "pipeline-run:42",
+                    expected: "completed",
+                    owner: "app:sample",
+                    reviewAfterMs: 60_000,
+                  },
+                ],
+              }
+            : { state: "converged", summary: "Pipeline observed", facts: ["fixture:pipeline-42"] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "broadcast-condition",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Observe pipeline completion",
+        acceptance: ["Pipeline completed"],
+        executor: "receiver",
+      },
+    });
+    const receivedBefore: boolean[] = [];
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "pipeline-run.state") return;
+      const eventId = event[EVENT_ROW_ID];
+      expect(eventId).toBeGreaterThan(0);
+      expect((event as unknown as Record<string, unknown>).eventId).toBeUndefined();
+      receivedBefore.push(config.resourceStore.hasTaskEvent(taskId, { eventId }));
+      return admitStandaloneCanonicalAppTaskEvent({
+        descriptor: installed[0]!,
+        event,
+        intent: null,
+        conditionTaskIds: [taskId],
+      }).delivery;
+    });
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    await run();
+    expect(calls).toBe(1);
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "waiting",
+      summary: "Await pipeline completion",
+    });
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    const event = bus.emit({
+      type: "pipeline-run.state",
+      source: "fixture",
+      owner: "app:sample",
+      data: { pipelineRunId: "42", state: "completed" },
+    } as AgentEvent);
+    const eventId = event[EVENT_ROW_ID]!;
+    expect(receivedBefore).toEqual([false]); // No exact target: Condition admission creates the first receipt.
+    expect(config.resourceStore.readTrigger(taskId)?.events?.map(({ event }) => event.eventId)).toEqual([eventId]);
+    bus.redeliverPersisted(event, eventId);
+    expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
+    await run();
+    expect(calls).toBe(2);
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Pipeline observed");
+    bus.redeliverPersisted(event, eventId);
+    expect(receivedBefore).toEqual([false, true, true]);
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    await run();
+    expect(calls).toBe(2);
+  });
+
   it("keeps late repeated worker publications consumed after child settlement", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4376,6 +4475,8 @@ describe("canonical App task runtime", () => {
     const woken: string[][] = [];
     bus.subscribeDurableRoute((event) => {
       if (event.type !== "sample.observed") return;
+      expect(event[EVENT_ROW_ID]).toBeGreaterThan(0);
+      expect((event as unknown as Record<string, unknown>).eventId).toBeUndefined();
       settledAtRelay.push(
         acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary === "Worker settled before relay",
       );

@@ -439,6 +439,7 @@ export function trackAppTaskConditionEventForTasks(
   // this read invalidates the mutation instead of reintroducing consumed input.
   const tree = config.resourceStore.readTaskContext({ taskIds: allowed }, { includeHistory: false, childLimit: 0 });
   for (const taskId of allowed) {
+    // First delivery stays allowed; only a consumed receipt removes a Task.
     if (!config.resourceStore.hasTaskEvent(taskId, event)) continue;
     // Worker publication links input before first relay/Condition matching.
     const pending = tree.taskTriggers?.[taskId];
