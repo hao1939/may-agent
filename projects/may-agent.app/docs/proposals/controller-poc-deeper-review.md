@@ -13,7 +13,7 @@ owner withdrawal and reconsider evidence when the human changes the question.
 The source should also become smaller. The first follow-up did not go far enough:
 it shared execution while retaining old admission, return and recovery contracts.
 The [source investigation below](#why-the-source-stayed-large) identifies those
-costs and tests one contract reduction. Model execution cost remains a separate
+costs and tests two contract reductions. Model execution cost remains a separate
 measurement from source size.
 
 Three small changes improve the candidate:
@@ -45,7 +45,7 @@ The source at `f2683274` shows three concrete causes:
 | Delegation has several return protocols | Direct children use `project.task.child-transitioned`; `admitTaskAppDependencies()` translates input publication into inbox waits and Conditions; human follow-up uses Topic links and `admitConversationTaskChange()`. Each has its own discovery and correlation checks. | Extend the existing admission link with the caller Task and use one exact result-return route. Human Requests and Topics remain context and product records. |
 | Session completion can substitute for Task settlement | `consumePersistedTerminalAgentResult()` reconstructs a claim and applies actions/results from a session artifact during startup or a busy claim. Normal execution separately handles dependency admission, verification and settlement. | Accept only at the normal Task settlement boundary. Retry uncommitted execution using retained evidence. |
 
-For example, ordinary delegation currently travels through:
+At that revision, ordinary delegation travelled through:
 
 ```text
 A proposes typed input for B
@@ -65,12 +65,13 @@ A proposes typed input for B
 Events still connect components. A timer rediscovers missing notifications from
 accepted state. An event is not a reason to split one local SQLite transaction
 into several separately recoverable steps. Admission publication can retain its
-existing durable journal replay if loading or mapping fails before acceptance.
+existing durable receipt. Direct input routes do not all have automatic journal
+redelivery: the implementation below retains the input row for admission recovery.
 
 This also requires dropping an expensive promise: after input is attached,
 rerunning the App mapper must not silently replace its responsible Task.
-`#replacementTaskAttachment()` currently supports that behavior and recovery
-keeps looking for it. The assigning owner can revise or close work explicitly.
+The former `#replacementTaskAttachment()` supported that behavior and recovery
+kept looking for it. The assigning owner can revise or close work explicitly.
 Changing admission and result reads together is necessary before deleting the
 inbox pump; removing the pump alone would strand ordinary inputs.
 
@@ -120,13 +121,77 @@ Design checks and 66 changed-document links pass. Hosted checks on the pushed
 revision are pending. The earlier live trials retain their original revisions;
 this source experiment makes no new model-cost or deployment claim.
 
+## Direct admission cleanup
+
+The next source slice removes the ordinary inbox worker as well. Its flow is:
+
+```text
+input event -> saved input -> synchronous App mapping
+            -> Task admission + exact input link (one SQLite commit)
+Task attempt -> accepted outcome
+             -> event or recovery scan -> exact input-result projection
+             -> existing caller dependency event
+```
+
+There is no inbox execution claim, lease renewal, capacity reservation or pump.
+`AppInboxHost` validates and maps input. `admitTaskRequest()` commits the Task,
+its exact input admission and applicable Topic/Request links. The Task runtime
+starts execution after that commit and owns all attempt pacing and recovery.
+An attached input is immutable: App reload cannot remap it to another Task.
+Owner revision, distinct follow-up input and closure remain explicit actions.
+Ordinary admission carries typed input, caller identity and trusted human origin.
+Human Conversation context is assembled by the declared Task capability, rather
+than enriching every ordinary input through a conversational inbox wrapper.
+
+Mapping or Task-admission failure leaves the saved input pending and reports a
+normal `handler.failed` fact. The existing recovery timer retries one page of
+64 unadmitted inputs and checks up to 256 exact result links, yielding between
+items. A partial index keeps the admission scan off completed history. No input
+retry counter, new queue or model call is needed. Disabled App rows do not starve
+later pages. Startup/reload and normal Task execution retain their existing roles.
+A receipt acknowledges saved input; it does not claim successful Task admission.
+
+The result copy is a read projection. Task acceptance no longer writes an inbox
+ready flag, and an unavailable projection cannot roll back the Task result.
+Failure reports keep input unfinished while the same Task retries. An accepted
+answer uses that input's saved admission key, never the Task's latest cycle.
+Explicit owner closure can be reported without inventing an answer. Neither an
+input result nor that report fulfills a human Request automatically.
+
+Historical split admissions reuse their exact stored identity. A missing input
+key is backfilled only when one historical admission matches; ambiguity remains
+visible for repair. Old rows remain readable. Expired ordinary result-projection claims are fenced
+and cleared without remapping; a fresh old claim is left alone. Historical
+Conversation execution requires
+the existing stopped-Host cutover; removing their runtime APIs does not authorize
+running old and new Hosts together. Test-only helpers construct old row shapes
+for read/control and cutover checks; they are absent from production imports.
+
+The accepted costs are synchronous mapping and a short SQLite admission on the
+publication path, plus up to the existing recovery interval before a failed
+mapping or missed result projection is retried. App mapping must stay pure and
+quick. Large event fan-out still uses the existing frozen admission worker.
+Input addressed to a closed or missing Task stays pending with a diagnostic;
+there is no automatic remapping or successful response for unapplied input.
+Owner repair is needed if the target can never accept that input.
+
+Source checks cover atomic admission/link rollback, competing processes,
+crash-before/after commit, lost-notification recovery, later-cycle identity,
+continuing failure/backoff, mixed inputs and restart. Against the preceding `2d837d20`, this cleanup removes **988 net production
+TypeScript lines** (300 added, 1,288 removed under `src/` and `packages/`, excluding
+tests). A 254-line test-only helper retains historical row construction for
+upgrade/read coverage; it is not another runtime. Full `bun run ci` at
+**`84cb6364`** passes: **2,852 passed, 3 installation-dependent skips, 0 failures**
+(2,855 tests across 290 files, 133 seconds). Types, architecture and lint pass.
+Design checks and 51 changed-document links pass. Hosted checks on the pushed
+revision are pending.
+This is a mechanical source experiment; it adds no live model or deployment claim.
+
 ## Next deletion, in order
 
-First remove the ordinary inbox handling lifecycle. Prove one ordinary App input
-through direct admission, worker execution, exact result read and restart, then
-move remaining producers and delete claim/renew/wait/reclaim code. Keep the
-existing receipt for publication and input identity; execution belongs to its
-Task. Request fulfillment still requires the appropriate explanation.
+The ordinary inbox worker and session-result acceptance path are now removed in
+the source candidate. The exact input-result projection remains a separate saved
+view, and delegation still has several result-return protocols.
 
 Then make human follow-up and nested delegation use that same saved return link.
 Prove **A → B → C → B → A**, concurrent human input, owner withdrawal and a result
@@ -144,8 +209,8 @@ consumers and retained child waits before any deletion.
 Only then reconsider the remaining tree scheduling and mutable snapshot writes.
 Measure deleted state transitions and branches, not just moved lines. Each slice
 should name the old contract it retires, the code that disappears and the cost
-we accept. The inbox and return-link changes above remain proposed; the current
-source experiment implements the recovery removal only.
+we accept. The return-link and raw child-spec changes remain proposed; the current source
+experiment removes session-result recovery and the ordinary inbox worker.
 
 ## What the live trials established
 

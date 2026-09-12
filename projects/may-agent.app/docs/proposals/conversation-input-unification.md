@@ -347,8 +347,8 @@ tracks what the candidate has implemented and verified.
 | Source boundary | Change to prove |
 | --- | --- |
 | [`core/tasks/controller.ts`](../../../may-agent/src/app/core/tasks/controller.ts) and [`queue.ts`](../../../may-agent/src/app/core/tasks/queue.ts) | Reuse queue, capacity wait, wake-during-run and drain; extend execution controls without a parallel Conversation controller |
-| [`composition/app-inbox-runtime.ts`](../../../may-agent/src/app/composition/app-inbox-runtime.ts) | Remove conversation execution pump/capacity/recovery after Task admission replaces it. It also serves ordinary App inputs: retain necessary admission/correlation or move those callers before deleting the whole pump |
-| [`core/state/app-inbox-store.ts`](../../../may-agent/src/app/core/state/app-inbox-store.ts) and [`core/inbox/app-inbox-host.ts`](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) | Current claims select input by App and exclude busy Conversations. Move execution authority to the exact conversation Task; retain ordered input, caller correlation and durable Stop evidence without a second executing claim |
+| [`composition/app-inbox-runtime.ts`](../../../may-agent/src/app/composition/app-inbox-runtime.ts) | Direct input admission, events and bounded admission/result recovery; the inbox execution pump and its capacity lane are removed in the source candidate |
+| [`core/state/app-inbox-store.ts`](../../../may-agent/src/app/core/state/app-inbox-store.ts) and [`core/inbox/app-inbox-host.ts`](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) | Retain input identity, caller correlation and readable historical evidence. Task admission owns execution; no inbox claims or lease renewal remain in production |
 | [`core/tasks/app-task-reconciler.ts`](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts) | Remove mode-dependent completion/reopening/stop rules after explicit outcome and closure behavior works. Today `achieve` cannot converge with live children, generic cancellation rejects `maintain`, and handler `stopped` is restricted to finite leaf Tasks |
 | Former `core/state/conversation-outcomes.ts` boundary | Reuse Request revision and explanation checks inside fenced Task settlement; retire the supervisor's separate projection/response path |
 | SDK types, readers, cleanup and App removal | Audit consumers of `done`, `converged`, receipts and mode. Accepted result, pending work and closed resource must stay distinguishable; an idle owner must not pin capacity or an execution workspace forever |
@@ -430,12 +430,13 @@ Keep existing homes and move authority, then delete replaced code:
 | `composition/` | Wire capabilities, Task-link routes and bounded timer discovery; no domain judgment or duplicate execution pump |
 | `packages/sdk/`, `projects/may.app/` and `agents/may/` | Minimal public contract changes and App conventions; remove the separate follow-up Task declaration and prompt |
 
-Shared execution is not the end of simplification. Ordinary App inputs still
-retain an inbox handling pump, and delegation retains several return protocols.
-The [next deletion sequence](controller-poc-deeper-review.md#next-deletion-in-order)
-targets direct Task admission and one saved return link before deleting those
-paths. This is pending work, not a claim that the candidate has already removed
-all inbox claims or unified every result adapter.
+Shared execution is not the end of simplification. The
+[direct admission cleanup](controller-poc-deeper-review.md#direct-admission-cleanup)
+removes ordinary inbox claims, pump, capacity and remapping from the candidate.
+It retains input receipts, an exact result projection and bounded recovery of
+failed admissions or missed result notifications. Delegation still has several
+return protocols; the [next deletion sequence](controller-poc-deeper-review.md#next-deletion-in-order)
+targets one saved caller link before unifying those routes.
 
 One controller implementation can serve independent Task keys concurrently.
 Do not serialize the Host globally or require generic Tasks to carry Conversation,

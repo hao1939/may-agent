@@ -117,7 +117,10 @@ decision and preserves evidence without inferring responsibility lifetime.
 This lifecycle and the shared-input route are implemented in the unmerged
 [Host PR #158](https://github.com/hao1939/may-agent/pull/158) candidate. They are
 not yet the released protocol; the proposal records the paired App and cutover
-requirements.
+requirements. The candidate now also uses direct admission for ordinary App input:
+a saved input and its Task link replace inbox execution claims. The
+[cleanup review](../proposals/controller-poc-deeper-review.md#direct-admission-cleanup)
+records failure recovery, exact result projection and the accepted costs.
 
 A simple task may converge on its first bounded attempt. Harder work keeps the
 same task identity across exact waits and later attempts:
