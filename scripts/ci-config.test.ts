@@ -52,6 +52,7 @@ describe("portable CI contract", () => {
   });
 
   it("includes script regressions but keeps installation checks explicit", () => {
+    expect(existsSync(new URL("scripts/poc", root))).toBe(false);
     const scripts = JSON.parse(read("package.json")).scripts;
     expect(scripts.test).toContain("scripts/");
     expect(scripts.test).not.toContain("test/deployment/");

@@ -29,8 +29,9 @@ it; action fencing and rollback tests now mutate existing fixture assignments.
 App delegation, nested A → B → C → B → A, continued human input, and reopen.
 Hierarchy-specific reconciler/state fixtures declare their children through App
 intent; they prove retained parent/child behavior, not typed delegation.
-The early `follow-through.ts` model harness is retired; use
-`scripts/poc/controller-judgment/shared-loop.ts` for the broader opt-in trial.
+Completed model harnesses are retired. Their versioned reproduction references
+and findings are linked from the [script guide](../scripts/README.md#retired-experiments).
+Portable runtime tests do not claim to reproduce model judgment.
 
 
 Conversation is a Task's human-facing role. Tests exercise its handler through
@@ -133,11 +134,23 @@ candidate-to-candidate restarts. The separate old-version trial below crosses
 the actual daemon boundary.
 
 For an opt-in old-source cutover trial, use a clean, dependency-installed Host
-checkout with the prior lifecycle:
+checkout at `a8f6518855aa5f85a697468665269124dda30479` and the candidate checkout:
 
 ```sh
-bun scripts/poc/task-runtime-cutover.ts --legacy-source /path/to/old-host --out /tmp/task-cutover-report
+bun scripts/migrations/task-state-cutover.ts --legacy-source /path/to/old-host
+bun scripts/migrations/task-runtime-cutover.ts --legacy-source /path/to/old-host --out /tmp/task-cutover-report
 ```
+
+Use a new report directory. The first command creates/deletes temporary state
+and prints a JSON verdict; the second retains its synthetic report. They are
+upgrade-verification tools, not commands to migrate an installation. Keep them
+while upgrading from that lifecycle is supported; deliberate withdrawal of that
+support, not an arbitrary expiry date, is their retirement boundary.
+
+`test/e2e/e5-source-activation.test.ts` owns the no-model daemon reload regression:
+committed source is not automatically active, successful activation is correlated
+to its exact request, and rejected source leaves the active release intact.
+Source-store unit checks remain in `src/app/app-source-release.test.ts`.
 
 This Linux harness starts the old daemon with temporary Apps and a local
 scripted provider. It retains an accepted reply/Request, holds the next human

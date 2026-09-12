@@ -1,41 +1,101 @@
 # Script guide
 
-Start with `bun run ci` for source verification. Scripts are not all safe to
-run as tests: some require an installed App tree, live state, or model access.
-Current design and operating procedures live in `may-agent.app/docs`, not here.
+Start with `bun run ci` for portable source verification. Build, diagnosis,
+deployment and model evaluation are different operations. Design and operating
+procedures live in the sibling `may-agent.app/docs` tree; routine CI does not
+need that tree, an installed App, credentials or a running May.
 
-| Purpose | Entry points | Boundary |
+## Maintained commands
+
+Run commands below from the Host checkout unless stated otherwise.
+
+| Purpose | Command / files | Inputs, output and effects |
 | --- | --- | --- |
-| Source checks | `bun run ci`, `check:canonical-app-boundary`, `check:event-graph` | No live installation required for CI. |
-| Build | `build-runtime-binary.ts`, `build-webui.ts`, `build-image.sh` | Builds are not deployments. Use `MAY_AGENT_UI_OUTPUT_DIR` to keep UI output in an isolated checkout. |
-| Image verification | `ci-container-smoke.sh` | Disposable candidate container with fixture agents; no host mounts or desktop stack. |
-| Diagnostics | `sample-runtime-quiet.ts`, `event-graph-check.ts`, `log-viewer.html` | Select the intended installation; do not confuse source fixtures with live evidence. |
-| Installed-App operations | `deploy.sh`, `deploy-receipt.ts` | Read each tool's usage and the operating manual. State changes require explicit task/owner authority. |
-| Gym compatibility | `gym-run.sh`, `gym-baseline.sh`, `gym-batch.sh`, `gym-record.ts` | Existing sibling consumers remain. Scenario execution calls models; baseline/recording writes `.state/may.db`. Only `gym-run.sh --list` and `gym-batch.sh --help` are read-only discovery. |
-| Manual diagnostics and experiments | `poc/`, `benchmark-human-task-interface.ts`, `smoke-steering.ts` | May call models, send messages, or change state. Not part of PR CI; use an authorized disposable installation. |
+| Source verification | `bun run ci`; `check-canonical-app-boundary.ts` | Host/SDK types, lint and portable tests. Optional `MAY_AGENT_VERIFY_APPS_ROOT` extends the boundary scan to supplied Apps; Host-only CI does not certify them. |
+| App/artifact compatibility | `MAY_AGENT_VERIFY_APPS_ROOT=/path/to/projects MAY_AGENT_VERIFY_SDK_ROOT=/path/to/sdk bun run verify:apps-artifact` | Loads supplied App source against an explicit SDK, reports compatibility, removes temporary bundle caches. Not deployment. |
+| Binary build | `bun run bundle`; `build-runtime-binary.ts` | Generates `bundle/may-agent` and UI staging output using this checkout and its build revision. Does not restart an installation. |
+| UI build | `bun run ui:sync`; `build-webui.ts` | Copies `packages/webui/static` to ignored **`bundle/platform-ui`** by default. `MAY_AGENT_UI_OUTPUT_DIR` selects another staging directory. The selected output is replaced recursively; never point it at source or installation data. `deploy.sh` supplies an explicit release staging directory. |
+| Image build | `bun run build`; `build-image.sh` | Requires Docker and writes a local image using the container build definition. No publication or deployment. |
+| Image selection / smoke | `ci-container-needed.sh`; `ci-container-smoke.sh IMAGE` | CI passes NUL-delimited changed paths to the selector. Smoke checks the disposable candidate image's readiness, UI and CLI protocol; no installation mounts, model calls or deployment. |
+| CLI protocol verification | `bun run check:codex-goal-protocol` | Requires the pinned Codex CLI. Generates schemas in temporary storage, compares `codex-goal-protocol.snapshot.json`, removes temporary output, exits nonzero on drift. Support code/tests are `codex-goal-protocol*`. No model call. See executor README and CONTRIBUTING for upgrades. |
+| Deployment | `MAY_AGENT_DEPLOY_TASK_ID=TASK_ID bun run deploy`; `deploy-receipt.ts` | Host Operations App authority and an exact open Task are required. Builds/stages a release, restarts through the supported restarter and writes correlated receipts. This changes installed state: use the operations manual, not as a test command. |
+| Event integrity | `bun run check:event-graph -- --state-dir /path/to/state` | Inspects an **existing** `may.db` read-only, prints a JSON report and fails on missing/incompatible state or integrity defects. `--limit` bounds the scan. Only explicit `--backfill` writes repairs. SQLite may create reader sidecars; inspection does not initialize schema. |
+| Quiet-runtime sample | `bun run sample:runtime-quiet -- --socket /path/to/may.sock --state-dir /path/to/state --seconds 30` | Installed daemon, SQLite and Linux `/proc` required. Reads CPU/memory plus work-activity evidence; prints JSON. Exit 2 means the window was not quiet, not a successful idle measurement. |
+| Task interface benchmark | `bun scripts/benchmark-human-task-interface.ts` | Creates 20,000 synthetic rows in memory; prints p95 latency and fails its explicit budgets. No installed state or model. Machine-sensitive benchmark, not a default CI gate. |
+| Offline transcripts | Open `scripts/log-viewer.html` in a browser and select a JSONL file | Reads local message records, not daemon event logs. No upload or live service. Format and limits below. |
+| Prior-lifecycle verification | `scripts/migrations/task-state-cutover.ts`, `task-runtime-cutover.ts` | Explicit clean old source plus temporary state; see the [test guide](../test/README.md). These verify an upgrade, never migrate your installation. |
+| Gym compatibility | `gym-run.sh`, `gym-baseline.sh`, `gym-batch.sh`, `gym-record.ts` | Model-backed scenario execution and existing result recording. `gym-run.sh --list` and `gym-batch.sh --help` are discovery; evaluation/recording are not read-only. See compatibility boundary below. |
 
-App-specific evaluation and reporting tools belong to their owning App or
-project, not this generic Host. For current daemon status, use its `--status`
-command with the intended runtime roots. For Git history, use
-`git log -S 'literal' -- path` or `git log -G 'regex' -- path` in the repository
-owning the file.
+Colocated `*.test.ts` files protect these commands and repository CI, lint,
+publication and deployment contracts. They run through `bun run ci`; no separate
+wrapper is needed. The browser test requires Chrome (or `CHROME_PATH`), like the
+other portable UI checks. `E2E_NO_UI=1` explicitly skips it locally, not in CI.
 
-The sibling Gym CLI still imports `src/app/direct-agent.ts`, its May alignment
-benchmark calls `gym-baseline.sh`, and the coach's Gym helper calls
-`gym-batch.sh`. Retain that adapter and the wrappers' runner/recorder dependencies
-until their consumers migrate together. The adapter uses the shared prepared
-executor; it does not create another runtime or durable work owner. A Host-only
-reference scan or canonical `.app` check does not establish that Gym is unused.
-Portable tests cover these entry points with fixtures, not model-backed trials.
+## Gym compatibility boundary
 
-The old `batch-merge.sh` and `review-merge.sh` shortcuts were removed: bypassing
-review, automatically choosing one side of conflicts, or deleting branches is
-not part of the supported PR workflow. `status.sh` and `git-when.sh` assumed a
-retired repository layout. Old `seed-metrics.ts` and
-`backfill-metric-thresholds.ts` duplicated schema and App policy; metric
-definitions belong to their owning Apps and use the existing metric service.
-Their history remains available in Git; no installed data was removed.
+The sibling Gym CLI imports `src/app/direct-agent.ts`, its May alignment
+benchmark calls `gym-baseline.sh`, and the coach workflow calls `gym-batch.sh`.
+The runner/recorder are their dependencies. Keep these entry points until the
+consumers and authoritative result store migrate together. The recorder derives
+the Host `.state/may.db` path from its location: moving it alone strands history.
+Baseline now preserves explicit failure and returns nonzero for FAIL/ERROR;
+do not infer a stronger batch-runner/storage contract from that fix.
 
-`telegram-reply-smoke.ts` was retired because it inspected legacy session-routing
-events, not current Conversation admission. Use the Telegram input/reply tests
-for portable source checks; a live experience trial needs separate authorization.
+General scenario execution belongs with Gym and App recording with its owner.
+This cleanup does not move either database or consumer. A Host-only reference
+scan does not establish that domain tooling is unused. The shared prepared
+executor remains the execution mechanism, not a separate work lifecycle.
+
+## Offline transcript format
+
+The viewer supports the message-per-line JSONL written by
+`src/lib/persistence.ts` (`sessions/SESSION_ID/session.jsonl`): `user`,
+`assistant` and `toolResult` messages. Text content may be a string or typed
+content blocks; tool calls/results, timestamps and supplied usage are rendered.
+For example, save these synthetic lines in a local `.jsonl` file:
+
+```jsonl
+{"role":"user","content":"Inspect the sample","timestamp":1000}
+{"role":"assistant","content":[{"type":"text","text":"Reading the evidence."},{"type":"toolCall","id":"read-1","name":"read","arguments":{"path":"sample.txt"}}],"timestamp":2000}
+{"role":"toolResult","toolCallId":"read-1","toolName":"read","isError":true,"content":[{"type":"text","text":"Sample file unavailable"}],"timestamp":3000}
+```
+
+It is a convenience viewer, not an integrity audit: malformed JSON lines are
+skipped, unsupported message roles are not a conversation turn, missing usage
+does not prove zero cost, and the whole file is read into browser memory.
+Keep real transcripts private even if automatic redaction has run. The portable
+browser regression uses the actual persistence writer and synthetic data only.
+
+## Retired experiments
+
+There is no supported `scripts/poc/` tree. Completed harnesses remain in Git at
+**`38a048da5c105bea91dc7163010d94483a60b747`** (Host main before retirement).
+Historical invocations must run in an isolated checkout of the recorded source,
+with its dependencies and any exact App revision identified by the evidence;
+they are not commands for current main. Model trials require explicit authority,
+provider configuration and budget, and are not reproducible output guarantees.
+
+The existing App documentation records the questions, positive/negative results,
+limitations and decisions. Start at
+`may-agent.app/docs/proposals/poc-retirement-and-knowledge-20260912.md` for the
+inventory and links to controller, recovery, teaching, improvement and executor
+evidence. Open proposals remain open; retiring code is not accepting their design.
+Active experimental branches are retained and must not reintroduce the folder.
+
+Useful checks have maintained homes:
+
+- Protocol compatibility: `check:codex-goal-protocol` plus the image smoke gate.
+- Definition activation: `test/e2e/e5-source-activation.test.ts` and the source-store suite.
+- Exact Task results, waits, owner closure, retry and reopen: existing Task,
+  Conversation and real-worker suites, not copied model-trial scoring code.
+- Old-source conversion: `scripts/migrations/` and its explicit test-guide boundary.
+
+`smoke-steering.ts` is retired with its package entry. Its assumed live metric
+and immediate database write are not a safe smoke contract. Portable HTTP
+validation/health tests and `test/integration/daemon-events.test.ts` retain
+request validation and real threshold-event application separately.
+
+Earlier merge shortcuts, layout-specific status scripts, metric seed/backfill
+scripts and the legacy Telegram smoke remain retired. Review, conflict choices,
+App metric definitions and live experience trials belong to their existing
+owners. No installed data is removed by this source cleanup.

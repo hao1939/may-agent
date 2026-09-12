@@ -174,6 +174,26 @@ describe("served workflow and metric health pages", () => {
     await read("/api/metrics/example/history?days=NaN", 400);
   });
 
+  test("steering rejects invalid and missing targets without touching installed state", async () => {
+    for (const [path, body, status] of [
+      ["/api/sessions/missing/message", {}, 400],
+      ["/api/metrics/missing/threshold", { threshold: "not-a-number" }, 400],
+      ["/api/metrics/missing/threshold", { threshold: 0.5 }, 404],
+      ["/api/alerts/0/resolve", { reason: "fixture" }, 404],
+      ["/api/alerts/notanumber/resolve", { reason: "fixture" }, 400],
+    ] as const) {
+      const response = await fetch(base + path, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body), signal: AbortSignal.timeout(5000),
+      });
+      expect(response.status).toBe(status);
+      expect((await response.json()).error).toBeTruthy();
+    }
+    const liveness = await fetch(base + "/api/liveness", { signal: AbortSignal.timeout(5000) });
+    expect(liveness.status).toBe(200);
+    expect(Array.isArray((await liveness.json()).alerts)).toBe(true);
+  });
+
   test("alert list limits do not claim an unlisted metric has no alert or hide its exact detail", async () => {
     const db = getDb(root);
     const insert = db.prepare("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES (?, ?, ?)");
