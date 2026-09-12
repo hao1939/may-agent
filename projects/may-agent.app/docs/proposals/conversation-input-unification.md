@@ -25,6 +25,22 @@ owns the target lifecycle and distinguishes it from the implemented protocol.
 
 ## Recommendation and value
 
+**The goal is a simpler mental model realized through one execution and return
+path.** Review each change by the concepts, decisions and parallel paths it
+removes. Human messages, delegated results, relevant facts and timer signals
+enter the same loop: durable input → reconcile → record outcome → return as
+input to the interested owner. Their origin changes context and App judgment;
+it does not introduce another lifecycle or coordination protocol.
+
+Convergence requires migrating consumers and retiring their replaced paths.
+Shared names or wrappers alone leave that work unfinished. For every remaining
+split, identify the user scenario that needs it and compare its value with the
+cost of keeping another mechanism. Breaking contracts and dropping low-value
+behavior are acceptable when the remaining scenarios stay correct and useful.
+Keep App-specific judgment and presentation at the edges; code owns correlation,
+scheduling, persistence and return. The next priority is the remaining return
+paths, with line-count reduction serving as supporting evidence.
+
 **Persist input, wake its Task, reconcile current state, commit an outcome, and
 release execution. Run again for relevant pending input or justified recovery.
 An authorized owner decides when to close the Task.**

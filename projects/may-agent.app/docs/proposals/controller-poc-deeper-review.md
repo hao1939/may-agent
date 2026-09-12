@@ -388,6 +388,11 @@ on the new Host revision are pending; optional App migration is still a gate.
 
 ## Next deletion, in order
 
+The review objective is convergence on one understandable input, reconciliation
+and return path. Remaining child-transition, typed-answer and Topic-return
+mechanisms are unfinished convergence work. Before adding another local fix,
+check whether moving its scenario onto the common path removes the need for it.
+
 Raw worker creation is now removed before combining return links: the breaking
 source contract has a proven typed-input replacement, so it need not wait for a
 larger state migration. This changes the earlier proposed order without claiming
