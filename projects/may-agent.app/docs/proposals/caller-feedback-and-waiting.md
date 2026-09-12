@@ -3,7 +3,7 @@
 **Status:** Isolated mechanics and bounded live-agent adoption tested; not a deployed contract.
 **Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169).
 **Baseline:** Host `8026aff97585edd7f728fa4ce360fdde71bc740a` (PR #164).
-**Current integration base:** Host `38a048da5c105bea91dc7163010d94483a60b747` (PR #167).
+**Current integration base:** Host `f6a11d1c` (PR #172); the original published candidate used #167.
 
 ## The idea
 
@@ -72,9 +72,11 @@ Separate two questions, without adding Task phases:
 1. **What should the caller know?** A selected report from this attempt.
 2. **When can this work continue?** The existing wait, retry or answer disposition.
 
-In the refined experiment, a waiting result may set `report: true`. Its existing
+In the reviewed candidate, a `waiting` or unsuccessful retrying result (`stopped`
+on #169, renamed `incomplete` by #168) may set `report: true`. Its existing
 summary, result and evidence form the report; there is no second message payload.
-Omission means an ordinary quiet wait. An explicit report requires evidence and
+Omission means an ordinary quiet wait, or retention of the first failure report
+while retrying. An explicit report requires non-empty evidence and
 means "return this new decision-relevant update", including after an earlier
 failure. Do not repeat the flag just to acknowledge an unchanged checkpoint.
 
@@ -120,7 +122,8 @@ The first trial retained the existing first-report-per-input rule. It hid an
 actionable access request after an earlier execution failure. The refined rule is:
 
 - Automatically return the first failed attempt; automatic retries remain quiet.
-- A waiting result with `report: true` deliberately selects a new report.
+- A waiting or unsuccessful retrying result with `report: true` deliberately
+  selects a new report. Reporting does not determine wait versus retry timing.
 - Keep the selected attempt reference on the existing input admission, separate
   from its answer reference. Preserve all earlier attempt evidence.
 - Increment a small report revision there, in the same state transaction.
@@ -271,8 +274,9 @@ retains revisions, scenarios, failed trial findings, counts and limitations.
 - The follow-through trial below exercises managed models and Conversation reply
   storage, not an installed May App, console/Telegram delivery, actual provider
   outage or process-kill recovery. Its source and repair event are synthetic.
-- The prototype allows explicit new reports on `waiting`, not on later `stopped`
-  outcomes. It is not a general-purpose progress/reporting API.
+- The original prototype allowed explicit updates only on `waiting`. The review
+  refinement below extends that flag to unsuccessful retrying results; it is
+  still not a general-purpose progress/reporting API.
 - Reporting a thrown exception is proved; arbitrary process death, admission
   failure, verification rejection and unavailable workflow paths need their own
   contract checks before claiming all failure boundaries.
@@ -530,3 +534,43 @@ without a revision read as revision 1. No migration was run, and older Host
 code is not claimed to understand the candidate's waiting/error report pointers;
 an installation rollback therefore needs its own state/consumer review. The
 remaining promotion limits above still apply.
+
+### Review refinement: one report choice for waits and retries
+
+The #169 review confirmed two defects: an empty explicit report passed the
+finish schema but failed later admission, and recovery treated an already
+observed legacy report as new. Fix those at their existing boundaries: separate
+quiet/reported waits in the schema and SDK type, require non-empty evidence for
+reported waits, and interpret an already-blocked legacy observation as revision 1.
+This needs neither a migration nor another compatibility layer.
+
+The review also identified a contract gap: after an execution failure, a worker
+could share a changed diagnosis only by choosing to wait. The candidate now
+passes explicit `report: true` from an unsuccessful result through the same
+selected-report function used by waits. The same Task remains eligible for
+paced retry. No flag means no replacement of its existing failure report.
+Agents judge whether the update matters; code does not compare report prose.
+
+Regressions reproduced the original failures before the changes. They exercise
+the real prepared finish tool, SDK schema/admission and compile-time types,
+file-backed legacy observation recovery, and the runtime sequence: execution
+error → explicit changed retrying report → quiet ordinary retry → original
+answer. That sequence reopens runtime/storage, preserves the first attempt's
+evidence and rejects delayed or duplicate report notifications. These are
+portable mechanical checks; no new live-model or deployment evidence is claimed.
+
+Integration order: #172's independent script fixes first, then reviewed #169,
+then #174's PoC retirement. The #168 → #170 → #171 → #173 cleanup stack has its
+own dependency order. Whichever side integrates second must preserve this
+contract while adopting `incomplete`, `facts`, Conversation/input names and the
+claim/execute/settle layout; do not add aliases for unmerged vocabulary. #174
+must also retire #169's new caller-feedback README and preserve its findings
+here. Do not restore `scripts/poc/` to resolve integration conflicts.
+
+#172 is now merged. The review candidate is Host `65c5e9f2`, rebased onto
+`f6a11d1c` without conflicts. Previous reviewed source `2433b88c` remains on
+`audit/caller-feedback-pre-review-20260912` for audit and experiment reproduction.
+The focused run passed 268 tests; Host/SDK type checks, boundary/lint checks and
+canonical design checks passed. Full rebased-source and hosted checks are
+recorded on the PR once complete. Neither source rebasing nor verification
+changes the installation.

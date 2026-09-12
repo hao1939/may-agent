@@ -15,7 +15,7 @@ status, not deployment evidence. App judgment needs separate live evidence.
 This page owns the durable Task contract. Retained SDK names such as
 `achieve`/`maintain`, `converged` and `stopped` do not select separate lifecycles.
 The unmerged [caller-feedback candidate](../proposals/caller-feedback-and-waiting.md)
-adds reporting while waiting and factual execution-error returns; those additions
+adds explicit updates while waiting or retrying and factual execution-error returns; those additions
 are not part of the merged baseline described here.
 [Message Lifecycle](message-lifecycle.md) owns conversational behavior;
 [App Contract](agent-app.md) owns declaration and input mapping.
