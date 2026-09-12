@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const staticRoot = join(repoRoot, "packages", "webui", "static");
 const configuredOutput = process.env.MAY_AGENT_UI_OUTPUT_DIR?.trim();
-const platformServedUi = configuredOutput ? resolve(configuredOutput) : resolve(repoRoot, "..", "platform", "ui");
+const output = configuredOutput ? resolve(configuredOutput) : join(repoRoot, "bundle", "platform-ui");
 
 async function copyStatic(target: string) {
   await rm(target, { recursive: true, force: true });
@@ -13,6 +13,6 @@ async function copyStatic(target: string) {
   await cp(staticRoot, target, { recursive: true });
 }
 
-await copyStatic(platformServedUi);
+await copyStatic(output);
 
-console.log(`generated ${platformServedUi}`);
+console.log(`generated ${output}`);
