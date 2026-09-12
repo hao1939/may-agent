@@ -43,13 +43,13 @@ function taskDatabase(projectDir: string, appId: string, taskIds: string[]): str
           id,
           parentId: "root",
           outcome: "Verify deployment",
-          acceptance: ["Return deployment evidence"],
+          acceptance: ["Return deployment facts"],
         },
       });
       if (id === "answered") {
         const claim = claimObservedAppTask(config, { taskId: id, appAgent: "owner", handler: "agent" });
         if (claim.kind !== "claimed") throw new Error("Expected fixture claim");
-        completeAppTask(config, claim, { summary: "Verified", evidence: ["fixture:deployment"] });
+        completeAppTask(config, claim, { summary: "Verified", facts: ["fixture:deployment"] });
       }
       if (id === "closed" || id === "cancelled") {
         const task = config.resourceStore.readTask(id)!;
