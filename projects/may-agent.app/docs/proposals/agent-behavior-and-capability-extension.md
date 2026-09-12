@@ -13,6 +13,11 @@ then exercised agent-authored teaching through a real temporary daemon and
 natural optional workflow selection. Focused Host PRs #159 and #160 contain
 runtime fixes and the portable teaching harness respectively. No live guidance
 or installation changed.
+The [method-by-method investigation](extension-methods-poc-20260912.md) adds
+22 completed model executions and one retained harness failure: it tests
+knowledge routing, crowded discovery, capability removal, isolated cross-agent
+teaching, rollback and source lifetime. Installed feedback delivery and verified
+post-promotion activation remain gaps, not a finished autonomous learning loop.
 This document itself authorizes no model calls,
 production activation or deployment.
 
@@ -121,6 +126,26 @@ May can still investigate, edit, verify, and answer directly within authorized
 scope. Using a tool or workflow does not by itself require delegation. Another
 agent supplies bounded expertise; another App is appropriate when responsibility
 or authority genuinely belongs there.
+
+### Choose by need, delivery and lifetime
+
+The [method matrix](extension-methods-poc-20260912.md#which-method-fits-which-case)
+records suitable cases, activation, retention, limits and observed agent use for
+each method. For a proposed change, answer these in its existing guidance or
+review, without adding another manifest:
+
+1. What is missing: current input, a fact, a method, an operation, a dependable
+   sequence, different judgment, or delivery of later feedback?
+2. When will the intended execution actually receive it: next input/read,
+   explicit selection, successful reload and new preparation, or deployment?
+3. Is it for this work only or standing guidance? Where is the authoritative
+   source, how is it discovered, and how can it be amended or withdrawn?
+4. What proves useful use, rather than just installation, execution or a report?
+
+Keep four facts separate: **available → delivered → used → useful**. A candidate
+can fail at any link. Inspect that link before adding more instructions or code.
+The agent can normally choose a suitable method from clear purpose/reference
+descriptions, but that is not a guaranteed protocol or an authority boundary.
 
 ### A small authoring convention, not another manifest
 
@@ -295,6 +320,13 @@ does not activate it. Failed validation/publication leaves the prior generation
 active; May reports the failure without claiming the new behavior is enabled.
 No new deployment daemon, release ledger or per-skill subscription is needed.
 
+Restart restores the activated source; it does not publish newer checkout edits.
+The same snapshot rule applies to released knowledge, local tools and workflows.
+In contrast, mutable operational facts can change on their next actual read
+without reload. Preserve their source and freshness; do not confuse an updated
+observation with approved standing policy. Source reload cannot replace the
+running Host binary or install new dependencies.
+
 Definition-only updates should use the supported reload, not require the human
 to restart the whole system. A change that needs Host code or additional
 permissions follows its separate existing authority and deployment path; it
@@ -355,6 +387,11 @@ now, use the existing exact Task feedback/control path. Preserve accepted waits,
 outcomes, and committed effects; adopting guidance is not authority to replay
 operations or reopen completed work.
 
+Situational use is not automatic forgetting. Skill bodies, answers and temporary
+instructions may remain in retained history; a source rollback does not erase
+them. Make a current correction clear through the existing input path. Use fresh
+execution controls to test durable adoption separately from transcript influence.
+
 ### Native workers
 
 Native CLI workers have their own discovery and permission behavior. Pass the
@@ -408,6 +445,29 @@ feedback. Reuse existing recovery and wait review, without extension-owned
 queues, retry workers or subscription bookkeeping.
 
 ## 6. Evidence from the current source
+
+### Method choice, lifetime and cross-agent teaching
+
+The [method investigation](extension-methods-poc-20260912.md) distinguishes
+source mechanics from agent behavior. A referenced policy and a discoverable
+skill worked; an unreferenced document and a skill omitted by the bounded catalog
+did not supply the policy. Explicit selection or an exact path restored use.
+Do not interpret a model's honest missing-information answer as a reasoning
+defect when the needed context was never delivered.
+
+A separate agent authored and read back an isolated guidance candidate. Fresh
+target executions used it, respected unknown scope and unrelated work, and
+followed a revised policy. Rollback and reactivation changed later behavior.
+This demonstrates scoped teaching with supplied authoritative knowledge, not
+autonomous invention of better strategies or independent production promotion.
+The harness supplied feedback and activated source; no installed App loop ran.
+
+One invalid attempt failed before model work because the improver's manually
+constructed definition omitted the provider credential binding. The correction
+reused prior evidence and completed only unfinished cases. The failure remains
+counted. Report extraction also separated carried-history tools/usage from the
+new turn. Evaluation must diagnose its own setup and attribution before asking
+an agent to repair behavior.
 
 ### Natural teaching and procedure selection
 
@@ -532,6 +592,24 @@ source-change/operations capability and the clear source/scope conventions
 tested in that trial. Do not install the fixture adapter as a new preference
 API. Keep the human's later request ordinary, include a fresh conversation,
 and inspect source and activation evidence rather than relying on "remembered."
+
+For the agent-inferred learning path, first connect existing pieces rather than
+introduce another controller. Evaluation currently prefers agent-local
+`last-eval.md`, while shared guidance points elsewhere; normal preparation does
+not inject either feedback body. Align one owned feedback/reference path and
+verify actual consumption. Gym's approved-overlay branch verifies and copies
+the candidate, but does not itself commit/reload/check active source. Keep
+“source applied” distinct from “active,” then verify a fresh ordinary execution.
+The [learning contract](../2a-design/practice-learning-loop.md#remaining-adoption-gaps)
+records these gaps and the retained exact-artifact approval boundary.
+
+Reuse Gym's bounded candidate revision/comparison loop and the existing Task
+for responsibility, evidence and waits. Test targeted examples, separate input
+combinations, previous behavior and non-applicable requests. Feedback can add
+newly approved scope without implying the old candidate failed. Revise only
+when valid evidence justifies it; invalid harness/provider/evaluator runs must
+not train a permanent workaround into the target. Current automatic intake is
+May-only; the isolated cross-agent result does not silently expand that scope.
 
 ### Second: verify the remaining installed boundaries
 

@@ -20,6 +20,10 @@ Skills are context resources, not work records:
 - a guard observes or intervenes on mechanical risk;
 - a skill supplies situational instructions for one turn.
 
+One-turn scope is not an erasure guarantee: the selected body and its results
+can remain in conversation history. Do not mistake transcript carryover for a
+new skill read, renewed activation, or a saved standing preference.
+
 Skill loading must not create a parallel request lifecycle or its own success
 state machine. The enclosing request correlates a bounded turn; an App Task owns durable
 work. Workflow and session records remain execution evidence.
@@ -191,6 +195,14 @@ budget wrapper:
 Only expose model-invocable catalog entries when the session has a read-capable
 tool. Programmatic explicit invocation remains available without a read tool
 because the runtime inserts the selected body directly.
+
+An omitted skill can still exist in the loaded catalog. A model with only a
+file-read tool may have no usable way to locate it from runtime diagnostics.
+Use concise scoped descriptions and an accessible exact reference or supported
+explicit selection where needed; do not assume omission is harmless. The
+[method PoC](../proposals/extension-methods-poc-20260912.md#delivery-and-natural-use)
+reproduces this boundary and its limits. Catalog visibility, full-body delivery,
+method use and useful outcome are separate evidence.
 
 ## Invocation
 

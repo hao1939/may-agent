@@ -107,6 +107,14 @@ this does not grant permission to change live guidance. See
 [skill snapshots](../2a-design/skills.md#discovery-lifecycle) for when an updated
 definition takes effect.
 
+Distinguish released references from mutable operational evidence. A knowledge
+file inside a definition release stays with that snapshot; a live fact changes
+when its tool reads the current owned source. Keep source/freshness clear.
+Restart restores the active definition, not unactivated edits. Temporary input
+or a selected skill may remain in history without becoming standing guidance.
+The [method matrix](../proposals/extension-methods-poc-20260912.md)
+explains the selection, activation and retention tradeoffs.
+
 ## AGENTS.md Shape
 
 Keep `AGENTS.md` concise and durable:

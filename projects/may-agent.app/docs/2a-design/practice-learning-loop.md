@@ -2,7 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented for Evaluation evidence, generated agent
-feedback, and Gym's May-improvement intake.
+feedback, and Gym's May-improvement intake. Actual feedback consumption and
+verified activation after approved source promotion remain adoption gaps below;
+this is not yet a verified end-to-end installed improvement loop.
 **Aligned with:** [Work Model](../1-principles/work-model.md),
 [Agent Evolution](../1-principles/evolution.md),
 [Session Evaluation Trail](session-eval-trail.md), [Projects](projects.md), and
@@ -113,6 +115,32 @@ A landed change is not proof of improvement. Its evidence names:
 - invalid-run and regression policy;
 - the exact approval identity when promotion is requested; and
 - later session or metric evidence that can challenge the change.
+
+## Remaining adoption gaps
+
+Source review and the [isolated method trial](../proposals/extension-methods-poc-20260912.md)
+distinguish three existing boundaries; the trial changes no production policy:
+
+- Evaluation's projection prefers the target agent's `last-eval.md`, whereas
+  installed shared guidance names a generated feedback path. Normal prompt
+  preparation loads neither body. Agree one owned output/reference path and
+  verify the target actually reads the relevant evidence. A UI listing a file
+  under prompt content is not execution proof. Feedback is mutable evidence;
+  its reference must reach the current record, not an old definition snapshot.
+- Gym's approved-agent-overlay branch validates the artifact fingerprint,
+  copies the files and emits `agent.revision.changed`. It does not itself
+  commit, reload or verify active definitions. “Applied source” must not imply
+  “active behavior.” Use the existing authorized source activation boundary
+  and a fresh relevant execution to prove adoption.
+- Current intake and improvement plans target May. A bounded experiment shows
+  one agent can author another agent's isolated guidance, but does not implement
+  or authorize general automatic cross-agent promotion.
+
+Reuse the existing candidate comparison/revision loop and Task evidence; no
+new learning controller is needed. Preserve exact-artifact approval, protected
+evaluation truth, valid-run accounting and unrelated/regression controls.
+Stored source can survive restart without being active; feedback can survive
+without being read. Later outcomes must be able to challenge an adopted lesson.
 
 ## Invariants
 

@@ -41,6 +41,10 @@ evaluates process stability rather than smarter or faster judgment. The
 now verifies scoped agent-authored guidance and later Conversation adoption in
 isolation. Installed authority/catalog and background Task adoption remain
 separate checks; focused Host PRs #159/#160 are under review.
+The [extension-method matrix](proposals/extension-methods-poc-20260912.md)
+compares suitable cases, activation, lifetime and agent use, including crowded
+discovery and isolated cross-agent teaching. It identifies feedback delivery
+and post-promotion activation as the next integration gaps.
 
 The [Telegram experience proposal](proposals/telegram-conversation-experience.md)
 tracks candidate fixes for five reproduced reliability defects alongside
