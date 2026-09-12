@@ -224,13 +224,13 @@ export function attachDaemonEventSubscribers(opts: {
   });
   bus.listen(
     createStuckDetector(
-      (sessionId, _reason) => {
+      (sessionId, reason) => {
         bus.emit({
           type: "session.cancel.requested",
           source: "runtime:stuck-detector",
           owner: "agent:may",
           target: { sessionId },
-          data: { reason: "session made no progress" },
+          data: { reason },
         } as any);
       },
       (agent, sessionId, reason) => {
