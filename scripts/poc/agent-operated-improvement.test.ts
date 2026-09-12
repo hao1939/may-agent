@@ -4,6 +4,83 @@ import { readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { reloadRecoveryEvidence } from "./agent-operated-improvement.js";
+
+function reloadRequests(...ids: string[]): AgentMessage {
+  return {
+    role: "assistant",
+    content: ids.map((id) => ({ type: "toolCall", id, name: "definition_source", arguments: { action: "reload" } })),
+    api: "openai-responses",
+    provider: "fixture",
+    model: "fixture",
+    stopReason: "toolUse",
+    timestamp: 0,
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+  };
+}
+function reloadResult(id: string, result: unknown, isError = false): AgentMessage {
+  return {
+    role: "toolResult",
+    toolCallId: id,
+    toolName: "definition_source",
+    isError,
+    timestamp: 0,
+    content: [{ type: "text", text: JSON.stringify(result) }],
+  };
+}
+const failure = reloadResult("first", { state: "not-submitted", retryable: true });
+const activated = {
+  activated: true,
+  sourceCommit: "candidate",
+  activeCommit: "candidate",
+  reload: { state: "succeeded" },
+};
+
+test("recovery needs a later assistant reload after the exact failure, then matching activation", () => {
+  const messages = [reloadRequests("first"), failure, reloadRequests("retry"), reloadResult("retry", activated)];
+  const evidence = reloadRecoveryEvidence(messages, "first", "candidate");
+  expect(evidence.handled).toBe(true);
+  expect(evidence.trace.map(({ messageIndex, role, callId }) => ({ messageIndex, role, callId }))).toEqual([
+    { messageIndex: 0, role: "assistant", callId: "first" },
+    { messageIndex: 1, role: "toolResult", callId: "first" },
+    { messageIndex: 2, role: "assistant", callId: "retry" },
+    { messageIndex: 3, role: "toolResult", callId: "retry" },
+  ]);
+  expect(reloadRecoveryEvidence(messages, "unrelated-failure", "candidate").handled).toBe(false);
+  expect(reloadRecoveryEvidence(messages, "first", "different-source").handled).toBe(false);
+});
+
+test("two reloads planned before failure are not an observed recovery, even if one activates", () => {
+  for (const prefix of [[reloadRequests("first", "retry")], [reloadRequests("first"), reloadRequests("retry")]]) {
+    expect(
+      reloadRecoveryEvidence([...prefix, failure, reloadResult("retry", activated)], "first", "candidate").handled,
+    ).toBe(false);
+  }
+});
+
+test("later retries need their own successful active-source result", () => {
+  for (const reply of [
+    reloadResult("unrelated", activated),
+    reloadResult("retry", activated, true),
+    reloadResult("retry", { ...activated, activated: false }),
+    reloadResult("retry", { ...activated, reload: { state: "pending" } }),
+    reloadResult("retry", { ...activated, activeCommit: "old-source" }),
+    reloadResult("retry", "malformed evidence"),
+  ]) {
+    expect(
+      reloadRecoveryEvidence([reloadRequests("first"), failure, reloadRequests("retry"), reply], "first", "candidate")
+        .handled,
+    ).toBe(false);
+  }
+});
 
 test("agent-operated trial preflight confines edits and distinguishes saving from activation", async () => {
   let root: string | undefined;

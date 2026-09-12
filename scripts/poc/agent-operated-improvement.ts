@@ -49,6 +49,67 @@ export function inside(root: string, path: string): string {
   return canonical;
 }
 
+/** Evidence only: do not schedule retries or infer an agent's private reasoning. */
+export function reloadRecoveryEvidence(
+  messages: DirectAgentExecutionResult["messages"],
+  injectedCallId: string | undefined,
+  activeCommit: string | undefined,
+) {
+  const trace: {
+    messageIndex: number;
+    role: "assistant" | "toolResult";
+    callId: string;
+    isError?: boolean;
+    result?: Record<string, unknown>;
+  }[] = [];
+  for (const [messageIndex, message] of messages.entries()) {
+    if (message.role === "assistant") {
+      for (const part of message.content) {
+        if (part.type === "toolCall" && part.name === "definition_source" && part.arguments.action === "reload") {
+          trace.push({ messageIndex, role: "assistant", callId: part.id });
+        }
+      }
+    } else if (
+      message.role === "toolResult" &&
+      trace.some((entry) => entry.role === "assistant" && entry.callId === message.toolCallId)
+    ) {
+      const text = message.content.find((part) => part.type === "text");
+      let result: Record<string, unknown> | undefined;
+      try {
+        const value = text?.type === "text" ? JSON.parse(text.text) : undefined;
+        if (value && typeof value === "object" && !Array.isArray(value)) result = value;
+      } catch {
+        // Missing/malformed evidence cannot establish recovery.
+      }
+      trace.push({ messageIndex, role: "toolResult", callId: message.toolCallId, isError: message.isError, result });
+    }
+  }
+  const failure = trace.find(
+    (entry) =>
+      entry.role === "toolResult" && entry.callId === injectedCallId && entry.result?.state === "not-submitted",
+  );
+  const retry =
+    failure &&
+    activeCommit &&
+    trace.find(
+      (entry) =>
+        entry.role === "assistant" &&
+        entry.messageIndex > failure.messageIndex &&
+        trace.some(
+          (reply) =>
+            reply.role === "toolResult" &&
+            reply.callId === entry.callId &&
+            reply.messageIndex > entry.messageIndex &&
+            !reply.isError &&
+            reply.result?.activated === true &&
+            reply.result.sourceCommit === activeCommit &&
+            reply.result.activeCommit === activeCommit &&
+            (reply.result.reload as { state?: string } | undefined)?.state === "succeeded",
+        ),
+    );
+  return { handled: !!retry, trace };
+}
+
 export async function runTrial(live = false) {
   process.env.E2E_KEEP = "1";
   const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket"], instance: "adoption" });
@@ -226,21 +287,26 @@ export async function runTrial(live = false) {
       ),
     );
 
-    let injected = false;
+    let injectedCallId: string | undefined;
     const operatedSource: AgentTool = {
       ...source,
       execute: async (id, input, signal) => {
         const action = (input as { action: string }).action;
         signal?.throwIfAborted();
-        if (action === "reload" && !injected) {
-          injected = true;
+        if (action === "reload" && injectedCallId === undefined) {
+          injectedCallId = id;
           const failure = {
             state: "not-submitted",
             retryable: true,
             message:
               "Synthetic transport unavailable before submission. No reload event was sent; the active source is unchanged. The transport is available for a later attempt.",
           };
-          records.push({ id: "injected-reload-failure", activeCommit: store.current()?.sourceCommit, ...failure });
+          records.push({
+            id: "injected-reload-failure",
+            callId: id,
+            activeCommit: store.current()?.sourceCommit,
+            ...failure,
+          });
           save();
           return response(failure);
         }
@@ -352,6 +418,8 @@ export async function runTrial(live = false) {
       assert(++executions <= 12);
       const result = await executePreparedAgent(prepared, { timeoutMs: 300_000 });
       recordExecution("improver", result, { objective, systemPrompt: prepared.systemPrompt });
+      const recovery = reloadRecoveryEvidence(result.messages, injectedCallId, store.current()?.sourceCommit);
+      checks.reloadRecovery = recovery;
       const dirty = await fixtureGit(sb.root, ["status", "--short", "--", "agents", "shared", "projects"]);
       checks.source = {
         baseline,
@@ -404,7 +472,7 @@ export async function runTrial(live = false) {
         probes,
         authoredAndActivated: store.current()?.sourceCommit !== baseline,
         verifiedActive,
-        handledPreAdmissionFailure: injected,
+        handledPreAdmissionFailure: recovery.handled,
         humanMidRunSteps: 0,
       };
       save();
@@ -414,7 +482,8 @@ export async function runTrial(live = false) {
       );
       assert.notEqual(store.current()?.sourceCommit, baseline, "No activated source change");
       assert.equal(dirty, "", "Uncommitted source remains");
-      assert(injected && verifiedActive, "No agent-operated activation or verification observed");
+      assert(recovery.handled, "No successful retry requested in a later assistant turn after the failure result");
+      assert(verifiedActive, "No agent-operated verification of the active source observed");
     }
     save();
     console.log("Completed bounded trial; inspect answers and source, not just mechanical assertions.");

@@ -29,6 +29,11 @@ failure: no event was sent and the old source remains active. A later request
 uses the real reload path and follows the exact request's completion. This tests
 handling an explicitly safe-to-retry failure, not an ambiguous external effect.
 Saving and committing source are checked separately from actual activation.
+The recovery check requires a failure tool result, a reload requested in a
+later assistant message, and that call's successful activation of the final
+source. Calls planned together do not count. Ordered call IDs, message indices
+and reload results are retained in `checks.reloadRecovery`; this establishes
+available feedback before the next action, not the agent's private reasoning.
 
 The improver chooses the change and its own questions. Four later withheld cases
 check production equality, staging overflow, unknown scope and unrelated writing.
@@ -59,9 +64,12 @@ sharing. Path substitution is not a general secret-redaction guarantee.
 
 ## Observations, September 12, 2026
 
-Two isolated trials completed 22 model executions. Each improver independently
-edited one guidance file, committed/reloaded it, handled the injected rejection
-and verified the active source without human-operated intermediate steps.
+Two earlier isolated trials completed 22 model executions. Each improver
+independently edited one guidance file, committed/reloaded it and verified the
+active source without human-operated intermediate steps. Both encountered the
+injected rejection, but the old flattened evidence did not preserve assistant
+turn boundaries: those runs cannot establish that retry was chosen after
+receiving the failure. Review identified and corrected that assertion gap.
 All ten improver-selected probes and eight withheld checks matched expectations.
 Changes added 10 and 12 lines respectively, preserving the existing identity.
 
@@ -77,11 +85,12 @@ Two setup defects were retained: an untracked empty fixture directory prevented
 reload, and a missing completion capability prevented target preparation. Neither
 started a model execution. The corrected preflight covers both boundaries.
 
-The final live-trial harness SHA-256 was
+The second trial's harness SHA-256 was
 `c215133f60174b5b4987b9508cd4b32825cc03d79d5fb36b22f5b6ac934d49b7`.
 Those trials preceded rebasing this source onto main after #159–#161 merged.
-Portable checks are repeated on the publication branch; earlier model evidence
-is not an exact-publication-head live-run claim.
+The publication harness now adds ordered recovery evidence and its regressions,
+plus a focused abort-during-reload-delay regression. Earlier model evidence
+does not prove the strengthened recovery check or exact publication revision.
 
 The governing proposal and detailed sanitized evidence are in the separately
 maintained App tree: `docs/proposals/agent-behavior-and-capability-extension.md`
