@@ -19,6 +19,12 @@ one Task -> author candidate -> wait -> reopen -> same Task resumes
 `converged` accepts the result but leaves the Task open. Its assigning owner
 decides closure or withdrawal. Keep committed source, active source, actual
 target revision and useful behavior distinct; none proves the next by itself.
+The success fixture calls the existing `closeAppTask` primitive with the exact
+accepted attempt in `afterResult`. It rejects an older result, checks `kind:
+closed`, and verifies the successful Task status, accepted attempt and returned
+payload are preserved immediately and after runtime/storage reopen. Cancellation
+is reserved for the separate withdrawal arm. This tests the closure primitive,
+not an installed owner-control interface or autonomous acceptance judgment.
 
 ## Run
 
@@ -93,6 +99,17 @@ The original input must return the accepted summary, response and result
 payload; the scripted success payload is exactly `{ accepted: true }`.
 
 ## Observed trials (September 12, 2026)
+
+Review correction: all live trials below predate the owner-close fix. Their
+`ownerClosure` record was actually a cancellation (`kind: cancelled`), not
+successful owner closure. They proved result return before cancellation, not
+preservation of the successful Task projection through owner closure. Those raw
+records remain unchanged; the corrected closure has no-model coverage.
+Likewise, historical holdout `passed` flags checked numeric/permission fields
+and revision, not citation or response quality. The final retained answers were
+inspected and do contain policy references and a proper welcome, but the old
+automatic verdict alone did not establish that. The current direct guide
+describes the narrower, explicit smoke verdict and its limits.
 
 The positive live trial completed twelve model executions. One Task/generation
 retained its candidate and wait across reopen; a second attempt activated it,

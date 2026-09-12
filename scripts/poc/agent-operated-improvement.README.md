@@ -44,6 +44,15 @@ The improver chooses the change and its own questions. Four later withheld cases
 check production equality, staging overflow, unknown scope and unrelated writing.
 Read the actual answers, citations, source diff and tool evidence as well as the
 numeric assertions; a passing finish call is not proof of a useful improvement.
+Each current holdout reports named checks and `mechanicalPassed`, not a general
+quality verdict. Checks require the expected fields, exact active revision,
+nonempty reply and a reported reference to the accepted policy version (or no
+policy source for unrelated work). The English welcome fixture explicitly asks
+for the words "welcome" and "team" in one sentence; its smoke check also rejects
+capacity/policy/deployment terms. This is a deliberately narrow response check,
+not proof of semantic correctness, factual grounding or general writing quality.
+It introduces no runtime grader or extra judging model. Agents/reviewers still
+inspect the actual answers and evidence before claiming useful behavior.
 
 ## Bounds and evidence
 
@@ -78,6 +87,12 @@ Treat raw artifacts as private: review and sanitize selected evidence before
 sharing. Path substitution is not a general secret-redaction guarantee.
 
 ## Observations, September 12, 2026
+
+Historical `passed` flags below checked only selected numeric/permission fields
+and (after revision hardening) source revision. They did not enforce citations
+or a useful unrelated reply. Later review added the explicit smoke requirements
+above, clarifying the prompts accordingly. Old reports and hashes are retained;
+their four passes are not retroactive evidence of the stronger automatic check.
 
 Two earlier isolated trials completed 22 model executions. Each improver
 independently edited one guidance file, committed/reloaded it and verified the

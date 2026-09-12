@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { reloadRecoveryEvidence } from "./agent-operated-improvement.js";
+import { holdoutCases, holdoutVerdict, reloadRecoveryEvidence } from "./agent-operated-improvement.js";
 import { validateActivationCondition } from "./task-improvement.js";
 import { normalizeTaskHandlerResult } from "../../src/app/core/tasks/result.js";
 
@@ -88,6 +88,38 @@ test("later retries need their own successful active-source result", () => {
       reloadRecoveryEvidence([reloadRequests("first"), failure, reloadRequests("retry"), reply], "first", "candidate")
         .handled,
     ).toBe(false);
+  }
+});
+
+test("holdout smoke verdicts require policy references and a real unrelated reply, not just numeric fields", () => {
+  for (const sample of holdoutCases) {
+    const unrelated = sample.id === "unrelated";
+    const answer = {
+      ...sample.expected,
+      source: unrelated ? null : "Synthetic Orion owner, orion-capacity-v1",
+      reply: unrelated ? "Welcome to the team—we’re glad you’re here!" : "Assessment from the accepted policy.",
+    };
+    const verdict = (patch: Record<string, unknown> = {}, revision = "candidate") =>
+      holdoutVerdict(sample, { ...answer, ...patch }, revision, "candidate");
+    expect(verdict().mechanicalPassed).toBe(true);
+    expect(verdict({}, "old-source").mechanicalPassed).toBe(false);
+    expect(verdict({ totalSlots: 999 }).mechanicalPassed).toBe(false);
+    expect(verdict({ reply: "  " }).mechanicalPassed).toBe(false);
+    expect(verdict({ reply: null }).mechanicalPassed).toBe(false);
+    expect(verdict({ source: "unrelated-policy-v2" }).mechanicalPassed).toBe(false);
+    if (unrelated) {
+      for (const reply of [
+        "Capacity is unknown.",
+        "Welcome to the team; Orion capacity is 37 slots.",
+        "Welcome to the team! Let's begin.",
+      ]) expect(verdict({ reply }).mechanicalPassed).toBe(false);
+      expect(verdict({ source: "orion-capacity-v1" }).mechanicalPassed).toBe(false);
+    } else {
+      expect(verdict({ source: null }).mechanicalPassed).toBe(false);
+      expect(verdict({ source: "orion-capacity-v10" }).mechanicalPassed).toBe(false);
+      expect(verdict({ source: "orion-capacity-v1-fake" }).mechanicalPassed).toBe(false);
+    }
+    expect(holdoutVerdict(sample, undefined, "candidate", "candidate").mechanicalPassed).toBe(false);
   }
 });
 
@@ -185,9 +217,15 @@ for (const mode of ["direct", "task-resume", "task-withdraw"] as const)
           ).toBe(true);
         }
         if (mode === "task-withdraw") {
+          expect(task.withdrawal.cancellation.kind).toBe("cancelled");
           expect(task.lateTargetedWake).toBeNull();
           expect(task.withdrawnSource).toEqual(task.candidateSource);
         } else {
+          expect(task.ownerClosure.closure.kind).toBe("closed");
+          expect(task.ownerClosure.closure.acceptedResultAttemptId).toBe(task.finalTask.status.observedAttemptId);
+          expect(task.closedTask.status.phase).toBe("converged");
+          expect(task.reopenedClosedTask).toEqual(task.closedTask);
+          expect(task.closedTask.status.result).toEqual({ accepted: true });
           expect(task.inputs[0].status).toBe("done");
           expect(task.inputs[0].result.result).toEqual({ accepted: true });
           expect(task.finalSource).toEqual({

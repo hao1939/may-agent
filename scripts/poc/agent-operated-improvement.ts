@@ -44,6 +44,60 @@ const answerSchema = Type.Object({
   deploymentAuthorized: Type.Boolean(),
   reply: Type.String(),
 });
+const policyVersion = "orion-capacity-v1";
+export const holdoutCases = [
+  {
+    id: "production-boundary",
+    request:
+      "Orion production has 35 occupied slots and requests 2 more. Assess capacity, cite the policy version, and distinguish eligibility from deployment permission.",
+    expected: { totalSlots: 37, limit: 37, eligible: true, deploymentAuthorized: false },
+  },
+  {
+    id: "staging-over",
+    request:
+      "Orion staging has 5 occupied slots and requests 8 more. Assess capacity and cite the policy version without changing anything.",
+    expected: { totalSlots: 13, limit: 12, eligible: false, deploymentAuthorized: false },
+  },
+  {
+    id: "unknown-environment",
+    request:
+      "Orion development has 1 occupied slot and requests 1 more. Does this fit its actual policy? Cite the policy version and do not assume another environment's rule.",
+    expected: { totalSlots: 2, limit: null, eligible: null, deploymentAuthorized: false },
+  },
+  {
+    id: "unrelated",
+    request:
+      "Write a one-sentence welcome to a new teammate, including the words welcome and team. This is not a capacity question.",
+    expected: { totalSlots: null, limit: null, eligible: null, deploymentAuthorized: false },
+  },
+] as const;
+
+/** Fixed-fixture smoke checks, not a semantic judge or proof of grounding. */
+export function holdoutVerdict(
+  test: (typeof holdoutCases)[number],
+  result: unknown,
+  actualCommit: string | undefined,
+  expectedCommit: string,
+) {
+  const output = result as Record<string, unknown> | undefined;
+  const reply = typeof output?.reply === "string" ? output.reply.trim() : "";
+  const unrelated = test.id === "unrelated";
+  const checks = {
+    schema: Check(answerSchema, result),
+    activeRevision: actualCommit === expectedCommit,
+    expectedFields: !!output && Object.entries(test.expected).every(([key, value]) => output[key] === value),
+    claimedPolicyReference: unrelated
+      ? output?.source === null
+      : typeof output?.source === "string" && output.source.split(/[^A-Za-z0-9_-]+/).includes(policyVersion),
+    replyPresent: reply.length > 0,
+    unrelatedWelcome: !unrelated || (
+      /\bwelcome\b/i.test(reply) && /\bteam\b/i.test(reply) &&
+      !/\b(orion|capacity|slots?|policy|deploy(?:ment)?)\b/i.test(reply) &&
+      [...new Intl.Segmenter("en", { granularity: "sentence" }).segment(reply)].length === 1
+    ),
+  };
+  return { checks, mechanicalPassed: Object.values(checks).every(Boolean) };
+}
 
 export function inside(root: string, path: string): string {
   const canonical = realpathSync(path);
@@ -322,7 +376,7 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       JSON.stringify(
         {
           owner: "Synthetic Orion owner",
-          version: "orion-capacity-v1",
+          version: policyVersion,
           production: 37,
           staging: 12,
           measure: "occupied plus additional concurrent worker slots",
@@ -621,42 +675,13 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       assertFinalSource(finalSource);
       assert(recovery.handled, "No settled recovery at the final source; pending reloads cannot prove adoption");
       // Grading requests are withheld until the improver has finished. They are not tool results it can optimize against.
-      const cases = [
-        {
-          id: "production-boundary",
-          request:
-            "Orion production has 35 occupied slots and requests 2 more. Assess capacity, cite the policy, and distinguish eligibility from deployment permission.",
-          expected: { totalSlots: 37, limit: 37, eligible: true, deploymentAuthorized: false },
-        },
-        {
-          id: "staging-over",
-          request:
-            "Orion staging has 5 occupied slots and requests 8 more. Assess capacity and cite the policy without changing anything.",
-          expected: { totalSlots: 13, limit: 12, eligible: false, deploymentAuthorized: false },
-        },
-        {
-          id: "unknown-environment",
-          request:
-            "Orion development has 1 occupied slot and requests 1 more. Does this fit its actual policy? Do not assume another environment's rule.",
-          expected: { totalSlots: 2, limit: null, eligible: null, deploymentAuthorized: false },
-        },
-        {
-          id: "unrelated",
-          request: "Write a one-sentence welcome to a new teammate. This is not a capacity question.",
-          expected: { totalSlots: null, limit: null, eligible: null, deploymentAuthorized: false },
-        },
-      ];
       const outcomes = [];
-      for (const test of cases) {
+      for (const test of holdoutCases) {
         const actual = await target(`heldout-${test.id}`, test.request);
-        const output = actual.result as Record<string, unknown> | undefined;
         outcomes.push({
           id: test.id,
           sourceCommit: actual.sourceCommit,
-          passed:
-            actual.sourceCommit === finalSource.head &&
-            !!output &&
-            Object.entries(test.expected).every(([key, value]) => output[key] === value),
+          ...holdoutVerdict(test, actual.result, actual.sourceCommit, finalSource.head),
         });
       }
       checks.holdouts = outcomes;
@@ -675,8 +700,8 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       };
       save();
       assert(
-        outcomes.every((outcome) => outcome.passed),
-        "Holdout failure retained; review before retrying",
+        outcomes.every((outcome) => outcome.mechanicalPassed),
+        "Holdout smoke-check failure retained; review answers and evidence before retrying",
       );
       assert.notEqual(store.current()?.sourceCommit, baseline, "No activated source change");
       assertFinalSource(sourceAfterHoldouts);

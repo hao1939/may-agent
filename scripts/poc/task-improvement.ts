@@ -12,6 +12,7 @@ import { HostCapacity } from "../../src/app/core/scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../src/app/core/tasks/app-task-runtime.js";
 import { createAppTaskCapability } from "../../src/app/core/tasks/app-task-capability.js";
+import { appTaskContext, closeAppTask } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { createTaskExecutionBackends } from "../../src/app/composition/task-execution.js";
 import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtime.js";
 import { listAppInboxItems } from "../../src/app/core/state/app-inbox-store.js";
@@ -512,15 +513,46 @@ export function taskImprover(withdraw = false): ImprovementRunner {
           runtime.db.prepare("SELECT count(*) AS count FROM app_tasks WHERE app_id = ?").get("lab")!.count,
           1,
         );
-        report.ownerClosure = runtime.tasks.cancel({
+        // Exercise the existing owner-close primitive, not human withdrawal.
+        // This fixture does not establish an installed owner-control interface.
+        const ownerContext = appTaskContext({
+          appDir, projectDir: work, agent: definition.name, maxConcurrent: 1, resourceStore: runtime.store,
+        });
+        const closeInput = {
           appId: "lab",
           taskId: "improve-guidance",
           expectedGeneration: finished.metadata.generation,
           expectedResourceVersion: finished.metadata.resourceVersion,
           reason: "Fixture owner accepts the bounded mechanism result",
-          controlKey: "accept-and-close",
-        });
-        assert(runtime.store.isCancelled("improve-guidance"));
+          afterResult: finished.status.observedAttemptId!,
+        };
+        assert.throws(
+          () => closeAppTask(ownerContext, { ...closeInput, afterResult: task.status.observedAttemptId! }),
+          /Cannot close after a result/,
+        );
+        assert.deepEqual(runtime.store.readTask("improve-guidance"), finished, "Stale acceptance must not close work");
+        report.ownerClosure = closeAppTask(ownerContext, closeInput);
+        const assertClosed = () => {
+          const closure = runtime!.store.readCancellation("improve-guidance");
+          assert.equal(closure?.kind, "closed");
+          assert.equal(closure.acceptedResultAttemptId, closeInput.afterResult);
+          const closed = runtime!.store.readTask("improve-guidance")!;
+          assert.equal(closed.status.phase, "converged");
+          assert.equal(closed.status.observedAttemptId, closeInput.afterResult);
+          for (const key of ["summary", "response", "result"] as const)
+            assert.deepEqual(closed.status[key], finished.status[key], `Closure changed accepted ${key}`);
+          assert.deepEqual(runtime!.store.readAttempt(closeInput.afterResult)?.acceptedResult, accepted);
+          assert.deepEqual(listAppInboxItems(runtime!.db, { appId: "lab" })[0]?.result, input.result);
+          assert.equal(runtime!.store.nextDueAt(), null);
+          return closed;
+        };
+        report.closedTask = assertClosed();
+        await runtime.close();
+        runtime = undefined;
+        runtime = await start();
+        report.reopenedClosedTask = assertClosed();
+        assert.deepEqual(report.reopenedClosedTask, report.closedTask);
+        assert.equal(read().attempts, 2, "Closed work must not restart");
         report.finalSource = await inspectSource();
         assert.deepEqual(report.finalSource, { sourceCommit: candidate, activeCommit: candidate });
       }
