@@ -4463,11 +4463,42 @@ describe("canonical App task runtime", () => {
           ...options(f, bus),
           installControllers: false,
           executors: {
-            receiver: async () => {
+            receiver: async (attempt) => {
               calls += 1;
-              if (calls === 1 && phase === "during execution") {
-                bus.redeliverPersisted(first, first[EVENT_ROW_ID]!);
+              if (phase === "during execution") {
+                const live: number[][] = [[], []];
+                for (const seen of live)
+                  attempt.onEvent((event, accept) => {
+                    seen.push(Number(event.data.revision));
+                    accept();
+                  });
+                const relay = async (event: AgentEvent, eventId: number) => {
+                  const delivered = new Promise<void>((resolve) => {
+                    const stop = bus.listen(
+                      () => {
+                        stop();
+                        resolve();
+                      },
+                      { types: ["sample.observed"] },
+                    );
+                  });
+                  bus.fanoutPersisted({ ...event }, eventId);
+                  await delivered;
+                };
+                await relay(first, first[EVENT_ROW_ID]!);
+                expect(live).toEqual([[], []]); // Already in the claimed input batch.
                 expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+                if (calls === 1 && route === "exact") {
+                  const fresh = bus.emit({
+                    type: "sample.observed",
+                    source: "fixture",
+                    owner: "app:sample",
+                    target: { appId: "sample", taskId },
+                    data: { revision: 1.5 },
+                  } as AgentEvent);
+                  await relay(fresh, fresh[EVENT_ROW_ID]!);
+                  expect(live).toEqual([[1.5], [1.5]]);
+                }
               }
               return { state: "converged", summary: "Feedback handled", evidence: ["fixture:handled"] };
             },

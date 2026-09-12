@@ -520,9 +520,26 @@ function runtimeTaskAttempt(input: {
       },
       onEvent(listener) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
+        // Each listener receives new input once; registering two listeners
+        // must not let one listener's acknowledgment hide it from the other.
+        const seenEventIds = new Set(
+          claim.events.map(({ event }) => Number(event.eventId)).filter((id) => Number.isSafeInteger(id) && id > 0),
+        );
         const unsubscribe = events.onEvent((incoming) => {
           const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-          if (selfPublishedEventIds.has(eventId)) return;
+          if (closed || selfPublishedEventIds.has(eventId) || seenEventIds.has(eventId)) return;
+          if (Number.isSafeInteger(eventId) && eventId > 0) {
+            if (descriptor.resourceStore.hasTaskEvent(claim.taskId, { eventId })) {
+              const pending = descriptor.resourceStore.readTrigger(claim.taskId);
+              if (
+                !(pending?.events ?? (pending ? [{ event: pending.event }] : [])).some(
+                  ({ event }) => Number(event.eventId) === eventId,
+                )
+              )
+                return;
+            }
+            seenEventIds.add(eventId);
+          }
           listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
             if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
             acceptedLiveEventIds.add(eventId);
