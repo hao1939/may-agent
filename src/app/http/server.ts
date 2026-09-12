@@ -17,7 +17,7 @@ declare const Bun: {
   }): { port: number };
 };
 import { randomUUID } from "node:crypto";
-import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { createQueryService } from "../../lib/query-service.js";
@@ -34,7 +34,7 @@ import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event
 import { loadProjectReadModel } from "../core/tasks/app-task-runtime-state.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
-import { readWorkflowEvidence } from "../../lib/workflow-evidence.js";
+import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
@@ -1250,7 +1250,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           impact: finding.impact || "",
           ownerReason: finding.ownerReason || "",
           suggestedActions: Array.isArray(finding.suggestedActions) ? finding.suggestedActions : [],
-          evidence: Array.isArray(finding.evidence) ? finding.evidence : [],
+          facts: Array.isArray(finding.facts) ? finding.facts : Array.isArray(finding.evidence) ? finding.evidence : [],
           notified,
           createdAt,
           evalTrailPath: evalData.source,
@@ -1335,96 +1335,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       guardSignals: guardSignals.slice(0, 50),
       recurring,
     });
-  }
-
-  async function handleSessionEvalGenerate(req: Request, sessionId: string): Promise<Response> {
-    const resolved = resolveSessionEval(sessionId);
-    if (!resolved) return json({ error: "Session not found" }, 404);
-
-    let body: { line?: number } = {};
-    try {
-      body = (await req.json()) as typeof body;
-    } catch {}
-    const focusLine = Number(body.line || 0);
-    const hasFocusLine = Number.isInteger(focusLine) && focusLine > 0;
-    const rows = readEvalRows(resolved.path);
-
-    if (existsSync(resolved.path) && !hasFocusLine) {
-      return json({ sessionId, source: resolved.source, exists: true, requested: false, rows });
-    }
-
-    const rawLines = readFileSync(resolved.session.path, "utf-8").split("\n");
-    const focusRaw = hasFocusLine ? rawLines[focusLine - 1] || "" : "";
-    const task = [
-      `Generate the session evaluation trail for ${sessionId}.`,
-      ``,
-      `Raw session log: ${resolved.session.source}`,
-      `Session eval trail to append: ${resolved.source}`,
-      hasFocusLine ? `Focus line: session.jsonl:${focusLine}` : `Focus: whole session`,
-      hasFocusLine ? `Raw focus record: ${focusRaw}` : ``,
-      ``,
-      `Append JSONL rows to session.eval.jsonl. Do not rewrite existing rows.`,
-      `Think deeply. Do not merely summarize the transcript. Judge whether each actor did well: user request quality, assistant reasoning/action quality, tool-call necessity, evidence quality, recovery, verification, and finish honesty.`,
-      `Use free-form JSON fields when useful. The only required mapping fields are: type, sessionId, source, author, createdAt, and line/rawSource/rawRole for line-level rows.`,
-      `For user lines, critique whether the request clearly expressed purpose, provided necessary context, stayed clean/integral, could be simpler, or contained misleading/stale information.`,
-      `For assistant/tool lines, explain what was good or bad, why it mattered, and how the agent should do better next time.`,
-      `Use existing human-feedback rows in the eval trail as correction signal when present.`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-    const evaluator = await sendDaemonFrame(
-      buildPublishFrame(
-        "evaluation.session.requested",
-        {
-          project: "evaluation",
-          source: resolved.source,
-          focusLine: hasFocusLine ? focusLine : null,
-          focusRaw: hasFocusLine ? focusRaw : null,
-          instructions: task,
-        },
-        { target: { appId: "evaluation", sessionId } },
-      ),
-    );
-
-    return json({
-      sessionId,
-      source: resolved.source,
-      exists: existsSync(resolved.path),
-      requested: evaluator.ok,
-      evaluatorError: evaluator.error,
-      rows,
-    });
-  }
-
-  async function handleSessionEvalComment(req: Request, sessionId: string): Promise<Response> {
-    const resolved = resolveSessionEval(sessionId);
-    if (!resolved) return json({ error: "Session not found" }, 404);
-    let body: { line?: number; comment?: string; author?: string; originalEval?: unknown };
-    try {
-      body = (await req.json()) as typeof body;
-    } catch {
-      return json({ error: "invalid json" }, 400);
-    }
-    const line = Number(body.line || 0);
-    const comment = String(body.comment || "").trim();
-    if (!Number.isInteger(line) || line < 1) return json({ error: "line must be a positive integer" }, 400);
-    if (!comment) return json({ error: "comment required" }, 400);
-    const raw = readFileSync(resolved.session.path, "utf-8").split("\n")[line - 1] || "";
-    const row = {
-      type: "line",
-      sessionId,
-      line,
-      source: "human-feedback",
-      author: body.author || "human",
-      createdAt: Date.now(),
-      comment,
-      originalEval: body.originalEval || null,
-      rawRole: "human-feedback",
-      rawSource: resolved.session.source,
-      rawContext: { source: resolved.session.source, line, raw },
-    };
-    appendFileSync(resolved.path, JSON.stringify(row) + "\n");
-    return json({ ok: true, row, rows: readEvalRows(resolved.path) });
   }
 
   function readSessionTranscript(sessionId: string): Record<string, unknown> | null {
@@ -3073,7 +2983,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     return json({
       ...buildLoopTrace(_db(), target),
-      ...("workflowRunId" in target ? { workflowEvidence: readWorkflowEvidence(STATE_DIR, target.workflowRunId) } : {}),
+      ...("workflowRunId" in target ? { workflowFacts: readWorkflowFacts(STATE_DIR, target.workflowRunId) } : {}),
     });
   }
 
@@ -3817,10 +3727,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (req.method === "POST") {
         const sessionCancelMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/cancel$/);
         if (sessionCancelMatch) return handleSessionCancel(sessionCancelMatch[1]);
-        const sessionEvalGenerateMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/eval$/);
-        if (sessionEvalGenerateMatch) return handleSessionEvalGenerate(req, sessionEvalGenerateMatch[1]);
-        const sessionEvalCommentMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/eval\/comment$/);
-        if (sessionEvalCommentMatch) return handleSessionEvalComment(req, sessionEvalCommentMatch[1]);
         const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
         const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);

@@ -32,7 +32,6 @@ afterEach(() => {
 function receipt(id = "measurement", parentId = "root"): TaskCompletionReceipt {
   const spec = {
     parentId,
-    mode: "achieve" as const,
     outcome: "Measure the sample",
     acceptance: ["Read the instrument"],
     input: { sample: "first" },
@@ -49,8 +48,8 @@ function receipt(id = "measurement", parentId = "root"): TaskCompletionReceipt {
     summary: "Measured the sample",
     response: "The measurement is 17.",
     result: { value: 17 },
-    evidence: ["measurement.json"],
-    acceptanceBasis: { method: "deterministic", verifier: "instrument", evidence: ["checked:17"] },
+    facts: ["measurement.json"],
+    acceptanceBasis: { method: "deterministic", verifier: "instrument", facts: ["checked:17"] },
     failureFingerprints: ["provider-interrupted"],
     completedAt: "2026-09-01T10:00:00.000Z",
   };
@@ -70,7 +69,6 @@ function resource(result: TaskCompletionReceipt, generation = 1): AppTaskResourc
     metadata: { id: result.metadata.id, generation, resourceVersion: 7 },
     spec: {
       parentId: result.parentId,
-      mode: "achieve",
       outcome: result.outcome,
       acceptance: result.acceptance,
       input: result.input,
@@ -126,7 +124,7 @@ test("historical completed work becomes a closed Task with exact result and call
     summary: result.summary,
     response: result.response,
     result: result.result,
-    evidence: result.evidence,
+    facts: result.facts,
     acceptanceBasis: result.acceptanceBasis,
   });
   expect(f.store.readCancellation("measurement")).toMatchObject({
@@ -157,11 +155,11 @@ test("historical completed work becomes a closed Task with exact result and call
   ).toThrow("cancelled task");
 });
 
-test("compacted receipts retain their original payload and detail digests without inventing lost evidence", () => {
+test("compacted receipts retain their original payload and detail digests without inventing lost facts", () => {
   const result = {
     ...receipt(),
     acceptance: [],
-    evidence: [],
+    facts: [],
     result: undefined,
     response: undefined,
     compactedDetailSha256: "1".repeat(64),
@@ -171,7 +169,7 @@ test("compacted receipts retain their original payload and detail digests withou
   const before = f.store.readReceipt("measurement");
   f.migrate();
   expect(f.store.readReceipt("measurement")).toEqual(before);
-  expect(readAppTaskAdmissionOutcome(f.config, "measurement", "ask")).toMatchObject({ evidence: [] });
+  expect(readAppTaskAdmissionOutcome(f.config, "measurement", "ask")).toMatchObject({ facts: [] });
   expect(readAppTaskAdmissionOutcome(f.config, "measurement", "ask")?.result).toBeUndefined();
 });
 
@@ -198,7 +196,7 @@ test("a historical receipt answers only its generation and cannot close revised 
   expect(f.store.isCancelled("measurement")).toBe(false);
 });
 
-test("existing human closure remains unchanged when importing older completion evidence", () => {
+test("existing human closure remains unchanged when importing older completion facts", () => {
   const result = receipt();
   const current = resource(result, 2);
   const f = fixture({ receipts: { measurement: result }, resources: { measurement: current } });

@@ -1,4 +1,4 @@
-/** Host-private reads of runtime evidence; App selection and triage policy live in Apps. */
+/** Host-private reads of runtime facts; App selection and triage policy live in Apps. */
 import type { SqliteDb } from "./db.js";
 
 const DEFAULT_LIMIT = 100;

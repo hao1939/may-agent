@@ -54,6 +54,7 @@ try {
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "worker" } } },
   });
   oldStore = old.resourceStore;
+  // These calls deliberately use the old Host contract, including request and evidence.
   legacyInput.admitTaskRequest(old, {
     appId: "sample",
     idempotencyKey: "original-measurement",
@@ -150,6 +151,7 @@ try {
   legacyRuntime.observeAppTaskIntent(old, { appAgent: "worker", intent: {
     id: "structural-child", parentId: "structural", mode: "achieve", outcome: "Measure independently", acceptance: ["Return evidence"],
   } });
+  assert.equal(Reflect.get(oldStore.readTask("structural-child")!.spec, "mode"), "achieve");
   legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
   const backlog = Array.from({ length: 34 }, (_, index) => `structural-newer-${index}`);
   for (const id of [...backlog, "structural-human"]) {
@@ -190,7 +192,13 @@ try {
   assert.deepEqual(answer?.result, { value: 17 });
   assert.equal(answer?.response, "The measurement is 17.");
   assert.equal(store.readCancellation("measurement")?.acceptedResultAttemptId, answer?.attemptId);
-  assert.deepEqual(store.readReceipt("measurement"), receipt);
+  const expectedReceipt = {
+    ...receipt,
+    facts: ["fixture:instrument:17"],
+    acceptanceBasis: { method: "deterministic", facts: ["fixture:instrument:17"] },
+  };
+  Reflect.deleteProperty(expectedReceipt, "evidence");
+  assert.deepEqual(store.readReceipt("measurement"), expectedReceipt);
   assert.deepEqual(store.readAttempt(claim.attemptId), priorAttempt);
   assert.equal(buildAppTaskTreeProjection(store.readSnapshot(), 1).tasks.measurement?.attempt_count, 1);
   assert.equal(
@@ -219,8 +227,12 @@ try {
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "maintained", "maintained")?.result, { value: 23 });
   assert.equal(store.readTask("maintained")?.status.observedAttemptId, maintained.attemptId);
   assert.equal(store.isCancelled("maintained"), false);
-  assert.deepEqual(store.readAttempt(stopped.attemptId)?.retiredCancellation, selfStop);
-  assert.deepEqual(store.readCancellation("cancelled"), humanClosure);
+  const expectedWorkerStop = { ...selfStop, facts: ["instrument:offline"] };
+  Reflect.deleteProperty(expectedWorkerStop, "evidence");
+  assert.deepEqual(store.readAttempt(stopped.attemptId)?.retiredCancellation, expectedWorkerStop);
+  const expectedHumanClosure = { ...humanClosure, facts: [] };
+  Reflect.deleteProperty(expectedHumanClosure, "evidence");
+  assert.deepEqual(store.readCancellation("cancelled"), expectedHumanClosure);
   assert.equal(completeAppTask(current, inflight, { summary: "Obsolete result" }).status, "stale");
   // The assigning owner retires the former supervision role using normal closure.
   // Nothing closes the other maintained or unfinished Tasks as a side effect.
@@ -269,7 +281,7 @@ try {
     const resumed = claimObservedAppTask(current, { taskId: id, appAgent: "worker", handler: "agent" });
     if (resumed.kind !== "claimed") throw new Error(`Migrated ${id} did not continue: ${JSON.stringify(resumed)}`);
     assert.equal((resumed.events[0]?.event.data as { request: { id: string } }).request.id, id);
-    if (id === "stopped") assert.equal(resumed.previousAttempt?.acceptedResult?.state, "stopped");
+    if (id === "stopped") assert.equal(resumed.previousAttempt?.acceptedResult?.state, "incomplete");
     completeAppTask(current, resumed, { summary: "Instrument restored", result: { value: 17 } });
     assert.deepEqual(readAppTaskAdmissionOutcome(current, id, id)?.result, { value: 17 });
     assert.equal(store.isCancelled(id), false);
@@ -282,6 +294,7 @@ try {
   assert.deepEqual(taskInputAdmissionKeys(review.events), firstKeys);
   assert.deepEqual(review.events[0], structural.events[0]);
   assert.equal(store.readTask("structural-child")?.status.phase, "pending");
+  assert.equal(Reflect.has(store.readTask("structural-child")!.spec, "mode"), false);
   assert.equal(completeAppTask(current, review, { summary: "Reviewed original ask and first batch" }).taskContinues, true);
   assert.equal(readAppTaskAdmissionOutcome(current, "structural", "structural"), null);
   const remaining = claimObservedAppTask(current, { taskId: "structural", appAgent: "worker", handler: "agent" });

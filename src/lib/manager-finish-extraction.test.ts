@@ -19,6 +19,26 @@ function finishResult(id: string, text: string, isError = false) {
 }
 
 describe("finish result extraction", () => {
+  it.each([
+    { verification_evidence: ["Archived check passed"] },
+    { verification_facts: ["Archived check passed"], verification_evidence: ["Superseded check"] },
+  ])("reads saved verification facts without exposing legacy names: %j", (verification) => {
+    const messages = [
+      finishCall("finish-saved", {
+        status: "success", summary: "Done", ...verification,
+        result: { evidence: "App-owned field" },
+      }),
+      finishResult("finish-saved", "✅ SUCCESS: Done"),
+    ];
+    const saved = JSON.stringify(messages);
+    const restored = JSON.parse(saved);
+    const result = extractFinishParams(restored);
+    expect(result?.verification_facts).toEqual(["Archived check passed"]);
+    expect(result).not.toHaveProperty("verification_evidence");
+    expect(result?.result).toEqual({ evidence: "App-owned field" });
+    expect(JSON.stringify(restored)).toBe(saved);
+  });
+
   it("extracts a successfully executed schema-backed finish payload", () => {
     const messages = [
       finishCall("finish-1", { status: "success", summary: "Done", result: { verdict: "pass" } }),

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { appTaskSpecHash } from "../tasks/app-task-reconciler.js";
+import { matchesAppTaskSpecHash } from "../tasks/app-task-reconciler.js";
 import type { AppTaskAttempt, AppTaskResource } from "../tasks/app-task-state.js";
 import type { AppTaskContext, TaskCompletionReceipt } from "../tasks/app-task-store.js";
 import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
@@ -31,7 +31,7 @@ function receiptAttempt(receipt: TaskCompletionReceipt): AppTaskAttempt {
       summary: receipt.summary,
       response: receipt.response,
       result: receipt.result,
-      evidence: receipt.evidence,
+      facts: receipt.facts,
       acceptanceBasis: receipt.acceptanceBasis,
     },
   };
@@ -75,7 +75,7 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
         if (
           current.metadata.generation < receipt.metadata.generation ||
           (current.metadata.generation === receipt.metadata.generation &&
-            appTaskSpecHash({ id: taskId, ...current.spec }, receipt.owner) !== receipt.specHash)
+            !matchesAppTaskSpecHash({ id: taskId, ...current.spec }, receipt.owner, receipt.specHash))
         )
           throw new Error(`Completion receipt conflicts with the retained Task ${taskId}`);
       } else mutation.expectMissingTaskIds!.push(taskId);
@@ -105,7 +105,6 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
           owner: receipt.owner,
           // Receipt-only history no longer has a complete executable spec.
           // This inert projection is closed before it becomes visible.
-          mode: "achieve",
           workflow: receipt.workflow,
           executor: receipt.executor,
           input: receipt.input,
@@ -127,10 +126,10 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
         summary: receipt.summary,
         response: receipt.response,
         result: receipt.result,
-        evidence: receipt.evidence,
+        facts: receipt.facts,
         updatedAt: receipt.completedAt,
       };
-      // A stale duplicate may still have an old claim. Preserve its evidence,
+      // A stale duplicate may still have an old claim. Preserve its facts,
       // invalidate that claim, and never allow it to replace accepted history.
       for (const old of Object.values(tree.attempts ?? {})) {
         if (old.taskId !== taskId || old.state !== "running") continue;
@@ -157,7 +156,7 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
         summary: receipt.summary,
         response: receipt.response,
         result: receipt.result,
-        evidence: receipt.evidence,
+        facts: receipt.facts,
         cancelledAt: receipt.completedAt,
         decidedBy: { kind: "app-policy" },
       });

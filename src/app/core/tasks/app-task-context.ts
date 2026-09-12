@@ -40,7 +40,7 @@ export function projectAppTaskReconciliationEvents(claim: Pick<AppTaskClaim, "ev
   };
 }
 
-/** Resolve durable return links before asking the executor to judge their evidence. */
+/** Resolve durable return links before asking the executor to judge their facts. */
 export function readAppTaskReconciliationEvents(
   store: Pick<AppTaskResourceStore, "readAttempt" | "readTask" | "readTaskContext">,
   claim: Pick<AppTaskClaim, "taskId" | "events" | "eventsTruncated" | "continuedInputKeys">,
@@ -59,7 +59,7 @@ export function readAppTaskReconciliationEvents(
   return projected;
 }
 
-/** Live feedback carries the same original ask and accepted dependency evidence as a later attempt. */
+/** Live feedback carries the same original ask and accepted dependency facts as a later attempt. */
 export function readAppTaskLiveEvent(config: AppTaskContext, taskId: string, event: AgentEvent) {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const events = [{ event: event as Record<string, unknown>, observedAt: new Date().toISOString() }];
@@ -154,12 +154,12 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
   });
   return {
     open,
-    note: "These accepted waits remain part of the Task's state. Judge new evidence against the goal and these obligations. Return waiting without redeclaring unchanged waits; code retains their identities and observations. Propose new or changed work only when the goal requires it, never merely because a wait was absent from prose or child summaries.",
+    note: "These accepted waits remain part of the Task's state. Judge new facts against the goal and these obligations. Return waiting without redeclaring unchanged waits; code retains their identities and observations. Propose new or changed work only when the goal requires it, never merely because a wait was absent from prose or child summaries.",
   };
 }
 
 const MAX_PROMPT_CHILD_TEXT = 256;
-const MAX_PROMPT_CHILD_EVIDENCE = 2;
+const MAX_PROMPT_CHILD_FACTS = 2;
 
 function boundedPromptChildText(value: string): string {
   return value.length <= MAX_PROMPT_CHILD_TEXT ? value : `${value.slice(0, MAX_PROMPT_CHILD_TEXT - 3)}...`;
@@ -171,8 +171,8 @@ function boundedPromptChildText(value: string): string {
  * resources remain available through the scoped Task read API.
  */
 export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
-  const evidence = (items: string[]) =>
-    items.slice(0, MAX_PROMPT_CHILD_EVIDENCE).map((item) => boundedPromptChildText(item));
+  const facts = (items: string[]) =>
+    items.slice(0, MAX_PROMPT_CHILD_FACTS).map((item) => boundedPromptChildText(item));
   return {
     ...(context.cancelled?.length
       ? {
@@ -180,7 +180,7 @@ export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
             ...child,
             outcome: boundedPromptChildText(child.outcome),
             summary: boundedPromptChildText(child.summary),
-            evidence: evidence(child.evidence),
+            facts: facts(child.facts),
           })),
         }
       : {}),
@@ -216,7 +216,7 @@ export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
       hasLiveChildren: child.hasLiveChildren,
       ...(child.updatedAt ? { updatedAt: child.updatedAt } : {}),
       ...(child.summary ? { summary: boundedPromptChildText(child.summary) } : {}),
-      evidence: evidence(child.evidence),
+      facts: facts(child.facts),
     })),
     completed: context.completed.map((child) => ({
       taskId: child.taskId,
@@ -227,7 +227,7 @@ export function projectAppTaskChildPromptContext(context: AppTaskChildContext) {
       ...(child.executor ? { executor: child.executor } : {}),
       ...(child.priority ? { priority: child.priority } : {}),
       summary: boundedPromptChildText(child.summary),
-      evidence: evidence(child.evidence),
+      facts: facts(child.facts),
       completedAt: child.completedAt,
     })),
     note: "This is a bounded status summary. Use tasks.get for a child's exact input or Conditions.",

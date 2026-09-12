@@ -9,7 +9,7 @@ import { rewriteSessionMessages } from "./persistence.js";
 import { createCheckpointDigest, createStartDigest, getLastDigest, upsertDigest } from "./session-digest.js";
 import { createDigestWriter } from "./session-subscribers.js";
 
-describe("session digest evidence", () => {
+describe("session digest facts", () => {
   let persistDir: string;
   const sessionId = "digest-session";
 
@@ -22,7 +22,7 @@ describe("session digest evidence", () => {
     rmSync(persistDir, { recursive: true });
   });
 
-  it("records start, checkpoint, and terminal evidence without replacing earlier observations", () => {
+  it("records start, checkpoint, and terminal facts without replacing earlier observations", () => {
     const writer = createDigestWriter(persistDir);
     const start = {
       type: "session.start",
@@ -140,9 +140,9 @@ describe("session digest evidence", () => {
       trigger: "timeout",
       outcome: "in_progress",
       what_happened: "Validation timed out",
-      still_open: "Need validation evidence",
+      still_open: "Need validation facts",
     });
-    expect(recovery).toMatchObject({ action: "escalate", action_reason: "Timed out: Need validation evidence" });
+    expect(recovery).toMatchObject({ action: "escalate", action_reason: "Timed out: Need validation facts" });
     closeDb(persistDir);
     expect(getLastDigest(persistDir, sessionId)).toEqual(recovery);
 

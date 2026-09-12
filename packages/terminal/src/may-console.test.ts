@@ -193,7 +193,7 @@ describe("May Console", () => {
                   ref: "7e11ab22",
                   status: "waiting",
                   outcome: "Review the follow-up",
-                  summary: "Waiting for evidence",
+                  summary: "Waiting for facts",
                   updatedAt: Date.UTC(2026, 7, 17, 9, 5, 0),
                   terminal: false,
                   cancellable: true,
@@ -231,7 +231,7 @@ describe("May Console", () => {
                   ref: "8f12ac90",
                   status: taskTerminal ? "done" : "running",
                   outcome: "Review the docs",
-                  acceptance: ["Report the exact findings.", "Show the verification evidence."],
+                  acceptance: ["Report the exact findings.", "Show the verification facts."],
                   statusDetail: taskTerminal ? "Completed." : "An attempt is working on it now.",
                   summary: taskTerminal ? "Review complete" : "Reviewing current behavior",
                   response: taskTerminal ? "The design and implementation now align." : undefined,
@@ -396,7 +396,7 @@ describe("May Console", () => {
         output.includes("  State\n    working. An attempt is working on it now.") &&
         output.includes("Current") &&
         output.includes("Reviewing current behavior") &&
-        output.includes("  Expected result\n    - Report the exact findings.\n    - Show the verification evidence.") &&
+        output.includes("  Expected result\n    - Report the exact findings.\n    - Show the verification facts.") &&
         output.includes("  You\n    Nothing needed right now."),
     );
 
@@ -576,7 +576,7 @@ describe("May Console", () => {
 
     taskProgress = {
       stage: "intermediate",
-      message: "Inspecting exact evidence",
+      message: "Inspecting exact facts",
       updatedAt: Date.UTC(2026, 7, 17, 9, 3, 4),
     };
     client?.write(
@@ -585,7 +585,7 @@ describe("May Console", () => {
         data: { appId: "evaluation", taskId: "review/docs" },
       })}\n`,
     );
-    await waitFor(() => output.includes("Inspecting exact evidence\n\n  Task 8f12ac90 · evaluation · working ·"));
+    await waitFor(() => output.includes("Inspecting exact facts\n\n  Task 8f12ac90 · evaluation · working ·"));
     client?.write(
       `${JSON.stringify({
         type: "app.task.updated",
@@ -593,7 +593,7 @@ describe("May Console", () => {
       })}\n`,
     );
     await Bun.sleep(30);
-    expect(output.split("Inspecting exact evidence").length - 1).toBe(1);
+    expect(output.split("Inspecting exact facts").length - 1).toBe(1);
 
     child.stdin.write("/apps may\n");
     await waitFor(
@@ -605,7 +605,7 @@ describe("May Console", () => {
 
     taskProgress = {
       stage: "intermediate",
-      message: "Checking the final evidence",
+      message: "Checking the final facts",
       updatedAt: Date.UTC(2026, 7, 17, 9, 4, 5),
     };
     client?.write(
@@ -615,13 +615,13 @@ describe("May Console", () => {
       })}\n`,
     );
     await Bun.sleep(20);
-    expect(output).not.toContain("Checking the final evidence");
+    expect(output).not.toContain("Checking the final facts");
 
     child.stdin.write("/watch 8f12ac90\n");
     await waitFor(
       () =>
         output.includes("[catch-up] 8f12ac90 changed while it was not followed.") &&
-        output.includes("Checking the final evidence"),
+        output.includes("Checking the final facts"),
     );
     client?.write(
       `${JSON.stringify({
@@ -630,7 +630,7 @@ describe("May Console", () => {
       })}\n`,
     );
     await Bun.sleep(30);
-    expect(output.split("Checking the final evidence").length - 1).toBe(1);
+    expect(output.split("Checking the final facts").length - 1).toBe(1);
 
     taskTerminal = true;
     remoteConversationMessages.push({

@@ -63,7 +63,7 @@ describe("canonical session terminal event", () => {
     const sessionId = emitSessionEnd({
       status: "success",
       summary: "Implemented the feature",
-      verification_evidence: ["bun test: exit 0"],
+      verification_facts: ["bun test: exit 0"],
       deliverables: [{ path: "src/app.ts", description: "New feature" }],
       completed_items: ["Implement feature X"],
     });
@@ -77,7 +77,7 @@ describe("canonical session terminal event", () => {
     expect(data.summary).toBe("Implemented the feature");
     expect(data.finishParams).toMatchObject({
       status: "success",
-      verification_evidence: ["bun test: exit 0"],
+      verification_facts: ["bun test: exit 0"],
       deliverables: [{ path: "src/app.ts", description: "New feature" }],
       completed_items: ["Implement feature X"],
     });
@@ -125,7 +125,7 @@ describe("canonical session terminal event", () => {
         task: "x".repeat(210_000),
         finishParams: {
           status: "success",
-          verification_evidence: ["bun test: exit 0"],
+          verification_facts: ["bun test: exit 0"],
         },
       },
     } as any);
@@ -143,7 +143,7 @@ describe("canonical session terminal event", () => {
       summary: "Large task completed",
       finishParams: {
         status: "success",
-        verification_evidence: ["bun test: exit 0"],
+        verification_facts: ["bun test: exit 0"],
       },
     });
     expect(data.task).toContain("[TRUNCATED:");

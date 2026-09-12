@@ -511,7 +511,7 @@ describe("project task workspace", () => {
     const refs = await git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/");
     expect(refs.split("\n")).toHaveLength(2);
     const dirtyFile = join(prepared.metadata.path, "dirty.txt");
-    writeFileSync(dirtyFile, "preserve recovery evidence\n");
+    writeFileSync(dirtyFile, "preserve recovery facts\n");
     expect(await finalizeAppTaskWorkspace(prepared, "failed")).toMatchObject({
       ok: true, metadata: { disposition: "retained-for-recovery" },
     });

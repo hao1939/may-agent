@@ -8,7 +8,7 @@
  * Semantics:
  *   - async, persisted, receiver-owned, never blocking RPC.
  *   - records one fact; declared App routes decide whether work is needed.
- *   - priority is evidence for the receiver, not direct session dispatch.
+ *   - priority is facts for the receiver, not direct session dispatch.
  *   - sender never blocks waiting for a reply. Reply, if any, is a new message event.
  *
  * Back-compat:

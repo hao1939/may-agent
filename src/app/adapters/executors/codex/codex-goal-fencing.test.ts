@@ -42,8 +42,7 @@ describe("Codex goal Task generation fencing", () => {
       id: "review:design",
       parentId: "operations",
       outcome: "Review the design",
-      acceptance: ["The review cites current evidence"],
-      mode: "achieve" as const,
+      acceptance: ["The review cites current facts"],
       input: { revision: 1 },
     };
     const observed = observeAppTaskIntent(config, { intent: firstIntent, appAgent: "app-owner" });
@@ -59,7 +58,7 @@ describe("Codex goal Task generation fencing", () => {
         state: "converged",
         summary: "Revision one was reviewed",
         response: "The review is ready.",
-        evidence: ["review-v1.md"],
+        facts: ["review-v1.md"],
       }),
       { allowNeedsAgent: false },
     );
@@ -75,7 +74,7 @@ describe("Codex goal Task generation fencing", () => {
       completeAppTask(config, claim, {
         summary: admitted.result.summary,
         response: admitted.result.response,
-        evidence: admitted.result.evidence,
+        facts: admitted.result.facts,
         actions: admitted.result.actions,
       }),
     ).toMatchObject({ status: "stale", actionsApplied: [] });

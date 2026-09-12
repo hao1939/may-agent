@@ -236,28 +236,29 @@ export function validateAppDefinition(definition: unknown): string[] {
     }
   }
 
-  if (app.requests !== undefined) {
-    const requests = record(app.requests);
-    if (!requests) errors.push(`App ${appId} requests must be an object`);
+  if (app.requests !== undefined) errors.push(`App ${appId} requests is retired; use conversation`);
+  if (app.conversation !== undefined) {
+    const conversation = record(app.conversation);
+    if (!conversation) errors.push(`App ${appId} conversation must be an object`);
     else {
-      if (requests.mode !== "agent") errors.push(`App ${appId} requests mode must be agent`);
+      if (conversation.mode !== "agent") errors.push(`App ${appId} conversation mode must be agent`);
       if (
-        requests.inputKinds !== undefined &&
-        (!Array.isArray(requests.inputKinds) ||
-          requests.inputKinds.length === 0 ||
-          requests.inputKinds.some((kind) => !nonEmpty(kind)) ||
-          new Set(requests.inputKinds).size !== requests.inputKinds.length)
+        conversation.inputKinds !== undefined &&
+        (!Array.isArray(conversation.inputKinds) ||
+          conversation.inputKinds.length === 0 ||
+          conversation.inputKinds.some((kind) => !nonEmpty(kind)) ||
+          new Set(conversation.inputKinds).size !== conversation.inputKinds.length)
       ) {
-        errors.push(`App ${appId} requests inputKinds must contain unique non-empty strings`);
+        errors.push(`App ${appId} conversation inputKinds must contain unique non-empty strings`);
       }
-      if (requests.conversationId !== undefined && !nonEmpty(requests.conversationId)) {
-        errors.push(`App ${appId} requests conversationId must be a non-empty string`);
+      if (conversation.conversationId !== undefined && !nonEmpty(conversation.conversationId)) {
+        errors.push(`App ${appId} conversation conversationId must be a non-empty string`);
       }
     }
   }
 
-  if (app.requests !== undefined && app.task !== undefined && record(app.requests)?.inputKinds === undefined) {
-    errors.push(`App ${appId} with both requests and task must declare requests.inputKinds`);
+  if (app.conversation !== undefined && app.task !== undefined && record(app.conversation)?.inputKinds === undefined) {
+    errors.push(`App ${appId} with both conversation and task must declare conversation.inputKinds`);
   }
 
   return errors;

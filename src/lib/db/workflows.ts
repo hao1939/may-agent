@@ -156,6 +156,11 @@ export function getWorkflowRun(persistDir: string, runId: string): WorkflowRunRe
     if (row?.artifact_sha256 && row.artifact_sha256 !== loaded.descriptor.sha256) {
       return { ...row, artifact_error: "workflow artifact integrity mismatch" };
     }
+    // Normalize the old discriminator after integrity checks; keep the artifact and App data intact.
+    const payload = loaded.value.result_payload;
+    if (payload && (payload as { kind: string }).kind === "evidence") {
+      return { ...loaded.value, result_payload: { ...payload, kind: "facts" } };
+    }
     return loaded.value;
   }
   return { ...row, artifact_error: "workflow artifact missing" };

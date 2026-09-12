@@ -185,7 +185,7 @@ describe("P113 Bash Resource Caps", () => {
     }
   });
 
-  it("includes retained capture evidence when execution reports a timeout", async () => {
+  it("includes retained capture facts when execution reports a timeout", async () => {
     const tool = createBashTool("/tmp", {
       defaultTimeout: 0.3,
       operations: {

@@ -142,12 +142,12 @@ export function createTestAppWorkflowContext<TInput>(
       summary,
       ...(output !== undefined ? { output } : {}),
     }),
-    blocked: (reason: string, evidence?: unknown) => ({
+    blocked: (reason: string, facts?: unknown) => ({
       id: executionId,
       kind: "workflow",
       status: "blocked",
       summary: reason,
-      ...(evidence !== undefined ? { evidence } : {}),
+      ...(facts !== undefined ? { facts } : {}),
     }),
   };
 }

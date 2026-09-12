@@ -1104,7 +1104,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("protects retained trace and open-work evidence from age deletion", () => {
+  it("protects retained trace and open-work facts from age deletion", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -2126,7 +2126,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("retains orphan lifecycle evidence across later event sweeps", () => {
+  it("retains orphan lifecycle facts across later event sweeps", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();

@@ -104,7 +104,7 @@ async function executeTaskCapability(
         resourceVersion: attempt.resourceVersion,
         agent: attempt.role.agent,
         handler: input.handler,
-        mode: taskDetail.mode ?? "achieve",
+
         outcome: taskDetail.outcome,
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},
@@ -191,7 +191,7 @@ async function executeTaskCapability(
         resourceVersion: attempt.resourceVersion,
         agent: attempt.role.agent,
         owner: attempt.role.agent,
-        mode: taskDetail.mode ?? "achieve",
+
         outcome: taskDetail.outcome,
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},
@@ -237,13 +237,13 @@ async function executeTaskCapability(
     );
     // A deliberate blocker is not a transport retry, but its diagnostic
     // context must remain visible to the same Task and its caller. Keep one
-    // bounded evidence entry; the full context remains on the workflow run.
+    // bounded facts entry; the full context remains on the workflow run.
     if (result.type === "blocked" && result.context !== undefined) {
       const context = JSON.stringify(result.context);
-      handlerResult.evidence.push(
+      handlerResult.facts.push(
         Buffer.byteLength(context, "utf8") <= 8192
           ? `workflow-blocker-context:${context}`
-          : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task evidence bound)`,
+          : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`,
       );
     }
     bus.emit({
@@ -303,7 +303,7 @@ async function executeTaskCapability(
       handlerResult: {
         state: "error",
         summary,
-        evidence: [],
+        facts: [],
         actions: [],
       },
       runId: null,
