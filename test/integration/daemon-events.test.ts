@@ -8,7 +8,7 @@ import {
   attachEventPersistence,
   createMetricMutationSubscriber,
 } from "../../src/app/daemon-events.js";
-import { getDb, insertWorkflowRun } from "../../src/lib/requests.js";
+import { closeDb, getDb, insertWorkflowRun } from "../../src/lib/requests.js";
 
 async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -19,6 +19,36 @@ async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<voi
 }
 
 describe("daemon event subscribers", () => {
+  for (const kind of ["call", "job"] as const) {
+    it(`retains exact stuck evidence for a ${kind} without changing its recovery owner`, async () => {
+      const persistDir = mkdtempSync(join(tmpdir(), "daemon-stuck-ownership-"));
+      const bus = new EventBus();
+      const events: any[] = [];
+      try {
+        attachEventPersistence({ bus, persistDir });
+        attachDaemonEventSubscribers({ bus, manager: {} as any, persistDir, projectRoot: persistDir });
+        bus.subscribe(event => events.push(event));
+        bus.emit({ type: "session.start", data: { sessionId: "stuck", agent: "worker", kind } } as any);
+        for (let turn = 0; turn < 6; turn++) {
+          bus.emit({ type: "turn_end", sessionId: "stuck", agent: "worker", toolCalls: 1, errorCount: 1 } as any);
+        }
+        await waitFor(() => events.some(event => event.type === "session.cancel.requested"));
+        // Drain the same deferred delivery queue before asserting absence.
+        await new Promise<void>(resolve => setImmediate(resolve));
+        expect(events.filter(event => event.type === "session.cancel.requested")).toMatchObject([{
+          target: { sessionId: "stuck" }, data: { reason: "Stuck: 6 consecutive error-only turns" },
+        }]);
+        expect(events.filter(event => event.type === "escalation.created")).toHaveLength(kind === "call" ? 0 : 1);
+        expect(getDb(persistDir).prepare(
+          "SELECT json_extract(data, '$.reason') AS reason FROM events WHERE event_type = 'session.cancel.requested'",
+        ).get()).toEqual({ reason: "Stuck: 6 consecutive error-only turns" });
+      } finally {
+        closeDb(persistDir);
+        rmSync(persistDir, { recursive: true, force: true });
+      }
+    });
+  }
+
   it("projects metric mutations only from their durable canonical events", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-metric-events-"));
     const bus = new EventBus();
