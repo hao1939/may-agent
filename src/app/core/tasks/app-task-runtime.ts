@@ -426,6 +426,7 @@ function runtimeTaskAttempt(input: {
   const events = createAppTaskEvents({
     bus: opts.bus,
     db: descriptor.resourceStore.db,
+    persistDir: opts.persistDir,
     appId: descriptor.id,
     claim,
     ...(input.event ? { parentEvent: input.event as AgentEvent } : {}),
@@ -1864,6 +1865,7 @@ async function reconcileTask(input: {
         attemptId: primary.attemptId,
         handler: primary.handler,
         disposition: retry.status,
+        retryAt: retry.retryAt,
         input: intent.input ?? {},
         summary: retry.summary,
       });
@@ -1904,6 +1906,7 @@ async function reconcileTask(input: {
         attemptId: primary.attemptId,
         handler: primary.handler,
         disposition: "retrying",
+        retryAt: attention.retryAt,
         input: intent.input ?? {},
         summary: attention.summary,
       });
@@ -1974,6 +1977,7 @@ async function reconcileTask(input: {
             attemptId: failedClaim.attemptId,
             handler: failedClaim.handler,
             disposition: retry.status,
+            retryAt: retry.retryAt,
             summary: retry.summary,
           },
         );
@@ -2879,6 +2883,7 @@ export function publishLoadedAppTaskEvent(input: {
   return createAppTaskEvents({
     bus: input.bus,
     db: descriptor.resourceStore.db,
+    persistDir: appRouterOptionsByBus.get(input.bus)?.persistDir,
     appId,
     claim: {
       taskId: input.binding.taskId,

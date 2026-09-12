@@ -2785,7 +2785,7 @@ export function failAppTaskAttempt(
   claim: AppTaskClaim,
   failure: string,
   details: { reason?: string; result?: Record<string, unknown>; evidence?: string[] } = {},
-): { status: "retrying" | "handoff" | "superseded"; summary: string } {
+): { status: "retrying" | "handoff" | "superseded"; summary: string; retryAt?: number | null } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
   // New input may have changed the version. Fence fresh state while still
@@ -2817,7 +2817,11 @@ export function failAppTaskAttempt(
     ...(details.result ? { result: structuredClone(details.result) } : {}),
   });
   commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
-  return { status: handoff ? "handoff" : "retrying", summary };
+  return {
+    status: handoff ? "handoff" : "retrying",
+    summary,
+    ...(!handoff ? { retryAt: resource.status.executionRetryAt ?? null } : {}),
+  };
 }
 
 export function releaseStaleAppTaskResult(
@@ -3732,7 +3736,11 @@ export function markAppTaskAttention(
     result?: Record<string, unknown>;
     evidence?: string[];
   },
-): { status: "applied" | "stale"; summary: string } {
+): { status: "applied" | "stale"; summary: string; retryAt?: number | null } {
   const failure = failAppTaskAttempt(config, claim, input.summary, input);
-  return { status: failure.status === "superseded" ? "stale" : "applied", summary: failure.summary };
+  return {
+    status: failure.status === "superseded" ? "stale" : "applied",
+    summary: failure.summary,
+    retryAt: failure.retryAt,
+  };
 }

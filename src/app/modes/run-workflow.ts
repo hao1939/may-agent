@@ -34,6 +34,15 @@ export async function runWorkflowMode(opts: {
   }
 
   console.log(`Loading workflow: ${wfPath}`);
+  if (opts.dryRun) {
+    const definition = await importRuntimeModule<{ name: string; description?: string }>(wfPath);
+    console.log(`Workflow: ${definition.name}`);
+    if (definition.description) console.log(definition.description);
+    console.log("Dry run: definition inspected; workflow, tools and agents were not executed.");
+    console.log("Task-owned workflows run through their App input, with normal Task admission.");
+    return;
+  }
+
   const rtx = buildRuntimeCtx({
     bus: opts.bus,
     persistDir: opts.persistDir,
@@ -47,76 +56,22 @@ export async function runWorkflowMode(opts: {
   const agentMatch = opts.mode.input.match(/agent:\s*(\S+)/) || opts.mode.name.match(/^(\w+)-heartbeat$/);
   const agent = agentMatch ? agentMatch[1] : "may";
 
-  if (!opts.dryRun) {
-    const workflowDir = dirname(wfPath);
-    const agentDir = dirname(workflowDir);
-    console.log(`Executing workflow: ${opts.mode.name} (agent: ${agent})\n`);
-    const { result, runId } = await runWorkflowDirect({
-      workflowName: opts.mode.name,
-      task: opts.mode.input,
-      manager: opts.manager,
-      runtimeCtx: rtx,
-      agentName: agent,
-      persistDir: opts.persistDir,
-      workflowDir,
-      guardsDir: join(agentDir, "guards"),
-      sharedGuardsDir: join(opts.sharedRoot, "guards"),
-    });
-    console.log(`Run: ${runId}`);
-    console.log(`Result: ${result.type}`);
-    if (result.type === "done") console.log(result.summary);
-    if (result.type === "blocked") console.log("Reason:", result.reason);
-    return;
-  }
-
-  const wfMod = await importRuntimeModule<any>(wfPath);
-
-  const ctx = {
-    ...rtx,
+  const workflowDir = dirname(wfPath);
+  const agentDir = dirname(workflowDir);
+  console.log(`Executing workflow: ${opts.mode.name} (agent: ${agent})\n`);
+  const { result, runId } = await runWorkflowDirect({
+    workflowName: opts.mode.name,
     task: opts.mode.input,
-    agent,
-    runAgent: async (agentName: string, prompt: string, stepOpts?: { schema?: unknown; skill?: string }) => {
-      console.log(`\n${"=".repeat(60)}\nDRY RUN: ${agentName}\n${"=".repeat(60)}\n${prompt}\n${"=".repeat(60)}\n`);
-      if (stepOpts?.skill) console.log(`Skill: ${stepOpts.skill}`);
-      if (stepOpts?.schema) console.log(`Output schema: ${JSON.stringify(stepOpts.schema, null, 2)}`);
-      return {
-        sessionId: "dry-run",
-        status: "error" as const,
-        lastAssistantText: null,
-        messages: [] as any[],
-        duration: "0s",
-        outputDir: "",
-        turnsUsed: 0,
-        error: "Dry run does not execute an agent or fabricate a structured finish result",
-      };
-    },
-    runFunction: async (label: string, fn: () => Promise<string>) => {
-      const output = await fn();
-      return { sessionId: `fn_${label}`, status: "done" as const, lastAssistantText: output, messages: [] as any[], duration: "0s", outputDir: "", turnsUsed: 0 };
-    },
-    runWorkflow: async () => ({ type: "blocked" as const, reason: "Sub-workflows not supported in CLI mode" }),
-    summarize: (r: any) => r?.lastAssistantText?.slice(0, 500) ?? "",
-    done: (s: string) => ({ type: "done" as const, summary: s }),
-    blocked: (r: string, c?: unknown) => ({ type: "blocked" as const, reason: r, context: c }),
-    createSession: async (sessionOpts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
-      console.log(`\n${"=".repeat(60)}\nDRY RUN createSession: ${sessionOpts.label || "session"} (tools: ${sessionOpts.tools})\n${"=".repeat(60)}\nSystem prompt: ${sessionOpts.systemPrompt.slice(0, 200)}...\n`);
-      let lastPrompt = "";
-      return {
-        async prompt(message: string) {
-          console.log(`  [${sessionOpts.label || "session"}] prompt (${message.length} chars):\n${message.slice(0, 300)}...\n`);
-          lastPrompt = message;
-        },
-        lastText() {
-          return `(dry run response to: ${lastPrompt.slice(0, 80)}...)`;
-        },
-        close() {},
-      };
-    },
-  };
-
-  console.log(`Executing workflow: ${wfMod.name} (agent: ${agent}, dry-run: ${opts.dryRun})\n`);
-  const result = await wfMod.execute(ctx);
-  console.log(`\nResult: ${result.type}`);
+    manager: opts.manager,
+    runtimeCtx: rtx,
+    agentName: agent,
+    persistDir: opts.persistDir,
+    workflowDir,
+    guardsDir: join(agentDir, "guards"),
+    sharedGuardsDir: join(opts.sharedRoot, "guards"),
+  });
+  console.log(`Run: ${runId}`);
+  console.log(`Result: ${result.type}`);
   if (result.type === "done") console.log(result.summary);
   if (result.type === "blocked") console.log("Reason:", result.reason);
 }

@@ -131,3 +131,13 @@ losing result acceptance, then propose the same outcome from that evidence.
 The local effect key follows admitted work, not attempt or mode. It remains
 App-owned; a new input on the same open Task may need a distinct key. A read
 proves publication only, and same-key/different-payload writes still fail.
+
+Publication keys encode an unambiguous tuple. Existing receipts remain readable
+and reusable only when their indexed App/Task identity matches the caller.
+Reads use the shared integrity-checked event loader, including artifact bodies;
+a missing or corrupt known body fails visibly rather than permitting blind redo.
+The fact's stored emission scope is verified before data crosses the capability.
+
+Failure notifications use `retrying` for retained work. `retryAt` is the stored
+backoff deadline, or `null` when fresh human input permits an immediate attempt.
+Agent handoff remains distinct; no new retry state or scheduling policy is added.

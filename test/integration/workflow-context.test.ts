@@ -73,7 +73,7 @@ describe("one workflow context", () => {
                 executionPaths: { appDir: "/app-scope", projectDir: "/project-scope", workspaceDir: "/attempt-scope" },
               }
             : {}),
-          ...(mode === "task" ? { taskEmitter: { publish: () => 41, onEvent: () => () => {} } } : {}),
+          ...(mode === "task" ? { taskEmitter: { read: () => null, publish: () => 41, onEvent: () => () => {} } } : {}),
         },
       );
       expect(result).toMatchObject({

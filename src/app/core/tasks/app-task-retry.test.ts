@@ -259,15 +259,18 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
   const f = fixture();
   const first = f.claim();
   admitHuman(f);
-  if (kind === "executor failure") failAppTaskAttempt(f.config, first, "Source unavailable");
-  else markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
+  const retry =
+    kind === "executor failure"
+      ? failAppTaskAttempt(f.config, first, "Source unavailable")
+      : markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
+  expect(retry.retryAt).toBeNull();
   f.reopen();
   const next = f.claim();
   expect(next.events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
   expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
   admitHuman(f); // Replay while running is not a new human message either.
-  failAppTaskAttempt(f.config, next, "Still unavailable");
+  expect(failAppTaskAttempt(f.config, next, "Still unavailable").retryAt).toBe(Date.now() + 500);
   expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
   expect(() => f.claim()).toThrow("waiting");
 });

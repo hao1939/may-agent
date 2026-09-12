@@ -164,7 +164,7 @@ describe("installed Gym admission contract", () => {
     });
     expect(renewAppTaskAttemptLease(config, claim)).toBe(true);
 
-    const emitter = createAppTaskEmitter({ bus, appId: "gym", claim });
+    const emitter = createAppTaskEmitter({ bus, db, appId: "gym", claim });
     const runDir = join(projectDir, ".state", "benchmarks", "scope_golden");
     mkdirSync(runDir, { recursive: true });
     writeFileSync(

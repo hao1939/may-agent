@@ -8,7 +8,7 @@ import {
 } from "../events/bus.js";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
 import type { SqliteDb } from "../../../lib/db.js";
-import { readTaskEmission, taskEmissionIdentity } from "../state/task-emissions.js";
+import { findTaskEmission, readTaskEmission, taskEmissionIdentity } from "../state/task-emissions.js";
 
 export type AppTaskEmission = {
   type: string;
@@ -82,6 +82,7 @@ function taskEventMux(bus: EventBus): TaskEventMux {
 export function createAppTaskEvents(input: {
   bus: EventBus;
   db: SqliteDb;
+  persistDir?: string;
   appId: string;
   claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
@@ -90,7 +91,7 @@ export function createAppTaskEvents(input: {
   const appId = normalizedAppId(input.appId);
   const key = `${appId}\0${input.claim.taskId}`;
   return {
-    read: (type, localKey) => readTaskEmission(input.db, { appId, ...input.claim }, type, localKey),
+    read: (type, localKey) => readTaskEmission(input.db, { appId, ...input.claim }, type, localKey, input.persistDir),
     publish: emitter.emit,
     onEvent(listener) {
       const mux = taskEventMux(input.bus);
@@ -112,6 +113,7 @@ export function createAppTaskEvents(input: {
  */
 export function createAppTaskEmitter(input: {
   bus: EventBus;
+  db: SqliteDb;
   appId: string;
   claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
@@ -125,7 +127,9 @@ export function createAppTaskEmitter(input: {
       if (emitted.type === "app.input.requested") {
         throw new Error("Cross-App result work must use a typed Task dependency, not events.emit");
       }
-      const idempotencyKey = taskEmissionIdentity({ appId, ...input.claim }, key);
+      const scope = { appId, ...input.claim };
+      const idempotencyKey =
+        findTaskEmission(input.db, scope, emitted.type, key)?.idempotencyKey ?? taskEmissionIdentity(scope, key);
       const event = {
         type: emitted.type,
         source: `app-task:${appId}`,
