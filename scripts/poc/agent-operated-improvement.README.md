@@ -98,18 +98,34 @@ message 26, a new reload request at 27 and matching activation at 28 (zero-based
 indices). However, the authored guidance also named an evidence file outside
 the target's readable snapshot. Embedded policy supplied correct answers, but
 the three capacity probes and three capacity holdouts incurred 13 failed reads.
-The improver reported the access limitation but left the unnecessary reference.
+Probe results reported the access limitation, but the improver left the reference.
 This is a useful mechanism result with a guidance-quality defect, not a clean
 overall improvement claim. That run is retained without rewriting its output.
 
-The next trial clarifies the target's existing read scope in the probe tool
+The refined trial clarifies the target's existing read scope in the probe tool
 description and exposes tool-error counts beside compact results. These are
 capability facts and evidence, not a prescribed edit or retry policy. No target
 permissions are broadened, and error counts do not automatically reject an
 otherwise useful result; the agent must judge their meaning.
 
+That trial at `13ecb2f5` completed ten model executions with four correct
+withheld answers. The agent authored a 12-line addition without the inaccessible
+reference. Its four chosen probes and four holdouts had **zero tool errors**.
+Failure delivery, later retry and matching activation appear at message indices
+25, 26 and 27. The unchanged baseline still made 19 failed discovery reads;
+this experiment did not solve baseline lookup inefficiency. No human operated
+intermediate steps in either follow-up.
+
+The final model-tested harness SHA-256 is
+`160dac2b88dff50bcc66f4684720fde8ba32f42874369fdf3cae855dcad08b7a`.
+These follow-ups add 20 model executions and eight correct withheld answers.
+The refined result supports clear capability descriptions and visible failure
+evidence. One run per variant cannot establish causation, a general speedup or
+reliability; keep the earlier guidance defect alongside the successful result.
+
 The governing proposal and detailed sanitized evidence are in the separately
 maintained App tree: `docs/proposals/agent-behavior-and-capability-extension.md`
 and `docs/proposals/agent-operated-improvement-poc-20260912.md`, recorded at App
-workspace commit `daee27686b`. This file documents the portable experiment only;
+workspace commits `daee27686b` (initial evidence) and `8e30112868` (review
+follow-ups). This file documents the portable experiment only;
 it does not replace App policy or authorize installation changes.
