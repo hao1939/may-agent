@@ -53,6 +53,23 @@ describe("App inbox host", () => {
     }).item;
   }
 
+  it("accepting a schema requires a declared handler for that input kind", () => {
+    const input = { kind: "probe", data: { value: "work" } };
+    for (const tasks of [undefined, {}]) {
+      const host = new AppInboxHost({ db, apps: [{ ...app(), task: undefined, tasks }] });
+      expect(host.acceptsInput("evaluation", input)).toBe(false);
+    }
+    const host = new AppInboxHost({ db, apps: [app()] });
+    expect(host.acceptsInput("evaluation", input)).toBe(true);
+    const conversation = new AppInboxHost({
+      db,
+      apps: [{ ...app(), task: undefined, conversation: { mode: "agent", inputKinds: ["probe"] } }],
+    });
+    expect(conversation.acceptsInput("evaluation", input)).toBe(true);
+    conversation.replaceApps([{ ...app(), task: undefined, conversation: { mode: "agent", inputKinds: ["message"] } }]);
+    expect(conversation.acceptsInput("evaluation", input)).toBe(false);
+  });
+
   it("validates input and exposes typed actions without lifecycle machinery", () => {
     const host = new AppInboxHost({
       db,

@@ -280,7 +280,13 @@ export class AppInboxHost {
 
   acceptsInput(appId: string, input: AppInput): boolean {
     const app = this.#apps.get(appId.trim());
-    return Boolean(app && Check(app.inputSchema, input));
+    if (!app || !Check(app.inputSchema, input)) return false;
+    // A schema describes valid data; accepting work also requires a handler.
+    // A declared handler may fail temporarily: its durable input remains retryable.
+    return Boolean(
+      (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.kind))) ||
+      (app.tasks && app.task),
+    );
   }
 
   matchingAppIds(owner: string, input: AppInput): string[] {

@@ -8,7 +8,7 @@ import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createRuntimeAppRead } from "../reads/app-read.js";
 import { childEventTrace, EVENT_ROW_ID, eventData, EventBus } from "./bus.js";
-import { createEventInterface } from "./interface.js";
+import { createEventInterface, findEventPublication } from "./interface.js";
 import { createAppEventAdmissionPlan, recordAppEventAdmissionCommandFailure } from "../state/app-event-admission-store.js";
 
 const roots: string[] = [];
@@ -41,6 +41,49 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it.each(["type", "scope", "ingress", "payload"])(
+    "publication confirmation cannot borrow another %s receipt",
+    (difference) => {
+      const { bus, db, events } = fixture();
+      const input = {
+        type: "fixture.comment",
+        target: { appId: "sample" },
+        idempotencyKey: "caller-key",
+        data: { projectId: "sample", comment: "Requested work" },
+      };
+      const context = { source: "control-socket", allowUnregisteredFact: true };
+      if (difference === "ingress") {
+        bus.emit({
+          type: input.type,
+          source: "internal",
+          owner: "app:sample",
+          target: input.target,
+          data: { ...input.data, appId: "sample", idempotencyKey: input.idempotencyKey },
+        } as any);
+      } else {
+        events.publish(
+          {
+            ...input,
+            ...(difference === "type" ? { type: "fixture.other" } : {}),
+            data: {
+              ...input.data,
+              ...(difference === "scope" ? { projectId: "other" } : {}),
+              ...(difference === "payload" ? { comment: "Previous work" } : {}),
+            },
+          },
+          context,
+        );
+      }
+      expect(findEventPublication(db, input, context)).toBeUndefined();
+      if (difference !== "payload") {
+        const receipt = events.publish(input, context);
+        expect(findEventPublication(db, input, context)).toBe(receipt.eventId);
+      } else {
+        expect(() => events.publish(input, context)).toThrow("Idempotency");
+      }
+    },
+  );
+
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {

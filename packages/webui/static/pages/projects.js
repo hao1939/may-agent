@@ -659,7 +659,13 @@ async function addProjectComment() {
       body: JSON.stringify({ path: _projectDetailPath, comment, idempotencyKey })
     });
     const data = await res.json();
-    if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
+    if (!res.ok || data.ok === false) {
+      // A settled observation has no work to deduplicate. Keep the user's text
+      // and let a later route accept a fresh submission. Unknown outcomes keep
+      // their key so retrying cannot create duplicate work.
+      if (data.retryWithNewKey === true) delete input.dataset.idempotencyKey;
+      throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
+    }
     input.value = '';
     delete input.dataset.idempotencyKey;
     if (data.eventId) {

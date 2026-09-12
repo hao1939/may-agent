@@ -27,9 +27,10 @@
  *   - Long-running workflow-iteration completion (E2/E3 cover the worker side).
  */
 
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { getEvent, publishEvent } from "../../packages/control/src/client.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
@@ -80,7 +81,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
   let sb: Sandbox;
   const retainedDiscussion = "# Retained discussion\n\nKeep the previous owner's decision visible.\n";
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
       fixtureProjects: ["comment.app", "history.app"],
@@ -95,10 +96,74 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
     await sb.waitForWeb(15000);
   }, 60_000);
 
-  afterAll(async () => {
+  afterEach(async () => {
     if (sb) closeDb(sb.stateDir);
     if (sb) await sb.close();
   });
+
+  test("retained comments can be retried after their App gains a work route", async () => {
+    if (!probe.ok) throw new Error(probe.reason);
+    const browser = await probe.mod.launch({
+      executablePath: probe.chromePath,
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${sb.webPort}/projects/history.app`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#project-comment");
+      await page.type("#project-comment", "Keep this request until the App can handle it");
+      const firstResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const rejected = await firstResponse;
+      expect(rejected.status()).toBe(503);
+      const rejection = await rejected.json();
+      expect(rejection, JSON.stringify(await getEvent(sb.socketPath, rejection.eventId))).toMatchObject({
+        retryWithNewKey: true,
+      });
+      const firstKey = JSON.parse(rejected.request().postData()!).idempotencyKey;
+      await page.waitForFunction(() => !(document.getElementById("project-comment") as HTMLInputElement)?.disabled);
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(
+        "Keep this request until the App can handle it",
+      );
+
+      // Install a real route through the daemon's ordinary reload path.
+      const route = readFileSync(join(sb.projectsRoot, "comment.app", "app.js"), "utf8").replaceAll(
+        '"comment"',
+        '"history"',
+      );
+      writeFileSync(join(sb.projectsRoot, "history.app", "app.js"), route);
+      const reload = await publishEvent(sb.socketPath, { type: "runtime.reload.requested", data: {} });
+      const operation = await pollUntil(
+        async () => {
+          const event = await getEvent(sb.socketPath, reload.eventId);
+          return event.links.find(
+            (link) => link.kind === "operation" && ["succeeded", "failed"].includes(link.state ?? ""),
+          );
+        },
+        { timeoutMs: 15_000, description: "App route reload" },
+      );
+      expect(operation.state).toBe("succeeded");
+
+      const nextResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const accepted = await nextResponse;
+      expect(accepted.status(), JSON.stringify(await accepted.json()) + "\n" + sb.getLogs()).toBe(202);
+      expect(JSON.parse(accepted.request().postData()!).idempotencyKey).not.toBe(firstKey);
+      await page.waitForFunction(() => (document.getElementById("project-comment") as HTMLInputElement)?.value === "");
+      const db = openSandboxDb(sb.dbPath);
+      try {
+        await pollUntil(
+          () => db.prepare("SELECT task_id FROM app_tasks WHERE app_id = 'history' AND task_id = 'work/comment'").get(),
+          { timeoutMs: 15_000, description: "retried comment Task" },
+        );
+      } finally {
+        db.close();
+      }
+    } finally {
+      await browser.close();
+    }
+  }, 30_000);
 
   test("served UI submits a comment and renders chat Markdown/raw streaming safely", async () => {
     if (!probe.ok) throw new Error(probe.reason);
@@ -310,6 +375,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         expect(comments).toHaveLength(2);
         const owned = comments.find((event) => event.id === receipt.eventId)!;
         expect(JSON.parse(owned.data!)).toMatchObject({ comment: commentText, project: "comment" });
+        expect(JSON.parse(owned.data!)).not.toHaveProperty("requestedOwner");
         const unowned = comments.find((event) => event.id !== receipt.eventId)!;
         expect(JSON.parse(unowned.data!)).toMatchObject({ comment: commentText, project: "history" });
         expect(db.prepare("SELECT task_id FROM app_tasks WHERE app_id = ?").all("history")).toEqual([]);
