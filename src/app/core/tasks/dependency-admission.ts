@@ -306,7 +306,7 @@ export function recoverTaskConditions(
   const db = getDb(opts.persistDir);
   const rows = db
     .prepare(
-      `SELECT event_type, source, timestamp, data
+      `SELECT id, event_type, source, timestamp, data
        FROM events
        WHERE (
          project_id = ?
@@ -323,6 +323,7 @@ export function recoverTaskConditions(
        LIMIT 2000`,
     )
     .all(descriptor.id, descriptor.id, descriptor.id, ...eventTypes) as Array<{
+    id: number;
     event_type?: unknown;
     source?: unknown;
     timestamp?: unknown;
@@ -337,6 +338,7 @@ export function recoverTaskConditions(
       if (!isRecord(parsed)) continue;
       const event: Record<string, unknown> = {
         ...parsed,
+        eventId: row.id,
         type: typeof row.event_type === "string" ? row.event_type : parsed.type,
         ...(typeof row.source === "string" && row.source.trim() ? { source: row.source } : {}),
         ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),

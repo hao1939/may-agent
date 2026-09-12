@@ -7164,7 +7164,7 @@ describe("canonical App task runtime", () => {
         const writer = new DbWriter(f.base.persistDir);
         const sourceBus = eventBus();
         sourceBus.setPersistenceSubscriber(writer.handler);
-        await installCoreTaskRuntimes(f.base);
+        const { installed } = await installCoreTaskRuntimes(f.base);
         f.observe("external-wait");
         f.terminalResult.state = "waiting";
         delete f.terminalResult.response;
@@ -7191,6 +7191,17 @@ describe("canonical App task runtime", () => {
         await requeueSavedAttempt(f, claim, route);
         await f.run(claim.taskId);
         expect(readTaskSnapshot(f.config).conditions?.["proof-ready"]?.status.state).toBe("true");
+        // A route selected before recovery may deliver after journal readback.
+        for (let delivery = 0; delivery < 2; delivery++) {
+          admitStandaloneCanonicalAppTaskEvent({
+            descriptor: installed[0]!,
+            event: fact,
+            intent: null,
+            conditionTaskIds: [claim.taskId],
+          });
+          expect(f.config.resourceStore.readTrigger(claim.taskId)?.events).toHaveLength(1);
+        }
+        expect(f.config.resourceStore.readTrigger(claim.taskId)?.event.eventId).toBe(fact[EVENT_ROW_ID]);
         expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
         expect(f.agentCalls()).toBe(1);
         f.terminalResult.state = "converged";
@@ -7199,11 +7210,74 @@ describe("canonical App task runtime", () => {
         expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.acceptedResult?.result).toEqual(f.payload);
         expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
         expect(f.agentCalls()).toBe(2);
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        closeDb(f.base.persistDir);
+        const reopened = await installCoreTaskRuntimes(f.base);
+        f.config = appTaskContext({
+          ...f.config,
+          resourceStore: AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!,
+        });
         await recoverInstalledAppTasks(f.base.bus);
+        admitStandaloneCanonicalAppTaskEvent({
+          descriptor: reopened.installed[0]!,
+          event: fact,
+          intent: null,
+          conditionTaskIds: [claim.taskId],
+        });
+        expect(f.config.resourceStore.readTrigger(claim.taskId)).toBeNull();
         await f.run(claim.taskId);
         expect(f.agentCalls()).toBe(2);
       },
     );
+
+    it("reads a consumed journal fact for a newly declared Condition after restart", async () => {
+      const f = setup();
+      const sourceBus = eventBus();
+      sourceBus.setPersistenceSubscriber(new DbWriter(f.base.persistDir).handler);
+      await installCoreTaskRuntimes(f.base);
+      f.observe("readback");
+      f.terminalResult.state = "waiting";
+      delete f.terminalResult.response;
+      const condition = {
+        id: "first-proof",
+        type: "sample.proof.ready",
+        subject: "id:proof-1",
+        expected: "ready",
+        owner: "app:sample",
+        reviewAfterMs: 60_000,
+      };
+      f.terminalResult.conditions = [condition];
+      const fact = sourceBus.emit({
+        type: "sample.proof.ready",
+        source: "fixture",
+        owner: "app:sample",
+        target: { project: "sample" },
+        data: { project: "sample", id: "proof-1", status: "ready" },
+      } as AgentEvent);
+      await f.run("readback");
+      expect(readTaskSnapshot(f.config).conditions?.["first-proof"]?.status.state).toBe("true");
+      await closeInstalledAppTaskRuntimes(f.base.bus);
+      closeDb(f.base.persistDir);
+      await installCoreTaskRuntimes(f.base);
+      f.config = appTaskContext({
+        ...f.config,
+        resourceStore: AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!,
+      });
+      // Consuming the first wake does not erase evidence for a different wait.
+      f.terminalResult.conditions = [{ ...condition, id: "second-proof" }];
+      await f.run("readback");
+      expect(f.agentCalls()).toBe(2);
+      expect(readTaskSnapshot(f.config).conditions?.["second-proof"]?.status.state).toBe("true");
+      expect(f.config.resourceStore.readTrigger("readback")?.events).toHaveLength(1);
+      expect(f.config.resourceStore.readTrigger("readback")?.event.eventId).toBe(fact[EVENT_ROW_ID]);
+      f.terminalResult.state = "converged";
+      delete f.terminalResult.conditions;
+      await f.run("readback");
+      await recoverInstalledAppTasks(f.base.bus);
+      await f.run("readback");
+      expect(f.agentCalls()).toBe(3);
+      expect(f.config.resourceStore.readTrigger("readback")).toBeNull();
+    });
 
     it.each([
       ["converged", "drain"],

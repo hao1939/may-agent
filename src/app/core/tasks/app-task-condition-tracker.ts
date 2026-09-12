@@ -439,14 +439,18 @@ export function trackAppTaskConditionEventForTasks(
   // this read invalidates the mutation instead of reintroducing consumed input.
   const tree = config.resourceStore.readTaskContext({ taskIds: allowed }, { includeHistory: false, childLimit: 0 });
   for (const taskId of allowed) {
-    // First delivery stays allowed; only a consumed receipt removes a Task.
+    // A first delivery or a still-pending receipt remains eligible.
     if (!config.resourceStore.hasTaskEvent(taskId, event)) continue;
     // Worker publication links input before first relay/Condition matching.
     const pending = tree.taskTriggers?.[taskId];
-    if (
-      !(pending?.events ?? (pending ? [{ event: pending.event }] : [])).some((entry) => sameEvent(entry.event, event))
-    )
-      allowed.delete(taskId);
+    if ((pending?.events ?? (pending ? [{ event: pending.event }] : [])).some((entry) => sameEvent(entry.event, event)))
+      continue;
+    // Consuming a wake does not erase evidence for a newly declared wait.
+    // The current Condition must still need and match this observation.
+    const provesOpenCondition = tree.resources?.[taskId]?.status.conditionIds?.some((id) =>
+      matchesAppTaskCondition(tree.conditions?.[id], event),
+    );
+    if (!provesOpenCondition) allowed.delete(taskId);
   }
   if (allowed.size === 0) return [];
   const wakes = new Map<string, AppTaskConditionWake>();
