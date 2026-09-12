@@ -1,11 +1,11 @@
 # Keep domain policy in Apps, keep the Host generic
 
-**Status:** Accepted; documentation and five focused Host source slices are
+**Status:** Accepted; documentation and six focused Host source slices are
 implemented for review. The broader cleanup is not complete. Deployment and live
 permission/state changes remain separate and are not authorized here.
 **Reviewed:** September 12–13, 2026. Initial Host baseline `649d801c`; the
-candidates now include fetched `main` `c0cbb59e7245924e50ac0d2c6cd5a82232418964`
-after Task-contract PR #168 merged. The discovery table below records the
+candidates include Task-contract PR #168 and fetched `main` `d7b9d962`
+after #177 and #178 merged. The discovery table below records the
 initial findings; the application record distinguishes fixes from remaining gaps.
 This is source evidence, not a claim about the running installation.
 
@@ -253,20 +253,22 @@ authority. Do not restart or alter the current installation to review this draft
 
 ## Application record — September 13, 2026
 
-Five source slices implement independent parts of this proposal. They have not
-been merged or deployed by this work. The current Task-contract baseline is
+Six source slices implement independent parts of this proposal. #177 and #178
+have since been merged by others; this work has not merged or deployed them.
+The current Task-contract baseline is
 merged #168, not the stale local Host checkout. No production activation, model
 call, permission change or state migration was performed.
 
 | Source slice | Change | Adoption boundary |
 | --- | --- | --- |
 | [#176](https://github.com/hao1939/may-agent/pull/176) | Remove Markdown mutation, owner fallback and misleading comment receipts; retain declared App subscriptions. | Unsupported App intake fails visibly and the browser retains input. |
-| [#177](https://github.com/hao1939/may-agent/pull/177) | Run exact declared metric commands, optionally sharing an ID-keyed sample envelope; remove Coach-specific dashboard counts. | Old single-sample commands still work. Producer and definition changes must land together to retain batching; installed definitions are not rewritten. |
-| [#178](https://github.com/hao1939/may-agent/pull/178) | Return bounded-call circuit-break failures to the caller, retain the exact cancellation reason, and remove misleading tool-error handoff/bypass instructions. | Standalone-job recovery and old restricted tool-policy presets remain compatible. |
+| [#177](https://github.com/hao1939/may-agent/pull/177), merged `d7b9d962` | Run exact declared metric commands, optionally sharing an ID-keyed sample envelope; remove Coach-specific dashboard counts. | Old single-sample commands still work. Producer and definition changes must land together to retain batching; installed definitions are not rewritten. |
+| [#178](https://github.com/hao1939/may-agent/pull/178), merged `7ee4aac6` | Return bounded-call circuit-break failures to the caller, retain the exact cancellation reason, and remove misleading tool-error handoff/bypass instructions. | Standalone-job recovery and old restricted tool-policy presets remain compatible. |
 | [#179](https://github.com/hao1939/may-agent/pull/179) | Move deployment receipt interpretation out of generic agent execution; provide exact fact delivery and a read-only receipt lookup. | Adopt with maintenance-agent guidance. Preserve the current deployment-owner restriction, atomic activation, rollback and duplicate-effect protection. |
-| [#180](https://github.com/hao1939/may-agent/pull/180) | Replace name-based file-write grants with exact reviewed configuration; separate installation protection root from App working directory. | Stacked on #178. Review needed installation grants before deployment; absent grants deny protected edits. |
+| [#180](https://github.com/hao1939/may-agent/pull/180) | Replace name-based file-write grants with exact reviewed configuration; separate installation protection root from App working directory. | Now targets main after #178. Review needed installation grants before deployment; absent grants deny protected edits. |
+| [#181](https://github.com/hao1939/may-agent/pull/181) | Add a narrow read-only Host health snapshot for ordinary App observers through optional reporting. | Host first, then companion App observer and old-job removal together. No private SQL, new timer, work assignment or healthy verdict. |
 
-The last PR is a deliberate behavior change, not a universal administrator
+The file-grant PR is a deliberate behavior change, not a universal administrator
 role. Its guards cover coding `write`/`edit`, not shell, native CLI, custom code
 or symlink aliases. Granting an `agent.json` permits administration of that
 profile, including its grants. The loader guide states this explicitly.
@@ -288,8 +290,15 @@ profile, including its grants. The loader guide states this explicitly.
   evidence and flat IDs were not routing authority. The correction uses
   `deployment.settled` with canonical `{appId, taskId}` targeting, not
   a new routing subsystem. Receipt validation also checks common, optional and
-  terminal fields. Exact admission/coalescing and malformed-evidence tests are
-  required before marking that PR ready.
+  terminal fields. The published correction at `0043fc8b` passed 33 focused
+  checks with 153 assertions, including actual CLI/daemon admission, later-tick
+  retention and reopened storage. Its Quality and Container checks passed and
+  both review threads were resolved by the session maintaining that PR. This
+  work retained its independent, unpublished correction for audit rather than
+  pushing a competing event convention.
+- #180 was refreshed against main at `b36f65aa`; 63 focused regressions and
+  static checks passed after conflict resolution. Current-head Quality and
+  Container passed; another Copilot review was requested.
 - Hosted Quality and Container results belong to each exact PR head. A prior
   green run is not proof for a later push; review and merge remain separate.
 
@@ -357,6 +366,68 @@ The legacy session-policy metadata was not comprehensively audited; old
 restricted presets remain in place. All of these observations are a
 point-in-time read, not a live migration or a claim about other installations.
 
+### Read-only Host health and ordinary maintenance observation
+
+The approved read is implemented in #181, Host source `d75c1b9b`, through
+`ObserverContext.read.hostHealth`. Its default window is one hour, maximum one
+day. It reports retained running and ended executions, separate outcome counts,
+missing end timestamps, selected Host failure event counts and at most 20 recent
+IDs per detail list. Totals are not capped; coverage and truncation are explicit.
+It reports executions and events, including retries and nested calls, not unique
+Tasks, incidents, product failures or an overall health verdict. It reveals no
+transcripts, configuration, task text, raw event data or provider error text.
+
+The optional reporting adapter supplies the read. Missing or failed reporting
+rejects rather than returning healthy zeros. Its SQL runs in a read-only
+snapshot; failure preserves the caller's surrounding transaction. No collector,
+database table, scheduler, global workflow capability or policy hook was added.
+
+The companion App candidate is commit `e79c7f44f7` on local branch
+`refactor/maintenance-health-observer-20260913`, in isolated worktree
+`/home/hao/workspace-worktrees/app-maintenance-health-20260913`. The active App
+tree is unchanged. Its 80-line observer replaces the private health job and
+signal files with returned facts and existing observation memory. It routes
+changed delivery/resume symptoms and incomplete execution evidence through the
+existing owner-review Task. Domain failures stay visible without automatically
+assigning every failed execution to maintenance. Only its exact observer's
+read failure gets the unavailable-health owner request.
+
+Unchanged signal families do not repeat the request; counts remain in each fact.
+A cleared time window is not proof of repair. Restart/reload may replay a
+visible symptom to the same stable Task; no exactly-once incident guarantee or
+separate durable suppression registry is claimed.
+
+This is deliberately narrower than the retired private job: metric breach and
+stall routes remain, as do separate escalation, session-recovery, metric-snapshot
+and daily-digest handlers. Legacy owner-message/orphan-pair aging and special
+blocked-workflow suppression are not reimplemented. Those heuristics do not
+become Host policy or new snapshot fields. The candidate README records this
+tradeoff and paired adoption order; it is not described as a lossless migration.
+The deleted handler and old tests remain recoverable in Git; production files,
+generated evidence and accepted Tasks are untouched.
+
+Verification so far:
+
+- Stable-main full Host CI: **2,946 passed, three installation-only skips, zero
+  failures**. An earlier run overlapped a main merge and failed two changed
+  contract tests; it is not used as proof. The stable run passed without changing
+  those contracts. Final-head `d75c1b9b` full CI, after extra window and
+  failed-read transaction regressions and formatting: **2,947 passed, three
+  installation-only skips, zero failures; 12,877 assertions across 297 files**.
+- Final focused report/runtime/real-daemon checks: **19 passed, 50 assertions**;
+  public SDK export check: **one passed**. The daemon proof follows an ordinary
+  observer read through a recorded fact and declared App subscription to an
+  accepted workflow result. It makes no model call.
+- Companion manifest, routing and observer checks: **22 passed, 117 assertions**;
+  source and new observer tests type-check against the new Host SDK, and the
+  App bundles. This does not claim whole-installation type compatibility.
+- #181 current-head Quality and Container passed. It is ready for review;
+  Copilot review was requested. Merge and final maintainer review remain separate.
+
+Adoption requires the new Host first and then the App definition plus cron
+removal together, with no overlapping old job. No live restart, permission,
+metric-definition or state changes were made.
+
 ### Still open, deliberately not weakened
 
 | Boundary | Remaining work and reason |
@@ -364,13 +435,13 @@ point-in-time read, not a live migration or a claim about other installations.
 | Installation permission adoption | #180 supplies the narrow trusted file scope, but no installed grant list is changed. The retained evaluation-path list is a protection floor, not a privileged name. Old deputy policies cannot be removed without checking retained sessions. |
 | Deployment authority | #179 removes the generic executor's receipt prompt and scanner. The exact open `may-agent` Task requirement remains until a reviewed trusted installation binding replaces it. Agent-supplied IDs or flags must not broaden this authority. |
 | Legacy escalation | #178 fixes bounded calls, not standalone jobs. The legacy lifecycle subscriber, configured escalation handler and session-recovery workflow still have source consumers. Retire them with correlated obligations and paired App/Host adoption, never by assuming a quiet database proves global disuse. |
-| Private maintenance and metric policy | Session cleanup, global metric queries, health reviews and digests still use private handler capabilities. Public observers cannot read the required global Host health data. Keep this explicit gap until a narrow supported read/fact contract is reviewed; do not export SQL/runtime context, duplicate timers, or replace deterministic sampling with model polling. |
+| Private maintenance and metric policy | #181 and companion `e79c7f44f7` supply the health-observer source path; paired installation adoption remains pending. Session cleanup, global metric queries and the daily digest still use private handlers. Their supported boundaries remain separate work; do not export SQL/runtime context, duplicate timers, or replace deterministic sampling with model polling. |
 | Reporting activation | #177 removes filename policy and Coach counts, not the collector's dependency on `trigger.metrics-snapshot` cadence. Decoupling that cadence must retain one collector and honest due/failure behavior. |
 
 These are remaining source/adoption gaps, not completed work. The reviewer
 approved a narrow read-only Host health snapshot for ordinary App observers on
-September 13. Implement it through optional reporting and existing observer
-reads, with bounded facts, explicit coverage and visible failure when unavailable.
+September 13. The source candidate now uses optional reporting and existing
+observer reads, with bounded facts, explicit coverage and visible failure when unavailable.
 No SQL, raw private messages, thresholds, work assignment or runtime controls
 belong in that contract. This does not authorize live configuration edits,
 dropping accepted obligations or changing deployment authority.
