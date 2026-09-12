@@ -213,7 +213,7 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
   };
   async function prepareTarget(id: string, request: string) {
     const release = store.current()!;
-    const read = createReadTool(sb.root, {
+    const read = createReadTool(release.root, {
       operations: {
         access: async (path) => {
           inside(release.root, path);
@@ -231,13 +231,13 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       },
       model: model(),
       tools: [read],
-      projectRoot: sb.root,
+      projectRoot: release.root,
       sharedRoot: release.sharedRoot,
       globalAgentsRoot: release.agentsRoot,
     });
     const prepared = prepareAgentExecution({
       definition,
-      projectRoot: sb.root,
+      projectRoot: release.root,
       task: request,
       sessionId: id,
       requireFinish: true,
@@ -379,6 +379,10 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       // Exercise real model/tool preparation without spending a provider call.
       const { prepared: targetPreflight } = await prepareTarget("preflight", "Ordinary fixture request");
       assert(targetPreflight.requireFinish);
+      const targetRead = targetPreflight.tools.find((tool) => tool.name === "read")!;
+      const common = await targetRead.execute("relative-shared", { path: "shared/common-sense.md" });
+      assert(common.content.some((part) => part.type === "text" && part.text.includes("Respect authorized scope")));
+      await assert.rejects(targetRead.execute("mutable-shared", { path: join(sb.root, "shared/common-sense.md") }));
       // Finish can append reported lessons as evidence. That evidence is not
       // writable guidance, readable target context, or automatic learning.
       const lessonMarker = "synthetic-target-lesson-not-active-guidance";
