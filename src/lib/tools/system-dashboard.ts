@@ -584,27 +584,6 @@ export function printSystemStatus(persistDir: string, opts?: Partial<StatusOptio
         lines.push(`  Verdicts (24h):    ${verdictStr}`);
       }
     }
-
-    // Coach experiments (from sessions)
-    const coachDb = openStatusDb(persistDir);
-    try {
-      const coachExperimentsRow = coachDb
-        ?.prepare(
-          `SELECT COUNT(*) as total
-           FROM sessions
-           WHERE agent = 'coach'
-             AND task LIKE '%growth-cycle%'
-             AND startedAt > ?`,
-        )
-        .get(now - WEEK) as { total: number } | null | undefined;
-      if (coachExperimentsRow && coachExperimentsRow.total > 0) {
-        lines.push(`  Coach growth cycles (7d): ${coachExperimentsRow.total}`);
-      }
-    } catch {
-      // best-effort
-    } finally {
-      coachDb?.close();
-    }
   }
 
   lines.push("");

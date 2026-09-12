@@ -97,20 +97,24 @@ function commandSample(value: unknown): CommandSample | null {
   return sample;
 }
 
-function parseCommandOutput(output: string): CommandSample | null {
+function parseCommandOutput(output: string, metricId: string): CommandSample | null {
   const trimmed = output.trim();
   if (!trimmed) return null;
   try {
-    return commandSample(JSON.parse(trimmed));
+    const parsed = JSON.parse(trimmed);
+    // A producer may report several observations in one invocation. The Host
+    // selects only this declared metric; missing entries are not zero samples.
+    if (parsed && typeof parsed === "object" && Object.hasOwn(parsed, "samples")) {
+      const samples = parsed.samples;
+      return samples && typeof samples === "object" && !Array.isArray(samples) && Object.hasOwn(samples, metricId)
+        ? commandSample(samples[metricId])
+        : null;
+    }
+    return commandSample(parsed);
   } catch {
     const value = Number(trimmed);
     return Number.isFinite(value) ? { value } : null;
   }
-}
-
-export function batchableProjectMetricCommand(command: string): { scriptPath: string; metricId: string } | null {
-  const match = command.trim().match(/^bun\s+(\S+\/(?:project-metrics|focus-metric-sample)\.ts)\s+(\S+)\s+--json$/);
-  return match ? { scriptPath: match[1]!, metricId: match[2]! } : null;
 }
 
 function execFileText(file: string, args: string[], options: ExecFileOptionsWithStringEncoding): Promise<string> {
@@ -122,54 +126,13 @@ function execFileText(file: string, args: string[], options: ExecFileOptionsWith
   });
 }
 
-async function executeCommand(command: string): Promise<CommandSample | null> {
-  const stdout = await execFileText("/bin/sh", ["-lc", command], {
+async function executeCommand(command: string): Promise<string> {
+  return execFileText("/bin/sh", ["-lc", command], {
     cwd: resolveRuntimeRoots(import.meta.url).projectRoot,
     encoding: "utf8",
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
   });
-  return parseCommandOutput(stdout);
-}
-
-async function executeBatches(rows: SourceMetric[]): Promise<{
-  samples: Map<string, CommandSample>;
-  handled: Set<string>;
-  failures: Map<string, string>;
-}> {
-  const groups = new Map<string, Array<{ rowId: string; metricId: string }>>();
-  for (const row of rows) {
-    if (!row.source_command) continue;
-    const parsed = batchableProjectMetricCommand(row.source_command);
-    if (!parsed) continue;
-    const group = groups.get(parsed.scriptPath) ?? [];
-    group.push({ rowId: row.id, metricId: parsed.metricId });
-    groups.set(parsed.scriptPath, group);
-  }
-
-  const samples = new Map<string, CommandSample>();
-  const handled = new Set<string>();
-  const failures = new Map<string, string>();
-  for (const [scriptPath, group] of groups) {
-    if (group.length < 2) continue;
-    for (const item of group) handled.add(item.rowId);
-    try {
-      const stdout = await execFileText("bun", [scriptPath, "--batch-json", ...group.map((item) => item.metricId)], {
-        cwd: resolveRuntimeRoots(import.meta.url).projectRoot,
-        encoding: "utf8",
-        timeout: 120_000,
-        maxBuffer: 4 * 1024 * 1024,
-      });
-      const parsed = JSON.parse(stdout) as Record<string, unknown>;
-      for (const item of group) {
-        const sample = commandSample(parsed[item.metricId]);
-        if (sample) samples.set(item.rowId, sample);
-      }
-    } catch (error) {
-      for (const item of group) failures.set(item.rowId, measurementError(error));
-    }
-  }
-  return { samples, handled, failures };
 }
 
 function measurementError(error: unknown): string {
@@ -236,7 +199,10 @@ export async function measureSourceMetrics(options: {
   const commandNote = options.triggerEventId
     ? `source-command; trigger-event:${options.triggerEventId}`
     : "source-command";
-  const batches = await executeBatches(dueRows);
+  // Cache only this measurement pass, including failures. Execute the exact
+  // declared command, once, when its first due command-backed metric is read.
+  // Query-backed or not-due definitions must not trigger producer side effects.
+  const commandOutputs = new Map<string, Promise<string>>();
 
   for (const row of dueRows) {
     options.onAttempt?.(row);
@@ -253,13 +219,15 @@ export async function measureSourceMetrics(options: {
       } else if (row.source_command) {
         measuredBy = "runtime:metric-source-command";
         note = commandNote;
-        sample = batches.samples.get(row.id) ?? null;
-        if (!sample && !batches.handled.has(row.id)) {
-          sample = await executeCommand(row.source_command);
+        let output = commandOutputs.get(row.source_command);
+        if (!output) {
+          output = executeCommand(row.source_command);
+          commandOutputs.set(row.source_command, output);
         }
+        sample = parseCommandOutput(await output, row.id);
       }
       if (!sample) {
-        failed(row.id, batches.failures.get(row.id) ?? "Source returned no finite numeric sample");
+        failed(row.id, "Source returned no finite numeric sample");
         continue;
       }
       metrics.record(row.id, sample.value, {
@@ -346,7 +314,7 @@ export function attachMetricSourceMeasurement(options: {
       sourceQuery: UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
       measureInterval: 300_000,
       description:
-        "Counts unhandled events that are not declared observation-only task lifecycle, profiling, progress, metric, conversation, review, approval, or Host Operations report facts.",
+        "Counts unhandled events that are not declared observation-only task lifecycle, profiling, progress, metric, conversation, review, approval, or maintenance report facts.",
     };
     const existingUnexpectedUnhandledMetric = db
       .prepare("SELECT id FROM metrics WHERE id = ?")
