@@ -1,7 +1,8 @@
 # Caller feedback while waiting — mechanics PoC
 
-Experimental branch rebased onto Host `38a048da` (#167); the original trials
-used `8026aff9`. This is not a released SDK contract.
+Experimental branch rebased onto Host `f6a11d1c` (#172); the original trials
+used `8026aff9`, and the first published candidate used `38a048da` (#167).
+This is not a released SDK contract.
 The design proposal is maintained in the companion App's canonical docs:
 `docs/proposals/caller-feedback-and-waiting.md`.
 

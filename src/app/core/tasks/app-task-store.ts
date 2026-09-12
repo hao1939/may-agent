@@ -139,7 +139,7 @@ export type AppTaskAdmission = {
   inputEvent?: Record<string, unknown>;
   /** Exact accepted answer for this input; later Task outcomes do not replace it. */
   resultAttemptId?: string;
-  /** Selected report: first failure, or an explicitly reported later wait. Never an answer. */
+  /** Selected report: first failure, or an explicit update while waiting/retrying. Never an answer. */
   reportAttemptId?: string;
   /** Monotonic within this input; older notifications cannot replace newer feedback. */
   reportRevision?: number;

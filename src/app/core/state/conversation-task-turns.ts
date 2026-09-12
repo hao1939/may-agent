@@ -400,7 +400,7 @@ export type ConversationTaskChangeRef = {
 /** Successful admissions remove themselves from discovery; the limit bounds returned work. */
 // Input-backed work exposes its selected report until answered or closed.
 // Seeded work has no input receipt; preserve its per-attempt stopped observations.
-// Both event admission and recovery use this predicate (alias: attempt).
+// Both event admission and recovery use this predicate (aliases: attempt, topic).
 const returnedAttemptSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
   OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'stopped'
@@ -411,11 +411,16 @@ const returnedAttemptSql = `(
   OR (NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
       WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)
     AND EXISTS (SELECT 1 FROM app_task_admissions admission
+      JOIN app_inbox_items origin_input
+        ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
       WHERE admission.app_id = attempt.app_id
         AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
         AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
         AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
-        AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id)
+        AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id
+        AND origin_input.app_id = topic.app_id
+        AND origin_input.conversation_id = topic.conversation_id
+        AND origin_input.topic_id = topic.id)
   )
 )`;
 
@@ -515,10 +520,12 @@ export function admitConversationTaskChange(
       if (
         !db
           .prepare(
-            `SELECT 1 FROM app_task_attempts attempt
-          WHERE attempt.app_id = ? AND attempt.attempt_id = ? AND ${returnedAttemptSql}`,
+            `SELECT 1 FROM app_task_attempts attempt, conversation_topics topic
+          WHERE attempt.app_id = ? AND attempt.attempt_id = ?
+            AND topic.app_id = ? AND topic.conversation_id = ? AND topic.id = ?
+            AND ${returnedAttemptSql}`,
           )
-          .get(source.resourceStore.appId, input.attemptId)
+          .get(source.resourceStore.appId, input.attemptId, appId, input.conversationId, input.topicId)
       )
         return { taskId: task.metadata.id, created: false };
       const outcome =

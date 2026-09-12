@@ -24,6 +24,7 @@ import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { readAppConversationResource, linkConversationTopicTask, createConversationTopic } from "./conversations.js";
 import { readConversationRequest } from "./conversation-requests.js";
+import { admitTaskRequest } from "./inbox.js";
 import {
   admitConversationTaskInput,
   admitConversationTaskChange,
@@ -797,6 +798,23 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
       taskId: "measurement",
       attemptId: claim.attemptId,
     };
+    const unrelatedTopics: Array<{ conversationId: string; topicId: string }> = [];
+    if (scenario !== "answer") {
+      const other = admitConversationTaskInput(f.context(), { ...f.input("other", 1), conversationId: "other-chat" });
+      completeConversationTaskTurn(f.context(), f.claim(other.taskId), {
+        summary: "Discuss unrelated work", response: "Following a different question",
+        topic: { kind: "new", title: "Other discussion" },
+      });
+      createConversationTopic(f.db, {
+        id: "other-topic", appId: app.id, conversationId: "chat", title: "Another topic in the same chat",
+        openedBy: "human", originMessageId: "other-topic-message",
+      });
+      unrelatedTopics.push(
+        { conversationId: "other-chat", topicId: getAppInboxItem(f.db, "other")!.topicId! },
+        { conversationId: "chat", topicId: "other-topic" },
+      );
+      for (const topic of unrelatedTopics) linkConversationTopicTask(f.db, topic.topicId, "worker", "measurement");
+    }
     expect(() => admitConversationTaskChange(f.context(), worker, returned)).toThrow("accepted attempt");
     if (scenario === "answer") completeAppTask(worker, claim, { summary: "Measured", result: { value: 17 } });
     else if (scenario === "execution-error") failAppTaskAttempt(worker, claim, "Synthetic source unavailable");
@@ -823,6 +841,13 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
     expect(() => admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: "missing" })).toThrow(
       "accepted attempt",
     );
+    if (scenario !== "answer") {
+      expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([
+        { ...returned, appId: app.id, taskAppId: "worker" },
+      ]);
+      for (const topic of unrelatedTopics)
+        expect(admitConversationTaskChange(f.context(), worker, { ...returned, ...topic }).created).toBe(false);
+    }
     createAppInboxItem(f.db, { ...f.input("ordinary", 2), input: { kind: "goal", data: {} } });
     const wake = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
     expect(wake.taskId).toBe(first.taskId);
@@ -877,6 +902,8 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
     f.reopen();
     worker = appTaskContext({ ...f.context(), resourceStore: AppTaskResourceStore.fromDb(f.db, "worker") });
     expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([reportIds[1]!]);
+    for (const topic of unrelatedTopics)
+      expect(admitConversationTaskChange(f.context(), worker, { ...returned, ...topic, attemptId: reportIds[1]! }).created).toBe(false);
     expect(admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: reportIds[0]! }).created).toBe(
       false,
     );
@@ -905,7 +932,9 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
     expect(admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: reportIds[1]! }).created).toBe(
       false,
     );
-    expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([
+    // Accepted Task outcomes remain visible to linked topics; selected input
+    // reports above are narrower and must only wake their originating topic.
+    expect(listPendingConversationTaskChanges(f.db, app.id).filter((change) => change.topicId === returned.topicId).map((change) => change.attemptId)).toEqual([
       finishing.attemptId,
     ]);
     expect(worker.resourceStore.isCancelled("measurement")).toBe(false);
@@ -1129,19 +1158,19 @@ test("closure input validates the exact source and rolls admission back without 
     "closure-fixture",
   );
   const worker = appTaskContext({ ...f.context(), resourceStore: source });
-  observeAppTaskIntent(worker, {
-    appAgent: "measurement",
-    admissionKey: "measurement-input",
-    trigger: { type: "app.task.requested", data: { idempotencyKey: "measurement-input" } },
-    intent: {
+  admitTaskRequest(worker, {
+    appId: source.appId,
+    idempotencyKey: "measurement-input",
+    request: { id: input.item.id, source: input.item.source, input: { kind: "measure", data: {} } },
+    topicId: topic.id,
+    attachment: { kind: "desired", intent: {
       id: "sample",
       parentId: "root",
       mode: "achieve",
       outcome: "Measure sample",
       acceptance: ["Observed value"],
-    },
+    } },
   });
-  linkConversationTopicTask(f.db, topic.id, source.appId, "sample");
   const failed = claimObservedAppTask(worker, {
     taskId: "sample",
     appAgent: "measurement",
