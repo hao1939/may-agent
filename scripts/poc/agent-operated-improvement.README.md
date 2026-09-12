@@ -31,6 +31,9 @@ handling an explicitly safe-to-retry failure, not an ambiguous external effect.
 Saving and committing source are checked separately from actual activation.
 The final Git HEAD must equal the active source; the retained diff and recovery
 check name that same commit. A clean but unactivated later commit cannot pass.
+Any pending reload observation makes the trial inconclusive before grading;
+the fixture does not add a drain/retry coordinator. Every withheld check must
+use that final commit, and source/activation are inspected again after grading.
 The recovery check requires a failure tool result, a reload requested in a
 later assistant message, and that call's successful activation of the final
 source. Calls planned together do not count. Ordered call IDs, message indices
@@ -46,12 +49,17 @@ numeric assertions; a passing finish call is not proof of a useful improvement.
 
 - At most 12 bounded executions per live trial: baseline, improver, up to six
   improver-selected target probes and four withheld checks.
-- Improver deadline: 300 seconds; each fresh target: 60 seconds. Nested read-only
+- Improver deadline: 300 seconds; each fresh target: 60 seconds. Nested target
   probes have their own deadline; this does not prove immediate cooperative
   cancellation of those model calls. Git operations receive cancellation.
 - Uses `gpt-5.6-sol` with fallback removed; actual model identities are recorded.
 - Target preparation uses the active immutable definition. It does not test
   existing persistent sessions or durable Task adoption.
+- Target reads are limited to that snapshot, and it cannot edit guidance or
+  policy. Its standard `finish` tool can append reported lessons to private
+  fixture evidence. The no-model preflight checks that this append happens,
+  the target cannot read it and a fresh target prompt does not load it. Calling
+  the whole execution "read-only" was too broad; evidence is not active guidance.
 - Probe results return the answer, revision, status, tool-error count, timing and a detail path;
   prompts and tool traces remain readable on demand.
 - Invalid executions are retained and stop the harness; no automatic harness

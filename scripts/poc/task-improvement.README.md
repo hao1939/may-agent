@@ -45,6 +45,10 @@ reopen. Committed source is retained, not activated or deleted.
 
 - Only synthetic target guidance is writable. Policy truth, target tools and
   permissions cannot be changed through the fixture capabilities.
+- The target cannot edit guidance or policy. Its standard finish tool can
+  append reported lessons as private fixture evidence; that evidence is neither
+  readable target context nor automatically loaded guidance. The shared
+  no-model preflight checks this narrower promise, not a blanket "read-only" claim.
 - The Task runtime restarts gracefully in process. The temporary source daemon
   stays running. Targets are direct fresh executions, not subprocess Task workers.
 - The external window is fixture control, not a production approval service.

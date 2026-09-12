@@ -56,6 +56,13 @@ test("recovery needs a later assistant reload after the exact failure, then matc
   ]);
   expect(reloadRecoveryEvidence(messages, "unrelated-failure", "candidate").handled).toBe(false);
   expect(reloadRecoveryEvidence(messages, "first", "different-source").handled).toBe(false);
+  expect(
+    reloadRecoveryEvidence(
+      [...messages, reloadRequests("still-pending"), reloadResult("still-pending", { reload: { state: "pending" } })],
+      "first",
+      "candidate",
+    ).handled,
+  ).toBe(false);
 });
 
 test("two reloads planned before failure are not an observed recovery, even if one activates", () => {
