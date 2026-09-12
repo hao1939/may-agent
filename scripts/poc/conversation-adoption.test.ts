@@ -1,10 +1,12 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { fixtureGit, fixtureRead, fixtureWrite } from "./conversation-adoption-tools.js";
+import { createServer } from "node:net";
+import { once } from "node:events";
+import { fixtureGit, fixtureRead, fixtureReload, fixtureWrite } from "./conversation-adoption-tools.js";
 import { requireDecidedTurn } from "./conversation-adoption.js";
 import { pollUntil } from "../../test/e2e/lib/live-daemon.js";
 
@@ -103,6 +105,45 @@ test("fixture Git forwards cancellation to a waiting subprocess", async () => {
     });
   } finally {
     clearTimeout(timer);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 5_000);
+
+test("fixture reload aborts inside its polling delay without making another observation", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-reload-abort-"));
+  const controller = new AbortController();
+  let observations = 0;
+  const server = createServer((socket) => {
+    let buffer = "";
+    socket.on("data", (chunk) => {
+      buffer += chunk.toString();
+      if (!buffer.includes("\n")) return;
+      const command = JSON.parse(buffer.trim());
+      const reply =
+        command.type === "publish"
+          ? { eventId: 1, eventType: "runtime.reload.requested", delivery: "accepted" }
+          : { event: { links: ++observations === 1 ? [] : [{ kind: "operation", state: "succeeded" }] } };
+      socket.end(JSON.stringify({ type: "ok", command: command.type, ...reply }) + "\n");
+    });
+  });
+  // Only the abortable delay subscribes to this signal. Abort just after it
+  // registers, instead of guessing a sleep duration or mocking shared modules.
+  const subscribe = controller.signal.addEventListener.bind(controller.signal);
+  const listener = spyOn(controller.signal, "addEventListener").mockImplementation((...args) => {
+    subscribe(...args);
+    if (args[0] === "abort") queueMicrotask(() => controller.abort());
+  });
+  try {
+    mkdirSync(join(root, "instances/adoption"), { recursive: true });
+    server.listen(join(root, "instances/adoption/may.sock"));
+    await once(server, "listening");
+    await expect(fixtureReload(root, controller.signal)).rejects.toMatchObject({ name: "AbortError" });
+    expect(listener).toHaveBeenCalled();
+    expect(observations).toBe(1);
+  } finally {
+    controller.abort();
+    listener.mockRestore();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
     rmSync(root, { recursive: true, force: true });
   }
 }, 5_000);
