@@ -1,3 +1,4 @@
+import { readTaskEventTarget } from "../events/task-target.js";
 import {
   childEventTrace,
   EVENT_ROW_ID,
@@ -73,15 +74,8 @@ function normalizedAppId(value: unknown): string {
 }
 
 function taskTargetKey(event: AgentEvent): string | null {
-  const envelope = event as AgentEvent & { target?: Record<string, unknown> };
-  const target =
-    envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target) ? envelope.target : {};
-  const appId = [target.appId, target.project].map(normalizedAppId).find(Boolean) ?? "";
-  const taskId =
-    typeof (target as Record<string, unknown>).taskId === "string"
-      ? String((target as Record<string, unknown>).taskId).trim()
-      : "";
-  return appId && taskId ? `${appId}\0${taskId}` : null;
+  const target = readTaskEventTarget((event as AgentEvent & { target?: unknown }).target);
+  return target?.appId ? `${target.appId}\0${target.taskId}` : null;
 }
 
 function taskEventMux(bus: EventBus): TaskEventMux {

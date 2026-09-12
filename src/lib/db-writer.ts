@@ -7,6 +7,7 @@
  */
 
 import { createHash } from "node:crypto";
+import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import {
   EVENT_DEDUPLICATED,
   EVENT_INGRESS_SOURCE,
@@ -842,13 +843,9 @@ export class DbWriter {
     eventId: number,
     observedAt: number,
   ): void {
-    const appId =
-      [target.appId, target.project]
-        .find((value): value is string => typeof value === "string" && Boolean(value.trim()))
-        ?.trim()
-        .replace(/\.app$/, "") ?? "";
-    const taskId = String(target.taskId ?? "").trim();
-    if (!appId || !taskId) return;
+    const address = readTaskEventTarget(target);
+    if (!address?.appId) return;
+    const { appId, taskId } = address;
     const authority = this.db
       .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
       .get(appId) as { value?: string } | null;

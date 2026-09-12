@@ -1,3 +1,4 @@
+import { readTaskEventTarget } from "../events/task-target.js";
 import {
   taskAgentResultSchema as appTaskAgentResultSchema,
   type TaskAttempt,
@@ -172,17 +173,8 @@ function runtimeTaskAttempt(input: {
     opts.bus,
     { appId: descriptor.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
     (publication, eventId) => {
-      const target = (publication as AgentEvent & { target?: Record<string, unknown> }).target;
-      const appId = [target?.appId, target?.project]
-        .find((value): value is string => typeof value === "string" && Boolean(value.trim()))
-        ?.trim()
-        .replace(/\.app$/, "");
-      if (
-        !closed &&
-        appId === descriptor.id &&
-        typeof target?.taskId === "string" &&
-        target.taskId.trim() === claim.taskId
-      )
+      const target = readTaskEventTarget((publication as AgentEvent & { target?: unknown }).target);
+      if (!closed && target?.appId === descriptor.id && target.taskId === claim.taskId)
         selfPublishedEventIds.add(eventId);
     },
   );

@@ -1,3 +1,4 @@
+import { readTaskEventTarget } from "../../core/events/task-target.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { resolve } from "node:path";
 import { SubagentManager } from "../../../lib/index.js";
@@ -286,14 +287,11 @@ async function runWorkerProcess(
   const stopInput = task
     ? bus.listen(
         (event) => {
-          const target = (event as AgentEvent & { target?: Record<string, unknown> }).target;
-          const appId = String(target?.appId ?? target?.project ?? "")
-            .trim()
-            .replace(/\.app$/, "");
+          const target = readTaskEventTarget((event as AgentEvent & { target?: unknown }).target);
           const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
           if (
             relayedEvents.has(event) ||
-            appId !== task.appId ||
+            target?.appId !== task.appId ||
             target?.taskId !== task.taskId ||
             !Number.isSafeInteger(eventId) ||
             Number(eventId) <= 0 ||
