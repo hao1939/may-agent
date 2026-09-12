@@ -106,6 +106,13 @@ export async function runTrial(live = false) {
     assert.equal(result.status, "done", `Invalid execution ${id}; retained, no harness rerun`);
     return record;
   };
+  const exposeEvidence = (record: Record<string, unknown>) => {
+    const { id, status, sourceCommit, request, result, error, durationMs } = record;
+    const evidencePath = `evidence/runs/${id}.json`;
+    write(evidencePath, JSON.stringify(clean(record), null, 2));
+    // Return enough to judge a trial; retain prompts/tool traces for an explicit read.
+    return { id, status, sourceCommit, request, result, error, durationMs, evidencePath };
+  };
   async function prepareTarget(id: string, request: string) {
     const release = store.current()!;
     const read = createReadTool(sb.root, {
@@ -267,6 +274,9 @@ export async function runTrial(live = false) {
     if (!live) {
       // Exercise real model/tool preparation without spending a provider call.
       assert((await prepareTarget("preflight", "Ordinary fixture request")).prepared.requireFinish);
+      const packet = exposeEvidence({ id: "preflight", result: { reply: "sample" }, systemPrompt: "details" });
+      assert(!("systemPrompt" in packet));
+      assert.equal(JSON.parse(readFileSync(join(sb.root, packet.evidencePath), "utf8")).systemPrompt, "details");
       assert.deepEqual(decoded(await list.execute("list", {})), { directories: ["agents", "shared", "evidence"] });
       const writer = fixtureWrite({ projectRoot: sb.root });
       await assert.rejects(writer.execute("denied", { path: "agents/may/agent.json", content: "{}" }));
@@ -289,13 +299,14 @@ export async function runTrial(live = false) {
         rejectedBeforeAdmission: true,
         realReloadRecovered: true,
         modelExecutions: 0,
+        compactEvidence: true,
       };
     } else {
       const baselineResult = await target(
         "baseline",
         "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy.",
       );
-      write("evidence/baseline.json", JSON.stringify(clean(baselineResult), null, 2));
+      write("evidence/baseline.json", JSON.stringify(exposeEvidence(baselineResult), null, 2));
       const baselineAnswer = baselineResult.result as Record<string, unknown> | undefined;
       assert(
         baselineAnswer?.limit === null && baselineAnswer?.eligible === null,
@@ -306,14 +317,14 @@ export async function runTrial(live = false) {
         name: "try_agent",
         label: "Try a fresh target execution",
         description:
-          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. Returns actual revision, answer, evidence and reported usage. Read-only target execution; at most six trials. Use results to judge your change; no hidden expected answers are supplied.",
+          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. Returns actual revision, answer and a detailed evidence reference. Read-only target execution; at most six trials. Use results to judge your change; no hidden expected answers are supplied.",
         parameters: Type.Object({ request: Type.String({ minLength: 1, maxLength: 4000 }) }),
         execute: async (_id, input, signal) => {
           signal?.throwIfAborted();
           if (++probes > 6) throw new Error("Six target probes exhausted; report remaining uncertainty");
           const result = await target(`agent-probe-${probes}`, (input as { request: string }).request);
           signal?.throwIfAborted();
-          return response(result);
+          return response(exposeEvidence(result));
         },
       };
       const configured = model();
