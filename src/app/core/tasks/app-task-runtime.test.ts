@@ -28,6 +28,7 @@ import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
+  admitStandaloneCanonicalAppTaskEvent,
   admitTaskAppDependencies,
   attachLoadedAppTask,
   cancelLoadedAppTask,
@@ -44,6 +45,7 @@ import {
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
+import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import type { TaskAgentRunner, TaskWorkflowRunner, TaskSessionRecovery } from "./execution.js";
 import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
@@ -4200,6 +4202,305 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it.each(["executor", "tasks tool"] as const)(
+    "runs three periodic reviews without self-published clock echoes through %s",
+    async (publisher) => {
+      setSystemTime(Date.now());
+      const f = fixture();
+      const bus = eventBus();
+      const writer = new DbWriter(join(f.root, "state"));
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const taskId = "work/periodic-review";
+      const facts: number[] = [];
+      let calls = 0;
+      const { installed } = await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        executors: {
+          reviewer: async (attempt) => {
+            calls += 1;
+            const count = Number(attempt.previousAttempt?.acceptedResult?.result?.count ?? 0) + 1;
+            expect(calls).toBe(count);
+            if (count > 1) {
+              const liveEvents: unknown[] = [];
+              const unsubscribe = attempt.onEvent((event) => liveEvents.push(event));
+              const notified = new Promise<void>((resolve) => {
+                const stop = bus.listen(
+                  () => {
+                    stop();
+                    resolve();
+                  },
+                  { types: ["time.reached"] },
+                );
+              });
+              const wait = attempt.waits.open[0]!;
+              expect(Date.now()).toBeGreaterThanOrEqual(Date.parse(wait.subject.slice(5)));
+              const event = {
+                type: "time.reached",
+                target: { appId: "sample", taskId },
+                data: { time: wait.subject.slice(5), state: true },
+              };
+              const localKey = `observed:${wait.conditionId}`;
+              if (publisher === "executor") {
+                facts.push((await attempt.publish(localKey, event)).eventId);
+              } else {
+                const tool = createAppTaskReadTool({
+                  bus,
+                  scope: () => ({
+                    appId: "sample",
+                    taskId,
+                    generation: attempt.task.generation,
+                    attemptId: attempt.attemptId,
+                  }),
+                });
+                const receipt = await tool.execute("publish-clock", {
+                  action: "publish",
+                  localKey,
+                  eventType: event.type,
+                  target: event.target,
+                  data: event.data,
+                });
+                const content = receipt.content[0];
+                if (content?.type !== "text") throw new Error("Expected publication receipt");
+                const body = JSON.parse(content.text);
+                expect(body.error).toBeUndefined();
+                facts.push(body.eventId);
+              }
+              await notified;
+              unsubscribe();
+              expect(liveEvents).toEqual([]);
+            }
+            return count === 3
+              ? {
+                  state: "converged",
+                  summary: "Three reviews complete",
+                  evidence: ["fixture:reviewed"],
+                  result: { count },
+                }
+              : {
+                  state: "waiting",
+                  summary: "Review complete; next review pending",
+                  evidence: ["fixture:reviewed"],
+                  result: { count },
+                  conditions: [
+                    {
+                      id: `review-${count + 1}`,
+                      type: "time.reached",
+                      subject: `time:${new Date(Date.now() + 60_000).toISOString()}`,
+                      expected: true,
+                      owner: "app:sample",
+                      reviewAfterMs: 60_000,
+                    },
+                  ],
+                };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "self-clock",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      });
+      bus.subscribeDurableRoute((event) => {
+        if (event.type !== "time.reached") return;
+        return admitStandaloneCanonicalAppTaskEvent({
+          descriptor: installed[0]!,
+          event,
+          intent: null,
+          targetedTaskId: taskId,
+          conditionTaskIds: [taskId],
+        }).delivery;
+      });
+      const config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          mode: "achieve",
+          outcome: "Three periodic reviews",
+          acceptance: ["Three reviews and no echo attempts"],
+          executor: "reviewer",
+        },
+      });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      for (let count = 1; count <= 3; count += 1) {
+        await run();
+        expect(calls).toBe(count);
+        expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+          state: count === 3 ? "converged" : "waiting",
+          result: { count },
+          ...(count > 1 ? { acceptedLiveEventIds: [facts[count - 2]] } : {}),
+        });
+        expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+        await run(); // No pending input may immediately start an echo attempt.
+        expect(calls).toBe(count);
+        if (count < 3) setSystemTime(Date.now() + 60_001);
+      }
+      expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+        phase: "converged",
+        conditionIds: [],
+      });
+      expect(facts).toHaveLength(2);
+      setSystemTime(Date.now() + 120_000);
+      await recoverInstalledAppTasks(bus);
+      await run();
+      expect(calls).toBe(3);
+    },
+  );
+
+  it.each(["execution failure", "invalid result", "external input", "superseded"] as const)(
+    "preserves other consumers and recovery after self-publication with %s",
+    async (scenario) => {
+      setSystemTime(Date.now());
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let calls = 0;
+      let ownFact = 0;
+      let otherFact = 0;
+      let externalFact = 0;
+      const taskId = "work/publisher";
+      const peerId = "work/consumer";
+      const intent = {
+        id: taskId,
+        parentId: "operations",
+        mode: "achieve" as const,
+        outcome: "Publish a fact",
+        acceptance: ["Use current facts"],
+        executor: "reviewer",
+      };
+      const install = async () => {
+        const writer = new DbWriter(persistDir);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        const { installed } = await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          executors: {
+            reviewer: async (attempt) => {
+              calls += 1;
+              if (calls > 1) {
+                const ids = attempt.events.items.map(({ eventId }) => eventId);
+                if (scenario === "superseded") expect(attempt.task.generation).toBe(2);
+                else expect(ids).toContain(scenario === "external input" ? externalFact : ownFact);
+                return {
+                  state: "converged",
+                  summary: "Recovered original work",
+                  evidence: ["fixture:verified"],
+                };
+              }
+              ownFact = (
+                await attempt.publish("own-fact", {
+                  type: "sample.observed",
+                  target: { appId: "sample", taskId },
+                  data: { state: true },
+                })
+              ).eventId;
+              otherFact = (
+                await attempt.publish("other-fact", {
+                  type: "sample.observed",
+                  target: { appId: "sample", taskId: peerId },
+                  data: { state: true },
+                })
+              ).eventId;
+              if (scenario === "execution failure") throw new Error("Interrupted after publication");
+              if (scenario === "invalid result") return { state: "invalid" } as never;
+              if (scenario === "external input") {
+                // Public producer metadata must never acknowledge new input.
+                externalFact = Number(
+                  bus.emit({
+                    type: "sample.observed",
+                    source: "app-task:sample",
+                    owner: "app:sample",
+                    target: { appId: "sample", taskId },
+                    data: {
+                      state: false,
+                      emission: {
+                        appId: "sample",
+                        taskId,
+                        generation: attempt.task.generation,
+                        localKey: "fake",
+                      },
+                      attemptId: attempt.attemptId,
+                    },
+                  } as AgentEvent)[EVENT_ROW_ID],
+                );
+              } else {
+                observeAppTaskIntent(loadedTaskConfig(f), {
+                  appAgent: "sample-owner",
+                  intent: { ...intent, outcome: "Publish and verify the revised outcome" },
+                });
+              }
+              return { state: "converged", summary: "First result", evidence: ["fixture:published"] };
+            },
+          },
+          appRegistrySnapshot: {
+            id: "publication-recovery",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: definition() }],
+          },
+        });
+        bus.subscribeDurableRoute((event) => {
+          if (event.type !== "sample.observed") return;
+          return admitStandaloneCanonicalAppTaskEvent({
+            descriptor: installed[0]!,
+            event,
+            intent: null,
+            targetedTaskId: String((event as AgentEvent & { target: { taskId: string } }).target.taskId),
+          }).delivery;
+        });
+      };
+      await install();
+      let config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent });
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...intent, id: peerId } });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await run();
+      expect(calls).toBe(1);
+      expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
+      expect(config.resourceStore.readTrigger(peerId)?.event.eventId).toBe(otherFact);
+      const pending = config.resourceStore.readTrigger(taskId);
+      if (scenario === "superseded") {
+        expect(config.resourceStore.readTask(taskId)?.metadata.generation).toBe(2);
+      } else {
+        expect(pending?.events?.map(({ event }) => event.eventId)).toContain(
+          scenario === "external input" ? externalFact : ownFact,
+        );
+        if (scenario === "external input")
+          expect(pending?.events?.map(({ event }) => event.eventId)).not.toContain(ownFact);
+      }
+      const retryAt = config.resourceStore.readTask(taskId)?.status.executionRetryAt;
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      config = loadedTaskConfig(f);
+      if (retryAt) setSystemTime(retryAt);
+      await run();
+      expect(calls).toBe(2);
+      expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered original work");
+      expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+      expect(config.resourceStore.readTrigger(peerId)?.event.eventId).toBe(otherFact);
+      expect(
+        getDb(persistDir).prepare("SELECT id FROM events WHERE event_type = 'sample.observed'").all(),
+      ).toHaveLength(scenario === "external input" ? 3 : 2);
+    },
+  );
+
   it("atomically consumes live input incorporated by a registered executor", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4213,6 +4514,7 @@ describe("canonical App task runtime", () => {
     });
     let calls = 0;
     let sawLiveFeedback = false;
+    let secondListenerSawFeedback = false;
     let wakeFirstAttempt = () => {};
     const firstAttemptReady = new Promise<void>((resolve) => {
       wakeFirstAttempt = resolve;
@@ -4264,6 +4566,9 @@ describe("canonical App task runtime", () => {
                 accept();
                 unsubscribe();
                 resolve();
+              });
+              attempt.onEvent((event) => {
+                if (event.type === "sample.feedback") secondListenerSawFeedback = true;
               });
               wakeFirstAttempt();
             });
@@ -4324,6 +4629,7 @@ describe("canonical App task runtime", () => {
     }
     expect(calls).toBe(1);
     expect(sawLiveFeedback).toBeTrue();
+    expect(secondListenerSawFeedback).toBeTrue();
     expect(published).toHaveLength(1);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })).toMatchObject({
       status: "done",

@@ -80,9 +80,11 @@ import {
   eventData,
   EVENT_DELIVERY_RESULT,
   EVENT_ROW_ID,
+  EVENT_TASK_EMISSION_FENCE,
   type AgentEvent,
   type DeliveryResult,
   type EventBus,
+  type EventTaskEmissionFence,
 } from "../events/bus.js";
 import {
   assertAppTaskEffectFresh,
@@ -433,8 +435,40 @@ function runtimeTaskAttempt(input: {
   });
   const subscriptions = new Set<() => void>();
   const acceptedLiveEventIds = new Set<number>();
+  const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
+  // Publication already gives this attempt the fact. Record its exact receipt
+  // synchronously: optional live listeners may run only after settlement. The
+  // hidden fence covers tools, workflows and executor publication alike; public
+  // source/emission fields cannot acknowledge somebody else's input. Settlement
+  // consumes these IDs only with a valid result, leaving failed attempts replayable.
+  const unsubscribePublications = opts.bus.subscribe(
+    (incoming) => {
+      const publication = incoming as AgentEvent & {
+        [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence;
+        [EVENT_ROW_ID]?: number;
+        target?: Record<string, unknown>;
+      };
+      const fence = publication[EVENT_TASK_EMISSION_FENCE];
+      const target = publication.target;
+      if (
+        closed ||
+        fence?.appId !== descriptor.id ||
+        fence.taskId !== claim.taskId ||
+        fence.taskGeneration !== claim.generation ||
+        fence.attemptId !== claim.attemptId ||
+        String(target?.appId ?? target?.project ?? "")
+          .trim()
+          .replace(/\.app$/, "") !== descriptor.id ||
+        String(target?.taskId ?? "").trim() !== claim.taskId
+      )
+        return;
+      const eventId = Number(publication[EVENT_ROW_ID]);
+      if (Number.isSafeInteger(eventId) && eventId > 0) selfPublishedEventIds.add(eventId);
+    },
+    { label: "task-attempt-publications" },
+  );
   const unsubscribeCancellation = events.onEvent((incoming) => {
     if (incoming.type !== "app.task.cancelled" && incoming.type !== "app.task.attempt.stopped") return;
     const cancellation =
@@ -494,6 +528,7 @@ function runtimeTaskAttempt(input: {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
         const unsubscribe = events.onEvent((incoming) => {
           const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
+          if (selfPublishedEventIds.has(eventId)) return;
           listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
             if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
             acceptedLiveEventIds.add(eventId);
@@ -510,10 +545,12 @@ function runtimeTaskAttempt(input: {
         return stop;
       },
     },
-    acceptedLiveEventIds: () => [...acceptedLiveEventIds].sort((left, right) => left - right),
+    acceptedLiveEventIds: () =>
+      [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right),
     close() {
       if (closed) return;
       closed = true;
+      unsubscribePublications();
       unsubscribeCancellation();
       for (const unsubscribe of [...subscriptions]) unsubscribe();
     },
