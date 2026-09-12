@@ -106,7 +106,7 @@ export function createAppTaskCapability(options: {
     close: async () => {
       await closeInstalledAppTaskRuntimes(options.bus);
     },
-    attach: async (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
+    attach: (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitConversation: (item) => admitLoadedConversationInput({ bus: options.bus, item }),
     admitConversationChange: (input) => admitLoadedConversationChange({ ...input, bus: options.bus }),
     stopTurn: (target) => stopLoadedConversationTurn({ bus: options.bus, target }),
@@ -138,7 +138,7 @@ export function createAppTaskCapability(options: {
         // A later cycle or an unrelated retained wait cannot answer this input.
         return { kind: "task", id: dependency.id,
           ...(task?.closed ? { closed: true } : {}),
-          status: task ? (task.status === "done" ? "waiting" : task.status) : "unknown",
+          status: task?.closed ? "attention" : "pending",
           summary: task?.closed ? "The Task closed without an accepted outcome for this input" : "This input has no accepted outcome yet",
         };
       }

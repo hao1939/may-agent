@@ -15,7 +15,8 @@ import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitConversationTaskInput, listPendingConversationTaskChanges } from "../state/conversation-task-turns.js";
-import { getAppInboxItem, claimAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../state/conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "../state/conversation-requests.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
@@ -717,8 +718,8 @@ test("ordinary inbox work and Conversation input share a Conversation without bl
         source: { kind: "human", id },
         input: { kind: "message", data: { text: "Keep discussing while the measurement runs" } },
       });
-      expect(ingress.runtime.host.readyCount(app.id)).toBe(1);
-      expect(ingress.runtime.host.readyAppIds()).toContain(app.id);
+
+      expect(ordinary.item.waitingOn?.kind).toBe("task");
       ingress.runtime.scanNow();
       await returned;
       expect(getAppInboxItem(f.db, ordinary.item.id)).toMatchObject({

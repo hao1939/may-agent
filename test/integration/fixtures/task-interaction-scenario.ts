@@ -23,7 +23,8 @@ import {
   conversationTaskIntent,
   listPendingConversationTaskChanges,
 } from "../../../src/app/core/state/conversation-task-turns.js";
-import { claimAppInboxItem, getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js";
+import { getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js";
+import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
 
 async function withProvider(
   f: ReturnType<typeof fixture>,

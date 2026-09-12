@@ -28,7 +28,9 @@ import {
   type AppTurnTarget,
 } from "./app-inbox-store.js";
 import { createConversationTopic, readConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
-import { stableTopicId } from "./conversation-turns.js";
+function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
+  return `topic_${createHash("sha256").update([appId, conversationId, originMessageId].join("\0")).digest("hex").slice(0, 24)}`;
+}
 import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
 
 /** Code assigns one execution identity per Conversation; agents never construct it. */

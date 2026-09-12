@@ -21,12 +21,8 @@ import type { AppInputContext } from "@may-agent/sdk";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";
 import { resolveTaskReference } from "../core/state/task-reference-index.js";
-import {
-  createAppInboxItem,
-  claimNextAppInboxItem,
-  stopAppInboxTurn,
-  getAppInboxItem,
-} from "../core/state/app-inbox-store.js";
+import { createAppInboxItem, stopAppInboxTurn, getAppInboxItem } from "../core/state/app-inbox-store.js";
+import { claimNextAppInboxItem } from "../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../core/state/conversations.js";
 import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import {

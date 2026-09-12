@@ -20,7 +20,8 @@ import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js"
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
 import { conversationTaskId } from "../core/state/conversation-task-turns.js";
 import { HostCapacity } from "../core/scheduling/host-capacity.js";
-import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "../core/state/app-inbox-store.js";
+import { createAppInboxItem } from "../core/state/app-inbox-store.js";
+import { claimNextAppInboxItem, waitAppInboxClaim } from "../../../test/fixtures/legacy-inbox.js";
 import {
   createConversationTopic,
   linkConversationTopicTask,
@@ -132,7 +133,7 @@ describe("App inbox runtime", () => {
       options: {
         hostCapacity: new HostCapacity(4),
         conversationAppId: "may",
-        attachTask: fakeTaskAttacher(db, async (input: any) => {
+        attachTask: fakeTaskAttacher(db, (input: any) => {
           const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
           attached.push(taskId);
           return { taskId };
@@ -212,7 +213,7 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      attachTask: fakeTaskAttacher(db, async (input: any) => {
+      attachTask: fakeTaskAttacher(db, (input: any) => {
         attachments.push(input.attachment);
         return { taskId: input.attachment.taskId };
       }),
@@ -354,7 +355,7 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      attachTask: fakeTaskAttacher(db, async (input: any) => {
+      attachTask: fakeTaskAttacher(db, (input: any) => {
         attachments.push(input.attachment);
         return { taskId: input.attachment.taskId };
       }),
@@ -474,7 +475,7 @@ describe("App inbox runtime", () => {
     expect(assignments).toEqual([]);
   });
 
-  it("returns from durable publication before request coordination starts", async () => {
+  it("returns from durable publication with the exact Task already admitted", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     runtime = await startAppInboxRuntime({
@@ -497,17 +498,16 @@ describe("App inbox runtime", () => {
       },
     });
 
-    expect(runtime.host.get("deferred-request")).toMatchObject({ status: "pending" });
+    expect(runtime.host.get("deferred-request")).toMatchObject({ status: "handling" });
     expect(runtime.host.get("deferred-request")?.lease).toBeUndefined();
-    expect(task.attached).toEqual([]);
-    await waitUntil(() => task.attached.length === 1);
+    expect(task.attached).toEqual(["probe/deferred-request"]);
     expect(runtime.host.get("deferred-request")?.waitingOn).toEqual({
       kind: "task",
       id: "probe/deferred-request",
     });
   });
 
-  it("keeps recovered and newly admitted work idle until explicitly started", async () => {
+  it("admits live input directly while deferring recovery until explicitly started", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     createAppInboxItem(db, {
@@ -538,111 +538,13 @@ describe("App inbox runtime", () => {
       },
     });
     await Bun.sleep(20);
-    expect(task.attached).toEqual([]);
+    expect(task.attached).toEqual(["probe/live-request"]);
     expect(runtime.host.get("recovered-request")?.status).toBe("pending");
-    expect(runtime.host.get("live-request")?.status).toBe("pending");
+    expect(runtime.host.get("live-request")?.status).toBe("handling");
 
     await runtime.start();
     await waitUntil(() => task.attached.length === 2);
     expect(task.attached.sort()).toEqual(["probe/live-request", "probe/recovered-request"]);
-  });
-
-  it.each(["may", "assistant"])("reserves foreground capacity for the selected %s App", async (appId) => {
-    const bus = persistentBus();
-    const task = capabilities(bus);
-    const started: string[] = [];
-    const releases: Array<() => void> = [];
-    mkdirSync(join(root, `${appId}.app`), { recursive: true });
-    writeFileSync(
-      join(root, `${appId}.app`, "app.js"),
-      `export default {
-        id: "${appId}", version: 1, agent: "${appId}",
-        inputSchema: {
-          type: "object", additionalProperties: false, required: ["kind", "data"],
-          properties: {
-            kind: { const: "probe" },
-            data: {
-              type: "object", additionalProperties: false, required: ["value"],
-              properties: { value: { type: "string" } }
-            }
-          }
-        },
-        task(input) {
-          return { kind: "desired", intent: {
-            id: "conversation/" + input.id, parentId: "${appId}", outcome: "Answer",
-            acceptance: ["Answered"], mode: "achieve"
-          }};
-        },
-        tasks: {}
-      };\n`,
-    );
-    runtime = await startAppInboxRuntime({
-      registry: await loadedRegistry(root),
-      db,
-      bus,
-      ...task.options,
-      hostCapacity: new HostCapacity(3),
-      maxConcurrentRequests: 3,
-      conversationAppId: appId,
-      attachTask: fakeTaskAttacher(db, async (input: any) => {
-        const taskId = input.attachment.intent.id as string;
-        started.push(taskId);
-        await new Promise<void>((resolve) => releases.push(resolve));
-        return { taskId };
-      }),
-      scanIntervalMs: 10_000,
-    });
-
-    for (const requestId of ["parallel-1", "parallel-2"]) {
-      bus.emit({
-        type: "app.input.requested",
-        source: "test",
-        owner: "app:evaluation",
-        data: {
-          appId: "evaluation",
-          requestId,
-          input: { kind: "probe", data: { value: requestId } },
-          source: { kind: "system", id: "test" },
-        },
-      });
-    }
-
-    await waitUntil(() => started.length === 2);
-    expect(started).toEqual(["probe/parallel-1", "probe/parallel-2"]);
-
-    bus.emit({
-      type: "app.input.requested",
-      source: "test",
-      owner: "human:test",
-      data: {
-        appId,
-        requestId: "foreground",
-        input: { kind: "probe", data: { value: "foreground" } },
-        source: { kind: "human", id: "message-1" },
-      },
-    });
-    await waitUntil(() => started.length === 3);
-    expect(started).toEqual(["probe/parallel-1", "probe/parallel-2", "conversation/foreground"]);
-
-    bus.emit({
-      type: "app.input.requested",
-      source: "test",
-      owner: "app:evaluation",
-      data: {
-        appId: "evaluation",
-        requestId: "parallel-3",
-        input: { kind: "probe", data: { value: "parallel-3" } },
-        source: { kind: "system", id: "test" },
-      },
-    });
-    await Bun.sleep(20);
-    expect(started).toHaveLength(3);
-
-    releases.shift()?.();
-    await waitUntil(() => started.length === 4);
-    expect(started[3]).toBe("probe/parallel-3");
-    for (const release of releases) release();
-    await waitUntil(() => runtime?.host.get("parallel-3")?.waitingOn?.kind === "task");
   });
 
   it("keeps bounded background input progressing without a conversational App selection", async () => {
@@ -777,106 +679,6 @@ describe("App inbox runtime", () => {
     },
   );
 
-  it("serializes May in the message handler per Conversation while running independent Conversations concurrently", async () => {
-    mkdirSync(join(root, "may.app"), { recursive: true });
-    writeFileSync(
-      join(root, "may.app", "app.js"),
-      `export default {
-        id: "may", version: 1, agent: "may",
-        inputSchema: {
-          type: "object", additionalProperties: false, required: ["kind", "data"],
-          properties: {
-            kind: { const: "message" },
-            data: {
-              type: "object", additionalProperties: true, required: ["message"],
-              properties: { message: { type: "string" } }
-            }
-          }
-        },
-        task(input) { return { kind: "desired", intent: {
-          id: "message/" + input.input.data.message, parentId: "may", outcome: "Answer " + input.input.data.message,
-          acceptance: ["Answered"], mode: "achieve"
-        }}; },
-        tasks: {}
-      };\n`,
-    );
-    const bus = persistentBus();
-    const task = capabilities(bus);
-    const started: string[] = [];
-    const releases = new Map<string, () => void>();
-    let conversationUpdateWakes = 0;
-    bus.subscribeDurableRoute((event) => {
-      if (event.type !== "conversation.updated") return;
-      conversationUpdateWakes += 1;
-      return { accepted: true, by: "test-conversation-view", route: "direct" };
-    });
-    runtime = await startAppInboxRuntime({
-      registry: await loadedRegistry(root),
-      db,
-      bus,
-      ...task.options,
-      hostCapacity: new HostCapacity(3),
-      maxConcurrentRequests: 3,
-      attachTask: fakeTaskAttacher(db, async (input: any) => {
-        const taskId = input.attachment.intent.id as string;
-        started.push(taskId);
-        await new Promise<void>((resolve) => releases.set(taskId, resolve));
-        return { taskId };
-      }),
-      scanIntervalMs: 10_000,
-    });
-
-    const publish = (conversationId: string, text: string) =>
-      bus.emit({
-        type: "conversation.message.created",
-        source: "may-console",
-        owner: "app:may",
-        data: {
-          appId: "may",
-          conversationId,
-          author: { kind: "human", id: `human-${text}` },
-          text,
-        },
-      });
-    publish("conversation-a", "first-a");
-    await waitUntil(() => started.includes("message/first-a"));
-    await waitUntil(() => conversationUpdateWakes > 0);
-
-    // Event admission is not serialized. The later Turn is durable while the
-    // first message-handler invocation is still running; only its handler
-    // claim waits for the preceding Turn in this Conversation.
-    const priorConversationUpdateWakes = conversationUpdateWakes;
-    publish("conversation-a", "second-a");
-    publish("conversation-b", "first-b");
-    expect(conversationUpdateWakes).toBe(priorConversationUpdateWakes);
-    const admitted = db
-      .prepare(
-        `SELECT COUNT(*) AS count
-         FROM app_inbox_items
-         WHERE app_id = 'may' AND conversation_id IN ('conversation-a', 'conversation-b')`,
-      )
-      .get() as { count: number };
-    expect(admitted.count).toBe(3);
-
-    await waitUntil(() => started.length === 2);
-    expect(started).toEqual(["message/first-a", "message/first-b"]);
-    expect(started).not.toContain("message/second-a");
-
-    releases.get("message/first-b")?.();
-    await Bun.sleep(20);
-    expect(started).not.toContain("message/second-a");
-
-    releases.get("message/first-a")?.();
-    await waitUntil(() => started.includes("message/second-a"));
-    releases.get("message/second-a")?.();
-    await waitUntil(() => {
-      const row = db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE lease_owner IS NOT NULL").get() as {
-        count: number;
-      };
-      return row.count === 0;
-    });
-  });
-
   it("recovers an exact Task wait after restart", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
@@ -936,6 +738,7 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
+      readDependency: async ({ appId, dependency }) => appId === "other" ? { ...dependency, status: "pending" } : task.observations.get(dependency.id) ?? null,
       scanIntervalMs: 10_000,
     });
     bus.emit({
@@ -957,11 +760,12 @@ describe("App inbox runtime", () => {
       source: { kind: "system", id: "test" },
       input: { kind: "probe", data: { value: "unrelated" } },
     });
-    await runtime.host.reconcileOnce("other");
+
     expect(runtime.host.get("unrelated-request")?.waitingOn).toEqual({
       kind: "task",
       id: "probe/waiting-request",
     });
+    // The real reader scopes equal Task IDs by App directory.
     task.observations.set("probe/waiting-request", {
       kind: "task",
       id: "probe/waiting-request",
@@ -1742,7 +1546,7 @@ describe("App inbox runtime", () => {
       deferStart: true,
       observerContext: () => ({}) as never,
     });
-    const readiness = spyOn(runtime.host, "readyAppIds").mockImplementation(() => {
+    const readiness = spyOn(runtime.host, "recoverAdmissions").mockImplementation(async () => {
       throw new Error("fixture readiness read unavailable");
     });
     try {
@@ -1755,11 +1559,11 @@ describe("App inbox runtime", () => {
           observed.filter((type) => type === "sample.scheduled").length === 32,
       );
       // Subsequent scans at the same slot cannot multiply publications.
-      await waitUntil(() => failures.length >= 3);
+      expect(failures).toHaveLength(1);
       expect(failures[0]).toMatchObject({
         type: "handler.failed",
         source: "app-inbox",
-        data: { stage: "input-recovery", error: "fixture readiness read unavailable", disposition: "recovery-pending" },
+        data: { stage: "dependency-recovery", error: "fixture readiness read unavailable", disposition: "recovery-pending" },
       });
       expect(observed.filter((type) => type === "sample.scheduled")).toHaveLength(32);
       expect(observed.filter((type) => type === "sample.observed")).toHaveLength(1);

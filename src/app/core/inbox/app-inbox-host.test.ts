@@ -1,21 +1,9 @@
-import { createConversationInbox } from "../../composition/conversation-inbox.js";
-import { APP_REQUEST_CONVERSATION_MAX_BYTES } from "../../conversations/context.js";
-import { boundedAppRequestConversation } from "../../conversations/context.js";
+import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import {
-  Type,
-  defineApp,
-  type AppConversationResource,
-  type AppDefinition,
-  type AppInputContext,
-  type AppTaskAttachment,
-} from "@may-agent/sdk";
+import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import { readAppConversationResource } from "../state/conversations.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
@@ -67,7 +55,7 @@ describe("App inbox host", () => {
   }
 
   it("validates input and exposes typed actions without lifecycle machinery", () => {
-    const host = createConversationInbox({
+    const host = new AppInboxHost({
       db,
       apps: [
         defineApp({
@@ -117,7 +105,7 @@ describe("App inbox host", () => {
           },
         ],
       });
-    const host = createConversationInbox({ db, apps: [subscribed("old.event")] });
+    const host = new AppInboxHost({ db, apps: [subscribed("old.event")] });
 
     expect(host.subscriptionInputs({ type: "old.event", data: {} })).toHaveLength(1);
     expect(host.subscriptionInputs({ type: "unrelated.event", data: {} })).toEqual([]);
@@ -127,634 +115,251 @@ describe("App inbox host", () => {
     expect(routed).toEqual(["old.event", "new.event"]);
   });
 
-  it("resolves every admitted input to exactly one durable Task", async () => {
-    const attachments: Array<{ appId: string; idempotencyKey: string; attachment: AppTaskAttachment }> = [];
-    const host = createConversationInbox({
+  it("admits directly, preserves identity, and never remaps an attached input on reload", async () => {
+    const attachments: AppTaskAttachment[] = [];
+    let mappings = 0;
+    const initial = defineApp({
+      ...app(),
+      task: (input) => {
+        mappings++;
+        return desiredTask(input.id);
+      },
+    });
+    const host = new AppInboxHost({
       db,
-      apps: [app()],
-      attachTask: fakeTaskAttacher(db, async ({ appId, attachment, idempotencyKey }) => {
-        attachments.push({ appId, attachment, idempotencyKey });
+      apps: [initial],
+      attachTask: fakeTaskAttacher(db, ({ attachment }) => {
+        attachments.push(attachment);
         return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
       }),
     });
-    admit(host, "one");
-
-    expect(await host.reconcileOnce("evaluation")).toEqual({ claimed: 1, admitted: 1, released: 0, errors: [] });
-    expect(attachments).toEqual([
+    expect(admit(host, "one")).toMatchObject({
+      status: "handling",
+      waitingOn: { kind: "task", id: "probe/one" },
+      taskAdmissionKey: "task:one",
+    });
+    expect(host.get("one")?.lease).toBeUndefined();
+    host.replaceApps([
       {
-        appId: "evaluation",
-        idempotencyKey: "task:one",
-        attachment: desiredTask("one"),
+        ...initial,
+        task: () => {
+          throw new Error("must not remap");
+        },
       },
     ]);
-    expect(host.get("one")?.waitingOn).toEqual({ kind: "task", id: "probe/one" });
+    admit(host, "one");
+    await host.recoverAdmissions();
+    await host.recoverTaskResults();
+    expect(mappings).toBe(1);
+    expect(attachments).toHaveLength(1);
+    expect(() =>
+      host.admit({
+        id: "one",
+        appId: "evaluation",
+        source: { kind: "system", id: "test" },
+        input: { kind: "probe", data: { value: "changed" } },
+      }),
+    ).toThrow("different input");
   });
 
-  it("attaches typed follow-up input to one exact existing Task", async () => {
-    const attachments: Array<{ attachment: AppTaskAttachment; request: Readonly<AppInputContext> }> = [];
-    const host = createConversationInbox({
+  it("uses the exact target and passes immutable typed input with human origin", () => {
+    let received: Readonly<AppInputContext> | undefined;
+    const host = new AppInboxHost({
       db,
-      apps: [app()],
-      attachTask: fakeTaskAttacher(db, async ({ attachment, request }) => {
-        attachments.push({ attachment, request });
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
+      apps: [
+        {
+          ...app(),
+          task: () => {
+            throw new Error("exact target bypasses mapping");
+          },
+        },
+      ],
+      attachTask: fakeTaskAttacher(db, ({ attachment, request }) => {
+        expect(attachment).toEqual({ kind: "existing", taskId: "existing" });
+        received = request;
+        return { taskId: "existing" };
       }),
     });
     host.admit({
       id: "feedback",
       appId: "evaluation",
-      targetTaskId: "probe/current",
-      source: { kind: "app", id: "may" },
-      input: { kind: "probe", data: { value: "human correction" } },
+      targetTaskId: "existing",
+      source: { kind: "human", id: "operator" },
+      input: { kind: "probe", data: { value: "correction" } },
     });
-
-    expect(await host.reconcileOnce("evaluation")).toEqual({ claimed: 1, admitted: 1, released: 0, errors: [] });
-    expect(attachments).toEqual([
-      {
-        attachment: { kind: "existing", taskId: "probe/current" },
-        request: expect.objectContaining({
-          id: "feedback",
-          input: { kind: "probe", data: { value: "human correction" } },
-        }),
-      },
-    ]);
-    expect(host.get("feedback")).toMatchObject({
-      targetTaskId: "probe/current",
-      waitingOn: { kind: "task", id: "probe/current" },
-    });
+    expect(received).toMatchObject({ id: "feedback", humanRequested: true });
+    expect(Object.isFrozen(received?.input.data)).toBe(true);
   });
 
-  it("accepts input after attention or an answer, but refuses a closed Task", async () => {
-    const attachments: AppTaskAttachment[] = [];
-    const completed: unknown[] = [];
-    const host = createConversationInbox({
+  it("contains mapping failure, admits unrelated input, and retries the saved input after repair", async () => {
+    const failures: unknown[] = [];
+    let repaired = false;
+    let failedMappings = 0;
+    const host = new AppInboxHost({
       db,
-      apps: [app()],
-      readDependency: async ({ dependency }) => ({
-        ...dependency,
-        status: dependency.id === "probe/attention" ? "attention" : "done",
-        closed: dependency.id === "probe/closed",
-      }),
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
-        attachments.push(attachment);
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      }),
-      onRequestCompleted: (item, result) => completed.push({ id: item.id, result }),
-    });
-    for (const [id, taskId] of [
-      ["feedback-attention", "probe/attention"],
-      ["feedback-done", "probe/done"],
-      ["feedback-closed", "probe/closed"],
-    ] as const) {
-      host.admit({
-        id,
-        appId: "evaluation",
-        targetTaskId: taskId,
-        source: { kind: "app", id: "may" },
-        input: { kind: "probe", data: { value: "human correction" } },
-      });
-    }
-
-    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
-    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
-    expect(await host.reconcileOnce("evaluation")).toMatchObject({ admitted: 1, errors: [] });
-    expect(attachments).toEqual([{ kind: "existing", taskId: "probe/attention" }, { kind: "existing", taskId: "probe/done" }]);
-    expect(host.get("feedback-attention")).toMatchObject({
-      status: "handling",
-      waitingOn: { kind: "task", id: "probe/attention" },
-    });
-    expect(host.get("feedback-done")).toMatchObject({
-      status: "handling", waitingOn: { kind: "task", id: "probe/done" },
-    });
-    expect(host.get("feedback-closed")).toMatchObject({
-      status: "done",
-      result: { summary: expect.stringContaining("new input was not applied") },
-    });
-    expect(completed).toEqual([
-      {
-        id: "feedback-closed",
-        result: { summary: expect.stringContaining("must be reconsidered as distinct follow-up work") },
-      },
-    ]);
-  });
-
-  it("projects the Task semantic result to the correlated request", async () => {
-    const completed: unknown[] = [];
-    let done = false;
-    const host = createConversationInbox({
-      db,
-      apps: [app()],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
-        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      })),
-      readDependency: async ({ dependency }) =>
-        dependency.kind === "task" && done
-          ? {
-              kind: "task",
-              id: dependency.id,
-              status: "done",
-              summary: "Probe passed",
-              response: "Everything is healthy.",
-              evidence: ["probe:ok"],
+      apps: [
+        {
+          ...app(),
+          task: (input) => {
+            if (input.id === "broken") {
+              failedMappings++;
+              if (!repaired) throw new Error("App mapping unavailable");
             }
-          : { kind: dependency.kind, id: dependency.id, status: "running" },
-      onRequestCompleted: (item, result) => completed.push({ id: item.id, result }),
-    });
-    admit(host, "result");
-    await host.reconcileOnce("evaluation");
-
-    done = true;
-    host.wake({ kind: "task", id: "probe/result" });
-    await host.reconcileOnce("evaluation");
-
-    expect(host.get("result")).toMatchObject({
-      status: "done",
-      result: { summary: "Probe passed", response: "Everything is healthy.", evidence: ["probe:ok"] },
-    });
-    expect(completed).toEqual([
-      {
-        id: "result",
-        result: { summary: "Probe passed", response: "Everything is healthy.", evidence: ["probe:ok"] },
-      },
-    ]);
-  });
-
-  it("reads the captured May attention result without reattaching or mutating its existing Task", async () => {
-    const fixtureUrl = new URL(
-      "../../../../test/fixtures/may-inbox-existing-task-correlation-20260818.json",
-      import.meta.url,
-    );
-    const fixtureBytes = readFileSync(fixtureUrl);
-    expect(createHash("sha256").update(fixtureBytes).digest("hex")).toBe(
-      "478b54c083fa4fa53dc61b83ef57565c59a31a85827d1a722527ebcb0118e508",
-    );
-    const capture = JSON.parse(fixtureBytes.toString("utf8")) as {
-      provenance: {
-        kind: string;
-        sourceSession: { id: string; requestId: string; resultSha256: string };
-        taskStateCapture: { sha256: string };
-      };
-      request: {
-        id: string;
-        appId: string;
-        parentId: string;
-        source: { kind: "app"; id: string };
-      };
-      dependencyObservation: {
-        kind: "task";
-        id: string;
-        status: "attention";
-        summary: string;
-      };
-      ownerResult: {
-        requestId: string;
-        disposition: { type: "task"; task: { kind: "existing"; taskId: string } };
-      };
-      taskResource: {
-        id: string;
-        generation: number;
-        resourceVersion: number;
-        phase: string;
-        completionReceipts: unknown[];
-      };
-      existingTaskAdmission: {
-        idempotencyKey: string;
-        taskId: string;
-        taskGeneration: number;
-        specHash: string;
-      };
-    };
-    expect(capture.provenance).toMatchObject({
-      kind: "immutable-runtime-capture",
-      sourceSession: {
-        id: "s_1787048407052_294",
-        requestId: "app-inbox:app_7ae28c2c-3058-499c-a749-84a4ffa04100",
-        resultSha256: "7f05f1cb19f13f7ee5e6e103e14e107436ab7fca014855003097a35d174ee785",
-      },
-      taskStateCapture: { sha256: "df7c20eb72128281fdc06e0c08fd4fe58a74c9a508ee66ecac1eec872104d00c" },
-    });
-
-    const requestId = capture.request.id;
-    const taskId = capture.ownerResult.disposition.task.taskId;
-    expect(capture.request.appId).toBe("may-agent");
-    expect(capture.ownerResult.requestId).toBe(requestId);
-    expect(capture.dependencyObservation.id).toBe(taskId);
-    expect(capture.existingTaskAdmission).toMatchObject({
-      idempotencyKey: `task:${requestId}:existing:${taskId}`,
-      taskId,
-      taskGeneration: 2,
-    });
-
-    const attachments: Array<{ appId: string; taskId: string; idempotencyKey: string }> = [];
-    const completed: Array<{ requestId: string; summary?: string }> = [];
-    let dependencyReady = false;
-    const readCapturedTaskResource = () => {
-      const readback = JSON.parse(readFileSync(fixtureUrl, "utf8")) as typeof capture;
-      return structuredClone(readback.taskResource);
-    };
-    const taskResourceBeforeReview = readCapturedTaskResource();
-    const mayApp = defineApp({
-      ...app("may-agent"),
-      task: () => capture.ownerResult.disposition.task,
-    });
-    const host = createConversationInbox({
-      db,
-      apps: [mayApp],
-      attachTask: fakeTaskAttacher(db, async ({ appId, attachment, idempotencyKey }) => {
-        const attachedTaskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
-        attachments.push({ appId, taskId: attachedTaskId, idempotencyKey });
-        return { taskId: attachedTaskId };
-      }),
-      readDependency: async ({ dependency }) => {
-        if (!dependencyReady) return { kind: dependency.kind, id: dependency.id, status: "running" };
-        const authoritativeReadback = JSON.parse(readFileSync(fixtureUrl, "utf8")) as typeof capture;
-        expect(authoritativeReadback.dependencyObservation.id).toBe(dependency.id);
-        return authoritativeReadback.dependencyObservation;
-      },
-      onRequestCompleted: (item, result) => completed.push({ requestId: item.id, summary: result.summary }),
-    });
-    host.admit({
-      id: requestId,
-      appId: capture.request.appId,
-      parentId: capture.request.parentId,
-      source: capture.request.source,
-      input: { kind: "probe", data: { value: capture.provenance.sourceSession.id } },
-    });
-
-    await host.reconcileOnce(capture.request.appId);
-    expect(attachments).toEqual([
-      {
-        appId: capture.request.appId,
-        taskId,
-        idempotencyKey: `task:${requestId}`,
-      },
-    ]);
-    expect(host.get(requestId)).toMatchObject({
-      id: requestId,
-      appId: "may-agent",
-      status: "handling",
-      waitingOn: { kind: "task", id: taskId },
-    });
-
-    dependencyReady = true;
-    expect(host.wake({ kind: "task", id: taskId })).toBe(1);
-    expect(await host.reconcileOnce(capture.request.appId)).toEqual({
-      claimed: 1,
-      admitted: 1,
-      released: 0,
-      errors: [],
-    });
-
-    expect(host.get(requestId)).toMatchObject({
-      id: requestId,
-      appId: "may-agent",
-      parentId: capture.request.parentId,
-      status: "done",
-      result: { summary: capture.dependencyObservation.summary },
-    });
-    expect(completed).toEqual([{ requestId, summary: capture.dependencyObservation.summary }]);
-    expect(attachments).toHaveLength(1);
-    expect(readCapturedTaskResource()).toEqual(taskResourceBeforeReview);
-    expect(readCapturedTaskResource()).toEqual({
-      id: taskId,
-      generation: 3,
-      resourceVersion: 10,
-      phase: "attention",
-      completionReceipts: [],
-    });
-  });
-
-  it("accepts the attachment operation's ready request without creating a second Task", async () => {
-    let attachments = 0;
-    const host = createConversationInbox({
-      db,
-      apps: [app()],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
-        attachments += 1;
-        return {
-          taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-          ready: true,
-        };
-      }),
-      readDependency: async ({ dependency }) => ({
-        kind: dependency.kind,
-        id: dependency.id,
-        status: "done",
-        summary: "Already complete",
-      }),
-    });
-    admit(host, "fast");
-
-    await host.reconcileOnce("evaluation");
-    expect(host.get("fast")?.availableAt).toBeLessThanOrEqual(Date.now());
-    await host.reconcileOnce("evaluation");
-
-    expect(attachments).toBe(1);
-    expect(host.get("fast")).toMatchObject({ status: "done", result: { summary: "Already complete" } });
-  });
-
-  it("re-observes each waiting input and wakes only its App", async () => {
-    const constantTaskApp = (id: string) =>
-      defineApp({
-        ...app(id),
-        task: () => ({ kind: "existing" as const, taskId: "runtime/owner-review" }),
-      });
-    const reads: string[] = [];
-    const host = createConversationInbox({
-      db,
-      apps: [constantTaskApp("evaluation"), constantTaskApp("alpha-project")],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
-        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      })),
-      readDependency: async ({ appId, dependency }) => {
-        reads.push(`${appId}/${dependency.id}`);
-        return {
-          kind: "task",
-          id: dependency.id,
-          status: appId === "evaluation" ? "done" : "running",
-          summary: appId === "evaluation" ? "Review complete" : "Review running",
-        };
-      },
-    });
-    admit(host, "evaluation-1", "evaluation");
-    admit(host, "evaluation-2", "evaluation");
-    admit(host, "aks-1", "alpha-project");
-    await host.reconcileOnce("evaluation");
-    await host.reconcileOnce("evaluation");
-    await host.reconcileOnce("alpha-project");
-
-    expect(await host.recoverTaskDependencies()).toEqual({
-      linked: 0,
-      woken: 2,
-      wokenAppIds: ["evaluation"],
-      errors: [],
-    });
-    expect(reads).toEqual(["alpha-project/runtime/owner-review", "evaluation/runtime/owner-review", "evaluation/runtime/owner-review"]);
-    expect(host.get("evaluation-1")?.availableAt).toBeDefined();
-    expect(host.get("evaluation-2")?.availableAt).toBeDefined();
-    expect(host.get("aks-1")?.availableAt).toBeUndefined();
-  });
-
-  it("yields control traffic between dependency recovery items from one App", async () => {
-    let reads = 0;
-    const host = createConversationInbox({
-      db,
-      apps: [app()],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
-        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      })),
-      readDependency: async ({ dependency }) => {
-        reads += 1;
-        return { ...dependency, status: "running" };
-      },
-    });
-    for (const [id, taskId] of [
-      ["first", "probe/first"],
-      ["second", "probe/second"],
-    ] as const) {
-      host.admit({
-        id,
-        appId: "evaluation",
-        targetTaskId: taskId,
-        source: { kind: "system", id: "test" },
-        input: { kind: "probe", data: { value: id } },
-      });
-      await host.reconcileOnce("evaluation");
-    }
-    reads = 0;
-
-    const recovery = host.recoverTaskDependencies();
-    await new Promise<void>((resolve) => setImmediate(resolve));
-
-    expect(reads).toBe(1);
-    await recovery;
-    expect(reads).toBe(2);
-  });
-
-  it("revisits a nonterminal dependency when repaired App policy assigns request-specific achieve work", async () => {
-    const legacy = defineApp({
-      ...app("may-agent"),
-      task: () => ({ kind: "existing" as const, taskId: "runtime/platform-owner-review" }),
-    });
-    const legacyHost = createConversationInbox({
-      db,
-      apps: [legacy],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
-        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
-      })),
-      readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
-    });
-    admit(legacyHost, "addressed-review", "may-agent");
-    await legacyHost.reconcileOnce("may-agent");
-    expect(legacyHost.get("addressed-review")?.waitingOn).toEqual({
-      kind: "task",
-      id: "runtime/platform-owner-review",
-    });
-
-    const attachments: AppTaskAttachment[] = [];
-    const repairedHost = createConversationInbox({
-      db,
-      apps: [app("may-agent")],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
-        attachments.push(attachment);
-        return { taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id };
-      }),
-      readDependency: async ({ dependency }) => ({ ...dependency, status: "waiting" }),
-    });
-
-    expect(await repairedHost.recoverTaskDependencies()).toEqual({
-      linked: 1,
-      woken: 1,
-      wokenAppIds: ["may-agent"],
-      errors: [],
-    });
-    await repairedHost.reconcileOnce("may-agent");
-
-    expect(attachments).toEqual([
-      expect.objectContaining({
-        kind: "desired",
-        intent: expect.objectContaining({ id: "probe/addressed-review", mode: "achieve" }),
-      }),
-    ]);
-    expect(repairedHost.get("addressed-review")?.waitingOn).toEqual({
-      kind: "task",
-      id: "probe/addressed-review",
-    });
-  });
-
-  it("passes bounded Conversation context to the Task Event", async () => {
-    let request: unknown;
-    const host = createConversationInbox({
-      db,
-      apps: [app("may")],
-      attachTask: fakeTaskAttacher(db, async (input) => {
-        request = input.request;
-        return { taskId: input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id };
-      }),
-    });
-    host.admit({
-      id: "turn-1",
-      appId: "may",
-      conversationId: "may:primary",
-      conversationSequence: 1,
-      source: { kind: "human", id: "message-1" },
-      input: { kind: "probe", data: { value: "review" } },
-    });
-
-    await host.reconcileOnce("may");
-
-    expect(request).toMatchObject({
-      id: "turn-1",
-      conversation: { id: "may:primary", current: { messageId: "message-1" } },
-    });
-    const conversation = readAppConversationResource(db, "may", "may:primary");
-    expect(conversation.messages).toEqual([]);
-    expect(conversation).not.toHaveProperty("work");
-  });
-
-  it("projects one exact focused Task observation without making focus an action", async () => {
-    let request: AppInputContext | undefined;
-    const host = createConversationInbox({
-      db,
-      apps: [
-        defineApp({
-          id: "may",
-          version: 1,
-          owner: "may",
-          inputSchema: Type.Object({
-            kind: Type.Literal("probe"),
-            data: Type.Object({
-              value: Type.String(),
-              context: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
-            }),
-          }),
-          task: (input) => desiredTask(input.id),
-          tasks: {},
-        }),
-      ],
-      readDependency: async ({ appId, dependency }) => ({
-        kind: "task",
-        id: dependency.id,
-        status: "waiting",
-        summary: `${appId} is waiting for verified evidence`,
-      }),
-      attachTask: fakeTaskAttacher(db, async (input) => {
-        request = input.request;
-        return { taskId: input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id };
-      }),
-    });
-    host.admit({
-      id: "turn-focused",
-      appId: "may",
-      conversationId: "may:primary",
-      conversationSequence: 1,
-      source: { kind: "human", id: "message-focused" },
-      input: {
-        kind: "probe",
-        data: {
-          value: "why is this waiting?",
-          context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } },
-        },
-      },
-    });
-
-    await host.reconcileOnce("may");
-
-    expect(request?.focusedTask).toEqual({
-      appId: "evaluation",
-      task: {
-        kind: "task",
-        id: "review/docs",
-        status: "waiting",
-        summary: "evaluation is waiting for verified evidence",
-      },
-    });
-    expect(request?.input).toMatchObject({
-      data: { context: { focusedTask: { appId: "evaluation", taskId: "review/docs" } } },
-    });
-  });
-
-  it("bounds owner Conversation context by bytes instead of retained message count", () => {
-    const conversation: AppConversationResource = {
-      id: "may:primary",
-      owner: "may",
-      version: 30,
-      current: { messageId: "message-30" },
-      messages: Array.from({ length: 30 }, (_, index) => ({
-        id: `message-${index + 1}`,
-        sequence: index + 1,
-        author: { kind: "human" as const, id: `human-${index + 1}` },
-        text: `${index + 1}:${"界".repeat(4_000)}`,
-        metadata: { requestId: index === 29 ? "current" : `request-${index + 1}` },
-        createdAt: index + 1,
-      })),
-    };
-
-    const bounded = boundedAppRequestConversation(conversation, "current");
-
-    expect(Buffer.byteLength(JSON.stringify(bounded), "utf8")).toBeLessThanOrEqual(APP_REQUEST_CONVERSATION_MAX_BYTES);
-    expect(bounded.messages.at(-1)?.id).toBe("message-29");
-    expect(bounded.messages.length).toBeLessThan(conversation.messages.length);
-    expect(bounded).not.toHaveProperty("work");
-  });
-
-  it("continues with the next request after one Task resolver fails", async () => {
-    const host = createConversationInbox({
-      db,
-      apps: [
-        defineApp({
-          ...app("evaluation"),
-          task: ({ id }) => {
-            if (id === "bad") throw new Error("bad input");
-            return desiredTask(id);
+            return desiredTask(input.id);
           },
-        }),
+        },
       ],
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => ({
+      attachTask: fakeTaskAttacher(db, ({ attachment }) => ({
         taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
       })),
-      retryAfterMs: 10_000,
+      onFailure: (failure) => {
+        failures.push(failure);
+        throw new Error("diagnostic failed too");
+      },
     });
-    admit(host, "bad");
-    admit(host, "good");
-
-    const failed = await host.reconcileOnce("evaluation");
-    const admitted = await host.reconcileOnce("evaluation");
-
-    expect(failed).toMatchObject({ claimed: 1, admitted: 0, released: 1 });
-    expect(failed.errors).toEqual(["Request bad: bad input"]);
-    expect(admitted).toMatchObject({ claimed: 1, admitted: 1, released: 0, errors: [] });
-    expect(host.get("good")?.waitingOn).toEqual({ kind: "task", id: "probe/good" });
-    expect(host.get("bad")?.status).toBe("pending");
+    expect(admit(host, "broken").status).toBe("pending");
+    expect(admit(host, "unrelated").waitingOn?.id).toBe("probe/unrelated");
+    expect(failedMappings).toBe(1);
+    expect(failures).toMatchObject([{ stage: "input-admission", error: "App mapping unavailable" }]);
+    repaired = true;
+    await host.recoverAdmissions();
+    expect(host.get("broken")?.waitingOn?.id).toBe("probe/broken");
+    expect(failedMappings).toBe(2);
   });
 
-  it("does not remove an App while it owns unfinished requests", () => {
-    const host = createConversationInbox({ db, apps: [app()] });
-    admit(host, "owned");
-    expect(() => host.replaceApps([])).toThrow("Cannot remove App evaluation while it owns unfinished inbox items");
-    host.replaceApps([app(), app("next")]);
-    expect(host.appIds()).toEqual(["evaluation", "next"]);
+  it("projects exact answers once and scopes result notifications by App", async () => {
+    let done = false;
+    const completed: string[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app(), app("other")],
+      attachTask: fakeTaskAttacher(db, () => ({ taskId: "shared-id" })),
+      readDependency: async ({ dependency, admissionKey }) => {
+        expect(admissionKey).toMatch(/^task:/);
+        return { ...dependency, status: done ? "done" : "pending", summary: "Exact answer", response: admissionKey };
+      },
+      onRequestCompleted: (item) => {
+        completed.push(item.id);
+      },
+    });
+    admit(host, "first");
+    admit(host, "second", "other");
+    await host.refreshTaskResults("evaluation", "shared-id");
+    expect(host.get("first")?.status).toBe("handling");
+    done = true;
+    await Promise.all([
+      host.refreshTaskResults("evaluation", "shared-id"),
+      host.refreshTaskResults("evaluation", "shared-id"),
+    ]);
+    expect(host.get("first")?.result).toMatchObject({ response: "task:first" });
+    expect(host.get("second")?.status).toBe("handling");
+    expect(completed).toEqual(["first"]);
+    await host.recoverTaskResults();
+    expect(completed).toEqual(["first", "second"]);
   });
 
-  it("retains pending admission for an unloaded App without blocking other Apps at startup", () => {
+  it("keeps an accepted answer when notification fails and rejects mismatched observations", async () => {
+    let mismatch = true;
+    const failures: unknown[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, () => ({ taskId: "work" })),
+      readDependency: async () => ({
+        kind: "task",
+        id: mismatch ? "wrong" : "work",
+        status: "done",
+        summary: "Verified",
+      }),
+      onRequestCompleted: () => {
+        throw new Error("notification lost");
+      },
+      onFailure: (failure) => failures.push(failure),
+    });
+    admit(host, "one");
+    await host.recoverTaskResults();
+    expect(host.get("one")?.status).toBe("handling");
+    expect(failures).toHaveLength(1);
+    mismatch = false;
+    await host.recoverTaskResults();
+    expect(host.get("one")?.result?.summary).toBe("Verified");
+  });
+
+  it("retires an expired ordinary projection claim without remapping its Task", async () => {
+    let now = 100;
+    let mappings = 0;
+    const host = new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [
+        {
+          ...app(),
+          task: (input) => {
+            mappings++;
+            return desiredTask(input.id);
+          },
+        },
+      ],
+      attachTask: fakeTaskAttacher(db, () => ({ taskId: "work" })),
+      readDependency: async ({ dependency }) => ({ ...dependency, status: "done", summary: "Verified" }),
+    });
+    admit(host, "old-projection");
     db.prepare(
-      `INSERT INTO app_event_admission_plans
-       (event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)
-       VALUES (101, 'previous:1', 1, 'pending', 1000, 1000)`,
-    ).run();
-    db.prepare(
-      `INSERT INTO app_event_admission_commands
-       (event_id, app_id, route_kind, route_id, payload, status, updated_at)
-       VALUES (101, 'evaluation', 'inbox', 'probe', ?, 'pending', 1000)`,
-    ).run(JSON.stringify({ input: { kind: "probe", data: { value: "retained" } } }));
-
-    const host = createConversationInbox({ db, apps: [app("next")] });
-    expect(host.appIds()).toEqual(["next"]);
-    const retained = db.prepare("SELECT * FROM app_event_admission_commands WHERE event_id = 101").get();
-    expect(retained).toMatchObject({ app_id: "evaluation", status: "pending", updated_at: 1000 });
-    host.replaceApps([app("next"), app()]);
-    expect(host.appIds()).toEqual(["evaluation", "next"]);
-    expect(db.prepare("SELECT * FROM app_event_admission_commands WHERE event_id = 101").get()).toEqual(retained);
-    expect(() => host.replaceApps([app("next")])).toThrow("pending event admission commands");
+      "UPDATE app_inbox_items SET lease_owner = 'old-host', lease_generation = 7, lease_expires_at = 150 WHERE id = ?",
+    ).run("old-projection");
+    await host.recoverAdmissions();
+    await host.recoverTaskResults();
+    expect(host.get("old-projection")?.lease?.owner).toBe("old-host");
+    now = 200;
+    await host.recoverAdmissions();
+    await host.recoverTaskResults();
+    expect(host.get("old-projection")?.status).toBe("done");
+    expect(host.get("old-projection")?.lease).toBeUndefined();
+    expect(mappings).toBe(1);
   });
+
+  it("does not remove an App while it owns unfinished inputs", () => {
+    const host = new AppInboxHost({ db, apps: [app()] });
+    admit(host, "one");
+    expect(() => host.replaceApps([])).toThrow("unfinished inbox items");
+  });
+});
+
+it("recovery advances past a page of disabled Apps without claiming input", async () => {
+  const db = openDatabase(":memory:");
+  applyDbSchema(db);
+  try {
+    for (let n = 0; n < 70; n++)
+      createAppInboxItem(db, {
+        id: `disabled-${n}`,
+        appId: "disabled",
+        source: { kind: "system", id: "fixture" },
+        input: { kind: "probe", data: { value: "old" } },
+      });
+    createAppInboxItem(db, {
+      id: "z-ready",
+      appId: "evaluation",
+      source: { kind: "system", id: "fixture" },
+      input: { kind: "probe", data: { value: "ready" } },
+    });
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      now: () => 1,
+      attachTask: fakeTaskAttacher(db, () => ({ taskId: "ready" })),
+    });
+    await host.recoverAdmissions();
+    expect(host.get("z-ready")?.status).toBe("pending");
+    await host.recoverAdmissions();
+    expect(host.get("z-ready")?.waitingOn?.id).toBe("ready");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items WHERE lease_owner IS NOT NULL").get()).toEqual({
+      count: 0,
+    });
+    host.close();
+    db.close();
+    await host.recoverAdmissions();
+    await host.recoverTaskResults();
+  } finally {
+    db.close();
+  }
 });

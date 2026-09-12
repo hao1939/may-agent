@@ -67,8 +67,8 @@ export async function readInputContext(
     return freezeInputContext(request);
   }
 
-  // Legacy session/analysis waits are not part of the Task-only contract.
-  // If an old terminal Event wakes one, reclaim the request as fresh Task work.
+  // Legacy session/analysis links are retained evidence; current execution
+  // and recovery belong to the Task.
   if (waitingOn.kind !== "task") return freezeInputContext(request);
   const dependency = { kind: "task", id: waitingOn.id } as const;
 

@@ -7,7 +7,8 @@ import { cancelAppTask, closeAppTask } from "./core/tasks/app-task-reconciler.js
 import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
 import { listRuntimeTaskViews } from "./core/reads/app-read.js";
 import type { AppTaskContext } from "./core/tasks/app-task-store.js";
-import { claimNextAppInboxItem, createAppInboxItem, waitAppInboxClaim } from "./core/state/app-inbox-store.js";
+import { createAppInboxItem } from "./core/state/app-inbox-store.js";
+import { claimNextAppInboxItem, waitAppInboxClaim } from "../../test/fixtures/legacy-inbox.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,

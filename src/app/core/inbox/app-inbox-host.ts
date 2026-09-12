@@ -1,7 +1,5 @@
-import { stateTransaction as withTransaction } from "../../../lib/db/transaction.js";
-import { readInputContext, freezeInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
-import { completeInboxInput } from "../state/inbox.js";
-import { randomUUID } from "node:crypto";
+import { freezeInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
+import { completeTaskInput, recoverTaskInputAdmissionKey } from "../state/inbox.js";
 import {
   matchesEventSelector,
   type AppDependencyObservation,
@@ -18,21 +16,12 @@ import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import { assertValidAppDefinition } from "../apps/definition-validation.js";
 import {
-  assertAppInboxClaim,
-  claimNextAppInboxItem,
   createAppInboxItem,
-  appInboxCandidateFilter,
   getAppInboxItem,
+  listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
-  releaseAppInboxClaim,
   type AppTurnTarget,
-  renewAppInboxClaim,
-  wakeAppInboxItem,
-  wakeAppInboxItemsWaitingOn,
-  wakeAppInboxItemsWaitingOnApp,
-  type AppInboxClaim,
   type AppInboxItem,
-  type AppInboxWaitKind,
   type AppInboxTaskDependencyKey,
   type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
@@ -46,16 +35,14 @@ export type AppTaskAttacher = (input: {
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   request: Readonly<AppInputContext>;
-  /** Inbox attachment commits its wait and Topic too; direct follow-up admission has no claim. */
-  claim?: AppInboxClaim;
+  /** Persist the input-to-Task link in the Task admission transaction. */
+  inboxInputId?: string;
   now?: number;
   /** Revalidate the originating turn inside the Task admission transaction. */
   authorize?: () => void;
   topicId?: string;
   requestLink?: { appId: string; conversationId: string; id: string; revision: number };
-}) => Promise<{
-  taskId: string;
-}>;
+}) => { taskId: string };
 
 export type AppActionDescription = {
   id: string;
@@ -88,30 +75,11 @@ export type AppInboxFailure = {
   agent?: string;
   requestId?: string;
   conversationId?: string;
-  claimRevision?: number;
   appId?: string;
   taskId?: string;
   stage: string;
   error: string;
   disposition: string;
-};
-
-export type AppInboxReconcileResult = {
-  claimed: number;
-  admitted: number;
-  released: number;
-  errors: string[];
-  failures?: AppInboxFailure[];
-  /** Conversations whose visible messages or active-work projection changed. */
-  conversationIds?: string[];
-};
-
-export type AppInboxTaskRecoveryResult = {
-  linked: number;
-  woken: number;
-  wokenAppIds: string[];
-  errors: string[];
-  failures?: AppInboxFailure[];
 };
 
 export type AppInboxHostOptions = {
@@ -124,18 +92,12 @@ export type AppInboxHostOptions = {
     created: boolean;
   };
   stopConversationTurn?: (target: AppTurnTarget) => unknown;
-  /** Optional context enrichment; Task-only operation does not require it. */
-  prepareInput?: (item: AppInboxItem, input: Readonly<AppInputContext>) => Promise<AppInputContext>;
-  workerId?: string;
-  leaseMs?: number;
-  retryAfterMs?: number;
   now?: () => number;
   /** Wake-only notification after a visible Conversation projection change. */
   onConversationChanged?: (appId: string, conversationId: string) => void;
   /** Durable semantic completion notification; transport delivery is separate. */
   onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
-  /** Notification after one request is durably attached to its exact Task. */
-
+  onFailure?: (failure: AppInboxFailure) => void;
 };
 
 type RegisteredApp = AppDefinition;
@@ -155,12 +117,6 @@ const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["st
   "interrupted",
   "unknown",
 ]);
-const TERMINAL_TASK_INPUT_STATUSES = new Set<AppDependencyObservation["status"]>([
-  "error",
-  "interrupted",
-  "unknown",
-]);
-
 export function appInboxHumanRequestId(itemId: string): string {
   return `app-inbox-human:${requiredText(itemId, "App inbox item id")}`;
 }
@@ -192,17 +148,15 @@ export class AppInboxHost {
   #subscriptionsByEventType: Map<string, RegisteredSubscription[]>;
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
-  readonly #prepareInput?: AppInboxHostOptions["prepareInput"];
   readonly #admitConversation?: AppInboxHostOptions["admitConversation"];
   readonly #stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
-  readonly #workerId: string;
-  readonly #leaseMs: number;
-  readonly #retryAfterMs: number;
   readonly #now: () => number;
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
   readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
-  readonly #executions = new Map<string, { claim: AppInboxClaim; controller: AbortController }>();
-  #taskDependencyRecoveryCursor?: AppInboxTaskDependencyKey;
+  readonly #onFailure?: AppInboxHostOptions["onFailure"];
+  #closed = false;
+  #admissionCursor?: string;
+  #resultCursor?: AppInboxTaskDependencyKey;
 
   constructor(options: AppInboxHostOptions) {
     this.#admitConversation = options.admitConversation;
@@ -210,17 +164,10 @@ export class AppInboxHost {
     this.#db = options.db;
     this.#readDependency = options.readDependency;
     this.#attachTask = options.attachTask;
-    this.#prepareInput = options.prepareInput;
-    this.#workerId = options.workerId?.trim() || `app-host:${process.pid}:${randomUUID()}`;
-    this.#leaseMs = options.leaseMs ?? 60_000;
-    this.#retryAfterMs = options.retryAfterMs ?? 1_000;
     this.#now = options.now ?? Date.now;
     this.#onConversationChanged = options.onConversationChanged;
     this.#onRequestCompleted = options.onRequestCompleted;
-    if (!Number.isFinite(this.#leaseMs) || this.#leaseMs <= 0) throw new Error("App host leaseMs must be positive");
-    if (!Number.isFinite(this.#retryAfterMs) || this.#retryAfterMs < 0) {
-      throw new Error("App host retryAfterMs must be finite and non-negative");
-    }
+    this.#onFailure = options.onFailure;
     this.#apps = new Map();
     this.#subscriptionsByEventType = new Map();
     this.replaceApps(options.apps);
@@ -379,6 +326,7 @@ export class AppInboxHost {
   }
 
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
+    if (this.#closed) throw new Error("App input admission is closed");
     const app = this.#requiredApp(input.appId);
     validateInput(app, input.input);
     const conversationInput = Boolean(
@@ -404,7 +352,11 @@ export class AppInboxHost {
         conversationId: prepared.conversationId ?? defaultConversationId ?? `${app.id}:primary`,
       });
     }
-    return createAppInboxItem(this.#db, prepared);
+    // Keep the receipt if App mapping or Task storage is temporarily unavailable.
+    // Only Task admission and its exact return link need an atomic commit.
+    const admitted = createAppInboxItem(this.#db, prepared);
+    this.#admitTask(admitted.item);
+    return { ...admitted, item: this.get(admitted.item.id)! };
   }
 
   get(id: string): AppInboxItem | null {
@@ -417,274 +369,8 @@ export class AppInboxHost {
     this.#stopConversationTurn(target);
   }
 
-  readyCount(appId: string): number {
-    const app = this.#requiredApp(appId);
-    if (app.requests && !app.requests.inputKinds) return 0;
-    const now = this.#now();
-    const filter = appInboxCandidateFilter([...this.#executions.keys()], app.requests?.inputKinds);
-    const row = this.#db
-      .prepare(
-        `SELECT 1 AS ready FROM (
-           SELECT candidate.app_id
-             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_available
-             WHERE candidate.app_id = ? AND candidate.status != 'done' AND candidate.lease_owner IS NULL
-               ${filter.sql}
-               AND candidate.available_at IS NOT NULL AND candidate.available_at <= ?
-               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
-                 SELECT 1 FROM app_inbox_items active
-                 WHERE active.app_id = candidate.app_id
-                   AND active.conversation_id = candidate.conversation_id
-                   AND active.id != candidate.id
-                   AND active.lease_owner IS NOT NULL
-                   AND active.lease_expires_at > ?
-               ))
-           UNION ALL
-           SELECT candidate.app_id
-             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_expired
-             WHERE candidate.app_id = ? AND candidate.status != 'done'
-               ${filter.sql}
-               AND candidate.lease_expires_at IS NOT NULL AND candidate.lease_expires_at <= ?
-               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
-                 SELECT 1 FROM app_inbox_items active
-                 WHERE active.app_id = candidate.app_id
-                   AND active.conversation_id = candidate.conversation_id
-                   AND active.id != candidate.id
-                   AND active.lease_owner IS NOT NULL
-                   AND active.lease_expires_at > ?
-               ))
-         ) LIMIT 1`,
-      )
-      .get(app.id, ...filter.params, now, now, app.id, ...filter.params, now, now);
-    return row ? 1 : 0;
-  }
-
-  /** Apps with claimable inbox work, derived only from ready/expired indexes. */
-  readyAppIds(): string[] {
-    const now = this.#now();
-    const loaded = this.#apps;
-    const rows = this.#db
-      .prepare(
-        `SELECT DISTINCT app_id FROM (
-           SELECT candidate.app_id
-             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_available
-             WHERE candidate.status != 'done' AND candidate.lease_owner IS NULL
-               AND candidate.available_at IS NOT NULL AND candidate.available_at <= ?
-               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
-                 SELECT 1 FROM app_inbox_items active
-                 WHERE active.app_id = candidate.app_id
-                   AND active.conversation_id = candidate.conversation_id
-                   AND active.id != candidate.id
-                   AND active.lease_owner IS NOT NULL
-                   AND active.lease_expires_at > ?
-               ))
-           UNION ALL
-           SELECT candidate.app_id
-             FROM app_inbox_items candidate INDEXED BY idx_app_inbox_expired
-             WHERE candidate.status != 'done'
-               AND candidate.lease_expires_at IS NOT NULL AND candidate.lease_expires_at <= ?
-               AND (candidate.conversation_id IS NULL OR NOT EXISTS (
-                 SELECT 1 FROM app_inbox_items active
-                 WHERE active.app_id = candidate.app_id
-                   AND active.conversation_id = candidate.conversation_id
-                   AND active.id != candidate.id
-                   AND active.lease_owner IS NOT NULL
-                   AND active.lease_expires_at > ?
-               ))
-         ) ORDER BY app_id`,
-      )
-      .all(now, now, now, now) as Array<{ app_id?: unknown }>;
-    return rows.flatMap((row) =>
-      typeof row.app_id === "string" && loaded.has(row.app_id) && this.readyCount(row.app_id) ? [row.app_id] : [],
-    );
-  }
-
-  wake(waitingOn: { kind: AppInboxWaitKind; id: string }): number {
-    return wakeAppInboxItemsWaitingOn(this.#db, waitingOn, this.#now());
-  }
-
-  /** Wake an exact dependency, including work already made ready by its state commit. */
-  wakeAppIds(waitingOn: { kind: AppInboxWaitKind; id: string }, appId?: string): string[] {
-    const appIds: string[] = [];
-    const now = this.#now();
-    const scope = appId === undefined ? undefined : requiredText(appId, "appId");
-    withTransaction(this.#db, () => {
-      const rows = this.#db
-        .prepare(
-          `SELECT DISTINCT app_id
-           FROM app_inbox_items
-           WHERE status = 'handling'
-             AND lease_owner IS NULL
-             AND waiting_on_kind = ?
-             AND waiting_on_id = ?
-             ${scope ? "AND app_id = ?" : ""}
-           ORDER BY app_id`,
-        )
-        .all(waitingOn.kind, requiredText(waitingOn.id, "waitingOn.id"), ...(scope ? [scope] : [])) as Array<{
-        app_id?: unknown;
-      }>;
-      if (rows.length === 0) return;
-      if (scope) wakeAppInboxItemsWaitingOnApp(this.#db, scope, waitingOn, now);
-      else wakeAppInboxItemsWaitingOn(this.#db, waitingOn, now);
-      for (const row of rows) {
-        if (typeof row.app_id === "string" && row.app_id.trim()) appIds.push(row.app_id.trim());
-      }
-    });
-    return appIds;
-  }
-
-  #replacementTaskAttachment(
-    app: Readonly<AppDefinition>,
-    item: Readonly<AppInboxItem>,
-    currentTaskId: string,
-  ): AppTaskAttachment | null {
-    if (item.targetTaskId || !app.task) return null;
-    const resolved = app.task({ id: item.id, source: item.source, input: item.input });
-    if (resolved?.kind !== "desired" || resolved.intent.mode !== "achieve" || resolved.intent.id === currentTaskId) {
-      return null;
-    }
-    return resolved;
-  }
-
-  /** Re-observe task waits so attention, missing tasks, or repaired App policy cannot wait forever. */
-  async recoverTaskDependencies(): Promise<AppInboxTaskRecoveryResult> {
-    const outcome: AppInboxTaskRecoveryResult = {
-      linked: 0,
-      woken: 0,
-      wokenAppIds: [],
-      errors: [],
-    };
-    if (!this.#readDependency) return outcome;
-    const wokenApps = new Set<string>();
-    let page = listAppInboxTaskDependencyKeys(this.#db, { after: this.#taskDependencyRecoveryCursor });
-    if (page.items.length === 0 && this.#taskDependencyRecoveryCursor) {
-      this.#taskDependencyRecoveryCursor = undefined;
-      page = listAppInboxTaskDependencyKeys(this.#db);
-    }
-    this.#taskDependencyRecoveryCursor = page.nextCursor;
-    for (const { appId, taskId, inputId, admissionKey } of page.items) {
-      const taskDependency = { kind: "task", id: taskId } as const;
-      const app = this.#apps.get(appId);
-      const agent = app?.agent ?? app?.owner;
-      try {
-        const observed = (await observeTaskDependency(this.#readDependency, appId, taskDependency, admissionKey)) ?? {
-          ...taskDependency,
-          status: "unknown" as const,
-        };
-        const item = getAppInboxItem(this.#db, inputId);
-        if (!item || item.status !== "handling" || item.lease || item.waitingOn?.id !== taskId) continue;
-        const replacement = !REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status) &&
-          this.#replacementTaskAttachment(this.#requiredApp(appId), item, taskId);
-        if (!replacement && !REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) continue;
-        if (wakeAppInboxItem(this.#db, inputId, this.#now())) {
-          if (replacement) outcome.linked += 1;
-          outcome.woken += 1;
-          wokenApps.add(appId);
-        }
-      } catch (error) {
-        outcome.errors.push(`App ${appId} task ${taskId}: ${errorMessage(error)}`);
-        (outcome.failures ??= []).push({
-          appId, agent, taskId, stage: "dependency-recovery",
-          error: errorMessage(error), disposition: "recovery-pending",
-        });
-      } finally {
-        // Yield between bounded input-link reads so recovery does not monopolize I/O.
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-      }
-    }
-    outcome.wokenAppIds = [...wokenApps].sort();
-    return outcome;
-  }
-
-  async reconcileOnce(appId: string): Promise<AppInboxReconcileResult> {
-    const app = this.#requiredApp(appId);
-    if (app.requests && !app.requests.inputKinds) return { claimed: 0, admitted: 0, released: 0, errors: [] };
-    const claim = claimNextAppInboxItem(
-      this.#db,
-      app.id,
-      this.#workerId,
-      this.#leaseMs,
-      this.#now(),
-      [...this.#executions.keys()],
-      app.requests?.inputKinds,
-    );
-    if (!claim) return { claimed: 0, admitted: 0, released: 0, errors: [] };
-    this.#notifyConversationChanges([claim.item]);
-
-    const controller = new AbortController();
-    this.#executions.set(claim.item.id, { claim, controller });
-    const stopRenewing = this.#renewClaim(claim, controller);
-    const outcome: AppInboxReconcileResult = { claimed: 1, admitted: 0, released: 0, errors: [] };
-    const conversationIds = new Set<string>();
-    try {
-      const request = await this.#authorRequest(claim.item);
-      const changedConversation = await this.#handleRequest(app, claim, request);
-      if (changedConversation) conversationIds.add(changedConversation);
-      outcome.admitted = 1;
-    } catch (error) {
-      outcome.errors.push(`Request ${claim.item.id}: ${errorMessage(error)}`);
-      const failure: AppInboxFailure = {
-        agent: app.agent ?? app.owner,
-        requestId: claim.item.id,
-        conversationId: claim.item.conversationId,
-        claimRevision: claim.generation,
-        stage: "input-handling",
-        error: errorMessage(error),
-        disposition: "ownership-lost",
-      };
-      outcome.failures = [failure];
-      try {
-        if (
-          releaseAppInboxClaim(this.#db, claim, {
-            retryAfterMs: this.#retryAfterMs,
-            now: this.#now(),
-          })
-        ) {
-          outcome.released = 1;
-          failure.disposition = "retry-scheduled";
-          if (claim.item.conversationId) {
-            conversationIds.add(claim.item.conversationId);
-          }
-        }
-      } catch (cleanupError) {
-        failure.disposition = "recovery-pending";
-        outcome.errors.push(`Request ${claim.item.id} cleanup: ${errorMessage(cleanupError)}`);
-        outcome.failures.push({ ...failure, stage: "input-cleanup", error: errorMessage(cleanupError) });
-      }
-    } finally {
-      stopRenewing();
-      this.#executions.delete(claim.item.id);
-    }
-    if (conversationIds.size > 0) outcome.conversationIds = [...conversationIds].sort();
-    return outcome;
-  }
-
-  async #handleRequest(
-    app: RegisteredApp,
-    claim: AppInboxClaim,
-    request: Readonly<AppInputContext>,
-  ): Promise<string | undefined> {
-    if (
-      app.requests &&
-      (app.requests.inputKinds === undefined || app.requests.inputKinds.includes(claim.item.input.kind))
-    ) {
-      throw new Error("Conversation input requires offline cutover to its Task execution owner");
-    }
-
-    const dependency = request.dependency;
-    if (dependency?.kind === "task" && REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(dependency.status)) {
-      return this.#completeRequest(claim, {
-        summary:
-          dependency.summary ??
-          (dependency.status === "done"
-            ? `${request.input.kind} completed`
-            : `Task ${dependency.id} requires owner review (${dependency.status})`),
-        response: dependency.response,
-        result: dependency.result,
-        evidence: dependency.evidence,
-      });
-    }
-
-    return this.#attachRequestTask(app, claim, request);
+  close(): void {
+    this.#closed = true;
   }
 
   #requiredApp(appId: string): RegisteredApp {
@@ -694,115 +380,151 @@ export class AppInboxHost {
     return app;
   }
 
-  async #authorRequest(item: AppInboxItem): Promise<AppInputContext> {
-    const input = await readInputContext(this.#db, item, this.#readDependency);
-    return freezeInputContext(this.#prepareInput ? await this.#prepareInput(item, input) : input);
-  }
-
-  #assertOwned(claim: AppInboxClaim): void {
-    this.#executions.get(claim.item.id)?.controller.signal.throwIfAborted();
-    assertAppInboxClaim(this.#db, claim, this.#now());
-  }
-
-  #renewClaim(claim: AppInboxClaim, controller: AbortController): () => void {
-    const intervalMs = Math.max(10, Math.floor(this.#leaseMs / 3));
-    const timer = setInterval(() => {
-      try {
-        this.#assertOwned(claim);
-        if (!renewAppInboxClaim(this.#db, claim, this.#leaseMs, this.#now())) throw new Error("claim is stale");
-      } catch (error) {
-        clearInterval(timer);
-        // Invalidate authority before cancellation/reporting, even if SQLite
-        // cannot record the failure. Do not release capacity until it settles.
-        controller.abort(error);
-        console.error(
-          `[app-inbox:${claim.item.appId}:${claim.item.id}:${claim.generation}] ownership lost: ${errorMessage(error)}`,
-        );
-      }
-    }, intervalMs);
-    timer.unref?.();
-    return () => clearInterval(timer);
-  }
-
-  #notifyConversationChanges(items: AppInboxItem[]): void {
-    if (!this.#onConversationChanged) return;
-    const conversations = new Map<string, string>();
-    for (const item of items) {
-      if (item.conversationId) conversations.set(item.conversationId, item.appId);
+  #failure(item: AppInboxItem, stage: string, error: unknown): void {
+    try {
+      this.#onFailure?.({
+        appId: item.appId,
+        requestId: item.id,
+        conversationId: item.conversationId,
+        agent: this.#apps.get(item.appId)?.agent ?? this.#apps.get(item.appId)?.owner,
+        stage,
+        error: errorMessage(error),
+        disposition: "recovery-pending",
+      });
+    } catch {
+      // Diagnostics cannot discard durable input or change its accepted result.
     }
-    for (const [conversationId, appId] of conversations) {
+  }
+
+  #admitTask(item: AppInboxItem): void {
+    if (item.status === "done" || item.executionTaskId) return;
+    if (item.lease && item.lease.expiresAt > this.#now()) return;
+    try {
+      const app = this.#requiredApp(item.appId);
+      if (app.requests && (!app.requests.inputKinds || app.requests.inputKinds.includes(item.input.kind)))
+        throw new Error("Conversation input requires offline cutover to its Task execution owner");
+      if (item.waitingOn?.kind === "task") {
+        // An old Host may have stopped while projecting an already attached
+        // input. Fence only that expired, ordinary input claim; never remap it.
+        if (item.lease)
+          this.#db
+            .prepare(
+              `UPDATE app_inbox_items SET lease_owner = NULL, lease_expires_at = NULL
+          WHERE id = ? AND lease_owner = ? AND lease_generation = ? AND lease_expires_at <= ?`,
+            )
+            .run(item.id, item.lease.owner, item.lease.generation, this.#now());
+        return;
+      }
+      if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
+      if (!this.#attachTask) throw new Error("App task admission is not configured");
+      validateInput(app, item.input);
+      const parent = item.parentId ? this.get(item.parentId) : null;
+      const request: AppInputContext = freezeInputContext({
+        id: item.id,
+        source: item.source,
+        input: item.input,
+        parentId: item.parentId,
+        ...(item.source.kind === "human" || parent?.source.kind === "human" ? { humanRequested: true as const } : {}),
+      });
+      const attachment = item.targetTaskId
+        ? { kind: "existing" as const, taskId: item.targetTaskId }
+        : app.task(request);
+      if (!attachment || typeof attachment !== "object")
+        throw new Error(`App ${app.id} task resolver returned no Task attachment`);
+      this.#attachTask({
+        appId: app.id,
+        attachment,
+        request,
+        inboxInputId: item.id,
+        idempotencyKey: `task:${item.id}`,
+        now: this.#now(),
+        topicId: item.topicId,
+      });
+    } catch (error) {
+      // Recovery has a fixed cadence; new unrelated inputs do not retry this row.
+      this.#failure(item, "input-admission", error);
+    }
+  }
+
+  /** Retry one bounded page of unadmitted inputs. No execution claims or capacity. */
+  async recoverAdmissions(): Promise<void> {
+    if (this.#closed) return;
+    const readPage = () =>
+      this.#db
+        .prepare(
+          `SELECT id FROM app_inbox_items
+      WHERE status != 'done' AND execution_task_id IS NULL
+        AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
+        AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
+        ${this.#admissionCursor ? "AND id > ?" : ""}
+      ORDER BY id LIMIT 64`,
+        )
+        .all(this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
+    let rows = readPage();
+    if (!rows.length && this.#admissionCursor) {
+      this.#admissionCursor = undefined;
+      rows = readPage();
+    }
+    this.#admissionCursor = rows.length === 64 ? String(rows.at(-1)!.id) : undefined;
+    for (const row of rows) {
+      if (this.#closed) return;
+      const item = this.get(String(row.id));
+      if (item && this.#apps.has(item.appId)) this.#admitTask(item);
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  /** Project exact accepted outcomes; Task failure/retry is not input completion. */
+  async refreshTaskResults(appId: string, taskId: string): Promise<void> {
+    if (this.#closed) return;
+    for (const item of listAppInboxItemsWaitingOnTask(this.#db, appId, taskId)) await this.#projectTaskResult(item);
+  }
+
+  async #projectTaskResult(item: AppInboxItem): Promise<void> {
+    if (this.#closed || !this.#readDependency || item.status === "done" || item.waitingOn?.kind !== "task") return;
+    try {
+      const admissionKey = recoverTaskInputAdmissionKey(this.#db, item);
+      if (!admissionKey)
+        throw new Error("Input has no unambiguous Task admission; repair its saved link before returning a result");
+      const observed = await observeTaskDependency(
+        this.#readDependency,
+        item.appId,
+        { kind: "task", id: item.waitingOn.id },
+        admissionKey,
+      );
+      if (this.#closed || !observed || !REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) return;
+      const result: AppResult = {
+        summary: observed.summary ?? `Task ${observed.id} requires owner review (${observed.status})`,
+        response: observed.response,
+        result: observed.result,
+        evidence: observed.evidence,
+      };
+      if (!completeTaskInput(this.#db, { ...item, taskAdmissionKey: admissionKey }, result, this.#now())) return;
       try {
-        this.#onConversationChanged(appId, conversationId);
+        this.#onRequestCompleted?.(item, result);
+        if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
       } catch {
-        // Conversation updates are coalescible wakes. A failed observer must
-        // never strand the authoritative request claim.
+        // The accepted result remains readable even if its notification fails.
       }
+    } catch (error) {
+      this.#failure(item, "input-result", error);
     }
   }
 
-  #completeRequest(claim: AppInboxClaim, result: AppResult): string | undefined {
-    completeInboxInput(this.#db, {
-      claim,
-      result,
-      authorize: () => this.#assertOwned(claim),
-      now: this.#now(),
-    });
-    if (this.#onRequestCompleted) {
-      try {
-        this.#onRequestCompleted(claim.item, result);
-      } catch {
-        // The accepted result is authoritative. Consumers can recover it by
-        // exact request identity; a wake notification cannot undo completion.
-      }
+  /** Repair missed result notifications with a bounded, yielding scan. */
+  async recoverTaskResults(): Promise<void> {
+    if (this.#closed) return;
+    let page = listAppInboxTaskDependencyKeys(this.#db, { after: this.#resultCursor });
+    if (page.items.length === 0 && this.#resultCursor) {
+      this.#resultCursor = undefined;
+      page = listAppInboxTaskDependencyKeys(this.#db);
     }
-    return claim.item.conversationId;
-  }
-
-  async #attachRequestTask(
-    app: RegisteredApp,
-    claim: AppInboxClaim,
-    request: Readonly<AppInputContext>,
-  ): Promise<string | undefined> {
-    if (!app.tasks) throw new Error(`App ${app.id} does not declare Task reconciliation`);
-    if (!app.task) throw new Error(`App ${app.id} does not resolve admitted input to a Task`);
-    if (!this.#attachTask) throw new Error("App task attachment is not configured");
-
-    if (claim.item.targetTaskId && this.#readDependency) {
-      const target: AppDependencyObservation = (await observeTaskDependency(this.#readDependency, app.id, {
-        kind: "task",
-        id: claim.item.targetTaskId,
-      })) ?? { kind: "task", id: claim.item.targetTaskId, status: "unknown" };
-      if (target.closed || TERMINAL_TASK_INPUT_STATUSES.has(target.status)) {
-        return this.#completeRequest(claim, {
-          summary: `Task ${target.id} is already ${target.closed ? "closed" : target.status}; the new input was not applied and must be reconsidered as distinct follow-up work if it still matters.`,
-          ...(target.evidence ? { evidence: target.evidence } : {}),
-        });
-      }
+    this.#resultCursor = page.nextCursor;
+    for (const { inputId } of page.items) {
+      if (this.#closed) return;
+      const item = this.get(inputId);
+      if (item && this.#apps.has(item.appId)) await this.#projectTaskResult(item);
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
-
-    const currentTaskId = request.dependency?.kind === "task" ? request.dependency.id : undefined;
-    const repairedAttachment = currentTaskId ? this.#replacementTaskAttachment(app, claim.item, currentTaskId) : null;
-    const attachment = claim.item.targetTaskId
-      ? ({ kind: "existing", taskId: claim.item.targetTaskId } as const)
-      : (repairedAttachment ??
-        (currentTaskId
-          ? ({ kind: "existing", taskId: currentTaskId } as const)
-          : app.task({ id: request.id, source: request.source, input: request.input })));
-    if (!attachment || typeof attachment !== "object") {
-      throw new Error(`App ${app.id} task resolver returned no Task attachment`);
-    }
-    const attached = await this.#attachTask({
-      appId: app.id,
-      attachment,
-      idempotencyKey: repairedAttachment
-        ? `task:${claim.item.id}:replace:${claim.generation}`
-        : `task:${claim.item.id}`,
-      request,
-      claim,
-      authorize: () => this.#assertOwned(claim),
-      now: this.#now(),
-    });
-    requiredText(attached.taskId, "Attached task id");
-    return claim.item.conversationId;
   }
 }

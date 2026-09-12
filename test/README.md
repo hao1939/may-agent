@@ -28,8 +28,8 @@ the same Task claim, attempt and recovery used for delegated work.
 
 Fourteen inbox tests previously called the removed `resolveRequest`,
 `onRequestFollowUp`, `onRequestMessage` or `controlTask` execution callbacks.
-Their useful behavior now has these owners; generic inbox admission, attachment,
-readiness and caller-context checks remain in `app-inbox-host.test.ts`.
+Their useful behavior now has these owners; generic inbox admission, immutable attachment,
+exact result projection and caller-identity checks remain in `app-inbox-host.test.ts`.
 
 | Retired callback-test behavior | Current executable coverage |
 | --- | --- |
@@ -75,15 +75,16 @@ rejects late output and preserves queued input plus accepted Requests across
 runtime reopen. Failed Stop persistence leaves execution live; stale Stop cannot
 alter an accepted result. A repeated committed Stop is an idempotent read.
 
-Admission containment and ownership checks remain in the inbox suites. They
-use typed Task attachment and dependency reads instead of a model callback.
-Containment uses fake Task storage to isolate real queue, claim, capacity and
-reporting behavior; ownership checks call the real attachment transaction.
-A failed renewal revokes local authority even while the saved lease is fresh.
-That authority is checked inside the transaction before new attachment effects;
-replaying an already committed attachment preserves its exact result without
-requiring the expired owner to act again. Storage tests retain lost-reply and
-changed-input checks. The common Task runtime owns model execution and recovery.
+Ordinary App input now uses direct Task admission. The inbox suites cover pure
+mapping, replay, immutable attachment and exact result projection. Containment
+uses real SQLite Task admission with mapping, input-link and diagnostic failures;
+accepted human Requests remain unchanged. `core/state/inbox.test.ts` owns atomic
+links, competing processes, crash-before/after commit, historical admission keys
+and exact outcomes after later cycles. Task acceptance survives unavailable input
+projection; event or recovery discovery repairs the projection without execution.
+The retired pump, capacity reservation, lease renewal and remapping tests are
+removed. `test/fixtures/legacy-inbox.ts` only constructs historical rows for
+read/control and offline-cutover tests; no production module imports it.
 
 The core reconciler's retry and worker-report checks now use persisted backoff
 and explicit owner closure. They retain duplicate-failure accounting, stale

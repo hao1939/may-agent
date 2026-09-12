@@ -15,7 +15,7 @@ import type {
 } from "./execution.js";
 import { appTaskSessionBinding } from "./session-binding.js";
 import { getDb } from "../../../lib/db/connection.js";
-import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
+import { admitTaskRequest } from "../state/inbox.js";
 import {
   admitConversationTaskInput,
   conversationTaskIntent,
@@ -26,7 +26,7 @@ import {
   stopConversationTaskTurn,
   type ConversationTaskChangeRef,
 } from "../state/conversation-task-turns.js";
-import type { AppInboxClaim, AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
+import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
@@ -2773,8 +2773,8 @@ export function attachLoadedAppTask(input: {
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   request: Readonly<AppInputContext>;
-  /** Inbox calls attach atomically; direct Task admission has no request claim. */
-  claim?: AppInboxClaim;
+  /** Persist the exact input return link with admission. */
+  inboxInputId?: string;
   now?: number;
   authorize?: () => void;
   topicId?: string;
@@ -2800,9 +2800,7 @@ export function attachLoadedAppTask(input: {
   const config = appTaskConfig(descriptor);
   const humanRequested = input.request.source.kind === "human" || input.request.humanRequested === true;
 
-  const observation = input.claim
-    ? attachRequestToTask(config, { ...input, claim: input.claim })
-    : admitTaskRequest(config, input);
+  const observation = admitTaskRequest(config, input);
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {

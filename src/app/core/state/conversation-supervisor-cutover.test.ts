@@ -25,7 +25,8 @@ import {
   closeAppTask,
   assertAppTaskClaimCurrent,
 } from "../tasks/app-task-reconciler.js";
-import { createAppInboxItem, claimAppInboxItem, getAppInboxItem, assertAppInboxClaim } from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { claimAppInboxItem, assertAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic, linkConversationTopicTask, readConversationTopic } from "./conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
 import {

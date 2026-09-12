@@ -2,21 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { readAppConversationResource } from "./conversations.js";
-import {
-  associateAppInboxClaimSession,
-  claimAppInboxItem,
-  claimNextAppInboxItem,
-  completeAppInboxClaim,
-  createAppInboxItem,
-  getAppInboxItem,
-  listAppInboxHealth,
-  listAppInboxItems,
-  listAppInboxTaskDependencyKeys,
-  releaseAppInboxClaim,
-  waitAppInboxClaim,
-  wakeAppInboxItemsWaitingOn,
-  wakeAppInboxItemsWaitingOnApp,
-} from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem, listAppInboxHealth, listAppInboxItems, listAppInboxTaskDependencyKeys } from "./app-inbox-store.js";
+import { associateAppInboxClaimSession, claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 
 describe("App inbox store", () => {
   let db: SqliteDb;
@@ -147,16 +134,6 @@ describe("App inbox store", () => {
     ).toThrow("already belongs to App may");
   });
 
-  it("does not duplicate a claim while its lease is valid", () => {
-    create("item-1", { now: 100 });
-
-    const first = claimAppInboxItem(db, "item-1", "worker-1", 50, 100);
-
-    expect(first?.generation).toBe(1);
-    expect(claimAppInboxItem(db, "item-1", "worker-2", 50, 149)).toBeNull();
-    expect(claimNextAppInboxItem(db, "may", "worker-2", 50, 149)).toBeNull();
-  });
-
   it("queries the authoritative inbox projection without decoding events", () => {
     create("older", { now: 100 });
     create("newer", { now: 101 });
@@ -204,29 +181,6 @@ describe("App inbox store", () => {
     expect(listAppInboxHealth(db, { now: 181 }).map((entry) => entry.appId)).toEqual(["evaluation", "may"]);
   });
 
-  it("reclaims an expired lease and fences the stale generation", () => {
-    create("item-1", { now: 100 });
-    const stale = claimAppInboxItem(db, "item-1", "worker-1", 50, 100)!;
-
-    const replacement = claimAppInboxItem(db, "item-1", "worker-2", 50, 150)!;
-
-    expect(replacement.generation).toBe(2);
-    expect(completeAppInboxClaim(db, stale, { summary: "stale" }, 151)).toBe(false);
-    expect(completeAppInboxClaim(db, replacement, { summary: "finished" }, 152)).toBe(true);
-    expect(getAppInboxItem(db, "item-1")?.result).toEqual({ summary: "finished" });
-  });
-
-  it("fences agent session association and clears it when the item waits", () => {
-    create("item-1", { now: 100 });
-    const claim = claimAppInboxItem(db, "item-1", "worker-1", 50, 100)!;
-
-    expect(associateAppInboxClaimSession(db, claim, "session-1", 101)).toBe(true);
-    expect(getAppInboxItem(db, "item-1")?.sessionId).toBe("session-1");
-    expect(waitAppInboxClaim(db, claim, { kind: "task", id: "task-1" }, { now: 102 })).toBe(true);
-    expect(getAppInboxItem(db, "item-1")?.sessionId).toBeUndefined();
-    expect(associateAppInboxClaimSession(db, claim, "stale-session", 103)).toBe(false);
-  });
-
   it("ignores retained historical delivery rows after semantic completion", () => {
     createAppInboxItem(db, {
       id: "human-delivery",
@@ -270,46 +224,6 @@ describe("App inbox store", () => {
     expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]).not.toHaveProperty("waitingOnDelivery");
   });
 
-  it("wakes dependency waits and also requeues them at review time", () => {
-    create("wake-me", { now: 100 });
-    create("review-me", { now: 100 });
-    const wakeClaim = claimAppInboxItem(db, "wake-me", "worker-1", 50, 100)!;
-    const reviewClaim = claimAppInboxItem(db, "review-me", "worker-2", 50, 100)!;
-
-    expect(waitAppInboxClaim(db, wakeClaim, { kind: "app", id: "child-1" }, { now: 110 })).toBe(true);
-    expect(waitAppInboxClaim(db, reviewClaim, { kind: "task", id: "task-1" }, { reviewAfterMs: 100, now: 110 })).toBe(
-      true,
-    );
-    expect(claimAppInboxItem(db, "review-me", "worker-3", 50, 209)).toBeNull();
-
-    expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "child-1" }, 120)).toBe(1);
-    expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "child-1" }, 120)).toBe(0);
-    expect(wakeAppInboxItemsWaitingOn(db, { kind: "app", id: "unrelated-child" }, 120)).toBe(0);
-    expect(claimAppInboxItem(db, "wake-me", "worker-3", 50, 120)?.generation).toBe(2);
-    expect(claimAppInboxItem(db, "review-me", "worker-4", 50, 210)?.generation).toBe(2);
-  });
-
-  it("returns a failed dependency review to event-driven waiting", () => {
-    create("retry-wait", { now: 100 });
-    const initial = claimAppInboxItem(db, "retry-wait", "worker-1", 50, 100)!;
-    expect(
-      waitAppInboxClaim(db, initial, { kind: "session", id: "session-old" }, { reviewAfterMs: 100, now: 110 }),
-    ).toBe(true);
-    const review = claimAppInboxItem(db, "retry-wait", "worker-2", 50, 210)!;
-
-    expect(releaseAppInboxClaim(db, review, { retryAfterMs: 1, now: 211 })).toBe(true);
-    expect(getAppInboxItem(db, "retry-wait")).toMatchObject({
-      status: "handling",
-      waitingOn: { kind: "session", id: "session-old" },
-      availableAt: undefined,
-      reviewAt: undefined,
-    });
-    expect(claimAppInboxItem(db, "retry-wait", "worker-3", 50, 10_000)).toBeNull();
-
-    expect(wakeAppInboxItemsWaitingOn(db, { kind: "session", id: "session-old" }, 10_001)).toBe(1);
-    expect(claimAppInboxItem(db, "retry-wait", "worker-3", 50, 10_001)).not.toBeNull();
-  });
-
   it("pages exact input links even when several await the same Task", () => {
     const waitForTask = (id: string, appId: string) => {
       createAppInboxItem(db, {
@@ -340,57 +254,6 @@ describe("App inbox store", () => {
       items: [{ appId: "evaluation", taskId: "runtime/owner-review", inputId: "evaluation-2" }],
     });
 
-    expect(wakeAppInboxItemsWaitingOnApp(db, "evaluation", { kind: "task", id: "runtime/owner-review" }, 120)).toBe(2);
-    expect(getAppInboxItem(db, "evaluation-1")?.availableAt).toBe(120);
-    expect(getAppInboxItem(db, "evaluation-2")?.availableAt).toBe(120);
-    expect(getAppInboxItem(db, "aks-1")?.availableAt).toBeUndefined();
-  });
 
-  it("fences session association and waits by the exact claim generation", () => {
-    create("session-fence", { now: 100 });
-    const stale = claimAppInboxItem(db, "session-fence", "old-runtime", 10, 100)!;
-    expect(associateAppInboxClaimSession(db, stale, "session-old", 101)).toBe(true);
-    expect(getAppInboxItem(db, "session-fence")).toMatchObject({
-      sessionId: "session-old",
-      lease: { generation: 1, owner: "old-runtime" },
-    });
-
-    const current = claimAppInboxItem(db, "session-fence", "new-runtime", 50, 111)!;
-    expect(waitAppInboxClaim(db, stale, { kind: "session", id: "session-old" }, { now: 112 })).toBe(false);
-    expect(associateAppInboxClaimSession(db, current, "session-current", 113)).toBe(true);
-    expect(waitAppInboxClaim(db, current, { kind: "session", id: "session-current" }, { now: 114 })).toBe(true);
-
-    expect(getAppInboxItem(db, "session-fence")).toMatchObject({
-      id: "session-fence",
-      waitingOn: { kind: "session", id: "session-current" },
-      lease: undefined,
-    });
-  });
-
-  it("admits and completes unrelated items independently", () => {
-    create("item-1", { now: 100 });
-    create("item-2", { now: 101 });
-
-    const first = claimNextAppInboxItem(db, "may", "worker-1", 50, 110)!;
-    const second = claimNextAppInboxItem(db, "may", "worker-2", 50, 110)!;
-
-    expect(first.item.id).toBe("item-1");
-    expect(second.item.id).toBe("item-2");
-    expect(completeAppInboxClaim(db, first, { summary: "first" }, 120)).toBe(true);
-    expect(getAppInboxItem(db, "item-2")?.status).toBe("handling");
-    expect(completeAppInboxClaim(db, second, { summary: "second" }, 121)).toBe(true);
-  });
-
-  it("serializes active conversation attempts without blocking on dependency waits", () => {
-    create("turn-1", { conversationId: "chat-1", conversationSequence: 1, now: 100 });
-    create("turn-2", { conversationId: "chat-1", conversationSequence: 2, now: 101 });
-
-    const first = claimNextAppInboxItem(db, "may", "worker-1", 50, 110)!;
-
-    expect(first.item.id).toBe("turn-1");
-    expect(claimNextAppInboxItem(db, "may", "worker-2", 50, 110)).toBeNull();
-    expect(claimAppInboxItem(db, "turn-2", "worker-2", 50, 110)).toBeNull();
-    expect(waitAppInboxClaim(db, first, { kind: "app", id: "child-1" }, { now: 120 })).toBe(true);
-    expect(claimNextAppInboxItem(db, "may", "worker-2", 50, 120)?.item.id).toBe("turn-2");
   });
 });

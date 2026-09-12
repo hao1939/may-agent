@@ -7,16 +7,10 @@ import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskContext } from "../tasks/app-task-reconciler.js";
-import { createConversationInbox } from "../../composition/conversation-inbox.js";
-import {
-  assertAppInboxClaim,
-  claimAppInboxItem,
-  completeAppInboxClaim,
-  createAppInboxItem,
-  getAppInboxItem,
-  waitAppInboxClaim,
-} from "./app-inbox-store.js";
-import { attachRequestToTask } from "./inbox.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { assertAppInboxClaim, claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
+import { admitTaskRequest } from "./inbox.js";
 import {
   createConversationTopic,
   readAppConversationResource,
@@ -92,13 +86,12 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
   let config = appTaskContext({ appDir: root, projectDir: root, agent: "example-owner", resourceStore: store });
   for (const id of ["running-child", "finished-child"]) {
     const child = input(db, id, undefined, parent.id);
-    const claim = claimAppInboxItem(db, child.id, "old-host", 60_000)!;
-    attachRequestToTask(config, {
+    admitTaskRequest(config, {
       appId: "example",
       attachment: testAttachment(id),
       idempotencyKey: `task:${id}`,
       request: { id, source: child.source, input: child.input },
-      claim,
+      inboxInputId: child.id,
       topicId: "topic",
     });
   }
@@ -172,7 +165,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
   });
   finishTask(config, "running-child");
   let modelCalls = 0;
-  const host = createConversationInbox({
+  const host = new AppInboxHost({
     db,
     apps: [frontend, worker],
     resolveRequest: async () => {
@@ -186,11 +179,11 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
       evidence: ["fixture:checked"],
     }),
   });
-  expect((await host.recoverTaskDependencies()).errors).toEqual([]);
-  for (let i = 0; i < 2; i++) expect((await host.reconcileOnce("example")).errors).toEqual([]);
+  await host.recoverTaskResults();
+
   expect(getAppInboxItem(db, "running-child")?.result?.evidence).toEqual(["fixture:checked"]);
   expect(getAppInboxItem(db, "finished-child")?.status).toBe("done");
-  expect(await host.reconcileOnce("frontend")).toMatchObject({ claimed: 0 });
+
   expect(modelCalls).toBe(0);
   expect(readConversationRequest(db, "frontend", "chat", "ask")).toEqual(askBefore);
 });

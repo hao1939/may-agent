@@ -209,8 +209,7 @@ mock.module("../../src/app/composition/app-inbox-runtime.js", () => ({
     registry = options.registry;
     assert.equal(options.deferStart, true);
     assert.equal(options.schedulesEnabled, schedulesEnabled);
-    assert.equal(options.maxConcurrentRequests, 2);
-    assert.equal(options.hostCapacity, sharedCapacity);
+    assert.equal("hostCapacity" in options, false);
     const first = sharedCapacity!.tryAcquireForeground();
     const second = sharedCapacity!.tryAcquireForeground();
     assert.ok(first && second);

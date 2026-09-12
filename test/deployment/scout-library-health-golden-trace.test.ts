@@ -91,7 +91,7 @@ async function runControl(control: GoldenControl): Promise<{
       apps: definitions,
       workerId: `golden:${control.id}`,
       retryAfterMs: 0,
-      attachTask: fakeTaskAttacher(db, async ({ attachment }) => {
+      attachTask: fakeTaskAttacher(db, ({ attachment }) => {
         if (control.id === "failed-wake") throw new Error("golden failed wake");
         const taskId = attachment.kind === "existing" ? attachment.taskId : attachment.intent.id;
         return { taskId };
@@ -122,10 +122,9 @@ async function runControl(control: GoldenControl): Promise<{
       input: routes[0].input,
       originEventId: persisted.id,
     });
-    const first = await host.reconcileOnce(routes[0].appId);
+    await host.recoverAdmissions();
 
     if (control.id === "failed-wake") {
-      expect(first.errors).toEqual([expect.stringContaining("golden failed wake")]);
       const retryable = host.get(requestId);
       expect(retryable).toMatchObject({ status: "pending", waitingOn: undefined });
       const visible = routedVisibility(db, persisted.id, retryable);
@@ -149,9 +148,7 @@ async function runControl(control: GoldenControl): Promise<{
       summary: "Golden Scout owner review completed",
       evidence: [control.traceId],
     });
-    expect(host.wake({ kind: "task", id: taskId! })).toBe(1);
-    const terminal = await host.reconcileOnce(routes[0].appId);
-    expect(terminal.errors).toEqual([]);
+    await host.recoverTaskResults();
     expect(host.get(requestId)).toMatchObject({
       status: "done",
       result: { summary: "Golden Scout owner review completed" },

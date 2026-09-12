@@ -7,23 +7,25 @@ is a Task's human-facing role; this directory does not run a second agent loop.
 Start at [`app-inbox-host.ts`](app-inbox-host.ts): validate input, resolve its
 Task, persist attachment and expose the correlated result. Declared human-facing
 input goes directly to its stable Task through `admitConversation`. Other typed
-App input uses a claimed admission step to attach work to its responsible Task.
-Those admission claims do not authorize model execution.
+App input resolves synchronously through `app.task`; Task admission commits its
+exact input link. There is no inbox execution claim, lease or capacity queue.
+Mapping failures retain the input for the bounded recovery scan. Accepted Task
+outcomes are projected by exact admission identity, using events and a recovery
+scan; failure of that projection cannot roll back the Task outcome.
 
 [`input-context.ts`](input-context.ts) reads and freezes caller context.
-[`composition/conversation-inbox.ts`](../../composition/conversation-inbox.ts)
-adds human context to admission. Execution context and judgment are prepared in
+Execution context and judgment are prepared in
 [`composition/conversation-task-turn.ts`](../../composition/conversation-task-turn.ts)
 under the Task's claim.
 
 [`core/state`](../state/README.md) owns durable input, attachment and result
 transactions. [`composition/app-inbox-runtime.ts`](../../composition/app-inbox-runtime.ts)
-wires event routes, admission scheduling and notifications, including linked
+wires event routes, admission recovery and notifications, including linked
 Task outcomes and missed-change discovery. It delegates Turn Stop to the Task
 runtime.
 
-`app-inbox-host.test.ts` owns generic admission, attachment, readiness and caller
-context. Human replies, handoffs, controls and retry are tested through actual
+`app-inbox-host.test.ts` owns generic admission, immutable attachment, result projection and caller
+identity. Human replies, handoffs, controls and retry are tested through actual
 Task execution in `core/tasks/conversation-runtime.test.ts` and atomic settlement
 in `core/state/conversation-task-turns.test.ts`. See the
 [coverage map](../../../../test/README.md#shared-task-execution-coverage).

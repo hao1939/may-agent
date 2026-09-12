@@ -8,12 +8,12 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | Start here | Owns |
 | --- | --- |
 | `app-task-resource-store.ts` | Canonical Tasks, attempts, Conditions, results and fenced mutations |
-| `app-inbox-store.ts` | Admitted input, claims, waits and turn handling records |
+| `app-inbox-store.ts` | Admitted input, exact Task links and readable historical Turn evidence |
 | `app-event-admission-store.ts` | Recorded routing decisions and delivery progress |
-| `inbox.ts` | Atomic Task attachment and input completion with Request closure |
+| `inbox.ts` | Atomic Task admission with input/Topic links; exact result projection |
 | `conversations.ts` | Conversation reads and Topic links |
 | `conversation-requests.ts` | Accepted asks and scoped revision checks |
-| `conversation-turns.ts`, `conversation-task-turns.ts` | Task-owned Turn admission, fenced decision acceptance and scoped Stop |
+| `conversation-task-turns.ts` | Task-owned Turn admission, fenced decision acceptance and scoped Stop |
 | `conversation-cutover.ts`, `task-receipt-cutover.ts`, `task-state-cutover.ts` | Offline import of prior Conversation execution, completed work and retained open Task state |
 | `task-reference-index.ts` | Lookup/display of exact Task references |
 

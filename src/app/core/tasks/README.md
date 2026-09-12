@@ -38,7 +38,7 @@ authorized owner -> close Task -> fence running execution and future wakes
 
 | Stage | Follow in source | Durable authority |
 | --- | --- | --- |
-| Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: attachRequestToTask()` or `admitTaskRequest()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
+| Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskRequest()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
 | Dispatch | `controller.ts` -> `reconcileTask()` (or the composition-supplied worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
 | Execute | `reconcileTask()` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
 | Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; exceptions use `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |

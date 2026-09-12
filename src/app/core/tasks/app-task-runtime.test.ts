@@ -17,8 +17,9 @@ import { openDatabase } from "../../../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
-import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
-import { claimAppInboxItem, createAppInboxItem, listAppInboxItems, waitAppInboxClaim } from "../state/app-inbox-store.js";
+import { admitTaskRequest } from "../state/inbox.js";
+import { createAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { AppRegistry } from "../apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
@@ -1259,7 +1260,7 @@ describe("canonical App task runtime", () => {
       db,
       bus,
       hostCapacity: new HostCapacity(2),
-      attachTask: async (input) => {
+      attachTask: (input) => {
         const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
         const result = attachLoadedAppTask({ ...input, bus });
         attachedDependencyTaskId ??= taskId;
@@ -1537,8 +1538,7 @@ describe("canonical App task runtime", () => {
           data: { kind: "task", id: attachedDependencyTaskId },
         });
       else {
-        const recovered = await inbox.host.recoverTaskDependencies();
-        expect(recovered.woken).toBe(1);
+        await inbox.host.recoverTaskResults();
         inbox.scanNow();
       }
       const deadline = Date.now() + 5_000;
@@ -4716,24 +4716,13 @@ describe("canonical App task runtime", () => {
         host = new AppInboxHost({
           db: getDb(persistDir),
           apps: [app],
-          attachTask: async (input) => {
+          attachTask: (input) => {
             if (controllers) return attachLoadedAppTask({ ...input, bus, appDir: f.appDir });
-            if (!input.claim) throw new Error("expected request claim");
-            return attachRequestToTask(loadedTaskConfig(f), { ...input, claim: input.claim });
+            return admitTaskRequest(loadedTaskConfig(f), input);
           },
-          readDependency: async ({ dependency }) => {
-            const task = readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: dependency.id });
-            return task
-              ? {
-                  ...dependency,
-                  status: task.status,
-                  summary: task.summary,
-                  response: task.response,
-                  result: task.result,
-                  evidence: task.evidence,
-                }
-              : null;
-          },
+          readDependency: ({ dependency, admissionKey }) => createAppTaskCapability({ bus }).readDependency({
+            appDir: f.appDir, dependency, admissionKey,
+          }),
         });
       };
       await install(!restart);
@@ -4743,7 +4732,7 @@ describe("canonical App task runtime", () => {
         source: { kind: "human", id: "operator" },
         input: { kind: "sample", data: {} },
       });
-      expect(await host!.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+
 
       if (restart) {
         const run = (taskId: string) =>
@@ -4766,8 +4755,8 @@ describe("canonical App task runtime", () => {
         for (let index = 0; index < 3; index += 1) expect(await run(childId)).toEqual([]);
         expect(childCalls).toBe(1);
         expect(readTaskSnapshot(config).taskTriggers?.[parentId]).toEqual(parentTrigger);
-        expect(await host!.recoverTaskDependencies()).toMatchObject({ woken: 0, errors: [] });
-        expect(host!.readyCount("sample")).toBe(0);
+        await host!.recoverTaskResults();
+
         // Drop all in-memory wake hints before the owner reviews the failure.
         // Startup must find the persisted parent trigger, not rerun the child.
         await closeInstalledAppTaskRuntimes(bus);
@@ -4810,8 +4799,9 @@ describe("canonical App task runtime", () => {
       for (const item of pendingCallerStates) {
         expect(item).toMatchObject({ status: "handling", waitingOn: { kind: "task", id: parentId } });
       }
-      expect(host!.readyCount("sample")).toBe(1);
-      expect(await host!.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+
+
+      await host!.recoverTaskResults();
       expect(host!.get("request-delivery")).toMatchObject({
         status: "done",
         result: {
@@ -4906,9 +4896,8 @@ describe("canonical App task runtime", () => {
         new AppInboxHost({
           db: state.resourceStore.db,
           apps: [app],
-          attachTask: async (input) => {
-            if (!input.claim) throw new Error("expected input claim");
-            return attachRequestToTask(state, { ...input, claim: input.claim });
+          attachTask: (input) => {
+            return admitTaskRequest(state, input);
           },
           readDependency: ({ dependency, admissionKey }) =>
             createAppTaskCapability({ bus }).readDependency({
@@ -4924,7 +4913,7 @@ describe("canonical App task runtime", () => {
         source: { kind: "human", id: "operator" },
         input: { kind: "sample", data: {} },
       });
-      expect(await host.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+
       const run = () =>
         reconcileLoadedAppTaskOnce({
           bus,
@@ -4945,7 +4934,7 @@ describe("canonical App task runtime", () => {
       const reported = readAcceptedRuntimeAttempt(config, taskId)!;
       expect(reported.acceptedResult).toMatchObject(decision);
       expect(config.resourceStore.isCancelled(taskId)).toBe(false);
-      expect(host.readyCount("sample")).toBe(0);
+
       expect(host.get("request-feature")).toMatchObject({
         status: "handling",
         waitingOn: { kind: "task", id: taskId },
@@ -4986,7 +4975,8 @@ describe("canonical App task runtime", () => {
         summary: "Feature verified",
         result: { feature: "working" },
       });
-      expect(await resumedHost.reconcileOnce("sample")).toMatchObject({ admitted: 1, errors: [] });
+
+      await resumedHost.recoverTaskResults();
       expect(resumedHost.get("request-feature")).toMatchObject({
         status: "done",
         result: { summary: "Feature verified" },

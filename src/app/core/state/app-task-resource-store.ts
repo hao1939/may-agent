@@ -1,10 +1,9 @@
 import { createHash } from "node:crypto";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as transaction } from "../../../lib/db/transaction.js";
-import { wakeAppInboxItemsWaitingOnApp } from "./app-inbox-store.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { isTaskAttentionReadyForReview, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
+import { pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -1428,25 +1427,6 @@ export class AppTaskResourceStore {
             receipt.appliedAt,
             json(receipt),
           );
-      }
-      // Readiness belongs to the accepted transition, not its EventBus hint.
-      const reviewable = new Set(mutation.deleteTaskIds ?? []);
-      for (const write of mutation.tasks ?? []) {
-        if (
-          isTaskAttentionReadyForReview(write.resource, Boolean(write.trigger)) ||
-          (!write.trigger &&
-            write.resource.status.phase === "converged" &&
-            write.resource.status.observedGeneration === write.resource.metadata.generation)
-        ) {
-          reviewable.add(write.resource.metadata.id);
-        }
-      }
-      for (const receipt of mutation.receipts ?? []) {
-        // A receipt from an older generation must not wake newly revised work.
-        if (!this.readTask(receipt.metadata.id)) reviewable.add(receipt.metadata.id);
-      }
-      for (const taskId of reviewable) {
-        wakeAppInboxItemsWaitingOnApp(this.db, this.appId, { kind: "task", id: taskId });
       }
       this.bumpRevision();
       return true;

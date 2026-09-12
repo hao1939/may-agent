@@ -18,9 +18,10 @@ import {
 import { AppTaskController } from "../tasks/controller.js";
 import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
-import { createConversationInbox } from "../../composition/conversation-inbox.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
-import { createAppInboxItem, claimAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { readAppConversationResource, linkConversationTopicTask, createConversationTopic } from "./conversations.js";
 import { readConversationRequest } from "./conversation-requests.js";
 import {
@@ -860,7 +861,7 @@ test("old inbox cannot execute Task-owned Conversation input or later unconverte
   const input = f.admit();
   createAppInboxItem(f.db, f.input("old-route", 2));
   let executions = 0;
-  const host = createConversationInbox({
+  const host = new AppInboxHost({
     db: f.db,
     apps: [app],
     resolveRequest: async () => {
@@ -870,8 +871,9 @@ test("old inbox cannot execute Task-owned Conversation input or later unconverte
   });
   expect(claimAppInboxItem(f.db, input.item.id, "legacy", 1_000)).toBeNull();
   expect(claimAppInboxItem(f.db, "old-route", "legacy", 1_000)).toBeNull();
-  expect(host.readyCount(app.id)).toBe(0);
-  await host.reconcileOnce(app.id);
+
+
+  await host.recoverAdmissions();
   expect(executions).toBe(0);
   expect(getAppInboxItem(f.db, "old-route")?.status).toBe("pending");
 });
