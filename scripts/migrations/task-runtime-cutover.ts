@@ -14,6 +14,7 @@ import type { AddressInfo } from "node:net";
 import type { AppDefinition, AppInputContext, ConversationTurnResult } from "@may-agent/sdk";
 import { getDb, closeDb } from "../../src/lib/requests.js";
 import { stateTransaction } from "../../src/lib/db/transaction.js";
+import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { migrateTaskCompletionReceipts } from "../../src/app/core/state/task-receipt-cutover.js";
 import { migrateOpenTaskState } from "../../src/app/core/state/task-state-cutover.js";
@@ -31,6 +32,7 @@ assert(
   "Use --legacy-source OLD_HOST --out REPORT_DIR",
 );
 const source = resolve(arg("--legacy-source")!);
+const legacyInboxStore = await import(pathToFileURL(join(source, "src/app/core/state/app-inbox-store.ts")).href);
 const output = resolve(arg("--out")!);
 const candidate = fileURLToPath(new URL("../../", import.meta.url));
 mkdirSync(output, { recursive: true });
@@ -127,7 +129,7 @@ const server = createServer(async (request, response) => {
               arguments: JSON.stringify({
                 status: "success",
                 summary: answer.summary,
-                verification_facts: ["Synthetic cutover input"],
+                [stage === "old" ? "verification_evidence" : "verification_facts"]: ["Synthetic cutover input"],
                 result: answer,
               }),
             },
@@ -217,7 +219,7 @@ try {
   );
   const definition = `export default {
     id: "may", version: 1, agent: "may", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, conversation: { mode: "agent", inputKinds: ["message"] },
+    workspace: { kind: "local", localPath: "." }, requests: { mode: "agent", inputKinds: ["message"] },
     tasks: { maxConcurrent: 2 },
     task(input) { const supervisor = input.input.kind === "supervise"; return { kind: "desired", intent: {
       id: supervisor ? "conversation/follow-up" : "measurement", parentId: "root", mode: supervisor ? "maintain" : "achieve",
@@ -320,6 +322,19 @@ try {
     oldDb.close();
   }
 
+  // Switch the fixture App to the candidate contract before offline conversion.
+  // The old daemon above must keep its original requests and Task-mode vocabulary.
+  writeFileSync(
+    join(appDir, "app.js"),
+    definition
+      .replace('requests: { mode: "agent"', 'conversation: { mode: "agent"')
+      .replace(', mode: supervisor ? "maintain" : "achieve"', '')
+      .replace(
+        'const supervisor = input.input.kind === "supervise";',
+        'if (input.input.kind === "supervise") throw new Error("Supervisor declaration removed"); const supervisor = false;',
+      ),
+  );
+
   // No candidate execution exists before the offline transaction. Expired leases alone are insufficient.
   const db = getDb(sb.stateDir);
   let executionTaskId: string;
@@ -349,7 +364,7 @@ try {
     });
     assert.throws(
       () =>
-        assertAppInboxClaim(
+        legacyInboxStore.assertAppInboxClaim(
           db,
           {
             item: getAppInboxItem(db, String(originalInput!.id))!,
@@ -368,13 +383,9 @@ try {
     closeDb(sb.stateDir);
   }
 
-  writeFileSync(
-    join(appDir, "app.js"),
-    definition.replace(
-      'const supervisor = input.input.kind === "supervise";',
-      'if (input.input.kind === "supervise") throw new Error("Supervisor declaration removed"); const supervisor = false;',
-    ),
-  );
+  // Candidate startup must load the matching fixture App snapshot, not the old active one.
+  const appSources = new DefinitionSourceReleaseStore(sb.root, sb.stateDir);
+  appSources.activate(appSources.stage());
   stage = "candidate";
   current = spawn(process.execPath, [join(candidate, "src/app/may.ts"), "--socket"], {
     cwd: candidate,

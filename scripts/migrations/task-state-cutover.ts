@@ -54,7 +54,8 @@ try {
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "worker" } } },
   });
   oldStore = old.resourceStore;
-  legacyInput.admitTaskInput(old, {
+  // These calls deliberately use the old Host contract, including request and evidence.
+  legacyInput.admitTaskRequest(old, {
     appId: "sample",
     idempotencyKey: "original-measurement",
     attachment: {
@@ -67,7 +68,7 @@ try {
         acceptance: ["Instrument evidence is retained"],
       },
     },
-    inputContext: {
+    request: {
       id: "original-measurement",
       appId: "sample",
       source: { kind: "human", id: "fixture" },
@@ -96,14 +97,14 @@ try {
   assert.equal(oldStore.readTask("measurement"), null);
   const priorAttempt = oldStore.readAttempt(claim.attemptId);
   const oldClaim = (id: string, mode: "achieve" | "maintain" = "achieve") => {
-    legacyInput.admitTaskInput(old, {
+    legacyInput.admitTaskRequest(old, {
       appId: "sample",
       idempotencyKey: id,
       attachment: {
         kind: "intent",
         intent: { id, parentId: "root", mode, outcome: "Measure the sample", acceptance: ["Retain measured evidence"] },
       },
-      inputContext: { id, appId: "sample", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { id } } },
+      request: { id, appId: "sample", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { id } } },
     });
     const attempt = legacyRuntime.claimObservedAppTask(old, { taskId: id, appAgent: "worker", handler: "agent" });
     if (attempt.kind !== "claimed") throw new Error(`Old ${id} claim failed: ${JSON.stringify(attempt)}`);
@@ -154,11 +155,11 @@ try {
   legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
   const backlog = Array.from({ length: 34 }, (_, index) => `structural-newer-${index}`);
   for (const id of [...backlog, "structural-human"]) {
-    legacyInput.admitTaskInput(old, {
+    legacyInput.admitTaskRequest(old, {
       appId: "sample",
       idempotencyKey: id,
       attachment: { kind: "existing", taskId: "structural" },
-      inputContext: {
+      request: {
         id, appId: "sample",
         source: { kind: id === "structural-human" ? "human" : "app", id: "fixture" },
         input: { kind: "measure", data: { id } },
@@ -191,7 +192,13 @@ try {
   assert.deepEqual(answer?.result, { value: 17 });
   assert.equal(answer?.response, "The measurement is 17.");
   assert.equal(store.readCancellation("measurement")?.acceptedResultAttemptId, answer?.attemptId);
-  assert.deepEqual(store.readReceipt("measurement"), receipt);
+  const expectedReceipt = {
+    ...receipt,
+    facts: ["fixture:instrument:17"],
+    acceptanceBasis: { method: "deterministic", facts: ["fixture:instrument:17"] },
+  };
+  Reflect.deleteProperty(expectedReceipt, "evidence");
+  assert.deepEqual(store.readReceipt("measurement"), expectedReceipt);
   assert.deepEqual(store.readAttempt(claim.attemptId), priorAttempt);
   assert.equal(buildAppTaskTreeProjection(store.readSnapshot(), 1).tasks.measurement?.attempt_count, 1);
   assert.equal(
@@ -220,8 +227,12 @@ try {
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "maintained", "maintained")?.result, { value: 23 });
   assert.equal(store.readTask("maintained")?.status.observedAttemptId, maintained.attemptId);
   assert.equal(store.isCancelled("maintained"), false);
-  assert.deepEqual(store.readAttempt(stopped.attemptId)?.retiredCancellation, selfStop);
-  assert.deepEqual(store.readCancellation("cancelled"), humanClosure);
+  const expectedWorkerStop = { ...selfStop, facts: ["instrument:offline"] };
+  Reflect.deleteProperty(expectedWorkerStop, "evidence");
+  assert.deepEqual(store.readAttempt(stopped.attemptId)?.retiredCancellation, expectedWorkerStop);
+  const expectedHumanClosure = { ...humanClosure, facts: [] };
+  Reflect.deleteProperty(expectedHumanClosure, "evidence");
+  assert.deepEqual(store.readCancellation("cancelled"), expectedHumanClosure);
   assert.equal(completeAppTask(current, inflight, { summary: "Obsolete result" }).status, "stale");
   // The assigning owner retires the former supervision role using normal closure.
   // Nothing closes the other maintained or unfinished Tasks as a side effect.
