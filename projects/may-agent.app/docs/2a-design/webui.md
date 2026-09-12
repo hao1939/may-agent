@@ -48,7 +48,7 @@ The only editable default UI source is:
 projects/may-agent/packages/webui/static/
 ```
 
-The server reads the sole generated deployment copy at:
+By default, the server reads the generated deployment copy at:
 
 ```text
 projects/platform/ui/
@@ -62,6 +62,15 @@ another staging directory; it is replaced, not merged. Explicit deployment
 activates the served copy. Earlier source versions still default to the sibling
 served target, so use the explicit staging override when building those versions.
 This candidate is not a claim that the installation has been updated.
+
+For development, the WebUI package's `dev` command serves `static/` directly
+through the same HTTP adapter: these editable assets need no compilation or
+deployment copy. `MAY_AGENT_UI_DIR` selects only the served static directory;
+it does not redirect App discovery, state or API requests. Without that override,
+the deployment path above is unchanged. Development must use the intended
+`PROJECT_ROOT`/`STATE_DIR`; `WEB_PORT` remains configurable (default 8080).
+Building and serving have explicit, separate paths rather than relying on an
+implicit write into the installation to refresh the browser.
 
 Project-specific `.app/ui/` directories are independent domain surfaces, not
 copies of the default platform UI. See

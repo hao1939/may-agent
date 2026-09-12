@@ -317,9 +317,38 @@ one open Task. It made four local scripted-provider calls and zero real-model
 calls. Protocol verification matches all 22 schemas for CLI 0.154.0; the
 20,000-row benchmark and canonical design checks pass. Full local CI passes:
 **2,917 tests, three existing installation-only skips, zero failures** (146.99 s).
-The pushed head is still draft pending fresh review and hosted checks in
+Hosted Quality (2m40s) and Container (1m33s) also pass at `578411ae` in
 [run 34701309783](https://github.com/hao1939/may-agent/actions/runs/34701309783).
-No deployment is claimed.
+That head's fresh Copilot review found a missed development-command consumer,
+described below. It is not the final ready revision. No deployment is claimed.
+
+### Development command follow-up
+
+The new staging default disconnected `packages/webui`'s existing `dev` command
+from the server's installed-asset directory. The build tests checked output
+placement but did not launch that consumer. The review is valid: a staged file
+is not evidence of what the browser actually receives.
+
+Keep the fix in the HTTP adapter, not core or deployment. `dev` serves editable
+`static/` directly through an explicit `MAY_AGENT_UI_DIR` override; these files
+need no compilation. The default deployed directory, App discovery and state
+roots stay unchanged. `WEB_PORT` can be supplied instead of being overwritten
+by the package command. No dev server framework, copy watcher or automatic
+deployment is introduced.
+
+A portable regression launches the real package command with isolated state
+and verifies exact source index/routes/assets instead of a stale installed
+copy. It first reproduced the installed-index mismatch with the old HTTP
+adapter. The default web-only command is also exercised against its installed
+fixture. Both leave installed assets and build staging untouched. The 14
+focused build/command/static-route tests pass; full revised-head CI follows.
+
+The fix is committed and pushed as `e9d3e2c5`. The review thread has its
+reproduction/fix reply and is resolved; Copilot was requested again. Both
+upgrade-verification tools also pass on this clean head, with the same four
+scripted-provider calls and no real-model calls. Updated hosted checks run in
+[34701835700](https://github.com/hao1939/may-agent/actions/runs/34701835700);
+the candidate remains draft while checks and review finish.
 
 The retirement review is [Host #174](https://github.com/hao1939/may-agent/pull/174),
 initial head `b83873c6e63ec4df3448cb2b3d408549e2491154`, stacked on #172. It includes
