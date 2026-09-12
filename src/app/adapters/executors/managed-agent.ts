@@ -17,9 +17,6 @@ import {
   planCanonicalAgentResidueCleanup,
   applyCanonicalAgentResidueCleanup,
   rejectConvergedDirectAgentResidue,
-  hasDeployReceiptWake,
-  readDeployReceiptForTask,
-  deployReceiptPrompt,
 } from "./agent-workspace.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -171,9 +168,6 @@ async function executeTaskAgent(
           JSON.stringify(dependencyCatalog, null, 2),
           "```",
         ]
-      : []),
-    ...(hasDeployReceiptWake(reconciliationEvents) || readDeployReceiptForTask(input.executionPaths.projectDir, task.id)
-      ? ["", ...deployReceiptPrompt(input.executionPaths.projectDir, task.id)]
       : []),
     ...(reconciliationEvents.items.length
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
