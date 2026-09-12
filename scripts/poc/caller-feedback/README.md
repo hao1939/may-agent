@@ -1,6 +1,7 @@
 # Caller feedback while waiting — mechanics PoC
 
-Experimental branch based on Host `8026aff9`, not a released SDK contract.
+Experimental branch rebased onto Host `38a048da` (#167); the original trials
+used `8026aff9`. This is not a released SDK contract.
 The design proposal is maintained in the companion App's canonical docs:
 `docs/proposals/caller-feedback-and-waiting.md`.
 
@@ -8,6 +9,7 @@ The design proposal is maintained in the companion App's canonical docs:
 bun install --frozen-lockfile
 bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'caller feedback PoC'
 bun test src/app/core/state/conversation-task-turns.test.ts src/app/core/tasks/conversation-runtime.test.ts src/app/core/tasks/app-task-runtime-policy.test.ts
+bun test src/app/core/tasks/app-task-retry.test.ts
 bun run ci
 ```
 
@@ -70,7 +72,14 @@ calls. Review the actual comparison and wording as well as the mechanical gate.
 Keep raw transcripts/configuration private. This does not test natural selection
 of delegation, arbitrary provider errors, process-kill recovery or installed May.
 
-Do not deploy this prototype as-is. Canonical Task design alignment and remaining
+The main integration keeps the shared failure transition and its evidence/retry
+semantics. Focused checks ensure a workflow handoff stays quiet and a subsequent
+agent failure reports without accepting an answer. New input received during
+execution is not assigned that attempt's report; repeated failures preserve the
+first report for each considered input. The Condition-owner schema also matches
+admission so malformed owners can be corrected before finish ends an attempt.
+
+Do not deploy this prototype as-is. Canonical Task design corrections and remaining
 promotion gates are recorded in the proposal. Explicit updates are
 limited to waiting results. Latest selected report can supersede undelivered
 earlier feedback; this is not delivery of every intermediate update. Process

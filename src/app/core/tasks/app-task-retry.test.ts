@@ -41,8 +41,8 @@ function fixture() {
       input: { kind: "measure", data: { sample: "one" } } } });
   return {
     get config() { return config; }, intent, databasePath,
-    claim() {
-      const claim = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+    claim(handler = "agent") {
+      const claim = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler });
       if (claim.kind !== "claimed") throw new Error(`Expected claim, got ${claim.kind}`);
       return claim;
     },
@@ -265,14 +265,51 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
       : markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
   expect(retry.retryAt).toBeNull();
   f.reopen();
+  const report = readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report");
+  expect(report).toMatchObject({ attemptId: first.attemptId, state: "error", reportRevision: 1 });
+  // Input admitted during execution was not considered by the failing attempt.
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "human:correction", "report")).toBeNull();
+  expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult).toBeUndefined();
   const next = f.claim();
   expect(next.events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
   expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
   admitHuman(f); // Replay while running is not a new human message either.
   expect(failAppTaskAttempt(f.config, next, "Still unavailable").retryAt).toBe(Date.now() + 500);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toEqual(report);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "human:correction", "report"))
+    .toMatchObject({ attemptId: next.attemptId, state: "error", reportRevision: 1 });
   expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
   expect(() => f.claim()).toThrow("waiting");
+});
+
+it("keeps an internal workflow handoff quiet, then returns the agent failure through the shared path", () => {
+  const f = fixture();
+  const workflow = f.claim("workflow:measure");
+  markAppTaskAttention(f.config, workflow, {
+    summary: "Need agent judgment", reason: "needs-agent", evidence: ["workflow:observation"],
+  });
+  f.reopen();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toBeNull();
+  expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
+  const agent = f.claim();
+  expect(agent.handoff?.reason).toBe("needs-agent");
+  expect(agent.events).toEqual(workflow.events);
+  markAppTaskAttention(f.config, agent, {
+    summary: "Agent result failed verification", reason: "HandlerResultInvalid", evidence: ["verifier:rejected"],
+  });
+  f.reopen();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
+    .toMatchObject({ attemptId: agent.attemptId, state: "error", reportRevision: 1 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.acceptedResult).toBeUndefined();
+  expect(f.config.resourceStore.isCancelled("work")).toBe(false);
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  const retry = f.claim();
+  completeAppTask(f.config, retry, { summary: "Verified measurement", result: { value: 17 } });
+  f.reopen();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure"))
+    .toMatchObject({ attemptId: retry.attemptId, result: { value: 17 } });
 });
 
 it("failed capability admission consumes the human opportunity without an unpaced retry loop", () => {
@@ -410,8 +447,12 @@ it("rolls failure, input restoration and deadline back together, and guards inde
   expect(() => failAppTaskAttempt(f.config, claim, "Provider unavailable")).toThrow("retry write rejected");
   expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
   expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
+  expect(f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] })
+    .appTaskAdmissions?.["ask:measure"]?.reportAttemptId).toBeUndefined();
   f.config.resourceStore.db.exec("DROP TRIGGER reject_retry");
   failAppTaskAttempt(f.config, claim, "Provider unavailable");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
+    .toMatchObject({ attemptId: claim.attemptId, state: "error", reportRevision: 1 });
   const due = f.config.resourceStore.nextDueAt();
   expect(due).toBeGreaterThan(Date.now());
   f.config.resourceStore.setRecoveryState("work", { ready: true, changed: true, nextCheckAt: null });
@@ -438,8 +479,10 @@ it("applies owner revision during cooldown and fences retry plus late failure on
   const resource = f.config.resourceStore.readTask("work")!;
   closeAppTask(f.config, { appId: "sample", taskId: "work", reason: "Owner withdrew this assignment",
     expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion });
+  const admissions = f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] }).appTaskAdmissions;
   expect(failAppTaskAttempt(f.config, revised, "Late provider failure").status).toBe("superseded");
   f.reopen();
+  expect(f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] }).appTaskAdmissions).toEqual(admissions);
   setSystemTime(new Date(oldDue + 1));
   expect(recordAppTaskTrigger(f.config, "work", { type: "project.task.tick" }).kind).not.toBe("recorded");
   expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("completed");
