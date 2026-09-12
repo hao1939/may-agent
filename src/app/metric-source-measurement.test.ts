@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyDbSchema } from "../lib/db/schema.js";
@@ -11,7 +11,6 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
-  batchableProjectMetricCommand,
   type MetricSourceMeasurementRuntime,
   INTENTIONAL_OBSERVATION_EVENT_TYPES,
   STALE_ACTIVE_SOURCE_QUERY,
@@ -20,26 +19,6 @@ import {
   UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
   UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY,
 } from "./metric-source-measurement.js";
-
-describe("source-command metric batching", () => {
-  it("groups both project and focused metric samplers by their accepted script", () => {
-    expect(
-      batchableProjectMetricCommand("bun /app/projects/example.app/scripts/project-metrics.ts example.total --json"),
-    ).toEqual({
-      scriptPath: "/app/projects/example.app/scripts/project-metrics.ts",
-      metricId: "example.total",
-    });
-    expect(
-      batchableProjectMetricCommand("bun /app/projects/example.app/scripts/focus-metric-sample.ts example.live --json"),
-    ).toEqual({
-      scriptPath: "/app/projects/example.app/scripts/focus-metric-sample.ts",
-      metricId: "example.live",
-    });
-    expect(
-      batchableProjectMetricCommand("bun /app/projects/example.app/scripts/arbitrary.ts example.live --json"),
-    ).toBeNull();
-  });
-});
 
 describe("source-query metric measurement", () => {
   let persistDir: string;
@@ -560,40 +539,96 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("runs batched source commands in the configured App root", async () => {
+  it("shares an arbitrary declared producer, preserves exact samples, and retries only on the next pass", async () => {
     const db = getDb(persistDir);
-    const sampler = join(persistDir, "project-metrics.ts");
+    const sampler = join(persistDir, "observations.ts");
+    const countPath = join(persistDir, "invocations");
+    const countInvocation = `
+      import { appendFileSync } from "node:fs";
+      appendFileSync("invocations", "called\\n");
+    `;
     writeFileSync(sampler, `
-      if (process.argv[2] !== "--batch-json") throw new Error("Expected one batch");
-      console.log(JSON.stringify(Object.fromEntries(process.argv.slice(3).map(
-        id => [id, { value: 9, note: process.cwd() }],
-      ))));
+      ${countInvocation}
+      if (process.argv.slice(2).join(" ") !== "--report exact") throw new Error("Command was rewritten");
+      console.log(JSON.stringify({ samples: {
+        "batch.first": { value: 9, sampleSize: 3, measuredAt: 1234, note: process.cwd() },
+        "batch.second": 0,
+        "batch.invalid": { value: "not a number" },
+        "batch.undeclared": 99,
+      } }));
     `);
-    for (const id of ["batch.first", "batch.second"]) {
+    const ids = ["batch.first", "batch.second", "batch.missing", "batch.invalid"];
+    for (const id of ids) {
       db.run(
         `INSERT INTO metrics
            (id, name, type, owner, threshold, priority, status, source_command, updated_at, alert_op)
          VALUES (?, ?, 'gauge', 'may', 10, 'P1', 'active', ?, 0, '>')`,
-        [id, id, `bun ${sampler} ${id} --json`],
+        [id, id, `'${process.execPath.replaceAll("'", "'\\''")}' observations.ts --report exact`],
       );
     }
     bus.emit({ type: "trigger.metrics-snapshot", source: "control-socket", owner: "agent:may", data: {} });
     await measurement.idle();
 
     expect(db.prepare(
-      "SELECT metric_id, value, note FROM metric_snapshots WHERE metric_id LIKE 'batch.%' ORDER BY metric_id",
+      "SELECT metric_id, value, sample_size, note FROM metric_snapshots WHERE metric_id LIKE 'batch.%' ORDER BY metric_id",
     ).all()).toEqual([
-      { metric_id: "batch.first", value: 9, note: persistDir },
-      { metric_id: "batch.second", value: 9, note: persistDir },
+      { metric_id: "batch.first", value: 9, sample_size: 3, note: persistDir },
+      { metric_id: "batch.second", value: 0, sample_size: null, note: expect.stringContaining("source-command") },
     ]);
+    expect(readFileSync(countPath, "utf8")).toBe("called\n");
+    expect(db.prepare("SELECT measured_at FROM metric_snapshots WHERE metric_id = 'batch.first'").get())
+      .toEqual({ measured_at: 1234 });
+    expect(db.prepare(
+      "SELECT COUNT(*) AS n FROM events WHERE event_type = 'metric.measurement.failed' AND json_extract(data, '$.metricId') LIKE 'batch.%'",
+    ).get()).toEqual({ n: 2 });
 
-    writeFileSync(sampler, `throw new Error("synthetic batch failure");`);
+    writeFileSync(sampler, `${countInvocation} throw new Error("synthetic producer failure");`);
     const failed = await measureSourceMetrics({ bus, persistDir });
-    expect(failed.failures).toEqual([
-      { id: "batch.first", reason: expect.stringContaining("synthetic batch failure") },
-      { id: "batch.second", reason: expect.stringContaining("synthetic batch failure") },
-    ]);
+    expect(failed.failures).toEqual([...ids].sort().map(id => ({
+      id, reason: expect.stringContaining("synthetic producer failure"),
+    })));
+    expect(readFileSync(countPath, "utf8")).toBe("called\ncalled\n");
     expect(db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id LIKE 'batch.%'").get()).toEqual({ n: 2 });
+
+    // The same map contract works when only one metric is due, after failure.
+    writeFileSync(sampler, `${countInvocation} console.log(JSON.stringify({ samples: { "batch.second": 7 } }));`);
+    const recovered = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id === "batch.second" });
+    expect(recovered).toEqual({ measured: ["batch.second"], skipped: [], failures: [] });
+    expect(readFileSync(countPath, "utf8")).toBe("called\ncalled\ncalled\n");
+    expect(db.prepare("SELECT value FROM metric_snapshots WHERE metric_id = 'batch.second' ORDER BY id DESC LIMIT 1").get())
+      .toEqual({ value: 7 });
+  });
+
+  it("does not execute commands for query-backed or not-due metrics", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    const marker = join(persistDir, "unexpected-command");
+    for (const id of ["query.first", "query.second", "not-due"]) {
+      metrics.define({
+        id, name: id, type: "gauge", owner: "fixture",
+        sourceQuery: id.startsWith("query.") ? "SELECT 3 AS value" : undefined,
+        sourceCommand: "touch unexpected-command; echo 9",
+      });
+    }
+    const result = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id.startsWith("query.") });
+    expect(result).toEqual({ measured: ["query.first", "query.second"], skipped: [], failures: [] });
+    expect(existsSync(marker)).toBe(false);
+  });
+
+  it("preserves legacy sample values even when an extra field is named samples", async () => {
+    const metrics = createMetricService({ getDb: () => getDb(persistDir) });
+    const ids = ["legacy.extra-number", "legacy.extra-map"];
+    for (const [index, id] of ids.entries()) {
+      const sample = { value: 7, samples: index === 0 ? 10 : { [id]: 99 } };
+      metrics.define({
+        id, name: id, type: "gauge", owner: "fixture",
+        sourceCommand: `printf '%s' '${JSON.stringify(sample)}'`,
+      });
+    }
+    const result = await measureSourceMetrics({ bus, persistDir, isDue: row => ids.includes(row.id) });
+    expect(result.failures).toEqual([]);
+    expect(result.measured).toHaveLength(2);
+    for (const id of ids) expect(metrics.get(id)?.observation?.value).toBe(7);
   });
 
   it("uses measureInterval as a lightweight minimum cadence and allows an explicit forced sample", async () => {
