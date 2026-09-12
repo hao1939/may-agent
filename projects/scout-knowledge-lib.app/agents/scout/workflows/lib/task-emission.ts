@@ -34,8 +34,10 @@ function byteFingerprint(value: unknown): string {
     .slice(0, 16);
 }
 
-/** Stable identity for one maintain-task wake, independent of its retry. */
-function reconciliationCycleKey(reconciliation: ReconciliationView): string {
+/** Stable input identity for one Task wake, independent of its retry. */
+function reconciliationCycleKey(
+  reconciliation: ReconciliationView,
+): string | undefined {
   const events = reconciliation.events;
   if (Number.isSafeInteger(events?.throughEventId)) {
     return `event-${events.throughEventId}`;
@@ -48,12 +50,14 @@ function reconciliationCycleKey(reconciliation: ReconciliationView): string {
   if (latestEvent) {
     return `event-${fingerprint(latestEvent)}`;
   }
-  return `state-${reconciliation.resourceVersion}`;
+  // Without input, the Host's Task-generation scope is sufficient. A mutable
+  // resource version changes during retry and must not invent a new publication.
+  return undefined;
 }
 
 /**
- * Task generation scopes achieve-task keys. Maintain tasks additionally need
- * the exact wake identity because one generation can reconcile many cycles.
+ * Every Task can receive multiple inputs in one generation. Scope publication
+ * to the exact wake, rather than a retired Task mode or mutable resource version.
  * When supplied, materialFact binds the key to the exact serialized event data,
  * so a reused key implies byte-equivalent data while changed facts get new keys.
  */
@@ -63,10 +67,8 @@ export function taskEmissionKey(
   materialFact?: unknown,
 ): string {
   const reconciliation = ctx.reconciliation;
-  const wakeKey =
-    reconciliation?.mode === "maintain"
-      ? `${reconciliationCycleKey(reconciliation)}:${logicalKey}`
-      : logicalKey;
+  const cycle = reconciliation && reconciliationCycleKey(reconciliation);
+  const wakeKey = cycle ? `${cycle}:${logicalKey}` : logicalKey;
   return materialFact === undefined
     ? wakeKey
     : `${wakeKey}:fact-${byteFingerprint(materialFact)}`;

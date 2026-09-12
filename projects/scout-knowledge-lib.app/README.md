@@ -1,5 +1,11 @@
 # Scout Knowledge Library App
 
+The current App requires Host v3.0.0: mode-free Tasks, `facts` in Task and
+execution results, and explicit typed dependencies for delegated results.
+Source adapters keep their own evidence payloads. Workflow publication uses
+the exact wake identity, so new research cycles can publish while retries of
+the same input retain their keys. Task parent links alone do not return work.
+
 This Agent App adds schedules, observation, durable task reconciliation, and
 delivery to the independently runnable Scout knowledge-library project in
 [`../scout-knowledge-lib`](../scout-knowledge-lib).

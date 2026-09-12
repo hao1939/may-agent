@@ -85,7 +85,6 @@ export function resolveScoutTask(
         acceptance: [
           "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op.",
         ],
-        mode: "maintain",
         workflow: "scout-explore",
         input: { source },
         outputs: [
@@ -104,7 +103,6 @@ export function resolveScoutTask(
         acceptance: [
           "Current findings are preserved in an immutable snapshot and handed to May through the supported App message route, or the workflow records that there are no findings. Do not claim provider delivery; preserve accumulator changes that arrive during handoff.",
         ],
-        mode: "maintain",
         workflow: "scout-daily-digest",
         outputs: [`${appDir}/agents/scout/workspace/digest`],
         priority: "P1",
@@ -118,7 +116,6 @@ export function resolveScoutTask(
         acceptance: [
           "A current library-health packet is recorded and meaningful signals produce one owner wake.",
         ],
-        mode: "maintain",
         workflow: "library-health",
         outputs: [`${appDir}/.state/library-health-packets.jsonl`],
         priority: "P1",
@@ -139,7 +136,6 @@ export function resolveScoutTask(
         acceptance: [
           "Scout performs one useful maintenance step or records an evidence-backed no-op without creating duplicate project work.",
         ],
-        mode: "maintain",
         workflow: "knowledge-planner",
         outputs: [
           `${projectDir}/knowledge`,
@@ -182,6 +178,7 @@ const scoutInputSchema = Type.Object(
       Type.Literal("library-health"),
       Type.Literal("explore"),
       Type.Literal("digest"),
+      Type.Literal("goal"),
     ]),
     data: Type.Record(Type.String(), Type.Unknown()),
   },
@@ -292,14 +289,41 @@ function intentForScoutInput(input: AppInput): TaskIntent | null {
 export function taskForScoutInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
+  if (admitted.input.kind === "goal") {
+    const data = eventParams(admitted.input.data);
+    if (
+      typeof data.outcome !== "string" ||
+      !data.outcome.trim() ||
+      !Array.isArray(data.acceptance) ||
+      data.acceptance.length === 0 ||
+      data.acceptance.some((item) => typeof item !== "string" || !item.trim())
+    )
+      throw new Error("Scout goal requires outcome and acceptance");
+    return {
+      kind: "desired",
+      intent: {
+        id: `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        parentId: "library-operations",
+        outcome: data.outcome.trim(),
+        acceptance: data.acceptance as string[],
+        agent: "scout",
+        input: { kind: "goal", data },
+        outputs: [
+          `${projectDir}/knowledge`,
+          `${projectDir}/reports`,
+          `${appDir}/agents/scout/workspace/digest/today.md`,
+        ],
+        priority: "P1",
+      },
+    };
+  }
   const intent = intentForScoutInput(admitted.input) ?? {
     id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
     parentId: "library-operations",
     outcome: `Interpret and handle admitted Scout input ${admitted.input.kind}.`,
     acceptance: [
-      "Scout returns an evidence-backed result or revises this same task to the exact library outcome.",
+      "Scout returns an evidence-backed result; if the assignment needs changing, report the evidence and ask its owner to refine it.",
     ],
-    mode: "achieve" as const,
     agent: "scout",
     input: {
       kind: admitted.input.kind,

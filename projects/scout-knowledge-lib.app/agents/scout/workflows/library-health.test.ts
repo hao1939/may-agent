@@ -356,7 +356,6 @@ describe("Scout library-health observer", () => {
           generation: 1,
           resourceVersion: 27,
           agent: "scout",
-          mode: "maintain",
           outcome: "Observe library health",
           acceptance: ["Publish one bounded observation"],
           input: {},

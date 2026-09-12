@@ -45,7 +45,6 @@ function workflowContext(
       generation: 1,
       resourceVersion: 1,
       agent: "scout",
-      mode: "maintain",
       outcome: `Explore ${source}`,
       acceptance: ["Current source checked"],
       input: { source },
@@ -76,7 +75,7 @@ function workflowContext(
         ...(result.structuredResult !== undefined
           ? { output: result.structuredResult }
           : {}),
-        ...(result.evidence !== undefined ? { evidence: result.evidence } : {}),
+        ...(result.evidence !== undefined ? { facts: result.evidence } : {}),
       };
     }) as WorkflowContext["agents"]["call"],
   });
@@ -123,7 +122,7 @@ describe("scout-explore workflow prompt", () => {
     const result = await executeScoutExplore(ctx);
 
     expect(result.status).toBe("blocked");
-    expect(result.evidence).toMatchObject({
+    expect(result.facts).toMatchObject({
       executionId: "s_draft",
       outputs: [draft, digest],
       source: { name: "hn" },
@@ -169,7 +168,7 @@ describe("scout-explore workflow prompt", () => {
     const result = await executeScoutExplore(ctx);
 
     expect(result.status).toBe("blocked");
-    expect(result.evidence).toMatchObject({
+    expect(result.facts).toMatchObject({
       executionId: "s_partial",
       finish: {
         status: "partial",
@@ -211,7 +210,7 @@ describe("scout-explore workflow prompt", () => {
     const result = await executeScoutExplore(ctx);
 
     expect(result.status).toBe("blocked");
-    expect(result.evidence).toMatchObject({
+    expect(result.facts).toMatchObject({
       executionId: "s_blocked",
       status: "blocked",
     });
@@ -514,7 +513,7 @@ describe("scout-explore workflow prompt", () => {
     expect(result).toMatchObject({
       status: "blocked",
       summary: "XHS search failed: search page timed out",
-      evidence: { evidence: ["access:ready", "note-count:12", "exit:1"] },
+      facts: { facts: ["access:ready", "note-count:12", "exit:1"] },
     });
   });
 
@@ -546,7 +545,7 @@ describe("scout-explore workflow prompt", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: expect.arrayContaining([
+        facts: expect.arrayContaining([
           "source:xhs",
           "items:0",
           "result:evidence-backed-no-op",
@@ -628,7 +627,7 @@ describe("scout-explore workflow prompt", () => {
       output: {
         state: "converged",
         summary: "Recorded one source-grounded XHS finding.",
-        evidence: expect.arrayContaining([
+        facts: expect.arrayContaining([
           "access:ready",
           "source:xhs",
           "query:AI agent 智能体",
@@ -733,7 +732,7 @@ describe("scout-explore workflow prompt", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: expect.arrayContaining([
+        facts: expect.arrayContaining([
           "source-provenance:agent-result+workflow-time",
           "result:evidence-backed-no-op",
           "execution:s_hn",
@@ -767,7 +766,7 @@ describe("scout-explore workflow prompt", () => {
     expect(result).toMatchObject({
       status: "blocked",
       summary: "Scout exploration returned invalid current-source evidence",
-      evidence: {
+      facts: {
         source: "hn",
         invalidField: "name",
         reason: "expected hn",
@@ -800,7 +799,7 @@ describe("scout-explore workflow prompt", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: expect.arrayContaining([
+        facts: expect.arrayContaining([
           "source-provenance:agent-result+workflow-time",
         ]),
       },
@@ -966,7 +965,7 @@ describe("scout-explore workflow prompt", () => {
       status: "blocked",
       summary:
         "Scout exploration created a finding with duplicate source references",
-      evidence: {
+      facts: {
         duplicates: [
           {
             kind: "existing-file",
@@ -1015,7 +1014,7 @@ describe("scout-explore workflow prompt", () => {
       status: "blocked",
       summary:
         "Scout exploration removed primary sources from an existing output",
-      evidence: {
+      facts: {
         replacements: [
           {
             kind: "existing-output-replaced",

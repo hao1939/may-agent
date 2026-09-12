@@ -18,14 +18,14 @@ The May Host runs Apps. Preserve this mental model:
 
 For human interaction, preserve the more specific shape:
 
-`human -> May turn -> direct work and response, or Topic -> exact owning Task`
+`human -> stable Conversation Task -> bounded turn -> response or delegated Task`
 
-Conversation holds discussion and Task references; a Task holds the ongoing
-commitment. May can act directly in an authorized bounded turn or own an
-ordinary Task when continuation is needed. Delegate for existing ownership,
+Conversation holds discussion and Task references; its stable Task owns execution.
+May can act directly in an authorized bounded turn or assign independent work
+to another ordinary Task. Delegate for existing ownership,
 required authority, or useful expertise, not merely a matching App name.
-Meaningful linked-Task changes wake May's existing supervision Task for useful
-updates. Neither the conversation nor that review becomes a proxy work owner.
+Linked outcomes return as input to the assigning Task. There is no separate
+follow-up supervision Task or second executing inbox handler in the Host.
 
 For project-directed interaction, preserve:
 
@@ -171,7 +171,7 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 ### Human-rooted traces
 
 - Treat a human `conversation.message.created` on `Conversation may:primary` as
-  both shared durable context and the input for one May request, not a Task.
+  shared durable context and input for its existing Conversation Task, not a new Task.
   Do not add `human.input.received`, a second `app.input.requested`, or a mutable
   current-session lifecycle for the same turn.
 - Understand human intention inside that May request. A question, request for
@@ -201,18 +201,17 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 - Explicit project HTTP/UI intent may persist `project.comment.created`
   directly as its receipt and trace root. Conversational intent remains one May
   request; May returns a typed `followUp` when durable work or exact Task
-  feedback is needed. It may target May's own goal input. New turns finish
-  after admission; only retained child-wait requests keep the old dependency
-  protocol.
+  feedback is needed. It may target May's own goal input. The bounded turn can
+  finish while independent work continues; accepted Requests remain tracked.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.
 - A declared App subscription translates project intent into typed Task input.
   App policy resolves the stable Task identity; it does not edit Host storage
   or create another request lifecycle.
-- Runtime validates and applies Task changes. When a typed child App dependency
-  completes, `app.dependency.completed` wakes the exact parent Task so its App
-  can review the observation and return its own result.
+- Runtime validates and applies Task changes. Typed child App dependencies
+  return exact outcomes through saved input links (`app.dependency.updated`),
+  so the assigning Task can judge the evidence and return its own result.
 - Compatible addressed work may batch and task wakes may coalesce, but every
   addressed request keeps its own identity and result. A shared task does not
   absorb the request lifecycle.
@@ -257,6 +256,9 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 ## Apps And Tasks
 
 Keep domain projects portable and App policy separate from Host mechanics.
+For authorized Task cleanup, read
+[`references/task-controls.md`](references/task-controls.md) for exact reads,
+the installed CLI, and closure verification; do not rediscover runtime internals.
 
 - Put App policy in `projects/<id>.app/`; domain tools and artifacts
   stay in the domain workspace.
@@ -274,7 +276,7 @@ Keep domain projects portable and App policy separate from Host mechanics.
   model turns are not Task attempts. Return only an accepted result or an exact
   external wait; a crash or restart retries the same Task automatically.
 - Give each independent standing responsibility one stable task identity.
-  Timers, semantic events, child transitions, and external observations wake
+  Timers, semantic events, explicit returned inputs, and external observations wake
   that resource; they do not create timestamped work records or scan the task
   tree for something to schedule.
 - Keep responsibilities explicit: the App declares the goal boundary,
@@ -285,7 +287,7 @@ Keep domain projects portable and App policy separate from Host mechanics.
   bootstrap intent; Apps and agents consume only bounded task views.
 - Workflows use their reconciliation context and exact `ctx.read.task` views;
   agents use bounded task readouts. They return `converged`, `waiting` with
-  exact Conditions or typed App dependencies, or `needs-agent` before an
+  exact Conditions or typed App dependencies, `incomplete` for failure, or `needs-agent` before an
   executor is selected, plus typed actions for Runtime to validate and apply.
 - When an App looks stuck, inspect the App and canonical Task state first.
   Reuse its existing Task and Condition, wake it through a declared App
@@ -303,15 +305,17 @@ Keep domain projects portable and App policy separate from Host mechanics.
 - Use Conditions only for observable external facts. Use direct children for
   decomposition and `dependsOn` for internal ordering; never model task phase,
   child completion, retry, or refill as a Condition.
-- Make a standing parent own its finite leaves directly. Let meaningful child
-  convergence or attention wake the parent through the shared controller;
-  reject sibling layouts that require an app-local refill or recovery handler.
-- An `achieve` task is absorbed into a completion receipt and removed from the
-  live graph. A `maintain` task stays live for later wake events. Parent/child
-  structure is decomposition, not scheduling.
-- Treat completion receipts as immutable. Never recreate a completed task ID;
-  create a deterministic successor only when a genuinely new desired outcome
-  exists.
+- A parent link describes organization, not a wake or return route. Use typed
+  dependencies when the assigning Task needs an answer; their saved input links
+  return the exact result. Use Conditions for external facts with a known producer.
+- Tasks accept outcomes and rest between inputs. Only
+  the assigning owner closes a Task. `done` alone does not mean closed; inspect
+  `closed`. Historical completion receipts remain evidence, not runtime authority.
+- `incomplete` reports an unsuccessful attempt with evidence and needed help;
+  it does not abandon work. Runtime retries with backoff until progress or
+  owner closure. A worker cannot change its own assignment.
+- Assign new work through typed App dependencies, never `create-task` or
+  `close-task` actions. Update existing child assignments using exact fences.
 - Bound passive review of an unchanged external Condition. If repeated reviews
   produce no new evidence, change the execution approach or settle into the
   event-driven wait; reject endless empty checkpoint loops.
@@ -387,8 +391,8 @@ Distinguish local blockers from ownership-boundary escalations.
   Reserve global `agents/` for May and explicitly justified standalone
   system-level agents.
 - Put operational settings in `agent.json`, not prose instructions.
-- May Console and Telegram turns use bounded requests with `finish()`, shared
-  execution tools, and no mandatory Task. Background work uses ordinary Tasks.
+- May Console and Telegram turns use `finish()` and shared execution tools
+  inside one stable Conversation Task. Independent work uses another Task.
   The separate direct-agent chat interface is a persistent observed REPL
   without `finish()`; do not confuse its session lifecycle with Conversation.
 - Human, CLI, Telegram, web, and socket actions enter through canonical App

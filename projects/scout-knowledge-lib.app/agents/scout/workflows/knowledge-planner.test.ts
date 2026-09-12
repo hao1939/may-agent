@@ -5,10 +5,10 @@ import { admitExperienceReviewResult, execute } from "./knowledge-planner";
 
 describe("Scout owner reconciliation boundary", () => {
   it.each([
-    { status: "blocked", evidence: undefined },
+    { status: "blocked", facts: undefined },
     {
       status: "done",
-      evidence: { status: "partial", next_steps: "Finish the review" },
+      facts: { status: "partial", next_steps: "Finish the review" },
     },
   ] as const)(
     "does not publish maintenance facts or actions from an incomplete call: %j",
@@ -23,7 +23,6 @@ describe("Scout owner reconciliation boundary", () => {
             generation: 1,
             resourceVersion: 1,
             agent: "scout",
-            mode: "maintain",
             outcome: "Maintain the library",
             acceptance: ["One bounded decision is recorded"],
             input: {},
@@ -44,7 +43,7 @@ describe("Scout owner reconciliation boundary", () => {
             output: {
               state: "converged",
               summary: "Partial maintenance plan",
-              evidence: ["partial"],
+              facts: ["partial"],
               actions: [],
             },
           })) as WorkflowContext["agents"]["call"],
@@ -55,60 +54,39 @@ describe("Scout owner reconciliation boundary", () => {
       );
 
       expect(result.status).toBe("blocked");
-      expect(result.evidence).toMatchObject({
+      expect(result.facts).toMatchObject({
         executionId: "s_blocked",
         ...(execution.status === "blocked"
           ? { status: "blocked" }
-          : { finish: execution.evidence }),
+          : { finish: execution.facts }),
       });
       expect(emitted).toEqual([]);
     },
   );
 
-  it("normalizes an omitted experience-task mode to finite achieve work", () => {
-    const admitted = admitExperienceReviewResult({
-      state: "converged",
-      summary: "Proposed one bounded improvement.",
-      evidence: ["Three reconciliations showed the same mechanical failure."],
-      actions: [
-        {
-          kind: "create-task",
-          id: "improve-source-diagnostic",
-          outcome: "Make source rejection diagnostic",
-          acceptance: ["The rejected field is named"],
-        },
-      ],
-    });
-
-    expect(admitted).toMatchObject({
-      ok: true,
-      result: {
-        actions: [
-          {
-            kind: "create-task",
-            id: "improve-source-diagnostic",
-            mode: "achieve",
-          },
-        ],
+  it("accepts one bounded Scout goal and rejects obsolete or unbounded creation", () => {
+    const dependency = {
+      id: "repair",
+      appId: "scout-knowledge-lib",
+      input: {
+        kind: "goal",
+        data: { outcome: "Repair navigation", acceptance: ["Links resolve"] },
       },
+    };
+    const result = {
+      state: "waiting",
+      summary: "Delegated repair",
+      facts: ["broken link"],
+      dependencies: [dependency],
+    };
+    expect(admitExperienceReviewResult(result)).toMatchObject({
+      ok: true,
+      result,
     });
-  });
-
-  it("rejects multiple tasks or maintain work from an experience review", () => {
-    const task = (id: string, mode: "achieve" | "maintain" = "achieve") => ({
-      kind: "create-task" as const,
-      id,
-      outcome: `Complete ${id}`,
-      acceptance: [`${id} is complete`],
-      mode,
-    });
-
     expect(
       admitExperienceReviewResult({
-        state: "converged",
-        summary: "Too much work.",
-        evidence: ["packet"],
-        actions: [task("one"), task("two")],
+        ...result,
+        dependencies: [dependency, { ...dependency, id: "second" }],
       }),
     ).toMatchObject({
       ok: false,
@@ -116,12 +94,30 @@ describe("Scout owner reconciliation boundary", () => {
     });
     expect(
       admitExperienceReviewResult({
-        state: "converged",
-        summary: "Standing work.",
-        evidence: ["packet"],
-        actions: [task("standing", "maintain")],
+        ...result,
+        dependencies: [
+          { ...dependency, input: { kind: "owner-review", data: {} } },
+        ],
       }),
-    ).toMatchObject({ ok: false, error: expect.stringContaining("maintain") });
+    ).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("Scout goal input"),
+    });
+    expect(
+      admitExperienceReviewResult({
+        state: "converged",
+        summary: "Old action",
+        facts: ["fact"],
+        actions: [
+          {
+            kind: "create-task",
+            id: "old",
+            outcome: "Repair",
+            acceptance: ["links"],
+          },
+        ],
+      }),
+    ).toMatchObject({ ok: false });
   });
 
   it("returns typed task proposals for the generic reconciler", async () => {
@@ -137,7 +133,6 @@ describe("Scout owner reconciliation boundary", () => {
           generation: 1,
           resourceVersion: 1,
           agent: "scout",
-          mode: "maintain",
           outcome: "Maintain the library",
           acceptance: ["One bounded decision is recorded"],
           input: {},
@@ -163,17 +158,20 @@ describe("Scout owner reconciliation boundary", () => {
             status: "done",
             summary: "proposed maintenance task",
             output: {
-              state: "converged",
+              state: "waiting",
               summary: "Proposed one bounded maintenance task.",
-              evidence: ["library packet identifies the gap"],
-              actions: [
+              facts: ["library packet identifies the gap"],
+              dependencies: [
                 {
-                  kind: "create-task",
                   id: "repair-navigation",
-                  parentId: "library-maintenance",
-                  outcome: "Repair library navigation",
-                  outputs: ["knowledge/README.md"],
-                  acceptance: ["The landing page links canonical notes"],
+                  appId: "scout-knowledge-lib",
+                  input: {
+                    kind: "goal",
+                    data: {
+                      outcome: "Repair library navigation",
+                      acceptance: ["The landing page links canonical notes"],
+                    },
+                  },
                 },
               ],
             },
@@ -189,6 +187,18 @@ describe("Scout owner reconciliation boundary", () => {
     expect(prompt).toContain("supported\n  task reads");
     expect(prompt).toContain("not current health signals");
     expect(prompt).toContain("block independent library maintenance");
+    expect(prompt).toContain(
+      "today.md is a mutable accumulator, not an archive",
+    );
+    expect(prompt).toContain(
+      "read the daily-digest Task and its retained snapshot",
+    );
+    expect(prompt).toContain(
+      "not proof that the highlight must still be in today.md",
+    );
+    expect(prompt).toContain(
+      "Do not re-add a highlight merely because handoff cleared it",
+    );
     expect(prompt).toContain(
       "never\n  claim a retired artifact was regenerated",
     );
@@ -221,28 +231,32 @@ describe("Scout owner reconciliation boundary", () => {
     expect(emitted.at(-1)).toMatchObject({
       type: "project.knowledge.maintained",
       localKey: expect.stringMatching(
-        /^state-1:knowledge-maintained:fact-[a-f0-9]{16}$/,
+        /^knowledge-maintained:fact-[a-f0-9]{16}$/,
       ),
       data: {
-        proposedActions: [{ kind: "create-task", id: "repair-navigation" }],
+        proposedActions: [],
+        proposedDependencies: [
+          { id: "repair-navigation", appId: "scout-knowledge-lib" },
+        ],
       },
     });
     expect(result).toMatchObject({
       status: "done",
       output: {
-        state: "converged",
-        actions: [{ kind: "create-task", id: "repair-navigation" }],
+        state: "waiting",
+        dependencies: [
+          { id: "repair-navigation", appId: "scout-knowledge-lib" },
+        ],
       },
     });
     const admitted = admitTaskReconcileResult(
       result.status === "done" ? result.output : undefined,
-      { allowNeedsAgent: true, defaultParentId: "project" },
+      { allowNeedsAgent: true },
     );
-    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
-      kind: "create-task",
+    expect(admitted.ok && admitted.result.dependencies?.[0]).toMatchObject({
       id: "repair-navigation",
-      mode: "achieve",
-      priority: "P2",
+      appId: "scout-knowledge-lib",
+      input: { kind: "goal", data: { outcome: "Repair library navigation" } },
     });
   });
 
@@ -251,10 +265,14 @@ describe("Scout owner reconciliation boundary", () => {
     const baseResult = {
       state: "converged" as const,
       summary: "No navigation repair is needed.",
-      evidence: ["knowledge/README.md exists"],
+      facts: ["knowledge/README.md exists"],
       actions: [],
     };
-    const run = (agentOutput: typeof baseResult, resourceVersion = 9) =>
+    const run = (
+      agentOutput: typeof baseResult,
+      eventId = 9,
+      resourceVersion = 1,
+    ) =>
       execute(
         createTestAppWorkflowContext({
           input: {},
@@ -264,12 +282,11 @@ describe("Scout owner reconciliation boundary", () => {
             generation: 1,
             resourceVersion,
             agent: "scout",
-            mode: "maintain",
             outcome: "Maintain the library",
             acceptance: ["One bounded decision is recorded"],
             input: {},
             children: { live: [], completed: [] },
-            events: { items: [], truncated: false },
+            events: { items: [], truncated: false, throughEventId: eventId },
           },
           workspace: {
             appRoot: "/app/projects/scout-knowledge-lib.app",
@@ -291,11 +308,11 @@ describe("Scout owner reconciliation boundary", () => {
       );
 
     await run(baseResult);
-    await run({ ...baseResult });
+    await run({ ...baseResult }, 9, 10);
     await run({
       ...baseResult,
       summary: "The landing page needs one canonical link.",
-      evidence: ["knowledge/README.md omits the canonical index"],
+      facts: ["knowledge/README.md omits the canonical index"],
     });
     await run(baseResult, 10);
 
@@ -306,10 +323,10 @@ describe("Scout owner reconciliation boundary", () => {
     );
     expect(emitted[2]?.localKey).not.toBe(emitted[0]?.localKey);
     expect(String(emitted[0]?.localKey)).toStartWith(
-      "state-9:knowledge-maintained:fact-",
+      "event-9:knowledge-maintained:fact-",
     );
     expect(String(emitted[3]?.localKey)).toStartWith(
-      "state-10:knowledge-maintained:fact-",
+      "event-10:knowledge-maintained:fact-",
     );
     expect(emitted[3]?.localKey).not.toBe(emitted[0]?.localKey);
   });
@@ -324,7 +341,6 @@ describe("Scout owner reconciliation boundary", () => {
           generation: 1,
           resourceVersion: 10,
           agent: "scout",
-          mode: "maintain",
           outcome: "Maintain the library",
           acceptance: ["One bounded decision is recorded"],
           input: {},
@@ -345,7 +361,7 @@ describe("Scout owner reconciliation boundary", () => {
           output: {
             state: "converged",
             summary: "No maintenance needed.",
-            evidence: ["bounded packet is unchanged"],
+            facts: ["bounded packet is unchanged"],
             actions: [],
           },
         })) as WorkflowContext["agents"]["call"],
@@ -376,7 +392,6 @@ describe("Scout owner reconciliation boundary", () => {
           generation: 2,
           resourceVersion: 2,
           agent: "scout",
-          mode: "maintain",
           outcome: "Review library experience",
           acceptance: ["One bounded decision is recorded"],
           input: {},
@@ -413,7 +428,7 @@ describe("Scout owner reconciliation boundary", () => {
             output: {
               state: "converged",
               summary: "No improvement justified.",
-              evidence: ["experience window contained no reconciliations"],
+              facts: ["experience window contained no reconciliations"],
               actions: [],
             },
           };

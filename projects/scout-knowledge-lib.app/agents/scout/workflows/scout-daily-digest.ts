@@ -43,7 +43,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     return ctx.done(summary, {
       state: "converged",
       summary,
-      evidence: [`digest:${todayFile}`],
+      facts: [`digest:${todayFile}`],
       actions: [],
     });
   }
@@ -108,7 +108,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: [
+    facts: [
       `digest:${archivePath}`,
       "handoff:may",
       "provider-delivery:not-verified",

@@ -8,6 +8,68 @@ import app, {
 } from "./app";
 
 describe("Scout task reconciliation", () => {
+  it("assigns bounded goals through typed input with stable admission identity", () => {
+    const input = {
+      id: "request-repair",
+      appId: "scout-knowledge-lib",
+      source: { kind: "app" as const, id: "scout" },
+      input: {
+        kind: "goal",
+        data: {
+          outcome: "Repair library navigation",
+          acceptance: ["Links resolve"],
+          context: "Keep unrelated notes intact",
+        },
+      },
+    };
+    const first = taskForScoutInput(input);
+    expect(first).toEqual(taskForScoutInput(input));
+    expect(first).toMatchObject({
+      kind: "desired",
+      intent: {
+        id: "goal/request-repair",
+        agent: "scout",
+        outcome: "Repair library navigation",
+        acceptance: ["Links resolve"],
+        input: input.input,
+      },
+    });
+    expect(taskForScoutInput({ ...input, id: "another-request" })).not.toEqual(
+      first,
+    );
+    expect(() =>
+      taskForScoutInput({
+        ...input,
+        input: { kind: "goal", data: { outcome: "Repair", acceptance: [] } },
+      }),
+    ).toThrow("outcome and acceptance");
+  });
+  it("makes source guidance discoverable from Scout's active instructions", async () => {
+    const agentRoot = new URL("./agents/scout/", import.meta.url);
+    const identity = await Bun.file(new URL("AGENTS.md", agentRoot)).text();
+    const context = await Bun.file(new URL("context.md", agentRoot)).text();
+    const config = await Bun.file(new URL("agent.json", agentRoot)).json();
+
+    expect(identity).toContain("[context.md](context.md)");
+    expect(context).toContain("## Source Access");
+    expect(context).toContain("`python3`");
+    expect(config).not.toHaveProperty("context_files");
+  });
+
+  it("keeps digest-link preservation in Scout's active instructions", async () => {
+    const identity = await Bun.file(
+      new URL("./agents/scout/AGENTS.md", import.meta.url),
+    ).text();
+
+    expect(identity).toContain("Before moving or renaming a file or section");
+    expect(identity).toContain("working digest, and retained digest snapshots");
+    expect(identity).toContain("research content in one place");
+    expect(identity).toContain(
+      "Link each new digest highlight to its research note",
+    );
+    expect(identity).toContain("use a file link when no stable section");
+  });
+
   it("maps each source to an independent standing maintain task", () => {
     for (const source of ["arxiv", "hn", "xhs", "github", "reddit"]) {
       expect(
@@ -19,7 +81,6 @@ describe("Scout task reconciliation", () => {
       ).toMatchObject({
         id: `explore-${source}`,
         parentId: "ongoing-research",
-        mode: "maintain",
         workflow: "scout-explore",
         input: { source },
         outputs: [
@@ -63,7 +124,6 @@ describe("Scout task reconciliation", () => {
   it("binds recurring responsibilities to stable task identities", () => {
     expect(resolveScoutTask({ type: "scout.digest" })).toMatchObject({
       id: "daily-digest",
-      mode: "maintain",
       workflow: "scout-daily-digest",
     });
     expect(
@@ -71,7 +131,6 @@ describe("Scout task reconciliation", () => {
     ).toMatchObject({
       id: "runtime/library-health-observer",
       parentId: "library-operations",
-      mode: "maintain",
       workflow: "library-health",
     });
     expect(
@@ -103,7 +162,6 @@ describe("Scout task reconciliation", () => {
     ).toMatchObject({
       id: "library-maintenance",
       parentId: "library-operations",
-      mode: "maintain",
       outputs: [
         "/app/projects/scout-knowledge-lib/knowledge",
         "/app/projects/scout-knowledge-lib/reports",
@@ -182,7 +240,6 @@ describe("Scout task reconciliation", () => {
     ).toMatchObject({
       id: "library-maintenance",
       workflow: "knowledge-planner",
-      mode: "maintain",
     });
   });
 
@@ -452,7 +509,6 @@ describe("Scout task reconciliation", () => {
       }),
     ).toMatchObject({
       id: "library-maintenance",
-      mode: "maintain",
       workflow: "knowledge-planner",
     });
   });

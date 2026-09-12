@@ -192,7 +192,7 @@ export function xhsWaitResult(
   return {
     state: "waiting",
     summary,
-    evidence: [
+    facts: [
       credential.reason,
       ...credential.evidence,
       "The source lane remains gated before agent dispatch.",
@@ -480,8 +480,7 @@ function repeatedPrimarySourceReferences(
   let sectionId = 0;
   let parentSectionId = 0;
   let currentSection:
-    | { id: number; label: string; level: number; parent: number }
-    | undefined;
+    { id: number; label: string; level: number; parent: number } | undefined;
 
   for (const line of content.split(/\r?\n/)) {
     const heading = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
@@ -490,14 +489,15 @@ function repeatedPrimarySourceReferences(
       const title = heading[2].trim();
       sectionId += 1;
       if (level === 2) parentSectionId = sectionId;
-      currentSection = /^(?:synthesis|references|sources)\b/i.test(title)
-        ? undefined
-        : {
-            id: sectionId,
-            label: `${heading[1]} ${title}`,
-            level,
-            parent: level === 2 ? 0 : parentSectionId,
-          };
+      currentSection =
+        /^(?:synthesis|references|(?:primary\s+)?sources)\b/i.test(title)
+          ? undefined
+          : {
+              id: sectionId,
+              label: `${heading[1]} ${title}`,
+              level,
+              parent: level === 2 ? 0 : parentSectionId,
+            };
       continue;
     }
     if (!currentSection) continue;
@@ -644,7 +644,7 @@ export async function executeScoutExplore(
     sourceEvidence = [...xhsAccessEvidence(credential), ...search.evidence];
     if (search.state === "failed") {
       return ctx.blocked(`XHS search failed: ${search.reason}`, {
-        evidence: sourceEvidence,
+        facts: sourceEvidence,
       });
     }
     if (search.items.length === 0) {
@@ -656,7 +656,7 @@ export async function executeScoutExplore(
       return ctx.done(summary, {
         state: "converged",
         summary,
-        evidence: [
+        facts: [
           ...sourceEvidence,
           ...sourceResultEvidence(observation, "workflow"),
           "result:evidence-backed-no-op",
@@ -704,7 +704,7 @@ export async function executeScoutExplore(
   }
   // Execution "done" means the call returned, not that its work succeeded.
   // The existing finish evidence preserves an explicitly partial outcome.
-  const finish = result.evidence;
+  const finish = result.facts;
   if (
     finish &&
     typeof finish === "object" &&
@@ -796,7 +796,7 @@ export async function executeScoutExplore(
   return ctx.done(structured.summary, {
     state: "converged",
     summary: structured.summary,
-    evidence: [
+    facts: [
       ...new Set([
         ...sourceEvidence,
         ...sourceResultEvidence(

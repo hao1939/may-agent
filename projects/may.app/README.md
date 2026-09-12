@@ -1,47 +1,58 @@
 # May
 
-**Implementation note:** This README describes the current separate supervision
-Task in `app.ts`. The accepted [shared conversation-input design](../may-agent.app/docs/2a-design/message-lifecycle.md#one-conversation-input-path)
-will handle human input and linked Task/timer reviews through one stable
-conversation execution Task. Explicit outcomes and owner-controlled closure
-replace separate conversation execution and the supervision Task.
-That change is [pending implementation](../may-agent.app/docs/proposals/conversation-input-unification.md);
-this documentation update does not change the running App.
+**Host requirement:** v3.0.0. The App uses `conversation` for human input,
+mode-free Tasks and `facts` for result observations. Retained history stays in
+the Host; source compatibility is not deployment proof.
 
-People talk to **May** (`app:may`). May understands each turn and can answer,
-investigate, edit, and verify directly within the authorized scope. An ordinary
-Task records work needing continuation or later steering. May may own it;
-another App is useful for existing ownership, required authority, or expertise.
-
-The Host may use a replaceable executor such as `agent:may` for one attempt.
-That executor is an implementation detail, not a second service or owner. The
-Host request remembers who is owed an answer across retries and restarts.
+People talk to **May** (`app:may`). One stable Task handles that interaction:
+understand the human's intention, discuss it, and perform authorized work.
+May can use tools directly within that Task. When work needs to continue in
+the background, May can assign another Task and keep the discussion available.
+Both Tasks use the same controller, attempts, outcomes and recovery.
 
 ```text
-human -> May frontend -> direct work and answer, or input -> owning Task
-                                      linked events -> May supervision -> useful update
+human input -> Task A -> answer or delegate Task B
+human input -> Task A -> continue discussion while B runs
+               Task B -> accepted outcome -> input to A -> useful reply
 ```
 
-A Topic groups related turns and links exact Tasks. It owns no work or status.
-Conversation remembers discussion; Task state remembers the ongoing commitment.
-Later natural messages can reuse that Topic and steer an exact unfinished Task;
-May owns one normal visible supervision Task for human-linked work, not one
-Task per human request. It does not parent, wait on, or duplicate destination
-work.
+May may own both Tasks. Another App is useful when it owns the domain,
+requires specific authority, or provides expertise or a workflow. The selected
+agent or workflow runs one bounded attempt; it does not own a second lifecycle.
 
-Recovery reviews are not Conversation updates. After checking the exact Task,
-an unchanged wait, previously reported unavailable App, or repeated recovery
-notice normally ends with a quiet, evidence-backed `converged` result. Omit
-`result.conversation` when there is no new useful fact, action or Request
-disposition. Keep the review evidence on the supervision Task. A new blocker,
-material change, concrete human decision, or explicit human status question
-still deserves a clear answer. An intentionally disabled App is not permission
-to enable it or replace its work.
+A **Request** records an accepted ask whose outcome May must return. Admitting
+background work does not fulfill it. May judges the returned evidence against
+the latest scope, explains the outcome and closes the Request when appropriate.
+A Task remains available after accepting an outcome; its assigning App, parent
+agent or human decides whether to revise or close the assignment.
+
+Messages retain the discussion. Topics group related messages and reference
+exact Tasks. Neither owns execution or copies Task state. Later human feedback
+and linked Task outcomes enter the same input loop. A worker's failure report
+preserves the assignment and evidence; the runtime paces another attempt with
+backoff rather than requiring a separate recovery agent.
+
+Task hierarchy alone does not deliver results. Typed dependencies retain the
+exact input/return link; Conditions identify external facts. An `incomplete`
+result reports a failed attempt, not owner closure. A waiting Task may return
+useful caller feedback with `report: true` while retaining its exact wait.
+
+The same rule applies to automated research checks: compare the result with
+the latest relevant Conversation report. Another run, timestamp or source
+fingerprint is not by itself a useful update. Keep unchanged, already-covered
+findings in Task evidence; new findings, changed blockers, accepted Request
+dispositions and explicit human questions still deserve an answer. This is agent judgment, not a new event filter or reporting ledger.
 
 Keep new progress separate from old asks. A maintained Task can produce useful
 findings after the linked Request is fulfilled. Report those findings on their
 own merits; old retry messages do not establish why a later cycle ran. Name a
 retry or human-requested run only when current evidence supports that link.
 
-This App owns no Host operations policy. Those outcomes belong to the separate
-Host Operations App (stable compatibility ID `app:may-agent`).
+The optional 15-minute review schedule discovers linked changes whose
+notifications were missed. It uses the same input path and adds no supervision
+Task. An unchanged wait or already reported outcome needs no repeated human
+update. Later useful findings can be reported without reopening a fulfilled ask.
+
+The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unification.md)
+owns the lifecycle and its evidence. Host deployment and runtime operations
+remain with the Host Operations App (`app:may-agent`).

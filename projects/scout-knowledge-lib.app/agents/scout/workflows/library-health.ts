@@ -837,7 +837,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   return ctx.done(summary, {
     state: "converged",
     summary,
-    evidence: [`packet:${packetPath}`],
+    facts: [`packet:${packetPath}`],
     actions: [],
   });
 }

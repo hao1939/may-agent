@@ -42,7 +42,6 @@ function fixture(today: string, archives: Record<string, string> = {}) {
         generation: 1,
         resourceVersion: 9,
         agent: "scout",
-        mode: "maintain",
         outcome: "Preserve findings and hand the daily digest to May",
         acceptance: [
           "Preserve findings and record a retry-stable handoff without claiming delivery",
@@ -96,7 +95,7 @@ describe("Scout daily digest", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        evidence: expect.arrayContaining([
+        facts: expect.arrayContaining([
           "handoff:may",
           "provider-delivery:not-verified",
         ]),
@@ -135,7 +134,7 @@ describe("Scout daily digest", () => {
     expect(result).toMatchObject({
       status: "done",
       output: {
-        evidence: [
+        facts: [
           `digest:${snapshot}`,
           "handoff:may",
           "provider-delivery:not-verified",

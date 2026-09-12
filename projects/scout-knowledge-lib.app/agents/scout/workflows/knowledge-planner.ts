@@ -14,25 +14,29 @@ export function admitExperienceReviewResult(
 ): { ok: true; result: AgentResult } | { ok: false; error: string } {
   const admitted = admitTaskReconcileResult(value, {
     allowNeedsAgent: false,
-    defaultParentId: "project",
   });
   if (!admitted.ok) return admitted;
   if (admitted.result.state === "needs-agent") {
     return { ok: false, error: "experience review cannot return needs-agent" };
   }
-  const created = (admitted.result.actions ?? []).filter(
-    (action) => action.kind === "create-task",
-  );
-  if (created.length > 1) {
+  const dependencies = admitted.result.dependencies ?? [];
+  if (dependencies.length > 1) {
     return {
       ok: false,
-      error: "experience review may create at most one finite task",
+      error: "experience review may delegate at most one bounded goal",
     };
   }
-  if (created.some((action) => action.mode !== "achieve")) {
+  if (
+    dependencies.some(
+      (dependency) =>
+        dependency.appId !== "scout-knowledge-lib" ||
+        dependency.input.kind !== "goal",
+    )
+  ) {
     return {
       ok: false,
-      error: "experience review may not create a maintain task",
+      error:
+        "experience review delegates bounded work through Scout goal input",
     };
   }
   return { ok: true, result: admitted.result };
@@ -98,7 +102,7 @@ Valid durable outcomes:
 - write a compact report under ${projectDir}/reports/
 - move a small verified report batch into reports/health, reports/merge,
   reports/triage, reports/migration, or reports/operations
-- propose a typed task action when project understanding or next work changes
+- revise an existing child assignment or delegate a bounded Scout goal when independent work is useful
 
 Health-signal closure rules:
 - Library-health signals are current domain facts, not task-progress judgments
@@ -126,6 +130,14 @@ Health-signal closure rules:
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.
+- today.md is a mutable accumulator, not an archive. The daily workflow preserves
+  a snapshot and clears the accumulator after recording its handoff to May.
+  Before repairing missing digest content, read the daily-digest Task and its retained snapshot.
+  A prior source Task's output path is not proof that the highlight must still be in today.md.
+  Do not re-add a highlight merely because handoff cleared it. Continue other
+  useful maintenance or record a no-op instead. Snapshot existence alone does
+  not prove handoff or provider delivery; inspect the corresponding evidence
+  when that is the question.
 - When compacting duplicated material into one authoritative note, leave an
   inline relative link at the omission point to the exact retained heading. A
   file-level mention elsewhere is not a substitute; verify the link after the
@@ -137,7 +149,11 @@ Operating rules:
 - Do not create ceremonial project/control tasks.
 - The Host is the sole task-state mutation authority. Never edit task JSON,
   call private task mutation commands, or write task state through a database.
-  Return proposed task changes only through typed actions in \`finish\`.
+  Return changes to existing child Tasks through typed actions in \`finish\`.
+  For independent work, return \`waiting\` with at most one dependency:
+  {id: "stable-purpose", appId: "scout-knowledge-lib", input: {kind: "goal",
+  data: {outcome: "bounded result", acceptance: ["proof required"], context: "relevant facts and constraints"}}}.
+  Never return create-task or close-task actions. Do not rewrite your own assignment.
 - Current task evidence comes from the reconciliation packet and supported
   task reads. Retained tasks/state.json and tasks/tree.json files are historical,
   not current health signals. Do not request a publisher to refresh them or
@@ -145,16 +161,20 @@ Operating rules:
   Explain obsolete acceptance and request a stop or scope correction; never
   claim a retired artifact was regenerated.
 - Existing-task actions require the exact generation in the supplied context. Never
-  mutate or create task ids beginning with \`runtime/\`.
+  mutate task ids beginning with \`runtime/\`.
 - You may edit Scout-owned knowledge and report files, plus the working digest,
   when that is the smallest useful domain step. Task actions describe the
   durable organization change; they are not a substitute for evidence that the
   domain change happened.
 - If no useful library or organization change is warranted, return an empty
   actions array with the exact reason.
-- Finish with state, summary, evidence, actions, and exact Conditions when
-  waiting. Use \`converged\` after applying the current bounded actions, and
-  \`waiting\` only for an identified external fact that an observer will emit.
+- Finish with the fields allowed for your state: summary and facts, actions
+  only where the result schema permits them. Use \`converged\` after the bounded work, and
+  \`waiting\` only for delegated work or an identified fact with a known return route.
+  A missing prerequisite with no return route is an unsuccessful \`incomplete\` report
+  with evidence and the help needed. It does not close the Task: Runtime retries
+  unfinished work with backoff. An accepted outcome also leaves the Task open
+  until its assigning owner closes it.
 
 ${experienceContext}
 
@@ -173,7 +193,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     });
   }
 
-  const finish = result.evidence;
+  const finish = result.facts;
   if (
     finish &&
     typeof finish === "object" &&
@@ -204,7 +224,8 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     summary: agentResult.summary,
     state: agentResult.state,
     proposedActions: agentResult.actions ?? [],
-    evidence: agentResult.evidence,
+    proposedDependencies: agentResult.dependencies ?? [],
+    facts: agentResult.facts,
   };
   try {
     await ctx.events.emit({
