@@ -15,6 +15,7 @@ Run commands below from the Host checkout unless stated otherwise.
 | App/artifact compatibility | `MAY_AGENT_VERIFY_APPS_ROOT=/path/to/projects MAY_AGENT_VERIFY_SDK_ROOT=/path/to/sdk bun run verify:apps-artifact` | Loads supplied App source against an explicit SDK, reports compatibility, removes temporary bundle caches. Not deployment. |
 | Binary build | `bun run bundle`; `build-runtime-binary.ts` | Generates `bundle/may-agent` and UI staging output using this checkout and its build revision. Does not restart an installation. |
 | UI build | `bun run ui:sync`; `build-webui.ts` | Copies `packages/webui/static` to ignored **`bundle/platform-ui`** by default. `MAY_AGENT_UI_OUTPUT_DIR` selects another staging directory. The selected output is replaced recursively; never point it at source or installation data. `deploy.sh` supplies an explicit release staging directory. |
+| UI development | `bun run --cwd packages/webui dev` | Serves editable `packages/webui/static` directly through the existing HTTP adapter; no build/copy or daemon startup. Uses `MAY_AGENT_UI_DIR` for assets only, without changing project discovery or state roots. Set `PROJECT_ROOT`/`STATE_DIR` to the intended development installation; `WEB_PORT` defaults to 8080. |
 | Image build | `bun run build`; `build-image.sh` | Requires Docker and writes a local image using the container build definition. No publication or deployment. |
 | Image selection / smoke | `ci-container-needed.sh`; `ci-container-smoke.sh IMAGE` | CI passes NUL-delimited changed paths to the selector. Smoke checks the disposable candidate image's readiness, UI and CLI protocol; no installation mounts, model calls or deployment. |
 | CLI protocol verification | `bun run check:codex-goal-protocol` | Requires the pinned Codex CLI. Generates schemas in temporary storage, compares `codex-goal-protocol.snapshot.json`, removes temporary output, exits nonzero on drift. Support code/tests are `codex-goal-protocol*`. No model call. See executor README and CONTRIBUTING for upgrades. |
@@ -30,6 +31,11 @@ Colocated `*.test.ts` files protect these commands and repository CI, lint,
 publication and deployment contracts. They run through `bun run ci`; no separate
 wrapper is needed. The browser test requires Chrome (or `CHROME_PATH`), like the
 other portable UI checks. `E2E_NO_UI=1` explicitly skips it locally, not in CI.
+
+`MAY_AGENT_UI_DIR` explicitly selects the HTTP adapter's served static directory
+(relative values use its working directory). Without it, the deployed default
+remains `<PROJECTS_ROOT>/platform/ui`. This is separate from the build output
+setting; building never switches the running server or deploys assets.
 
 ## Gym compatibility boundary
 

@@ -411,11 +411,10 @@ function isPlatformUiAppRoute(pathname: string): boolean {
   return idParts.length === 1 || idParts.length === 2;
 }
 
-export function servePlatformUiRequest(req: Request, projectsRoot: string): Response | null {
+export function servePlatformUiRequest(req: Request, platformUiDir: string): Response | null {
   const url = new URL(req.url);
   if (req.method !== "GET") return null;
 
-  const platformUiDir = resolve(projectsRoot, "platform", "ui");
   if (isPlatformUiAppRoute(url.pathname)) {
     const indexPath = resolve(platformUiDir, "index.html");
     return existsSync(indexPath) && statSync(indexPath).isFile() ? servePlatformUiFile(req, indexPath) : null;
@@ -423,7 +422,7 @@ export function servePlatformUiRequest(req: Request, projectsRoot: string): Resp
 
   // Top-level platform UI assets: index.html uses relative paths like
   // `styles.css`, `app.js`, `pages/projects.js`. Map those to
-  // <PROJECTS_ROOT>/platform/ui/<path>. Restricted to known static
+  // the selected UI directory. Restricted to known static
   // extensions so /api/foo never falls through to this branch.
   if (!/^\/([\w\-.]+\/)*[\w\-.]+\.(css|js|map|svg|png|jpg|jpeg|gif|webp|ico)$/.test(url.pathname)) {
     return null;
@@ -503,6 +502,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const AGENTS_ROOT = process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents");
   const SHARED_ROOT = process.env.SHARED_ROOT || resolve(PROJECT_ROOT, "shared");
   const PROJECTS_ROOT = process.env.PROJECTS_ROOT || resolve(PROJECT_ROOT, "projects");
+  // Development can serve source assets without changing App discovery or deployment.
+  const PLATFORM_UI_DIR = resolve(process.env.MAY_AGENT_UI_DIR?.trim() || join(PROJECTS_ROOT, "platform", "ui"));
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
 
@@ -2085,7 +2086,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function serveIndex(): Response {
-    const platformUi = resolve(PROJECTS_ROOT, "platform", "ui", "index.html");
+    const platformUi = resolve(PLATFORM_UI_DIR, "index.html");
     if (existsSync(platformUi)) return serveFile(platformUi);
     return serveProjectStatic("/projects");
   }
@@ -3832,7 +3833,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (alertResolveMatch) return handleAlertResolve(req, alertResolveMatch[1]);
       }
 
-      const platformUiResponse = servePlatformUiRequest(req, PROJECTS_ROOT);
+      const platformUiResponse = servePlatformUiRequest(req, PLATFORM_UI_DIR);
       if (platformUiResponse) return platformUiResponse;
       if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return serveIndex();
       if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/")))
