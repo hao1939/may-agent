@@ -17,33 +17,33 @@ describe("cross-edit-guard", () => {
   // ── May exemption ──────────────────────────────────────
 
   describe("May exemption", () => {
-    it("may can edit any agent's AGENTS.md", () => {
+it("denies the old implicit exception: may can edit any agent's AGENTS.md", () => {
       const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "may", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
-    it("may can edit evaluator criteria", () => {
+it("denies the old implicit exception: may can edit evaluator criteria", () => {
       const r = checkCrossEditGuard(agentPath("evaluator", "knowledge", "criteria.md"), "may", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
-    it("may can edit philosophy.md", () => {
+it("denies the old implicit exception: may can edit philosophy.md", () => {
       const r = checkCrossEditGuard(agentPath("shared", "philosophy.md"), "may", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
-    it("May exemption is case-insensitive", () => {
+it("denies the old implicit exception: May exemption is case-insensitive", () => {
       const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "May", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
   });
 
   // ── No agent name (backward compat) ────────────────────
 
   describe("no agent name", () => {
-    it("undefined agentName bypasses all guards", () => {
+it("denies the old implicit exception: undefined agentName bypasses all guards", () => {
       const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), undefined, ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
   });
 
@@ -122,9 +122,9 @@ describe("cross-edit-guard", () => {
       expect(r.message).toContain("P70");
     });
 
-    it("allows tech-lead to edit app-local agent.json files", () => {
+it("denies the old implicit exception: allows tech-lead to edit app-local agent.json files", () => {
       const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "agent.json"), "tech-lead", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
     it("allows app-local .lab writes", () => {
@@ -146,9 +146,9 @@ describe("cross-edit-guard", () => {
   // ── Tech-lead agent.json exception ─────────────────────
 
   describe("tech-lead agent.json exception", () => {
-    it("tech-lead can edit other agent's agent.json", () => {
+it("denies the old implicit exception: tech-lead can edit other agent's agent.json", () => {
       const r = checkCrossEditGuard(agentPath("bob", "agent.json"), "tech-lead", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
     it("non-tech-lead cannot edit other agent's agent.json", () => {
@@ -167,9 +167,9 @@ describe("cross-edit-guard", () => {
       expect(r.message).toContain("agent.json");
     });
 
-    it("tech-lead can edit its own agent.json (exception)", () => {
+it("denies the old implicit exception: tech-lead can edit its own agent.json (exception)", () => {
       const r = checkCrossEditGuard(agentPath("tech-lead", "agent.json"), "tech-lead", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
     it("optimizer cannot edit its own agent.json", () => {
@@ -217,9 +217,9 @@ describe("cross-edit-guard", () => {
       expect(r.message).toContain("P98");
     });
 
-    it("evaluator can edit its own criteria files", () => {
+it("denies the old implicit exception: evaluator can edit its own criteria files", () => {
       const r = checkCrossEditGuard(agentPath("evaluator", "knowledge", "criteria.md"), "evaluator", ROOT);
-      expect(r.blocked).toBe(false);
+      expect(r.blocked).toBe(true);
     });
 
     it("allows non-evaluator to edit non-protected evaluator files", () => {

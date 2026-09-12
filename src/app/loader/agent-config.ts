@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../../lib/types.js";
 import { VALID_TOOL_PRESETS } from "../../lib/tool-preset-registry.js";
+import { validProtectedFileWrites } from "../../lib/tools/cross-edit-guard.js";
 import type { EventBus } from "../core/events/bus.js";
 
 export interface AgentConfig {
@@ -10,6 +11,8 @@ export interface AgentConfig {
   domain: string;
   model: string; // key into models map
   tools: string[]; // preset names: "coding", "agents", "workflow", etc.
+  /** Reviewed installation-relative protected files this execution may write. No names, globs or directory grants. */
+  protectedFileWrites?: string[];
   memoryLimit?: number;
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
@@ -45,6 +48,10 @@ export function validateAgentConfig(
 
   if (config.model && !models[config.model]) {
     errors.push({ agent: name, field: "model", message: `Unknown model "${config.model}"` });
+  }
+
+  if (config.protectedFileWrites !== undefined && !validProtectedFileWrites(config.protectedFileWrites)) {
+    errors.push({ agent: name, field: "protectedFileWrites", message: "Expected exact installation-relative file paths without traversal, globs or directory grants" });
   }
 
   if (config.tools) {

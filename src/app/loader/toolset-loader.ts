@@ -29,6 +29,9 @@ export interface ToolsetLoaderOptions {
   canonicalProjectsRoot?: string;
   appDirectories?: readonly string[];
   projectRoot: string;
+  /** Writable installation root, not an App workspace or immutable definition snapshot. */
+  installationRoot?: string;
+  agentWriteDirectory?: string;
   persistDir: string;
   manager: SubagentManager;
   bus: EventBus;
@@ -60,7 +63,12 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
 
       case "coding":
-        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
+        tools.push(...createCodingTools(projectRoot, {
+          agentName: config.name,
+          guardRoot: opts.installationRoot ?? projectRoot,
+          agentWriteDirectory: opts.agentWriteDirectory ?? agentDir,
+          protectedFileWrites: config.protectedFileWrites,
+        }));
         break;
 
       case "read-only": {

@@ -13,7 +13,7 @@ import {
 	stripBom,
 } from "./edit-diff.js";
 import { resolveToCwd } from "./path-utils.js";
-import { checkCrossEditGuard } from "./cross-edit-guard.js";
+import { checkCrossEditGuard, type FileWriteScope } from "./cross-edit-guard.js";
 import { withAbortSignal } from "./abort-utils.js";
 
 const editSchema: TSchema = Type.Object({
@@ -50,7 +50,7 @@ const defaultEditOperations: EditOperations = {
 	access: (path) => fsAccess(path, constants.R_OK | constants.W_OK),
 };
 
-export interface EditToolOptions {
+export interface EditToolOptions extends FileWriteScope {
 	/** Custom operations for file editing. Default: local filesystem */
 	operations?: EditOperations;
 	/** Agent name for cross-edit protection. If set, blocks edits to other agents' protected files. */
@@ -85,7 +85,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 			const absolutePath = resolveToCwd(path, cwd);
 
 			// Cross-edit guard: block edits to other agents' protected files
-			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot, options);
 			if (guard.blocked) {
 				return {
 					content: [{ type: "text", text: guard.message! }],

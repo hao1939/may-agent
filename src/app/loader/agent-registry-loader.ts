@@ -191,6 +191,8 @@ export async function prepareAgents(
         tools: await buildTools(config, {
           ...opts,
           projectRoot: effectiveProjectRoot,
+          installationRoot: projectRoot,
+          agentWriteDirectory: resolve(projectRoot, source.relativeDir),
           agentsRoot: agentsRootForAgentDir(source),
           globalAgentsRoot: agentsRoot,
           agentDir: source.dir,

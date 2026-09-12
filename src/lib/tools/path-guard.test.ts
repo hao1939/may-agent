@@ -25,8 +25,8 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(result.message).toContain("agent.json");
   });
 
-  it("allows tech-lead to write own agent.json", () => {
-    expect(isAllowed("/app/agents/tech-lead/agent.json", "tech-lead")).toBe(true);
+it("denies the old implicit exception: allows tech-lead to write own agent.json", () => {
+    expect(isAllowed("/app/agents/tech-lead/agent.json", "tech-lead")).toBe(false);
   });
 
   it("allows writes to own agent LESSONS.md", () => {
@@ -108,20 +108,20 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   });
 
   // May exemption — May can edit any agent's protected files
-  it("allows May to write to another agent's AGENTS.md", () => {
-    expect(isAllowed("/app/agents/bob/AGENTS.md", "may")).toBe(true);
+it("denies the old implicit exception: allows May to write to another agent's AGENTS.md", () => {
+    expect(isAllowed("/app/agents/bob/AGENTS.md", "may")).toBe(false);
   });
 
-  it("allows May to write to another agent's agent.json", () => {
-    expect(isAllowed("/app/agents/coder/agent.json", "may")).toBe(true);
+it("denies the old implicit exception: allows May to write to another agent's agent.json", () => {
+    expect(isAllowed("/app/agents/coder/agent.json", "may")).toBe(false);
   });
 
   it("allows May to write to another agent's LESSONS.md", () => {
     expect(isAllowed("/app/agents/tech-lead/LESSONS.md", "may")).toBe(true);
   });
 
-  it("allows tech-lead to write to another agent's agent.json (P70 config management)", () => {
-    expect(isAllowed("/app/agents/coder/agent.json", "tech-lead")).toBe(true);
+it("denies the old implicit exception: allows tech-lead to write to another agent's agent.json (P70 config management)", () => {
+    expect(isAllowed("/app/agents/coder/agent.json", "tech-lead")).toBe(false);
   });
 
   it("blocks tech-lead from writing to another agent's AGENTS.md", () => {
