@@ -2,6 +2,7 @@
 
 **Status:** Isolated mechanics and bounded live-agent adoption tested; not a deployed contract.
 **Baseline:** Host `8026aff97585edd7f728fa4ce360fdde71bc740a` (PR #164).
+**Current integration base:** Host `38a048da5c105bea91dc7163010d94483a60b747` (PR #167).
 
 ## The idea
 
@@ -193,7 +194,8 @@ the complete Host gate. Model-backed adoption and deployment remain separate.
 
 ## Experiment record
 
-Local branch: `poc/caller-feedback-wait-20260912`, based on the revision above.
+Local branch: `poc/caller-feedback-wait-20260912`. The original trials used the
+baseline above; the main integration below records the current rebased revision.
 Initial Task-to-Task candidate: `0882cad717b3e2ff162a0133e9ea8bba7f53e606`.
 Conversation/live-trial extension: `9584ea5965c992c53e6ef6987467f28d267a0657`.
 Owner-schema follow-up: `590b02444b11e393a0657b0459461139de91a85b`.
@@ -273,8 +275,8 @@ retains revisions, scenarios, failed trial findings, counts and limitations.
   failure, verification rejection and unavailable workflow paths need their own
   contract checks before claiming all failure boundaries.
 - Compact managed-agent guidance describes the candidate, and canonical Task docs
-  now describe the merged baseline separately. Integration with newer main and
-  the remaining failure-boundary checks are still required before promotion.
+  describe the merged baseline separately. The main integration below verifies
+  shared failure handling; broader failure-boundary checks remain separate.
 - A report points to full attempt/workflow evidence; the runtime-failure summary
   is truncated to 1,024 characters. Safe presentation and evidence access still
   need review across the actual caller and human boundaries.
@@ -443,7 +445,54 @@ of parent subscriptions, and the possible executor cost of Condition checkpoints
 It does not promote `waiting.report` or execution-error caller returns to released
 behavior.
 
-New main contains #163 and #167 after this PoC's base. #167 consolidates the
-failure transition this candidate extends. Reconcile the report-pointer update
-with that shared transition and rerun caller/Conversation regressions before
-promotion; the branch has not been rebased, pushed or deployed by this follow-up.
+At the end of the owner-schema follow-up, main contained #163 and #167 after
+this PoC's base. #167 consolidated the failure transition this candidate extends.
+The integration below addresses that overlap; no push or deployment has occurred.
+
+### Integration with current main
+
+Rebased the three local PoC commits onto fetched main `38a048da` (#167).
+Integrated tip, including the added boundary checks: `2433b88c92547025459b50f82bd00f1278bddf50`.
+The previous tip `590b0244` remains on `audit/caller-feedback-pre-main-20260912`
+for audit, so the earlier live-trial revisions remain inspectable.
+
+The conflict was in the expected failure transition. Keep main's shared
+`failAppTaskAttempt()` and its thin diagnostic wrapper. Save the exact input's
+report pointer inside that same fenced transaction, except for an internal
+workflow-to-agent handoff. Do not restore the duplicate failure implementation.
+Retry deadlines, preserved/replaced diagnostic evidence and handoff semantics
+remain main's behavior. The other two commits replayed unchanged.
+
+The rebased candidate passed 242 focused checks covering Task/Conversation
+feedback, result admission and retry. The expanded retry file then passed 18
+checks, including the new handoff boundary. Those checks establish that:
+
+- an internal handoff selects no caller report; a subsequent agent failure does;
+- input arriving during execution is not attributed to that attempt's failure;
+- a later failure reports newly considered input but does not replace an older
+  input's first report;
+- report selection rolls back with failed attempt/retry-state persistence; and
+- a late failure after owner closure cannot change the saved admission.
+
+One bounded live trial on the integrated runtime used the lower value `0.78`.
+Manual review confirmed the human-help request and final comparison: `0.78`
+is `0.12` below `0.90`. May fulfilled the measurement Request, not the minimum
+requirement, and did not cancel the worker. The exact original answer survived
+runtime/storage reopen. Counts were two worker and four Conversation attempts,
+eight model-stream starts, one denied read and one successful read, with no
+writes, in 54.4 seconds. This is a synthetic mechanism/adoption check, not an
+installed-service or reliability-rate claim.
+
+The live runtime and harness were unchanged from rebased `887513d6`; uncommitted
+changes were documentation and retry tests only. Later edits strengthened the
+rollback/closure assertions, so the final diff differs from the live trial's
+recorded patch hash. Full-suite evidence is recorded separately. Source
+publication, hosted image checks and deployment still require their normal
+review and authority.
+
+Final `bun run ci` on this integration passed **2,905 tests**, with **three
+installation-only skips and zero failures**, across 292 files (213.22 seconds
+for tests). Type, App-boundary and lint checks passed. The opt-in live harness's
+standalone type check and canonical design checks also passed. No failing gate
+was bypassed or retried to conceal a failure. The added tests and documentation
+are committed locally; the Host branch is clean and includes the fetched main.

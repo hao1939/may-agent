@@ -353,9 +353,76 @@
       }
     },
     "remaining": [
-      "Integrate newer main #163/#167: the latter shares the failure transition extended by this candidate; rerun report and Conversation regressions.",
+      "At this historical revision, integration with main #163/#167 remained pending; see mainIntegration for the follow-up.",
       "Remaining failure-boundary and publication/closure checks before production promotion.",
       "No remote push, PR, rebase or deployment occurred."
+    ]
+  },
+  "mainIntegration": {
+    "base": "38a048da5c105bea91dc7163010d94483a60b747",
+    "candidate": "2433b88c92547025459b50f82bd00f1278bddf50",
+    "rebasedRuntime": "887513d6dd767a89ad6920704b75f3585e0ca206",
+    "priorTip": "590b02444b11e393a0657b0459461139de91a85b",
+    "auditBranch": "audit/caller-feedback-pre-main-20260912",
+    "rebasedCommits": [
+      { "before": "0882cad7", "after": "412873e4", "change": "Report admission moved into main's shared failure transition; workflow handoff stays quiet." },
+      { "before": "9584ea59", "after": "046467cc", "change": "Replayed unchanged." },
+      { "before": "590b0244", "after": "887513d6", "change": "Replayed unchanged." }
+    ],
+    "focused": {
+      "rebasedChecks": { "passed": 242, "failed": 0, "files": 7 },
+      "expandedRetryChecks": { "passed": 18, "failed": 0, "assertions": 236 },
+      "contracts": [
+        "Internal workflow handoff does not select a report; subsequent agent failure does.",
+        "Failure binds only input considered by that attempt, not concurrent newer input.",
+        "Repeated failures preserve each input's first selected report.",
+        "Failed state persistence rolls report-pointer selection back with attempt and retry state.",
+        "Late failure after owner closure cannot mutate saved admissions."
+      ]
+    },
+    "liveTrial": {
+      "sourceRevision": "887513d6dd767a89ad6920704b75f3585e0ca206",
+      "sourceDirty": true,
+      "sourcePatchHash": "ef9c34a34d7e346ee17353a0ef99d9201e35dd34147e6344ebf8b27226933730",
+      "sourceScope": "Only docs and retry tests were uncommitted; runtime and harness match sourceRevision. Later rollback/closure test assertions differ from the recorded live patch hash.",
+      "value": 0.78,
+      "minimum": 0.9,
+      "mechanicsPassed": true,
+      "manualJudgmentPassed": true,
+      "review": "Correctly asks the human requester to restore access, then reports 0.78 below 0.90 by 0.12 and fulfills the comparison Request. Worker stays open; original answer survives reopen.",
+      "workerAttempts": 2,
+      "conversationAttempts": 4,
+      "taskAttempts": 6,
+      "dispatchProfiles": 7,
+      "modelStreamStarts": 8,
+      "deniedReads": 1,
+      "successfulReads": 1,
+      "writes": 0,
+      "durationMs": 54388,
+      "limitation": "Synthetic source, repair, Apps and model; no installed-service, speed comparison or reliability-rate proof."
+    },
+    "ci": {
+      "command": "bun run ci",
+      "exitCode": 0,
+      "passed": 2905,
+      "skipped": 3,
+      "failed": 0,
+      "files": 292,
+      "assertions": 12719,
+      "testDurationSeconds": 213.22,
+      "skipReason": "installation-only agent catalog checks"
+    },
+    "liveHarnessTypeCheck": { "exitCode": 0 },
+    "canonicalDesign": {
+      "command": "bun run check:may-design",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "remaining": [
+      "Independent source review and hosted image checks before merge.",
+      "All failure boundaries, arbitrary process-death and concurrent publication/closure are not universally certified by these focused checks.",
+      "No remote push, PR or deployment occurred."
     ]
   },
   "comparison": {
