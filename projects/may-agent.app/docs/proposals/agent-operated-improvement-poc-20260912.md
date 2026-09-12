@@ -175,8 +175,12 @@ The local Host branch is `poc/agent-operated-improvement-20260912`, based on the
 teaching harness and truthful-completion candidates (#160 and #161). It is
 isolated from the live installation. The fixture daemons are stopped after runs;
 experiment artifacts remain for audit.
-The final tested harness revision is `76f32080`; it is a local PoC branch, not
-a merged or deployed production feature.
+The final model-tested harness revision is `76f32080`. The original branch
+remains for audit. [Host PR #163](https://github.com/hao1939/may-agent/pull/163)
+publishes only this PoC on main after #159–#161 merged, using branch
+`test/agent-operated-improvement` at `46251b1c`. The harness file is byte-identical;
+publication-branch portable validation is separate from the earlier model runs.
+This is not a merged or deployed production feature.
 
 ```sh
 bun scripts/poc/agent-operated-improvement.ts
