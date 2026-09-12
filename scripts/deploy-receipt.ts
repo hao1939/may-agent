@@ -33,6 +33,14 @@ export type DeployReceipt = {
   failure?: string;
 };
 
+function nonEmptyText(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function timestamp(value: unknown): value is string {
+  return nonEmptyText(value) && Number.isFinite(Date.parse(value));
+}
+
 /** Read-only fallback when a restart wake was lost; correlate both App and Task. */
 export function readDeployReceiptForTask(receiptDir: string, project: string, taskId: string): DeployReceipt | null {
   if (!existsSync(receiptDir)) return null;
@@ -45,10 +53,20 @@ export function readDeployReceiptForTask(receiptDir: string, project: string, ta
     }
     if (receipt.project !== project || receipt.taskId !== taskId) continue;
     if (
-      typeof receipt.correlation !== "string" || !receipt.correlation ||
-      typeof receipt.artifactSha !== "string" || !receipt.artifactSha ||
-      typeof receipt.requestedAt !== "string" || !Number.isFinite(Date.parse(receipt.requestedAt)) ||
-      !["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "")
+      !nonEmptyText(receipt.project) || !nonEmptyText(receipt.taskId) ||
+      !nonEmptyText(receipt.correlation) || !nonEmptyText(receipt.artifactSha) ||
+      !nonEmptyText(receipt.verification) || !timestamp(receipt.requestedAt) ||
+      !["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "") ||
+      (receipt.sourceCommit !== undefined && !nonEmptyText(receipt.sourceCommit)) ||
+      (receipt.failure !== undefined && typeof receipt.failure !== "string") ||
+      (receipt.completedAt !== undefined && !timestamp(receipt.completedAt)) ||
+      (receipt.loadedArtifactSha !== undefined && !nonEmptyText(receipt.loadedArtifactSha)) ||
+      (receipt.health !== undefined && receipt.health !== "healthy" && receipt.health !== "unhealthy") ||
+      (receipt.duplicateDeploy !== undefined && typeof receipt.duplicateDeploy !== "boolean") ||
+      (receipt.phase !== "requested" && (
+        receipt.completedAt === undefined || receipt.loadedArtifactSha === undefined ||
+        receipt.health === undefined || receipt.duplicateDeploy === undefined
+      ))
     ) throw new Error(`Invalid deployment receipt for ${project}/${taskId}: ${name}`);
     receipts.push(receipt as DeployReceipt);
   }

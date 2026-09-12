@@ -115,7 +115,7 @@ describe("SubagentManager timeout enforcement", () => {
       apiKey: "fake-key",
     });
 
-    const result = await manager.callAgent("owner-step", "inspect evidence", { timeout: 25 });
+    const result = await manager.callAgent("owner-step", "inspect facts", { timeout: 25 });
 
     expect(observedSignal).toBeDefined();
     expect(observedSignal?.aborted).toBe(true);

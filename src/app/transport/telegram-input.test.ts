@@ -218,7 +218,7 @@ describe("Telegram durable input and natural follow-up", () => {
       inputSchema: { type: "object", required: ["kind", "data"], properties: {
         kind: { const: "message" }, data: { type: "object" },
       } },
-      requests: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
+      conversation: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
     } }]);
     const start = async () => {
       const hostCapacity = new HostCapacity(1);
@@ -228,7 +228,7 @@ describe("Telegram durable input and natural follow-up", () => {
         conversations: {
           execute: (turn) => prepareConversationTaskTurn({
             ...turn,
-            resolveRequest: async ({ request }) => {
+            resolveConversationInput: async ({ inputContext: request }) => {
               seen.push(request);
               return { summary: "Checked", response: "Checked", topic: { kind: "none" } };
             },
@@ -986,11 +986,11 @@ describe("Telegram May input", () => {
         ...task,
         progress: {
           stage: "intermediate",
-          message: "Inspecting exact evidence",
+          message: "Inspecting exact facts",
           updatedAt: Date.UTC(2026, 7, 22, 1, 3, 4),
         },
       }),
-    ).toContain("Current · 2026-08-22 01:03:04 UTC\nInspecting exact evidence");
+    ).toContain("Current · 2026-08-22 01:03:04 UTC\nInspecting exact facts");
     expect(
       renderTelegramTask({
         ...task,
@@ -1433,7 +1433,7 @@ describe("Telegram May input", () => {
               { update_id: 1, message: { message_id: 501, chat: { id: 123 }, text: "/apps evaluation" } },
               { update_id: 2, message: { message_id: 502, chat: { id: 123 }, text: "/task 8f12ac90" } },
               { update_id: 3, message: { message_id: 503, chat: { id: 123 }, text: "/watch 8f12ac90" } },
-              { update_id: 4, message: { message_id: 504, chat: { id: 123 }, text: "Prioritize exact evidence" } },
+              { update_id: 4, message: { message_id: 504, chat: { id: 123 }, text: "Prioritize exact facts" } },
             ],
           }),
         } as Response;
@@ -1520,7 +1520,7 @@ describe("Telegram May input", () => {
         observed.some(
           (event) =>
             event.type === "conversation.message.created" &&
-            event.data?.text === "Prioritize exact evidence" &&
+            event.data?.text === "Prioritize exact facts" &&
             event.data?.context?.focusedApp === "evaluation" &&
             event.data?.context?.focusedTask?.taskId === "review/docs",
         ),
@@ -1541,7 +1541,7 @@ describe("Telegram May input", () => {
 
       taskProgress = {
         stage: "intermediate",
-        message: "Inspecting exact evidence",
+        message: "Inspecting exact facts",
         updatedAt: Date.UTC(2026, 7, 22, 1, 3, 4),
       };
       bus.emit({
@@ -1554,7 +1554,7 @@ describe("Telegram May input", () => {
           emission: { appId: "evaluation", taskId: "review/docs" },
         },
       } as any);
-      await waitFor(() => sent.some((text) => text.includes("Inspecting exact evidence")));
+      await waitFor(() => sent.some((text) => text.includes("Inspecting exact facts")));
 
       taskTerminal = true;
       bus.emit({

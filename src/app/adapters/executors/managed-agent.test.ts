@@ -12,27 +12,54 @@ test("generic agent execution carries operation facts without reading private de
     const receipts = join(root, ".state", "deploy-receipts");
     mkdirSync(receipts, { recursive: true });
     // Previously this file selected a deployment prompt for an unrelated App.
-    writeFileSync(join(receipts, "private.json"), JSON.stringify({
-      version: 1, project: "maintenance", taskId: "work", correlation: "private-correlation",
-      artifactSha: "private-artifact", phase: "requested", requestedAt: new Date().toISOString(),
-    }));
+    writeFileSync(
+      join(receipts, "private.json"),
+      JSON.stringify({
+        version: 1,
+        project: "maintenance",
+        taskId: "work",
+        correlation: "private-correlation",
+        artifactSha: "private-artifact",
+        phase: "requested",
+        requestedAt: new Date().toISOString(),
+      }),
+    );
     let prompt = "";
-    const runner = createTaskAgentRunner({ manager: {
-      callAgent: async (_agent: string, text: string) => {
-        prompt = text;
-        return { status: "done", sessionId: "fixture", structuredResult: {
-          state: "converged", summary: "Observed operation", evidence: ["event:1"],
-        } };
-      },
-    } as unknown as SubagentManager });
+    const runner = createTaskAgentRunner({
+      manager: {
+        callAgent: async (_agent: string, text: string) => {
+          prompt = text;
+          return {
+            status: "done",
+            sessionId: "fixture",
+            structuredResult: {
+              state: "converged",
+              summary: "Observed operation",
+              facts: ["event:1"],
+            },
+          };
+        },
+      } as unknown as SubagentManager,
+    });
     const input = {
       descriptor: { id: "example", app: {} },
       attempt: {
         task: { id: "work", generation: 1, outcome: "Inspect evidence", acceptance: [] },
         role: { agent: "worker", instructions: "Inspect ordinary facts" },
-        events: { items: [{ eventId: 1, event: { type: "project.task.tick", data: {
-          reason: "restart-aware-deploy-receipt", deploymentReceipt: { correlation: "event-correlation", phase: "succeeded" },
-        } } }] },
+        events: {
+          items: [
+            {
+              eventId: 1,
+              event: {
+                type: "deployment.settled",
+                data: {
+                  reason: "restart-aware-deploy-receipt",
+                  deploymentReceipt: { correlation: "event-correlation", phase: "succeeded" },
+                },
+              },
+            },
+          ],
+        },
         waits: {},
       },
       executionPaths: { projectDir: root, workspaceDir: root },
@@ -40,7 +67,11 @@ test("generic agent execution carries operation facts without reading private de
       dependencies: [],
     } as unknown as TaskAgentInput;
     const result = await runner.execute(input);
-    expect(result.handlerResult).toMatchObject({ state: "converged", summary: "Observed operation" });
+    expect(result.handlerResult).toMatchObject({
+      state: "converged",
+      summary: "Observed operation",
+      facts: ["event:1"],
+    });
     expect(prompt).toContain("event-correlation");
     expect(prompt).not.toContain("private-correlation");
     expect(prompt).not.toContain("Restart-aware deploy receipt");

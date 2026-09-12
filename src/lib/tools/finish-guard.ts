@@ -4,7 +4,7 @@
  * Warn when success claims file deliverables but the transcript has no apparent
  * writing or delegation activity. This heuristic examines calls, not outcomes:
  * silence does not prove writes succeeded or verification was meaningful.
- * The finish tool checks required evidence and file existence; the caller/App
+ * The finish tool checks required facts and file existence; the caller/App
  * judges correctness against its acceptance criteria.
  */
 
@@ -42,7 +42,7 @@ function extractToolCallNames(messages: BeforeToolCallContext["context"]["messag
  * Looks for patterns like: >, >>, tee, cp, mv, mkdir, touch, echo...>
  * This is a heuristic — it catches common file-creation patterns from bash.
  */
-function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messages"]): boolean {
+function hasBashWriteFacts(messages: BeforeToolCallContext["context"]["messages"]): boolean {
   for (const msg of messages) {
     if (msg.role === "assistant" && Array.isArray(msg.content)) {
       for (const block of msg.content) {
@@ -74,7 +74,7 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
  *
  * Exceptions (no signal):
  * - `finish()` with status other than "success"
- * - Sessions without typed deliverables; summary prose is not evidence
+ * - Sessions without typed deliverables; summary prose is not facts
  * - Sessions where write, edit, or file-producing bash commands were used
  */
 export function createFinishGuard(): (
@@ -93,31 +93,31 @@ export function createFinishGuard(): (
     // Only guard success
     if (args.status !== "success") return undefined;
 
-    // Check for write/edit evidence in the transcript
+    // Check for write/edit facts in the transcript
     const toolNames = extractToolCallNames(ctx.context.messages);
 
     // Direct file-writing tools used?
-    let hasWriteEvidence = false;
+    let hasWriteFacts = false;
     if (toolNames.has("write") || toolNames.has("edit")) {
-      hasWriteEvidence = true;
+      hasWriteFacts = true;
     }
 
     // Orchestration tools delegate work to child sessions whose writes don't
-    // appear in the parent transcript. A CLI task is only evidence after the
+    // appear in the parent transcript. A CLI task is only facts after the
     // caller has also read its durable result or deliverable; acceptance alone
     // is not completion.
     if (
-      !hasWriteEvidence &&
+      !hasWriteFacts &&
       (toolNames.has("workflow") ||
         toolNames.has("agents") ||
         (toolNames.has("run_cli_agent") && toolNames.has("read")))
     ) {
-      hasWriteEvidence = true;
+      hasWriteFacts = true;
     }
 
     // Bash commands that write files?
-    if (!hasWriteEvidence && toolNames.has(BASH_TOOL_NAME) && hasBashWriteEvidence(ctx.context.messages)) {
-      hasWriteEvidence = true;
+    if (!hasWriteFacts && toolNames.has(BASH_TOOL_NAME) && hasBashWriteFacts(ctx.context.messages)) {
+      hasWriteFacts = true;
     }
 
     const hasDeliverables = args.deliverables && args.deliverables.length > 0;
@@ -125,8 +125,8 @@ export function createFinishGuard(): (
     // to validate. Meaning in the summary remains the model's responsibility.
     if (!hasDeliverables) return undefined;
 
-    // ── Gate 1: No write evidence at all — signal (original FM-3.1/FM-2.2 guard) ──
-    if (!hasWriteEvidence) {
+    // ── Gate 1: No write facts at all — signal (original FM-3.1/FM-2.2 guard) ──
+    if (!hasWriteFacts) {
       const deliverablePaths = args.deliverables!.map((d) => d.path).join(", ");
       return {
         block: false, // signal-only: guard emits metric but does not block

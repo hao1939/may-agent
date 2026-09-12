@@ -1,6 +1,6 @@
 import { Type, type Static } from "@earendil-works/pi-ai";
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { CliCallEvidence } from "@may-agent/sdk";
+import type { CliCallFacts } from "@may-agent/sdk";
 import type { EventTrace } from "../../app/core/events/bus.js";
 import { runCliAgent, type CliAgentOptions } from "../cli-agent.js";
 
@@ -81,11 +81,11 @@ export interface RunCliAgentToolOptions {
 }
 
 /** Read runtime metadata, never assistant prose or JSON copied into tool text. */
-export function cliCallEvidence(sessionId: string, messages: AgentMessage[]): CliCallEvidence[] {
-  const calls = new Map<string, CliCallEvidence>();
+export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
+  const calls = new Map<string, CliCallFacts>();
   for (const message of messages) {
     if (message.role !== "toolResult" || message.toolName !== "run_cli_agent") continue;
-    const call = (message.details as { cliCall?: CliCallEvidence } | undefined)?.cliCall;
+    const call = (message.details as { cliCall?: CliCallFacts } | undefined)?.cliCall;
     if (!call || call.sessionId !== sessionId || call.toolCallId !== message.toolCallId) continue;
     if (!call.taskId || (call.tool !== "codex" && call.tool !== "claude")) continue;
     if (call.status !== "completed" && call.status !== "failed") continue;
@@ -100,13 +100,13 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
     name: "run_cli_agent",
     label: "Run CLI Agent",
     description:
-      "Run one bounded Codex or Claude investigation, review, or patch. Waits for completion and returns a terminal result with evidence paths. Cancellation stops the native process; work that must outlive this call belongs to a Task.",
+      "Run one bounded Codex or Claude investigation, review, or patch. Waits for completion and returns a terminal result with facts paths. Cancellation stops the native process; work that must outlive this call belongs to a Task.",
     parameters: paramsSchema,
     execute: async (
       toolCallId,
       rawParams,
       signal,
-    ): Promise<AgentToolResult<{ cliCall: CliCallEvidence } | undefined>> => {
+    ): Promise<AgentToolResult<{ cliCall: CliCallFacts } | undefined>> => {
       try {
         // Capture identity once, before awaiting: tools can be shared by concurrent sessions.
         const sessionId = opts.getCallerSessionId?.();
@@ -117,7 +117,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           trace: opts.getCallerTrace?.(),
           signal,
         });
-        const cliCall: CliCallEvidence = {
+        const cliCall: CliCallFacts = {
           sessionId,
           toolCallId,
           taskId: result.taskId,

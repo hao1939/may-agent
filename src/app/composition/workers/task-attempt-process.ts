@@ -12,8 +12,9 @@ import {
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
-  type AppTaskRuntimeOptions,
+
 } from "../../core/tasks/app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
 import { attachEventPersistence } from "../../daemon-events.js";
 import { prepareDaemonAgents } from "../../daemon-agents.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";

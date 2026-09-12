@@ -37,15 +37,14 @@ function taskDatabase(projectDir: string, appId: string, taskIds: string[]): str
         intent: {
           id,
           parentId: "root",
-          mode: "achieve",
           outcome: "Verify deployment",
-          acceptance: ["Return deployment evidence"],
+          acceptance: ["Return deployment facts"],
         },
       });
       if (id === "answered") {
         const claim = claimObservedAppTask(config, { taskId: id, appAgent: "owner", handler: "agent" });
         if (claim.kind !== "claimed") throw new Error("Expected fixture claim");
-        completeAppTask(config, claim, { summary: "Verified", evidence: ["fixture:deployment"] });
+        completeAppTask(config, claim, { summary: "Verified", facts: ["fixture:deployment"] });
       }
       if (id === "closed" || id === "cancelled") {
         const task = config.resourceStore.readTask(id)!;
@@ -247,6 +246,32 @@ describe("restart-aware deploy receipts", () => {
       // Corruption is uncertainty, never an empty result that permits a retry.
       writeFileSync(f.path, JSON.stringify({ ...JSON.parse(before), requestedAt: "invalid" }));
       expect(() => readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toThrow("Invalid deployment receipt");
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ["verification", undefined],
+    ["completedAt", undefined],
+    ["completedAt", "invalid"],
+    ["loadedArtifactSha", undefined],
+    ["health", undefined],
+    ["duplicateDeploy", undefined],
+    ["sourceCommit", 7],
+    ["failure", false],
+    ["health", "unknown"],
+    ["duplicateDeploy", "false"],
+  ])("rejects malformed terminal receipt field %s=%j", (field, value) => {
+    const f = fixture();
+    try {
+      requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123");
+      settleReceipt(f.path, "succeeded", "abc123", "healthy");
+      const invalid = { ...JSON.parse(readFileSync(f.path, "utf8")), [field as string]: value };
+      const saved = JSON.stringify(invalid);
+      writeFileSync(f.path, saved);
+      expect(() => readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toThrow("Invalid deployment receipt");
+      expect(readFileSync(f.path, "utf8")).toBe(saved);
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }

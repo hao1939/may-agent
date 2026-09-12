@@ -23,7 +23,6 @@ test("runtime preparation requires offline receipt conversion before admission o
     const assignment = {
       id: "measurement",
       parentId: "root",
-      mode: "achieve" as const,
       outcome: "Measure the sample",
       acceptance: ["Measurement recorded"],
     };
@@ -37,7 +36,7 @@ test("runtime preparation requires offline receipt conversion before admission o
       handler: "agent:worker",
       summary: "Measured 17",
       result: { value: 17 },
-      evidence: ["sample.json"],
+      facts: ["sample.json"],
       failureFingerprints: [],
       completedAt: "2026-09-01T00:00:00.000Z",
     };

@@ -220,7 +220,7 @@ describe("runtime integration", () => {
         return ctx.blocked("missing approval", {
           owner: "human:operator",
           requestedAction: "Approve or reject the rollout",
-          evidence: { change: "database migration" },
+          facts: { change: "database migration" },
         });
       }
     `,

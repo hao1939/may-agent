@@ -22,7 +22,7 @@ type GoldenControl = {
 type GoldenTrace = {
   schemaVersion: number;
   contract: string;
-  activationEvidence: {
+  activationFacts: {
     reuseOnly: boolean;
     livePositiveEventId: number;
     loadedSdkIdentity: string;
@@ -146,7 +146,7 @@ async function runControl(control: GoldenControl): Promise<{
       id: taskId!,
       status: "done",
       summary: "Golden Scout owner review completed",
-      evidence: [control.traceId],
+      facts: [control.traceId],
     });
     await host.recoverTaskResults();
     expect(host.get(requestId)).toMatchObject({
@@ -164,7 +164,7 @@ describe("persisted Scout library-health full golden trace", () => {
     expect(artifact).toMatchObject({
       schemaVersion: 1,
       contract: "scout.project.library_health.observed",
-      activationEvidence: {
+      activationFacts: {
         reuseOnly: true,
         livePositiveEventId: 5800284,
         loadedSdkIdentity: "32bc02fa80326469a27c43cfe48d197d73305676",

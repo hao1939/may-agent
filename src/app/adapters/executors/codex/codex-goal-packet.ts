@@ -16,7 +16,7 @@ export type CanonicalTaskAttemptPacket = {
   desired: {
     outcome: string;
     acceptance: string[];
-    mode: "achieve" | "maintain";
+
     input: JsonRecord;
   };
   role: {
@@ -24,7 +24,7 @@ export type CanonicalTaskAttemptPacket = {
     instructions: string;
   };
   events: TaskReconciliationEvents & {
-    checkpoint?: { summary: string; evidence: string[] };
+    checkpoint?: { summary: string; facts: string[] };
   };
   observations: {
     children: TaskAttempt["children"];
@@ -53,7 +53,7 @@ export function projectCanonicalTaskAttempt(attempt: TaskAttempt): CanonicalTask
     desired: {
       outcome: attempt.task.outcome,
       acceptance: structuredClone(attempt.task.acceptance),
-      mode: attempt.task.mode ?? "achieve",
+
       input: structuredClone(attempt.task.input),
     },
     role: structuredClone(attempt.role),
@@ -86,7 +86,7 @@ export function renderCodexGoalTaskAttempt(packet: CanonicalTaskAttemptPacket): 
       "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
-      "The workspace is read-only; cite exact evidence and do not mutate files or external systems.",
+      "The workspace is read-only; cite exact facts and do not mutate files or external systems.",
       "Progress commentary may become a durable Task event, so omit secret values, raw command output, tool payloads, and diffs.",
       "",
       CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(packet),

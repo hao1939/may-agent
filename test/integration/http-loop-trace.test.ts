@@ -131,7 +131,7 @@ describe("buildLoopTrace", () => {
       projectId: "v2-spec-coverage-buildout",
       metricId: "session.first-turn-error-count-1h",
       alertId: 7,
-      evidence: {
+      facts: {
         workflowCount: 1,
         sessionCount: 1,
         guardSignalCount: 1,
@@ -171,10 +171,10 @@ describe("buildLoopTrace", () => {
         status: "interrupted",
         owner: "agent:may",
         summary: "workflow_definition_missing",
-        evidence: expect.objectContaining({ nextAction: "recover" }),
+        facts: expect.objectContaining({ nextAction: "recover" }),
       }),
     ]));
-    expect(trace.evidence.failoverCount).toBe(1);
+    expect(trace.facts.failoverCount).toBe(1);
   });
 
   it("keeps terminal workflow resume skips terminal in execution view", () => {
@@ -195,7 +195,7 @@ describe("buildLoopTrace", () => {
         status: "done",
         owner: "agent:may",
         summary: "workflow already reached terminal status",
-        evidence: expect.objectContaining({ nextAction: "none" }),
+        facts: expect.objectContaining({ nextAction: "none" }),
       }),
     ]));
   });
@@ -214,7 +214,7 @@ describe("buildLoopTrace", () => {
       target: { kind: "session", id: "s_unreg" },
       owner: "agent:missing-agent",
       projectId: "closed-loop-reliability",
-      evidence: { failoverCount: 1 },
+      facts: { failoverCount: 1 },
     });
     expect(trace.failoverEvents[0]).toMatchObject({ event_type: "session.resume_failed", owner: "agent:missing-agent" });
     expect(trace.executions).toEqual(expect.arrayContaining([
@@ -228,7 +228,7 @@ describe("buildLoopTrace", () => {
     ]));
   });
 
-  it("treats a failure event target as failover evidence", () => {
+  it("treats a failure event target as failover facts", () => {
     const db = makeDb();
     const now = Date.now();
     db.prepare("INSERT INTO events (id, event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?)")
@@ -240,7 +240,7 @@ describe("buildLoopTrace", () => {
       target: { kind: "event", id: 31 },
       owner: "agent:may",
       handler: { reason: "Unknown message target" },
-      evidence: { failoverCount: 1 },
+      facts: { failoverCount: 1 },
     });
     expect(trace.failoverEvents[0]).toMatchObject({ event_type: "message.delivery_failed", owner: "agent:may" });
   });
