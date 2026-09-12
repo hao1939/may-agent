@@ -14,8 +14,9 @@ import {
   installAppTaskRuntimes,
   closeInstalledAppTaskRuntimes,
   admitStandaloneCanonicalAppTaskEvent,
-  type AppTaskRuntimeOptions,
+
 } from "../tasks/app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
 import { standaloneAppTaskAdmissionDescriptors } from "../tasks/runtime-definition.js";
 import {
   appTaskContext,

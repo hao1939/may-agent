@@ -11,9 +11,11 @@ Read in this order:
 
 1. `app-task-capability.ts` is the private entry point used by Host composition.
 2. `controller.ts` and `queue.ts` select ready work under shared capacity.
-3. `app-task-runtime.ts` coordinates claim, execution, verification and settlement.
-   `runtime-definition.ts` prepares App descriptors, seed authority and project
-   read models; installation/publication and rollback stay in the runtime.
+3. `attempt-runner.ts: runTaskAttempt()` shows claim → execute → settle.
+   `attempt-execution.ts` builds the shared context and invokes the selected executor.
+   `dependency-admission.ts` admits typed delegation and recovers exact waits.
+   `app-task-runtime.ts` installs controllers and wires routes; `runtime-definition.ts`
+   prepares App descriptors and binds their existing state authority.
 4. `app-task-reconciler.ts` checks identity/revisions and applies state transitions
    through [`core/state`](../state/README.md).
 5. `app-task-recovery.ts` schedules recovery; `startup-recovery.ts` checks
@@ -39,17 +41,18 @@ authorized owner -> close Task -> fence running execution and future wakes
 | Stage | Follow in source | Durable authority |
 | --- | --- | --- |
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskInput()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
-| Dispatch | `controller.ts` -> `reconcileTask()` (or the composition-supplied worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
-| Execute | `reconcileTask()` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
+| Dispatch | `controller.ts` -> `attempt-runner.ts: runTaskAttempt()` (locally or in the worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
+| Execute | `attempt-execution.ts` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
 | Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; execution failures and the diagnostic wrapper share `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. `reportAppTaskFailure()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains facts for normal execution and validation |
 
-These entry points are in `app-task-runtime.ts` or `app-task-reconciler.ts`
-unless a path is given. Result rejection retains unfinished work and paces its
+Installation and external controls enter through `app-task-runtime.ts`. The attempt
+sequence and result checks live in `attempt-runner.ts`; only the existing reconciler
+applies canonical transitions. Result rejection retains unfinished work and paces its
 next attempt. Queues and events help discover work, while stored Tasks, attempts
 and Conditions retain it. A timer rediscovers eligible work; it does not create
-a separate maintenance lifecycle. `recoverTaskConditions()` reads exact input
+a separate maintenance lifecycle. `dependency-admission.ts: recoverTaskConditions()` reads exact input
 answers and selected reports, then replays them and retained external Events
 through the same Condition transition. Feedback survives a missed notification;
 no extra delivery queue is needed.

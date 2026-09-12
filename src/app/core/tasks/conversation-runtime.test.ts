@@ -29,8 +29,9 @@ import {
   wakeLoadedAppTasks,
   cancelLoadedAppTask,
   reconcileLoadedAppTaskOnce,
-  type AppTaskRuntimeOptions,
+
 } from "./app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
 const dispose: Array<() => Promise<void>> = [];
 afterEach(async () => {

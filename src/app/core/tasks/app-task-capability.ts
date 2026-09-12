@@ -30,8 +30,9 @@ import {
   retryLoadedFailedAppTask,
   stopLoadedConversationTurn,
   wakeLoadedAppTasks,
-  type AppTaskRuntimeOptions,
+
 } from "./app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
 export type AppTaskGenerationResult = { apps: number };
 
