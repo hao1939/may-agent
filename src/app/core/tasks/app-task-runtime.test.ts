@@ -4338,7 +4338,12 @@ describe("canonical App task runtime", () => {
 
     await install(false);
     attach("work/missing");
-    await until(() => Boolean(store.readTask("work/missing")?.status.executionRetryAt));
+    let retryAt = 0;
+    await until(() => {
+      const deadline = store.readTask("work/missing")?.status.executionRetryAt;
+      if (deadline) retryAt = deadline;
+      return Boolean(deadline);
+    });
     const failure = Object.values(store.readTaskContext({ taskIds: ["work/missing"] }).attempts ?? {})
       .find((attempt) => attempt.failureReason === "HandlerUnavailable")!;
     expect(failure).toMatchObject({ handler: "executor:reviewer", state: "failed" });
@@ -4346,7 +4351,8 @@ describe("canonical App task runtime", () => {
     attach("work/independent", "other");
     await until(() => accepted("work/independent")?.state === "converged");
     expect(calls).not.toContain("work/missing");
-    const retryAt = store.readTask("work/missing")!.status.executionRetryAt!;
+    // The controller may already have claimed another retry while the
+    // independent Task ran. Its current status need not retain the deadline.
     await install(true);
     await until(() => accepted("work/missing")?.state === "converged");
     expect(startedAt.get("work/missing")).toBeGreaterThanOrEqual(retryAt);
@@ -5405,7 +5411,7 @@ describe("canonical App task runtime", () => {
     while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < 5 && performance.now() < deadline) {
       await Bun.sleep(5);
     }
-    expect(calls).toBe(5);
+    expect(calls, JSON.stringify(config.resourceStore.readTaskContext({ taskIds: ["work/broken"] }).attempts)).toBe(5);
     expect(config.resourceStore.readTask("work/broken")?.status).toMatchObject({
       phase: "pending",
       executionFailures: 5,
