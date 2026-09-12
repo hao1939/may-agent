@@ -29,6 +29,8 @@ failure: no event was sent and the old source remains active. A later request
 uses the real reload path and follows the exact request's completion. This tests
 handling an explicitly safe-to-retry failure, not an ambiguous external effect.
 Saving and committing source are checked separately from actual activation.
+The final Git HEAD must equal the active source; the retained diff and recovery
+check name that same commit. A clean but unactivated later commit cannot pass.
 The recovery check requires a failure tool result, a reload requested in a
 later assistant message, and that call's successful activation of the final
 source. Calls planned together do not count. Ordered call IDs, message indices
@@ -122,6 +124,11 @@ These follow-ups add 20 model executions and eight correct withheld answers.
 The refined result supports clear capability descriptions and visible failure
 evidence. One run per variant cannot establish causation, a general speedup or
 reliability; keep the earlier guidance defect alongside the successful result.
+
+Publication review also added a no-model regression for a clean commit made
+after activation. It must fail the final-source check until that commit is
+activated. This assertion hardening was not a new model-backed trial; the
+earlier live harness hashes above remain the source of those observations.
 
 The governing proposal and detailed sanitized evidence are in the separately
 maintained App tree: `docs/proposals/agent-behavior-and-capability-extension.md`

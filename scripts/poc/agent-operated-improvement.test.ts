@@ -107,6 +107,7 @@ test("agent-operated trial preflight confines edits and distinguishes saving fro
       realReloadRecovered: true,
       modelExecutions: 0,
       compactEvidence: true,
+      finalSourceMatchesActive: true,
     });
   } finally {
     try {

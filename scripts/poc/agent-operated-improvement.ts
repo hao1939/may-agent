@@ -49,6 +49,11 @@ export function inside(root: string, path: string): string {
   return canonical;
 }
 
+function assertFinalSource(source: { head: string; active?: string; dirty: string }) {
+  assert.equal(source.dirty, "", "Uncommitted source remains");
+  assert.equal(source.head, source.active, "Final committed source is not active");
+}
+
 /** Evidence only: do not schedule retries or infer an agent's private reasoning. */
 export function reloadRecoveryEvidence(
   messages: DirectAgentExecutionResult["messages"],
@@ -131,6 +136,16 @@ export async function runTrial(live = false) {
     );
   const save = () => write("results.json", JSON.stringify(clean({ live, executions, checks, records }), null, 2));
   const store = new DefinitionSourceReleaseStore(sb.root, sb.stateDir);
+  const inspectSource = async (baseline: string) => {
+    const head = await fixtureGit(sb.root, ["rev-parse", "HEAD"]);
+    return {
+      baseline,
+      head,
+      active: store.current()?.sourceCommit,
+      dirty: await fixtureGit(sb.root, ["status", "--short", "--", "agents", "shared", "projects"]),
+      diff: await fixtureGit(sb.root, ["diff", baseline, head, "--", "agents/may"]),
+    };
+  };
   const source = fixtureSource({ projectRoot: sb.root, persistDir: sb.stateDir });
   const callSource = async (action: string, paths?: string[], signal?: AbortSignal) => {
     const result = await source.execute("source", { action, paths }, signal);
@@ -370,6 +385,19 @@ export async function runTrial(live = false) {
       assert(
         readFileSync(join(store.current()!.agentsRoot, "may/AGENTS.md"), "utf8").includes("Synthetic preflight marker"),
       );
+      assertFinalSource(await inspectSource(baseline!));
+      // A clean commit after activation must not pass as the tested source.
+      await writer.execute("later-guidance", {
+        path: "agents/may/AGENTS.md",
+        content: targetIdentity + "Synthetic later candidate, not yet active.\n",
+      });
+      await callSource("commit", ["agents/may/AGENTS.md"]);
+      const unactivated = await inspectSource(baseline!);
+      assert.equal(unactivated.dirty, "");
+      assert.notEqual(unactivated.head, unactivated.active);
+      assert.throws(() => assertFinalSource(unactivated), /Final committed source is not active/);
+      assert.equal((await callSource("reload")).activated, true);
+      assertFinalSource(await inspectSource(baseline!));
       checks.preflight = {
         confinedWrites: true,
         committedNotActive: true,
@@ -377,6 +405,7 @@ export async function runTrial(live = false) {
         realReloadRecovered: true,
         modelExecutions: 0,
         compactEvidence: true,
+        finalSourceMatchesActive: true,
       };
     } else {
       const baselineResult = await target(
@@ -429,15 +458,10 @@ export async function runTrial(live = false) {
       assert(++executions <= 12);
       const result = await executePreparedAgent(prepared, { timeoutMs: 300_000 });
       recordExecution("improver", result, { objective, systemPrompt: prepared.systemPrompt });
-      const recovery = reloadRecoveryEvidence(result.messages, injectedCallId, store.current()?.sourceCommit);
+      const finalSource = await inspectSource(baseline!);
+      const recovery = reloadRecoveryEvidence(result.messages, injectedCallId, finalSource.head);
       checks.reloadRecovery = recovery;
-      const dirty = await fixtureGit(sb.root, ["status", "--short", "--", "agents", "shared", "projects"]);
-      checks.source = {
-        baseline,
-        active: store.current()?.sourceCommit,
-        dirty,
-        diff: await fixtureGit(sb.root, ["diff", baseline!, "--", "agents/may"]),
-      };
+      checks.source = finalSource;
       save();
       // Grading requests are withheld until the improver has finished. They are not tool results it can optimize against.
       const cases = [
@@ -492,7 +516,7 @@ export async function runTrial(live = false) {
         "Holdout failure retained; review before retrying",
       );
       assert.notEqual(store.current()?.sourceCommit, baseline, "No activated source change");
-      assert.equal(dirty, "", "Uncommitted source remains");
+      assertFinalSource(finalSource);
       assert(recovery.handled, "No successful retry requested in a later assistant turn after the failure result");
       assert(verifiedActive, "No agent-operated verification of the active source observed");
     }
