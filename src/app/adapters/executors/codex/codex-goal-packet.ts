@@ -29,6 +29,7 @@ export type CanonicalTaskAttemptPacket = {
   observations: {
     children: TaskAttempt["children"];
     waits: TaskAttempt["waits"];
+    previousAttempt?: TaskAttempt["previousAttempt"];
   };
   workspace: {
     cwd: string;
@@ -60,6 +61,7 @@ export function projectCanonicalTaskAttempt(attempt: TaskAttempt): CanonicalTask
     observations: {
       children: structuredClone(attempt.children),
       waits: structuredClone(attempt.waits),
+      ...(attempt.previousAttempt ? { previousAttempt: structuredClone(attempt.previousAttempt) } : {}),
     },
     workspace: {
       cwd: attempt.cwd,

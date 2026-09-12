@@ -333,6 +333,121 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
+  it("replaces a background capacity wait when human Conversation work becomes ready", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire()!;
+    const started: string[] = [];
+    const finishHuman = Promise.withResolvers<void>();
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set(["conversation"]) }),
+      reconcile: async (taskId) => {
+        started.push(taskId);
+        if (taskId === "conversation") await finishHuman.promise;
+      },
+    });
+    try {
+      controller.enqueue("ordinary", { lane: "human", priority: "P0" });
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      controller.enqueue("conversation");
+      await waitUntil(() => started.length === 1);
+      expect(started).toEqual(["conversation"]);
+      expect(capacity.snapshot().running).toBe(2);
+      finishHuman.resolve();
+      await waitUntil(() => controller.snapshot().running.length === 0 && capacity.snapshot().waiting === 1);
+      releaseBackground();
+      await waitUntil(() => started.includes("ordinary") && capacity.snapshot().running === 0);
+      expect(started).toEqual(["conversation", "ordinary"]);
+      expect(capacity.snapshot().waiting).toBe(0);
+    } finally {
+      finishHuman.resolve();
+      releaseBackground();
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
+  it("rechecks input class after waiting instead of spending the foreground reserve on a system review", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire()!;
+    const releaseForeground = capacity.tryAcquireForeground()!;
+    let humanPending = true;
+    const started: string[] = [];
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      readScheduling: () => ({
+        backgroundPaused: false,
+        foregroundTaskIds: new Set(humanPending ? ["conversation"] : []),
+      }),
+      reconcile: async (taskId) => {
+        started.push(taskId);
+      },
+    });
+    try {
+      controller.enqueue("conversation");
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      humanPending = false;
+      releaseForeground();
+      await waitUntil(() => capacity.snapshot().running === 1 && capacity.snapshot().waiting === 1);
+      expect(started).toEqual([]);
+      releaseBackground();
+      await waitUntil(() => started.length === 1 && capacity.snapshot().running === 0);
+      expect(started).toEqual(["conversation"]);
+      expect(capacity.snapshot().waiting).toBe(0);
+    } finally {
+      releaseBackground();
+      releaseForeground();
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
+  it("releases reserved capacity and backs off when the scheduling read fails", async () => {
+    const capacity = new HostCapacity(2);
+    const releaseBackground = capacity.tryAcquire()!;
+    const releaseForeground = capacity.tryAcquireForeground()!;
+    const reported = Promise.withResolvers<void>();
+    let readBroken = false;
+    let starts = 0;
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      retryDelayMs: () => 30,
+      readScheduling: () => {
+        if (readBroken) throw new Error("Scheduling storage unavailable");
+        return { backgroundPaused: false, foregroundTaskIds: new Set(["conversation"]) };
+      },
+      reconcile: async () => {
+        starts++;
+      },
+      onError: (_taskId, error, willRetry) => {
+        expect(String(error)).toContain("Scheduling storage unavailable");
+        expect(willRetry).toBe(true);
+        reported.resolve();
+      },
+    });
+    try {
+      controller.enqueue("conversation");
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      readBroken = true;
+      releaseForeground();
+      await reported.promise;
+      expect(starts).toBe(0);
+      expect(capacity.snapshot()).toEqual({ running: 1, waiting: 0 });
+      expect(controller.snapshot().pending).toEqual(["conversation"]);
+      readBroken = false;
+      await waitUntil(() => starts === 1 && controller.snapshot().running.length === 0);
+      expect(capacity.snapshot()).toEqual({ running: 1, waiting: 0 });
+    } finally {
+      releaseBackground();
+      releaseForeground();
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
   it("shares the Host limit across independent controllers", async () => {
     // One of three Host slots is reserved for foreground May conversation.
     const appCapacity = new HostCapacity(3);
@@ -476,25 +591,99 @@ describe("AppTaskController", () => {
     controller.close();
   });
 
-  it("retries controller failures with bounded backoff", async () => {
+  it("keeps retrying dispatch failures beyond the former count limit", async () => {
     let runs = 0;
     const errors: boolean[] = [];
     const controller = new AppTaskController({
       maxConcurrent: 1,
-      maxRetries: 2,
       retryDelayMs: () => 0,
       reconcile: async () => {
         runs++;
-        if (runs < 3) throw new Error("temporary");
+        if (runs < 8) throw new Error("temporary");
       },
       onError: (_taskId, _error, willRetry) => {
         errors.push(willRetry);
       },
     });
     controller.enqueue("a");
-    await waitUntil(() => runs === 3);
-    expect(errors).toEqual([true, true]);
+    await waitUntil(() => runs === 8);
+    expect(errors).toEqual(Array(7).fill(true));
     controller.close();
+  });
+
+  it.each([false, true])("preserves dispatch backoff across wakes without holding other work (capacity: %s)", async (shared) => {
+    const delay = 80;
+    const capacity = shared ? new HostCapacity(1) : undefined;
+    const starts: Array<{ taskId: string; at: number; lane: string }> = [];
+    let failedAt = 0;
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      capacity,
+      retryDelayMs: () => delay,
+      async reconcile(taskId, dispatch) {
+        starts.push({ taskId, at: Date.now(), lane: dispatch.lane });
+        if (taskId === "bad" && !failedAt) {
+          failedAt = Date.now();
+          controller.enqueue(taskId);
+          throw new Error("Storage unavailable before claim");
+        }
+      },
+      onError(taskId) {
+        for (let i = 0; i < 10; i++) controller.enqueue(taskId, { lane: "human", promote: true });
+        controller.enqueue("good");
+      },
+    });
+    try {
+      controller.enqueue("bad");
+      await waitUntil(() => starts.some(({ taskId }) => taskId === "good"));
+      expect(starts.map(({ taskId }) => taskId)).toEqual(["bad", "good"]);
+      await waitUntil(() => controller.snapshot().running.length === 0);
+      expect(capacity?.snapshot().running ?? 0).toBe(0);
+      controller.enqueue("bad");
+      await waitUntil(() => starts.length === 3);
+      expect(starts[2]).toMatchObject({ taskId: "bad", lane: "human" });
+      expect(starts[2]!.at - failedAt).toBeGreaterThanOrEqual(delay);
+      await waitUntil(() => controller.snapshot().running.length === 0);
+      // Allow the original timer interval to pass again: an early wake must
+      // not leave behind a delayed, duplicate successful reconciliation.
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      expect(starts).toHaveLength(3);
+      expect(controller.snapshot()).toEqual({ pending: [], running: [], dirty: [] });
+    } finally {
+      controller.close();
+      await controller.whenDrained();
+    }
+  });
+
+  it.each(["pause", "close"])("respects %s while a dispatch retry timer expires", async (control) => {
+    let runs = 0;
+    let reported = false;
+    const controller = new AppTaskController({
+      maxConcurrent: 1,
+      retryDelayMs: () => 30,
+      async reconcile() {
+        if (++runs === 1) throw new Error("Storage unavailable");
+      },
+      onError(taskId) {
+        controller.enqueue(taskId);
+        if (control === "close") controller.close();
+        else controller.setEnabled(false);
+        reported = true;
+      },
+    });
+    try {
+      controller.enqueue("bad");
+      await waitUntil(() => reported && controller.snapshot().running.length === 0);
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(runs).toBe(1);
+      if (control === "pause") {
+        controller.setEnabled(true);
+        await waitUntil(() => runs === 2);
+      }
+    } finally {
+      controller.close();
+      await controller.whenDrained();
+    }
   });
 
   it.each([
@@ -514,7 +703,6 @@ describe("AppTaskController", () => {
     const controller = new AppTaskController({
       maxConcurrent: 1,
       capacity,
-      maxRetries: 1,
       retryDelayMs: () => 0,
       reconcile(taskId) {
         starts.push(taskId);

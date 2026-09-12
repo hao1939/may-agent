@@ -45,10 +45,10 @@ export async function pollUntil<T>(
   predicate: () => Promise<T | null | undefined | false> | T | null | undefined | false,
   opts: { timeoutMs: number; intervalMs?: number; description?: string },
 ): Promise<T> {
-  const start = Date.now();
+  const start = performance.now();
   const interval = opts.intervalMs ?? 200;
   let lastErr: unknown = null;
-  while (Date.now() - start < opts.timeoutMs) {
+  while (performance.now() - start < opts.timeoutMs) {
     try {
       const v = await predicate();
       if (v) return v as T;

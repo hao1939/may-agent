@@ -11,7 +11,15 @@ import {
   type ResolvedTaskReference,
 } from "./core/state/task-reference-index.js";
 
-export type HumanTaskStatus = "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "cancelled";
+export type HumanTaskStatus =
+  | "pending"
+  | "running"
+  | "waiting"
+  | "attention"
+  | "up-to-date"
+  | "done"
+  | "closed"
+  | "cancelled";
 
 export type HumanTaskProgress = {
   stage: string;
@@ -43,6 +51,7 @@ export type HumanTaskView = {
   statusDetail?: string;
   summary?: string;
   response?: string;
+  result?: Record<string, unknown>;
   evidence?: string[];
   updatedAt: number;
   terminal: boolean;
@@ -240,7 +249,7 @@ function boundedUtf8Text(value: string, maxBytes: number): string {
 }
 
 function listCard(view: HumanTaskView): HumanTaskView {
-  const { acceptance: _acceptance, response: _response, evidence: _evidence, ...card } = view;
+  const { acceptance: _acceptance, response: _response, result: _result, evidence: _evidence, ...card } = view;
   return {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
@@ -264,9 +273,11 @@ function taskStatusDetail(
     case "attention":
       return "The App needs review or recovery.";
     case "up-to-date":
-      return "Current work is reconciled; this maintained Task will wake when relevant facts change.";
+      return "Current work is reconciled; this Task will wake when relevant facts change.";
     case "done":
       return "Completed.";
+    case "closed":
+      return "Closed by its owner; no further work will run.";
     case "cancelled":
       return "Cancelled.";
   }
@@ -436,15 +447,16 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (row.terminal === 2) {
     const cancellation = parseJson<AppTaskCancellation>(row.payload);
     if (!cancellation) return null;
+    const status = cancellation.kind === "closed" ? "closed" : "cancelled";
     const view: HumanTaskView = {
       appId,
       taskId,
       ref,
-      status: "cancelled",
+      status,
       generation: cancellation.generation,
       resourceVersion: cancellation.resourceVersion,
       outcome: cancellation.outcome,
-      statusDetail: taskStatusDetail("cancelled"),
+      statusDetail: taskStatusDetail(status),
       summary: cancellation.summary,
       ...(cancellation.response ? { response: cancellation.response } : {}),
       ...(cancellation.result ? { result: structuredClone(cancellation.result) } : {}),
@@ -470,6 +482,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       statusDetail: taskStatusDetail("done"),
       summary: receipt.summary,
       ...(receipt.response ? { response: receipt.response } : {}),
+      ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
       ...(receipt.evidence ? { evidence: [...receipt.evidence] } : {}),
       updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
       terminal: true,
@@ -498,10 +511,11 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     statusDetail: taskStatusDetail(status, { ready: row.ready, attempt }),
     ...(observationIsCurrent && resource.status.summary ? { summary: resource.status.summary } : {}),
     ...(observationIsCurrent && resource.status.response ? { response: resource.status.response } : {}),
+    ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
     ...(observationIsCurrent && resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
     terminal: false,
-    cancellable: resource.spec.mode !== "maintain",
+    cancellable: true,
     ...(resource.status.currentAttemptId
       ? {
           execution: {
@@ -568,7 +582,7 @@ function taskWaits(db: SqliteDb, appId: string, taskId: string): HumanTaskWait[]
   const unresolved: HumanTaskWait[] = [];
   for (const condition of conditions) {
     const requestId =
-      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
+      condition.spec.type === "app.dependency.updated" && condition.spec.subject.startsWith("id:")
         ? condition.spec.subject.slice(3)
         : "";
     const request = requestId
@@ -833,19 +847,22 @@ export class HumanTaskService {
       "attention",
       "up-to-date",
       "done",
+      "closed",
       "cancelled",
     ]);
     if (input.status?.some((status) => !valid.has(status))) throw new Error("Invalid Task status filter");
     const statuses = input.status ? new Set(input.status) : null;
     const humanActionOnly = input.humanActionOnly === true;
-    const includeLive = !statuses || [...statuses].some((status) => status !== "done" && status !== "cancelled");
+    const includeLive = !statuses || [...statuses].some((status) => !["done", "closed", "cancelled"].includes(status));
     const includeDone =
       !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("done") === true);
     const includeCancelled =
       !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("cancelled") === true);
+    const includeClosed =
+      !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("closed") === true);
     const livePhases = statuses
       ? [...statuses].flatMap((status) =>
-          status === "done" || status === "cancelled" ? [] : [status === "up-to-date" ? "converged" : status],
+          ["done", "closed", "cancelled"].includes(status) ? [] : [status === "up-to-date" ? "converged" : status],
         )
       : ["pending", "running", "waiting", "attention", "converged"];
     // Keep the indexed stored-phase search, then narrow by the display phase.
@@ -901,12 +918,15 @@ export class HumanTaskService {
       );
       if (appId) values.push(appId);
     }
-    if (includeCancelled) {
+    if (includeCancelled || includeClosed) {
+      const closureKinds = [includeCancelled ? "cancelled" : null, includeClosed ? "closed" : null].filter(Boolean);
       parts.push(
-        `SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
+        `SELECT c.app_id, c.task_id, COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') AS phase, c.requested_at AS updated_at,
            c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
-         FROM app_task_cancellations c${appId ? " WHERE c.app_id = ?" : ""}`,
+         FROM app_task_cancellations c
+         WHERE COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') IN (${closureKinds.map(() => "?").join(", ")})${appId ? " AND c.app_id = ?" : ""}`,
       );
+      values.push(...closureKinds);
       if (appId) values.push(appId);
     }
     if (parts.length === 0) return { items: [] };

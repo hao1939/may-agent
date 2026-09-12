@@ -1,6 +1,7 @@
 import type { AppEvent } from "./event.js";
 import type { AppInput } from "./app.js";
 
+/** Retained App intent labels; both use the same lifecycle and require owner closure. */
 export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 /** Stable executor adapter name selected by durable Task intent. */
@@ -41,7 +42,11 @@ export type Condition = {
   reviewAfterMs?: number;
 };
 
-/** `stopped` ends this finite leaf Task without achieving its outcome. */
+/**
+ * Attempt judgment, not Task lifetime. `converged` accepts an outcome and leaves
+ * the Task open. `stopped` reports an unsuccessful attempt; unfinished work retries
+ * with backoff until progress or owner closure.
+ */
 export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "stopped";
 
 /** One child App outcome required by the current task. */
@@ -54,27 +59,8 @@ export type TaskAppDependency = {
   input: AppInput;
 };
 
-/** Desired Task mutations returned by one fenced reconciliation attempt. */
+/** Update existing Tasks through a fenced attempt. Assign new work through dependencies; workers cannot rewrite their own assignment. */
 export type TaskAction =
-  | {
-      kind: "create-task";
-      id: string;
-      parentId: string;
-      outcome: string;
-      mode: TaskMode;
-      outputs: string[];
-      acceptance: string[];
-      priority: TaskPriority;
-      /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
-      agent?: string;
-      /** @deprecated Use `agent`. */
-      owner?: string;
-      workflow?: string;
-      executor?: TaskExecutorName;
-      input?: Record<string, unknown>;
-      dependsOn?: string[];
-      category?: string;
-    }
   | {
       kind: "update-task";
       taskId: string;
@@ -96,12 +82,6 @@ export type TaskAction =
       category?: string | null;
     }
   | {
-      kind: "close-task";
-      taskId: string;
-      expectedGeneration: number;
-      summary: string;
-    }
-  | {
       kind: "unblock-task";
       taskId: string;
       expectedGeneration: number;
@@ -109,18 +89,46 @@ export type TaskAction =
     };
 
 export type TaskReconcileResult = {
-  state: TaskReconcileState;
   summary: string;
-  /** Caller-facing semantic answer, when this task fulfills an addressed request. */
-  response?: string;
-  /** App-defined machine-readable state/result. The runtime carries it without interpreting domain meaning. */
-  result?: Record<string, unknown>;
   evidence: string[];
-  actions?: TaskAction[];
-  conditions?: Condition[];
-  /** Runtime-admitted child App requests. Valid only while waiting. */
-  dependencies?: TaskAppDependency[];
-};
+} & (
+  | {
+      state: "converged";
+      /** Caller-facing answer for the addressed input; does not close the Task. */
+      response?: string;
+      result?: Record<string, unknown>;
+      actions?: TaskAction[];
+      conditions?: never;
+      dependencies?: never;
+    }
+  | {
+      state: "waiting";
+      response?: never;
+      result?: Record<string, unknown>;
+      actions?: TaskAction[];
+      conditions?: Condition[];
+      /** New child App requests; code retains unchanged waits. */
+      dependencies?: TaskAppDependency[];
+    }
+  | {
+      state: "stopped";
+      /** At least one observation supporting this unsuccessful attempt. */
+      evidence: [string, ...string[]];
+      response?: string;
+      result?: Record<string, unknown>;
+      actions?: never;
+      conditions?: never;
+      dependencies?: never;
+    }
+  | {
+      state: "needs-agent";
+      response?: never;
+      result?: never;
+      actions?: never;
+      conditions?: never;
+      dependencies?: never;
+    }
+);
 
 export type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";

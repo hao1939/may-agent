@@ -1,25 +1,14 @@
 import type { SqliteDb } from "../../../lib/db.js";
-import {
-  assertAppInboxClaim,
-  completeAppInboxClaim,
-  recordAppInboxHandling,
-  wakeAppInboxItemsWaitingOn,
-  type AppInboxHandling,
-} from "./app-inbox-store.js";
-import { applyConversationRequestUpdates, ConversationRequestConflict } from "./conversation-requests.js";
 import type { AppInputContext, AppTaskAttachment, AppResult } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { getAppInboxItem, waitAppInboxClaim, wakeAppInboxItem, type AppInboxClaim } from "./app-inbox-store.js";
+import { getAppInboxItem, type AppInboxItem } from "./app-inbox-store.js";
 import {
-  isAppTaskConverged,
   observeAppTaskIntent,
   readAppTaskIntent,
-  readAppTaskTrigger,
   type AppTaskObservationResult,
 } from "../tasks/app-task-reconciler.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
-import { isTaskAttentionReadyForReview } from "../tasks/app-task-state.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
 
@@ -29,6 +18,8 @@ export type TaskRequestInput = {
   idempotencyKey: string;
   request: Readonly<AppInputContext>;
   authorize?: () => void;
+  inboxInputId?: string;
+  now?: number;
   topicId?: string;
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
 };
@@ -37,9 +28,50 @@ export type TaskRequestInput = {
 export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
+    const db = config.resourceStore.db;
+    const item = input.inboxInputId ? getAppInboxItem(db, input.inboxInputId) : null;
+    if (input.inboxInputId) {
+      if (
+        !item ||
+        item.id !== input.request.id ||
+        item.appId !== input.appId ||
+        !isDeepStrictEqual(item.input, input.request.input) ||
+        !isDeepStrictEqual(item.source, input.request.source)
+      )
+        throw new Error("Task admission does not match its saved input");
+      if (input.idempotencyKey !== `task:${item.id}`)
+        throw new Error("Task admission identity must belong to its input");
+      if (item.waitingOn?.kind === "task") {
+        const task = config.resourceStore.readTask(item.waitingOn.id);
+        if (!task) throw new Error(`Attached Task ${item.waitingOn.id} is missing`);
+        const target = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
+        if (target !== item.waitingOn.id) throw new Error("Cannot remap an admitted input to different work");
+        return admitAuthorizedTaskRequest(config, {
+          ...input,
+          idempotencyKey: item.taskAdmissionKey ?? input.idempotencyKey,
+        });
+      }
+      if (
+        item.status === "done" ||
+        item.executionTaskId ||
+        (item.lease && item.lease.expiresAt > (input.now ?? Date.now()))
+      )
+        throw new Error("Input is already owned or completed");
+      const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
+      if (item.targetTaskId && item.targetTaskId !== taskId) throw new Error("Cannot replace an exact Task target");
+    }
+    // A released Host could commit the Task before saving its input link.
+    // Reuse that exact admission during the offline upgrade/restart boundary.
+    if (item) {
+      const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
+      const keys = [input.idempotencyKey, `task:${item.id}:desired:${taskId}`, `task:${item.id}:existing:${taskId}`];
+      const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
+      input = { ...input, idempotencyKey: keys.find((key) => admissions?.[key]) ?? input.idempotencyKey };
+    }
     const observation = admitAuthorizedTaskRequest(config, input);
-    if (input.topicId)
-      linkConversationTopicTask(config.resourceStore.db, input.topicId, input.appId, observation.taskId);
+    if (item) linkTaskInput(db, item.id, observation.taskId, input.idempotencyKey, input.now);
+    const topicId = item?.topicId ?? input.topicId;
+    if (topicId) linkConversationTopicTask(db, topicId, input.appId, observation.taskId);
     if (input.requestLink)
       linkConversationRequestTask(config.resourceStore.db, {
         ...input.requestLink,
@@ -61,13 +93,10 @@ function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestIn
       .appTaskAdmissions?.[idempotencyKey];
     if (admission) {
       if (admission.taskId !== taskId) throw new Error("Task request identity was reused for different work");
-      if (!config.resourceStore.readTask(taskId) && !config.resourceStore.readReceipt(taskId)) {
+      if (!config.resourceStore.readTask(taskId)) {
         throw new Error(`Admitted Task ${taskId} is missing`);
       }
       return { kind: "observed", taskId, generation: admission.taskGeneration, changed: false };
-    }
-    if (isAppTaskConverged(config, taskId)) {
-      throw new Error(`Task ${taskId} in App ${input.appId} is already complete; create distinct follow-up work`);
     }
     intent = readAppTaskIntent(config, taskId);
     if (!intent) throw new Error(`Task ${taskId} does not exist in App ${input.appId}`);
@@ -90,133 +119,60 @@ function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestIn
   });
 }
 
-/** Task admission, request wait/claim release and Topic correlation share one commit. */
-export function attachRequestToTask(
-  config: AppTaskContext,
-  input: TaskRequestInput & { claim: AppInboxClaim; now?: number },
-): AppTaskObservationResult {
-  const db = config.resourceStore.db;
-  return stateTransaction(db, () => {
-    const now = input.now ?? Date.now();
-    const current = getAppInboxItem(db, input.claim.item.id);
-    const taskId = input.attachment.kind === "existing" ? input.attachment.taskId.trim() : input.attachment.intent.id;
-    if (
-      !current ||
-      current.id !== input.request.id ||
-      current.appId !== input.appId ||
-      input.appId !== config.resourceStore.appId ||
-      !isDeepStrictEqual(current.input, input.request.input) ||
-      !isDeepStrictEqual(current.source, input.request.source)
-    ) {
-      throw new Error("Task attachment request does not match its claim");
-    }
-    if (current.targetTaskId && current.targetTaskId !== taskId) throw new Error("Cannot replace an exact Task target");
-    const previous = input.claim.item.waitingOn;
-    const replacing = previous?.kind === "task" && previous.id !== taskId;
-    const operationKey = replacing ? `task:${current.id}:replace:${input.claim.generation}` : `task:${current.id}`;
-    if (input.idempotencyKey !== operationKey) throw new Error("Task attachment identity must belong to its request");
-    const replay =
-      current.status === "handling" &&
-      !current.lease &&
-      current.waitingOn?.kind === "task" &&
-      current.waitingOn.id === taskId &&
-      db.prepare("SELECT lease_generation FROM app_inbox_items WHERE id = ?").get(current.id)?.lease_generation ===
-        input.claim.generation;
-    if (
-      !replay &&
-      (current.status !== "handling" ||
-        current.lease?.owner !== input.claim.owner ||
-        current.lease.generation !== input.claim.generation ||
-        current.lease.expiresAt <= now)
-    ) {
-      throw new Error("claim is stale");
-    }
-    // A released Host could commit admission and crash before storing the wait.
-    // Reuse that exact target's identity; normal admission checks still reject
-    // changed work. The request wait becomes authoritative in this transaction,
-    // so no admission rewrite, scan or schema migration is needed.
-    let admissionKey = operationKey;
-    if (!previous) {
-      const keys = [
-        operationKey,
-        `task:${current.id}:${input.attachment.kind}:${taskId}`,
-        `task:${current.id}:${input.attachment.kind === "existing" ? "desired" : "existing"}:${taskId}`,
-      ];
-      const admissions = config.resourceStore.readTaskContext({
-        taskIds: [],
-        admissionIds: keys,
-      }).appTaskAdmissions;
-      admissionKey = keys.find((key) => admissions?.[key]) ?? operationKey;
-    }
-    // Rechecks of accepted work retain its admission identity; App-selected
-    // replacement has a separate key and is fenced by this request claim.
-    const continuing = input.attachment.kind === "existing" && previous?.kind === "task" && previous.id === taskId;
-    const generation = continuing
-      ? (config.resourceStore.readTask(taskId)?.metadata.generation ??
-        config.resourceStore.readReceipt(taskId)?.metadata.generation)
-      : undefined;
-    if (continuing && generation === undefined) throw new Error(`Attached Task ${taskId} is missing`);
-    const observation: AppTaskObservationResult = continuing
-      ? { kind: "observed", taskId, generation: generation!, changed: false }
-      : admitTaskRequest(config, { ...input, idempotencyKey: admissionKey });
-    if (replay) return observation;
-    if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: observation.taskId }, { now })) {
-      throw new Error("claim is stale");
-    }
-    if (current.topicId) linkConversationTopicTask(db, current.topicId, input.appId, observation.taskId, now);
-    const hasPendingInput = Boolean(readAppTaskTrigger(config, observation.taskId));
-    if (
-      isTaskAttentionReadyForReview(config.resourceStore.readTask(observation.taskId), hasPendingInput) ||
-      (!hasPendingInput && isAppTaskConverged(config, observation.taskId, observation.generation))
-    ) {
-      wakeAppInboxItem(db, current.id, now);
-    }
-    return observation;
-  });
+/** Called inside Task admission's transaction; this row is correlation, never an execution owner. */
+export function linkTaskInput(
+  db: SqliteDb,
+  inputId: string,
+  taskId: string,
+  admissionKey: string,
+  now = Date.now(),
+): void {
+  const updated = db
+    .prepare(
+      `UPDATE app_inbox_items SET status = 'handling',
+    waiting_on_kind = 'task', waiting_on_id = ?, task_admission_key = ?,
+    available_at = NULL, review_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
+    changed_at = ?, updated_at = ? WHERE id = ? AND status != 'done' AND execution_task_id IS NULL`,
+    )
+    .run(taskId, admissionKey, now, now, inputId);
+  if (updated.changes !== 1) throw new Error("Task input is unavailable");
 }
 
-/** Retry an uncommitted result, not a rejected decision or Task operation. */
-export class InputCompletionError extends Error {}
+/** A compare-and-set projection of an exact Task answer, not another attempt. */
+export function completeTaskInput(db: SqliteDb, item: AppInboxItem, result: AppResult, now: number): boolean {
+  if (item.waitingOn?.kind !== "task") return false;
+  return (
+    db
+      .prepare(
+        `UPDATE app_inbox_items SET status = 'done', result = ?, completed_at = ?,
+      available_at = NULL, review_at = NULL, changed_at = ?, updated_at = ?
+    WHERE id = ? AND status = 'handling' AND lease_owner IS NULL
+      AND waiting_on_kind = 'task' AND waiting_on_id = ? AND task_admission_key IS ?`,
+      )
+      .run(JSON.stringify(result), now, now, now, item.id, item.waitingOn.id, item.taskAdmissionKey ?? null).changes ===
+    1
+  );
+}
 
-/** Input result, accepted-ask closure and dependent wakes share one commit. */
-export function completeInboxInput(
-  db: SqliteDb,
-  input: {
-    claim: AppInboxClaim;
-    result: AppResult;
-    handling?: AppInboxHandling;
-    authorize: () => void;
-    now: number;
-  },
-): void {
-  const { claim, result, handling, authorize, now } = input;
-  try {
-    stateTransaction(db, () => {
-      authorize();
-      assertAppInboxClaim(db, claim, now);
-      if (handling) recordAppInboxHandling(db, claim, handling, now);
-      if (!handling && claim.item.handling?.phase === "decided" && claim.item.conversationId) {
-        const closing = (claim.item.handling.decision.requestUpdates ?? []).filter(
-          (update) => update.disposition !== "open",
-        );
-        if (closing.length)
-          applyConversationRequestUpdates(db, {
-            appId: claim.item.appId,
-            conversationId: claim.item.conversationId,
-            topicId: claim.item.topicId,
-            updates: closing.map((update) => ({ ...update, expectedRevision: update.expectedRevision + 1 })),
-            updateKey: `input:${claim.item.id}:close`,
-            messageId: `result:${claim.item.id}`,
-            now,
-          });
-      }
-      const rowCompleted = completeAppInboxClaim(db, claim, result, now);
-      if (!rowCompleted) throw new Error("claim is stale");
-      wakeAppInboxItemsWaitingOn(db, { kind: "app", id: claim.item.id }, now);
-    });
-  } catch (error) {
-    if (!handling && claim.item.handling?.phase === "decided" && !(error instanceof ConversationRequestConflict))
-      throw new InputCompletionError(error instanceof Error ? error.message : String(error), { cause: error });
-    throw error;
-  }
+/** Backfill only an unambiguous historical input admission, never the Task's latest answer. */
+export function recoverTaskInputAdmissionKey(db: SqliteDb, item: AppInboxItem): string | undefined {
+  if (item.taskAdmissionKey || item.waitingOn?.kind !== "task") return item.taskAdmissionKey;
+  const keys = [
+    `task:${item.id}`,
+    `task:${item.id}:desired:${item.waitingOn.id}`,
+    `task:${item.id}:existing:${item.waitingOn.id}`,
+  ];
+  const rows = db
+    .prepare(
+      `SELECT task_id FROM app_task_admissions WHERE app_id = ?
+    AND task_id IN (?, ?, ?) AND json_extract(admission_json, '$.taskId') = ?`,
+    )
+    .all(item.appId, ...keys, item.waitingOn.id);
+  if (rows.length !== 1) return undefined;
+  const key = String(rows[0]!.task_id);
+  db.prepare(
+    `UPDATE app_inbox_items SET task_admission_key = ?
+    WHERE id = ? AND task_admission_key IS NULL AND waiting_on_kind = 'task' AND waiting_on_id = ?`,
+  ).run(key, item.id, item.waitingOn.id);
+  return key;
 }

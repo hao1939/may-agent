@@ -630,6 +630,9 @@ export async function executePreparedAgent(
 
   const messages = agent.state.messages as AgentMessage[];
   const finishResult = extractFinishParams(messages as any[]) ?? undefined;
+  // A committed finish survives a timeout while the turn unwinds. Validate the
+  // caller's required payload below before treating that receipt as a result.
+  if (finishResult && timedOut) error = undefined;
   const assistantError = !finishResult ? extractLastAssistantError(messages) : undefined;
   const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(messages) : undefined;
   error ??= assistantError ?? terminalFailure;
@@ -643,7 +646,10 @@ export async function executePreparedAgent(
   if (!error && !finishResult && !assistantText) {
     error = "Agent ended without producing a response";
   }
-  const status = timedOut ? "interrupted" : finishResult?.status === "failure" || error ? "error" : "done";
+  // A validated caller-defined result can report an unsuccessful domain outcome.
+  // Its caller judges that outcome; it is not an execution failure to retry.
+  const legacyFailure = !prepared.outputSchema && finishResult?.status === "failure";
+  const status = timedOut && !finishResult ? "interrupted" : error || legacyFailure ? "error" : "done";
 
   return {
     status,

@@ -1,5 +1,5 @@
 /**
- * Shared App discovery context for conversation and Task execution.
+ * Typed Task admission targets for every Task handler.
  * Summarizes the supplied registry snapshot; does not load or run Apps.
  */
 import type { AppRegistrySnapshot } from "./core/apps/registry.js";
@@ -158,11 +158,17 @@ export function appDependencyCatalog(
   sourceAppId: string,
 ): Array<{ appId: string; description: string; inputs: AppInputContract[] }> {
   return entries
-    .filter(({ definition }) => definition.id !== sourceAppId && definition.task && definition.tasks)
+    .filter(({ definition }) => definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,
       description: definition.description?.trim() || "No description declared.",
-      inputs: appInputContracts(definition.inputSchema),
+      inputs: appInputContracts(definition.inputSchema).filter(
+        (input) =>
+          definition.id !== sourceAppId ||
+          !definition.requests ||
+          Boolean(definition.requests.inputKinds && !definition.requests.inputKinds.includes(input.kind)),
+      ),
     }))
+    .filter((entry) => entry.inputs.length > 0)
     .sort((left, right) => left.appId.localeCompare(right.appId));
 }

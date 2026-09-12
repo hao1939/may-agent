@@ -1,49 +1,29 @@
-import { createConversationInbox } from "./conversation-inbox.js";
-import type { AppInputResolver } from "../conversations/turn-handler.js";
-import type { AppRequestTaskController } from "../conversations/turn-handler.js";
-import { recordConversationTaskOutcome } from "../core/state/conversation-outcomes.js";
+import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
+import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
+import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
-import { createHash } from "node:crypto";
-import {
-  isConversationFollowUpTask,
-  oneItemPerConversationTask,
-  publishConversationTaskWaiting,
-} from "../conversations/task-status.js";
 import {
   matchesEventSelector,
-  type AppConversationRequestUpdate,
   type AppDependencyObservation,
   type AppEvent,
   type AppInput,
   type AppInputSource,
-  type AppInputContext,
   type EventSelector,
   type ObserverContext,
   type TaskIntent,
 } from "@may-agent/sdk";
 import { log } from "../../lib/log.js";
 import type { SqliteDb } from "../../lib/db.js";
-import { listConversationRequests } from "../core/state/conversation-requests.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../core/events/bus.js";
 import {
   AppInboxHost,
   type AppInboxFailure,
-  type AppInboxReconcileResult,
   type AppTaskAttacher,
+  type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
-import {
-  listAppInboxItemsWaitingOnTask,
-  listHumanAppInboxItemsWaitingOnAppRequest,
-  type AppInboxItem,
-} from "../core/state/app-inbox-store.js";
-import {
-  listConversationTopicLinksForTask,
-  listStaleConversationTopicTasks,
-  readAppConversationResource,
-  readConversationTopic,
-} from "../core/state/conversations.js";
+import { listConversationTopicLinksForTask } from "../core/state/conversations.js";
 import type {
   AppDefinitionSource,
   AppRegistry,
@@ -63,7 +43,6 @@ import {
 } from "../core/state/app-event-admission-store.js";
 import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
-import type { HostCapacity } from "../core/scheduling/host-capacity.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -73,7 +52,7 @@ export type AppRegistryReloadPreparation = (input: {
 
 export type AppInboxRuntime = {
   host: AppInboxHost;
-  /** Begin recovery, schedules, and request execution after interfaces are ready. */
+  /** Begin recovery, schedules, and input coordination after interfaces are ready. */
   start(): Promise<void>;
   close(): void;
   scanNow(): void;
@@ -87,22 +66,14 @@ const ADMISSION_RECOVERY_INTERVAL_MS = 60_000;
 const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const ADMISSION_COMMAND_TURN_GAP_MS = 2;
 
-function assignmentText(item: AppInboxItem): string {
-  const data = item.input.data;
-  const outcome =
-    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).outcome : undefined;
-  return typeof outcome === "string" && outcome.trim()
-    ? `Assigned to ${item.appId}: ${outcome.trim()}`
-    : `Assigned to ${item.appId}.`;
-}
-
 export type StartAppInboxRuntimeOptions = {
   registry: AppRegistry;
   db: SqliteDb;
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
-  resolveRequest?: AppInputResolver;
-  controlTask?: AppRequestTaskController;
+  admitConversation?: AppInboxHostOptions["admitConversation"];
+  admitConversationChange?: AppTaskCapability["admitConversationChange"];
+  stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   admitTaskEvent?: (input: {
     appId: string;
     appDir: string;
@@ -128,19 +99,12 @@ export type StartAppInboxRuntimeOptions = {
     appId: string;
     appDir: string;
     dependency: { kind: "task"; id: string };
+    admissionKey?: string;
   }) => Promise<AppDependencyObservation | null>;
-  /** Shared Host capacity used by both request decisions and Task attempts. */
-  hostCapacity: HostCapacity;
-  /** Maximum request decisions admitted to shared Host capacity at once. */
-  maxConcurrentRequests?: number;
-  /** Composition selects the conversational App; omission leaves all input in the background lane. */
-  conversationAppId?: string;
   /** Recovery cadence, including retrying Apps whose input dispatch failed. */
   scanIntervalMs?: number;
   /** Select timed App publications only; admission, observers and recovery remain active. */
   schedulesEnabled?: boolean;
-  leaseMs?: number;
-  retryAfterMs?: number;
   now?: () => number;
   observerContext?: (appId: string, appDir: string) => ObserverContext;
   /** State root used to restore an oversized event body while resuming a frozen plan. */
@@ -196,7 +160,6 @@ function eventIdentity(event: AgentEvent): string | undefined {
   const eventId = eventRowId(event);
   return eventId ? `event:${eventId}` : undefined;
 }
-
 
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
   const taskId = typeof event.target?.taskId === "string" ? event.target.taskId.trim() : "";
@@ -287,7 +250,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     observationsByEventType = indexAppEventSelectors(entries, (definition) => definition.observations);
   };
   const attachTask: AppTaskAttacher | undefined = options.attachTask
-    ? async (input) => {
+    ? (input) => {
         const appDir = appDirById.get(input.appId);
         if (!appDir) throw new Error(`Unknown App: ${input.appId}`);
         return options.attachTask!({ ...input, appDir });
@@ -335,55 +298,37 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     link: { appId: string; conversationId: string; topicId: string },
     taskRef: { appId: string; taskId: string },
     change: {
-      followUpId: string;
       idempotencyKey: string;
-      disposition?: string;
-      summary?: string;
-      reason?: string;
+      attemptId?: string;
+      closedGeneration?: number;
     },
   ): void => {
-    // Live updates and recovery share this boundary. The owning Conversation
-    // must not project its follow-up Task back to itself; other Apps may watch it.
-    if (isConversationFollowUpTask(link.appId, taskRef.appId, taskRef.taskId)) return;
-    const topic = readConversationTopic(options.db, link.appId, link.conversationId, link.topicId);
-    const conversation = readAppConversationResource(options.db, link.appId, link.conversationId, {
-      limit: 20,
-      topicId: link.topicId,
-    });
+    // The source identity is enough. Admission reads the stored outcome;
+    // the executing Task collects current Conversation context.
+    if (taskRef.appId === link.appId && taskRef.taskId === conversationTaskId(link.appId, link.conversationId)) return;
+    if (!change.attemptId && change.closedGeneration === undefined) return;
     options.bus.emit({
       type: "conversation.task.changed",
-      source: change.reason ? "conversation-supervision-recovery" : "app-task",
+      source: "app-task",
       owner: `app:${link.appId}`,
       target: { appId: link.appId, project: link.appId },
       data: {
         appId: link.appId,
         conversationId: link.conversationId,
         topicId: link.topicId,
-        followUpId: change.followUpId,
         taskRef,
-        ...(change.disposition ? { disposition: change.disposition } : {}),
-        ...(change.summary ? { summary: change.summary } : {}),
-        ...(change.reason ? { reason: change.reason } : {}),
-        topicTitle: topic?.title,
-        requests: listConversationRequests(options.db, link.appId, link.conversationId, link.topicId, taskRef),
-        messages: conversation.messages
-          .filter((message) => message.metadata?.topicId === link.topicId)
-          .slice(-12)
-          .map((message) => ({
-            messageId: message.id,
-            author: message.author,
-            text: message.text,
-          })),
+        ...(change.attemptId ? { attemptId: change.attemptId } : {}),
+        ...(change.closedGeneration !== undefined ? { closedGeneration: change.closedGeneration } : {}),
       },
       idempotencyKey: change.idempotencyKey,
     } as unknown as AgentEvent);
   };
-  const host = createConversationInbox({
+  const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
     attachTask,
-    resolveRequest: options.resolveRequest,
-    controlTask: options.controlTask,
+    admitConversation: options.admitConversation,
+    stopConversationTurn: options.stopConversationTurn,
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
@@ -391,210 +336,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           return options.readDependency!({ ...input, appDir });
         }
       : undefined,
-    leaseMs: options.leaseMs,
-    retryAfterMs: options.retryAfterMs,
+    now: options.now,
+    onFailure: (failure) => reportFailure(failure),
     onConversationChanged: notifyConversationUpdated,
-    onRequestMessage(item, text, topicId) {
-      if (!item.conversationId) return;
-      options.bus.emit({
-        type: "conversation.message.created",
-        source: "app-inbox",
-        owner: `app:${item.appId}`,
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          messageId: `result:${item.id}`,
-          author: { kind: "agent", id: item.appId },
-          text,
-          metadata: {
-            channel: item.channel,
-            channelTargetId: item.channelTargetId,
-            channelThreadId: item.channelThreadId,
-            requestId: item.id,
-            topicId,
-          },
-          idempotencyKey: `conversation-request-message:${item.conversationId}:${item.id}`,
-        },
-      });
-    },
-    async onRequestFollowUp(item, followUp, topicId, authorize) {
-      if (!item.conversationId) {
-        throw new Error(`App follow-up ${item.id} requires a Conversation`);
-      }
-      const requestId = `appreq_${createHash("sha256").update(`${item.id}\0follow-up`).digest("hex").slice(0, 24)}`;
-      const target = loadedById.get(followUp.appId);
-      if (!target?.definition.task || !target.definition.tasks) {
-        throw new Error(`App follow-up targets non-Task App ${followUp.appId}`);
-      }
-      if (!attachTask) throw new Error("App follow-up Task admission is not configured");
-      const source = { kind: "app" as const, id: item.appId };
-      const request: AppInputContext = {
-        id: requestId,
-        source,
-        ...(item.source.kind === "human" ? { humanRequested: true } : {}),
-        input: followUp.input,
-      };
-      const attachment = followUp.task
-        ? ({ kind: "existing", taskId: followUp.task.taskId } as const)
-        : target.definition.task({ id: requestId, source, input: followUp.input });
-      if (!attachment) throw new Error(`App ${followUp.appId} returned no Task for conversational follow-up`);
-      const attached = await attachTask({
-        appId: followUp.appId,
-        attachment,
-        idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
-        request,
-        authorize,
-        topicId,
-        ...(followUp.requestId
-          ? {
-              requestLink: {
-                appId: item.appId,
-                conversationId: item.conversationId,
-                id: followUp.requestId,
-                revision:
-                  item.handling?.phase === "decided"
-                    ? (item.handling.requestRevisions?.[followUp.requestId] ?? -1)
-                    : -1,
-              },
-            }
-          : {}),
-      });
-      authorize();
-      options.bus.emit({
-        type: "conversation.message.created",
-        source: "app-task-admission",
-        owner: `app:${item.appId}`,
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          author: { kind: "tool", id: "runtime" },
-          text: `Accepted durable work: ${followUp.outcome}`,
-          metadata: {
-            command: "task-admitted",
-            channel: item.channel,
-            channelTargetId: item.channelTargetId,
-            channelThreadId: item.channelThreadId,
-            requestId: item.id,
-            topicId,
-            taskRefs: [{ appId: followUp.appId, taskId: attached.taskId }],
-            followTask: { appId: followUp.appId, taskId: attached.taskId },
-          },
-          idempotencyKey: `conversation-task-assigned:${item.conversationId}:${requestId}:${followUp.appId}:${attached.taskId}`,
-        },
-      });
-      options.bus.emit({
-        type: "conversation.task.linked",
-        source: "app-inbox",
-        owner: `app:${item.appId}`,
-        target: { appId: item.appId, project: item.appId },
-        data: {
-          appId: item.appId,
-          conversationId: item.conversationId,
-          topicId,
-          requestId,
-          taskRef: { appId: followUp.appId, taskId: attached.taskId },
-        },
-        idempotencyKey: `conversation-task-linked:${item.conversationId}:${topicId}:${followUp.appId}:${attached.taskId}`,
-      } as unknown as AgentEvent);
-    },
-    onRequestTaskAttached(item, taskId) {
-      if (item.source.kind !== "app") return;
-      if (item.conversationId && item.topicId && !item.parentId) {
-        options.bus.emit({
-          type: "conversation.message.created",
-          source: "app-task-admission",
-          owner: `app:${item.source.id}`,
-          data: {
-            appId: item.source.id,
-            conversationId: item.conversationId,
-            author: { kind: "tool", id: "runtime" },
-            text: assignmentText(item),
-            metadata: {
-              channel: item.channel,
-              channelTargetId: item.channelTargetId,
-              channelThreadId: item.channelThreadId,
-              requestId: item.replyToSourceId ?? item.id,
-              topicId: item.topicId,
-              taskRefs: [{ appId: item.appId, taskId }],
-              followTask: { appId: item.appId, taskId },
-            },
-            idempotencyKey: `conversation-task-assigned:${item.conversationId}:${item.id}:${item.appId}:${taskId}`,
-          },
-        });
-        options.bus.emit({
-          type: "conversation.task.linked",
-          source: "app-inbox",
-          owner: `app:${item.source.id}`,
-          target: { appId: item.source.id, project: item.source.id },
-          data: {
-            appId: item.source.id,
-            conversationId: item.conversationId,
-            topicId: item.topicId,
-            requestId: item.id,
-            taskRef: { appId: item.appId, taskId },
-          },
-          idempotencyKey: `conversation-task-linked:${item.conversationId}:${item.topicId}:${item.appId}:${taskId}`,
-        } as unknown as AgentEvent);
-        return;
-      }
-      for (const parent of oneItemPerConversationTask(listHumanAppInboxItemsWaitingOnAppRequest(options.db, item.id))) {
-        const parentTaskId = parent.waitingOn?.kind === "task" ? parent.waitingOn.id : undefined;
-        if (!parent.conversationId || !parentTaskId) continue;
-        options.bus.emit({
-          type: "conversation.message.created",
-          source: "app-inbox",
-          owner: `app:${parent.appId}`,
-          data: {
-            appId: parent.appId,
-            conversationId: parent.conversationId,
-            author: { kind: "agent", id: parent.appId },
-            text: assignmentText(item),
-            metadata: {
-              channel: parent.channel,
-              channelTargetId: parent.channelTargetId,
-              channelThreadId: parent.channelThreadId,
-              requestId: parent.id,
-              taskRefs: [
-                { appId: parent.appId, taskId: parentTaskId },
-                { appId: item.appId, taskId },
-              ],
-              followTask: { appId: item.appId, taskId },
-            },
-            idempotencyKey: `conversation-task-assigned:${parent.conversationId}:${parent.appId}:${parentTaskId}:${item.appId}:${taskId}`,
-          },
-        });
-      }
-    },
-    onRequestCompleted(item, result) {
-      if (item.source.kind !== "app") return;
-      options.bus.emit({
-        type: "app.dependency.completed",
-        source: `app-inbox:${item.appId}`,
-        owner: `app:${item.source.id}`,
-        data: {
-          kind: "app",
-          id: item.id,
-          status: "done",
-          summary: result.summary,
-          ...(result.response ? { response: result.response } : {}),
-          ...(result.result ? { result: result.result } : {}),
-          ...(result.evidence ? { evidence: result.evidence } : {}),
-          ...(item.waitingOn?.kind === "task" ? { taskId: item.waitingOn.id, appId: item.appId } : {}),
-        },
-      });
+    onRequestUpdated(item, result, status) {
+      const event = appInputFeedbackEvent(item, result, status);
+      if (event) options.bus.emit(event);
     },
   });
-  const active = new Map<string, number>();
-  const dirty = new Set<string>();
-  const pending: string[] = [];
-  const queued = new Set<string>();
-  const recoveryPending = new Set<string>();
-  const capacityWaits = new Set<() => void>();
-  let pumpHandle: ReturnType<typeof setTimeout> | null = null;
-  const maxConcurrentRequests = options.maxConcurrentRequests ?? 2;
-  if (!Number.isSafeInteger(maxConcurrentRequests) || maxConcurrentRequests <= 0) {
-    throw new Error("App request concurrency must be a positive safe integer");
-  }
   let closed = false;
   let started = false;
   let startPromise: Promise<void> | null = null;
@@ -627,9 +376,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       log("error", `[app-inbox] ${JSON.stringify(failure)}; reporting failed: ${String(reportError)}`);
     }
   };
-  const report = (appId: string, outcome: AppInboxReconcileResult) => {
-    for (const failure of outcome.failures ?? []) reportFailure({ appId, ...failure });
-  };
   const reportRuntimeFailure = (
     stage: string,
     error: unknown,
@@ -644,146 +390,30 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       disposition: "recovery-pending",
     });
   };
-  const scheduleReady = (appId: string): void => {
-    if (closed || recoveryPending.has(appId)) return;
-    try {
-      if (dirty.has(appId) || host.readyCount(appId) > 0) schedule(appId);
-    } catch (error) {
-      // A later admission or bounded recovery scan rediscovers durable readiness.
-      reportRuntimeFailure("input-readiness", error, appId);
-    }
-  };
-
-  const armPump = (): void => {
-    if (closed || !started || pumpHandle) return;
-    pumpHandle = setTimeout(() => {
-      pumpHandle = null;
-      try {
-        pump();
-      } catch (error) {
-        reportRuntimeFailure("input-dispatch", error);
-        armPump();
-      }
-    }, 0);
-  };
-
-  const pump = (): void => {
-    const activeCount = () => [...active.values()].reduce((total, count) => total + count, 0);
-    if (closed) return;
-    const totalActive = activeCount();
-    const foregroundActive = (options.conversationAppId ? active.get(options.conversationAppId) : undefined) ?? 0;
-    const backgroundActive = totalActive - foregroundActive;
-    const backgroundLimit = maxConcurrentRequests === 1 ? 1 : maxConcurrentRequests - 1;
-    const foregroundIndex = pending.findIndex((appId) => appId === options.conversationAppId);
-    const backgroundIndex = pending.findIndex((appId) => appId !== options.conversationAppId);
-    const nextIndex =
-      foregroundIndex >= 0 && totalActive < maxConcurrentRequests
-        ? foregroundIndex
-        : backgroundIndex >= 0 && totalActive < maxConcurrentRequests && backgroundActive < backgroundLimit
-          ? backgroundIndex
-          : -1;
-    if (nextIndex < 0) return;
-    const [appId] = pending.splice(nextIndex, 1);
-    if (!appId) return;
-    queued.delete(appId);
-    if (recoveryPending.has(appId) || !dirty.has(appId)) {
-      armPump();
-      return;
-    }
-    const appActive = active.get(appId) ?? 0;
-    const agent = loaded.find(({ definition }) => definition.id === appId)?.definition.agent ?? "runtime";
-    active.set(appId, appActive + 1);
-    dirty.delete(appId);
-    // Own the wait as well as execution. Closing releases an unstarted
-    // reservation and settles its dispatch without claiming durable input.
-    void new Promise<(() => void) | undefined>((resolve) => {
-      const cancel = () => {
-        cancelAcquire();
-        capacityWaits.delete(cancel);
-        resolve(undefined);
-      };
-      const acquired = (release: () => void) => {
-        capacityWaits.delete(cancel);
-        resolve(release);
-      };
-      const cancelAcquire =
-        appId === options.conversationAppId
-          ? options.hostCapacity.acquireForegroundCancellable(acquired)
-          : options.hostCapacity.acquireCancellable(acquired);
-      capacityWaits.add(cancel);
-    })
-      .then(async (release) => {
-        if (!release) return;
-        try {
-          if (closed || recoveryPending.has(appId)) return;
-          return await host.reconcileOnce(appId);
-        } finally {
-          release();
-        }
-      })
-      .then((outcome) => {
-        if (!outcome) return;
-        report(appId, outcome);
-        for (const conversationId of outcome.conversationIds ?? []) {
-          notifyConversationUpdated(appId, conversationId);
-        }
-      })
-      .catch((error) => {
-        // A failed claim can remain ready. Even new input must not turn it
-        // into a retry loop; the existing recovery scan releases this App.
-        recoveryPending.add(appId);
-        dirty.delete(appId);
-        reportRuntimeFailure("input-dispatch", error, appId, agent);
-      })
-      .finally(() => {
-        const remaining = (active.get(appId) ?? 1) - 1;
-        if (remaining > 0) active.set(appId, remaining);
-        else active.delete(appId);
-        // Only released claims make the next turn runnable. Never spin on a
-        // Conversation whose current execution still owns the claim.
-        scheduleReady(appId);
-        armPump();
-      });
-    scheduleReady(appId);
-    armPump();
-  };
-
-  const schedule = (appId: string): void => {
-    if (closed || recoveryPending.has(appId) || !host.appIds().includes(appId)) return;
-    dirty.add(appId);
-    if (queued.has(appId)) return;
-    queued.add(appId);
-    pending.push(appId);
-    armPump();
-  };
-
-  let taskRecovery: Promise<void> | null = null;
-  const dependencyRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
-  let nextDependencyRecoveryAt = 0;
-  const recoverTaskDependencies = (): Promise<void> => {
-    if (taskRecovery) return taskRecovery;
+  let inputRecovery: Promise<void> | null = null;
+  const inputRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
+  let nextInputRecoveryAt = 0;
+  const recoverInputs = (): Promise<void> => {
+    if (inputRecovery) return inputRecovery;
+    nextInputRecoveryAt = now() + inputRecoveryIntervalMs;
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
-      .then(() => (closed ? { linked: 0, woken: 0, wokenAppIds: [], errors: [] } : host.recoverTaskDependencies()))
-      .then((outcome) => {
-        for (const appId of outcome.wokenAppIds) schedule(appId);
-        for (const failure of outcome.failures ?? []) reportFailure(failure);
+      .then(async () => {
+        if (closed) return;
+        await host.recoverAdmissions();
+        if (!closed) await host.recoverTaskResults();
       })
       .catch((error) => reportRuntimeFailure("dependency-recovery", error))
       .finally(() => {
-        if (taskRecovery === current) taskRecovery = null;
-        nextDependencyRecoveryAt = now() + dependencyRecoveryIntervalMs;
+        if (inputRecovery === current) inputRecovery = null;
       });
-    taskRecovery = current;
+    inputRecovery = current;
     return current;
   };
 
   const recoverNow = () => {
     if (closed || !started) return;
     const currentTime = now();
-    const readyAppIds = host.readyAppIds();
-    recoveryPending.clear();
-    for (const appId of readyAppIds) schedule(appId);
-    if (currentTime >= nextDependencyRecoveryAt) void recoverTaskDependencies();
+    if (currentTime >= nextInputRecoveryAt) void recoverInputs();
     recoverAdmissionPlans();
   };
 
@@ -818,14 +448,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         );
       }
       if (command.kind === "inbox") {
-        const admitted = host.admit({
+        host.admit({
           appId: command.appId,
           source: { kind: "system", id: identity },
           input: command.input,
           originEventId: plan.eventId,
           idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
         });
-        schedule(admitted.item.appId);
+
       }
       if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
         if (!entry.definition.tasks) {
@@ -865,35 +495,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           });
           if (!delivery) {
             throw new Error(`Canonical App ${command.appId} did not durably admit frozen ${command.routeId}`);
-          }
-        }
-        if (String(event.type) === "app.follow-up.requested" && command.kind === "task" && command.intent) {
-          const data = eventData(event);
-          const conversationId = typeof data.conversationId === "string" ? data.conversationId.trim() : "";
-          const topicId = typeof data.topicId === "string" ? data.topicId.trim() : "";
-          const requestId = typeof data.requestId === "string" ? data.requestId.trim() : "";
-          const followUp = record(data.followUp);
-          const outcome = typeof followUp.outcome === "string" ? followUp.outcome.trim() : "";
-          if (conversationId && requestId && outcome) {
-            options.bus.emit({
-              type: "conversation.message.created",
-              source: "app-task-admission",
-              owner: `app:${command.appId}`,
-              data: {
-                appId: command.appId,
-                conversationId,
-                author: { kind: "tool", id: "runtime" },
-                text: `Accepted durable work: ${outcome}`,
-                metadata: {
-                  requestId,
-                  command: "task-admitted",
-                  ...(topicId ? { topicId } : {}),
-                  taskRefs: [{ appId: command.appId, taskId: command.intent.id }],
-                  followTask: { appId: command.appId, taskId: command.intent.id },
-                },
-                idempotencyKey: `conversation-task-admitted:${conversationId}:${requestId}:${command.appId}:${command.intent.id}`,
-              },
-            });
           }
         }
       }
@@ -1066,7 +667,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const routeSnapshot = registrySnapshot;
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);
-      let dependencyWakeDelivery: DeliveryResult | undefined;
+      // These facts signal state already committed by the Task runtime. They
+      // must not become new input through generic exact-target admission.
+      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped")
+        return { accepted: true, by: "task-runtime-notification", route: "direct" };
+      if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
+        const rows = options.db.prepare(`SELECT DISTINCT conversation_id FROM app_inbox_items
+          WHERE app_id = ? AND conversation_id IS NOT NULL AND
+            (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`)
+          .all(String(data.project ?? ""), String(data.taskId ?? ""), String(data.taskId ?? ""));
+        for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
+      }
       if (event.type === "conversation.turn.stop.requested") {
         host.stopTurn({
           appId: String(data.appId ?? ""),
@@ -1074,7 +685,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           turnId: String(data.turnId ?? ""),
           expectedRevision: Number(data.expectedRevision),
         });
-        schedule(String(data.appId));
         return { accepted: true, by: "conversation-turn-control", route: "direct" };
       }
       const message = addressedAgentMessage(event);
@@ -1092,7 +702,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             channel: `agent:${message.sender}`,
             idempotencyKey: message.identity,
           });
-          schedule(admitted.item.appId);
+
           return {
             accepted: true,
             by: `app-inbox:${admitted.item.appId}:message`,
@@ -1164,7 +774,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
                 ? data.idempotencyKey.trim()
                 : eventIdentity(event),
           });
-          schedule(admitted.item.appId);
+
           notifyConversationUpdated(admitted.item.appId, admitted.item.conversationId);
           return { accepted: true, by: `conversation:${conversationId}:app-inbox:${admitted.item.appId}` };
         }
@@ -1178,31 +788,60 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       if (String(event.type) === "conversation.supervision.review") {
         const appId = typeof data.project === "string" ? data.project.trim() : "";
-        const minQuietMs = Math.max(60_000, Math.floor(Number(data.minQuietMs) || 900_000));
         const limit = Math.min(100, Math.max(1, Math.floor(Number(data.limit) || 100)));
         if (!appId) throw new Error("Conversation supervision review requires its App");
-        const links = listStaleConversationTopicTasks(options.db, appId, {
-          updatedBefore: now() - minQuietMs,
-          limit,
-        });
-        for (const link of links) {
-          const reviewId = eventRowId(event) ?? eventIdentity(event) ?? "review";
-          emitConversationTaskChanged(
-            link,
-            { appId: link.taskAppId, taskId: link.taskId },
-            {
-              followUpId: `recovery:${reviewId}:${link.taskAppId}:${link.taskId}`,
-              reason: "No Task update was observed during the review interval.",
-              idempotencyKey: `conversation-task-recovery:${reviewId}:${link.topicId}:${link.taskAppId}:${link.taskId}`,
-            },
-          );
+        if (options.admitConversationChange) {
+          const changes = listPendingConversationTaskChanges(options.db, appId, limit);
+          for (const change of changes) {
+            emitConversationTaskChanged(
+              change,
+              { appId: change.taskAppId, taskId: change.taskId },
+              {
+                ...change,
+                idempotencyKey: `conversation-change-review:${eventRowId(event)}:${change.topicId}:${change.taskAppId}:${change.taskId}:${change.attemptId ?? `closed:${change.closedGeneration}`}`,
+              },
+            );
+          }
+          return {
+            accepted: true,
+            by: `conversation-changes:${appId}`,
+            route: "direct",
+            note: `${changes.length} missing change input(s) selected`,
+          };
         }
-        return {
-          accepted: true,
-          by: `conversation-supervision:${appId}`,
-          route: "direct",
-          note: `${links.length} quiet linked Task(s) selected for bounded review`,
-        };
+        throw new Error("Conversation Task change admission is not configured");
+      }
+      if (String(event.type) === "conversation.task.changed") {
+        if (!options.admitConversationChange) throw new Error("Conversation Task change admission is not configured");
+        const ref = record(data.taskRef);
+        if (
+          [data.appId, data.conversationId, data.topicId, ref.appId, ref.taskId].every(
+            (value) => typeof value === "string" && value.trim(),
+          )
+        ) {
+          const admitted = options.admitConversationChange({
+            appId: String(data.appId),
+            conversationId: String(data.conversationId),
+            topicId: String(data.topicId),
+            taskAppId: String(ref.appId),
+            taskId: String(ref.taskId),
+            ...(typeof data.closedGeneration === "number" &&
+            Number.isSafeInteger(data.closedGeneration) &&
+            data.closedGeneration > 0
+              ? { closedGeneration: data.closedGeneration }
+              : { attemptId: typeof data.attemptId === "string" ? data.attemptId : "" }),
+          });
+          if (admitted)
+            return {
+              accepted: true,
+              by: `conversation-task:${admitted.taskId}`,
+              route: "direct",
+              note: admitted.created
+                ? "Stored Task change admitted as Conversation input"
+                : "Task change already handled or unavailable",
+            };
+        }
+        throw new Error("Conversation Task change has no available execution owner or exact stored outcome");
       }
       if (event.type === "app.input.requested") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
@@ -1232,7 +871,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               ? data.idempotencyKey.trim()
               : identity,
         });
-        schedule(admitted.item.appId);
+
         return {
           accepted: true,
           by: `app-inbox:${admitted.item.appId}`,
@@ -1240,111 +879,34 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: `request:${admitted.item.id}; ${admitted.created ? "created" : "existing"}`,
         };
       }
-      if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
-        const kind = data.kind;
-        const id = typeof data.id === "string" ? data.id.trim() : "";
-        if ((kind === "app" || kind === "task" || kind === "session") && id) {
-          const taskAppId = kind === "task" && typeof data.appId === "string" ? data.appId.trim() : undefined;
-          if (event.type === "app.dependency.updated" && kind === "task" && taskAppId) {
-            for (const request of listAppInboxItemsWaitingOnTask(options.db, taskAppId, id)) {
-              if (request.source.kind !== "app") continue;
-              options.bus.emit({
-                type: "app.dependency.updated",
-                source: "app-inbox",
-                owner: `app:${request.source.id}`,
-                target: { appId: request.source.id, project: request.source.id },
-                data: {
-                  kind: "app",
-                  id: request.id,
-                  appId: request.source.id,
-                  idempotencyKey: `app-request-updated:${request.id}:${eventRowId(event)}`,
-                },
-              } as unknown as AgentEvent);
-            }
-          }
-          for (const appId of host.wakeAppIds({ kind, id }, taskAppId || undefined)) schedule(appId);
-          // One dependency Event may advance both an inbox request and one or
-          // more Tasks. Preserve the direct inbox wake, then continue through
-          // canonical Task-Condition admission below.
-          dependencyWakeDelivery = { accepted: true, by: "app-inbox:wake" };
-        }
-      }
-      if (event.type === "session.end") {
-        const sessionId = typeof data.sessionId === "string" ? data.sessionId.trim() : "";
-        if (sessionId) {
-          for (const appId of host.wakeAppIds({ kind: "session", id: sessionId })) schedule(appId);
-        }
-      }
-      if (String(event.type) === "project.task.reconciled") {
-        const appId = typeof data.project === "string" ? data.project.trim() : "";
+      if (String(event.type) === "project.task.reconciled" || event.type === "app.task.cancelled") {
+        const closed = event.type === "app.task.cancelled";
+        const sourceAppId = closed ? data.appId : data.project;
+        const appId = typeof sourceAppId === "string" ? sourceAppId.trim() : "";
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
-        const disposition = typeof data.disposition === "string" ? data.disposition.trim() : "";
-        const summary = typeof data.summary === "string" ? data.summary.trim() : "";
         if (appId && taskId) {
+          // One committed Task fact refreshes both exact caller answers and
+          // linked Conversation observations. A wait or retry is not an answer.
+          void host
+            .refreshTaskResults(appId, taskId)
+            .catch((error) => reportRuntimeFailure("input-result", error, appId));
           for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
             emitConversationTaskChanged(
               link,
               { appId, taskId },
               {
-                followUpId: `task-event:${eventRowId(event) ?? `${appId}:${taskId}:${data.generation ?? "?"}`}`,
-                disposition,
-                summary,
+                ...(closed
+                  ? { closedGeneration: Number(data.generation) }
+                  : typeof data.attemptId === "string"
+                    ? { attemptId: data.attemptId }
+                    : {}),
                 idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
               },
             );
           }
         }
-        const conversationResult = record(record(data.result).conversation);
-        const conversationId =
-          typeof conversationResult.conversationId === "string" ? conversationResult.conversationId.trim() : "";
-        const topicId = typeof conversationResult.topicId === "string" ? conversationResult.topicId.trim() : "";
-        const followUpId =
-          typeof conversationResult.followUpId === "string" ? conversationResult.followUpId.trim() : "";
-        const text = typeof conversationResult.text === "string" ? conversationResult.text.trim() : "";
-        const taskRefs = Array.isArray(conversationResult.taskRefs)
-          ? conversationResult.taskRefs
-              .flatMap((value) => {
-                const item = record(value);
-                const refAppId = typeof item.appId === "string" ? item.appId.trim().replace(/\.app$/, "") : "";
-                const refTaskId = typeof item.taskId === "string" ? item.taskId.trim() : "";
-                return refAppId && refTaskId ? [{ appId: refAppId, taskId: refTaskId }] : [];
-              })
-              .slice(0, 100)
-          : [];
-        const followUp = followUpId ? host.get(followUpId) : null;
-        const followUpContext = record(record(followUp?.input.data).conversationContext);
-        const correlatedConversationId =
-          followUp?.source.kind === "app" &&
-          followUp.source.id === appId &&
-          typeof followUpContext.conversationId === "string"
-            ? followUpContext.conversationId.trim()
-            : "";
-        const correlatedTopicId =
-          followUp?.source.kind === "app" && followUp.source.id === appId && typeof followUpContext.topicId === "string"
-            ? followUpContext.topicId.trim()
-            : "";
-        const targetConversationId = correlatedConversationId || conversationId;
-        const targetTopicId = correlatedTopicId || topicId;
-        if (appId && targetConversationId && targetTopicId && followUpId && text) {
-          if (!recordConversationTaskOutcome(options.db, options.bus, {
-            appId, conversationId: targetConversationId, topicId: targetTopicId, followUpId,
-            text, taskRefs, requestUpdates: conversationResult.requestUpdates as AppConversationRequestUpdate[] | undefined,
-            now: now(),
-          })) {
-            options.bus.emit({
-              type: "info",
-              message: `[app-inbox:${appId}] Follow-up ${followUpId} result names unavailable Topic ${targetTopicId}`,
-            });
-          }
-        }
-        if (appId && taskId && appId === options.conversationAppId && disposition === "waiting") {
-          publishConversationTaskWaiting(options.db, options.bus, {
-            appId,
-            taskId,
-            generation: data.generation,
-            summary,
-          });
-        }
+        // Closure is already committed; its notification cannot become fresh Task input.
+        if (closed) return { accepted: true, by: "task-runtime-notification", route: "direct" };
       }
       const identity = eventIdentity(event);
       if (identity) {
@@ -1512,7 +1074,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           };
         }
       }
-      return dependencyWakeDelivery;
+      // An answer can outlive its caller's wait. Keep the saved fact readable
+      // without inventing work when no current Condition or App route needs it.
+      if (event.type === "app.dependency.updated" && data.kind === "app")
+        return { accepted: true, by: "app-input-result", route: "noop" };
     },
     { label: "app-inbox-route" },
   );
@@ -1543,13 +1108,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       started = true;
       // Recovery is scheduled behind admission. It must not delay the caller
       // that opens the human interface or activates this message handler.
-      void recoverTaskDependencies();
+      void recoverInputs();
       recoverAdmissionPlans(true);
       timer.every(scanIntervalMs, scanFromTimer);
       initialRecovery.after(0, scanFromTimer);
       scheduleProducer.start(scanIntervalMs);
       observerRuntime.start(scanIntervalMs);
-      armPump();
       startPromise = Promise.resolve();
       return startPromise;
     },
@@ -1606,12 +1170,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     close() {
       if (closed) return;
       closed = true;
-      for (const cancel of capacityWaits) cancel();
-      recoveryPending.clear();
+      host.close();
       timer.close();
       initialRecovery.close();
-      if (pumpHandle) clearTimeout(pumpHandle);
-      pumpHandle = null;
       if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
       if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
@@ -1625,9 +1186,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       observerRuntime.close();
       scheduleProducer.close();
       unsubscribe();
-      pending.length = 0;
-      queued.clear();
-      dirty.clear();
     },
   };
   if (!options.deferStart) await runtime.start();

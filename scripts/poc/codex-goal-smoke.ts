@@ -153,7 +153,6 @@ async function main(): Promise<void> {
     }
     const taskResultAdmission = admitCodexGoalTaskResult(answer, {
       allowNeedsAgent: false,
-      defaultParentId: argument("--default-parent") ?? "poc-root",
     });
     await sampleResources();
     process.stdout.write(

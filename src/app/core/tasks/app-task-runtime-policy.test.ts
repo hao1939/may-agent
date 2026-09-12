@@ -38,7 +38,6 @@ describe("App Task agent prompt context", () => {
     expect(protocol).toContain("agent pursuing one Task goal owned by App may");
     expect(protocol).not.toContain("accountable owner");
     expect(protocol).toContain("Finish exactly once with finish().result");
-    expect(protocol).toContain("Return state waiting only for an exact observable Condition");
     expect(protocol).toContain("Runtime publishes and correlates it");
     expect(protocol).not.toContain("Converged example");
   });
@@ -117,7 +116,7 @@ describe("App Task agent prompt context", () => {
 describe("Task Condition reconciliation authority", () => {
   const canonical = {
     id: "app-request:appdep_exact",
-    type: "app.dependency.completed",
+    type: "app.dependency.updated",
     subject: "id:appdep_exact",
     expected: { field: "status", equals: "done" },
   };

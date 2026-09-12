@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
+import type { AppConversationResource, AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
+import type { AppTaskAttempt } from "../tasks/app-task-state.js";
+import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
 
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
@@ -15,7 +17,7 @@ export type AppInboxHandling =
 
 export type AppTurnTarget = { appId: string; conversationId: string; turnId: string; expectedRevision: number };
 
-export type AppInboxTaskDependencyKey = { appId: string; taskId: string };
+export type AppInboxTaskDependencyKey = { appId: string; taskId: string; inputId: string; admissionKey?: string };
 
 export type AppInboxTaskDependencyPage = {
   items: AppInboxTaskDependencyKey[];
@@ -43,6 +45,10 @@ export type AppInboxItem = {
   status: AppInboxStatus;
   sessionId?: string;
   waitingOn?: { kind: AppInboxWaitKind; id: string };
+  /** Admission whose exact outcome this input awaits; independent of later Task cycles. */
+  taskAdmissionKey?: string;
+  /** The Task owns execution; this row only retains Conversation input and its reply. */
+  executionTaskId?: string;
   result?: AppResult;
   handling?: AppInboxHandling;
   availableAt?: number;
@@ -77,13 +83,6 @@ export type CreateAppInboxItem = {
   now?: number;
 };
 
-export type AppInboxClaim = {
-  item: AppInboxItem;
-  generation: number;
-  owner: string;
-};
-
-/** A claim durably associated with the exact agent session that was executing it. */
 export type AppInboxQuery = {
   appId?: string;
   status?: AppInboxStatus;
@@ -162,6 +161,8 @@ function rowToItem(row: InboxRow): AppInboxItem {
     status: requiredText(row.status, "status") as AppInboxStatus,
     sessionId: optionalText(row.session_id),
     waitingOn: waitingKind && waitingId ? { kind: waitingKind, id: waitingId } : undefined,
+    taskAdmissionKey: optionalText(row.task_admission_key),
+    executionTaskId: optionalText(row.execution_task_id),
     result: result ? parseJson<AppResult>(result, "result") : undefined,
     handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
     availableAt: optionalNumber(row.available_at),
@@ -223,16 +224,38 @@ export function readActiveAppTurn(
   db: SqliteDb,
   appId: string,
   conversationId: string,
-):
-  | {
-      id: string;
-      revision: number;
-      channel?: string;
-      channelTargetId?: string;
-      channelThreadId?: string;
-      channelMessageId?: number;
-    }
-  | undefined {
+): AppConversationResource["activeTurn"] {
+  const attempt = db
+    .prepare(
+      `SELECT a.attempt_id, a.task_generation, a.attempt_json FROM app_tasks t
+     JOIN app_task_attempts a ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
+     WHERE t.app_id = ? AND t.task_id = (
+       SELECT execution_task_id FROM app_inbox_items
+       WHERE app_id = ? AND conversation_id = ? AND execution_task_id IS NOT NULL LIMIT 1
+     ) AND a.state = 'running'`,
+    )
+    .get(appId, appId, conversationId);
+  if (attempt) {
+    const claimed = parseJson<AppTaskAttempt>(attempt.attempt_json, "Task attempt");
+    // Match the claimed batch's reply destination; newly queued input cannot
+    // move the active Turn or its Stop button to a different surface.
+    const inputs = taskInputAdmissionKeys(claimed.events ?? [], claimed.continuedInputKeys)
+      .map((key) =>
+        key.startsWith("conversation-input:") ? getAppInboxItem(db, key.slice("conversation-input:".length)) : null,
+      )
+      .filter((item) =>
+        item?.appId === appId && item.conversationId === conversationId && item.executionTaskId === claimed.taskId,
+      );
+    const source = inputs.filter((item) => item?.source.kind === "human").at(-1) ?? inputs.at(-1);
+    return {
+      id: String(attempt.attempt_id),
+      revision: Number(attempt.task_generation),
+      ...(source?.channel ? { channel: source.channel } : {}),
+      ...(source?.channelTargetId ? { channelTargetId: source.channelTargetId } : {}),
+      ...(source?.channelThreadId ? { channelThreadId: source.channelThreadId } : {}),
+      ...(source?.channelMessageId ? { channelMessageId: source.channelMessageId } : {}),
+    };
+  }
   const row = db
     .prepare(
       `SELECT id, lease_generation, channel, channel_target_id, channel_thread_id, channel_message_id FROM app_inbox_items
@@ -364,38 +387,6 @@ export function listAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, task
     .map(rowToItem);
 }
 
-/** Human conversations currently awaiting one exact Task. */
-export function listHumanAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, taskId: string): AppInboxItem[] {
-  return listAppInboxItemsWaitingOnTask(db, appId, taskId).filter(
-    (item) => item.source.kind === "human" && item.conversationId !== undefined,
-  );
-}
-
-/** Human Conversation requests whose current Task is waiting on one exact App request. */
-export function listHumanAppInboxItemsWaitingOnAppRequest(db: SqliteDb, requestId: string): AppInboxItem[] {
-  const normalizedRequestId = requiredText(requestId, "requestId");
-  return db
-    .prepare(
-      `SELECT DISTINCT inbox.*
-       FROM app_task_conditions condition
-       JOIN app_task_condition_routes route
-         ON route.app_id = condition.app_id AND route.condition_id = condition.condition_id
-       JOIN app_inbox_items inbox
-         ON inbox.app_id = route.app_id
-        AND inbox.waiting_on_kind = 'task'
-        AND inbox.waiting_on_id = route.task_id
-       WHERE condition.condition_id = ?
-         AND json_extract(condition.condition_json, '$.spec.type') = 'app.dependency.completed'
-         AND json_extract(condition.condition_json, '$.spec.subject') = ?
-         AND inbox.source_kind = 'human'
-         AND inbox.conversation_id IS NOT NULL
-         AND inbox.status = 'handling'
-       ORDER BY inbox.created_at, inbox.id`,
-    )
-    .all(`app-request:${normalizedRequestId}`, `id:${normalizedRequestId}`)
-    .map(rowToItem);
-}
-
 /** Bounded request evidence used to project Conversation messages. */
 export function listAppInboxConversationItems(
   db: SqliteDb,
@@ -421,26 +412,7 @@ export function listAppInboxConversationItems(
     .map(rowToItem);
 }
 
-export function associateAppInboxClaimTopic(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  topicId: string,
-  now = Date.now(),
-): boolean {
-  const id = requiredText(topicId, "topic id");
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET topic_id = ?, changed_at = ?, updated_at = ?
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?
-         AND (topic_id IS NULL OR topic_id = ?)`,
-      [id, now, now, claim.item.id, claim.generation, claim.owner, id],
-    ).changes === 1
-  );
-}
-
-/** One bounded page of distinct canonical Task dependencies awaiting review. */
+/** One bounded page of input-to-Task links awaiting their exact results. */
 export function listAppInboxTaskDependencyKeys(
   db: SqliteDb,
   options: { after?: AppInboxTaskDependencyKey; limit?: number } = {},
@@ -452,24 +424,26 @@ export function listAppInboxTaskDependencyKeys(
   const after = options.after;
   const rows = db
     .prepare(
-      `SELECT app_id, waiting_on_id
+      `SELECT app_id, waiting_on_id, id, task_admission_key
        FROM app_inbox_items INDEXED BY idx_app_inbox_task_wait_recovery
        WHERE status = 'handling'
          AND lease_owner IS NULL
          AND waiting_on_kind = 'task'
          AND waiting_on_id IS NOT NULL
-         ${after ? "AND (app_id, waiting_on_id) > (?, ?)" : ""}
-       GROUP BY app_id, waiting_on_id
-       ORDER BY app_id, waiting_on_id
+         ${after ? "AND (app_id, waiting_on_id, id) > (?, ?, ?)" : ""}
+       ORDER BY app_id, waiting_on_id, id
        LIMIT ?`,
     )
     .all(
-      ...(after ? [requiredText(after.appId, "after.appId"), requiredText(after.taskId, "after.taskId")] : []),
+      ...(after ? [requiredText(after.appId, "after.appId"), requiredText(after.taskId, "after.taskId"),
+        requiredText(after.inputId, "after.inputId")] : []),
       limit + 1,
     )
     .map((row) => ({
       appId: requiredText(row.app_id, "app_id"),
       taskId: requiredText(row.waiting_on_id, "waiting_on_id"),
+      inputId: requiredText(row.id, "id"),
+      ...(optionalText(row.task_admission_key) ? { admissionKey: optionalText(row.task_admission_key) } : {}),
     }));
   const items = rows.slice(0, limit);
   return {
@@ -491,6 +465,11 @@ export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: 
               SUM(CASE WHEN status = 'handling' THEN 1 ELSE 0 END) AS handling,
               SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
               SUM(CASE WHEN status != 'done'
+                            AND execution_task_id IS NULL
+                            AND NOT EXISTS (SELECT 1 FROM app_inbox_items owned
+                              WHERE owned.app_id = app_inbox_items.app_id
+                                AND owned.conversation_id = app_inbox_items.conversation_id
+                                AND owned.execution_task_id IS NOT NULL)
                             AND ((lease_owner IS NULL AND available_at IS NOT NULL AND available_at <= ?)
                               OR (lease_expires_at IS NOT NULL AND lease_expires_at <= ?))
                        THEN 1 ELSE 0 END) AS ready,
@@ -609,348 +588,4 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
     }
   }
   return { item, created: false };
-}
-
-export function listUnlinkedAppDelegations(db: SqliteDb, limit = 100): AppInboxItem[] {
-  if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error("Delegation query limit must be positive");
-  return (
-    db
-      .prepare(
-        `SELECT * FROM app_inbox_items
-         WHERE parent_id IS NOT NULL
-           AND source_kind = 'app'
-           AND origin_event_id IS NULL
-           AND idempotency_key LIKE 'delegate:%'
-         ORDER BY created_at, id
-         LIMIT ?`,
-      )
-      .all(limit) as InboxRow[]
-  ).map(rowToItem);
-}
-
-const CLAIMABLE_SQL = `
-  status != 'done'
-  AND (
-    (lease_owner IS NULL AND available_at IS NOT NULL AND available_at <= ?)
-    OR (lease_expires_at IS NOT NULL AND lease_expires_at <= ?)
-  )
-`;
-
-function claimedRow(
-  db: SqliteDb,
-  whereSql: string,
-  whereParams: unknown[],
-  owner: string,
-  leaseMs: number,
-  now: number,
-): AppInboxClaim | null {
-  requiredText(owner, "lease owner");
-  if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
-  const row = db
-    .prepare(
-      `UPDATE app_inbox_items
-       SET status = 'handling',
-           available_at = NULL,
-           session_id = NULL,
-           started_at = COALESCE(started_at, ?),
-           changed_at = ?,
-           lease_generation = lease_generation + 1,
-           lease_owner = ?,
-           lease_expires_at = ?,
-           updated_at = ?
-       WHERE ${whereSql}
-       RETURNING *`,
-    )
-    .get(now, now, owner, now + leaseMs, now, ...whereParams);
-  if (!row) return null;
-  const item = rowToItem(row);
-  return { item, generation: item.lease!.generation, owner };
-}
-
-export function claimAppInboxItem(
-  db: SqliteDb,
-  id: string,
-  owner: string,
-  leaseMs: number,
-  now = Date.now(),
-): AppInboxClaim | null {
-  return claimedRow(
-    db,
-    `id = ? AND ${CLAIMABLE_SQL}
-     AND (
-       conversation_id IS NULL
-       OR NOT EXISTS (
-         SELECT 1 FROM app_inbox_items active
-         WHERE active.app_id = app_inbox_items.app_id
-           AND active.conversation_id = app_inbox_items.conversation_id
-           AND active.id != app_inbox_items.id
-           AND active.lease_owner IS NOT NULL
-           AND active.lease_expires_at > ?
-       )
-     )`,
-    [id, now, now, now],
-    owner,
-    leaseMs,
-    now,
-  );
-}
-
-/** `candidate` is the ready input; IDs are bound parameters, never SQL text. */
-export function excludeExecutingConversations(executingIds: string[]): string {
-  return executingIds.length
-    ? `AND NOT EXISTS (
-    SELECT 1 FROM app_inbox_items local
-    WHERE local.id IN (${executingIds.map(() => "?").join(",")})
-      AND (local.id = candidate.id OR
-        (local.app_id = candidate.app_id AND local.conversation_id = candidate.conversation_id))
-  )`
-    : "";
-}
-
-export function claimNextAppInboxItem(
-  db: SqliteDb,
-  appId: string,
-  owner: string,
-  leaseMs: number,
-  now = Date.now(),
-  executingIds: string[] = [],
-): AppInboxClaim | null {
-  requiredText(appId, "appId");
-  requiredText(owner, "lease owner");
-  if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
-
-  const row = db
-    .prepare(
-      `UPDATE app_inbox_items
-       SET status = 'handling',
-           available_at = NULL,
-           session_id = NULL,
-           started_at = COALESCE(started_at, ?),
-           changed_at = ?,
-           lease_generation = lease_generation + 1,
-           lease_owner = ?,
-           lease_expires_at = ?,
-           updated_at = ?
-       WHERE id = (
-         SELECT candidate.id
-         FROM app_inbox_items candidate
-         WHERE candidate.app_id = ?
-           ${excludeExecutingConversations(executingIds)}
-           AND candidate.status != 'done'
-           AND (
-             (candidate.lease_owner IS NULL
-               AND candidate.available_at IS NOT NULL
-               AND candidate.available_at <= ?)
-             OR (candidate.lease_expires_at IS NOT NULL
-               AND candidate.lease_expires_at <= ?)
-           )
-           AND (
-             candidate.conversation_id IS NULL
-             OR NOT EXISTS (
-               SELECT 1 FROM app_inbox_items active
-               WHERE active.app_id = candidate.app_id
-                 AND active.conversation_id = candidate.conversation_id
-                 AND active.id != candidate.id
-                 AND active.lease_owner IS NOT NULL
-                 AND active.lease_expires_at > ?
-             )
-           )
-         ORDER BY candidate.created_at, candidate.conversation_seq, candidate.id
-         LIMIT 1
-       )
-       RETURNING *`,
-    )
-    .get(now, now, owner, now + leaseMs, now, appId, ...executingIds, now, now, now);
-  if (!row) return null;
-  const item = rowToItem(row);
-  return { item, generation: item.lease!.generation, owner };
-}
-
-export function renewAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, leaseMs: number, now = Date.now()): boolean {
-  if (!Number.isFinite(leaseMs) || leaseMs <= 0) throw new Error("App inbox leaseMs must be positive");
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET lease_expires_at = ?, updated_at = ?
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?`,
-      [now + leaseMs, now, claim.item.id, claim.generation, claim.owner],
-    ).changes === 1
-  );
-}
-
-/** Check at the effect's transaction boundary, not only after execution. */
-export function assertAppInboxClaim(db: SqliteDb, claim: AppInboxClaim, now = Date.now()): void {
-  const item = getAppInboxItem(db, claim.item.id);
-  if (
-    item?.status !== "handling" ||
-    item.lease?.owner !== claim.owner ||
-    item.lease.generation !== claim.generation ||
-    item.lease.expiresAt <= now
-  )
-    throw new Error("claim is stale");
-}
-
-export function recordAppInboxHandling(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  handling: AppInboxHandling | null,
-  now = Date.now(),
-): void {
-  const changed = db.run(
-    `UPDATE app_inbox_items SET handling = ?, updated_at = ?
-    WHERE id = ? AND status = 'handling' AND lease_owner = ? AND lease_generation = ? AND lease_expires_at > ?`,
-    [handling ? JSON.stringify(handling) : null, now, claim.item.id, claim.owner, claim.generation, now],
-  ).changes;
-  if (changed !== 1) throw new Error("claim is stale");
-}
-
-export function associateAppInboxClaimSession(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  sessionId: string,
-  now = Date.now(),
-): boolean {
-  requiredText(sessionId, "sessionId");
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET session_id = ?, changed_at = ?, updated_at = ?
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?`,
-      [sessionId, now, now, claim.item.id, claim.generation, claim.owner],
-    ).changes === 1
-  );
-}
-
-export function waitAppInboxClaim(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  waitingOn: { kind: AppInboxWaitKind; id: string },
-  options: { reviewAfterMs?: number; now?: number } = {},
-): boolean {
-  requiredText(waitingOn.id, "waitingOn.id");
-  const now = options.now ?? Date.now();
-  const reviewAt = options.reviewAfterMs === undefined ? null : now + options.reviewAfterMs;
-  if (options.reviewAfterMs !== undefined && (!Number.isFinite(options.reviewAfterMs) || options.reviewAfterMs < 0)) {
-    throw new Error("App inbox reviewAfterMs must be finite and non-negative");
-  }
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET waiting_on_kind = ?, waiting_on_id = ?, review_at = ?, available_at = ?,
-           session_id = NULL, lease_owner = NULL, lease_expires_at = NULL, changed_at = ?, updated_at = ?
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?`,
-      [waitingOn.kind, waitingOn.id, reviewAt, reviewAt, now, now, claim.item.id, claim.generation, claim.owner],
-    ).changes === 1
-  );
-}
-
-export function wakeAppInboxItem(db: SqliteDb, id: string, now = Date.now()): boolean {
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET available_at = CASE
-             WHEN available_at IS NULL OR available_at > ? THEN ?
-             ELSE available_at
-           END,
-           review_at = NULL,
-           updated_at = ?
-       WHERE id = ? AND status = 'handling' AND lease_owner IS NULL`,
-      [now, now, now, id],
-    ).changes === 1
-  );
-}
-
-/** Wake every unfinished item explicitly waiting on a completed dependency. */
-export function wakeAppInboxItemsWaitingOn(
-  db: SqliteDb,
-  waitingOn: { kind: AppInboxWaitKind; id: string },
-  now = Date.now(),
-): number {
-  return wakeAppInboxItemsWaitingOnScope(db, waitingOn, now);
-}
-
-/** Wake one dependency only inside its canonical App scope. */
-export function wakeAppInboxItemsWaitingOnApp(
-  db: SqliteDb,
-  appId: string,
-  waitingOn: { kind: AppInboxWaitKind; id: string },
-  now = Date.now(),
-): number {
-  return wakeAppInboxItemsWaitingOnScope(db, waitingOn, now, requiredText(appId, "appId"));
-}
-
-function wakeAppInboxItemsWaitingOnScope(
-  db: SqliteDb,
-  waitingOn: { kind: AppInboxWaitKind; id: string },
-  now: number,
-  appId?: string,
-): number {
-  requiredText(waitingOn.id, "waitingOn.id");
-  const result = db.run(
-    `UPDATE app_inbox_items
-     SET available_at = CASE
-           WHEN available_at IS NULL OR available_at > ? THEN ?
-           ELSE available_at
-         END,
-         review_at = NULL,
-         updated_at = ?
-     WHERE status = 'handling'
-       AND lease_owner IS NULL
-       AND waiting_on_kind = ?
-       AND waiting_on_id = ?
-       ${appId ? "AND app_id = ?" : ""}
-       AND (available_at IS NULL OR available_at > ? OR review_at IS NOT NULL)`,
-    [now, now, now, waitingOn.kind, waitingOn.id, ...(appId ? [appId] : []), now],
-  );
-  return result.changes;
-}
-
-export function completeAppInboxClaim(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  result: AppResult,
-  now = Date.now(),
-): boolean {
-  requiredText(result.summary, "result.summary");
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET status = 'done', result = ?, completed_at = ?, changed_at = ?, updated_at = ?,
-           waiting_on_kind = NULL, waiting_on_id = NULL,
-           review_at = NULL, available_at = NULL,
-           lease_owner = NULL, lease_expires_at = NULL
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?`,
-      [JSON.stringify(result), now, now, now, claim.item.id, claim.generation, claim.owner],
-    ).changes === 1
-  );
-}
-
-export function releaseAppInboxClaim(
-  db: SqliteDb,
-  claim: AppInboxClaim,
-  options: { retryAfterMs?: number; now?: number } = {},
-): boolean {
-  const now = options.now ?? Date.now();
-  const retryAfterMs = options.retryAfterMs ?? 0;
-  if (!Number.isFinite(retryAfterMs) || retryAfterMs < 0) {
-    throw new Error("App inbox retryAfterMs must be finite and non-negative");
-  }
-  const retryAt = now + retryAfterMs;
-  return (
-    db.run(
-      `UPDATE app_inbox_items
-       SET status = CASE WHEN waiting_on_kind IS NULL THEN 'pending' ELSE 'handling' END,
-           available_at = CASE WHEN waiting_on_kind IS NULL THEN ? ELSE NULL END,
-           review_at = CASE WHEN waiting_on_kind IS NULL THEN review_at ELSE NULL END,
-           session_id = NULL,
-           lease_owner = NULL, lease_expires_at = NULL, changed_at = ?, updated_at = ?
-       WHERE id = ? AND status = 'handling'
-         AND lease_generation = ? AND lease_owner = ?`,
-      [retryAt, now, now, claim.item.id, claim.generation, claim.owner],
-    ).changes === 1
-  );
 }

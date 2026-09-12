@@ -1,124 +1,80 @@
-# Conversation handling and state
+# Human interaction within the Task loop
 
-This directory owns the replaceable conversational frontend, not storage.
-[`context.ts`](context.ts) selects bounded context;
-[`turn-handler.ts`](turn-handler.ts) validates answers/effects and calls state
-operations; [`turn-agent.ts`](turn-agent.ts) invokes the shared model/tool runner.
-[`composition/conversation-inbox.ts`](../composition/conversation-inbox.ts)
-wires that capability into the generic inbox Host through
-[`AppInputHandler`](../core/inbox/input-handler.ts). The Host keeps admission,
-ordering, claims, Stop and recovery. Task-only operation can omit this frontend
-without losing unrelated Task execution or retained Conversation reads.
+Conversation describes a Task's interaction with a human. It keeps messages,
+Topics and accepted Requests; the Task owns execution, waits, retry and closure.
+This directory supplies context and agent judgment for that role. It has no
+controller or independent execution claim.
 
-Composition selects `conversationAppId` for foreground input capacity and the
-frontend's Task status presentation. The shipped Host selects `may`; the shared
-scheduler does not recognize a particular App name. [`task-status.ts`](task-status.ts)
-owns waiting-message wording/deduplication and the conventional
-`conversation/follow-up` self-wake suppression. The latter follows the owning
-Conversation, so retained follow-up work cannot wake itself through live Task
-updates or supervision recovery if selection changes or is omitted. Both paths
-apply the safeguard before projecting a Task change; other Apps can still
-observe it. Omitting selection leaves inputs in the background lane; the shared
-capacity limit and reserve remain unchanged.
-This internal selection does not rename an installed App or change its stored
-identities, event routes, or turn-handler declarations.
+## Follow one input
 
-Start storage reads at `readAppConversationResource()` in
-[`core/state/conversations.ts`](../core/state/conversations.ts). It owns message
-projection, Topic creation/search/pagination and exact Topic-to-Task links in
-the same Host database. It reads typed input evidence through
-`listAppInboxConversationItems()` in [`core/state/app-inbox-store.ts`](../core/state/app-inbox-store.ts). That store retains
-input admission and claim primitives; projection has no scheduler or lifecycle.
+```text
+human input / linked Task outcome / relevant timer-discovered change
+  -> durable input on the same stable Task
+  -> common Task claim and bounded attempt
+  -> prepare human context and invoke the App's agent
+  -> commit answer, Request updates and authorized effects together
+  -> release execution; run again for pending input or paced retry
+```
 
+[`context.ts`](context.ts) selects bounded messages, Topics, Requests and canonical
+Task observations. [`turn-agent.ts`](turn-agent.ts) invokes the model/tool runner
+and validates `ConversationTurnResult`. The agent can answer, request a handoff,
+or apply an authorized control; it does not manage admission receipts or retry.
+The `conversation_context` tool reads omitted history and full Request records.
+
+[`composition/conversation-task-turn.ts`](../composition/conversation-task-turn.ts)
+prepares the judgment under the current Task claim and validates contextual
+handoff/control targets. [`composition/task-execution.ts`](../composition/task-execution.ts)
+wires this handler into the [Task runtime](../core/tasks/README.md), which owns
+capacity, attempts, session binding, cancellation and backoff for every Task.
+A handler-specific result shape is not a second lifecycle.
+
+## Durable effects and follow-through
+
+[`core/state/conversation-task-turns.ts`](../core/state/conversation-task-turns.ts)
+commits the reply, Topic selection, Request updates, Task result and any admitted
+work or authorized control in one fenced transaction. Failed settlement retains
+the input for normal Task retry. Rejected proposals do not publish a misleading
+reply. Previous-attempt evidence lets the App correct its decision after backoff,
+including after storage reopen; there is no extra conversational retry loop.
+
+A handoff links the responsible Task to the caller's Topic and, when declared,
+accepted Request. Linked answers, honest failure reports and owner closures
+return as durable input. Intermediate waits remain readable without executing
+the caller. Live events provide prompt return; bounded discovery finds missed
+changes. The agent judges whether the evidence resolves the accepted ask.
+Completing an attempt or an inbox item does not itself fulfill a Request.
+
+Task A can discuss with a human while B works, and B can delegate C. All use the
+same Task controller. The App/parent/human owns assignment closure; an accepted
+answer or worker failure report leaves the Task open.
+
+[`core/state/conversations.ts`](../core/state/conversations.ts) owns message and
+Topic reads, including canonical resolution of short Topic references.
 [`core/state/conversation-requests.ts`](../core/state/conversation-requests.ts)
-stores the accepted human ask separately from input handling:
-App/Conversation-scoped ID, current scope/revision, exact Task links, and
-open/closed with closure reason and message identity. Apps return
-`requestUpdates`; the Host validates versions, persists acceptance before a
-handoff and commits closure with the answer. It never infers fulfillment from
-a Task status. Admission links the actual Task in the same state transaction.
-Request updates add exact Task links; empty or omitted `taskRefs` never erase
-admitted work. Duplicate links are ignored, with at most 32 distinct links per
-Request, including links added by later updates.
+owns accepted asks, revision checks and exact Task links. These are product
+records and projections, not schedulers or additional work lifecycles.
 
-The `conversation_context` tool in `turn-agent.ts` uses the shared state reads
-to page open asks (`requests`, `afterId`) and read full scope (`request`, `id`).
-Bounded prompts keep whole records; an omitted record must be read before
-changing it. The Host's
-handoff path can resolve an omitted ask from the scoped store and rechecks its
-open status and recorded revision at Task admission. May's existing
-supervision result can supply `result.conversation.requestUpdates`; stale
-closures fail without losing the accepted scope or accepting a false answer.
-The existing recovery scan also selects terminal linked Tasks with an open
-ask. Discussion-only asks do not create periodic work, and no Request owns
-execution, retries or another controller. Historical asks are not backfilled.
+## Controls and boundaries
 
-The input Host binds each executing claim to its exact session. Losing claim
-ownership aborts that execution locally; it does not crash the daemon. Replies,
-Task controls and admissions revalidate authority at their commit boundary.
-Already accepted effects are not undone. Cancellation retains capacity until
-the executor settles, and database/reporting failures do not bypass cleanup.
+Console Esc and interface Stop buttons address an exact observed Turn. Task
+state records the stop before local execution is aborted, rejects late output,
+and preserves newer input and the accepted ask. Delegated Tasks continue.
+Closing the stable Task is a separate authorized owner action.
 
-`ConversationTurnResult` is the single interactive Turn contract: answer, apply
-an authorized Task control, or hand off to one responsible Task. Both the agent
-adapter and handler enforce it, including for a frontend without its own Task
-capability. `AppRequestDecision` and `appRequestAgentResultSchema` are deprecated
-aliases of this contract; neither accepts `dependencies`. `AppRequest` remains
-an alias of `AppInputContext`, not an accepted Request resource.
+Omitting this handler leaves its input visible and prevents execution through
+an old inbox owner; other Task handlers continue to work. The candidate refuses
+cutover when unfinished legacy input still has a different execution owner.
+The isolated old-to-new daemon fixture verifies shutdown, conversion and fresh
+input after restart. Its [procedure and limits](../../../test/README.md#shared-task-execution-coverage)
+do not certify an installation-specific rollout or rollback.
 
-Direct human turns persist a small `handling` record before model execution.
-A failed or interrupted execution, or a rejected Task control/handoff, finishes
-input handling with an explicit failure response, not fulfillment. It needs
-new human input to try again; already admitted work continues independently.
-A validated decision is saved before applying effects, so recovery can replay
-idempotent admission/publication after a crash or failed result write without
-rerunning the model. Rejected decisions or effects end the turn, including
-when recovery finds that a handoff's target App is no longer available.
-Task callers keep their separate Task-result handling contract.
-Row `done` means input handling ended; inspect `handling` and the result for
-its disposition.
+Start verification at `core/tasks/conversation-runtime.test.ts` for actual
+execution and `core/state/conversation-task-turns.test.ts` for atomic effects and
+reopen. `turn-agent.test.ts` owns context tools and result validation. The
+[test coverage map](../../../test/README.md#shared-task-execution-coverage)
+records migration of old callback tests and its remaining limits.
 
-Console Esc and Telegram/browser Stop buttons observe `activeTurn` and publish
-`conversation.turn.stop.requested` with that exact ID and revision. The Host
-persists `stopped` before aborting, without waiting behind model execution.
-Recovery cannot replay it. Old/duplicate controls never select a newer turn.
-Independent Tasks continue; stopping a turn does not close its accepted ask.
-Console preserves drafts and dismisses completion first. Browser May chat reads
-the shared Conversation over HTTP; it no longer selects a default session.
-Stopping, then sending a correction can update the same accepted Request;
-seamless current-turn steering remains separate follow-up work.
-
-[`composition/app-inbox-runtime.ts`](../composition/app-inbox-runtime.ts) attaches cleanup before dispatch/readiness reads and
-contains detached recovery failures. Structured `handler.failed` diagnostics
-retain known work identity, stage, error and disposition. Failed diagnostic
-persistence falls back to the independent logger, without replaying execution.
-
-Callers pass the existing database connection. Core state operations own the
-coordinated commits: [`conversation-turns.ts`](../core/state/conversation-turns.ts)
-accepts decisions with Topics and Request updates;
-[`inbox.ts`](../core/state/inbox.ts) attaches Task work and completes inputs with
-Request closure; [`conversation-outcomes.ts`](../core/state/conversation-outcomes.ts)
-records supervised outcomes with their explanation and Request updates.
-Execution stays outside those transactions. There is no new database, cache,
-background process or alternate state authority.
-
-The database upgrade retires unfinished conversational child waits as failed
-input handling. It preserves accepted Requests, existing child inputs, Tasks,
-Topic links, results and history. Those Tasks continue independently. A failed
-turn is visible as `failure:<inputId>` alongside any earlier acknowledgment;
-new human input is needed to review the remaining work. This deliberately gives
-up automatic child-result aggregation without keeping a second execution path.
-Task-to-Task/App dependencies are unaffected. The upgrade is covered by
-[`retired-conversation-waits.test.ts`](../core/state/retired-conversation-waits.test.ts),
-including file-backed reopen, stale claims and continuation of admitted work.
-
-[`core/state/conversations.test.ts`](../core/state/conversations.test.ts) covers
-message deduplication, bounded views, Topic discovery and reopen reads.
-[`conversation-requests.test.ts`](../core/state/conversation-requests.test.ts)
-covers scoped asks and revision fences. [`turn-agent.test.ts`](turn-agent.test.ts)
-exercises context discovery, result schemas and a scripted real-tool repair loop;
-it does not prove live model judgment. Inbox ownership, failure, completion,
-Task attachment and transport tests retain the integration coverage.
-
-The canonical design is
-[Message Lifecycle](../../../../may-agent.app/docs/2a-design/message-lifecycle.md).
+The canonical design and PoC evidence live in the sibling App project's
+`docs/proposals/conversation-input-unification.md`; this guide describes the
+candidate source, not a deployed release.

@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { buildSandbox } from "./lib/sandbox.js";
 import { openSandboxDb, pollUntil, socketEmit, socketStatus } from "./lib/live-daemon.js";
 
@@ -158,22 +159,31 @@ test.each(["waiting", "running"] as const)(
           },
           {
             timeoutMs: 10000,
-            description: "same Task completes after restart",
+            description: "same Task accepts an outcome after restart",
           },
         );
         expect(completed).toMatchObject({ id: "work/main", summary: "Exact fact observed" });
-        const receipts = db
-          .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = 'sample'")
-          .all() as Array<{
-          receipt_json: string;
-        }>;
-        expect(receipts).toHaveLength(1);
-        expect(JSON.parse(receipts[0].receipt_json).metadata).toMatchObject({
+        const store = AppTaskResourceStore.activeFromDb(db, "sample")!;
+        const retained = store.readTask("work/main")!;
+        expect(retained.metadata).toMatchObject({
           id: "work/main",
           generation: waiting.generation,
         });
+        expect(store.readAttempt(retained.status.observedAttemptId!)).toMatchObject({
+          taskId: "work/main",
+          taskGeneration: waiting.generation,
+          state: "completed",
+          acceptedResult: {
+            state: "converged",
+            summary: "Exact fact observed",
+            evidence: ["project.approval.submitted"],
+          },
+        });
+        expect(retained.status.currentAttemptId).toBeUndefined();
+        expect(store.isCancelled("work/main")).toBe(false);
+        expect(store.readReceipt("work/main")).toBeNull();
         expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks WHERE app_id = 'sample'").get()).toEqual({
-          count: 0,
+          count: 1,
         });
         expect(
           db.prepare("SELECT COUNT(*) AS count FROM events WHERE source = 'app:sample:schedule:disabled'").get(),

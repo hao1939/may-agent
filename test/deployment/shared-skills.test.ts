@@ -72,7 +72,7 @@ describe("shared system skills", () => {
     const content = readSkill("agents/may/skills/may-agent-system/SKILL.md");
     expect(content).toContain("project.comment.created event -> declared App route -> App Task -> accepted result");
     expect(content).toContain("The agent core does not import EventBus, SQLite, metrics, tasks, scheduling, or");
-    expect(content).toContain("`app.dependency.completed` wakes the exact parent Task");
+    expect(content).toContain("`app.dependency.updated` wakes the exact parent Task");
     expect(content).toMatch(/every\s+addressed request keeps its own identity and result/);
     expect(content).toContain("return one semantic event receipt without wrapper");
     expect(content).toMatch(/Task persistence is host-private and\s+reconciler-owned/);
@@ -85,7 +85,7 @@ describe("shared system skills", () => {
     expect(investigation).toMatch(/Task persistence is host-private and\s+reconciler-owned/i);
     expect(investigation).not.toContain("`.state/tasks/state.json`");
     expect(investigation).toContain("exactly one correlated");
-    expect(investigation).toContain("`app.dependency.completed` wake the exact");
+    expect(investigation).toContain("`app.dependency.updated` wake the exact");
     expect(investigation).not.toContain("project.owner.reviewed");
     expect(dispatch).toContain("completion");
     expect(dispatch).toContain("receipts, event trace, and durable App inbox");

@@ -1,7 +1,7 @@
 import { Type, defineApp } from "@may-agent/sdk";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { readAppConversationResource } from "./conversations.js";
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,30 +11,27 @@ import { applyDbSchema } from "../../../lib/db/schema.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { cacheTaskSnapshots, readTaskSnapshot } from "../tasks/app-task-store.js";
-import {
-  claimAppInboxItem,
-  createAppInboxItem,
-  getAppInboxItem,
-  waitAppInboxClaim,
-  wakeAppInboxItem,
-} from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
 import {
   cancelAppTask,
+  closeAppTask,
   claimObservedAppTask,
-  completeAppTask,
   failAppTaskAttempt,
   markAppTaskAttention,
   observeAppTaskIntent,
   retryFailedAppTask,
   stopAppTask,
+  readAppTaskAdmissionOutcome,
 } from "../tasks/app-task-reconciler.js";
 import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
-import { admitTaskRequest, attachRequestToTask } from "./inbox.js";
+import { admitTaskRequest, completeTaskInput, recoverTaskInputAdmissionKey } from "./inbox.js";
 
 const roots: string[] = [];
 const connections: SqliteDb[] = [];
 afterEach(() => {
+  setSystemTime();
   for (const db of connections.splice(0)) db.close();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -78,7 +75,6 @@ function fixture() {
     source: { kind: "human", id: "one" },
     input: { kind: "example", data: {} },
   }).item;
-  const claim = claimAppInboxItem(db, item.id, "handler-one", 60_000)!;
   const config = openState(path);
   connections.push(config.resourceStore.db);
   const input = {
@@ -86,9 +82,23 @@ function fixture() {
     attachment: testAttachment(),
     idempotencyKey: "task:request-one",
     request: { id: item.id, source: item.source, input: item.input },
-    claim,
+    inboxInputId: item.id,
   };
   return { db, path, config, input };
+}
+
+function advanceToRetry(config: ReturnType<typeof openState>, taskId = "work/one") {
+  const retryAt = config.resourceStore.readTask(taskId)!.status.executionRetryAt!;
+  expect(retryAt).toBeGreaterThan(Date.now());
+  setSystemTime(new Date(retryAt));
+}
+
+function repeatFailures(config: ReturnType<typeof openState>, count: number) {
+  for (let failure = 0; failure < count; failure++) {
+    if (failure) advanceToRetry(config);
+    expect(failTask(config).status).toBe("retrying");
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(failure + 1);
+  }
 }
 
 async function worker(path: string, action: string, taskId?: string) {
@@ -122,14 +132,14 @@ describe("request-to-Task state operation", () => {
       }),
     ).toThrow("turn stopped");
     expect(config.resourceStore.readTask("work/one")).toBeNull();
-    expect(() => admitTaskRequest(config, { ...input, topicId: "missing" })).toThrow();
+    expect(() => admitTaskRequest(config, { ...input, inboxInputId: undefined, topicId: "missing" })).toThrow();
     expect(config.resourceStore.readTask("work/one")).toBeNull();
-    admitTaskRequest(config, { ...input, topicId: "topic" });
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, topicId: "topic" });
     expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
   });
   it("commits Task input, exact dependency, Topic and Conversation claim release together", () => {
     const { db, config, input } = fixture();
-    attachRequestToTask(config, input);
+    admitTaskRequest(config, input);
     expect(getAppInboxItem(db, input.request.id)).toMatchObject({ waitingOn: { kind: "task", id: "work/one" } });
     expect(getAppInboxItem(db, input.request.id)?.lease).toBeUndefined();
     expect(config.resourceStore.readTask("work/one")).not.toBeNull();
@@ -147,24 +157,32 @@ describe("request-to-Task state operation", () => {
 
   it("replays a lost reply without duplicating input and rejects changed desired work", () => {
     const { config, input } = fixture();
-    const first = attachRequestToTask(config, input);
+    let authorized = 0;
+    const authorize = () => {
+      authorized++;
+    };
+    const first = admitTaskRequest(config, { ...input, authorize });
     const revision = config.resourceStore.revision();
-    expect(attachRequestToTask(config, input)).toMatchObject({ taskId: first.taskId, generation: first.generation });
+    expect(admitTaskRequest(config, { ...input, authorize })).toMatchObject({
+      taskId: first.taskId,
+      generation: first.generation,
+    });
+    expect(authorized).toBe(2);
     expect(config.resourceStore.revision()).toBe(revision);
     expect(
       config.resourceStore.readTaskContext({ taskIds: [first.taskId] }).taskTriggers?.[first.taskId]?.events,
     ).toHaveLength(1);
-    expect(() => attachRequestToTask(config, { ...input, attachment: testAttachment("different") })).toThrow();
+    expect(() => admitTaskRequest(config, { ...input, attachment: testAttachment("different") })).toThrow();
     expect(config.resourceStore.readTask("different")).toBeNull();
     const changed = testAttachment();
     if (changed.kind !== "desired") throw new Error("fixture");
     changed.intent.outcome = "Different desired work";
-    expect(() => attachRequestToTask(config, { ...input, attachment: changed })).toThrow("different desired work");
+    expect(() => admitTaskRequest(config, { ...input, attachment: changed })).toThrow("different desired work");
     expect(() =>
-      attachRequestToTask(config, { ...input, idempotencyKey: "try-another-key", attachment: changed }),
+      admitTaskRequest(config, { ...input, idempotencyKey: "try-another-key", attachment: changed }),
     ).toThrow("identity must belong");
     expect(() =>
-      attachRequestToTask(config, { ...input, request: { ...input.request, input: { kind: "changed", data: {} } } }),
+      admitTaskRequest(config, { ...input, request: { ...input.request, input: { kind: "changed", data: {} } } }),
     ).toThrow("does not match");
   });
 
@@ -190,61 +208,47 @@ describe("request-to-Task state operation", () => {
       }).appTaskAdmissions;
     const accepted = admissions()?.[legacyKey];
     expect(accepted).toBeDefined();
-    const now = input.claim.item.lease!.expiresAt + 1;
-    const claim = claimAppInboxItem(db, input.request.id, "restarted-handler", 60_000, now)!;
+    const now = Date.now();
     const resumed = {
       ...input,
-      claim,
       now,
       attachment: kind === "existing" ? ({ kind, taskId: "work/one" } as const) : desired,
     };
     db.exec(
       "CREATE TRIGGER fail_topic BEFORE INSERT ON conversation_topic_tasks BEGIN SELECT RAISE(ABORT, 'link failure'); END",
     );
-    expect(() => attachRequestToTask(config, resumed)).toThrow("link failure");
+    expect(() => admitTaskRequest(config, resumed)).toThrow("link failure");
     expect(admissions()?.[input.idempotencyKey]).toBeUndefined();
     expect(admissions()?.[legacyKey]).toEqual(accepted);
-    expect(getAppInboxItem(db, input.request.id)?.lease?.owner).toBe("restarted-handler");
+    expect(getAppInboxItem(db, input.request.id)?.status).toBe("pending");
     db.exec("DROP TRIGGER fail_topic");
-    const result = attachRequestToTask(config, resumed);
+    const result = admitTaskRequest(config, resumed);
     expect(result.taskId).toBe("work/one");
     expect(admissions()?.[input.idempotencyKey]).toBeUndefined();
     expect(admissions()?.[legacyKey]).toEqual(accepted);
     expect(config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers).toEqual(before.taskTriggers);
     expect(getAppInboxItem(db, input.request.id)?.waitingOn?.id).toBe("work/one");
     expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
-    expect(Boolean(getAppInboxItem(db, input.request.id)?.availableAt)).toBe(completed);
+    expect(Boolean(readAppTaskAdmissionOutcome(config, "work/one", legacyKey))).toBe(completed);
     const revision = config.resourceStore.revision();
-    attachRequestToTask(config, resumed);
+    admitTaskRequest(config, resumed);
     expect(config.resourceStore.revision()).toBe(revision);
   });
 
   it("rejects changed desired work but can recover its prior admission as an existing Task", () => {
     const { db, config, input } = fixture();
     const legacyKey = "task:request-one:desired:work/one";
-    admitTaskRequest(config, { ...input, idempotencyKey: legacyKey });
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: legacyKey });
     const before = config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers;
     const changed = testAttachment();
     if (changed.kind !== "desired") throw new Error("fixture");
     changed.intent.outcome = "Different work";
-    expect(() => attachRequestToTask(config, { ...input, attachment: changed })).toThrow("different desired work");
+    expect(() => admitTaskRequest(config, { ...input, attachment: changed })).toThrow("different desired work");
     expect(getAppInboxItem(db, input.request.id)?.waitingOn).toBeUndefined();
-    expect(getAppInboxItem(db, input.request.id)?.lease?.owner).toBe(input.claim.owner);
-    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    expect(getAppInboxItem(db, input.request.id)?.status).toBe("pending");
+    admitTaskRequest(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
     expect(config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers).toEqual(before);
     expect(getAppInboxItem(db, input.request.id)?.waitingOn?.id).toBe("work/one");
-  });
-
-  it("rejects an expired or superseded request claim before creating Task work", () => {
-    const { db, config, input } = fixture();
-    expect(() => attachRequestToTask(config, { ...input, now: input.claim.item.lease!.expiresAt + 1 })).toThrow(
-      "claim is stale",
-    );
-    expect(
-      claimAppInboxItem(db, input.request.id, "new-owner", 60_000, input.claim.item.lease!.expiresAt + 1),
-    ).not.toBeNull();
-    expect(() => attachRequestToTask(config, input)).toThrow("claim is stale");
-    expect(config.resourceStore.readTask("work/one")).toBeNull();
   });
 
   it("rolls back admission, wait, and cached state when Topic linking fails", () => {
@@ -254,8 +258,8 @@ describe("request-to-Task state operation", () => {
     db.exec(
       "CREATE TRIGGER fail_topic BEFORE INSERT ON conversation_topic_tasks BEGIN SELECT RAISE(ABORT, 'link failure'); END",
     );
-    expect(() => attachRequestToTask(config, input)).toThrow("link failure");
-    expect(getAppInboxItem(db, input.request.id)?.lease?.owner).toBe("handler-one");
+    expect(() => admitTaskRequest(config, input)).toThrow("link failure");
+    expect(getAppInboxItem(db, input.request.id)?.status).toBe("pending");
     expect(config.resourceStore.readTask("work/one")).toBeNull();
     expect(
       config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [input.idempotencyKey] }).appTaskAdmissions?.[
@@ -263,35 +267,36 @@ describe("request-to-Task state operation", () => {
       ],
     ).toBeUndefined();
     db.exec("DROP TRIGGER fail_topic");
-    attachRequestToTask(config, { ...input, attachment: testAttachment("recomputed") });
+    admitTaskRequest(config, { ...input, attachment: testAttachment("recomputed") });
     expect(readTaskSnapshot(config).resources?.["work/one"]).toBeUndefined();
     expect(readTaskSnapshot(config).resources?.recomputed).toBeDefined();
   });
 
-  it("leaves a request ready when matching work completed before attachment", () => {
+  it("does not satisfy a new input with an earlier answer from the same Task", () => {
     const { db, config, input } = fixture();
-    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
     finishTask(config);
-    attachRequestToTask(config, input);
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    admitTaskRequest(config, input);
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    expect(getAppInboxItem(db, input.request.id)?.taskAdmissionKey).toBe(input.idempotencyKey);
     expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
   });
 
   it("does not treat an older receipt as completion of a changed generation", () => {
     const { db, config, input } = fixture();
-    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
     finishTask(config);
     const changed = testAttachment();
     if (changed.kind !== "desired") throw new Error("fixture");
     changed.intent.outcome = "New generation";
-    attachRequestToTask(config, { ...input, attachment: changed });
+    admitTaskRequest(config, { ...input, attachment: changed });
     expect(config.resourceStore.readTask("work/one")?.metadata.generation).toBe(2);
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
   });
 
-  it("persists a completion wake across processes without an EventBus and scopes it to the App", async () => {
+  it("persists an exact answer across processes without an EventBus", async () => {
     const { db, path, config, input } = fixture();
-    attachRequestToTask(config, input);
+    admitTaskRequest(config, input);
     createAppInboxItem(db, {
       id: "other-request",
       appId: "other",
@@ -301,21 +306,31 @@ describe("request-to-Task state operation", () => {
     const other = claimAppInboxItem(db, "other-request", "other-handler", 60_000)!;
     waitAppInboxClaim(db, other, { kind: "task", id: "work/one" });
     expect(await worker(path, "complete")).toEqual({ exitCode: 0, stderr: "" });
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
     expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
   });
 
-  it.each(["attention", "cancel"])("persists request readiness for %s without a notification", (operation) => {
+  it.each(["report", "cancel"])("preserves input and owner control after %s without a notification", (operation) => {
     const { db, config, input } = fixture();
-    attachRequestToTask(config, input);
-    if (operation === "attention") {
+    admitTaskRequest(config, input);
+    if (operation === "report") {
       const claim = claimObservedAppTask(config, {
         taskId: "work/one",
         appAgent: "example-owner",
         handler: "agent:example-owner",
       });
       if (claim.kind !== "claimed") throw new Error("expected claim");
-      markAppTaskAttention(config, claim, { summary: "Needs a decision", reason: "fixture" });
+      stopAppTask(config, claim, { summary: "Source is offline", evidence: ["fixture:source-offline"] });
+      expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
+        state: "stopped",
+        summary: "Source is offline",
+        evidence: ["fixture:source-offline"],
+      });
+      expect(config.resourceStore.isCancelled(claim.taskId)).toBe(false);
+      expect(readAppTaskAdmissionOutcome(config, claim.taskId, input.idempotencyKey)).toBeNull();
+      expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+      advanceToRetry(config);
+      finishTask(config);
     } else {
       const current = config.resourceStore.readTask("work/one")!;
       cancelAppTask(config, {
@@ -323,41 +338,36 @@ describe("request-to-Task state operation", () => {
         taskId: "work/one",
         expectedGeneration: current.metadata.generation,
         expectedResourceVersion: current.metadata.resourceVersion,
-        reason: "stop",
+        reason: "Owner withdrew the assignment",
       });
     }
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
   });
 
-  it.each(["complete", "stop"])("cannot commit a Task %s without its durable request wake", (decision) => {
+  it.each(["complete", "close"])("Task %s survives an unavailable input projection", (decision) => {
     const { db, config, input } = fixture();
-    attachRequestToTask(config, input);
-    const claim = claimObservedAppTask(config, {
-      taskId: "work/one",
-      appAgent: "example-owner",
-      handler: "agent:example-owner",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    const settle = () =>
-      decision === "stop"
-        ? stopAppTask(config, claim, { summary: "Optional work is not feasible", evidence: ["fixture:feasibility"] })
-        : completeAppTask(config, claim, { summary: "Verified", evidence: [] });
-    db.exec(
-      "CREATE TRIGGER fail_wake BEFORE UPDATE OF available_at ON app_inbox_items WHEN NEW.available_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'wake failure'); END",
-    );
-    expect(settle).toThrow("wake failure");
-    expect(config.resourceStore.readReceipt("work/one")).toBeNull();
-    expect(config.resourceStore.readCancellation("work/one")).toBeNull();
-    expect(config.resourceStore.readTask("work/one")?.status.phase).toBe("running");
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
-    db.exec("DROP TRIGGER fail_wake");
-    expect(settle().status).toBe("applied");
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    admitTaskRequest(config, input);
+    const item = getAppInboxItem(db, input.request.id)!;
+    db.exec("CREATE TRIGGER fail_projection BEFORE UPDATE ON app_inbox_items BEGIN SELECT RAISE(ABORT, 'projection failure'); END");
+    if (decision === "complete") finishTask(config);
+    else {
+      const task = config.resourceStore.readTask("work/one")!;
+      closeAppTask(config, { appId: "example", taskId: "work/one", expectedGeneration: task.metadata.generation,
+        expectedResourceVersion: task.metadata.resourceVersion, reason: "Owner withdrew this input" });
+    }
+    const result = { summary: decision === "complete" ? "Verified" : "Closed by owner" };
+    expect(() => completeTaskInput(db, item, result, Date.now())).toThrow("projection failure");
+    expect(getAppInboxItem(db, input.request.id)?.status).toBe("handling");
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
+    db.exec("DROP TRIGGER fail_projection");
+    expect(completeTaskInput(db, item, result, Date.now())).toBe(true);
+    expect(getAppInboxItem(db, input.request.id)?.result).toEqual(result);
   });
 
-  it("durably readies the linked request when retries exhaust without an EventBus or executable parent", async () => {
+  it("preserves retry pacing and unfinished input across processes beyond the old failure limit", async () => {
+    setSystemTime(new Date());
     const { db, path, config, input } = fixture();
-    attachRequestToTask(config, input);
+    admitTaskRequest(config, input);
     createAppInboxItem(db, {
       id: "other-request",
       appId: "other",
@@ -366,56 +376,48 @@ describe("request-to-Task state operation", () => {
     });
     const other = claimAppInboxItem(db, "other-request", "other-handler", 60_000)!;
     waitAppInboxClaim(db, other, { kind: "task", id: "work/one" });
-    for (let failure = 1; failure <= 3; failure++) {
-      expect(failTask(config).status).toBe("retrying");
-      expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
-    }
-    // The last failure commits in a different process; no in-memory wake survives it.
-    expect(await worker(path, "fail")).toEqual({ exitCode: 0, stderr: "" });
-    expect(config.resourceStore.readTask("work/one")?.status).toMatchObject({
-      phase: "attention",
-      executionFailures: 4,
-    });
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
-    expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
-    const review = claimAppInboxItem(db, input.request.id, "reviewer", 60_000);
-    expect(review?.item.waitingOn).toEqual({ kind: "task", id: "work/one" });
+    repeatFailures(config, 5);
+    const deadline = config.resourceStore.readTask("work/one")!.status.executionRetryAt!;
+    // A fresh process observes the saved deadline, with no EventBus or in-memory timer.
+    expect(await worker(path, "expect-backoff")).toEqual({ exitCode: 0, stderr: "" });
     const restarted = openState(path);
     connections.push(restarted.resourceStore.db);
-    expect(
-      claimObservedAppTask(restarted, {
-        taskId: "work/one",
-        appAgent: "example-owner",
-        handler: "agent:example-owner",
-      }).kind,
-    ).toBe("attention");
+    expect(restarted.resourceStore.readTask("work/one")?.status).toMatchObject({
+      phase: "pending",
+      executionFailures: 5,
+      executionRetryAt: deadline,
+    });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     const tree = restarted.resourceStore.readTaskContext({ taskIds: ["work/one"] });
-    expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(5);
     expect(tree.taskTriggers?.["work/one"]?.events).toHaveLength(1);
+    advanceToRetry(restarted);
+    finishTask(restarted);
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
+    expect(getAppInboxItem(db, "other-request")?.availableAt).toBeUndefined();
+    expect(restarted.resourceStore.isCancelled("work/one")).toBe(false);
+    expect(readAppTaskAdmissionOutcome(restarted, "work/one", input.idempotencyKey)?.summary).toBe("Verified");
   });
 
-  it("readies a request attached after exhaustion without authorizing another execution", () => {
+  it("a newly attached human input permits progress without erasing prior failure cost", () => {
     const { db, config, input } = fixture();
-    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
-    for (let failure = 0; failure < 4; failure++) failTask(config);
-    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
-    expect(
-      claimObservedAppTask(config, {
-        taskId: "work/one",
-        appAgent: "example-owner",
-        handler: "agent:example-owner",
-      }).kind,
-    ).toBe("attention");
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
+    repeatFailures(config, 4);
+    admitTaskRequest(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(4);
     expect(
       config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers?.["work/one"]?.events,
     ).toHaveLength(2);
+    finishTask(config);
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
+    expect(config.resourceStore.isCancelled("work/one")).toBe(false);
   });
 
-  it.each(["retry", "revise"])("does not return exhausted attention after an authorized %s", (operation) => {
+  it.each(["retry", "revise"])("waits for an exact answer after an authorized %s", (operation) => {
     const { db, config, input } = fixture();
-    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
-    for (let failure = 0; failure < 4; failure++) failTask(config);
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
+    repeatFailures(config, 4);
     const task = config.resourceStore.readTask("work/one")!;
     if (operation === "retry") {
       retryFailedAppTask(config, {
@@ -432,36 +434,43 @@ describe("request-to-Task state operation", () => {
         intent: { ...attachment.intent, outcome: "Finish the revised example" },
       });
     }
-    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    admitTaskRequest(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     finishTask(config);
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
   });
 
-  it("rolls back the final execution failure if its request wake cannot commit", () => {
+  it("rolls back failure evidence and pacing together when retry persistence fails", () => {
     const { db, config, input } = fixture();
-    attachRequestToTask(config, input);
-    for (let failure = 0; failure < 3; failure++) failTask(config);
+    admitTaskRequest(config, input);
+    repeatFailures(config, 3);
+    advanceToRetry(config);
     const claim = claimObservedAppTask(config, {
       taskId: "work/one",
       appAgent: "example-owner",
       handler: "agent:example-owner",
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
+    const before = readTaskSnapshot(config);
     db.exec(
-      "CREATE TRIGGER fail_wake BEFORE UPDATE OF available_at ON app_inbox_items WHEN NEW.available_at IS NOT NULL BEGIN SELECT RAISE(ABORT, 'wake failure'); END",
+      "CREATE TRIGGER fail_retry BEFORE UPDATE OF resource_json ON app_tasks WHEN NEW.app_id = 'example' AND NEW.task_id = 'work/one' AND json_extract(NEW.resource_json, '$.status.executionFailures') = 4 BEGIN SELECT RAISE(ABORT, 'retry write failure'); END",
     );
-    expect(() => failAppTaskAttempt(config, claim, "Fixture execution failure")).toThrow("wake failure");
-    expect(config.resourceStore.readTask("work/one")?.status).toMatchObject({ phase: "running", executionFailures: 3 });
+    expect(() => failAppTaskAttempt(config, claim, "Fixture execution failure")).toThrow("retry write failure");
+    expect(readTaskSnapshot(config)).toEqual(before);
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
-    db.exec("DROP TRIGGER fail_wake");
-    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("attention");
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    db.exec("DROP TRIGGER fail_retry");
+    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("retrying");
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(4);
+    expect(config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("failed");
+    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
+    advanceToRetry(config);
+    finishTask(config);
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
   });
 
   it("does not return an old attention result while new attached input is pending", () => {
     const { db, config, input } = fixture();
-    admitTaskRequest(config, { ...input, idempotencyKey: "earlier-request" });
+    admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
     const claim = claimObservedAppTask(config, {
       taskId: "work/one",
       appAgent: "example-owner",
@@ -469,32 +478,13 @@ describe("request-to-Task state operation", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     markAppTaskAttention(config, claim, { summary: "Old blocker", reason: "fixture" });
-    attachRequestToTask(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
+    admitTaskRequest(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
     expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeUndefined();
     finishTask(config);
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
   });
 
-  it("keeps intentional replacement separate from retry and does not re-admit it on review", () => {
-    const { db, config, input } = fixture();
-    attachRequestToTask(config, input);
-    wakeAppInboxItem(db, input.request.id);
-    const claim = claimAppInboxItem(db, input.request.id, "review", 60_000)!;
-    attachRequestToTask(config, {
-      ...input,
-      claim,
-      attachment: testAttachment("replacement"),
-      idempotencyKey: `task:request-one:replace:${claim.generation}`,
-    });
-    const revision = config.resourceStore.revision();
-    wakeAppInboxItem(db, input.request.id);
-    const next = claimAppInboxItem(db, input.request.id, "next-review", 60_000)!;
-    attachRequestToTask(config, { ...input, claim: next, attachment: { kind: "existing", taskId: "replacement" } });
-    expect(config.resourceStore.revision()).toBe(revision);
-    expect(getAppInboxItem(db, input.request.id)?.waitingOn?.id).toBe("replacement");
-  });
-
-  it("admits only one binding from competing processes using the same request claim", async () => {
+  it("admits only one binding from competing processes using the same saved input", async () => {
     const { db, path, config, input } = fixture();
     const results = await Promise.all([worker(path, "attach", "left"), worker(path, "attach", "right")]);
     expect(results.filter((result) => result.exitCode === 0)).toHaveLength(1);
@@ -518,9 +508,9 @@ describe("request-to-Task state operation", () => {
       expect(getAppInboxItem(db, input.request.id)?.waitingOn?.id).toBe("work/one");
       expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
     }
-    attachRequestToTask(config, input);
+    admitTaskRequest(config, input);
     finishTask(config);
-    expect(getAppInboxItem(db, input.request.id)?.availableAt).toBeNumber();
+    expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
   });
 
   it("rolls back nested state writes even when their caller handles the failure", () => {
@@ -549,17 +539,30 @@ it("runs Task-only input with no conversational frontend and keeps retained Conv
   });
   const host = new AppInboxHost({
     db, apps: [app],
-    attachTask: async (input) => attachRequestToTask(config, { ...input, claim: input.claim! }),
+    attachTask: (input) => admitTaskRequest(config, input),
     readDependency: async ({ dependency }) => ({ ...dependency, status: "done", summary: "Verified", evidence: ["fixture:checked"] }),
   });
   const before = readAppConversationResource(db, "example", "chat");
   host.admit({ id: "no-chat", appId: app.id, source: { kind: "system", id: "scheduler" }, input: { kind: "example", data: {} } });
-  expect((await host.reconcileOnce(app.id)).errors).toEqual([]);
+  await host.recoverTaskResults();
   expect(config.resourceStore.readTask("work/without-chat")?.metadata.generation).toBe(1);
   finishTask(config, "work/without-chat");
-  host.wakeAppIds({ kind: "task", id: "work/without-chat" }, app.id);
-  expect((await host.reconcileOnce(app.id)).errors).toEqual([]);
+  await host.recoverTaskResults();
   expect(host.get("no-chat")).toMatchObject({ status: "done", result: { summary: "Verified" } });
   expect(readAppConversationResource(db, "example", "chat")).toEqual(before);
   expect(listConversationTopicLinksForTask(db, app.id, "work/without-chat")).toEqual([]);
+});
+
+it("recovers only an exact, unambiguous historical admission key", () => {
+  const { db, config, input } = fixture();
+  admitTaskRequest(config, input);
+  finishTask(config);
+  db.prepare("UPDATE app_inbox_items SET task_admission_key = NULL WHERE id = ?").run(input.request.id);
+  const item = getAppInboxItem(db, input.request.id)!;
+  expect(recoverTaskInputAdmissionKey(db, item)).toBe(input.idempotencyKey);
+  expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey)?.summary).toBe("Verified");
+  // Two historical admissions cannot be collapsed into a guessed input answer.
+  admitTaskRequest(config, { ...input, inboxInputId: undefined, idempotencyKey: `task:${item.id}:existing:work/one` });
+  db.prepare("UPDATE app_inbox_items SET task_admission_key = NULL WHERE id = ?").run(item.id);
+  expect(recoverTaskInputAdmissionKey(db, item)).toBeUndefined();
 });

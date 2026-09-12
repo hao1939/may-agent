@@ -8,6 +8,7 @@ import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   claimObservedAppTask,
+  completeAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
   recordAppTaskTrigger,
@@ -93,7 +94,7 @@ afterEach(() => {
 });
 
 describe("App task Condition review checkpoint", () => {
-  it("reconciles unexpected input across restart while retaining independent waits and deadlines", () => {
+  it.each(["redeclared", "retained"])("preserves independent %s waits and future deadlines across input and restart", (route) => {
     const config = fixture();
     const conditions = [
       {
@@ -114,6 +115,7 @@ describe("App task Condition review checkpoint", () => {
       },
     ];
     const wait = { disposition: "waiting" as const, summary: "Still waiting for both facts", conditions };
+    const unchangedWait = route === "redeclared" ? wait : { disposition: "waiting" as const, summary: wait.summary };
     deferAppTask(config, claim(config), wait);
     const before = readTaskSnapshot(config).conditions;
     const due = config.resourceStore.nextDueAt();
@@ -134,12 +136,12 @@ describe("App task Condition review checkpoint", () => {
       expect(
         claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind,
       ).toBe("busy");
-      deferAppTask(config, first, wait);
+      deferAppTask(config, first, unchangedWait);
       expect(readTaskSnapshot(config).conditions).toEqual(before);
       expect(config.resourceStore.nextDueAt()).toBe(due);
       const second = claim(config);
       expect(second.events.map(({ event }) => event.eventId)).toEqual([402]);
-      deferAppTask(config, second, wait);
+      deferAppTask(config, second, unchangedWait);
       expect(listRunnableAppTaskIds(config)).toEqual([]);
 
       // Observation-only broadcasts are not exact Task input and match neither wait.
@@ -153,15 +155,19 @@ describe("App task Condition review checkpoint", () => {
       ]);
       const third = claim(config);
       expect(third.events.map(({ event }) => event.eventId)).toEqual([403]);
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["pipeline", "decision"]);
+      deferAppTask(config, third, route === "redeclared" ? { ...wait, conditions: [conditions[1]] } : unchangedWait);
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
-      deferAppTask(config, third, { ...wait, conditions: [conditions[1]] });
       expect(readTaskSnapshot(config).conditions?.decision).toEqual(before?.decision);
       const decision = { type: "project.task.reconciled", eventId: 404, taskId: "decision", state: "converged" };
       expect(trackAppTaskConditionEventForTasks(config, decision, ["human-request"])).toMatchObject([
         { conditionId: "decision" },
       ]);
       expect(trackAppTaskConditionEventForTasks(config, decision, ["human-request"])).toEqual([]);
-      expect(claim(config).events.map(({ event }) => event.eventId)).toEqual([404]);
+      const fourth = claim(config);
+      expect(fourth.events.map(({ event }) => event.eventId)).toEqual([404]);
+      expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
+      completeAppTask(config, fourth, { summary: "Both facts verified", evidence: ["pipeline:42", "decision:done"] });
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual([]);
     } finally {
       config.resourceStore.close();
@@ -301,7 +307,7 @@ describe("App task Condition review checkpoint", () => {
     expect(listRunnableAppTaskIds(config)).toEqual([]);
   });
 
-  it("keeps an unchanged checkpoint recoverable after repeated owner reviews", () => {
+  it.each(["redeclared", "retained"])("paces repeated reviews of an unchanged %s wait", (route) => {
     const config = fixture();
     const condition = {
       id: "external-review-finished",
@@ -319,7 +325,7 @@ describe("App task Condition review checkpoint", () => {
       conditions: [condition],
     });
 
-    for (let reviewAttempt = 1; reviewAttempt <= 3; reviewAttempt += 1) {
+    for (let reviewAttempt = 1; reviewAttempt <= 5; reviewAttempt += 1) {
       makeConditionReviewDue(config, condition.id);
 
       const review = claim(config);
@@ -327,22 +333,32 @@ describe("App task Condition review checkpoint", () => {
         type: "project.task.condition-review.missed",
         data: {
           conditionIds: [condition.id],
-          reviewAttempt,
-          finalReview: reviewAttempt === 3,
         },
       });
+      expect(review.trigger?.data).not.toHaveProperty("reviewAttempt");
+      expect(review.trigger?.data).not.toHaveProperty("finalReview");
       deferAppTask(config, review, {
         disposition: "waiting",
         summary: "The same external result is still pending",
         evidence: [`review:unchanged:${reviewAttempt}`],
-        conditions: [condition],
+        ...(route === "redeclared" ? { conditions: [condition] } : {}),
       });
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+      expect(config.resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
+      expect(readTaskSnapshot(config).conditions?.[condition.id]?.status.state).toBe("unknown");
+      if (reviewAttempt === 2) {
+        config.resourceStore.close();
+        config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+        expect(listRunnableAppTaskIds(config)).toEqual([]);
+        expect(config.resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
+      }
     }
 
     const state = readTaskSnapshot(config);
     expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
     expect(listRunnableAppTaskIds(config)).toEqual([]);
     expect(config.resourceStore.nextDueAt()).not.toBeNull();
+    config.resourceStore.close();
   });
 
   it("replaces an obsolete recovery date with the declared review checkpoint", () => {

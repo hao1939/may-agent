@@ -79,7 +79,7 @@ export function projectTaskOutcomes(
 ): TaskOutcomePage {
   const includeDone = projection.includeDone === true;
   const source = tasks
-    .filter((task) => includeDone || ACTIVE_STATUSES.has(task.status))
+    .filter((task) => includeDone || (!task.closed && ACTIVE_STATUSES.has(task.status)))
     .sort((a, b) => a.id.localeCompare(b.id));
   const byId = new Map(source.map((task) => [task.id, task]));
   const assigned = new Set<string>();

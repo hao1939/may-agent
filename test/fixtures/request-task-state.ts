@@ -8,7 +8,7 @@ import {
   failAppTaskAttempt,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { getAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
-import { admitTaskRequest, attachRequestToTask } from "../../src/app/core/state/inbox.js";
+import { admitTaskRequest } from "../../src/app/core/state/inbox.js";
 
 export const testAttachment = (taskId = "work/one"): AppTaskAttachment => ({
   kind: "desired",
@@ -49,10 +49,19 @@ if (import.meta.main) {
   const db = config.resourceStore.db;
   try {
     if (action === "complete") finishTask(config, taskId);
-    else if (action === "fail") failTask(config, taskId);
-    else {
+    else if (action === "expect-backoff") {
+      const task = config.resourceStore.readTask(taskId)!;
+      const claim = claimObservedAppTask(config, { taskId, appAgent: "example-owner", handler: "agent:example-owner" });
+      if (
+        claim.kind !== "waiting" ||
+        claim.retryAt !== task.status.executionRetryAt ||
+        (task.status.executionFailures ?? 0) < 5 ||
+        config.resourceStore.isCancelled(taskId)
+      )
+        throw new Error("Fresh process did not preserve the continuing Task's retry deadline");
+    } else {
       const item = getAppInboxItem(db, "request-one");
-      if (!item?.lease) throw new Error("Request is no longer owned");
+      if (!item) throw new Error("Input is unavailable");
       if (action === "crash-admission-existing" || action === "crash-admission-desired") {
         const kind = action === "crash-admission-existing" ? "existing" : "desired";
         // Released Hosts committed admission before the request wait/Topic link.
@@ -71,12 +80,12 @@ if (import.meta.main) {
           return run(sql, params);
         };
       }
-      attachRequestToTask(config, {
+      admitTaskRequest(config, {
         appId: "example",
         attachment: testAttachment(taskId),
         idempotencyKey: "task:request-one",
         request: { id: item.id, source: item.source, input: item.input },
-        claim: { item, owner: item.lease.owner, generation: item.lease.generation },
+        inboxInputId: item.id,
       });
       if (action === "crash-after") process.kill(process.pid, "SIGKILL");
     }

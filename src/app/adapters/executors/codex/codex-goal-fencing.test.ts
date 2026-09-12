@@ -61,7 +61,7 @@ describe("Codex goal Task generation fencing", () => {
         response: "The review is ready.",
         evidence: ["review-v1.md"],
       }),
-      { allowNeedsAgent: false, defaultParentId: "operations" },
+      { allowNeedsAgent: false },
     );
     if (admitted.kind !== "accepted") throw new Error(`expected admitted result: ${admitted.reason}`);
 

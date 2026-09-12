@@ -16,6 +16,7 @@
  * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { openSandboxDb, pollUntil, queryEvents, queryWorkflowRuns } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
@@ -62,21 +63,24 @@ describe("E3b: workflow discovery and scheduled execution", () => {
       );
       expect(runs[0].status).toBe("done");
       expect(runs[0].endedAt).not.toBeNull();
-      const task = await pollUntil(
+      const store = AppTaskResourceStore.activeFromDb(db, "scheduled-workflow")!;
+      const attempt = await pollUntil(
         () => {
-          const row = db
-            .prepare(
-              "SELECT receipt_json FROM app_task_receipts WHERE app_id = 'scheduled-workflow' AND receipt_id = 'work/main'",
-            )
-            .get() as { receipt_json: string } | null;
-          return row ? JSON.parse(row.receipt_json) : null;
+          const id = store.readTask("work/main")?.status.observedAttemptId;
+          const observed = id ? store.readAttempt(id) : null;
+          return observed?.acceptedResult?.state === "converged" ? observed : null;
         },
         { timeoutMs: 10000, intervalMs: 100, description: "Task accepts scheduled workflow result" },
       );
-      expect(task).toMatchObject({
-        metadata: { id: "work/main", generation: 1 },
-        summary: "Scheduled workflow verified",
+      expect(attempt).toMatchObject({
+        taskId: "work/main",
+        taskGeneration: 1,
+        state: "completed",
+        acceptedResult: { summary: "Scheduled workflow verified", evidence: ["e2e.workflow_ran"] },
       });
+      expect(store.readTask("work/main")?.metadata).toMatchObject({ id: "work/main", generation: 1 });
+      expect(store.isCancelled("work/main")).toBe(false);
+      expect(store.readReceipt("work/main")).toBeNull();
     } catch (error) {
       console.error(sb.getLogs().slice(-8000));
       console.error(db.prepare("SELECT task_id, phase, resource_json FROM app_tasks").all());

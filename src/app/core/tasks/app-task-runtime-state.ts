@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 export type ProjectRuntimePaths = {
   appDir: string;
@@ -9,10 +9,6 @@ export type ProjectRuntimePaths = {
   projectStatePath: string;
 };
 
-function ensureDir(path: string): void {
-  if (!existsSync(path)) mkdirSync(path, { recursive: true });
-}
-
 function readJsonObject(path: string): Record<string, unknown> {
   if (!existsSync(path)) return {};
   try {
@@ -21,11 +17,6 @@ function readJsonObject(path: string): Record<string, unknown> {
   } catch {
     return {};
   }
-}
-
-function writeJson(path: string, value: unknown): void {
-  ensureDir(dirname(path));
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
 export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
@@ -45,13 +36,4 @@ export function loadProjectReadModel(appDir: string): Record<string, unknown> {
     ...readJsonObject(join(appDir, "project.json")),
     ...readJsonObject(projectRuntimePaths(appDir).projectStatePath),
   };
-}
-
-export function saveProjectRuntimeState(appDir: string, patch: Record<string, unknown>): void {
-  const path = projectRuntimePaths(appDir).projectStatePath;
-  writeJson(path, {
-    ...readJsonObject(path),
-    ...patch,
-    updatedAt: typeof patch.updatedAt === "string" ? patch.updatedAt : new Date().toISOString(),
-  });
 }

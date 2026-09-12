@@ -1,7 +1,7 @@
 import { Type, type Static, type TSchema } from "typebox";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
-import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskDetail } from "./workflow.js";
+import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
@@ -212,6 +212,10 @@ export type AppInputContext<TData = unknown> = {
   humanRequested?: true;
   parentId?: string;
   input: AppInput<TData>;
+  /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
+  inputs?: ReadonlyArray<AppTaskInput>;
+  /** Evidence from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
+  previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;
   /** Exact bounded observation for the human's focused Task, when supplied. */
   focusedTask?: {
@@ -402,10 +406,11 @@ export type AppTaskPolicy = {
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
+  /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
   maxConcurrent?: number;
 };
 
-/** Direct bounded handling for conversational input; it creates no App Task. */
+/** Conversation input executes through one stable Task per Conversation. */
 export type AppRequestPolicy = {
   mode: "agent";
   /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */

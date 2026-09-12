@@ -1,16 +1,12 @@
+import { wakeAppInboxItemsWaitingOn } from "../../../../test/fixtures/legacy-inbox.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import {
-  createAppInboxItem,
-  claimAppInboxItem,
-  completeAppInboxClaim,
-  waitAppInboxClaim,
-  wakeAppInboxItemsWaitingOn,
-} from "./app-inbox-store.js";
+import { createAppInboxItem } from "./app-inbox-store.js";
+import { claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import {
   createConversationTopic,
   findConversationTopics,

@@ -7,6 +7,7 @@ const TASK_SECTIONS = [
   { id: "waiting", label: "Waiting" },
   { id: "up-to-date", label: "Up to date" },
   { id: "done", label: "Done" },
+  { id: "closed", label: "Closed" },
   { id: "cancelled", label: "Cancelled" },
 ];
 const PROJECT_TASK_PAGE_SIZE = 30;
@@ -93,7 +94,7 @@ async function renderProjectKanban(el, options = {}) {
         <label>State <select id="project-task-status" onchange="reloadProjectTasks()">
           <option value="">All states</option>${TASK_SECTIONS.map((s) => `<option value="${s.id}"${s.id === board.status ? " selected" : ""}>${s.label}</option>`).join("")}
         </select></label>
-        <label><input id="project-task-history" type="checkbox"${board.includeDone ? " checked" : ""} onchange="reloadProjectTasks()">Include finished/cancelled Tasks</label>
+        <label><input id="project-task-history" type="checkbox"${board.includeDone ? " checked" : ""} onchange="reloadProjectTasks()">Include Task history</label>
         <button onclick="reloadProjectTasks()">Refresh / newest page</button>
         <button id="project-tasks-next" onclick="nextProjectTasks()"${page.nextCursor ? "" : " disabled"}>Next page</button>
         <label for="project-task-filter">Filter this page</label>

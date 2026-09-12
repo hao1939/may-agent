@@ -12,6 +12,9 @@ export type Logger = {
 
 export type TaskView = {
   id: string;
+  /** Owner ended execution; a prior accepted result alone does not close the Task. */
+  closed?: boolean;
+  /** Current work phase. `done` means an accepted outcome; inspect `closed` for owner closure. */
   status: "pending" | "running" | "waiting" | "attention" | "done";
   generation: number;
   outcome: string;
@@ -40,7 +43,7 @@ export type TaskDetail = TaskView & {
 };
 
 export type TaskListOptions = {
-  /** Exact phases to include. Omitted means every phase. */
+  /** Exact phases to include. Omitted means every phase, including closed history. */
   status?: TaskView["status"][];
   /** Bounded page size. Runtime caps this at 100. */
   limit?: number;
@@ -55,7 +58,7 @@ export type TaskPage = {
 
 /** Opt-in, read-only shadow grouping. Legacy Task identities remain the traceability authority. */
 export type TaskOutcomeProjection = {
-  /** Include immutable completed receipts. Omitted means active Tasks only. */
+  /** Include accepted outcomes and closed history. Omitted means active work only. */
   includeDone?: boolean;
   /** Return only the reviewed outcome containing this exact Task. */
   taskId?: string;
@@ -283,6 +286,8 @@ export type TaskReconciliationEvent = {
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
   items: TaskReconciliationEvent[];
+  /** Earlier asks whose awaited evidence is being considered now; not new input or new authority. */
+  continuedInputs?: TaskReconciliationEvent[];
   /** Highest durable event identity in items, when every item has one. */
   throughEventId?: number;
   /** More linked events remain pending for the same task. */
@@ -310,6 +315,24 @@ export type TaskAttempt = {
     instructions: string;
   };
   task: TaskDetail;
+  /** Latest earlier attempt of this Task. Evidence to inspect, not authority to repeat its effects. */
+  previousAttempt?: {
+    attemptId: string;
+    generation: number;
+    state: "running" | "completed" | "failed" | "interrupted";
+    summary?: string;
+    failureReason?: string;
+    sessionId?: string;
+    workspacePath?: string;
+    /** Exact admitted report, when one exists. An execution error need not have one. */
+    acceptedResult?: {
+      state: "converged" | "waiting" | "stopped";
+      summary: string;
+      response?: string;
+      result?: Record<string, unknown>;
+      evidence: string[];
+    };
+  };
   /** Attempt-scoped working directory selected by Runtime. */
   cwd: string;
   /** App-declared paths this attempt may intentionally produce. */
@@ -317,9 +340,11 @@ export type TaskAttempt = {
   /** Bounded direct-child facts needed to reconcile parent work. */
   children: {
     live: TaskReconciliationChild[];
+    /** Archived outcomes from the retired completion protocol, not current readiness. */
     completed: TaskReconciliationChild[];
-    /** Terminal non-success findings. Never successful prerequisites or live work. */
+    /** Owner closure history (legacy field name). Closure alone proves neither success nor failure. */
     cancelled?: Array<{
+      kind?: "closed" | "cancelled";
       taskId: string;
       parentId: string;
       generation: number;
@@ -377,6 +402,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   acceptance: string[];
   input: TInput;
   children: TaskAttempt["children"];
+  previousAttempt?: TaskAttempt["previousAttempt"];
   /**
    * Bounded projection of the App's other live tasks for workflows that review
    * frontier health. The current reconciliation task is intentionally omitted.

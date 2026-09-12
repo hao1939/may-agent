@@ -1,8 +1,7 @@
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../../test/fixtures/model.js";
-import { createConversationInbox } from "../composition/conversation-inbox.js";
-import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, appRequestAgentResultSchema, defineApp, type AppInputContext } from "@may-agent/sdk";
@@ -19,8 +18,20 @@ import { createBashTool } from "../../lib/tools/bash.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import { createConversationAgentResolver } from "./turn-agent.js";
+import type { AppInputResolver } from "./turn-agent.js";
 import { readAppConversationResource } from "../core/state/conversations.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
+import { getDb, closeDb } from "../../lib/requests.js";
+import { EventBus } from "../core/events/bus.js";
+import { createTaskExecutionBackends } from "../composition/task-execution.js";
+import { createAppTaskCapability } from "../core/tasks/app-task-capability.js";
+import {
+  installAppTaskRuntimes,
+  closeInstalledAppTaskRuntimes,
+  reconcileLoadedAppTaskOnce,
+} from "../core/tasks/app-task-runtime.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { getAppInboxItem } from "../core/state/app-inbox-store.js";
 
 const input = (kind: string) => Type.Object({ kind: Type.Literal(kind), data: Type.Object({ text: Type.String() }) });
 const may = defineApp({
@@ -49,12 +60,62 @@ const answer = { summary: "Answered", response: "Here are the options.", topic: 
 describe("conversational attempt contract", () => {
   const databases: SqliteDb[] = [];
   const roots: string[] = [];
-  afterEach(() => {
+  const runtimes: EventBus[] = [];
+  afterEach(async () => {
+    for (const bus of runtimes.splice(0)) await closeInstalledAppTaskRuntimes(bus);
+    setSystemTime();
     databases.splice(0).forEach((db) => db.close());
-    roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
+    roots.splice(0).forEach((root) => {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    });
   });
 
-  async function attempt(current = request, app = may) {
+  async function taskRuntime(root: string, manager: SubagentManager, frontend = may) {
+    const bus = new EventBus();
+    runtimes.push(bus);
+    const entries = [frontend, owner].map((definition) => {
+      const appDir = join(root, `${definition.id}.app`);
+      mkdirSync(appDir, { recursive: true });
+      return { appDir, definition };
+    });
+    const db = getDb(root);
+    await installAppTaskRuntimes(
+      {
+        projectRoot: root,
+        projectsRoot: root,
+        persistDir: root,
+        bus,
+        installControllers: false,
+        appRegistrySnapshot: { id: "turn-tool-loop", generation: 1, entries },
+        conversations: createTaskExecutionBackends({ manager, bus }).conversations,
+      },
+      { deferRecovery: true },
+    );
+    return {
+      bus,
+      db,
+      store: AppTaskResourceStore.activeFromDb(db, frontend.id)!,
+      admit: createAppTaskCapability({ bus }).admitConversation,
+      run: (taskId: string) =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: frontend.id,
+          taskId,
+          dispatch: { lane: "human", enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0 },
+        }),
+    };
+  }
+
+  async function attempt(
+    current = request,
+    app = may,
+    execution: Parameters<AppInputResolver>[0]["execution"] = {
+      signal: new AbortController().signal,
+      sessionStarted: () => {},
+      taskBinding: { appId: app.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
+    },
+  ) {
     const db = openDatabase(":memory:");
     databases.push(db);
     applyDbSchema(db);
@@ -69,12 +130,20 @@ describe("conversational attempt contract", () => {
       },
     } as unknown as SubagentManager;
     const registry = {
-      snapshot: () => ({ entries: [may, owner].map((definition) => ({ appDir: definition.id, definition })) }),
+      snapshot: () => ({ entries: [app, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
     const resolve = createConversationAgentResolver({ manager, registry, db });
-    expect(await resolve({ app, request: current })).toEqual(answer);
+    expect(await resolve({ app, request: current, execution })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
+
+  it("keeps a Task-owned Conversation session under that Task's recovery authority", async () => {
+    const taskBinding = { appId: may.id, taskId: "conversation", generation: 1, attemptId: "attempt" };
+    const { options } = await attempt(request, may, {
+      signal: new AbortController().signal, sessionStarted: () => {}, taskBinding,
+    });
+    expect(options).toMatchObject({ recoveryOwner: "app-task-reconciler", taskBinding });
+  });
 
   it("retrieves omitted asks by exact identity and pages without crossing Conversations", async () => {
     const current = { ...request, conversation: { id: "chat", owner: may.id, messages: [] } };
@@ -130,9 +199,14 @@ describe("conversational attempt contract", () => {
     expect(Check(schema, waiting)).toBe(false);
     expect(Check(appRequestAgentResultSchema, waiting)).toBe(false);
     expect(Check(schema, { ...answer, dependencies: [] })).toBe(false);
-    expect(prompt).toContain("request completes");
+    expect(prompt).toContain("The current Turn finishes after the handoff is admitted");
+    expect(prompt).toContain("The Request remains open until its scope is resolved and explained");
     expect(prompt).not.toContain("Choose dependency appId");
-    expect(options).toMatchObject({ requireFinish: true, toolPolicy: "app-agent-full", recoveryOwner: "app-inbox" });
+    expect(options).toMatchObject({
+      requireFinish: true,
+      toolPolicy: "app-agent-full",
+      recoveryOwner: "app-task-reconciler",
+    });
     // Schema narrowing must retain ordinary feedback and cancellation contracts.
     expect(
       Check(schema, {
@@ -157,18 +231,32 @@ describe("conversational attempt contract", () => {
   it.each([
     ["explicit inputs", may],
     ["all inputs", { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined }],
-  ] as const)("rejects child-wait effects without creating work (%s)", async (_kind, frontend) => {
-    const { db } = await attempt();
-    const host = createConversationInbox({
-      db, apps: [frontend, owner],
-      resolveRequest: async () => ({
-        ...answer, topic: { kind: "new", title: "Review" },
-        dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: { text: "Review" } } }],
+  ] as const)("rejects child-wait effects without admitting child work (%s)", async (_kind, frontend) => {
+    const root = mkdtempSync(join(tmpdir(), "may-invalid-turn-"));
+    roots.push(root);
+    const manager = {
+      getAgentDefinition: () => ({ name: "may", tools: [] }),
+      callAgentDefinition: async () => ({
+        status: "done",
+        structuredResult: {
+          ...answer,
+          topic: { kind: "new", title: "Review" },
+          dependencies: [{ id: "child", appId: "owner", input: { kind: "work", data: { text: "Review" } } }],
+        },
       }),
+    } as unknown as SubagentManager;
+    const host = await taskRuntime(root, manager, frontend);
+    const { db } = host;
+    const admitted = host.admit({ ...request, appId: may.id, conversationId: "may:primary", conversationSequence: 1 });
+    await host.run(admitted.taskId);
+    expect(host.store.readTask(admitted.taskId)?.status).toMatchObject({
+      phase: "pending",
+      executionFailures: 1,
+      executionRetryAt: expect.any(Number),
+      summary: expect.stringContaining("Invalid Conversation decision"),
     });
-    host.admit({ ...request, appId: may.id, conversationId: "may:primary", conversationSequence: 1 });
-    expect((await host.reconcileOnce(may.id)).errors).toEqual([expect.stringContaining("invalid request decision")]);
-    expect(host.get(request.id)?.handling?.phase).toBe("failed");
+    expect(getAppInboxItem(db, request.id)?.status).not.toBe("done");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 1 });
     expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all(request.id)).toEqual([]);
     expect(readAppConversationResource(db, may.id, "may:primary").topics).toEqual([]);
   });
@@ -185,14 +273,12 @@ describe("conversational attempt contract", () => {
   });
 
   it.each(["done", "interrupted", "budget-exhausted"] as const)(
-    "repairs a failed check within one Turn using the real model/tool loop (%s)",
+    "repairs a tool failure within one Turn and retains work after executor %s",
     async (status) => {
       const root = mkdtempSync(join(tmpdir(), "may-direct-work-"));
       roots.push(root);
       writeFileSync(join(root, "note.txt"), "A small typo: teh.\n");
-      const db = openDatabase(":memory:");
-      databases.push(db);
-      applyDbSchema(db);
+      const db = getDb(root);
       const definition: SubagentDefinition = {
         name: "may",
         description: "Direct work fixture",
@@ -232,6 +318,13 @@ describe("conversational attempt contract", () => {
         getAgentDefinition: () => definition,
         callAgentDefinition: async (agent: SubagentDefinition, prompt: string, options: CallOptions) => {
           calls += 1;
+          if (calls > 1) {
+            const context = JSON.parse(prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!);
+            expect(context.previousAttempt).toMatchObject({
+              state: "failed",
+              summary: expect.stringContaining(executionFailure),
+            });
+          }
           const prepared = prepareAgentExecution({
             ...options,
             definition: agent,
@@ -261,6 +354,7 @@ describe("conversational attempt contract", () => {
               result: decision,
             } },
           ];
+          if (calls > 1) steps.splice(1, 4); // Read and verify retained effects; do not repeat the writes.
           let step = 0;
           let modelSteps = 0;
           const toolOutcomes: Array<{ name: string; failed: boolean }> = [];
@@ -288,7 +382,9 @@ describe("conversational attempt contract", () => {
           expect(execution.error).toBeUndefined();
           expect(execution.structuredResult).toEqual(decision);
           expect(modelSteps).toBe(steps.length);
-          expect(toolOutcomes).toEqual(steps.map((call, index) => ({ name: call.name, failed: index === 3 })));
+          expect(toolOutcomes).toEqual(
+            steps.map((call, index) => ({ name: call.name, failed: calls === 1 && index === 3 })),
+          );
           expect(readFileSync(join(root, "note.txt"), "utf8")).toBe("A small typo: the.\n");
           expect(Check(options.outputSchema!, decision)).toBe(true);
 
@@ -296,26 +392,12 @@ describe("conversational attempt contract", () => {
             ...execution,
             // Inject executor terminal statuses independently of its proposed
             // result: a failed or exhausted execution cannot fulfill the ask.
-            status: status === "budget-exhausted" ? "error" : status,
-            ...(status !== "done" ? { error: executionFailure } : {}),
+            status: calls > 1 ? "done" : status === "budget-exhausted" ? "error" : status,
+            ...(calls === 1 && status !== "done" ? { error: executionFailure } : {}),
           };
         },
       } as unknown as SubagentManager;
-      const registry = {
-        snapshot: () => ({ entries: [may, owner].map((app) => ({ appDir: app.id, definition: app })) }),
-      } as unknown as AppRegistry;
-      const options = {
-        db,
-        apps: [may, owner],
-        resolveRequest: createConversationAgentResolver({ manager, registry, db }),
-        attachTask: async () => {
-          throw new Error("Direct work must not create a Task");
-        },
-        onRequestFollowUp: () => {
-          throw new Error("Direct work must not hand off");
-        },
-      };
-      const host = createConversationInbox(options);
+      let host = await taskRuntime(root, manager);
       const input = {
         ...request,
         input: { kind: "message", data: { text: "Fix and verify the typo in note.txt" } },
@@ -323,38 +405,48 @@ describe("conversational attempt contract", () => {
         conversationId: "may:primary",
         conversationSequence: 1,
       };
-      host.admit(input);
-      const result = await host.reconcileOnce("may");
+      const admitted = host.admit(input);
+      await host.run(admitted.taskId);
       expect(calls).toBe(1);
       expect(db.prepare("SELECT id FROM app_inbox_items WHERE parent_id = ?").all(request.id)).toEqual([]);
-      expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 1 });
       if (status !== "done") {
         expect(readConversationRequest(db, "may", "may:primary", "typo")?.status).toBe("open");
-        expect(result.errors).toEqual([expect.stringContaining(executionFailure)]);
-        expect(host.get(request.id)?.status).toBe("done");
-        expect(host.get(request.id)?.handling).toEqual({
-          phase: "failed",
-          reason: executionFailure,
+        expect(host.store.readTask(admitted.taskId)?.status).toMatchObject({
+          phase: "pending",
+          executionFailures: 1,
+          summary: expect.stringContaining(executionFailure),
         });
+        expect(getAppInboxItem(db, request.id)?.status).not.toBe("done");
         expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
           expect.objectContaining({ author: { kind: "human", id: "human-1" }, text: input.input.data.text }),
-          expect.objectContaining({ text: expect.stringContaining("I couldn't finish this turn") }),
         ]);
-        return;
+        const due = host.store.nextDueAt()!;
+        await closeInstalledAppTaskRuntimes(host.bus);
+        closeDb(root);
+        host = await taskRuntime(root, manager);
+        setSystemTime(new Date(due));
+        await host.run(admitted.taskId);
       }
-      expect(result.errors).toEqual([]);
-      expect(readConversationRequest(db, "may", "may:primary", "typo")?.status).toBe("closed");
-      expect(host.get(request.id)).toMatchObject({ status: "done", result: { response: decision.response } });
+      expect(calls).toBe(status === "done" ? 1 : 2);
+      expect(readConversationRequest(host.db, "may", "may:primary", "typo")?.status).toBe("closed");
+      expect(getAppInboxItem(host.db, request.id)).toMatchObject({
+        status: "done",
+        result: { response: decision.response },
+      });
       // Duplicate delivery and reopening the Host must not repeat accepted work.
-      const reopened = createConversationInbox(options);
+      await closeInstalledAppTaskRuntimes(host.bus);
+      closeDb(root);
+      const reopened = await taskRuntime(root, manager);
       reopened.admit(input);
-      expect((await reopened.reconcileOnce("may")).errors).toEqual([]);
-      expect(calls).toBe(1);
-      expect(reopened.get(request.id)?.result?.response).toBe(decision.response);
-      expect(readAppConversationResource(db, "may", "may:primary").messages).toEqual([
+      await reopened.run(admitted.taskId);
+      expect(calls).toBe(status === "done" ? 1 : 2);
+      expect(getAppInboxItem(reopened.db, request.id)?.result?.response).toBe(decision.response);
+      expect(readAppConversationResource(reopened.db, "may", "may:primary").messages).toEqual([
         expect.objectContaining({ author: { kind: "human", id: "human-1" }, text: input.input.data.text }),
-        expect.objectContaining({ id: "result:turn-1", author: { kind: "agent", id: "may" }, text: decision.response }),
+        expect.objectContaining({ author: { kind: "agent", id: "may" }, text: decision.response }),
       ]);
+      expect(reopened.store.isCancelled(admitted.taskId)).toBe(false);
     },
   );
 

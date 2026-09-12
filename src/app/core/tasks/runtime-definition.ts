@@ -102,13 +102,15 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
   }
+  descriptor.resourceStore.assertCompletionReceiptsImported();
 }
 
 function discoverAppTaskResourceStore(
   persistDir: string | undefined,
-  appId: string,
+  app: AppDefinition,
   appDir: string,
 ): AppTaskResourceStore {
+  const appId = app.id;
   if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);
   const db = getDb(persistDir);
   const active = AppTaskResourceStore.activeFromDb(db, appId);
@@ -135,6 +137,12 @@ function discoverAppTaskResourceStore(
       seed.resources && typeof seed.resources === "object" && !Array.isArray(seed.resources) ? seed.resources : {},
     tasks: {},
   } as TaskTree;
+  // A Conversation-only App needs no authored Task tree. Keep the structural
+  // root conventional; it is neither work nor another execution identity.
+  if (app.requests && Object.keys(tree.groups ?? {}).length === 0) {
+    tree.root_task_id = "root";
+    tree.groups = { root: { id: "root", parent_id: null } };
+  }
   const sourceRevision = `seed:${createHash("sha256").update(seedText).digest("hex")}`;
   const store = AppTaskResourceStore.fromDb(db, appId);
   store.bootstrapSnapshot(tree, sourceRevision);
@@ -155,12 +163,12 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
   const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
   const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
   for (const { appDir, definition: app } of entries) {
-    if (!app.tasks) continue;
+    if (!app.tasks && !app.requests) continue;
     const id = app.id;
     if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
-    const resourceStore = discoverAppTaskResourceStore(opts.persistDir, id, appDir);
+    const resourceStore = discoverAppTaskResourceStore(opts.persistDir, app, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id,
       appDir,
@@ -172,7 +180,7 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
     };
     descriptor.reconciliationPaused = resourceStore.projectLifecycle() === "paused";
     validatePreparedAppTaskRuntime(descriptor);
-    resourceStore.setConfiguredMaxConcurrent(app.tasks.maxConcurrent ?? 1);
+    resourceStore.setConfiguredMaxConcurrent(app.tasks?.maxConcurrent ?? 1);
     descriptors.push(descriptor);
   }
   return descriptors;
@@ -186,7 +194,7 @@ export function standaloneAppTaskAdmissionDescriptors(input: {
   const descriptors = new Map<string, AppTaskRuntimeDescriptor>();
   for (const { appDir, definition: app } of input.entries) {
     if (!app.tasks) continue;
-    const resourceStore = discoverAppTaskResourceStore(input.persistDir, app.id, appDir);
+    const resourceStore = discoverAppTaskResourceStore(input.persistDir, app, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id: app.id,
       appDir,

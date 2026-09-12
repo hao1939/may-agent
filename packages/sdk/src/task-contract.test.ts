@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { Check } from "typebox/value";
 import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultSchema } from "./task-contract.js";
 
-const workflowOptions = { allowNeedsAgent: true, defaultParentId: "app-root" };
+const workflowOptions = { allowNeedsAgent: true };
 
 describe("App stop contract", () => {
   const stopped = {
@@ -28,6 +28,20 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("rejects legacy close actions instead of manufacturing a successful outcome", () => {
+    const result = {
+      state: "converged",
+      summary: "Withdraw the child scope",
+      evidence: ["owner:withdrawal"],
+      actions: [{ kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" }],
+    };
+    expect(Check(taskAgentResultSchema, result)).toBe(false);
+    expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
+      ok: false,
+      error: "actions[0].kind must be one of update-task, unblock-task; delegate new work through dependencies",
+    });
+  });
+
   it("preserves a caller response separately from task summary", () => {
     expect(
       admitTaskReconcileResult(
@@ -152,44 +166,12 @@ describe("project task handler contract", () => {
     ).toEqual({ ok: false, error: "dependencies[0].taskId must be a non-empty string when present" });
   });
 
-  it("applies convention defaults to a finite create action", () => {
-    const admitted = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Created one bounded follow-up",
-        evidence: ["review:current-frontier"],
-        actions: [
-          {
-            kind: "create-task",
-            id: "work/follow-up",
-            outcome: "Finish the bounded follow-up.",
-            acceptance: ["The follow-up has exact evidence."],
-          },
-        ],
-      },
-      workflowOptions,
-    );
-
-    expect(admitted).toEqual({
-      ok: true,
-      result: {
-        state: "converged",
-        summary: "Created one bounded follow-up",
-        evidence: ["review:current-frontier"],
-        actions: [
-          {
-            kind: "create-task",
-            id: "work/follow-up",
-            parentId: "app-root",
-            outcome: "Finish the bounded follow-up.",
-            acceptance: ["The follow-up has exact evidence."],
-            mode: "achieve",
-            outputs: [],
-            priority: "P2",
-          },
-        ],
-      },
-    });
+  it("rejects raw child specifications in both schema and admission", () => {
+    const output = { state: "waiting", summary: "Delegate work", evidence: ["needed"],
+      actions: [{ kind: "create-task", id: "child", outcome: "Measure", acceptance: ["Measured"] }] };
+    expect(Check(taskAgentResultSchema, output)).toBeFalse();
+    expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({ ok: false,
+      error: "actions[0].kind must be one of update-task, unblock-task; delegate new work through dependencies" });
   });
 
   it("accepts the established human identity for an accountable timed wait", () => {
@@ -219,8 +201,9 @@ describe("project task handler contract", () => {
       evidence: [] as string[],
       actions: [
         {
-          kind: "create-task" as const,
-          id: "work/specialist",
+          kind: "update-task" as const,
+          taskId: "work/specialist",
+          expectedGeneration: 1,
           outcome: "Run specialist work",
           acceptance: ["Specialist work completes"],
           agent: "specialist",
@@ -249,8 +232,9 @@ describe("project task handler contract", () => {
           evidence: [],
           actions: [
             {
-              kind: "create-task",
-              id: "work/ambiguous",
+              kind: "update-task",
+              taskId: "work/ambiguous",
+              expectedGeneration: 1,
               outcome: "Do work",
               acceptance: ["Work completes"],
               agent: "one",
@@ -263,35 +247,6 @@ describe("project task handler contract", () => {
     ).toEqual({ ok: false, error: "actions[0].agent conflicts with legacy owner" });
   });
 
-  it("normalizes app/project root aliases on create actions", () => {
-    const admitted = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Created one bounded follow-up",
-        evidence: ["review:current-frontier"],
-        actions: [
-          {
-            kind: "create-task",
-            id: "work/follow-up",
-            parentId: "alpha-project",
-            outcome: "Finish the bounded follow-up.",
-            acceptance: ["The follow-up has exact evidence."],
-          },
-        ],
-      },
-      {
-        ...workflowOptions,
-        rootParentAliases: ["alpha-project"],
-      },
-    );
-
-    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
-      kind: "create-task",
-      id: "work/follow-up",
-      parentId: "app-root",
-    });
-  });
-
   it("preserves domain input, dependencies, and explicit standing mode", () => {
     const admitted = admitTaskReconcileResult(
       {
@@ -300,8 +255,9 @@ describe("project task handler contract", () => {
         evidence: [],
         actions: [
           {
-            kind: "create-task",
-            id: "runtime/monitor",
+            kind: "update-task",
+            taskId: "runtime/monitor",
+            expectedGeneration: 1,
             outcome: "Keep the signal observed.",
             acceptance: ["The latest signal is represented."],
             mode: "maintain",
@@ -401,8 +357,9 @@ describe("project task handler contract", () => {
         evidence: [],
         actions: [
           {
-            kind: "create-task",
-            id: "work/review",
+            kind: "update-task",
+            taskId: "work/review",
+            expectedGeneration: 1,
             outcome: "Implement the bounded change.",
             acceptance: ["The change is verified."],
             executor: "reviewer",
@@ -421,8 +378,9 @@ describe("project task handler contract", () => {
           evidence: [],
           actions: [
             {
-              kind: "create-task",
-              id: "work/ambiguous",
+              kind: "update-task",
+              taskId: "work/ambiguous",
+              expectedGeneration: 1,
               outcome: "Do work.",
               acceptance: ["Done."],
               workflow: "implementation",
@@ -442,8 +400,9 @@ describe("project task handler contract", () => {
           evidence: [],
           actions: [
             {
-              kind: "create-task",
-              id: "work/invalid-executor",
+              kind: "update-task",
+              taskId: "work/invalid-executor",
+              expectedGeneration: 1,
               outcome: "Do work.",
               acceptance: ["Done."],
               executor: "Bad Name",
@@ -454,7 +413,7 @@ describe("project task handler contract", () => {
       ),
     ).toEqual({
       ok: false,
-      error: "actions[0].executor must be a lowercase name of at most 64 characters when present",
+      error: "actions[0].executor must be a lowercase name of at most 64 characters or null when present",
     });
   });
 
@@ -523,8 +482,9 @@ describe("project task handler contract", () => {
         evidence: ["proof"],
         actions: [
           {
-            kind: "create-task",
-            id: "work/exact",
+            kind: "update-task",
+            taskId: "work/exact",
+            expectedGeneration: 1,
             outcome: "Do exact work",
             acceptance: ["Exact work is done"],
             unexpected: true,

@@ -1,10 +1,9 @@
 import { createHash } from "node:crypto";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as transaction } from "../../../lib/db/transaction.js";
-import { wakeAppInboxItemsWaitingOnApp } from "./app-inbox-store.js";
 import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { isTaskAttentionReadyForReview, isTaskExecutionExhausted } from "../tasks/app-task-state.js";
+import { pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -119,8 +118,8 @@ export type AppTaskControlReceipt = {
 
 export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
-  /** Readiness release must not race an App pause from another writer. */
-  requireActiveProject?: boolean;
+  /** Check background pause against current input inside the claim transaction. */
+  requireUnpausedTask?: string;
   expectMissingTaskIds?: string[];
   tasks?: TaskResourceWrite[];
   deleteTaskIds?: string[];
@@ -200,9 +199,8 @@ export class AppTaskResourceStore {
     ready: boolean,
     nextCheckAt: number | null,
   ): void {
-    // Input remains durable while execution is stopped; it must not leave a
-    // permanently ready/due recovery hint that bypasses or spins on the guard.
-    const executionStopped = isTaskExecutionExhausted(resource);
+    // Retain pending input without a ready hint that bypasses its cooldown.
+    const retryAt = pendingTaskExecutionRetryAt(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -233,9 +231,9 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !executionStopped && taskChanged(resource, trigger) ? 1 : 0,
-        !executionStopped && ready ? 1 : 0,
-        executionStopped ? null : nextCheckAt,
+        !retryAt && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && ready ? 1 : 0,
+        retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
         epoch(resource.status.updatedAt) ?? Date.now(),
@@ -479,6 +477,35 @@ export class AppTaskResourceStore {
     return value === "active" || value === "paused" ? value : null;
   }
 
+  /** Foreground eligibility comes from admitted human input, never Task priority. */
+  hasPendingHumanConversationInput(taskId: string): boolean {
+    return Boolean(
+      this.db
+        .prepare(
+          `SELECT 1 FROM app_inbox_items WHERE app_id = ? AND execution_task_id = ?
+       AND source_kind = 'human' AND status != 'done' LIMIT 1`,
+        )
+        .get(this.appId, taskId),
+    );
+  }
+
+  pendingHumanConversationTaskIds(): Set<string> {
+    return new Set(
+      (
+        this.db
+          .prepare(
+            `SELECT DISTINCT execution_task_id FROM app_inbox_items WHERE app_id = ?
+       AND execution_task_id IS NOT NULL AND source_kind = 'human' AND status != 'done'`,
+          )
+          .all(this.appId) as Array<{ execution_task_id: string }>
+      ).map((row) => row.execution_task_id),
+    );
+  }
+
+  allowsTaskExecution(taskId: string): boolean {
+    return this.projectLifecycle() === "active" || this.hasPendingHumanConversationInput(taskId);
+  }
+
   readTask(taskId: string): AppTaskResource | null {
     const row = this.db
       .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
@@ -487,11 +514,13 @@ export class AppTaskResourceStore {
   }
 
   /** Read accepted content and its current display phase from the same row. */
-  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"] } | null {
+  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"]; closed: boolean } | null {
     const row = this.db
-      .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase FROM app_tasks WHERE app_id = ? AND task_id = ?`)
-      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"] } | null;
-    return row ? { resource: parseJson<AppTaskResource>(row.resource_json), phase: row.phase } : null;
+      .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase,
+        EXISTS(SELECT 1 FROM app_task_cancellations c WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id) AS closed
+        FROM app_tasks WHERE app_id = ? AND task_id = ?`)
+      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closed: number } | null;
+    return row ? { resource: parseJson<AppTaskResource>(row.resource_json), phase: row.phase, closed: Boolean(row.closed) } : null;
   }
 
   readTrigger(taskId: string): AppTaskTrigger | null {
@@ -513,6 +542,26 @@ export class AppTaskResourceStore {
       .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?")
       .get(this.appId, taskId) as { receipt_json?: string } | null;
     return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
+  }
+
+  /** Activation precondition, not a migration or a per-claim repair loop. */
+  assertCompletionReceiptsImported(): void {
+    const missing = this.db.prepare(`
+      SELECT r.receipt_id FROM app_task_receipts r
+      WHERE r.app_id = ? AND NOT EXISTS (
+        SELECT 1 FROM app_task_attempts a
+        WHERE a.app_id = r.app_id AND a.task_id = r.receipt_id
+          AND a.task_generation = json_extract(r.receipt_json, '$.metadata.generation')
+          AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
+          AND json_extract(a.attempt_json, '$.specHash') = json_extract(r.receipt_json, '$.specHash')
+      ) LIMIT 1
+    `).get(this.appId) as { receipt_id: string } | null;
+    if (missing) {
+      throw new Error(
+        `App ${this.appId} has unconverted completion history for Task ${missing.receipt_id}; ` +
+        "stop the old Host and workers and run the offline Task state cutover before activation",
+      );
+    }
   }
 
   readControlReceipt(controlKey: string): AppTaskControlReceipt | null {
@@ -574,7 +623,7 @@ export class AppTaskResourceStore {
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running')
+           AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.condition_id, linked.task_id`,
       )
       .all(this.appId, eventType) as Array<{
@@ -617,7 +666,7 @@ export class AppTaskResourceStore {
                : ""
            }
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running')
+           AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )
       .all(eventType, ...(exactSubjects ?? [])) as Array<{
@@ -684,11 +733,7 @@ export class AppTaskResourceStore {
       clauses.push(
         `SELECT task_id AS id FROM app_tasks
          WHERE app_id = ? AND task_id > ? AND phase IN (${storedPhases.map(() => "?").join(", ")})
-           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
-           AND NOT EXISTS (
-             SELECT 1 FROM app_task_cancellations c
-             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
-           )`,
+           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})`,
       );
       values.push(this.appId, after, ...storedPhases, ...livePhases);
     }
@@ -882,6 +927,11 @@ export class AppTaskResourceStore {
           ).map((row) => [row.task_id, parseJson<AppTaskCancellation>(row.cancellation_json)]),
         )
       : {};
+    // Canonical references must survive a bounded history read even when the
+    // clock moves backwards or several attempts share a timestamp.
+    const referencedAttemptIds = Object.values(resources).flatMap(({ status }) =>
+      [status.currentAttemptId, status.observedAttemptId].filter((id): id is string => Boolean(id)),
+    );
     const attempts =
       options.includeHistory !== false && taskIds.length
         ? Object.fromEntries(
@@ -890,12 +940,15 @@ export class AppTaskResourceStore {
                 .prepare(
                   `SELECT attempt_id, attempt_json FROM (
                    SELECT attempt_id, attempt_json,
-                     ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY started_at DESC, attempt_id DESC) AS position
+                     ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY
+                       CASE WHEN attempt_id IN (${referencedAttemptIds.map(() => "?").join(", ") || "NULL"})
+                         THEN 0 ELSE 1 END,
+                       started_at DESC, attempt_id DESC) AS position
                    FROM app_task_attempts
                    WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})
                  ) WHERE position <= ?`,
                 )
-                .all(this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
+                .all(...referencedAttemptIds, this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
                 attempt_id?: string;
                 attempt_json?: string;
               }>
@@ -1123,41 +1176,6 @@ export class AppTaskResourceStore {
     ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
-  /**
-   * Advance a recovery hint, not Task state, before asynchronous inspection.
-   * The durable cursor lets later startup/reload passes reach the rest of the
-   * attention cohort even if this worker exits or a binding stays unavailable.
-   */
-  takeHandlerRecoveryTaskIds(limit = 512): string[] {
-    const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
-    return transaction(this.db, () => {
-      type Cursor = { updated_at: number; task_id: string };
-      const raw = this.meta("handler_recovery_cursor");
-      const cursor = raw ? parseJson<Cursor | null>(raw) : null;
-      const query = this.db.prepare(
-        `SELECT task_id, updated_at FROM app_tasks
-         WHERE app_id = ? AND phase = 'attention'
-           AND (updated_at, task_id) > (?, ?)
-           AND NOT EXISTS (
-             SELECT 1 FROM app_task_cancellations c
-             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
-           )
-         ORDER BY updated_at, task_id LIMIT ?`,
-      );
-      const read = (after: Cursor | null) =>
-        query.all(
-          this.appId,
-          after?.updated_at ?? Number.MIN_SAFE_INTEGER,
-          after?.task_id ?? "",
-          boundedLimit,
-        ) as Cursor[];
-      let rows = read(cursor);
-      if (rows.length === 0 && cursor) rows = read(null);
-      this.setMeta("handler_recovery_cursor", json(rows.length === boundedLimit ? rows.at(-1) : null));
-      return rows.map((row) => row.task_id);
-    });
-  }
-
   hasUnfinishedTasks(): boolean {
     return Boolean(
       this.db
@@ -1172,53 +1190,6 @@ export class AppTaskResourceStore {
         )
         .get(this.appId),
     );
-  }
-
-  /** Exact failed attempts that one later successful agent session may repair. */
-  listHandlerExecutionRecoveryTaskIds(agent: string, limit = 256): string[] {
-    const normalizedAgent = agent.trim();
-    if (!normalizedAgent) return [];
-    const boundedLimit = Math.max(1, Math.min(10_000, Math.floor(limit)));
-    return (
-      this.db
-        .prepare(
-          `SELECT failed.task_id
-           FROM app_task_attempts failed INDEXED BY idx_app_task_attempts_execution_failure
-           JOIN app_tasks task
-             ON task.app_id = failed.app_id AND task.task_id = failed.task_id
-           WHERE failed.app_id = ?
-             AND json_extract(failed.attempt_json, '$.owner') = ?
-             AND json_extract(failed.attempt_json, '$.failureReason')
-               IN ('HandlerExecutionFailed', 'handler-blocked')
-             AND task.phase = 'attention'
-             AND failed.task_generation = task.generation
-             AND typeof(json_extract(failed.attempt_json, '$.finishedAt')) = 'text'
-             AND json_extract(failed.attempt_json, '$.finishedAt') <> ''
-             AND typeof(json_extract(failed.attempt_json, '$.sessionId')) = 'text'
-             AND json_extract(failed.attempt_json, '$.sessionId') <> ''
-             AND (
-               json_extract(failed.attempt_json, '$.failureReason') = 'HandlerExecutionFailed'
-               OR json_extract(failed.attempt_json, '$.handler') =
-                 'owner:' || json_extract(failed.attempt_json, '$.owner')
-             )
-             AND failed.attempt_id = (
-               SELECT latest.attempt_id
-               FROM app_task_attempts latest INDEXED BY idx_app_task_attempts_task
-               WHERE latest.app_id = failed.app_id
-                 AND latest.task_id = failed.task_id
-                 AND latest.task_generation = failed.task_generation
-               ORDER BY latest.started_at DESC, latest.attempt_id DESC
-               LIMIT 1
-             )
-             AND NOT EXISTS (
-               SELECT 1 FROM app_task_cancellations cancelled
-               WHERE cancelled.app_id = task.app_id AND cancelled.task_id = task.task_id
-             )
-           ORDER BY failed.started_at, failed.task_id
-           LIMIT ?`,
-        )
-        .all(this.appId, normalizedAgent, boundedLimit) as Array<{ task_id?: string }>
-    ).flatMap((row) => (row.task_id ? [row.task_id] : []));
   }
 
   listLiveTaskIds(excludeTaskId: string, limit = 64): string[] {
@@ -1258,7 +1229,7 @@ export class AppTaskResourceStore {
       throw new Error("Task resource mutation requires at least one existing or missing-task fence");
     }
     return transaction(this.db, () => {
-      if (mutation.requireActiveProject && this.projectLifecycle() !== "active") return false;
+      if (mutation.requireUnpausedTask && !this.allowsTaskExecution(mutation.requireUnpausedTask)) return false;
       for (const fence of mutation.fences) {
         const current = this.db
           .prepare(
@@ -1299,7 +1270,22 @@ export class AppTaskResourceStore {
       }
       for (const { resource } of mutation.tasks ?? []) {
         const previous = this.readTask(resource.metadata.id);
-        if (previous?.spec.parentId !== resource.spec.parentId && this.isCancelled(resource.spec.parentId)) {
+        // Offline receipt import may restore an already closed child beneath a
+        // closed parent. It adds history, never new executable responsibility.
+        const restoredClosure =
+          !previous &&
+          mutation.cancellations?.some(
+            (closure) =>
+              closure.taskId === resource.metadata.id &&
+              closure.kind === "closed" &&
+              closure.generation === resource.metadata.generation &&
+              this.readReceipt(resource.metadata.id)?.metadata.generation === closure.generation,
+          );
+        if (
+          previous?.spec.parentId !== resource.spec.parentId &&
+          this.isCancelled(resource.spec.parentId) &&
+          !restoredClosure
+        ) {
           return false;
         }
       }
@@ -1442,25 +1428,6 @@ export class AppTaskResourceStore {
             json(receipt),
           );
       }
-      // Readiness belongs to the accepted transition, not its EventBus hint.
-      const reviewable = new Set(mutation.deleteTaskIds ?? []);
-      for (const write of mutation.tasks ?? []) {
-        if (
-          isTaskAttentionReadyForReview(write.resource, Boolean(write.trigger)) ||
-          (!write.trigger &&
-            write.resource.status.phase === "converged" &&
-            write.resource.status.observedGeneration === write.resource.metadata.generation)
-        ) {
-          reviewable.add(write.resource.metadata.id);
-        }
-      }
-      for (const receipt of mutation.receipts ?? []) {
-        // A receipt from an older generation must not wake newly revised work.
-        if (!this.readTask(receipt.metadata.id)) reviewable.add(receipt.metadata.id);
-      }
-      for (const taskId of reviewable) {
-        wakeAppInboxItemsWaitingOnApp(this.db, this.appId, { kind: "task", id: taskId });
-      }
       this.bumpRevision();
       return true;
     });
@@ -1470,53 +1437,58 @@ export class AppTaskResourceStore {
     taskId: string,
     input: { ready?: boolean; changed?: boolean; nextCheckAt?: number | null; expectedRevision?: number },
   ): boolean {
-    const assignments: string[] = [];
-    const assignmentValues: unknown[] = [];
-    const changedPredicates: string[] = [];
-    const expectedValues: unknown[] = [];
-    if (input.ready !== undefined) {
-      assignments.push("ready = ?");
-      assignmentValues.push(input.ready ? 1 : 0);
-      changedPredicates.push("ready IS NOT ?");
-      expectedValues.push(input.ready ? 1 : 0);
-    }
-    if (input.changed !== undefined) {
-      assignments.push("changed = ?");
-      assignmentValues.push(input.changed ? 1 : 0);
-      changedPredicates.push("changed IS NOT ?");
-      expectedValues.push(input.changed ? 1 : 0);
-    }
-    if (input.nextCheckAt !== undefined) {
-      assignments.push("next_check_at = ?");
-      assignmentValues.push(input.nextCheckAt);
-      changedPredicates.push("next_check_at IS NOT ?");
-      expectedValues.push(input.nextCheckAt);
-    }
-    if (!assignments.length) return false;
-    const changed =
-      this.db
-        .prepare(
-          `UPDATE app_tasks SET ${assignments.join(", ")}
-           WHERE app_id = ? AND task_id = ?
-             AND (${changedPredicates.join(" OR ")})
-             AND (? IS NULL OR ? = (
-               SELECT CAST(value AS INTEGER) FROM app_task_store_meta
-               WHERE app_id = app_tasks.app_id AND key = 'revision'
-             ))
-             AND NOT EXISTS (
-               SELECT 1 FROM app_task_cancellations cancelled
-               WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
-             )`,
-        )
-        .run(
-          ...assignmentValues,
-          this.appId,
-          taskId,
-          ...expectedValues,
-          input.expectedRevision ?? null,
-          input.expectedRevision ?? null,
-        ).changes > 0;
-    return changed;
+    return transaction(this.db, () => {
+      const resource = this.readTask(taskId);
+      const retryAt = resource && pendingTaskExecutionRetryAt(resource);
+      if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
+      const assignments: string[] = [];
+      const assignmentValues: unknown[] = [];
+      const changedPredicates: string[] = [];
+      const expectedValues: unknown[] = [];
+      if (input.ready !== undefined) {
+        assignments.push("ready = ?");
+        assignmentValues.push(input.ready ? 1 : 0);
+        changedPredicates.push("ready IS NOT ?");
+        expectedValues.push(input.ready ? 1 : 0);
+      }
+      if (input.changed !== undefined) {
+        assignments.push("changed = ?");
+        assignmentValues.push(input.changed ? 1 : 0);
+        changedPredicates.push("changed IS NOT ?");
+        expectedValues.push(input.changed ? 1 : 0);
+      }
+      if (input.nextCheckAt !== undefined) {
+        assignments.push("next_check_at = ?");
+        assignmentValues.push(input.nextCheckAt);
+        changedPredicates.push("next_check_at IS NOT ?");
+        expectedValues.push(input.nextCheckAt);
+      }
+      if (!assignments.length) return false;
+      const changed =
+        this.db
+          .prepare(
+            `UPDATE app_tasks SET ${assignments.join(", ")}
+             WHERE app_id = ? AND task_id = ?
+               AND (${changedPredicates.join(" OR ")})
+               AND (? IS NULL OR ? = (
+                 SELECT CAST(value AS INTEGER) FROM app_task_store_meta
+                 WHERE app_id = app_tasks.app_id AND key = 'revision'
+               ))
+               AND NOT EXISTS (
+                 SELECT 1 FROM app_task_cancellations cancelled
+                 WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+               )`,
+          )
+          .run(
+            ...assignmentValues,
+            this.appId,
+            taskId,
+            ...expectedValues,
+            input.expectedRevision ?? null,
+            input.expectedRevision ?? null,
+          ).changes > 0;
+      return changed;
+    });
   }
 
 }
