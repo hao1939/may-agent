@@ -412,6 +412,46 @@ instructions may remain in retained history; a source rollback does not erase
 them. Make a current correction clear through the existing input path. Use fresh
 execution controls to test durable adoption separately from transcript influence.
 
+### Improvement uses the ordinary Task lifecycle
+
+Host #158 is merged in source (`f5d5a535`, September 12, 2026); this does not
+establish deployment. Use that common lifecycle rather than a separate learning
+job, campaign controller, or Task for each edit and probe.
+
+A small correction can finish inside the current Conversation Task. Improvement
+that needs independent follow-through gets one ordinary App-owned Task. The
+agent chooses what to edit, how to test it, and whether feedback warrants repair.
+Code preserves the assignment, scoped effects, evidence, waits and returned
+result. A workflow is useful only when repeatable mechanical ordering earns it.
+
+The durable evidence should identify the objective and scope, candidate revision,
+any required exact approval, observed activation, actual target execution revision
+and its result. Reuse the Task's result/evidence and owned source artifacts;
+do not add an improvement status database. Inspect committed effects after
+reopening instead of blindly repeating them. A restart does not renew authority
+or reset an agreed spending allowance.
+
+Keep these facts distinct:
+
+```text
+candidate saved -> active source -> target execution used it -> useful result
+```
+
+An external wait releases execution and preserves the same Task. Its observation
+resumes work; a timer or successful reload is not itself proof of adoption.
+`converged` accepts an outcome and leaves the Task open. The assigning owner
+decides closure or withdrawal. A worker's `stopped` report is an unsuccessful
+attempt, not cancellation of the assignment. Unfinished work retains the normal
+retry policy; a bounded improvement budget must be enforced at the applicable
+operation boundary, not expressed by pretending `stopped` closes the Task.
+
+The [unified-Task improvement experiment](task-improvement-poc-20260912.md)
+examines this composition. It also checks **effective** tool capabilities after
+Task preparation: the runtime rebuilds standard coding tools for the Task
+workspace. A differently scoped source capability must keep its own adapter
+identity and restrictions. Registration alone does not prove the executed
+capability has the intended scope.
+
 ### Native workers
 
 Native CLI workers have their own discovery and permission behavior. Pass the

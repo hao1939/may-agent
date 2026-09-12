@@ -31,6 +31,13 @@ small shared state boundary.
 
 ## Current focus
 
+The [unified-Task improvement trial](proposals/task-improvement-poc-20260912.md)
+extends agent-operated guidance work through a durable wait and Task-runtime/storage
+reopen. One Task resumed across two managed attempts, activated its candidate and
+passed four withheld checks. A separate withdrawal trial prevented later activation.
+The retained unsuccessful trials exposed fixture tool rebinding and a no-op-event
+counting error, not a need for another learning lifecycle. No production changes.
+
 The [agent-operated improvement PoC](proposals/agent-operated-improvement-poc-20260912.md)
 now tests the extension mechanisms without a human operating the intermediate
 steps. Four temporary trials completed 42 model executions and 16 correct
@@ -77,8 +84,8 @@ outcome, rest, and run again when needed. The App, parent agent or human decides
 when to close the Task. Human interaction, delegation and scheduled observation
 are capabilities a Task can combine. Messages, Topics and accepted Requests
 preserve human context within that loop. This replaces the earlier scheduler-only
-candidate; the source PoC in draft Host #158 implements shared execution and
-input/result routes. Full CI, live nested delegation and an isolated daemon
+candidate; merged Host #158 (`f5d5a535`) implements shared execution and
+input/result routes. This is source status, not deployment evidence. Full CI, live nested delegation and an isolated daemon
 cutover pass. Compatibility retirement and the expected reduction in maintenance
 cost remain under review. The proposal links the evidence and remaining gates.
 

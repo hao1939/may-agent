@@ -77,8 +77,8 @@ assigning owner judges scope and whether more work is worthwhile. A worker
 can report failure honestly; abandoning the assignment belongs to its owner.
 The [continuing-Task baseline](../proposals/conversation-input-unification.md#recovery-keeps-the-same-task)
 uses backoff to pace unfinished work without a fixed failure-count stop;
-the source candidate in Host #158 implements it and awaits human review and
-separate adoption. Its [deeper PoC review](../proposals/controller-poc-deeper-review.md)
+merged source in Host #158 implements it; release/deployment remains a separate
+check. Its [deeper PoC review](../proposals/controller-poc-deeper-review.md)
 examines continuing-retry cost and owner decisions in use.
 
 Useful default error handling and metrics remain product goals. Being provided
@@ -240,8 +240,8 @@ conversation Task remains available. An accepted outcome does not require the
 Task to close. The App, parent agent or human decides when to close it, and the
 Host enforces that decision without judging responsibility lifetime. Timers are
 optional input; quiet Tasks need no running agent. The accepted
-[baseline](../2a-design/task-resource-engine.md#one-lifecycle-baseline) is pending
-implementation. Neither tool use nor frequency alone requires a workflow or a
+[baseline](../2a-design/task-resource-engine.md#one-lifecycle-baseline) is implemented
+in merged Host #158; this does not establish deployment. Neither tool use nor frequency alone requires a workflow or a
 new work mechanism.
 
 An App becomes more powerful by adding domain policy, acceptance checks,

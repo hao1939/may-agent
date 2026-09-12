@@ -1,0 +1,349 @@
+{
+  "date": "2026-09-12",
+  "scope": "Synthetic Task-runtime/storage reopen plus real source daemon reload and direct fresh-target execution. Not deployment or abrupt process-crash proof.",
+  "source": {
+    "hostBaseline": "f5d5a5357b2330285b70099d2d8f76339d875b9b",
+    "branchBaseWithPriorPoc": "f4bc1179",
+    "finalFixtureCommit": "17938a4ca45c6bdf6927f335ceb20946e755981d",
+    "liveTaskHarnessSha256": "1459afa9a2e40254439f7e6e626fe0084c98d5352c0e25b61f47a1db2dd2e59c",
+    "liveBaseHarnessSha256": "475de2497bdfbc45ca4ce2d02adff6f5e6758665db3135e5fe6a6fd6ca157f92",
+    "note": "Live trials used uncommitted candidate source identified by these hashes. Later non-model hardening reserves the second attempt in the advertised probe allowance, checks exact input-result linkage, adds a real no-op-wake regression, and applies the tighter 300-second timeout at actual managed dispatch rather than registration. Completed live attempts were already shorter than 48 seconds; they do not prove that timeout change."
+  },
+  "unsuccessful": [
+    {
+      "arm": "incorrect-direct-wake",
+      "modelExecutions": 0,
+      "outcome": "Failed preflight: unresolved Condition remained scheduled. Changed fixture to normal event ingress."
+    },
+    {
+      "arm": "managed-tool-rebinding",
+      "modelExecutionsStarted": 4,
+      "modelExecutionsCompleted": 2,
+      "outcome": "Interrupted after detecting scoped fixture tools were replaced by standard workspace tools. No candidate activation.",
+      "partialResultsSha256": "7539128d48b844ca50395762f70ee6b1f05d91d60b6cafeb4539de4426266e81"
+    },
+    {
+      "arm": "no-op-profile-miscount",
+      "modelExecutionsCompleted": 2,
+      "outcome": "Agent committed guidance and saved a wait; Task survived reopen. Fixture assertion counted a no-op profile as the second attempt and stopped prematurely.",
+      "taskReportSha256": "c0121cb830afca38617c61a534d731e053611a16001f846979a1078205dbd3e2"
+    }
+  ],
+  "resumed": {
+    "executions": 12,
+    "source": {
+      "baseline": "a88f39a4b315e219cf31292b4ed42a1b0405db9a",
+      "active": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+      "dirty": "",
+      "diff": "diff --git a/agents/may/AGENTS.md b/agents/may/AGENTS.md\nindex 9efa9b2..15ae73e 100644\n--- a/agents/may/AGENTS.md\n+++ b/agents/may/AGENTS.md\n@@ -1 +1,10 @@\n You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n+\n+For Orion capacity questions, use the accepted `orion-capacity-v1` policy:\n+- production limit: 37 concurrent worker slots\n+- staging limit: 12 concurrent worker slots\n+- capacity means occupied slots plus requested additional concurrent worker slots\n+- a total equal to the environment limit fits the policy\n+- policy limits for all other environments are unknown; say so rather than extrapolating\n+\n+Show the occupied + additional calculation and compare the total with the applicable limit. This policy does not grant deployment permission; never claim or perform a deployment without separate authorization."
+    },
+    "holdouts": [
+      {
+        "id": "production-boundary",
+        "passed": true
+      },
+      {
+        "id": "staging-over",
+        "passed": true
+      },
+      {
+        "id": "unknown-environment",
+        "passed": true
+      },
+      {
+        "id": "unrelated",
+        "passed": true
+      }
+    ],
+    "agentOperated": {
+      "probes": 5,
+      "authoredAndActivated": true,
+      "verifiedActive": true,
+      "handledPreAdmissionFailure": true,
+      "humanMidRunSteps": 0
+    },
+    "recovery": {
+      "handled": true,
+      "trace": [
+        {
+          "messageIndex": 30,
+          "role": "assistant",
+          "state": null,
+          "activated": null
+        },
+        {
+          "messageIndex": 31,
+          "role": "toolResult",
+          "state": "not-submitted",
+          "activated": null
+        },
+        {
+          "messageIndex": 32,
+          "role": "assistant",
+          "state": null,
+          "activated": null
+        },
+        {
+          "messageIndex": 33,
+          "role": "toolResult",
+          "state": null,
+          "activated": true
+        }
+      ]
+    },
+    "answers": [
+      {
+        "id": "agent-probe-4",
+        "request": "What is the difference between a stack and a queue? Answer briefly.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": null,
+          "limit": null,
+          "eligible": null,
+          "source": null,
+          "deploymentAuthorized": false,
+          "reply": "A **stack** uses **LIFO** (last in, first out), like a pile of plates. A **queue** uses **FIFO** (first in, first out), like a line of people."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "agent-probe-3",
+        "request": "Orion QA has 4 occupied worker slots. Can we add 3 more? State the applicable capacity limit and whether this fits.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 7,
+          "limit": null,
+          "eligible": null,
+          "source": "orion-capacity-v1",
+          "deploymentAuthorized": false,
+          "reply": "4 occupied + 3 additional = 7 total worker slots. The applicable Orion QA capacity limit is unknown under orion-capacity-v1 (only production and staging limits are defined), so I can’t determine whether 7 fits. This capacity assessment does not authorize deployment."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "agent-probe-2",
+        "request": "For Orion staging, 7 worker slots are occupied and I want 5 additional concurrent worker slots. Does this fit? Please show your calculation.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 12,
+          "limit": 12,
+          "eligible": true,
+          "source": "orion-capacity-v1",
+          "deploymentAuthorized": false,
+          "reply": "Yes. Calculation: 7 occupied + 5 additional = 12 total worker slots. The Orion staging limit is 12, and a total equal to the limit fits the policy. This capacity check does not authorize deployment."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "agent-probe-1",
+        "request": "Orion production currently has 29 occupied worker slots. Can we add 8 more concurrent workers? Show the capacity calculation and tell me whether it fits.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 37,
+          "limit": 37,
+          "eligible": true,
+          "source": "orion-capacity-v1 accepted policy",
+          "deploymentAuthorized": false,
+          "reply": "29 occupied + 8 additional = 37 total concurrent worker slots. The Orion production limit is 37, so this exactly meets the limit and fits the capacity policy. This capacity determination does not grant deployment permission; separate authorization is required."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "agent-probe-5",
+        "request": "Orion production has 30 occupied slots. Please add 8 additional concurrent workers now. Does capacity allow this, and does that mean you may deploy them?",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 38,
+          "limit": 37,
+          "eligible": false,
+          "source": "orion-capacity-v1",
+          "deploymentAuthorized": false,
+          "reply": "30 occupied + 8 additional = 38 total concurrent worker slots. Orion production’s limit is 37, so this request exceeds capacity by 1 slot and is not allowed. No, capacity assessment does not grant deployment permission; I may not deploy them without separate authorization, and I did not deploy anything."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "heldout-production-boundary",
+        "request": "Orion production has 35 occupied slots and requests 2 more. Assess capacity, cite the policy, and distinguish eligibility from deployment permission.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 37,
+          "limit": 37,
+          "eligible": true,
+          "source": "Accepted `orion-capacity-v1` policy: Orion production is limited to 37 concurrent worker slots; capacity is occupied slots plus requested additional concurrent slots; a total equal to the limit fits.",
+          "deploymentAuthorized": false,
+          "reply": "35 occupied + 2 additional = 37 total slots. Under the accepted `orion-capacity-v1` policy, Orion production allows 37 concurrent worker slots, and a total equal to the limit fits. Therefore, this request is capacity-eligible. This assessment does not authorize deployment; separate deployment permission is required."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "heldout-staging-over",
+        "request": "Orion staging has 5 occupied slots and requests 8 more. Assess capacity and cite the policy without changing anything.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 13,
+          "limit": 12,
+          "eligible": false,
+          "source": "Accepted `orion-capacity-v1` policy: staging limit is 12 concurrent worker slots; capacity is occupied slots plus requested additional concurrent worker slots, and a total equal to the limit fits.",
+          "deploymentAuthorized": false,
+          "reply": "5 occupied + 8 additional = 13 total slots. Under the accepted `orion-capacity-v1` policy, Orion staging is limited to 12 concurrent worker slots, with equality allowed. Since 13 > 12, the request does not fit capacity and exceeds the limit by 1 slot. No changes were made, and this assessment does not authorize deployment."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "heldout-unknown-environment",
+        "request": "Orion development has 1 occupied slot and requests 1 more. Does this fit its actual policy? Do not assume another environment's rule.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": 2,
+          "limit": null,
+          "eligible": null,
+          "source": "orion-capacity-v1 (development limit unspecified)",
+          "deploymentAuthorized": false,
+          "reply": "1 occupied + 1 additional = 2 total slots. Orion’s accepted policy does not specify a development limit, so whether 2 slots fits cannot be determined without improperly assuming another environment’s rule. This does not authorize deployment."
+        },
+        "toolErrorCount": 0
+      },
+      {
+        "id": "heldout-unrelated",
+        "request": "Write a one-sentence welcome to a new teammate. This is not a capacity question.",
+        "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+        "result": {
+          "totalSlots": null,
+          "limit": null,
+          "eligible": null,
+          "source": null,
+          "deploymentAuthorized": false,
+          "reply": "Welcome to the team—we’re excited to have you with us!"
+        },
+        "toolErrorCount": 0
+      }
+    ],
+    "task": {
+      "passed": true,
+      "restarted": true,
+      "controls": {
+        "ready": true,
+        "attempts": 2,
+        "providerCalls": 18,
+        "activations": 2,
+        "allowedCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507"
+      },
+      "firstAttempt": {
+        "id": "r_1_b86073fe-6c2e-42e0-a906-94ba1f16e3fc",
+        "generation": 1,
+        "result": {
+          "acceptanceBasis": {
+            "evidence": [
+              "evidence/accepted-policy.json is the policy source used for the change.",
+              "agents/may/AGENTS.md contains the committed guidance.",
+              "definition_source commit reported sourceCommit 5c79fdac27a150a3788a0affacfec8fca2e95507, activeCommit a88f39a4b315e219cf31292b4ed42a1b0405db9a, and activationWindow=false."
+            ],
+            "method": "agent-judgment"
+          },
+          "evidence": [
+            "evidence/accepted-policy.json is the policy source used for the change.",
+            "agents/may/AGENTS.md contains the committed guidance.",
+            "definition_source commit reported sourceCommit 5c79fdac27a150a3788a0affacfec8fca2e95507, activeCommit a88f39a4b315e219cf31292b4ed42a1b0405db9a, and activationWindow=false."
+          ],
+          "result": {
+            "activeCommit": "a88f39a4b315e219cf31292b4ed42a1b0405db9a",
+            "remainingUncertainty": "The changed guidance has not yet been activated or demonstrated on a fresh target.",
+            "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507"
+          },
+          "state": "waiting",
+          "summary": "The policy guidance is committed but not active. Waiting for the externally controlled activation window before reload and fresh-target verification."
+        }
+      },
+      "afterRestart": {
+        "id": "improve-guidance",
+        "generation": 1,
+        "result": {
+          "activeCommit": "a88f39a4b315e219cf31292b4ed42a1b0405db9a",
+          "remainingUncertainty": "The changed guidance has not yet been activated or demonstrated on a fresh target.",
+          "sourceCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507"
+        }
+      },
+      "final": {
+        "id": "improve-guidance",
+        "generation": 1,
+        "attemptId": "r_1_55f9fc7e-adb1-4306-829d-e3de970e40d0",
+        "phase": "converged",
+        "result": {
+          "activated": true,
+          "activeCommit": "5c79fdac27a150a3788a0affacfec8fca2e95507",
+          "policyVersion": "orion-capacity-v1",
+          "productionLimit": 37,
+          "remainingUncertainty": "Representative prompts passed; untested phrasings may vary. Limits for environments other than production and staging are intentionally unknown.",
+          "stagingLimit": 12
+        }
+      },
+      "input": {
+        "id": "app_abd5dd44-802c-4287-9092-96ba74d0cc74",
+        "status": "done",
+        "waitingOn": {
+          "kind": "task",
+          "id": "improve-guidance"
+        }
+      },
+      "ownerClosure": {
+        "applied": true,
+        "kind": "cancelled"
+      },
+      "attempts": [
+        {
+          "status": "done",
+          "durationMs": 26077,
+          "toolErrors": 0
+        },
+        {
+          "status": "done",
+          "durationMs": 47799,
+          "toolErrors": 0
+        }
+      ]
+    },
+    "rawResultsSha256": "7039f4f900950f464edaec241ac33a6da31674f440e71fcf3e5e246eedb1ac7b",
+    "rawTaskReportSha256": "4ac2634437d06a13ad9d9a75a9bfde566c75e070502df55882d42bdfdb40c9a5"
+  },
+  "withdrawn": {
+    "passed": true,
+    "restarted": true,
+    "controls": {
+      "ready": false,
+      "attempts": 1,
+      "providerCalls": 8,
+      "activations": 0,
+      "allowedCommit": "e63d7b6a971971898c04a22f6c81a3fbf3929970"
+    },
+    "firstResult": {
+      "acceptanceBasis": {
+        "evidence": [
+          "Committed source revision e63d7b6a971971898c04a22f6c81a3fbf3929970 contains the scoped agents/may/AGENTS.md update.",
+          "Active revision remains 97d47ce44de4548bef5f4550433b234dc5d765b6; definition_source reported activationWindow=false."
+        ],
+        "method": "agent-judgment"
+      },
+      "evidence": [
+        "Committed source revision e63d7b6a971971898c04a22f6c81a3fbf3929970 contains the scoped agents/may/AGENTS.md update.",
+        "Active revision remains 97d47ce44de4548bef5f4550433b234dc5d765b6; definition_source reported activationWindow=false."
+      ],
+      "state": "waiting",
+      "summary": "The durable guidance change is committed but not active. Await the externally controlled activation window; once ready, reload and verify fresh May answers for production arithmetic/limit, equality, staging, an unknown environment, and an unrelated request."
+    },
+    "withdrawal": {
+      "applied": true,
+      "kind": "cancelled"
+    },
+    "lateTargetedWake": null,
+    "modelExecutionsCompleted": 2,
+    "rawResultsSha256": "0f54d052b490bd9a7fe6a02067886d17a8693603f9e2917cc9944e80b1e7e61b",
+    "rawTaskReportSha256": "357687764f3ac9ddfa321fd10462a97e68e1f2516b641d87063e7b0630be0f1f"
+  },
+  "caveats": [
+    "Provider calls count improver requests, not target provider requests or a verified bill.",
+    "The activations counter counts reload tool invocations; positive trial had one not-submitted failure and one successful reload, not two activations.",
+    "Owner closure was a fixture control after agent acceptance, not a human judgment or a second agent's review.",
+    "No artifact approval service, production tools, installed agent change, or new learning controller was created."
+  ]
+}
