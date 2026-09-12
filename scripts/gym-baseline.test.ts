@@ -25,7 +25,7 @@ test.each([
   },
   {
     name: "explicit false with passing checks",
-    value: result(false, [{ passed: true }]),
+    value: result(false, [{ name: "sample check", passed: true }]),
     runner: 0,
     recorder: 0,
     expected: "0 pass, 1 fail, 0 error",
@@ -56,6 +56,12 @@ test.each([
     code: 1,
   },
   { name: "missing result", value: null, runner: 1, recorder: 0, expected: "0 pass, 0 fail, 1 error", code: 1 },
+  ...[
+    { name: "wrong scenario", value: { ...result(true), scenario: "another" } },
+    { name: "wrong agent", value: { ...result(true), agent: "another" } },
+    { name: "missing check name", value: result(true, [{ passed: true }]) },
+    { name: "empty check name", value: result(true, [{ name: " ", passed: true }]) },
+  ].map((item) => ({ ...item, runner: 0, recorder: 0, expected: "0 pass, 0 fail, 1 error", code: 1, record: false })),
   {
     name: "failed process claiming success",
     value: result(true),
@@ -72,7 +78,7 @@ test.each([
     expected: "0 pass, 0 fail, 1 error",
     code: 1,
   },
-])("Gym baseline preserves $name", async ({ value, runner, recorder, expected, code }) => {
+])("Gym baseline preserves $name", async ({ value, runner, recorder, expected, code, record = true }) => {
   const root = mkdtempSync(join(tmpdir(), "may-gym-baseline-"));
   try {
     const scripts = join(root, "scripts");
@@ -109,7 +115,7 @@ process.exit(Number(process.env.FIXTURE_RECORDER_EXIT));
     );
     expect(observed.code).toBe(code);
     expect(observed.stdout).toContain(expected);
-    if (value && typeof value.passed === "boolean" && !value.checks?.includes(null))
+    if (record && value && typeof value.passed === "boolean" && !value.checks?.includes(null))
       expect(JSON.parse(readFileSync(recorded, "utf8"))).toEqual(value);
     else expect(existsSync(recorded)).toBe(false);
   } finally {

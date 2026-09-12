@@ -22,6 +22,8 @@ const path = join(stateDir, "may.db");
 if (!existsSync(path)) throw new Error(`Event inspection requires an existing database: ${path}`);
 // Inspection must not initialize, restore or migrate Host state. Backfill is
 // the explicitly requested write path; it retains the Host's schema handling.
+// SQLite may create WAL reader sidecars. This is database-read-only, not a
+// zero-filesystem-write snapshot; do not race raw file copies of a live WAL.
 const db = shouldBackfill ? getDb(stateDir) : openReadOnlyDatabase(path);
 try {
   let backfilled = 0;

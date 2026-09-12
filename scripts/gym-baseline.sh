@@ -81,11 +81,14 @@ for offset in [0] + [i + 1 for i, c in enumerate(text) if c == "\n"]:
     try: d = json.loads(text[offset:])
     except ValueError: continue
     if not isinstance(d, dict) or type(d.get("passed")) is not bool: continue
-    if not all(isinstance(d.get(k), str) and d[k].strip() for k in ("scenario", "agent")): continue
+    if d.get("scenario") != sys.argv[2] or d.get("agent") != sys.argv[3]: continue
     checks = d.get("checks", [])
-    if not isinstance(checks, list) or not all(isinstance(c, dict) and type(c.get("passed")) is bool for c in checks): continue
+    if not isinstance(checks, list) or not all(
+        isinstance(c, dict) and type(c.get("passed")) is bool
+        and isinstance(c.get("name"), str) and c["name"].strip() for c in checks
+    ): continue
     print(json.dumps(d)); break
-' "$tmpfile")
+' "$tmpfile" "$scenario" "$AGENT")
   
   if [ -n "$result_json" ]; then
     # Record to may.db with batch/tag

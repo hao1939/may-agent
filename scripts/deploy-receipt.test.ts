@@ -280,6 +280,11 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).not.toContain("MAY_AGENT_DEPLOY_PROJECT:-");
     expect(deploy).toContain('task_db="${MAY_AGENT_DEPLOY_TASK_DB:-${STATE_DIR:-/app/.state}/may.db}"');
     expect(deploy).toContain('deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"');
+    const validation = 'deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"';
+    expect(deploy.split(validation)).toHaveLength(3);
+    expect(deploy.indexOf(validation)).toBeLessThan(deploy.indexOf("bun run bundle"));
+    expect(deploy.lastIndexOf(validation)).toBeGreaterThan(deploy.indexOf("bun run bundle"));
+    expect(deploy.lastIndexOf(validation)).toBeLessThan(deploy.indexOf("deploy-receipt.ts request"));
     expect(deploy).not.toContain("state.json");
     expect(deploy).toContain('source_commit="$(git rev-parse --verify HEAD)"');
     expect(deploy).toContain('canonical_commit="$(git -C "$deploy_root" rev-parse --verify HEAD)"');
