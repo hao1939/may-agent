@@ -351,7 +351,9 @@ The paired Host Operations workflow now preserves typed dependencies and no
 longer rewrites raw creation into waiting. Its prompt explains independent App
 input and existing-Task actions. Its disclosure schema composes with the SDK
 result union, preserving failure/result validation rather than reading nonexistent
-union properties. Focused workflow, schema and App-routing checks pass.
+union properties. The local validator and review artifact also accept `stopped`,
+preserving an honest failure report for core retry instead of rejecting the
+SDK-valid output. Focused workflow, schema and App-routing checks pass.
 
 A wider source audit found more consumers in Evaluation's owner-review guards
 and Scout's knowledge planner. They still contain raw-creation rules and removed
@@ -379,8 +381,8 @@ Host **`94864da1`** passes the complete `bun run ci`: **2,849 passed,
 3 installation-dependent skips, 0 failures** (2,852 tests across 290 files,
 140 seconds), with types, architecture and lint passing. The four fewer tests
 than `9d34e90b` reflect retired creation-specific expectations; supported atomic,
-stale-effect and input-return scenarios remain. Paired App **`3b70d285e3`**
-passes **21 focused workflow/schema/routing tests** against the candidate SDK.
+stale-effect and input-return scenarios remain. Paired App **`c3d23a56b6`**
+passes **22 focused workflow/schema/routing tests** against the candidate SDK.
 Canonical design checks and **45 changed-document links** pass. Hosted checks
 on the new Host revision are pending; optional App migration is still a gate.
 
