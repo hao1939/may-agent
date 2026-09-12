@@ -13,7 +13,13 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { createServer } from "node:net";
+import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
+import { readDeployReceiptForTask } from "./deploy-receipt.js";
+import { AppTaskResourceStore } from "../src/app/core/state/app-task-resource-store.js";
+import { runEmitMode } from "../src/app/modes/emit.js";
+import { buildSandbox } from "../test/e2e/lib/sandbox.js";
+import { openSandboxDb, pollUntil, socketEmit } from "../test/e2e/lib/live-daemon.js";
 
 const roots: string[] = [];
 const sourceCommit = "a".repeat(40);
@@ -29,13 +35,14 @@ function executable(path: string, body = "#!/bin/sh\nexit 0\n"): void {
 
 async function fixture(
   healthy: boolean,
-  options: { failUiSwitch?: boolean; previousSdk?: boolean; socketHealthy?: boolean } = {},
+  options: { failUiSwitch?: boolean; previousSdk?: boolean; socketHealthy?: boolean; failWake?: boolean } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-agent-restarter-ui-"));
   roots.push(root);
   const binDir = join(root, "bin");
   const bundleRoot = join(root, "bundle");
-  const receiptDir = join(root, "receipts");
+  const receiptDir = join(root, ".state", "deploy-receipts");
+  const wakePath = join(root, "task-wake.json");
   const uiParent = join(root, "platform");
   const uiTarget = join(uiParent, "ui");
   const sdkRelease = `sdk-${sourceCommit}`;
@@ -65,9 +72,10 @@ async function fixture(
   const consoleTarget = join(root, "may-console");
   const bundle = join(bundleRoot, "may-agent");
   const consoleBundle = join(bundleRoot, "may-console");
-  executable(target, "#!/bin/sh\nexit 0\n");
+  const hostScript = '#!/bin/sh\nif [ "${1:-}" = --emit ]; then\n  [ "${MAY_TEST_FAIL_WAKE:-}" != 1 ] || exit 1\n  printf "%s\\n" "$2" > "$MAY_TEST_WAKE_PATH.type"\n  printf "%s\\n" "$3" > "$MAY_TEST_WAKE_PATH"\nfi\nexit 0\n';
+  executable(target, hostScript);
   executable(consoleTarget);
-  executable(bundle, "#!/bin/sh\nexit 0\n# new-runtime\n");
+  executable(bundle, `${hostScript}# new-runtime\n`);
   executable(consoleBundle, "#!/bin/sh\nexit 0\n# new-console\n");
 
   const sdkLink = join(bundleRoot, "sdk-current");
@@ -83,10 +91,11 @@ async function fixture(
       correlation: "deploy-test",
       project: "may-agent",
       taskId: "app-request/test",
-      artifactSha: "pending",
+      artifactSha: createHash("sha256").update(readFileSync(bundle)).digest("hex"),
       sourceCommit,
       phase: "requested",
       requestedAt: new Date().toISOString(),
+      verification: "Compare the artifact hash and readiness facts before reporting the result.",
     })}\n`,
   );
   const deployMarker = join(bundleRoot, "deploy-requested");
@@ -140,6 +149,8 @@ async function fixture(
         MAY_AGENT_HEALTH_DELAY: "0",
         MAY_AGENT_HEALTH_SOCKET: healthSocket,
         MAY_TEST_UI_TARGET: uiTarget,
+        MAY_TEST_WAKE_PATH: wakePath,
+        MAY_TEST_FAIL_WAKE: options.failWake ? "1" : "0",
       },
       stdout: "pipe",
       stderr: "pipe",
@@ -159,6 +170,8 @@ async function fixture(
     root,
     result,
     receipt,
+    receiptDir,
+    wakePath,
     uiTarget,
     uiRelease,
     bundleRoot,
@@ -171,6 +184,94 @@ async function fixture(
 }
 
 describe("supervisor UI release", () => {
+  it("admits the restarter fact to its exact Task and retains it beside later clock ticks", async () => {
+    const f = await fixture(true);
+    expect(f.result.exitCode).toBe(0);
+    const eventType = readFileSync(`${f.wakePath}.type`, "utf8").trim();
+    const payload = JSON.parse(readFileSync(f.wakePath, "utf8"));
+    const receipt = JSON.parse(readFileSync(f.receipt, "utf8"));
+    const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket"] });
+    try {
+      await sb.daemonReady;
+      const appDir = join(sb.projectsRoot, "may-agent.app");
+      mkdirSync(join(appDir, "tasks"), { recursive: true });
+      writeFileSync(
+        join(appDir, "tasks", "seed.json"),
+        JSON.stringify({
+          project_lifecycle: "paused",
+          root_task_id: "root",
+          groups: { root: { id: "root", parent_id: null } },
+        }),
+      );
+      writeFileSync(
+        join(appDir, "app.js"),
+        `export default {
+        id: "may-agent", version: 1, agent: "may", inputSchema: { type: "object" },
+        workspace: { kind: "local", localPath: "." }, tasks: {},
+        task() { return { kind: "desired", intent: {
+          id: "app-request/test", parentId: "root", outcome: "Inspect deployment facts", acceptance: ["Report findings"]
+        } }; }
+      };`,
+      );
+      await socketEmit(sb.socketPath, "publish", { event: { type: "runtime.reload.requested", data: {} } });
+      await pollUntil(
+        async () => {
+          const response = (await socketEmit(sb.socketPath, "apps.list")) as { apps?: Array<{ id: string }> };
+          return response.apps?.some((app) => app.id === "may-agent");
+        },
+        { timeoutMs: 5000, description: "load paused receipt owner" },
+      );
+      await socketEmit(sb.socketPath, "publish", {
+        event: {
+          type: "app.input.requested",
+          target: { appId: "may-agent" },
+          data: { input: { kind: "review", data: {} } },
+        },
+      });
+      const db = openSandboxDb(sb.dbPath);
+      try {
+        const store = AppTaskResourceStore.activeFromDb(db, "may-agent")!;
+        await pollUntil(() => store.readTask("app-request/test"), { timeoutMs: 5000 });
+        // Use the real CLI emitter and the restarter's captured arguments,
+        // without repairing its routing in the test.
+        const emit = (type: string, data: Record<string, unknown>) =>
+          runEmitMode({
+            mode: { event: type, data },
+            endpoint: sb.socketPath,
+            persistDir: sb.stateDir,
+            instanceLabel: "e2e",
+            interfaceAgent: "may",
+            retry: { maxAttempts: 1 },
+            writeReceipt: () => {},
+          });
+        await emit(eventType, payload);
+        for (let i = 0; i < 3; i++)
+          await emit("project.task.tick", {
+            target: { appId: "may-agent", taskId: "app-request/test" },
+            data: { tick: i },
+          });
+      } finally {
+        db.close();
+      }
+      const reopened = openSandboxDb(sb.dbPath);
+      try {
+        const store = AppTaskResourceStore.activeFromDb(reopened, "may-agent")!;
+        const events = store.readTrigger("app-request/test")?.events ?? [];
+        expect(events.filter(({ event }) => event.type === "deployment.settled")).toMatchObject([
+          {
+            event: { target: { appId: "may-agent", taskId: "app-request/test" }, data: { deploymentReceipt: receipt } },
+          },
+        ]);
+        expect(events.filter(({ event }) => event.type === "project.task.tick")).toHaveLength(1);
+        expect(store.readTask("app-request/test")?.status.currentAttemptId).toBeUndefined();
+      } finally {
+        reopened.close();
+      }
+    } finally {
+      await sb.close();
+    }
+  }, 30_000);
+
   it("activates the versioned UI with the healthy binary and SDK", async () => {
     const f = await fixture(true);
     expect(f.result.stderr).toBe("");
@@ -179,7 +280,27 @@ describe("supervisor UI release", () => {
     expect(readlinkSync(f.uiTarget)).toBe(join(f.bundleRoot, f.uiRelease));
     expect(readFileSync(join(f.uiTarget, "index.html"), "utf8")).toBe("new-ui\n");
     expect(readlinkSync(f.sdkLink)).toBe(`sdk-${sourceCommit}`);
-    expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({ phase: "succeeded", health: "healthy" });
+    const receipt = JSON.parse(readFileSync(f.receipt, "utf8"));
+    expect(receipt).toMatchObject({ phase: "succeeded", health: "healthy", loadedArtifactSha: receipt.artifactSha });
+    expect(JSON.parse(readFileSync(f.wakePath, "utf8"))).toEqual({
+      target: { appId: "may-agent", taskId: "app-request/test" },
+      data: {
+        project: "may-agent", taskId: "app-request/test",
+        reason: "restart-aware-deploy-receipt", deploymentCorrelation: "deploy-test", deploymentPhase: "succeeded",
+        deploymentReceipt: receipt,
+      },
+    });
+  });
+
+  it("keeps exact settled evidence readable when the best-effort Task wake is lost", async () => {
+    const f = await fixture(true, { failWake: true });
+    expect(f.result.exitCode).toBe(0);
+    expect(existsSync(f.wakePath)).toBe(false);
+    expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "app-request/test"))
+      .toEqual(JSON.parse(readFileSync(f.receipt, "utf8")));
+    expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "app-request/test"))
+      .toMatchObject({ phase: "succeeded", health: "healthy", duplicateDeploy: false });
+    expect(existsSync(f.deployMarker)).toBe(false);
   });
 
   it("restores the prior UI and SDK when readiness fails", async () => {
