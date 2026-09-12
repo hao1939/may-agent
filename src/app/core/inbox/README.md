@@ -16,7 +16,7 @@ scan; failure of that projection cannot roll back the Task outcome.
 `project.task.reconciled` and `app.task.cancelled` refresh exact input answers
 and linked Conversation observations. The runtime emits no second Task-level
 dependency notification. Only a saved App input answer produces
-`app.dependency.completed`; ordinary waits and failed retries do not relay a
+`app.dependency.updated`; ordinary waits and failed retries do not relay a
 caller wake. Review deadlines and explicit App event routes remain available.
 
 [`input-context.ts`](input-context.ts) reads and freezes input identity and human

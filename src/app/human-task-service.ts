@@ -582,7 +582,7 @@ function taskWaits(db: SqliteDb, appId: string, taskId: string): HumanTaskWait[]
   const unresolved: HumanTaskWait[] = [];
   for (const condition of conditions) {
     const requestId =
-      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
+      condition.spec.type === "app.dependency.updated" && condition.spec.subject.startsWith("id:")
         ? condition.spec.subject.slice(3)
         : "";
     const request = requestId

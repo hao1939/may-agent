@@ -1,5 +1,4 @@
 import type {
-  AppDependencyObservation,
   TaskDetail,
   TaskIntent,
   TaskListOptions,
@@ -8,6 +7,7 @@ import type {
   TaskPage,
 } from "@may-agent/sdk";
 import type { AppTaskAttacher } from "../inbox/app-inbox-host.js";
+import type { TaskInputObservation } from "../inbox/input-context.js";
 import type { EventBus } from "../events/bus.js";
 import type { AppRegistrySnapshot } from "../apps/registry.js";
 import type { ConversationTaskChangeRef } from "../state/conversation-task-turns.js";
@@ -64,7 +64,7 @@ export type AppTaskCapability = {
     appDir: string;
     dependency: { kind: "task"; id: string };
     admissionKey?: string;
-  }): Promise<AppDependencyObservation | null>;
+  }): Promise<TaskInputObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string }): TaskDetail | null;
@@ -136,7 +136,9 @@ export function createAppTaskCapability(options: {
           summary: accepted.summary, response: accepted.response, result: accepted.result, evidence: accepted.evidence,
         };
         // A later cycle or an unrelated retained wait cannot answer this input.
+        const report = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey, kind: "report" });
         return { kind: "task", id: dependency.id,
+          ...(report && !task?.closed ? { report } : {}),
           ...(task?.closed ? { closed: true } : {}),
           status: task?.closed ? "attention" : "pending",
           summary: task?.closed ? "The Task closed without an accepted outcome for this input" : "This input has no accepted outcome yet",

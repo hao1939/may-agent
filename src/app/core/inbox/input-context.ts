@@ -1,12 +1,14 @@
-import type { AppInputContext, AppDependencyObservation } from "@may-agent/sdk";
+import type { AppInputContext, AppDependencyObservation, AppResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem, type AppInboxItem } from "../state/app-inbox-store.js";
+
+export type TaskInputObservation = AppDependencyObservation & { report?: AppResult & { attemptId: string } };
 
 export type AppDependencyReader = (input: {
   appId: string;
   dependency: { kind: "task"; id: string };
   admissionKey?: string;
-}) => Promise<AppDependencyObservation | null>;
+}) => Promise<TaskInputObservation | null>;
 
 export function freezeInputContext<T>(value: T): T {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
@@ -19,7 +21,7 @@ export async function observeTaskDependency(
   appId: string,
   dependency: { kind: "task"; id: string },
   admissionKey?: string,
-): Promise<AppDependencyObservation | null> {
+): Promise<TaskInputObservation | null> {
   const observed = await readDependency?.({ appId, dependency, ...(admissionKey ? { admissionKey } : {}) });
   if (observed && (observed.kind !== dependency.kind || observed.id !== dependency.id)) {
     throw new Error(`Dependency reader returned a mismatched observation for ${dependency.kind}:${dependency.id}`);

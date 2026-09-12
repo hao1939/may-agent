@@ -623,7 +623,7 @@ export class AppTaskResourceStore {
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running')
+           AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.condition_id, linked.task_id`,
       )
       .all(this.appId, eventType) as Array<{
@@ -666,7 +666,7 @@ export class AppTaskResourceStore {
                : ""
            }
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running')
+           AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )
       .all(eventType, ...(exactSubjects ?? [])) as Array<{

@@ -122,6 +122,9 @@ CREATE TABLE IF NOT EXISTS app_task_admissions (
   app_id TEXT NOT NULL, task_id TEXT NOT NULL, admission_json TEXT NOT NULL,
   PRIMARY KEY(app_id, task_id)
 );
+CREATE INDEX IF NOT EXISTS idx_app_task_admissions_target
+  ON app_task_admissions(app_id, json_extract(admission_json, '$.taskId'),
+    json_extract(admission_json, '$.taskGeneration'));
 `;
 
 /** Create the resource tables and migrate legacy JSON links once. */

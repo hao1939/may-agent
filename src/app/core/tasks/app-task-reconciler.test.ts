@@ -3904,7 +3904,7 @@ describe("App task reconciler state", () => {
         conditions: [
           {
             id: `app-request:${requestId}`,
-            type: "app.dependency.completed",
+            type: "app.dependency.updated",
             subject: `id:${requestId}`,
             expected: { field: "status", equals: "done" },
           },
@@ -4930,7 +4930,7 @@ describe("App task reconciler state", () => {
         conditions: [
           {
             id: "app-request:existing-proof",
-            type: "app.dependency.completed",
+            type: "app.dependency.updated",
             subject: "id:existing-proof",
             expected: { field: "status", equals: "done" },
           },

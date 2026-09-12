@@ -301,7 +301,7 @@ export type SystemEvent =
       data: { appId: string; taskId: string };
     }
   | {
-      type: "app.dependency.completed";
+      type: "app.dependency.updated";
       source?: string;
       owner: string;
       data: {

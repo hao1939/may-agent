@@ -16,7 +16,7 @@ import type {
 import { appTaskSessionBinding } from "./session-binding.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { admitTaskRequest } from "../state/inbox.js";
-import { appInputResultEvent } from "../inbox/input-result.js";
+import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import {
   admitConversationTaskInput,
   conversationTaskIntent,
@@ -536,7 +536,7 @@ export function admitTaskAppDependencies(input: {
   }
 
   const existing = (input.existingConditions ?? []).flatMap((condition) => {
-    if (condition.type !== "app.dependency.completed" || !condition.id.startsWith("app-request:")) return [];
+    if (condition.type !== "app.dependency.updated" || !condition.id.startsWith("app-request:")) return [];
     const requestId = condition.subject.startsWith("id:") ? condition.subject.slice("id:".length) : "";
     if (!requestId || condition.id !== `app-request:${requestId}`) return [];
     const item = input.opts.persistDir ? getAppInboxItem(getDb(input.opts.persistDir), requestId) : null;
@@ -564,7 +564,7 @@ export function admitTaskAppDependencies(input: {
     item,
     condition: {
       id: `app-request:${item.id}`,
-      type: "app.dependency.completed",
+      type: "app.dependency.updated",
       subject: `id:${item.id}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${item.appId}`,
@@ -720,7 +720,7 @@ export function admitTaskAppDependencies(input: {
     }
     admitted.set(dependency.id, {
       id: `app-request:${requestId}`,
-      type: "app.dependency.completed",
+      type: "app.dependency.updated",
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${dependency.appId}`,
@@ -743,7 +743,7 @@ function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string)
   const resource = tree.resources?.[taskId];
   return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
     const condition = tree.conditions?.[conditionId];
-    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.completed") {
+    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.updated") {
       return [];
     }
     return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
@@ -2381,19 +2381,24 @@ function recoverTaskConditions(
     }
   }
 
-  // A completion notification can be lost before it reaches the journal.
-  // Read only each retained wait's exact receipt; a later Task result is not
-  // an answer to that input. Use the normal Condition transition and trigger.
+  // A feedback notification can be lost before it reaches the journal.
+  // Read each wait's exact saved answer or first report, not a later Task result.
+  // Use the normal Condition transition and trigger.
   const allowed = new Set(resourceScope.taskIds);
   const recoveredTaskIds = new Set<string>();
-  if (eventTypes.includes("app.dependency.completed")) {
-    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.completed")) {
+  if (eventTypes.includes("app.dependency.updated")) {
+    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated")) {
       if (input.conditionIds && !input.conditionIds.includes(condition.metadata.id)) continue;
       if (!condition.spec.subject.startsWith("id:")) continue;
       const item = getAppInboxItem(db, condition.spec.subject.slice(3));
-      if (item?.status !== "done" || !item.result || item.source.kind !== "app" || item.source.id !== descriptor.id)
-        continue;
-      const event = appInputResultEvent(item, item.result)!;
+      if (!item || item.source.kind !== "app" || item.source.id !== descriptor.id) continue;
+      const source = AppTaskResourceStore.activeFromDb(db, item.appId);
+      const report = item.status !== "done" && item.taskAdmissionKey && item.waitingOn?.kind === "task" &&
+        source && !source.isCancelled(item.waitingOn.id)
+        ? readAppTaskAdmissionOutcome({ resourceStore: source }, item.waitingOn.id, item.taskAdmissionKey, "report") : null;
+      const result = item.status === "done" ? item.result : report;
+      if (!result) continue;
+      const event = appInputFeedbackEvent(item, result, item.status === "done" ? "done" : "blocked")!;
       if (!matchesAppTaskCondition(condition, event)) continue;
       for (const wake of trackAppTaskConditionEventForTasks(
         config,
@@ -2764,11 +2769,12 @@ export function attachLoadedAppTask(input: {
 /** Read one input's accepted answer without using a later Task cycle's result. */
 export function readLoadedAppTaskInputResult(input: {
   bus: EventBus; appDir: string; taskId: string; admissionKey: string;
+  kind?: "answer" | "report";
 }) {
   const appDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((entry) => resolve(entry.appDir) === appDir);
   return descriptor
-    ? readAppTaskAdmissionOutcome(appTaskConfig(descriptor), input.taskId, input.admissionKey)
+    ? readAppTaskAdmissionOutcome(appTaskConfig(descriptor), input.taskId, input.admissionKey, input.kind)
     : null;
 }
 

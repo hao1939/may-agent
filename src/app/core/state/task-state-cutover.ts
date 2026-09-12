@@ -29,7 +29,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
     const tree = store.readSnapshot();
     const now = input.now ?? Date.now();
     const stamp = new Date(now).toISOString();
-    const mutation: AppTaskResourceMutation = { fences: [], tasks: [], attempts: [], admissions: [] };
+    const mutation: AppTaskResourceMutation = { fences: [], tasks: [], attempts: [], admissions: [], conditions: [] };
     let outcomes = 0;
     let continued = 0;
     let workerStops = 0;
@@ -158,8 +158,22 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
         if (!condition) throw new Error(`Condition ${id} is missing for Task ${taskId}`);
         return { id, generation: condition.metadata.generation };
       });
+      const renamedConditions = conditions.flatMap(({ id }) => {
+        const condition = tree.conditions![id]!;
+        if (condition.spec.type !== "app.dependency.completed" || !id.startsWith("app-request:")) return [];
+        condition.spec.type = "app.dependency.updated";
+        condition.metadata.resourceVersion++;
+        return [condition];
+      });
       for (const [key, admission] of admissions) {
         if (admission.resultAttemptId) continue;
+        // Recover only a proven first report, never infer one from current status.
+        if (!admission.reportAttemptId) {
+          const report = attempts.find((attempt) =>
+            attempt.acceptedResult?.state === "stopped" && attempt.specHash === admission.specHash &&
+            taskInputAdmissionKeys(attemptEvents(attempt), attempt.continuedInputKeys).includes(key));
+          if (report) admission.reportAttemptId = report.metadata.id;
+        }
         if (considered.has(key) && observed?.specHash === admission.specHash) {
           if (observed.acceptedResult?.state === "converged") admission.resultAttemptId = observed.metadata.id;
           else if (observed.acceptedResult?.state === "waiting" && resource.status.phase === "waiting")
@@ -208,6 +222,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
         !isDeepStrictEqual(resource, original) ||
         changedAttempts.length ||
         changedAdmissions.length ||
+        renamedConditions.length ||
         changedTrigger ||
         selfStop
       ) {
@@ -225,6 +240,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
         });
         for (const attempt of changedAttempts) attempt.metadata.resourceVersion++;
         mutation.attempts!.push(...changedAttempts);
+        mutation.conditions!.push(...renamedConditions);
         mutation.admissions!.push(...changedAdmissions.map(([key, value]) => ({ taskId: key, value })));
       }
     }

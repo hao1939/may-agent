@@ -140,6 +140,8 @@ export type AppTaskAdmission = {
   inputEvent?: Record<string, unknown>;
   /** Exact accepted answer for this input; later Task outcomes do not replace it. */
   resultAttemptId?: string;
+  /** First accepted failure for this input; reporting it does not answer the input. */
+  reportAttemptId?: string;
 };
 
 export type TaskTree = {

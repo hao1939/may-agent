@@ -95,8 +95,8 @@ export type AppInboxHostOptions = {
   now?: () => number;
   /** Wake-only notification after a visible Conversation projection change. */
   onConversationChanged?: (appId: string, conversationId: string) => void;
-  /** Durable semantic completion notification; transport delivery is separate. */
-  onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
+  /** Notification of saved caller feedback; a blocker does not complete input. */
+  onRequestUpdated?: (item: AppInboxItem, result: AppResult, status: "done" | "blocked") => void;
   onFailure?: (failure: AppInboxFailure) => void;
 };
 
@@ -148,7 +148,7 @@ export class AppInboxHost {
   readonly #stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   readonly #now: () => number;
   readonly #onConversationChanged?: (appId: string, conversationId: string) => void;
-  readonly #onRequestCompleted?: (item: AppInboxItem, result: AppResult) => void;
+  readonly #onRequestUpdated?: AppInboxHostOptions["onRequestUpdated"];
   readonly #onFailure?: AppInboxHostOptions["onFailure"];
   #closed = false;
   #admissionCursor?: string;
@@ -162,7 +162,7 @@ export class AppInboxHost {
     this.#attachTask = options.attachTask;
     this.#now = options.now ?? Date.now;
     this.#onConversationChanged = options.onConversationChanged;
-    this.#onRequestCompleted = options.onRequestCompleted;
+    this.#onRequestUpdated = options.onRequestUpdated;
     this.#onFailure = options.onFailure;
     this.#apps = new Map();
     this.#subscriptionsByEventType = new Map();
@@ -481,7 +481,11 @@ export class AppInboxHost {
         { kind: "task", id: item.waitingOn.id },
         admissionKey,
       );
-      if (this.#closed || !observed || !REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) return;
+      if (this.#closed || !observed) return;
+      if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) {
+        if (observed.report) this.#onRequestUpdated?.(item, observed.report, "blocked");
+        return;
+      }
       const result: AppResult = {
         summary: observed.summary ?? `Task ${observed.id} requires owner review (${observed.status})`,
         response: observed.response,
@@ -490,7 +494,7 @@ export class AppInboxHost {
       };
       if (!completeTaskInput(this.#db, { ...item, taskAdmissionKey: admissionKey }, result, this.#now())) return;
       try {
-        this.#onRequestCompleted?.(item, result);
+        this.#onRequestUpdated?.(item, result, "done");
         if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
       } catch {
         // The accepted result remains readable even if its notification fails.

@@ -223,20 +223,34 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
 }
 
 /** Shared matcher for per-App and global indexed Condition routes. */
+function isAppInputReport(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
+  return condition.spec.type === "app.dependency.updated" && event.type === condition.spec.type &&
+    condition.metadata.id.startsWith("app-request:") &&
+    condition.spec.subject === `id:${String(eventField(event, "id") ?? "")}` &&
+    eventField(event, "kind") === "app" && eventField(event, "status") === "blocked" &&
+    stableEquals(condition.spec.expected, { field: "status", equals: "done" });
+}
+
 export function matchesAppTaskCondition(
   condition: unknown,
   event: Record<string, unknown>,
 ): condition is AppTaskCondition {
-  return isCondition(condition) && condition.status.state !== "true" && matches(condition, event);
+  return isCondition(condition) && condition.status.state !== "true" &&
+    (matches(condition, event) || (isAppInputReport(condition, event) &&
+      (!isRecord(condition.status.observed) || condition.status.observed.state !== "blocked")));
 }
 
 /** Recognize the evidence that belongs to a wait, including an already observed fact. */
 export function matchesAppTaskConditionEvidence(condition: unknown, event: Record<string, unknown>): condition is AppTaskCondition {
-  return isCondition(condition) && matches(condition, event);
+  return isCondition(condition) && (matches(condition, event) || isAppInputReport(condition, event));
 }
 
 function observation(event: Record<string, unknown>): Record<string, unknown> {
   return {
+    ...(event.type === "app.dependency.updated" && eventField(event, "status") === "blocked"
+      ? { summary: eventField(event, "summary"), response: eventField(event, "response"),
+          result: eventField(event, "result"), evidence: eventField(event, "evidence") }
+      : {}),
     eventType: event.type,
     source: event.source,
     taskId: eventField(event, "taskId", "task_id"),
@@ -263,10 +277,11 @@ function applyConditionEvent(
 
   for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
     if (!isCondition(condition)) continue;
-    if (!matches(condition, event)) continue;
+    const report = isAppInputReport(condition, event);
+    if (report ? !matchesAppTaskCondition(condition, event) : !matches(condition, event)) continue;
     const waitingResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
-        (resource.status.phase === "waiting" || resource.status.phase === "running") &&
+        ["waiting", "running", "pending"].includes(resource.status.phase) &&
         resource.status.conditionIds?.includes(id) &&
         (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
     );
@@ -278,7 +293,7 @@ function applyConditionEvent(
       condition.metadata.resourceVersion += 1;
       condition.status = {
         observedGeneration: condition.metadata.generation,
-        state: "true",
+        state: report ? "false" : "true",
         observed: observation(event),
         observedAt: now,
         evidence: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],

@@ -397,6 +397,24 @@ export type ConversationTaskChangeRef = {
 } & ConversationTaskChange;
 
 /** Successful admissions remove themselves from discovery; the limit bounds returned work. */
+// Input-backed work reports its first accepted failure per input. Seeded work
+// has no input receipt; preserve its existing per-attempt Topic observations.
+// Both event admission and recovery use this predicate (alias: attempt).
+const returnedAttemptSql = `(
+  json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
+  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'stopped' AND (
+    NOT EXISTS (SELECT 1 FROM app_task_admissions admission
+      WHERE admission.app_id = attempt.app_id
+        AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
+        AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation)
+    OR EXISTS (SELECT 1 FROM app_task_admissions admission
+      WHERE admission.app_id = attempt.app_id
+        AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
+        AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
+        AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id)
+  ))
+)`;
+
 export function listPendingConversationTaskChanges(
   db: SqliteDb,
   appId: string,
@@ -416,7 +434,7 @@ export function listPendingConversationTaskChanges(
       FROM conversation_topics topic
       JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
       JOIN app_task_attempts attempt ON attempt.app_id = linked.app_id AND attempt.task_id = linked.task_id
-      WHERE topic.app_id = ? AND json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('converged', 'stopped')
+      WHERE topic.app_id = ? AND ${returnedAttemptSql}
       UNION ALL
       SELECT topic.app_id, topic.conversation_id, topic.id, linked.app_id, linked.task_id, NULL,
         json_extract(closed.cancellation_json, '$.generation'), closed.requested_at,
@@ -489,9 +507,11 @@ export function admitConversationTaskChange(
       const attempt = source.resourceStore.readAttempt(input.attemptId);
       if (attempt?.taskId !== input.taskId || !attempt.acceptedResult)
         throw new Error("Task result must name an accepted attempt of the linked Task");
-      // Match ordinary Task dependencies: a recorded wait is progress, not
-      // a returned answer. Keep it readable without starting a caller attempt.
-      if (attempt.acceptedResult.state === "waiting") return { taskId: task.metadata.id, created: false };
+      // Match the saved selection used by recovery; retries remain in history.
+      if (!db.prepare(`SELECT 1 FROM app_task_attempts attempt
+          WHERE attempt.app_id = ? AND attempt.attempt_id = ? AND ${returnedAttemptSql}`)
+        .get(source.resourceStore.appId, input.attemptId))
+        return { taskId: task.metadata.id, created: false };
       id = `conversation-result:${prefix}:${input.attemptId}`;
       fact = {
         kind: "task-outcome",

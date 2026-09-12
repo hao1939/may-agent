@@ -1072,10 +1072,10 @@ test("a failed child report returns to Conversation without closing its assignme
       executors: {
         measure: async (attempt) => {
           priorAttempts.push(attempt.previousAttempt);
-          if (++runs === 1)
+          if (++runs <= 3)
             return {
               state: "stopped",
-              summary: "Could not obtain measurement: source offline",
+              summary: `Could not obtain measurement: source offline (${runs})`,
               evidence: ["measurement source: unavailable"],
             };
           await repair.promise;
@@ -1094,12 +1094,18 @@ test("a failed child report returns to Conversation without closing its assignme
           message.text.includes("still trying"),
         ),
     );
+    const repeated = eventAfter(f.bus, (event) => event.type === "project.task.reconciled" &&
+      event.data.taskId === "sample" && runs === 3);
     ingress.publish("ask", "Get the measurement and report it here");
     await reported;
     expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
     const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
     expect(child.isCancelled("sample")).toBe(false);
-    expect(child.readTask("sample")?.status.executionFailures).toBe(1);
+    await repeated;
+    expect(child.readTask("sample")?.status.executionFailures).toBe(3);
+    f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 10 } });
+    expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+    expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(1);
     const finished = eventAfter(
       f.bus,
       (event) =>
@@ -1108,13 +1114,13 @@ test("a failed child report returns to Conversation without closing its assignme
     );
     repair.resolve();
     await finished;
-    expect(runs).toBe(2);
+    expect(runs).toBe(4);
     expect(priorAttempts[0]).toBeUndefined();
     expect(priorAttempts[1]).toMatchObject({
       state: "completed",
       acceptedResult: {
         state: "stopped",
-        summary: "Could not obtain measurement: source offline",
+        summary: "Could not obtain measurement: source offline (1)",
         evidence: ["measurement source: unavailable"],
       },
     });

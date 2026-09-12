@@ -2,17 +2,17 @@ import type { AppResult } from "@may-agent/sdk";
 import type { AgentEvent } from "../events/bus.js";
 import type { AppInboxItem } from "../state/app-inbox-store.js";
 
-/** The same exact caller answer for live notification and saved-receipt recovery. */
-export function appInputResultEvent(item: AppInboxItem, result: AppResult): AgentEvent | null {
+/** The same exact caller feedback for live notification and saved-state recovery. */
+export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult, status: "done" | "blocked" = "done"): AgentEvent | null {
   if (item.source.kind !== "app") return null;
   return {
-    type: "app.dependency.completed",
+    type: "app.dependency.updated",
     source: `app-inbox:${item.appId}`,
     owner: `app:${item.source.id}`,
     data: {
       kind: "app",
       id: item.id,
-      status: "done",
+      status,
       summary: result.summary,
       ...(result.response ? { response: result.response } : {}),
       ...(result.result ? { result: result.result } : {}),

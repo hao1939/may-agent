@@ -653,17 +653,20 @@ function consideredInputKeys(
   ]);
 }
 
-/** Bind only admitted input actually considered by this terminal judgment. */
+/** Bind only admitted input actually considered by this accepted judgment. */
 function acceptedInputAdmissions(
   config: AppTaskContext, tree: TaskTree, claim: AppTaskClaim, acceptedLiveEventIds: number[] = [],
+  kind: "answer" | "report" = "answer",
 ) {
   const keys = consideredInputKeys(config, tree, claim, acceptedLiveEventIds);
   if (!keys.length) return [];
   const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
-  const writes = keys.flatMap((key) => {
+  const writes = keys.flatMap<{ taskId: string; value: NonNullable<TaskTree["appTaskAdmissions"]>[string] }>((key) => {
     const admission = admissions?.[key];
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration !== claim.generation ||
       admission.resultAttemptId) return [];
+    if (kind === "report")
+      return admission.reportAttemptId ? [] : [{ taskId: key, value: { ...admission, reportAttemptId: claim.attemptId } }];
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
     return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
   });
@@ -672,14 +675,15 @@ function acceptedInputAdmissions(
   return writes;
 }
 
-/** Read one input's accepted answer, independently of the Task's current state or lifetime. */
-export function readAppTaskAdmissionOutcome(config: AppTaskContext, taskId: string, admissionKey: string) {
+/** Read one input's exact accepted answer or first report, independently of later Task cycles. */
+export function readAppTaskAdmissionOutcome(config: Pick<AppTaskContext, "resourceStore">, taskId: string, admissionKey: string, kind: "answer" | "report" = "answer") {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
-  if (admission?.taskId !== taskId || !admission.resultAttemptId) return null;
-  const attempt = config.resourceStore.readAttempt(admission.resultAttemptId);
+  const attemptId = kind === "answer" ? admission?.resultAttemptId : admission?.reportAttemptId;
+  if (admission?.taskId !== taskId || !attemptId) return null;
+  const attempt = config.resourceStore.readAttempt(attemptId);
   if (attempt?.taskId !== taskId || attempt.taskGeneration !== admission.taskGeneration ||
-    !attempt.acceptedResult || attempt.acceptedResult.state === "waiting") return null;
+    attempt.acceptedResult?.state !== (kind === "answer" ? "converged" : "stopped")) return null;
   return { attemptId: attempt.metadata.id, generation: attempt.taskGeneration, ...attempt.acceptedResult };
 }
 
@@ -1148,7 +1152,7 @@ export function repairUnadmittedAppDependencyWaits(
       if (
         !isAppTaskCondition(condition) ||
         condition.status.state === "true" ||
-        condition.spec.type !== "app.dependency.completed" ||
+        condition.spec.type !== "app.dependency.updated" ||
         !condition.spec.subject.startsWith("id:")
       ) {
         return [];
@@ -2267,6 +2271,7 @@ export function stopAppTask(
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
+  const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report");
   const failures = (resource.status.executionFailures ?? 0) + 1;
   // Accepted evidence is not a final answer to the original assignment.
   // Preserve input, including accepted live feedback and earlier linked waits.
@@ -2286,7 +2291,7 @@ export function stopAppTask(
   });
   const parentTaskId = recordExecutableParentTrigger(tree, claim.taskId, "attention", summary, input.evidence, now, claim.attemptId);
   trackResourceMutationTask(mutationScope, tree, parentTaskId);
-  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+  commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
   return { status: "applied", summary, ...(parentTaskId ? { parentTaskId } : {}) };
 }
 

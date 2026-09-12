@@ -13,6 +13,7 @@ import {
   cancelAppTask,
   readAppTaskAdmissionOutcome,
   stopAppTaskAttempt,
+  stopAppTask,
   recordAppTaskTrigger,
 } from "../tasks/app-task-reconciler.js";
 import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
@@ -504,4 +505,48 @@ test("worker-stop conversion is scoped to its App even when another App has the 
   expect(other.readSnapshot()).toEqual(before);
   expect(f.store.isCancelled("work")).toBe(false);
   expect(other.isCancelled("work")).toBe(true);
+});
+
+
+test("offline cutover renames caller waits and retains their identity across replay and restart", () => {
+  const f = fixture();
+  f.ask("assignment", "caller");
+  const old = f.claim("caller");
+  const id = "app-request:child-input";
+  deferAppTask(f.config, old, { disposition: "waiting", summary: "Waiting for child", conditions: [{
+    id, type: "app.dependency.completed", subject: "id:child-input",
+    expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 300_000,
+  }] });
+  const before = f.store.readTaskConditions("caller")[0]!;
+  f.migrate();
+  f.reopen();
+  const condition = f.store.readTaskConditions("caller")[0]!;
+  expect(condition.spec.type).toBe("app.dependency.updated");
+  expect(condition.metadata.generation).toBe(before.metadata.generation);
+  expect(f.migrate().tasks).toBe(0);
+  expect(trackAppTaskConditionEventForTasks(f.config, {
+    type: "app.dependency.updated", source: "app-inbox:sample", data: {
+      kind: "app", id: "child-input", status: "blocked", summary: "Source unavailable",
+    },
+  }, ["caller"])).toHaveLength(1);
+  expect(f.store.readTaskConditions("caller")[0]!.status.state).toBe("false");
+});
+
+test("offline cutover restores only the first accepted failure for its exact input", () => {
+  const f = fixture();
+  f.ask("first");
+  const first = f.claim();
+  stopAppTask(f.config, first, { summary: "Source unavailable", evidence: ["HTTP:503"] });
+  f.advance();
+  stopAppTask(f.config, f.claim(), { summary: "Source still unavailable", evidence: ["HTTP:503"] });
+  const saved = f.store.readTaskContext({ taskIds: [], admissionIds: ["task:first"] }).appTaskAdmissions!["task:first"]!;
+  delete saved.reportAttemptId;
+  f.store.commit({ fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],
+    admissions: [{ taskId: "task:first", value: saved }] });
+  expect(f.migrate().inputs).toBe(1);
+  f.reopen();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:first", "report")?.attemptId).toBe(first.attemptId);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:unrelated", "report")).toBeNull();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:first")).toBeNull();
+  expect(f.migrate().tasks).toBe(0);
 });

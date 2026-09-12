@@ -599,7 +599,7 @@ describe("Human Task service", () => {
     const dependency = {
       metadata: { id: "app-request:dependency-request", generation: 1, resourceVersion: 1 },
       spec: {
-        type: "app.dependency.completed",
+        type: "app.dependency.updated",
         subject: "id:dependency-request",
         expected: { field: "status", equals: "done" },
         owner: "app:may-agent",
@@ -833,7 +833,7 @@ describe("Human Task service", () => {
     const condition = {
       metadata: { id: "app-request:appdep_child", generation: 1, resourceVersion: 1 },
       spec: {
-        type: "app.dependency.completed",
+        type: "app.dependency.updated",
         subject: "id:appdep_child",
         expected: { field: "status", equals: "done" },
       },

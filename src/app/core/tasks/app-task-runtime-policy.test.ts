@@ -116,7 +116,7 @@ describe("App Task agent prompt context", () => {
 describe("Task Condition reconciliation authority", () => {
   const canonical = {
     id: "app-request:appdep_exact",
-    type: "app.dependency.completed",
+    type: "app.dependency.updated",
     subject: "id:appdep_exact",
     expected: { field: "status", equals: "done" },
   };

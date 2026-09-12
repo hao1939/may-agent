@@ -223,7 +223,7 @@ async function delegation(nested = false) {
       export const description = "Assess an independently measured sample";
       export async function execute(ctx) {
         const returned = ctx.reconciliation.events.items.find(({ event }) =>
-          event.type === "app.dependency.completed" && event.data.kind === "app");
+          event.type === "app.dependency.updated" && event.data.kind === "app");
         if (!returned) return ctx.done("Requested an independent measurement", {
           state: "waiting", summary: "Waiting for the sample", evidence: [],
           dependencies: [{ id: "sample", appId: "sample", input: { kind: "sample", data: {} } }]

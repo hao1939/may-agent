@@ -108,7 +108,7 @@ export function readAppTaskWaitPromptContext(
     const condition = tree.conditions?.[conditionId];
     if (!condition || condition.status.state === "true") return [];
     const requestId =
-      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
+      condition.spec.type === "app.dependency.updated" && condition.spec.subject.startsWith("id:")
         ? condition.spec.subject.slice(3)
         : "";
     return [
@@ -135,6 +135,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
       status: string;
       targetTaskId?: string;
       resolvedTaskId?: string;
+      report?: unknown;
     };
   }>;
   note: string;
@@ -142,7 +143,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
   const open = waits.flatMap(({ conditionId, condition, dependency: item }) => {
     if (!condition || condition.status.state === "true") return [];
     const requestId =
-      condition.spec.type === "app.dependency.completed" && condition.spec.subject.startsWith("id:")
+      condition.spec.type === "app.dependency.updated" && condition.spec.subject.startsWith("id:")
         ? condition.spec.subject.slice(3)
         : "";
     return [
@@ -159,6 +160,8 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
                 status: item.status,
                 ...(item.targetTaskId ? { targetTaskId: item.targetTaskId } : {}),
                 ...(item.waitingOn?.kind === "task" ? { resolvedTaskId: item.waitingOn.id } : {}),
+                ...(condition.status.state === "false" && condition.status.observed
+                  ? { report: condition.status.observed } : {}),
               },
             }
           : {}),

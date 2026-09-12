@@ -69,8 +69,8 @@ const withdraw = process.argv.includes("--withdraw");
 const correction = process.argv.includes("--correction");
 const scenario = arg("--scenario") ?? "measurement";
 assert(["measurement", "manifest", "owner-repair"].includes(scenario), "Unknown scenario");
-assert(scenario === "measurement" || (!nested && !withdraw && !correction),
-  "Manifest and owner-repair scenarios use one delegated worker");
+assert(scenario === "measurement" || (!withdraw && !correction && (scenario === "owner-repair" || !nested)),
+  "Only measurement supports correction/withdrawal; manifest uses one worker");
 const manifest = scenario === "manifest";
 const needsOwner = scenario === "owner-repair";
 assert(!(natural && nested), "Choose either the natural ask or the explicitly nested trial");
@@ -170,7 +170,7 @@ const start = async () => {
     bus,
     timeoutMs: 180_000,
     spawnWorker(request) {
-      if (++dispatches > (needsOwner ? 12 : nested ? 10 : 8)) {
+      if (++dispatches > (needsOwner ? (nested ? 18 : 12) : nested ? 10 : 8)) {
         const error = Error("Trial dispatch allowance exhausted");
         allowanceExceeded.reject(error);
         throw error;
@@ -253,6 +253,8 @@ try {
         "measurement",
         manifest
           ? `Please audit the release manifest at ${sourceUrl}: total its compressed bytes and identify any component missing a license. The source can be slow; I'll have questions while you investigate.`
+          : needsOwner && nested
+          ? `Please arrange a background review of the sample at ${sourceUrl} against a 0.90 minimum. Have the reviewer obtain the measurement from a separate worker, then assess that worker's returned evidence. If the source is unavailable, tell me what needs my help and keep the original ask open. Only I can restore that source. Report the conclusion to me and keep our discussion available while they work.`
           : needsOwner
           ? `Please find out whether the sample at ${sourceUrl} meets the 0.90 minimum. If the source is unavailable, tell me what needs my help and keep the original ask open. Only I can restore that source. The source can be slow; I'll have questions while you investigate.`
           : natural
@@ -359,6 +361,16 @@ try {
         const openAsk = readConversationRequest(db, "may", "may:primary", ask.id)!;
         assert.equal(openAsk.status, "open", "A failure report must not close the original ask");
         assert.equal(store().isCancelled(taskB), false, "The failed worker's assignment remains open");
+        if (measurementAdmission) {
+          assert.equal(getAppInboxItem(db, measurementAdmission.id)?.status, "handling");
+          const firstReport = readLoadedAppTaskInputResult({ bus, appDir: join(root, "projects/may.app"),
+            taskId: taskC!, admissionKey: measurementAdmission.taskAdmissionKey!, kind: "report" });
+          assert(firstReport?.state === "stopped", "The nested worker must return its accepted failure without answering");
+          assert(events.some(({ event }) => event.type === "app.dependency.updated" &&
+            event.data.id === measurementAdmission.id && event.data.status === "blocked"),
+            "The original caller relationship must carry the blocker");
+          report = { ...report, firstReportAttemptId: firstReport.attemptId };
+        }
         const ownerReply = conversation().messages.filter((message) => message.author.kind === "agent").at(-1)?.text;
         assert(ownerReply && /unavailable|restor|503|repair/i.test(ownerReply), "Owner must explain the source problem");
         report = { ...report, ownerReply, ownerFeedbackDelayMs: Date.now() - firstSourceFailureAt!, failedReads };

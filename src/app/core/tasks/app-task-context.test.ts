@@ -11,7 +11,7 @@ import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 function condition(id: string, state: AppTaskCondition["status"]["state"] = "unknown"): AppTaskCondition {
   return {
     metadata: { id, generation: 1, resourceVersion: 1 },
-    spec: { type: "app.dependency.completed", subject: `id:${id}`, expected: true },
+    spec: { type: "app.dependency.updated", subject: `id:${id}`, expected: true },
     status: { observedGeneration: 1, state },
   };
 }
@@ -84,7 +84,7 @@ describe("Task context projections", () => {
     expect(projected.open).toEqual([
       {
         conditionId: "wait:review",
-        type: "app.dependency.completed",
+        type: "app.dependency.updated",
         subject: "id:review",
         state: "unknown",
         dependency: {
@@ -95,10 +95,10 @@ describe("Task context projections", () => {
           resolvedTaskId: "resolved-task",
         },
       },
-      { conditionId: "wait:missing", type: "app.dependency.completed", subject: "id:missing", state: "false" },
+      { conditionId: "wait:missing", type: "app.dependency.updated", subject: "id:missing", state: "false" },
       {
         conditionId: "wait:new",
-        type: "app.dependency.completed",
+        type: "app.dependency.updated",
         subject: "id:new",
         state: "unknown",
         dependency: { requestId: "new", appId: "evaluation", status: "handling", resolvedTaskId: "new-task" },
@@ -129,7 +129,7 @@ describe("Task context projections", () => {
         "context-test",
       );
       expect(readAppTaskWaitPromptContext(store, null, "current").open).toEqual([
-        { conditionId: "open", type: "app.dependency.completed", subject: "id:open", state: "unknown" },
+        { conditionId: "open", type: "app.dependency.updated", subject: "id:open", state: "unknown" },
       ]);
       expect(readAppTaskWaitPromptContext(store, null, "absent").open).toEqual([]);
     } finally {

@@ -1,4 +1,4 @@
-import { appInputResultEvent } from "../core/inbox/input-result.js";
+import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
@@ -339,8 +339,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     now: options.now,
     onFailure: (failure) => reportFailure(failure),
     onConversationChanged: notifyConversationUpdated,
-    onRequestCompleted(item, result) {
-      const event = appInputResultEvent(item, result);
+    onRequestUpdated(item, result, status) {
+      const event = appInputFeedbackEvent(item, result, status);
       if (event) options.bus.emit(event);
     },
   });
@@ -1076,7 +1076,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       // An answer can outlive its caller's wait. Keep the saved fact readable
       // without inventing work when no current Condition or App route needs it.
-      if (event.type === "app.dependency.completed" && data.kind === "app")
+      if (event.type === "app.dependency.updated" && data.kind === "app")
         return { accepted: true, by: "app-input-result", route: "noop" };
     },
     { label: "app-inbox-route" },

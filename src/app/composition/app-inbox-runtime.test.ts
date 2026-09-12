@@ -426,7 +426,7 @@ describe("App inbox runtime", () => {
     const condition = {
       metadata: { id: "app-request:owner-request", generation: 1, resourceVersion: 1 },
       spec: {
-        type: "app.dependency.completed",
+        type: "app.dependency.updated",
         subject: "id:owner-request",
         expected: { field: "status", equals: "done" },
       },

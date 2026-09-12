@@ -238,7 +238,7 @@ describe("App inbox host", () => {
         expect(admissionKey).toMatch(/^task:/);
         return { ...dependency, status: done ? "done" : "pending", summary: "Exact answer", response: admissionKey };
       },
-      onRequestCompleted: (item) => {
+      onRequestUpdated: (item) => {
         completed.push(item.id);
       },
     });
@@ -271,7 +271,7 @@ describe("App inbox host", () => {
         status: "done",
         summary: "Verified",
       }),
-      onRequestCompleted: () => {
+      onRequestUpdated: () => {
         throw new Error("notification lost");
       },
       onFailure: (failure) => failures.push(failure),
