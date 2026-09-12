@@ -98,6 +98,9 @@ mv -f "$bundle_dir/may-agent.provenance.json.next" "$bundle_dir/may-agent.proven
 
 # This is the durability boundary: the requested receipt is atomically present
 # before the external restarter is started and before either runtime service stops.
+# The owner may have closed the Task while we built. Recheck before requesting
+# restart; this is not a lease, and Host admission still fences a later closure.
+bun scripts/deploy-receipt.ts validate-target "$task_db" "$project" "$task_id"
 set +e
 bun scripts/deploy-receipt.ts request "$receipt" "$project" "$task_id" "$correlation" "$artifact_sha" "$source_commit"
 rc=$?

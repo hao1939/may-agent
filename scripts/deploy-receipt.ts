@@ -32,16 +32,29 @@ export function validateDeployTaskTarget(path: string, project: string, taskId: 
       throw new Error(`Task resources for ${project} are not canonical in ${path}`);
     }
     const target = db
-      .query("SELECT 1 AS present FROM app_tasks WHERE app_id = ? AND task_id = ?")
-      .get(project, taskId);
+      .query(
+        `SELECT EXISTS(SELECT 1 FROM app_task_cancellations closed
+        WHERE closed.app_id = task.app_id AND closed.task_id = task.task_id) AS closed
+        FROM app_tasks task WHERE task.app_id = ? AND task.task_id = ?`,
+      )
+      .get(project, taskId) as { closed: number } | null;
     if (!target) {
-      throw new Error(`Deploy task ${project}/${taskId} does not exist; refusing to emit an unresolvable targeted wake`);
+      throw new Error(
+        `Deploy task ${project}/${taskId} does not exist; refusing to emit an unresolvable targeted wake`,
+      );
     }
+    if (target.closed)
+      throw new Error(`Deploy task ${project}/${taskId} is closed; it cannot accept a deployment wake`);
   } catch (error) {
-    if (error instanceof Error && (error.message.startsWith("Deploy task ") || error.message.startsWith("Task resources "))) {
+    if (
+      error instanceof Error &&
+      (error.message.startsWith("Deploy task ") || error.message.startsWith("Task resources "))
+    ) {
       throw error;
     }
-    throw new Error(`Cannot read deploy task database ${path}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Cannot read deploy task database ${path}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   } finally {
     db?.close();
   }
