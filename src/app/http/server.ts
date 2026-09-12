@@ -1250,7 +1250,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           impact: finding.impact || "",
           ownerReason: finding.ownerReason || "",
           suggestedActions: Array.isArray(finding.suggestedActions) ? finding.suggestedActions : [],
-          facts: Array.isArray(finding.facts) ? finding.facts : [],
+          facts: Array.isArray(finding.facts) ? finding.facts : Array.isArray(finding.evidence) ? finding.evidence : [],
           notified,
           createdAt,
           evalTrailPath: evalData.source,

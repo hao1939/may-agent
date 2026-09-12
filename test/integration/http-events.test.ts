@@ -8,6 +8,7 @@ import { createQueryService } from "../../src/lib/query-service.js";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import type { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/db/connection.js";
+import { upsertSession } from "../../src/lib/db/sessions.js";
 
 describe("HTTP event reads", () => {
   let root: string;
@@ -66,6 +67,35 @@ describe("HTTP event reads", () => {
     expect(response.status).toBe(200);
     return response.json();
   }
+
+  it("reads legacy learning findings as facts without changing saved notes", async () => {
+    const sessionId = "s_learning";
+    const dir = join(root, "sessions", sessionId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "session.jsonl"), '{"role":"user","content":"Review the result"}\n');
+    upsertSession(root, { sessionId, agent: "worker", task: "Review the result",
+      status: "done", startedAt: Date.now(), endedAt: Date.now() });
+    const findings = [
+      { id: "legacy", evidence: ["Saved observation"] },
+      { id: "current", facts: ["Current observation"] },
+      { id: "both", facts: ["Preferred observation"], evidence: ["Superseded observation"] },
+      { id: "empty", facts: [], evidence: ["Superseded observation"] },
+    ];
+    const path = join(dir, "session.eval.jsonl");
+    const saved = JSON.stringify({ type: "summary", verdict: "needs_fix",
+      repairDecision: { ownerFindings: findings } }) + "\n";
+    writeFileSync(path, saved);
+    const result = await read("/api/learning");
+    expect(result.findings.map((finding: { id: string; facts: string[] }) => ({ id: finding.id, facts: finding.facts })))
+      .toEqual([
+        { id: "legacy", facts: ["Saved observation"] },
+        { id: "current", facts: ["Current observation"] },
+        { id: "both", facts: ["Preferred observation"] },
+        { id: "empty", facts: [] },
+      ]);
+    for (const finding of result.findings) expect(finding).not.toHaveProperty("evidence");
+    expect(readFileSync(path, "utf8")).toBe(saved);
+  });
 
   it("reads saved session notes without Evaluation and rejects retired writes", async () => {
     const dir = join(root, "sessions", "s_notes");

@@ -153,6 +153,24 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       );
       expect(helpersPresent).toBe(true);
 
+      const judgments = await page.evaluate(() => {
+        const ui = window as typeof window & {
+          renderAlertJudgment: (alert: { latestJudgment: Record<string, unknown> }) => string;
+        };
+        return [
+          { evidence: "Saved <detail>" },
+          { facts: "Current <detail>", evidence: "Superseded detail" },
+        ].map((detail) => ui.renderAlertJudgment({ latestJudgment: {
+          operation: "reviewed", summary: "Less specific summary", ...detail,
+        } }));
+      });
+      expect(judgments[0]).toContain("Saved &lt;detail&gt;");
+      expect(judgments[1]).toContain("Current &lt;detail&gt;");
+      for (const rendered of judgments) {
+        expect(rendered).not.toContain("Less specific summary");
+        expect(rendered).not.toContain("Superseded detail");
+      }
+
       const platformRouteAttr = await page.evaluate(() => {
         const rows = Array.from(document.querySelectorAll('tr[onclick*="routeTo"]'));
         const row = rows.find((r) => (r.textContent ?? "").includes("platform"));

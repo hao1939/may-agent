@@ -39,7 +39,11 @@ function setup() {
 }
 
 describe("escalation lifecycle", () => {
-  it("resumes the source session when an escalation resolves terminally", () => {
+  it.each([
+    { facts: { decision: "B" } },
+    { evidence: { decision: "B" } },
+    { facts: { decision: "B" }, evidence: { decision: "superseded" } },
+  ])("resumes the source session with current or saved resolution facts: %j", (facts) => {
     const { persistDir, bus, resumed, sent } = setup();
 
     bus.emit({
@@ -63,7 +67,7 @@ describe("escalation lifecycle", () => {
         outcome: "answered",
         summary: "Use option B",
         resumeInstruction: "Continue with option B",
-        facts: { decision: "B" },
+        ...facts,
       },
     } as never);
 
@@ -73,6 +77,9 @@ describe("escalation lifecycle", () => {
     expect(resumed[0].message).toContain("Escalation esc_parent resolved.");
     expect(resumed[0].message).toContain("Outcome: answered.");
     expect(resumed[0].message).toContain("Instruction: Continue with option B");
+    expect(resumed[0].message).toContain('Facts: {"decision":"B"}');
+    expect(resumed[0].message).not.toContain("superseded");
+    expect(resumed[0].message).not.toContain("Evidence:");
 
     const rows = getDb(persistDir)
       .prepare(

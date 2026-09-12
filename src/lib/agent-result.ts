@@ -47,7 +47,7 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
           completed_items: args.completed_items,
           new_items: args.new_items,
           lessons: args.lessons,
-          verification_facts: args.verification_facts,
+          verification_facts: args.verification_facts ?? args.verification_evidence,
           context_updates: args.context_updates,
           result: args.result,
         };

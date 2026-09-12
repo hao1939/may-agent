@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./db/connection.js";
-import { listWorkflowRunIds } from "./db/workflows.js";
+import { getWorkflowRun, insertWorkflowRun, listWorkflowRunIds } from "./db/workflows.js";
+import { writeJsonArtifact, workflowRunRef } from "./artifacts.js";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import {
@@ -30,6 +31,34 @@ afterEach(() => {
 });
 
 describe("workflow facts without reporting", () => {
+  it.each([
+    { state: "available", value: { kind: "evidence", evidence: ["App-owned data"] }, redacted: false },
+    { state: "unavailable", reason: "too-large" },
+  ])("normalizes a saved blocked payload after reopen without rewriting it: %j", (payload) => {
+    const { root } = fixture();
+    const runId = "wr_legacy";
+    insertWorkflowRun(root, {
+      runId, workflow: "saved", task: "Retain the blocked result", parentSessionId: null,
+      parentWorkflowRunId: null, depth: 1, status: "blocked", startedAt: 1, endedAt: 2,
+      result_summary: null, result_reason: "Waiting for access", resumedFromRunId: null,
+    });
+    const ref = workflowRunRef(runId);
+    const path = join(root, ref);
+    const artifact = JSON.parse(readFileSync(path, "utf8"));
+    artifact.result_payload = { kind: "evidence", ...payload };
+    const descriptor = writeJsonArtifact(root, ref, artifact);
+    getDb(root).prepare("UPDATE workflow_runs SET artifact_sha256 = ?, artifact_bytes = ? WHERE runId = ?")
+      .run(descriptor.sha256, descriptor.bytes, runId);
+    const saved = readFileSync(path, "utf8");
+    closeDb(root);
+
+    expect(getWorkflowRun(root, runId)?.result_payload).toEqual({ kind: "facts", ...payload });
+    expect(readWorkflowFacts(root, runId)?.run.result_payload).toEqual({ kind: "facts", ...payload });
+    expect(readFileSync(path, "utf8")).toBe(saved);
+    expect(getDb(root).prepare("SELECT artifact_sha256 FROM workflow_runs WHERE runId = ?").get(runId))
+      .toEqual({ artifact_sha256: descriptor.sha256 });
+  });
+
   it("bounds payload traversal without invoking authored accessors, serializers or proxy traps", () => {
     let invoked = 0;
     const hook = () => { invoked++; throw new Error("Authored hook must not run"); };

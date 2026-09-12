@@ -411,7 +411,7 @@ function renderAlertJudgment(alert) {
     return '<div style="margin-top:5px;color:var(--yellow);font-size:11px">unjudged: owner still needs to react</div>';
   }
   const operation = judgment.operation || judgment.verdict || 'judged';
-  const facts = String(judgment.facts || judgment.summary || '').trim();
+  const facts = String(judgment.facts ?? judgment.evidence ?? judgment.summary ?? '').trim();
   const clipped = facts.length > 180 ? facts.slice(0, 177) + '...' : facts;
   const when = judgment.timestamp ? timeAgo(Number(judgment.timestamp)) : 'recently';
   return '<div style="margin-top:5px;color:var(--fg2);font-size:11px;line-height:1.35">'
