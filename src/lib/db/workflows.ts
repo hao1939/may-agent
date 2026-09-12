@@ -9,6 +9,7 @@ import {
 } from "../artifacts.js";
 import { readSessionMeta } from "../persistence.js";
 import type { TaskBinding } from "../persistence.js";
+import type { WorkflowPayload } from "../workflow-payload.js";
 
 export interface WorkflowRunRecord {
   runId: string;
@@ -31,6 +32,8 @@ export interface WorkflowRunRecord {
   endedAt: number | null;
   result_summary: string | null;
   result_reason: string | null;
+  /** Optional bounded inspection copy, stored only in the existing run artifact. */
+  result_payload?: WorkflowPayload;
   resumedFromRunId: string | null;
   sourcePath?: string | null;
   sourceScope?: "agent" | "project" | null;
@@ -99,7 +102,13 @@ export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): v
 export function updateWorkflowRun(
   persistDir: string,
   runId: string,
-  fields: { status: string; endedAt?: number; result_summary?: string; result_reason?: string },
+  fields: {
+    status: string;
+    endedAt?: number;
+    result_summary?: string;
+    result_reason?: string;
+    result_payload?: WorkflowPayload;
+  },
 ): void {
   const db = getDb(persistDir);
   const current = db.prepare("SELECT * FROM workflow_runs WHERE runId = ?").get(runId) as WorkflowRunRecord | null;
@@ -114,6 +123,7 @@ export function updateWorkflowRun(
       endedAt: fields.endedAt ?? full?.endedAt ?? current.endedAt,
       result_summary: fields.result_summary ?? full?.result_summary ?? current.result_summary,
       result_reason: fields.result_reason ?? full?.result_reason ?? current.result_reason,
+      ...(fields.result_payload ? { result_payload: fields.result_payload } : {}),
     });
   }
   withSqliteBusyRetry(`update workflow_run ${runId}`, () =>

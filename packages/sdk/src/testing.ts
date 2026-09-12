@@ -85,6 +85,7 @@ export function createTestObserverContext(
 
 export type TestAppWorkflowContextOptions<TInput> = {
   input: TInput;
+  signal?: AbortSignal;
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   read?: AppRead;
   log?: Logger;
@@ -111,6 +112,7 @@ export function createTestAppWorkflowContext<TInput>(
   });
   return {
     input: options.input,
+    signal: options.signal ?? new AbortController().signal,
     ...(options.reconciliation ? { reconciliation: options.reconciliation } : {}),
     read: options.read ?? createTestAppRead(),
     agents: {
