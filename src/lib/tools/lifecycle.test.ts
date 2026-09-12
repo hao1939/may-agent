@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createFinishTool } from "./lifecycle.js";
 import type { FinishToolOptions } from "./lifecycle.js";
-import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -226,5 +226,38 @@ describe("createFinishTool", () => {
     const tool = createTool();
     expect(tool.name).toBe("finish");
     expect(tool.description).toContain("structured completion");
+    // The schema is what the model sees, not just developer documentation.
+    const fields = tool.parameters.properties;
+    expect(fields.completed_items.description).toContain("does not complete");
+    expect(fields.new_items.description).toContain("does not create");
+    expect(fields.context_updates.description).toContain("suggestions only");
+    expect(fields.context_updates.description).toContain("verified activation");
+    expect(fields.lessons.description).toContain("best-effort");
+  });
+
+  it.each([true, false])("reports notes without claiming adoption (lesson storage available=%s)", async (storageAvailable) => {
+    if (!storageAvailable) rmSync(stateDir, { recursive: true });
+    const text = await callFinish(createTool(), {
+      status: "partial",
+      summary: "Reviewed the change; follow-up needs an owner decision.",
+      next_steps: "Ask the owner to authorize the follow-up.",
+      completed_items: ["Reviewed change"],
+      new_items: ["Apply follow-up"],
+      context_updates: [{ action: "add", content: "Project prefers concise reviews" }],
+      lessons: [{ category: "insight", content: "Verify the selected revision" }],
+    });
+    expect(text).toContain("PARTIAL");
+    expect(text).toContain("Lessons reported:");
+    expect(text).not.toContain("Lessons recorded:");
+    expect(existsSync(join(projectRoot, "agents/tech-lead/context.md"))).toBe(false);
+    const streamPath = join(stateDir, "memory-stream.jsonl");
+    expect(existsSync(streamPath)).toBe(storageAvailable);
+    if (storageAvailable) {
+      expect(JSON.parse(readFileSync(streamPath, "utf8").trim())).toMatchObject({
+        agent: "tech-lead",
+        category: "insight",
+        content: "Verify the selected revision",
+      });
+    }
   });
 });

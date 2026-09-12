@@ -6,10 +6,12 @@
  * What finish() does:
  *   - Reports status (success/failure/blocked/partial) + summary
  *   - Validates deliverables exist on disk
- *   - Updates request tracker (SQLite)
- *   - Triggers post-turn hooks (evaluation, context-learn, memory)
+ *   - Attempts to append reported lessons to the local memory stream
+ *   - Returns a report; the caller records the turn and runs its configured hooks
  *
  * What finish() does NOT do:
+ *   - Create or complete Tasks/Requests from report text
+ *   - Activate guidance or load reported context into future sessions
  *   - Choose whether the session becomes idle or terminal (the caller's autoClose policy does that)
  *   - Prevent further messages (chat sessions accept input after finish)
  *
@@ -86,17 +88,17 @@ const finishSchema: TSchema = Type.Object({
     Type.Array(
       Type.String({
         description:
-          "Description of a task completed this session. Fuzzy-matched against pending requests in the DB to auto-mark them COMPLETED.",
+          "Description of work completed this session, for the caller's report.",
       }),
       {
         description:
-          "Tasks completed during this session. Infrastructure automatically resolves matching tracked requests.",
+          "Reported completed work. This does not complete tracked Tasks or Requests; use the owning App's authorized controls when needed.",
       },
     ),
   ),
   new_items: Type.Optional(
-    Type.Array(Type.String({ description: "Description of a new task to track (self-assigned follow-up work)" }), {
-      description: "New tasks discovered during this session. Infrastructure creates tracked requests for them.",
+    Type.Array(Type.String({ description: "Suggested follow-up work for the owner to consider" }), {
+      description: "Reported follow-up suggestions. This does not create Tasks or Requests.",
     }),
   ),
   lessons: Type.Optional(
@@ -111,7 +113,7 @@ const finishSchema: TSchema = Type.Object({
             "The lesson — specific and actionable, not generic. Bad: 'always test'. Good: 'manager.ts uses lazy DB init, must call getDb() not import db directly'.",
         }),
       }),
-      { description: "Lessons learned this session. Persisted to memory for cross-session learning." },
+      { description: "Reported lessons. A local memory-stream append is best-effort; this does not load lessons into future sessions or activate guidance." },
     ),
   ),
   verification_evidence: Type.Optional(
@@ -130,16 +132,16 @@ const finishSchema: TSchema = Type.Object({
     Type.Array(
       Type.Object({
         action: Type.Union([Type.Literal("add"), Type.Literal("remove")], {
-          description: "'add': persist a new fact. 'remove': delete a stale/incorrect fact.",
+          description: "Proposed context change: 'add' a fact or 'remove' a stale/incorrect fact.",
         }),
         content: Type.String({
           description:
-            "The fact to add or remove. Keep short (one line). Example: 'User prefers Vitest over Jest', 'DB uses node:sqlite not better-sqlite3'.",
+            "The proposed fact to add or remove. Keep short (one line). Example: 'Project uses Vitest', 'DB uses node:sqlite'.",
         }),
       }),
       {
         description:
-          "Persistent context updates. Facts added here are loaded into future sessions via agents/<name>/context.md. Use sparingly — only for durable project knowledge, user preferences, or corrections.",
+          "Reported context-change suggestions only. This does not update context.md, load facts into future sessions, or activate guidance. Lasting behavior changes need an authorized source edit and verified activation; do not claim them from this report alone.",
       },
     ),
   ),
@@ -165,11 +167,11 @@ interface FinishParams {
  *
  * When called:
  * 1. Validates deliverable paths exist (if status is success)
- * 2. Updates the unified request tracker (SQLite)
+ * 2. Attempts a best-effort local append of reported lessons
  * 3. Returns a formatted summary as the tool output
  *
- * The tool output becomes the final message visible to the parent/manager,
- * replacing unstructured free-text endings.
+ * The caller extracts accepted finish arguments from session evidence and owns
+ * the resulting work state. Report fields are not additional state-changing tools.
  */
 export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema> {
   const { agentName, projectRoot, persistDir } = options;
@@ -313,7 +315,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 
       if (params.lessons && params.lessons.length > 0) {
         parts.push("");
-        parts.push("**Lessons recorded:**");
+        parts.push("**Lessons reported:**");
         for (const l of params.lessons) {
           parts.push(`- [${l.category}] ${l.content}`);
         }

@@ -161,6 +161,7 @@ describe("shared agent execution preparation", () => {
     writeFileSync(join(root, "shared", "common-sense.md"), "mutable rules\n");
     writeFileSync(join(definitionSharedRoot, "common-sense.md"), "released shared rules\n");
     writeFileSync(join(agentDir, "AGENTS.md"), "sample identity\n");
+    writeFileSync(join(agentDir, "context.md"), "reported context is not activated guidance\n");
 
     const prepared = prepareAgentExecution({
       definition: {
@@ -188,6 +189,7 @@ describe("shared agent execution preparation", () => {
     expect(prepared.runner.streamFn).toBeFunction();
     expect(prepared.systemPrompt).toContain("released shared rules\n\nsample identity");
     expect(prepared.systemPrompt).not.toContain("mutable rules");
+    expect(prepared.systemPrompt).not.toContain("reported context is not activated guidance");
     expect(prepared.systemPrompt).toContain("Available tools: read, finish");
     expect(prepared.systemPrompt).toContain("Current time: 2026-07-19T00:00:00.000Z");
   });
