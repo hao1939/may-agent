@@ -222,6 +222,15 @@ recheck appropriately; neither a timer nor persistence grants new authority.
 An invalid model result is failure evidence for correction, not a reason to
 invent a domain blocker or discard the assignment.
 
+The acceptance boundary is the Task settlement transaction. A finished agent
+session without a committed Task result is retained evidence; after ownership
+and process cleanup checks, retry the same input through normal execution and
+validation. Do not reconstruct a second result-acceptance path from the session
+artifact. Already accepted Task results survive restart without another attempt.
+This deliberately accepts possible extra execution cost in the gap before
+settlement; the [source simplification review](controller-poc-deeper-review.md#first-removal-retry-uncommitted-execution)
+records the deletion and tests.
+
 Core owns claims, timing, fencing, retained evidence and notifications. The App
 supplies worker judgment about diagnosis and the next useful approach. Its
 assigning owner judges continued value, scope and closure. Put those instructions
@@ -420,6 +429,13 @@ Keep existing homes and move authority, then delete replaced code:
 | `adapters/` | Existing execution, producer and interface capabilities; none owns an extra work lifecycle |
 | `composition/` | Wire capabilities, Task-link routes and bounded timer discovery; no domain judgment or duplicate execution pump |
 | `packages/sdk/`, `projects/may.app/` and `agents/may/` | Minimal public contract changes and App conventions; remove the separate follow-up Task declaration and prompt |
+
+Shared execution is not the end of simplification. Ordinary App inputs still
+retain an inbox handling pump, and delegation retains several return protocols.
+The [next deletion sequence](controller-poc-deeper-review.md#next-deletion-in-order)
+targets direct Task admission and one saved return link before deleting those
+paths. This is pending work, not a claim that the candidate has already removed
+all inbox claims or unified every result adapter.
 
 One controller implementation can serve independent Task keys concurrently.
 Do not serialize the Host globally or require generic Tasks to carry Conversation,

@@ -10,9 +10,11 @@ retains nested delegation, failure and cutover evidence.
 Keep one Task lifecycle. The new trials support its practical value: an agent
 can choose delegation from an ordinary ask, keep discussion available, accept
 owner withdrawal and reconsider evidence when the human changes the question.
-Do not equate that result with cheaper model execution or dramatically fewer
-lines. The controller saves coordination work, while model judgment and repeated
-context still have a cost.
+The source should also become smaller. The first follow-up did not go far enough:
+it shared execution while retaining old admission, return and recovery contracts.
+The [source investigation below](#why-the-source-stayed-large) identifies those
+costs and tests one contract reduction. Model execution cost remains a separate
+measurement from source size.
 
 Three small changes improve the candidate:
 
@@ -27,6 +29,123 @@ Three small changes improve the candidate:
 
 These remove an obsolete procedure and a policy switch. They do not introduce
 another queue, controller, recovery role, per-input retry counter or config layer.
+
+## Why the source stayed large
+
+The unification moved execution authority, but kept too many old protocols around
+it. Preserving every old contract made adapters and compatibility checks replace
+much of the deleted code. That was an incremental implementation choice, not a
+necessary cost of one Task lifecycle.
+
+The source at `f2683274` shows three concrete causes:
+
+| Retained mechanism | Cost and source evidence | Smallest useful change |
+| --- | --- | --- |
+| Ordinary App input still has a handling lifecycle | `AppInboxHost.reconcileOnce()` claims input, renews a lease, attaches a Task, waits, claims again and copies the outcome. Composition retains a pump and dependency recovery. The SDK already declares `app.task` as a pure synchronous mapping. | Resolve and commit Task admission directly. Keep input identity and caller correlation; retire execution claims on inbox rows. |
+| Delegation has several return protocols | Direct children use `project.task.child-transitioned`; `admitTaskAppDependencies()` translates input publication into inbox waits and Conditions; human follow-up uses Topic links and `admitConversationTaskChange()`. Each has its own discovery and correlation checks. | Extend the existing admission link with the caller Task and use one exact result-return route. Human Requests and Topics remain context and product records. |
+| Session completion can substitute for Task settlement | `consumePersistedTerminalAgentResult()` reconstructs a claim and applies actions/results from a session artifact during startup or a busy claim. Normal execution separately handles dependency admission, verification and settlement. | Accept only at the normal Task settlement boundary. Retry uncommitted execution using retained evidence. |
+
+For example, ordinary delegation currently travels through:
+
+```text
+A proposes typed input for B
+  -> input event -> B inbox row -> inbox claim -> B Task admission
+  -> B attempt -> accepted result -> inbox claim -> copied input result
+  -> dependency event -> A Condition -> A attempt
+```
+
+The target is shorter:
+
+```text
+A proposes typed input for B
+  -> Task admission and saved return link -> B attempt -> accepted result
+  -> event admits the exact result to A -> A attempt
+```
+
+Events still connect components. A timer rediscovers missing notifications from
+accepted state. An event is not a reason to split one local SQLite transaction
+into several separately recoverable steps. Admission publication can retain its
+existing durable journal replay if loading or mapping fails before acceptance.
+
+This also requires dropping an expensive promise: after input is attached,
+rerunning the App mapper must not silently replace its responsible Task.
+`#replacementTaskAttachment()` currently supports that behavior and recovery
+keeps looking for it. The assigning owner can revise or close work explicitly.
+Changing admission and result reads together is necessary before deleting the
+inbox pump; removing the pump alone would strand ordinary inputs.
+
+The mutable `TaskTree` projection and `ResourceMutationScope` add another layer
+between lifecycle operations and row writes. They deserve a later review, but
+are not a second database authority. Exact multi-row changes still need atomicity
+and fences. Do not replace them with a generic repository framework before
+reducing the operations and relationships they support.
+
+## First removal: retry uncommitted execution
+
+Host `2d837d20` removes the session-result acceptance path, its reconstructed
+claim and its result-reading adapter port. It removes **261 net production lines**
+against `f2683274`; no schema, recovery service or configuration option replaces it.
+
+The contract is explicit:
+
+- A result committed to the Task remains accepted across restart.
+- A finished session without Task settlement remains execution evidence.
+  Recovery preserves the assignment, generation and pending input, releases the
+  orphaned attempt, and retries through normal execution and validation.
+- A live caller keeps its claim. Recovery checks exact ownership and confirms
+  process cleanup before replacement; a terminal session marker alone is not
+  proof that its shell descendants exited.
+- Worker failure remains evidence; only the assigning owner closes the Task.
+
+The cost is an additional bounded attempt, possibly another paid agent call,
+when execution finishes just before settlement is lost. The App must inspect
+retained evidence before repeating an external effect whose duplication matters.
+No exactly-once external execution guarantee is added. Workflows already paid
+this redo cost because their lost verifier/continuation could not safely be
+reconstructed; direct agent execution now follows the same rule.
+
+The new regression fails against the preceding source: it consumes the saved
+proposal and mutates another Task, including while the caller's lease is fresh.
+The candidate instead leaves that proposal unapplied, preserves the original
+input, and accepts the replacement judgment. This is a deliberate contract
+change, not a claim that the old test's expected salvage behavior never worked.
+Focused tests also cover accepted results after reopen, early external evidence,
+failed process cleanup and workflow verification. Recovery-only settlement
+matrices are retired; normal settlement keeps the outcome/action checks.
+
+The focused recovery/failure-report run passes 25 cases. Full `bun run ci` at
+`2d837d20` passes: **2,883 passed, 3 installation-dependent skips, 0 failures**;
+2,886 tests across 291 files in 152 seconds. Types, architecture and lint pass.
+Design checks and 66 changed-document links pass. Hosted checks on the pushed
+revision are pending. The earlier live trials retain their original revisions;
+this source experiment makes no new model-cost or deployment claim.
+
+## Next deletion, in order
+
+First remove the ordinary inbox handling lifecycle. Prove one ordinary App input
+through direct admission, worker execution, exact result read and restart, then
+move remaining producers and delete claim/renew/wait/reclaim code. Keep the
+existing receipt for publication and input identity; execution belongs to its
+Task. Request fulfillment still requires the appropriate explanation.
+
+Then make human follow-up and nested delegation use that same saved return link.
+Prove **A → B → C → B → A**, concurrent human input, owner withdrawal and a result
+committed before notification is lost. Convert or drain retained links during
+the already planned offline cutover. Do not keep another runtime switch or ask
+the agent to reproduce old request identifiers on every attempt.
+
+After that, test retiring worker `create-task` delegation in favor of typed App
+input, which already lets the App choose the Task specification. Keep explicit
+owner revision/closure controls and hierarchy where they support reads or
+authority. Avoid retaining both raw child-spec creation and App-input delegation
+as permanent ways to assign the same work. This retirement needs an audit of App
+consumers and retained child waits before any deletion.
+
+Only then reconsider the remaining tree scheduling and mutable snapshot writes.
+Measure deleted state transitions and branches, not just moved lines. Each slice
+should name the old contract it retires, the code that disappears and the cost
+we accept. The inbox and return-link changes above remain proposed; the current
+source experiment implements the recovery removal only.
 
 ## What the live trials established
 
@@ -129,10 +248,12 @@ local document links pass. Hosted **Quality and Container both pass** on
 Against main `49272b5a`, production source under `src/` and `packages/`, excluding
 tests, compile fixtures, JSON and Markdown, is 2,988 lines added and 2,439 removed:
 **549 net added**, of which **517** are offline converters and **32** ongoing
-source. This remains a reduction in competing execution paths, not a large
-source-size reduction. The SDK type correction adds explicit branches; deleting
-the actual identity and persistence checks would save lines by weakening the
-proven guarantees.
+source. These counts describe `f2683274`, before the recovery removal above.
+The earlier conclusion that further savings mostly required weakening identity
+checks was too narrow. Retiring the alternate acceptance path keeps those checks
+and reduces ongoing source to **229 net lines fewer** than that main baseline.
+Including the 517 offline-converter lines, production source is still **288 net
+lines larger**. The larger admission/return-path reduction remains to be proved.
 
 Keep exact admitted-input/result links, claim fences and typed Request closure.
 The correction and withdrawal cases show their value. Keep planned upgrade

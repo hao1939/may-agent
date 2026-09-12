@@ -8,11 +8,15 @@ The current review artifact is [Host PR #158](https://github.com/hao1939/may-age
 The subsequent [deeper review](controller-poc-deeper-review.md) records natural
 delegation, owner withdrawal, corrected acceptance, additive waits and revised
 retry pacing. The evidence below retains its original revisions and defaults.
+Its [later source investigation](controller-poc-deeper-review.md#why-the-source-stayed-large)
+also supersedes the session-result salvage tests below: uncommitted execution
+now retries through normal Task settlement. Ordinary App inbox handling and the
+multiple result-return protocols remain explicit simplification work.
 
 **Recommendation:** Proceed with human review of one Task model, controller and
 lifecycle. A can take human input, delegate to B, and B can delegate to C:
 **A → B → C → B → A**. Context and capabilities vary; execution ownership does
-not. The old independent inbox executor and supervisor reply path are removed,
+not. The old independent conversational inbox executor and supervisor reply path are removed,
 and the paired App removes its supervisor declaration. Source checks, two live
 nested trials and an isolated real-daemon cutover support this critical path.
 The [acceptance audit](#critical-path-acceptance-audit) states what is proved and
