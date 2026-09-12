@@ -28,7 +28,7 @@ import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
-  
+
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,

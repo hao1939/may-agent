@@ -29,7 +29,7 @@ import {
   wakeLoadedAppTasks,
   cancelLoadedAppTask,
   reconcileLoadedAppTaskOnce,
-  
+
 } from "./app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 

@@ -12,7 +12,7 @@ import {
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
-  
+
 } from "../../core/tasks/app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
 import { attachEventPersistence } from "../../daemon-events.js";
