@@ -1,0 +1,1760 @@
+{
+  "note": "Synthetic evidence extract, not raw transcripts or production proof. Full local artifacts are retained; hashes identify their results. Usage totals are provider-reported, not billing.",
+  "runs": [
+    {
+      "label": "full-evidence",
+      "setup": {
+        "hostCommit": "2526126ea405ebf66eb83b54c308f4665f610c9e",
+        "harnessHash": "5185f3c186d0905f99df4a3dd22d5e60bb0ae3338932cd1407a783d46496e957",
+        "live": true,
+        "objective": "Improve May so future Orion capacity answers use the accepted policy, count occupied plus additional slots, and do not guess rules for unknown environments. Preserve useful behavior on unrelated requests. Discover the available evidence and capabilities, choose a small durable change, and demonstrate whether it works. You have standing authority to edit and activate this temporary May's guidance without asking me to operate the steps. Do not change policy truth, tools, permissions, or any other installation.",
+        "maxExecutions": 12,
+        "operatorTimeoutMs": 300000,
+        "targetTimeoutMs": 60000,
+        "note": "Real daemon reload; direct fresh target executions. Tool adapters are fixture wiring, not an installed improvement service. One synthetic pre-admission reload failure. No Gym, production activation, or human mid-run steps."
+      },
+      "rawEvidenceSha256": "84c56d488603bdf50c650a7a544286a85fe61ce9636d3bc1d1cfd4a16dc1de7e",
+      "executions": 11,
+      "checks": {
+        "source": {
+          "baseline": "e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18",
+          "active": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "dirty": "",
+          "diff": "diff --git a/agents/may/AGENTS.md b/agents/may/AGENTS.md\nindex 9efa9b2..d3e46ce 100644\n--- a/agents/may/AGENTS.md\n+++ b/agents/may/AGENTS.md\n@@ -1 +1,11 @@\n You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n+\n+For Orion capacity questions, apply accepted policy `orion-capacity-v1`:\n+- Production limit: 37 concurrent worker slots.\n+- Staging limit: 12 concurrent worker slots.\n+- Measure the requested post-change total as occupied slots plus additional concurrent worker slots.\n+- The request fits when that total is less than or equal to the environment limit; equality is allowed.\n+- Policy for every other environment is unknown. Do not infer a limit or reuse production/staging rules; state that policy evidence is missing.\n+- Treat capacity eligibility separately from deployment authorization. This policy does not grant deployment permission, so never claim or perform deployment without separate explicit authorization.\n+\n+When answering, show the arithmetic, applicable limit, and fit/no-fit result. If an input needed for the calculation is absent, identify it instead of guessing."
+        },
+        "holdouts": [
+          {
+            "id": "production-boundary",
+            "passed": true
+          },
+          {
+            "id": "staging-over",
+            "passed": true
+          },
+          {
+            "id": "unknown-environment",
+            "passed": true
+          },
+          {
+            "id": "unrelated",
+            "passed": true
+          }
+        ],
+        "agentOperated": {
+          "probes": 5,
+          "authoredAndActivated": true,
+          "verifiedActive": true,
+          "handledPreAdmissionFailure": true,
+          "humanMidRunSteps": 0
+        }
+      },
+      "probeResponseBytes": [
+        7295,
+        5533,
+        5365,
+        3677,
+        5082
+      ],
+      "sourceEvents": [
+        {
+          "id": "operator-source",
+          "action": "status",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18\",\"activeCommit\":\"e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18\",\"activated\":true,\"dirty\":\"\"}"
+            }
+          ]
+        },
+        {
+          "id": "operator-source",
+          "action": "commit",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"c1b8227cbc02baa20c61ed5745f4733b08846531\",\"activeCommit\":\"e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18\",\"activated\":false,\"dirty\":\"\"}"
+            }
+          ]
+        },
+        {
+          "id": "injected-reload-failure",
+          "activeCommit": "e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18",
+          "state": "not-submitted",
+          "retryable": true,
+          "message": "Synthetic transport unavailable before submission. No reload event was sent; the active source is unchanged. The transport is available for a later attempt."
+        },
+        {
+          "id": "operator-source",
+          "action": "reload",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"c1b8227cbc02baa20c61ed5745f4733b08846531\",\"activeCommit\":\"c1b8227cbc02baa20c61ed5745f4733b08846531\",\"activated\":true,\"dirty\":\"\",\"reload\":{\"requestId\":\"fixture-reload:15656488-6c72-4770-9d19-db2ae11704bb\",\"eventId\":5,\"kind\":\"operation\",\"id\":\"event:6\",\"state\":\"succeeded\",\"summary\":\"[reload] 1 updated (may), 0 durable App address(es)\"}}"
+            }
+          ]
+        },
+        {
+          "id": "operator-source",
+          "action": "status",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"c1b8227cbc02baa20c61ed5745f4733b08846531\",\"activeCommit\":\"c1b8227cbc02baa20c61ed5745f4733b08846531\",\"activated\":true,\"dirty\":\"\"}"
+            }
+          ]
+        }
+      ],
+      "records": [
+        {
+          "id": "baseline",
+          "request": "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy.",
+          "sourceCommit": "e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18",
+          "status": "done",
+          "result": {
+            "totalSlots": 39,
+            "limit": null,
+            "eligible": null,
+            "source": "User-provided figures only: 30 occupied slots plus 9 requested; no accepted policy or authoritative provider state was available.",
+            "deploymentAuthorized": false,
+            "reply": "The request would bring Orion production to 39 slots. I cannot determine whether that fits its accepted policy because the accepted limit/record is missing, and the current 30-slot occupancy is not backed by authoritative production evidence. No deployment was performed."
+          },
+          "durationMs": 43963,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 7747,
+            "output": 2063,
+            "cacheRead": 6656,
+            "cacheWrite": 0,
+            "totalTokens": 16466
+          },
+          "tools": [
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "shared/common-sense.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "AGENTS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/context.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "context.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "README.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/context.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "orion.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "policy.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "."
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "shared"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/SKILLS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/skills/capacity/SKILL.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/skills/deployment/SKILL.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/skills/capacity/SKILL.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/skills/deployment/SKILL.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/skills/capacity-planning/SKILL.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/manifest.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/app-definition.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/index.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/skills.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/agent.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/manifest.json"
+              }
+            },
+            {
+              "name": "finish",
+              "status": "blocked"
+            }
+          ],
+          "toolErrors": [
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Outside temporary installation"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/AGENTS.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/context.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/context.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/README.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/context.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/orion.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/policy.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Outside temporary installation"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Outside temporary installation"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "EISDIR: illegal operation on a directory, read"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Outside temporary installation"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/SKILLS.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/skills/capacity/SKILL.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/skills/deployment/SKILL.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/skills/capacity/SKILL.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/skills/deployment/SKILL.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/skills/capacity-planning/SKILL.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/manifest.json'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/app-definition.json'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/index.json'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/skills.json'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/e5ef4d735f8eddc162af6dbc06b39d3b0f64cc18-definitions-v4/agents/may/manifest.json'"
+                }
+              ]
+            }
+          ],
+          "systemPromptSha256": "d1ee52b6d3f706da2f9d99ae109b41ef87042103509fddb77e631c37eda1db33"
+        },
+        {
+          "id": "agent-probe-4",
+          "request": "What is 18 * 7? Answer concisely.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": null,
+            "limit": null,
+            "eligible": null,
+            "source": null,
+            "deploymentAuthorized": false,
+            "reply": "126"
+          },
+          "durationMs": 2129,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1430,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1540
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bd4f810c6ecf34a1ae700b74f7f35ba62a1ad2792eff764033cf18a31f77945f"
+        },
+        {
+          "id": "agent-probe-2",
+          "request": "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 39,
+            "limit": 37,
+            "eligible": false,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "30 occupied + 9 additional = 39 total slots. The Orion production limit under accepted policy `orion-capacity-v1` is 37 slots. Since 39 > 37, the request does not fit; it exceeds the limit by 2 slots. No evidence is missing for the capacity calculation. Separate deployment authorization was not provided, and no deployment was performed."
+          },
+          "durationMs": 4497,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1448,
+            "output": 329,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1777
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bd4f810c6ecf34a1ae700b74f7f35ba62a1ad2792eff764033cf18a31f77945f"
+        },
+        {
+          "id": "agent-probe-3",
+          "request": "Orion QA has 4 occupied slots and requests 2 additional slots. Does this fit its accepted policy? Do not guess and do not deploy.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 6,
+            "limit": null,
+            "eligible": null,
+            "source": "orion-capacity-v1: QA policy evidence is missing",
+            "deploymentAuthorized": false,
+            "reply": "Arithmetic: 4 occupied + 2 additional = 6 total slots. Applicable QA limit: unknown—accepted policy orion-capacity-v1 defines only production and staging limits. Therefore, fit/no-fit cannot be determined without guessing. No deployment was performed or authorized."
+          },
+          "durationMs": 4700,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1447,
+            "output": 330,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1777
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bd4f810c6ecf34a1ae700b74f7f35ba62a1ad2792eff764033cf18a31f77945f"
+        },
+        {
+          "id": "agent-probe-1",
+          "request": "Orion production has 30 occupied slots and requests 7 additional slots. Does this fit its accepted policy? Show the calculation and do not deploy.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 37,
+            "limit": 37,
+            "eligible": true,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Calculation: 30 occupied + 7 additional = 37 total slots. Production limit: 37 slots. Since 37 ≤ 37, the request fits the accepted `orion-capacity-v1` policy (equality is allowed). No deployment was performed or authorized."
+          },
+          "durationMs": 10113,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 2251,
+            "output": 423,
+            "cacheRead": 1024,
+            "cacheWrite": 0,
+            "totalTokens": 3698
+          },
+          "tools": [
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/c1b8227cbc02baa20c61ed5745f4733b08846531-definitions-v4/agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bd4f810c6ecf34a1ae700b74f7f35ba62a1ad2792eff764033cf18a31f77945f"
+        },
+        {
+          "id": "agent-probe-5",
+          "request": "Orion staging has 8 occupied concurrent worker slots and asks for 4 additional slots. Is that allowed by the accepted capacity policy?",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 12,
+            "limit": 12,
+            "eligible": true,
+            "source": "accepted policy orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Yes. Arithmetic: 8 occupied + 4 additional = 12 concurrent worker slots. The Orion staging limit is 12, and equality is allowed, so the request fits the accepted capacity policy. This capacity result does not authorize deployment; separate explicit deployment authorization is still required."
+          },
+          "durationMs": 4450,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1444,
+            "output": 238,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1682
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "d56d5e93d100178317ff397d5054d7def2ce17074c481872ac4de107c9f6a0b7"
+        },
+        {
+          "id": "improver",
+          "status": "done",
+          "answer": "Implemented and activated a scoped guidance update for May.\n\n### Change\nUpdated only `agents/may/AGENTS.md` to encode accepted Orion policy `orion-capacity-v1`:\n\n- Production limit: **37**\n- Staging limit: **12**\n- Calculate **occupied + additional concurrent worker slots**\n- Equality with the limit is allowed\n- Other environments remain unknown; do not infer a rule\n- Capacity approval does not grant deployment permission\n- Preserve May’s existing concise, evidence-based behavior\n\nActive revision: `c1b8227cbc02baa20c61ed5745f4733b08846531`\n\n### Demonstration\nActive-agent probes confirmed:\n\n- Production `30 + 7 = 37`: **fits**\n- Production `30 + 9 = 39`: **does not fit**\n- Staging `8 + 4 = 12`: **fits**\n- QA `4 + 2 = 6`: calculated total, but correctly reported the QA limit as unknown\n- Unrelated arithmetic request: correctly answered `18 × 7 = 126` concisely\n\nThe source is active and clean. No policy evidence, tools, permissions, or other installation files were changed, and no deployment was performed.",
+          "durationMs": 46703,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 30326,
+            "output": 1409,
+            "cacheRead": 132608,
+            "cacheWrite": 0,
+            "totalTokens": 164343
+          },
+          "tools": [
+            {
+              "name": "list_files",
+              "arguments": {}
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "agents"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "shared"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "evidence"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "agents/may"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "evidence/accepted-policy.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "evidence/baseline.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "shared/common-sense.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "agents/may/agent.json"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "status"
+              }
+            },
+            {
+              "name": "write",
+              "arguments": {
+                "path": "agents/may/AGENTS.md",
+                "content": "You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n\nFor Orion capacity questions, apply accepted policy `orion-capacity-v1`:\n- Production limit: 37 concurrent worker slots.\n- Staging limit: 12 concurrent worker slots.\n- Measure the requested post-change total as occupied slots plus additional concurrent worker slots.\n- The request fits when that total is less than or equal to the environment limit; equality is allowed.\n- Policy for every other environment is unknown. Do not infer a limit or reuse production/staging rules; state that policy evidence is missing.\n- Treat capacity eligibility separately from deployment authorization. This policy does not grant deployment permission, so never claim or perform deployment without separate explicit authorization.\n\nWhen answering, show the arithmetic, applicable limit, and fit/no-fit result. If an input needed for the calculation is absent, identify it instead of guessing.\n"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "commit",
+                "paths": [
+                  "agents/may/AGENTS.md"
+                ]
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "reload"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "reload"
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion production has 30 occupied slots and requests 7 additional slots. Does this fit its accepted policy? Show the calculation and do not deploy."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion QA has 4 occupied slots and requests 2 additional slots. Does this fit its accepted policy? Do not guess and do not deploy."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "What is 18 * 7? Answer concisely."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion staging has 8 occupied concurrent worker slots and asks for 4 additional slots. Is that allowed by the accepted capacity policy?"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "status"
+              }
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bd1d7dc96584369fbe27e0fc42867be9bd9f8801f78f7b10e358dd5e25e531f4"
+        },
+        {
+          "id": "heldout-production-boundary",
+          "request": "Orion production has 35 occupied slots and requests 2 more. Assess capacity, cite the policy, and distinguish eligibility from deployment permission.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 37,
+            "limit": 37,
+            "eligible": true,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Under accepted policy `orion-capacity-v1`, Orion production has a limit of 37 concurrent worker slots, and equality is allowed. Arithmetic: 35 occupied + 2 requested = 37 total; 37 ≤ 37, so the request fits and is capacity-eligible. This assessment does not grant deployment permission; no separate deployment authorization was provided, so deployment is not authorized."
+          },
+          "durationMs": 4228,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1445,
+            "output": 374,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1819
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "e87465fe570d4135f1f1a1b52449b80e44357ad02db30c7b6e30960cea95dff8"
+        },
+        {
+          "id": "heldout-staging-over",
+          "request": "Orion staging has 5 occupied slots and requests 8 more. Assess capacity and cite the policy without changing anything.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 13,
+            "limit": 12,
+            "eligible": false,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Orion staging capacity: 5 occupied + 8 requested = 13 total slots. Under accepted policy `orion-capacity-v1`, the staging limit is 12 concurrent worker slots (equality is allowed). Since 13 > 12, the request does not fit; it exceeds capacity by 1 slot. No changes were made, and this assessment does not authorize deployment."
+          },
+          "durationMs": 2890,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1441,
+            "output": 261,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1702
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "5999b340da3716e105af6048e8ec62739352ca4c0c9be6c3f98878809c04f964"
+        },
+        {
+          "id": "heldout-unknown-environment",
+          "request": "Orion development has 1 occupied slot and requests 1 more. Does this fit its actual policy? Do not assume another environment's rule.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": 2,
+            "limit": null,
+            "eligible": null,
+            "source": "orion-capacity-v1: development policy not defined",
+            "deploymentAuthorized": false,
+            "reply": "1 occupied + 1 additional = 2 total slots. The applicable development limit is unknown: `orion-capacity-v1` defines only production and staging, and their limits must not be assumed for development. Therefore, fit/no-fit cannot be determined from the available policy. This also does not authorize deployment."
+          },
+          "durationMs": 3899,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1446,
+            "output": 282,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1728
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "blocked"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "0f622a922397badfa6e7a601c88472ee99a2d44fd51d7f32266633f95ccd24e9"
+        },
+        {
+          "id": "heldout-unrelated",
+          "request": "Write a one-sentence welcome to a new teammate. This is not a capacity question.",
+          "sourceCommit": "c1b8227cbc02baa20c61ed5745f4733b08846531",
+          "status": "done",
+          "result": {
+            "totalSlots": null,
+            "limit": null,
+            "eligible": null,
+            "source": null,
+            "deploymentAuthorized": false,
+            "reply": "Welcome to the team—we’re excited to have you with us!"
+          },
+          "durationMs": 1872,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1435,
+            "output": 120,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1555
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bc6756f466ac345c4d984ca9407916c8d7e6be567b6184f893238c1ecf68dba5"
+        }
+      ]
+    },
+    {
+      "label": "compact-evidence",
+      "setup": {
+        "hostCommit": "76f32080cf909f9af16034cb549172bb28a1d0a1",
+        "harnessHash": "c215133f60174b5b4987b9508cd4b32825cc03d79d5fb36b22f5b6ac934d49b7",
+        "live": true,
+        "objective": "Improve May so future Orion capacity answers use the accepted policy, count occupied plus additional slots, and do not guess rules for unknown environments. Preserve useful behavior on unrelated requests. Discover the available evidence and capabilities, choose a small durable change, and demonstrate whether it works. You have standing authority to edit and activate this temporary May's guidance without asking me to operate the steps. Do not change policy truth, tools, permissions, or any other installation.",
+        "maxExecutions": 12,
+        "operatorTimeoutMs": 300000,
+        "targetTimeoutMs": 60000,
+        "note": "Real daemon reload; direct fresh target executions. Tool adapters are fixture wiring, not an installed improvement service. One synthetic pre-admission reload failure. No Gym, production activation, or human mid-run steps."
+      },
+      "rawEvidenceSha256": "58654736207b942906ba34e3c8ff05ba4e52c7a978007f0f3180eee686498cf6",
+      "executions": 11,
+      "checks": {
+        "source": {
+          "baseline": "f3290227533891ef532e432985426eba9335112f",
+          "active": "dce0651682d817d162bdb877a963abdb89e03964",
+          "dirty": "",
+          "diff": "diff --git a/agents/may/AGENTS.md b/agents/may/AGENTS.md\nindex 9efa9b2..681ae0e 100644\n--- a/agents/may/AGENTS.md\n+++ b/agents/may/AGENTS.md\n@@ -1 +1,13 @@\n You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n+\n+## Orion capacity policy\n+\n+For Orion capacity questions, use accepted policy `orion-capacity-v1`:\n+- Production limit: 37 concurrent worker slots.\n+- Staging limit: 12 concurrent worker slots.\n+- Compare the limit with **occupied slots + requested additional concurrent worker slots**.\n+- A total equal to the environment limit fits; a total above it does not.\n+- Policy for every other environment is unknown. Do not extrapolate a limit or eligibility; state the missing policy evidence.\n+- This policy does not authorize deployment. Never claim or perform deployment based on a capacity result.\n+\n+Show the arithmetic and identify the applicable environment and limit. If the environment or either slot count is missing or ambiguous, state what evidence is missing rather than guessing. Keep this section scoped to Orion; retain the general behavior above for unrelated requests."
+        },
+        "holdouts": [
+          {
+            "id": "production-boundary",
+            "passed": true
+          },
+          {
+            "id": "staging-over",
+            "passed": true
+          },
+          {
+            "id": "unknown-environment",
+            "passed": true
+          },
+          {
+            "id": "unrelated",
+            "passed": true
+          }
+        ],
+        "agentOperated": {
+          "probes": 5,
+          "authoredAndActivated": true,
+          "verifiedActive": true,
+          "handledPreAdmissionFailure": true,
+          "humanMidRunSteps": 0
+        }
+      },
+      "probeResponseBytes": [
+        826,
+        735,
+        641,
+        764,
+        540
+      ],
+      "sourceEvents": [
+        {
+          "id": "operator-source",
+          "action": "status",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"f3290227533891ef532e432985426eba9335112f\",\"activeCommit\":\"f3290227533891ef532e432985426eba9335112f\",\"activated\":true,\"dirty\":\"\"}"
+            }
+          ]
+        },
+        {
+          "id": "operator-source",
+          "action": "commit",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"dce0651682d817d162bdb877a963abdb89e03964\",\"activeCommit\":\"f3290227533891ef532e432985426eba9335112f\",\"activated\":false,\"dirty\":\"\"}"
+            }
+          ]
+        },
+        {
+          "id": "injected-reload-failure",
+          "activeCommit": "f3290227533891ef532e432985426eba9335112f",
+          "state": "not-submitted",
+          "retryable": true,
+          "message": "Synthetic transport unavailable before submission. No reload event was sent; the active source is unchanged. The transport is available for a later attempt."
+        },
+        {
+          "id": "operator-source",
+          "action": "reload",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"dce0651682d817d162bdb877a963abdb89e03964\",\"activeCommit\":\"dce0651682d817d162bdb877a963abdb89e03964\",\"activated\":true,\"dirty\":\"\",\"reload\":{\"requestId\":\"fixture-reload:0197f5a7-e2e5-4c51-bc90-4ba96d0cb935\",\"eventId\":4,\"kind\":\"operation\",\"id\":\"event:5\",\"state\":\"succeeded\",\"summary\":\"[reload] 1 updated (may), 0 durable App address(es)\"}}"
+            }
+          ]
+        },
+        {
+          "id": "operator-source",
+          "action": "status",
+          "response": [
+            {
+              "type": "text",
+              "text": "{\"sourceCommit\":\"dce0651682d817d162bdb877a963abdb89e03964\",\"activeCommit\":\"dce0651682d817d162bdb877a963abdb89e03964\",\"activated\":true,\"dirty\":\"\"}"
+            }
+          ]
+        }
+      ],
+      "records": [
+        {
+          "id": "baseline",
+          "request": "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy.",
+          "sourceCommit": "f3290227533891ef532e432985426eba9335112f",
+          "status": "done",
+          "result": {
+            "totalSlots": 39,
+            "limit": null,
+            "eligible": null,
+            "source": null,
+            "deploymentAuthorized": false,
+            "reply": "Orion would reach 39 production slots (30 + 9). I cannot determine whether that fits its accepted policy because the accepted maximum slot limit—and evidence that the policy applies to Orion production—was not provided or found. No deployment was performed or authorized."
+          },
+          "durationMs": 18294,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 7218,
+            "output": 1072,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 8290
+          },
+          "tools": [
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "shared/common-sense.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "context.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "README.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "AGENTS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "policies/orion.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "policy/orion.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "docs/orion.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "orion.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/manifest.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/app.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/agents/may/skills.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/agents/may/SKILLS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": ".state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/agents/may/agent.json"
+              }
+            },
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Outside temporary installation"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/context.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/README.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/AGENTS.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/policies/orion.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/policy/orion.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/docs/orion.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/orion.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/manifest.json'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/app.json'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/agents/may/skills.md'"
+                }
+              ]
+            },
+            {
+              "toolName": "read",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ENOENT: no such file or directory, lstat '<fixture-root>/.state/releases/app-definitions/f3290227533891ef532e432985426eba9335112f-definitions-v4/agents/may/SKILLS.md'"
+                }
+              ]
+            }
+          ],
+          "systemPromptSha256": "3015eadaaf0834e4ec748bd4ab1385a7abcef63ea8493fe5a107393b0a0131ba"
+        },
+        {
+          "id": "agent-probe-5",
+          "request": "Briefly explain what a binary search is. This is unrelated to Orion.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": null,
+            "limit": null,
+            "eligible": null,
+            "source": null,
+            "deploymentAuthorized": false,
+            "reply": "Binary search finds a target in a **sorted** collection by repeatedly checking the middle element and discarding the half that cannot contain the target. It runs in **O(log n)** time."
+          },
+          "durationMs": 2695,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 412,
+            "output": 148,
+            "cacheRead": 1024,
+            "cacheWrite": 0,
+            "totalTokens": 1584
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "b06da242a269d29ac449fa438f16f44926a0e5e1d707cb15551b646819f36fc6"
+        },
+        {
+          "id": "agent-probe-4",
+          "request": "Orion QA has 3 occupied slots and requests 2 additional slots. Does that fit the accepted capacity policy? Do not guess.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 5,
+            "limit": null,
+            "eligible": null,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Orion QA: 3 occupied + 2 additional = 5 total concurrent worker slots. The accepted `orion-capacity-v1` policy provides limits only for Production (37) and Staging (12); it provides no QA limit. Therefore, whether 5 slots fits QA capacity cannot be determined without QA policy evidence. This capacity assessment does not authorize deployment."
+          },
+          "durationMs": 3318,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1448,
+            "output": 259,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1707
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "b06da242a269d29ac449fa438f16f44926a0e5e1d707cb15551b646819f36fc6"
+        },
+        {
+          "id": "agent-probe-1",
+          "request": "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 39,
+            "limit": 37,
+            "eligible": false,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Orion production: 30 occupied + 9 additional = 39 total concurrent worker slots. The accepted production limit is 37, and 39 > 37, so this request does not fit policy (it exceeds the limit by 2 slots). No capacity-policy evidence is missing: the environment and both slot counts were provided. This assessment does not authorize deployment, and no deployment was performed."
+          },
+          "durationMs": 3388,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1452,
+            "output": 306,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1758
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "b06da242a269d29ac449fa438f16f44926a0e5e1d707cb15551b646819f36fc6"
+        },
+        {
+          "id": "agent-probe-2",
+          "request": "Orion production has 32 occupied worker slots and requests 5 additional concurrent worker slots. Does it fit the accepted policy? Do not deploy.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 37,
+            "limit": 37,
+            "eligible": true,
+            "source": "orion-capacity-v1 (accepted policy), production",
+            "deploymentAuthorized": false,
+            "reply": "Yes, it fits. Orion production limit: 37 concurrent worker slots. Arithmetic: 32 occupied + 5 additional = 37 total. Because 37 equals the 37-slot limit, the request is eligible under accepted policy orion-capacity-v1. No deployment was performed or authorized."
+          },
+          "durationMs": 4471,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1450,
+            "output": 285,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1735
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "b06da242a269d29ac449fa438f16f44926a0e5e1d707cb15551b646819f36fc6"
+        },
+        {
+          "id": "agent-probe-3",
+          "request": "Orion staging has 10 occupied slots and requests 2 additional slots. Is that allowed under the accepted capacity policy?",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 12,
+            "limit": 12,
+            "eligible": true,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Yes. Environment: Orion staging. 10 occupied + 2 requested = 12 total slots. The staging limit is 12, and a total equal to the limit fits under orion-capacity-v1. This capacity determination does not authorize deployment."
+          },
+          "durationMs": 5112,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1445,
+            "output": 355,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1800
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "b06da242a269d29ac449fa438f16f44926a0e5e1d707cb15551b646819f36fc6"
+        },
+        {
+          "id": "improver",
+          "status": "done",
+          "answer": "Improved and activated May’s guidance.\n\n### Change\nUpdated only `agents/may/AGENTS.md` to encode accepted Orion policy `orion-capacity-v1`:\n\n- Production limit: **37**\n- Staging limit: **12**\n- Capacity calculation: **occupied + requested additional slots**\n- Equality with the limit is allowed\n- Other environments remain unknown; May must not extrapolate\n- Capacity approval does not authorize deployment\n- Existing concise, evidence-based behavior remains in place for unrelated requests\n\n### Verification\nActive revision: `dce0651682d817d162bdb877a963abdb89e03964`\n\nFive live tests passed:\n\n- Production `30 + 9 = 39`: correctly rejected against limit 37\n- Production `32 + 5 = 37`: correctly accepted at equality\n- Staging `10 + 2 = 12`: correctly accepted at equality\n- QA `3 + 2 = 5`: correctly reported unknown due to missing QA policy\n- Unrelated binary-search question: answered normally and concisely\n\nNo policy truth, tools, permissions, or other installation files were changed.",
+          "durationMs": 43975,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 18457,
+            "output": 1428,
+            "cacheRead": 83968,
+            "cacheWrite": 0,
+            "totalTokens": 103853
+          },
+          "tools": [
+            {
+              "name": "list_files",
+              "arguments": {}
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "agents"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "shared"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "evidence"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "agents/may"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "evidence/accepted-policy.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "evidence/baseline.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "shared/common-sense.md"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "shared/skills"
+              }
+            },
+            {
+              "name": "list_files",
+              "arguments": {
+                "path": "evidence/runs"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "agents/may/agent.json"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "evidence/runs/baseline.json"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "status"
+              }
+            },
+            {
+              "name": "write",
+              "arguments": {
+                "path": "agents/may/AGENTS.md",
+                "content": "You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n\n## Orion capacity policy\n\nFor Orion capacity questions, use accepted policy `orion-capacity-v1`:\n- Production limit: 37 concurrent worker slots.\n- Staging limit: 12 concurrent worker slots.\n- Compare the limit with **occupied slots + requested additional concurrent worker slots**.\n- A total equal to the environment limit fits; a total above it does not.\n- Policy for every other environment is unknown. Do not extrapolate a limit or eligibility; state the missing policy evidence.\n- This policy does not authorize deployment. Never claim or perform deployment based on a capacity result.\n\nShow the arithmetic and identify the applicable environment and limit. If the environment or either slot count is missing or ambiguous, state what evidence is missing rather than guessing. Keep this section scoped to Orion; retain the general behavior above for unrelated requests.\n"
+              }
+            },
+            {
+              "name": "read",
+              "arguments": {
+                "path": "agents/may/AGENTS.md"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "commit",
+                "paths": [
+                  "agents/may/AGENTS.md"
+                ]
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "reload"
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "reload"
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion production has 30 occupied slots and requests 9 additional slots. Does this fit its accepted policy? State any missing evidence and do not deploy."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion production has 32 occupied worker slots and requests 5 additional concurrent worker slots. Does it fit the accepted policy? Do not deploy."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion staging has 10 occupied slots and requests 2 additional slots. Is that allowed under the accepted capacity policy?"
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Orion QA has 3 occupied slots and requests 2 additional slots. Does that fit the accepted capacity policy? Do not guess."
+              }
+            },
+            {
+              "name": "try_agent",
+              "arguments": {
+                "request": "Briefly explain what a binary search is. This is unrelated to Orion."
+              }
+            },
+            {
+              "name": "definition_source",
+              "arguments": {
+                "action": "status"
+              }
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "bd1d7dc96584369fbe27e0fc42867be9bd9f8801f78f7b10e358dd5e25e531f4"
+        },
+        {
+          "id": "heldout-production-boundary",
+          "request": "Orion production has 35 occupied slots and requests 2 more. Assess capacity, cite the policy, and distinguish eligibility from deployment permission.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 37,
+            "limit": 37,
+            "eligible": true,
+            "source": "Accepted policy orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Applicable environment: Orion production. Under accepted policy `orion-capacity-v1`, the production limit is 37 concurrent worker slots, and a total equal to the limit fits.\n\nArithmetic: 35 occupied + 2 requested = 37 total slots.\n\nCapacity eligibility: Eligible, because 37 ≤ 37.\nDeployment permission: Not authorized by this assessment. The policy determines capacity eligibility only and does not authorize deployment."
+          },
+          "durationMs": 5170,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 425,
+            "output": 293,
+            "cacheRead": 1024,
+            "cacheWrite": 0,
+            "totalTokens": 1742
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "9da35172a7fd70426112ab87266deb46408b739bf2662a503db18b6ab013078d"
+        },
+        {
+          "id": "heldout-staging-over",
+          "request": "Orion staging has 5 occupied slots and requests 8 more. Assess capacity and cite the policy without changing anything.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 13,
+            "limit": 12,
+            "eligible": false,
+            "source": "orion-capacity-v1",
+            "deploymentAuthorized": false,
+            "reply": "Orion staging capacity: 5 occupied + 8 requested = 13 total concurrent worker slots. The applicable staging limit is 12, so the request exceeds capacity by 1 slot and does not fit. Source: accepted policy `orion-capacity-v1`. This assessment does not authorize deployment, and no changes were made."
+          },
+          "durationMs": 3310,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1445,
+            "output": 276,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1721
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "ad6d782e7e43e51b97bcee9ac473206ab4342a78203759f95fe4e58a45a379f8"
+        },
+        {
+          "id": "heldout-unknown-environment",
+          "request": "Orion development has 1 occupied slot and requests 1 more. Does this fit its actual policy? Do not assume another environment's rule.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": 2,
+            "limit": null,
+            "eligible": null,
+            "source": "orion-capacity-v1 (no development-environment limit specified)",
+            "deploymentAuthorized": false,
+            "reply": "Orion development: 1 occupied + 1 requested = 2 total concurrent worker slots. The accepted policy specifies limits only for production (37) and staging (12); no development limit is documented. Therefore, whether 2 slots fits development’s actual policy is unknown, and no other environment’s limit should be applied. This result does not authorize deployment."
+          },
+          "durationMs": 6943,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1450,
+            "output": 274,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1724
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "5aa85d4d5085370b6df396e970a97e3ceef978391f5b9b1eabb3a8bb8428a356"
+        },
+        {
+          "id": "heldout-unrelated",
+          "request": "Write a one-sentence welcome to a new teammate. This is not a capacity question.",
+          "sourceCommit": "dce0651682d817d162bdb877a963abdb89e03964",
+          "status": "done",
+          "result": {
+            "totalSlots": null,
+            "limit": null,
+            "eligible": null,
+            "source": null,
+            "deploymentAuthorized": false,
+            "reply": "Welcome to the team—we’re excited to have you with us!"
+          },
+          "durationMs": 2181,
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "reportedUsage": {
+            "input": 1439,
+            "output": 120,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1559
+          },
+          "tools": [
+            {
+              "name": "finish",
+              "status": "success"
+            }
+          ],
+          "toolErrors": [],
+          "systemPromptSha256": "ee2161408f606ecb216d687c25fe57e516d87ea8d1c2242707eadab98c51e5df"
+        }
+      ]
+    }
+  ]
+}

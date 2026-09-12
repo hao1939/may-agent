@@ -1,25 +1,18 @@
 # Teaching agents: from a correction to dependable behavior
 
 **Design status:** Proposed for review, September 12, 2026.
-**Implementation status:** A focused isolated PoC completed 31 model-backed
-executions using existing Host capabilities. [Results and limitations](agent-adoption-poc-20260912.md)
-support guidance adoption, not a new extension framework. The follow-up
-[process-stability investigation](workflow-stability-poc-20260912.md) corrects
-the initial workflow evaluation: dependable sequencing is its primary purpose,
-not better judgment or lower latency. A subsequent isolated source candidate
-adds cooperative helper cancellation and retained return evidence; its limits
-and verification are in that report. The [next-phase trial](conversation-adoption-poc-20260912.md)
-then exercised agent-authored teaching through a real temporary daemon and
-natural optional workflow selection. Focused Host PRs #159 and #160 contain
-runtime fixes and the portable teaching harness respectively. No live guidance
-or installation changed.
-The [method-by-method investigation](extension-methods-poc-20260912.md) adds
-22 completed model executions and one retained harness failure: it tests
-knowledge routing, crowded discovery, capability removal, isolated cross-agent
-teaching, rollback and source lifetime. Installed feedback delivery and verified
-post-promotion activation remain gaps, not a finished autonomous learning loop.
-This document itself authorizes no model calls,
-production activation or deployment.
+**Implementation status:** Isolated trials support guidance adoption, method
+discovery and dependable workflow execution through existing Host capabilities.
+The [agent-operated trial](agent-operated-improvement-poc-20260912.md) focuses on
+the remaining usability question: can an agent discover, author, activate and
+verify another agent's improvement without human-operated intermediate steps?
+Both trials succeeded, with 22 completed model executions and eight correct
+withheld checks; this is narrow synthetic evidence, not production reliability.
+Section 6 links the earlier evidence; section 7 separates this mechanism work
+from production integration and the optional Gym learning path.
+
+No production guidance, permissions or deployment changed. This document
+itself authorizes no model calls, production activation or deployment.
 
 ## Outcome and recommendation
 
@@ -39,6 +32,20 @@ or workflow. May understands the correction, preserves its intended scope,
 activates authorized guidance, and uses it in a later ordinary request. The
 human need not choose files or remember capability names. This changes the
 context and procedures available to the model, not the model's trained weights.
+
+The human supplies the desired outcome and authorized scope; **the agent operates
+the mechanism**. For example: "Help May answer our capacity questions correctly
+using the accepted policy." The agent discovers the evidence and available
+capabilities, chooses a small change, tries it, activates it when authorized,
+and checks later behavior. The human should not have to select files, run an
+evaluation, relay tool results, or issue each reload command.
+
+We are proving those usable mechanisms, not requiring a production Gym campaign
+or a new automated learning controller. Once the mechanisms work, an ordinary
+agent can use them to investigate and improve itself or another authorized
+target. Improving another agent does not grant control over its owner or tools.
+Existing work records retain evidence; a repeated improvement process can remain
+agent-directed unless a demonstrated stable procedure deserves a workflow.
 
 The local trial proved the execution side under controlled conditions: a loaded
 rule or discoverable skill affected later ordinary reviews without a reminder;
@@ -180,6 +187,12 @@ uses descriptions to choose the method; the human need not remember a skill or
 workflow name. Explicit selection remains an optional way to remove ambiguity.
 Code validates the selected name and input, but does not add a second semantic
 classifier to decide which method the human meant.
+
+Return a compact result with its revision, outcome, limitation and an evidence
+reference. Keep detailed prompts and tool traces available on demand instead
+of repeatedly putting them into the caller's context. The first agent-operated
+trial succeeded but exposed that unnecessary payload cost in its fixture tools.
+This is an ordinary tool-result convention, not a new evidence service.
 
 ## 3. Workflows are first-class callable abilities
 
@@ -424,6 +437,14 @@ existing source change path over a new mutable preference database.
 
 ### Preserve the trust boundary
 
+Standing authority should describe the target, allowed kinds of edits, activation
+scope and resource budget. Within that scope, the agent need not ask for the
+same permission at every step. It must still preserve accepted policy/evaluation
+truth, inspect the exact changed source and report uncertainty. New permissions,
+executable changes or production deployment follow their separate controls.
+The agent-operated trial uses standing authority only in its temporary fixture;
+it does not change the installed Gym exact-artifact approval contract.
+
 Skills and knowledge guide judgment; they cannot install dependencies, supply
 credentials, expand tool access, approve a mutation, or bypass another App's
 controls. External observations are evidence, not instructions or authority.
@@ -445,6 +466,19 @@ feedback. Reuse existing recovery and wait review, without extension-owned
 queues, retry workers or subscription bookkeeping.
 
 ## 6. Evidence from the current source
+
+### Agent-operated improvement
+
+The [focused trial](agent-operated-improvement-poc-20260912.md) supplies an
+objective and synthetic standing authority, not an edit recipe. The improver
+chooses the guidance change, invokes real source activation, handles an explicit
+pre-admission failure, tests the active target and reports its result. Later
+withheld cases check that claim. Fixture adapters expose existing execution and
+reload capabilities; they are not an installed general improvement service.
+
+This tests **operability**, not whether agents can invent a better strategy from
+arbitrary failures. Small successful examples do not establish a fleet-wide
+reliability rate. The report records setup failures, costs and remaining limits.
 
 ### Method choice, lifetime and cross-agent teaching
 
@@ -540,7 +574,13 @@ canonical checkout first failed dependency resolution for the skill library;
 that environment was not changed. Synthetic preparation/discovery probes made
 no provider calls. These checks do not establish improved model behavior.
 
-## 7. Small next implementation slice
+## 7. Implementation scope
+
+The current deliverable is the agent-operated mechanism, now demonstrated in
+the [bounded PoC](agent-operated-improvement-poc-20260912.md). One installed
+adoption path is a separate next step. The earlier Gym integration candidates
+below remain useful work, but completing that campaign is not a gate on this
+mechanism or a process the human must operate.
 
 The [feedback/adoption integration candidate](feedback-adoption-integration-20260912.md)
 now fixes the feedback location and false source-promotion completion locally.
@@ -597,7 +637,30 @@ records the Console/Telegram selector-forwarding gap. The
 distinguishes reporting, source edits, activation and later use. These are
 truthful-contract corrections, not production adoption or a new learning policy.
 
-### First: prepare one authorized App adoption
+### First: prove an agent can operate the mechanism
+
+Give the agent a bounded improvement objective and standing authority over a
+temporary target, but no edit locations or step-by-step recipe in the request.
+Normal capability descriptions and discoverable conventions are appropriate;
+hiding the interface would test guessing, not usability.
+
+Use accepted read-only evidence, a target with an observed gap, and a small set
+of later cases withheld from the improver. Require evidence that it:
+
+- discovers the relevant source and facts without a human naming the files;
+- chooses and authors a scoped durable change;
+- distinguishes source edits, committed source and actual activation;
+- uses a truthful failure result to recover or explain the remaining blocker;
+- tests the active target itself and preserves unrelated behavior; and
+- reports what changed, what was checked and what remains uncertain.
+
+Code confines effects and returns actual results. The agent decides what to
+change and whether its observations justify another try. Keep invalid experiment
+runs separate from target failures; do not teach workarounds for a broken harness.
+Independent withheld checks assess the agent's claim but are not a controller
+that secretly repairs or activates its candidate.
+
+### Then: expose the proved path in one authorized installation
 
 Remove contradictory ownership guidance and duplicate policy for the selected
 path. Keep Host execution/result requirements intact. Agree the lightweight
@@ -621,7 +684,9 @@ the candidate, but does not itself commit/reload/check active source. Keep
 The [learning contract](../2a-design/practice-learning-loop.md#remaining-adoption-gaps)
 records these gaps and the retained exact-artifact approval boundary.
 
-Reuse Gym's bounded candidate revision/comparison loop and the existing Task
+When a task genuinely needs benchmark-based strategy comparison, reuse Gym's
+bounded comparison rather than duplicating it. Gym is not required for ordinary
+guidance edits or for proving agent usability. Use the existing Task
 for responsibility, evidence and waits. Test targeted examples, separate input
 combinations, previous behavior and non-applicable requests. Feedback can add
 newly approved scope without implying the old candidate failed. Revise only
@@ -629,7 +694,7 @@ when valid evidence justifies it; invalid harness/provider/evaluator runs must
 not train a permanent workaround into the target. Current automatic intake is
 May-only; the isolated cross-agent result does not silently expand that scope.
 
-### Second: verify the remaining installed boundaries
+### Verify the remaining installed boundaries
 
 Make the method discoverable in the actual bounded catalog, not only the
 six-skill synthetic catalog; preserve explicit skill selection where supported. Verify
@@ -690,15 +755,18 @@ The proposed decisions are:
    them where useful; use App enforcement only for an actual required protocol.
 4. Keep fixed execution snapshots and immediate human feedback distinct. New
    executions adopt activated guidance without replacing Tasks or conversations.
-5. Prove one correction-to-later-behavior path before broad adoption; keep only
-   the guidance and procedures whose benefit is demonstrated.
+5. Prove agents can operate the correction-to-later-behavior path under bounded
+   authority, without human-operated intermediate steps. Keep only the guidance
+   and procedures whose benefit is demonstrated.
 
-The first slice is finished when a saved and activated correction is applied in
-a later relevant request without being repeated, important findings remain,
-unrelated work is unaffected, and temporary instructions stay temporary. The
-agent can explain missing capability or pending activation honestly; existing
-Task/Conversation identity survives. If a workflow is retained, comparative
-evidence must justify its cost separately from the guidance improvement.
+The mechanism slice is finished when an agent discovers, authors, activates and
+verifies a scoped improvement without human-operated intermediate steps, and
+independent later checks support its claim. It handles a bounded failure honestly
+and preserves unrelated work. Existing evidence for temporary scope and source
+lifetime remains applicable; a new trial must state which boundaries it actually
+exercises. Production integration, durable Task continuity and any retained
+workflow have their own evidence needs. Finishing a full Gym campaign is not an
+acceptance requirement for this slice.
 
 Core redesign, general automatic learning, new UI pages, fine-tuning, fleet-wide
 enablement and production deployment are outside this proposal.

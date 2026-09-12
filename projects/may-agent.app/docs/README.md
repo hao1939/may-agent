@@ -31,6 +31,15 @@ small shared state boundary.
 
 ## Current focus
 
+The [agent-operated improvement PoC](proposals/agent-operated-improvement-poc-20260912.md)
+now tests the extension mechanisms without a human operating the intermediate
+steps. In two temporary trials, an improver discovered, authored, activated and
+tested May's guidance, recovered from an explicit pre-admission reload failure,
+and passed eight withheld checks. Compact answers with on-demand evidence kept
+the interface usable. This supports agent-directed use of existing capabilities,
+not a new learning controller or a requirement to complete a Gym campaign.
+Production authority and installed-path adoption remain separate.
+
 The [agent extension proposal](proposals/agent-behavior-and-capability-extension.md)
 follows a human correction through scoped guidance, verified activation and
 use in later ordinary work. Instructions, skills, tools and workflows use
