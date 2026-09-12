@@ -54,6 +54,9 @@ test.skipIf(skip)(
         "Inspect the sample <b>literally</b>",
       );
       expect(await page.$eval(".tool-result", (element) => element.textContent)).toContain("Sample file unavailable");
+      expect(await page.$eval(".tool-result .summary", (element) => element.textContent)).toBe(
+        "<img src=x>: Sample file unavailable",
+      );
       expect(await page.$$("#timeline img, #timeline b")).toHaveLength(0);
       expect(await page.$eval("#stats-bar", (element) => element.textContent)).toContain("3");
       expect(errors).toEqual([]);
