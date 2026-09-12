@@ -163,7 +163,7 @@ function insertTask(
     taskId: string;
     phase: string;
     updatedAt: number;
-    mode?: "achieve" | "maintain";
+
     ready?: boolean;
     changed?: boolean;
     acceptance?: string[];
@@ -178,7 +178,7 @@ function insertTask(
       parentId: "root",
       outcome: `Handle ${input.taskId}`,
       acceptance: input.acceptance ?? ["done"],
-      mode: input.mode ?? "achieve",
+
       owner: `${input.appId}-owner`,
       ...(input.category ? { category: input.category } : {}),
     },
@@ -246,7 +246,6 @@ test("shows a converged maintain Task as live and up to date", () => {
     taskId: "conversation/follow-up",
     phase: "converged",
     updatedAt: 2,
-    mode: "maintain",
   });
   const service = new HumanTaskService(db, registry("may"));
 
@@ -259,14 +258,14 @@ test("shows a converged maintain Task as live and up to date", () => {
 test("shows a converged Task with pending work as queued in detail, lists, and status filters", () => {
   const db = database();
   const service = new HumanTaskService(db, registry("research"));
-  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1, mode: "maintain" });
+  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1 });
   for (const [taskId, ready, changed] of [
     ["scheduled", true, true],
     ["not-ready", false, true],
     ["ready", true, false],
   ] as const) {
     insertTask(db, {
-      appId: "research", taskId, phase: "converged", updatedAt: 2, mode: "maintain", ready, changed,
+      appId: "research", taskId, phase: "converged", updatedAt: 2, ready, changed,
     });
     expect(service.getTask({ appId: "research", taskId })).toMatchObject({
       status: "pending",
@@ -703,7 +702,7 @@ describe("Human Task service", () => {
 
   test("resolves exact detail by stable ref and preserves terminal results", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "maintain", phase: "running", updatedAt: 10, mode: "maintain" });
+    insertTask(db, { appId: "alpha", taskId: "maintain", phase: "running", updatedAt: 10 });
     insertReceipt(db, "alpha", "finished", 20);
     indexTaskReference(db, "alpha", "maintain");
     indexTaskReference(db, "alpha", "finished");
@@ -952,7 +951,7 @@ describe("Human Task service", () => {
 
   test("does not present the previous observation as progress for a newer running attempt", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "maintained", phase: "running", updatedAt: 200, mode: "maintain" });
+    insertTask(db, { appId: "alpha", taskId: "maintained", phase: "running", updatedAt: 200 });
     const row = db
       .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'alpha' AND task_id = 'maintained'")
       .get() as { resource_json: string };

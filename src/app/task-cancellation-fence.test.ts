@@ -38,7 +38,6 @@ describe("Task cancellation fence", () => {
             parentId: "root",
             outcome: "Finish the work",
             acceptance: ["done"],
-            mode: "achieve",
             owner: "may",
           },
           status: {

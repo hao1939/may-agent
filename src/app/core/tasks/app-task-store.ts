@@ -43,7 +43,7 @@ export type AppTaskProjectionItem = {
   owner?: string;
   workflow?: string;
   executor?: TaskExecutorName;
-  mode?: "achieve" | "maintain";
+
   generation?: number;
   resource_version?: number;
   phase?: AppTaskPhase;
@@ -438,7 +438,7 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       ...(owner ? { owner } : {}),
       ...(spec.workflow ? { workflow: spec.workflow } : {}),
       ...(spec.executor ? { executor: spec.executor } : {}),
-      mode: spec.mode,
+
       generation: metadata.generation,
       resource_version: metadata.resourceVersion,
       phase: status.phase,

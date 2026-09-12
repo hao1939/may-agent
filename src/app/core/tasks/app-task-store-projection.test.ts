@@ -6,7 +6,7 @@ function resource(
   id: string,
   phase: AppTaskResource["status"]["phase"],
   options: {
-    mode?: "achieve" | "maintain";
+
     parentId?: string;
     dependsOn?: string[];
     conditionIds?: string[];
@@ -21,7 +21,7 @@ function resource(
       parentId: options.parentId ?? "root",
       outcome: `Outcome ${id}`,
       acceptance: [`Accept ${id}`],
-      mode: options.mode ?? "achieve",
+
       dependsOn: options.dependsOn,
       input: options.input,
       owner: options.owner,
@@ -112,7 +112,6 @@ describe("canonical project task projection", () => {
       },
     ]);
     expect(result.tasks.standing).toMatchObject({
-      mode: "maintain",
       phase: "converged",
       synchronized: true,
       readiness: { state: "not-applicable" },

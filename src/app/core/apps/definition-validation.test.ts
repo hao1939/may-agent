@@ -18,7 +18,6 @@ describe("canonical App definition validation", () => {
           parentId: "evaluation",
           outcome: `Handle ${input.kind}`,
           acceptance: ["Input handled"],
-          mode: "achieve",
         },
       }),
       subscriptions: [

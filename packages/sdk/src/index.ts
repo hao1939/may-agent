@@ -85,7 +85,6 @@ export type {
   TaskAppDependency,
   TaskExecutorName,
   TaskIntent,
-  TaskMode,
   TaskPriority,
   TaskReconcileResult,
   TaskReconcileState,

@@ -116,7 +116,7 @@ export type AppTaskAttempt = {
   continuedInputKeys?: string[];
   /** Accepted evidence from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
-    state: "converged" | "waiting" | "stopped";
+    state: "converged" | "waiting" | "incomplete";
     report?: true;
     summary: string;
     response?: string;

@@ -37,7 +37,6 @@ function fixture() {
               parentId: "root",
               outcome: "Keep the parent responsibility healthy",
               acceptance: ["The parent is healthy"],
-              mode: "maintain",
             },
             status: {
               observedGeneration: 1,
@@ -51,7 +50,6 @@ function fixture() {
               parentId: "parent",
               outcome: "Finish one bounded child",
               acceptance: ["The child is finished"],
-              mode: "achieve",
             },
             status: {
               observedGeneration: 0,

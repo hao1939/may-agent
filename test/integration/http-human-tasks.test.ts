@@ -135,7 +135,6 @@ describe("HTTP human Task reads and board", () => {
         parentId: "root",
         outcome: `Full goal ${id}: ${"detail ".repeat(30)}`,
         acceptance: ["Exact result verified"],
-        mode: "maintain",
         owner: "test",
       },
       status: { observedGeneration: 2, phase, summary: `Observe ${id}`, updatedAt: new Date(n).toISOString() },

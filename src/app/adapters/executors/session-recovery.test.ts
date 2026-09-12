@@ -25,14 +25,14 @@ it.each(["success", "failure", "blocked", "partial"])(
     const root = mkdtempSync(join(tmpdir(), "may-recovered-judgment-"));
     roots.push(root);
     const sessionId = "judge-session";
-    const judgment = { state: "stopped", summary: "Further recovery exceeds the authorized budget." };
+    const judgment = { state: "incomplete", summary: "Further recovery exceeds the authorized budget." };
     writeSessionMeta(root, sessionId, {
       agent: "judge",
       task: "Decide whether recovery is worthwhile",
       status: "running",
       startedAt: 1,
       kind: "call",
-      outputSchema: Type.Object({ state: Type.Literal("stopped"), summary: Type.String() }),
+      outputSchema: Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }),
     });
     appendSessionMessage(root, sessionId, {
       role: "assistant",

@@ -5,7 +5,6 @@ import type {
   TaskAction,
   TaskAppDependency,
   TaskExecutorName,
-  TaskMode,
   TaskReconcileResult,
   TaskVerificationResult,
 } from "./task.js";
@@ -15,7 +14,6 @@ export const MAX_TASK_RESULT_BYTES = 16 * 1024;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 const stringArraySchema = Type.Array(nonEmptyStringSchema);
-const taskModeSchema = Type.Union([Type.Literal("achieve"), Type.Literal("maintain")]);
 const taskPrioritySchema = Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]);
 const TASK_EXECUTOR_PATTERN = "^[a-z][a-z0-9-]{0,63}$";
 const taskExecutorSchema = Type.String({ minLength: 1, maxLength: 64, pattern: TASK_EXECUTOR_PATTERN });
@@ -46,7 +44,6 @@ export const taskActionSchema = Type.Union([
       expectedGeneration: Type.Integer({ minimum: 1 }),
       parentId: Type.Optional(nonEmptyStringSchema),
       outcome: Type.Optional(nonEmptyStringSchema),
-      mode: Type.Optional(taskModeSchema),
       outputs: Type.Optional(stringArraySchema),
       acceptance: Type.Optional(Type.Array(nonEmptyStringSchema, { minItems: 1 })),
       priority: Type.Optional(taskPrioritySchema),
@@ -125,7 +122,7 @@ export const taskAgentResultSchema = Type.Union([
   ),
   Type.Object(
     {
-      state: Type.Literal("stopped"),
+      state: Type.Literal("incomplete"),
       report: Type.Optional(Type.Literal(true)),
       summary: nonEmptyStringSchema,
       response: Type.Optional(nonEmptyStringSchema),
@@ -190,10 +187,6 @@ function validGeneration(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 }
 
-function validMode(value: unknown): value is TaskMode {
-  return value === "achieve" || value === "maintain";
-}
-
 function validPriority(value: unknown): value is "P0" | "P1" | "P2" | "P3" {
   return value === "P0" || value === "P1" || value === "P2" || value === "P3";
 }
@@ -254,8 +247,7 @@ function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number
     action.outcome = outcome;
   }
   if ("mode" in value) {
-    if (!validMode(value.mode)) return `actions[${index}].mode must be achieve or maintain when present`;
-    action.mode = value.mode;
+    return `actions[${index}].mode is retired; all Tasks use one lifecycle`;
   }
   if ("outputs" in value) {
     const outputs = normalizedStringArray(value.outputs, true);
@@ -413,17 +405,17 @@ export function admitTaskReconcileResult(
       result: { state: "needs-agent", summary: output.summary.trim(), evidence },
     };
   }
-  if (output.state !== "converged" && output.state !== "waiting" && output.state !== "stopped") {
-    return { ok: false, error: "state must be converged, waiting, stopped, or needs-agent" };
+  if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
+    return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
   }
   if (output.report !== undefined &&
-    ((output.state !== "waiting" && output.state !== "stopped") || output.report !== true || evidence.length === 0)) {
-    return { ok: false, error: "report requires waiting or stopped, true, and non-empty evidence" };
+    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || evidence.length === 0)) {
+    return { ok: false, error: "report requires waiting or incomplete, true, and non-empty evidence" };
   }
-  if (output.state === "stopped") {
-    if (evidence.length === 0) return { ok: false, error: "stopped requires evidence for the decision" };
+  if (output.state === "incomplete") {
+    if (evidence.length === 0) return { ok: false, error: "incomplete requires evidence for the decision" };
     if (output.actions !== undefined || output.conditions !== undefined || output.dependencies !== undefined) {
-      return { ok: false, error: "stopped cannot include actions, Conditions, or dependencies" };
+      return { ok: false, error: "incomplete cannot include actions, Conditions, or dependencies" };
     }
   }
   const admittedOutput = output as Record<string, unknown>;
@@ -522,9 +514,9 @@ export function admitTaskReconcileResult(
       : waiting };
   }
   const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
-  if (output.state === "stopped") {
-    // The stopped branch above has already checked that evidence is non-empty.
-    return { ok: true, result: { ...answer, state: "stopped", evidence: evidence as [string, ...string[]],
+  if (output.state === "incomplete") {
+    // The incomplete branch above has already checked that evidence is non-empty.
+    return { ok: true, result: { ...answer, state: "incomplete", evidence: evidence as [string, ...string[]],
       ...(output.report === true ? { report: true } : {}),
     } };
   }

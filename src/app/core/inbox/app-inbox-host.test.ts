@@ -19,7 +19,6 @@ function desiredTask(id: string): AppTaskAttachment {
       parentId: "probes",
       outcome: `Handle ${id}`,
       acceptance: ["Probe handled"],
-      mode: "achieve",
     },
   };
 }

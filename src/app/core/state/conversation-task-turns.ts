@@ -45,7 +45,6 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
   if (!root) throw new Error("Conversation App has no structural root");
   return {
     parentId: root,
-    mode: "maintain",
     executor: "conversation",
     outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
     acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
@@ -399,11 +398,11 @@ export type ConversationTaskChangeRef = {
 
 /** Successful admissions remove themselves from discovery; the limit bounds returned work. */
 // Input-backed work exposes its selected report until answered or closed.
-// Seeded work has no input receipt; preserve its per-attempt stopped observations.
+// Seeded work has no input receipt; preserve its per-attempt incomplete observations.
 // Both event admission and recovery use this predicate (aliases: attempt, topic).
 const returnedAttemptSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
-  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'stopped'
+  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped')
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id

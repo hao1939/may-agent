@@ -150,7 +150,6 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
     const workerIntent: TaskIntent = {
       id: "measurement",
       parentId: "root",
-      mode: "maintain",
       executor: "measure",
       outcome: "Measure the sample",
       acceptance: ["Retain the value"],
@@ -167,7 +166,6 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
     const supervisorIntent: TaskIntent = {
       id: "conversation/follow-up",
       parentId: "root",
-      mode: "maintain",
       executor: "supervisor",
       outcome: "Return linked results",
       acceptance: ["Close the loop"],

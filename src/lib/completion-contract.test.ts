@@ -125,7 +125,7 @@ describe("prepared completion contract", () => {
     expect(result.terminate).toBe(true);
   });
 
-  it.each(["waiting", "stopped"])("rejects an empty %s report before finish and accepts its correction", async (state) => {
+  it.each(["waiting", "incomplete"])("rejects an empty %s report before finish and accepts its correction", async (state) => {
     const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
     const args = { ...review, status: "partial", result: {
       state, report: true, summary: "Access is missing", evidence: [] as string[],

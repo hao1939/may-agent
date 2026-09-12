@@ -13,6 +13,7 @@ import {
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
+  reportAppTaskFailure,
 } from "./app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -23,7 +24,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(mode: "achieve" | "maintain" = "maintain") {
+function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-accepted-result-"));
   roots.push(root);
   const databasePath = join(root, "host.sqlite");
@@ -40,7 +41,6 @@ function fixture(mode: "achieve" | "maintain" = "maintain") {
     parentId: "root",
     outcome: "Return the requested measurement",
     acceptance: ["Measurement is verified"],
-    mode,
   };
   observeAppTaskIntent(config, {
     intent,
@@ -167,7 +167,6 @@ describe("accepted Task outcome evidence", () => {
         parentId: "work",
         outcome: "Measure the sample",
         acceptance: ["Measurement is verified"],
-        mode: "maintain",
       },
       appAgent: "owner",
     });
@@ -210,7 +209,7 @@ describe("accepted Task outcome evidence", () => {
   });
 
   it("retains finite work's accepted evidence while open and after explicit owner closure", () => {
-    const { config, claim, reopen } = fixture("achieve");
+    const { config, claim, reopen } = fixture();
     const current = claim();
     completeAppTask(config, current, measured);
     const restored = reopen();
@@ -247,7 +246,7 @@ describe("accepted Task outcome evidence", () => {
   });
 
   it("does not record cancelled execution as an accepted result", () => {
-    const { config, claim } = fixture("achieve");
+    const { config, claim } = fixture();
     const current = claim();
     const resource = config.resourceStore.readTask("work")!;
     cancelAppTask(config, {
@@ -260,4 +259,31 @@ describe("accepted Task outcome evidence", () => {
     expect(completeAppTask(config, current, measured).status).toBe("stale");
     expect(config.resourceStore.readAttempt(current.attemptId)).not.toHaveProperty("acceptedResult");
   });
+});
+
+it.each([
+  ["achieve", "9a59dba0d862f7b9914c126ba0caa52300e1e2bb59fd6c3564a72c06c0bc9da9"],
+  ["maintain", "259f1b087aac89483676d589afad0b98f78fb46b605dadefd1d58292d1cf4dd5"],
+])("reads retained %s work without restoring a public mode or losing its report", (mode, oldHash) => {
+  const f = fixture();
+  observeAppTaskIntent(f.config, { intent: f.intent, appAgent: "owner", admissionKey: "original" });
+  const claim = f.claim();
+  reportAppTaskFailure(f.config, claim, { summary: "Source unavailable", evidence: ["source:offline"] });
+  const db = f.config.resourceStore.db;
+  // Hashes come from the prior Host; the compatibility test does not copy hashing code.
+  db.prepare("UPDATE app_tasks SET resource_json = json_set(resource_json, '$.spec.mode', ?) WHERE task_id = 'work'").run(mode);
+  db.prepare("UPDATE app_task_admissions SET admission_json = json_set(admission_json, '$.specHash', ?) WHERE task_id = 'original'").run(oldHash);
+  db.prepare("UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.acceptedResult.state', 'stopped') WHERE attempt_id = ?").run(claim.attemptId);
+  const config = f.reopen();
+  expect(config.resourceStore.readTask("work")?.spec).not.toHaveProperty("mode");
+  expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
+    state: "incomplete", summary: "Source unavailable", evidence: ["source:offline"],
+  });
+  expect(config.resourceStore.readSnapshot().attempts?.[claim.attemptId]?.acceptedResult?.state).toBe("incomplete");
+  expect(observeAppTaskIntent(config, { intent: f.intent, appAgent: "owner", admissionKey: "original" }))
+    .toMatchObject({ generation: 1, changed: false });
+  expect(() => observeAppTaskIntent(config, { intent: { ...f.intent, outcome: "Different work" }, appAgent: "owner", admissionKey: "original" }))
+    .toThrow("different desired work");
+  expect(() => observeAppTaskIntent(config, { intent: { ...f.intent, mode } as typeof f.intent, appAgent: "owner" }))
+    .toThrow("Task mode is retired");
 });

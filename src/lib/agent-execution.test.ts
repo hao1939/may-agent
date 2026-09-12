@@ -539,7 +539,7 @@ describe("shared agent execution preparation", () => {
 });
 
 describe("direct structured judgment execution", () => {
-  const judgment = { state: "stopped", summary: "Further recovery exceeds the authorized budget." };
+  const judgment = { state: "incomplete", summary: "Further recovery exceeds the authorized budget." };
   const finishArgs = {
     status: "failure",
     summary: judgment.summary,
@@ -563,7 +563,7 @@ describe("direct structured judgment execution", () => {
       sessionId: "judgment-fixture",
       task: "Decide whether recovery is worthwhile.",
       requireFinish: true,
-      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("stopped"), summary: Type.String() }) } : {}),
+      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }) } : {}),
     });
   }
 

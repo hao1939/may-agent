@@ -112,7 +112,6 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
               metadata: { id: "work/one", generation: 1, resourceVersion: 1 },
               spec: {
                 parentId: "root",
-                mode: "achieve",
                 outcome: "Probe the worker boundary",
                 acceptance: ["Fixture evidence"],
                 ...(workflow ? { workflow: "probe" } : {}),

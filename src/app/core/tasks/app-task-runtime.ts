@@ -91,7 +91,7 @@ import {
   associateAppTaskSession,
   claimObservedAppTask,
   cancelAppTask,
-  stopAppTask,
+  reportAppTaskFailure,
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
@@ -1570,7 +1570,7 @@ async function reconcileTask(input: {
         reason: primaryHandlerResult.summary,
       });
     }
-    if (primaryHandlerResult.state === "stopped") {
+    if (primaryHandlerResult.state === "incomplete") {
       const stale = await fenceWorkspaceFinalization();
       if (stale) return stale.reconcileTaskIds;
       // Stopping does not accept or discard workspace output. Retain it using
@@ -1583,7 +1583,7 @@ async function reconcileTask(input: {
       ];
       try {
         const applied = persistResult(() =>
-          stopAppTask(config, primary, {
+          reportAppTaskFailure(config, primary, {
             ...primaryHandlerResult,
             evidence,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
@@ -1594,7 +1594,7 @@ async function reconcileTask(input: {
           generation: primary.generation,
           attemptId: primary.attemptId,
           handler: primary.handler,
-          disposition: applied.status === "applied" ? "stopped" : "stale",
+          disposition: applied.status === "applied" ? "incomplete" : "stale",
           summary: applied.summary ?? primaryHandlerResult.summary,
           evidence,
         });
@@ -1683,7 +1683,7 @@ async function reconcileTask(input: {
             handler: primary.handler,
             disposition: apply.status === "applied" ? appliedDisposition : "stale",
             outcome: intent.outcome,
-            mode: intent.mode,
+
             owner: intent.owner ?? descriptor.agent,
             ...(intent.workflow ? { workflow: intent.workflow } : {}),
             ...(intent.executor ? { executor: intent.executor } : {}),
@@ -1724,7 +1724,7 @@ async function reconcileTask(input: {
               handler: primary.handler,
               disposition: "stale",
               outcome: intent.outcome,
-              mode: intent.mode,
+
               owner: intent.owner ?? descriptor.agent,
               ...(intent.workflow ? { workflow: intent.workflow } : {}),
               ...(intent.executor ? { executor: intent.executor } : {}),

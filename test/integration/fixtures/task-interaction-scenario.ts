@@ -210,8 +210,7 @@ async function delegation(nested = false) {
     tasks: { maxConcurrent: 2 },
     task: (admitted) => ({ kind: "desired", intent: {
       id: admitted.input.kind === "sample" ? "sample" : "measurement",
-      parentId: "root", mode: "achieve",
-      workflow: ${nested} && admitted.input.kind === "measure" ? "assess" : "probe",
+      parentId: "root", workflow: ${nested} && admitted.input.kind === "measure" ? "assess" : "probe",
       outcome: "Get the sample measurement", acceptance: ["Return the measured value"]
     } })
   };`,

@@ -22,7 +22,7 @@ import {
   markAppTaskAttention,
   observeAppTaskIntent,
   retryFailedAppTask,
-  stopAppTask,
+  reportAppTaskFailure,
   readAppTaskAdmissionOutcome,
 } from "../tasks/app-task-reconciler.js";
 import { failTask, finishTask, openState, testAttachment } from "../../../../test/fixtures/request-task-state.js";
@@ -320,9 +320,9 @@ describe("request-to-Task state operation", () => {
         handler: "agent:example-owner",
       });
       if (claim.kind !== "claimed") throw new Error("expected claim");
-      stopAppTask(config, claim, { summary: "Source is offline", evidence: ["fixture:source-offline"] });
+      reportAppTaskFailure(config, claim, { summary: "Source is offline", evidence: ["fixture:source-offline"] });
       expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
-        state: "stopped",
+        state: "incomplete",
         summary: "Source is offline",
         evidence: ["fixture:source-offline"],
       });

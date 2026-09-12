@@ -57,7 +57,7 @@ export type AppTaskClaim = {
   attemptId: string;
   agent: string;
   handler: string;
-  mode: "achieve" | "maintain";
+
   intent: AppTaskIntent;
   events: AppTaskTriggerEvent[];
   eventsTruncated: boolean;
@@ -464,13 +464,23 @@ function syntheticAttemptTrigger(
 }
 
 export function appTaskSpecHash(intent: AppTaskIntent, effectiveAgent?: string): string {
+  return taskSpecHash(intent, effectiveAgent);
+}
+
+/** Compare retained evidence without rewriting its identity or accepting legacy authoring. */
+export function matchesAppTaskSpecHash(intent: AppTaskIntent, effectiveAgent: string, hash: string): boolean {
+  return [undefined, "achieve", "maintain"].some((legacyMode) => taskSpecHash(intent, effectiveAgent, legacyMode) === hash);
+}
+
+function taskSpecHash(intent: AppTaskIntent, effectiveAgent?: string, legacyMode?: string): string {
   return createHash("sha256")
     .update(
       JSON.stringify(
         stableValue({
           outcome: intent.outcome,
           acceptance: intent.acceptance,
-          mode: intent.mode,
+          ...(legacyMode ? { mode: legacyMode } : {}),
+
           owner: effectiveAgent ?? intent.owner ?? null,
           workflow: intent.workflow ?? null,
           executor: intent.executor ?? "agent",
@@ -488,7 +498,7 @@ function resourceSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
     parentId: intent.parentId,
     outcome: intent.outcome,
     acceptance: [...intent.acceptance],
-    mode: intent.mode,
+
     ...(intent.owner?.trim() ? { owner: intent.owner.trim() } : {}),
     ...(intent.workflow?.trim() ? { workflow: intent.workflow.trim() } : {}),
     ...(intent.executor ? { executor: intent.executor } : {}),
@@ -506,7 +516,7 @@ function resourceIntent(resource: AppTaskResource): AppTaskIntent {
     parentId: resource.spec.parentId,
     outcome: resource.spec.outcome,
     acceptance: [...resource.spec.acceptance],
-    mode: resource.spec.mode,
+
     ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
     ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
@@ -602,7 +612,7 @@ function finishAttempt(
 function acceptedAttemptResult(
   tree: TaskTree,
   taskId: string,
-  state: "converged" | "waiting" | "stopped",
+  state: "converged" | "waiting" | "incomplete",
   input: {
     summary: string;
     response?: string;
@@ -688,7 +698,7 @@ export function readAppTaskAdmissionOutcome(
   admissionKey: string,
   kind: "answer" | "report" = "answer",
 ): (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & {
-  attemptId: string; generation: number; state: "converged" | "waiting" | "stopped" | "error";
+  attemptId: string; generation: number; state: "converged" | "waiting" | "incomplete" | "error";
   reportRevision?: number;
 }) | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
@@ -708,7 +718,7 @@ export function readAppTaskAdmissionOutcome(
 /** A report exposes accepted progress or execution facts, never an invented answer. */
 export function appTaskAttemptReport(attempt: AppTaskAttempt) {
   const accepted = attempt.acceptedResult;
-  if (accepted?.state === "stopped" || (accepted?.state === "waiting" && accepted.report)) return accepted;
+  if (accepted?.state === "incomplete" || (accepted?.state === "waiting" && accepted.report)) return accepted;
   if (!accepted && attempt.state === "failed")
     return {
       state: "error" as const,
@@ -1259,6 +1269,7 @@ export function repairRunningAppTasksWithoutAttempt(
 }
 
 function validateIntent(intent: AppTaskIntent): void {
+  if ("mode" in intent) throw new Error("Task mode is retired; all Tasks use one lifecycle");
   if (!intent.id.trim()) throw new Error("Task reconciliation requires a non-empty task id");
   if (!intent.parentId.trim()) throw new Error(`Task ${intent.id} requires a parentId`);
   if (!intent.outcome.trim()) throw new Error(`Task ${intent.id} requires an outcome`);
@@ -1327,7 +1338,7 @@ export function observeAppTaskIntent(
   const specHash = appTaskSpecHash(input.intent, agent);
   const previousAdmission = admissionKey ? tree.appTaskAdmissions?.[admissionKey] : undefined;
   if (previousAdmission) {
-    if (previousAdmission.taskId !== input.intent.id || previousAdmission.specHash !== specHash) {
+    if (previousAdmission.taskId !== input.intent.id || !matchesAppTaskSpecHash(input.intent, agent, previousAdmission.specHash)) {
       throw new Error(`Task admission key ${admissionKey} was already used for different desired work`);
     }
     const current = tree.resources?.[previousAdmission.taskId];
@@ -2102,7 +2113,7 @@ export function retryFailedAppTask(
   }
   const attempt = latestTaskAttempt(tree, input.taskId, input.expectedGeneration);
   const unsuccessful = attempt?.state === "failed" ||
-    (attempt?.state === "completed" && attempt.acceptedResult?.state === "stopped");
+    (attempt?.state === "completed" && attempt.acceptedResult?.state === "incomplete");
   if (!attempt || !unsuccessful || resource.status.currentAttemptId) {
     throw new Error(
       `Task ${input.appId}/${input.taskId} is not eligible for retry: its current generation has no completed failed attempt`,
@@ -2248,7 +2259,7 @@ function closeTask(
     if (
       accepted?.taskId !== input.taskId ||
       accepted.taskGeneration !== input.expectedGeneration ||
-      !["converged", "stopped"].includes(accepted.acceptedResult?.state ?? "") ||
+      !["converged", "incomplete"].includes(accepted.acceptedResult?.state ?? "") ||
       resource.status.observedAttemptId !== input.afterResult ||
       resource.status.currentAttemptId ||
       tree.taskTriggers?.[input.taskId]?.event
@@ -2268,7 +2279,7 @@ function closeTask(
 }
 
 /** Retain an honest failure report and the unfinished assignment for a later attempt. */
-export function stopAppTask(
+export function reportAppTaskFailure(
   config: AppTaskContext,
   claim: AppTaskClaim,
   input: {
@@ -2297,7 +2308,7 @@ export function stopAppTask(
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
-  attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
+  attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "incomplete", input, defaultTaskAcceptance(claim, input.evidence));
   const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", input.report === true);
   const failures = (resource.status.executionFailures ?? 0) + 1;
   // Accepted evidence is not a final answer to the original assignment.
@@ -2750,7 +2761,7 @@ export function claimObservedAppTask(
     attemptId,
     agent,
     handler,
-    mode: intent.mode,
+
     intent: structuredClone(intent),
     events: structuredClone(claimedEvents),
     eventsTruncated: remainingEvents.length > 0,
@@ -3144,9 +3155,6 @@ function validateTaskActions(
     if (action.kind === "update-task" && action.outcome !== undefined) {
       requireNonEmptyString(action.outcome, `Handler update for ${action.taskId} outcome`);
     }
-    if (action.kind === "update-task" && action.mode !== undefined && !["achieve", "maintain"].includes(action.mode)) {
-      throw new Error(`Handler update for ${action.taskId} has invalid mode ${String(action.mode)}`);
-    }
     if (action.kind === "update-task" && action.outputs !== undefined) {
       requireStringList(action.outputs, `Handler update for ${action.taskId} outputs`, true);
       resolveAppTaskOutputPaths(action.outputs, paths);
@@ -3184,7 +3192,6 @@ function validateTaskActions(
       action.kind === "update-task" &&
       action.parentId === undefined &&
       action.outcome === undefined &&
-      action.mode === undefined &&
       action.outputs === undefined &&
       action.acceptance === undefined &&
       action.priority === undefined &&
@@ -3305,7 +3312,7 @@ function applyTaskActions(
           parentId: action.parentId ?? current.parentId,
           outcome: action.outcome?.trim() ?? current.outcome,
           acceptance: action.acceptance ? [...action.acceptance] : current.acceptance,
-          mode: action.mode ?? current.mode,
+
           outputs: action.outputs ? [...action.outputs] : current.outputs,
           priority: action.priority ?? current.priority,
           ...(action.input ? { input: structuredClone(action.input) } : {}),

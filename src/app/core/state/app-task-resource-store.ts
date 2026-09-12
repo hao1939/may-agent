@@ -57,6 +57,26 @@ function parseJson<T>(value: unknown): T {
   return JSON.parse(value) as T;
 }
 
+/** Retained labels are evidence compatibility only, never another execution contract. */
+function parseTaskResource(value: unknown): AppTaskResource {
+  const resource = parseJson<AppTaskResource>(value);
+  const spec = resource.spec as AppTaskResource["spec"] & { mode?: unknown };
+  if ("mode" in spec) {
+    if (spec.mode !== "achieve" && spec.mode !== "maintain") throw new Error("Invalid retained Task mode");
+    delete spec.mode;
+  }
+  return resource;
+}
+
+function parseTaskAttempt(value: unknown): AppTaskAttempt {
+  const attempt = parseJson<AppTaskAttempt>(value);
+  const result = attempt.acceptedResult as { state: string } | undefined;
+  if (result?.state === "stopped") result.state = "incomplete";
+  if (result && !["converged", "waiting", "incomplete"].includes(result.state))
+    throw new Error("Invalid retained Task result state");
+  return attempt;
+}
+
 function eventKey(event: Record<string, unknown>): string {
   const eventId = Number(event.eventId);
   if (Number.isSafeInteger(eventId) && eventId > 0) return `event:${eventId}`;
@@ -510,7 +530,7 @@ export class AppTaskResourceStore {
     const row = this.db
       .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
       .get(this.appId, taskId) as { resource_json?: string } | null;
-    return row?.resource_json ? parseJson<AppTaskResource>(row.resource_json) : null;
+    return row?.resource_json ? parseTaskResource(row.resource_json) : null;
   }
 
   /** Read accepted content and its current display phase from the same row. */
@@ -520,7 +540,7 @@ export class AppTaskResourceStore {
         EXISTS(SELECT 1 FROM app_task_cancellations c WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id) AS closed
         FROM app_tasks WHERE app_id = ? AND task_id = ?`)
       .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closed: number } | null;
-    return row ? { resource: parseJson<AppTaskResource>(row.resource_json), phase: row.phase, closed: Boolean(row.closed) } : null;
+    return row ? { resource: parseTaskResource(row.resource_json), phase: row.phase, closed: Boolean(row.closed) } : null;
   }
 
   readTrigger(taskId: string): AppTaskTrigger | null {
@@ -534,7 +554,7 @@ export class AppTaskResourceStore {
     const row = this.db
       .prepare("SELECT attempt_json FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?")
       .get(this.appId, attemptId) as { attempt_json?: string } | null;
-    return row?.attempt_json ? parseJson<AppTaskAttempt>(row.attempt_json) : null;
+    return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
   }
 
   readReceipt(taskId: string): TaskCompletionReceipt | null {
@@ -756,7 +776,7 @@ export class AppTaskResourceStore {
     ).flatMap((row) => (row.id ? [row.id] : []));
   }
 
-  private jsonMap<T>(table: string, key: string, column: string): Record<string, T> {
+  private jsonMap<T>(table: string, key: string, column: string, parse = parseJson<T>): Record<string, T> {
     return Object.fromEntries(
       (
         this.db.prepare(`SELECT ${key}, ${column} FROM ${table} WHERE app_id = ?`).all(this.appId) as Array<
@@ -764,7 +784,7 @@ export class AppTaskResourceStore {
         >
       ).flatMap((row) =>
         typeof row[key] === "string" && typeof row[column] === "string"
-          ? [[row[key] as string, parseJson<T>(row[column])]]
+          ? [[row[key] as string, parse(row[column])]]
           : [],
       ),
     );
@@ -780,7 +800,7 @@ export class AppTaskResourceStore {
       .prepare("SELECT task_id, resource_json, trigger_json FROM app_tasks WHERE app_id = ?")
       .all(this.appId) as Array<{ task_id?: string; resource_json?: string; trigger_json?: string | null }>) {
       if (!row.task_id || !row.resource_json) continue;
-      resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
+      resources[row.task_id] = parseTaskResource(row.resource_json);
       if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
     }
     return {
@@ -791,7 +811,7 @@ export class AppTaskResourceStore {
       ...(typeof metadata.root_task_id === "string" ? { root_task_id: metadata.root_task_id } : {}),
       resources,
       taskTriggers,
-      attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json"),
+      attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json", parseTaskAttempt),
       conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
       cancellations: this.jsonMap<AppTaskCancellation>("app_task_cancellations", "task_id", "cancellation_json"),
@@ -843,7 +863,7 @@ export class AppTaskResourceStore {
       }>;
       for (const row of rows) {
         if (!row.task_id || !row.resource_json || resources[row.task_id]) continue;
-        const resource = parseJson<AppTaskResource>(row.resource_json);
+        const resource = parseTaskResource(row.resource_json);
         resources[row.task_id] = resource;
         if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
         for (const relatedId of [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]) {
@@ -889,7 +909,7 @@ export class AppTaskResourceStore {
       }>;
       for (const row of rows) {
         if (!row.task_id || !row.resource_json) continue;
-        resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
+        resources[row.task_id] = parseTaskResource(row.resource_json);
         if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
       }
     }
@@ -912,7 +932,7 @@ export class AppTaskResourceStore {
       }>;
       for (const row of rows) {
         if (!row.task_id || !row.resource_json) continue;
-        resources[row.task_id] = parseJson<AppTaskResource>(row.resource_json);
+        resources[row.task_id] = parseTaskResource(row.resource_json);
         if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
       }
     }
@@ -954,7 +974,7 @@ export class AppTaskResourceStore {
               }>
             ).flatMap((row) =>
               row.attempt_id && row.attempt_json
-                ? [[row.attempt_id, parseJson<AppTaskAttempt>(row.attempt_json)] as const]
+                ? [[row.attempt_id, parseTaskAttempt(row.attempt_json)] as const]
                 : [],
             ),
           )

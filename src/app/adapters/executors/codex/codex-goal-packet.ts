@@ -16,7 +16,7 @@ export type CanonicalTaskAttemptPacket = {
   desired: {
     outcome: string;
     acceptance: string[];
-    mode: "achieve" | "maintain";
+
     input: JsonRecord;
   };
   role: {
@@ -53,7 +53,7 @@ export function projectCanonicalTaskAttempt(attempt: TaskAttempt): CanonicalTask
     desired: {
       outcome: attempt.task.outcome,
       acceptance: structuredClone(attempt.task.acceptance),
-      mode: attempt.task.mode ?? "achieve",
+
       input: structuredClone(attempt.task.input),
     },
     role: structuredClone(attempt.role),

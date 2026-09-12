@@ -19,7 +19,7 @@ import {
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
   retryFailedAppTask,
-  stopAppTask,
+  reportAppTaskFailure,
 } from "./app-task-reconciler.js";
 
 const cleanup: Array<() => void> = [];
@@ -34,7 +34,7 @@ function fixture() {
   let config = appTaskTestContext({ appDir: root, agent: "owner", databasePath,
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "owner" } } } });
   cleanup.push(() => { config.resourceStore.close(); rmSync(root, { recursive: true, force: true }); });
-  const intent = { id: "work", parentId: "root", outcome: "Read the measurement", acceptance: ["Return observed value"], mode: "achieve" as const };
+  const intent = { id: "work", parentId: "root", outcome: "Read the measurement", acceptance: ["Return observed value"] };
   observeAppTaskIntent(config, { intent, appAgent: "owner" });
   admitTaskRequest(config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
     idempotencyKey: "ask:measure", request: { id: "measure", source: { kind: "app", id: "caller" },
@@ -356,7 +356,7 @@ it.each(["execution error", "failure report"])("allows an explicit owner retry d
   const f = fixture();
   const first = f.claim();
   if (kind === "execution error") failAppTaskAttempt(f.config, first, "Provider unavailable");
-  else stopAppTask(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
+  else reportAppTaskFailure(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
   const evidence = f.config.resourceStore.readAttempt(first.attemptId);
   const resource = f.config.resourceStore.readTask("work")!;
   const instruction = { appId: "sample", taskId: "work", controlKey: "owner-retry",
@@ -377,7 +377,7 @@ it.each(["omitted", "explicit", "execution"])(
     setSystemTime(Date.now());
     const f = fixture();
     const first = f.claim();
-    stopAppTask(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
+    reportAppTaskFailure(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
     const accepted = f.config.resourceStore.readAttempt(first.attemptId);
     setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
     const next = f.claim();
@@ -406,10 +406,10 @@ it.each(["omitted", "explicit", "execution"])(
 it("accepts failure evidence without resolving the ask, then succeeds on the same assignment", () => {
   const f = fixture();
   const first = f.claim();
-  stopAppTask(f.config, first, { summary: "Could not read this measurement", result: { problem: "source offline" }, evidence: ["source:offline"] });
+  reportAppTaskFailure(f.config, first, { summary: "Could not read this measurement", result: { problem: "source offline" }, evidence: ["source:offline"] });
   f.reopen();
   expect(f.config.resourceStore.readAttempt(first.attemptId)).toMatchObject({ state: "completed",
-    acceptedResult: { state: "stopped", evidence: ["source:offline"] } });
+    acceptedResult: { state: "incomplete", evidence: ["source:offline"] } });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
   const due = f.config.resourceStore.readTask("work")!.status.executionRetryAt!;
   expect(() => f.claim()).toThrow("waiting");
@@ -423,7 +423,7 @@ it("accepts failure evidence without resolving the ask, then succeeds on the sam
     generation: first.generation,
     state: "completed",
     acceptedResult: {
-      state: "stopped",
+      state: "incomplete",
       summary: "Could not read this measurement",
       result: { problem: "source offline" },
       evidence: ["source:offline"],
@@ -435,7 +435,7 @@ it("accepts failure evidence without resolving the ask, then succeeds on the sam
   completeAppTask(f.config, next, { summary: "Source repaired; measurement read", result: { value: 17 } });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toMatchObject({ attemptId: next.attemptId, result: { value: 17 } });
-  expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult?.state).toBe("stopped");
+  expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult?.state).toBe("incomplete");
   expect(f.config.resourceStore.nextDueAt()).toBeNull();
 });
 

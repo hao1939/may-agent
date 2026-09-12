@@ -23,7 +23,7 @@ export type TaskCapabilityRun = {
 
 export type NormalizedTaskHandlerResult = {
   /** `error` is an attempt/runtime outcome, never a valid handler decision. */
-  state: "converged" | "waiting" | "needs-agent" | "stopped" | "error";
+  state: "converged" | "waiting" | "needs-agent" | "incomplete" | "error";
   /** A rejected contract needs correction, not a transport retry. Host-only. */
   resultRejected?: true;
   summary: string;

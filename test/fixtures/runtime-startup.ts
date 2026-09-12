@@ -521,7 +521,6 @@ export async function execute(ctx) {
           intent: {
             id: taskId,
             parentId: "fixture",
-            mode: "achieve",
             workflow: "reload-probe",
             outcome: "Verify reload preserves Task processing",
             acceptance: ["Fixture result accepted"],

@@ -26,10 +26,6 @@ function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
              SELECT 1 FROM app_task_cancellations cancellation
              WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
            )
-           AND (
-             task.phase <> 'converged'
-             OR json_extract(task.resource_json, '$.spec.mode') = 'maintain'
-           )
          LIMIT 1`,
       )
       .get(),

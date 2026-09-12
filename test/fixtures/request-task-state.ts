@@ -12,7 +12,7 @@ import { admitTaskRequest } from "../../src/app/core/state/inbox.js";
 
 export const testAttachment = (taskId = "work/one"): AppTaskAttachment => ({
   kind: "desired",
-  intent: { id: taskId, parentId: "project", mode: "achieve", outcome: "Finish the example", acceptance: ["Verified"] },
+  intent: { id: taskId, parentId: "project", outcome: "Finish the example", acceptance: ["Verified"] },
 });
 
 export function openState(path: string, appId = "example") {

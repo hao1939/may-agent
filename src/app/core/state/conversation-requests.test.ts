@@ -14,7 +14,7 @@ import {
   claimObservedAppTask,
   completeAppTask,
   failAppTaskAttempt,
-  stopAppTask,
+  reportAppTaskFailure,
 } from "../tasks/app-task-reconciler.js";
 import {
   createConversationTopic,
@@ -57,7 +57,7 @@ const owner = defineApp({
   tasks: {},
   task: () => ({
     kind: "desired",
-    intent: { id: "work", parentId: "project", mode: "achieve", outcome: "Find evidence", acceptance: ["Verified"] },
+    intent: { id: "work", parentId: "project", outcome: "Find evidence", acceptance: ["Verified"] },
   }),
 });
 const answer: ConversationTurnResult = {
@@ -339,7 +339,7 @@ test.each([
     ).toBe(true);
   } else
     expect(
-      stopAppTask(config, claim, { summary: "Evidence source unavailable", evidence: ["fixture:source"] }).status,
+      reportAppTaskFailure(config, claim, { summary: "Evidence source unavailable", evidence: ["fixture:source"] }).status,
     ).toBe("applied");
   const settledTask = config.resourceStore.readTaskContext({ taskIds: ["work"] });
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(accepted);

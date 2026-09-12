@@ -148,7 +148,7 @@ try {
   const humanClosure = oldStore.readCancellation("cancelled");
   const structural = oldClaim("structural", "maintain");
   legacyRuntime.observeAppTaskIntent(old, { appAgent: "worker", intent: {
-    id: "structural-child", parentId: "structural", mode: "achieve", outcome: "Measure independently", acceptance: ["Return evidence"],
+    id: "structural-child", parentId: "structural", outcome: "Measure independently", acceptance: ["Return evidence"],
   } });
   legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
   const backlog = Array.from({ length: 34 }, (_, index) => `structural-newer-${index}`);
@@ -269,7 +269,7 @@ try {
     const resumed = claimObservedAppTask(current, { taskId: id, appAgent: "worker", handler: "agent" });
     if (resumed.kind !== "claimed") throw new Error(`Migrated ${id} did not continue: ${JSON.stringify(resumed)}`);
     assert.equal((resumed.events[0]?.event.data as { request: { id: string } }).request.id, id);
-    if (id === "stopped") assert.equal(resumed.previousAttempt?.acceptedResult?.state, "stopped");
+    if (id === "stopped") assert.equal(resumed.previousAttempt?.acceptedResult?.state, "incomplete");
     completeAppTask(current, resumed, { summary: "Instrument restored", result: { value: 17 } });
     assert.deepEqual(readAppTaskAdmissionOutcome(current, id, id)?.result, { value: 17 });
     assert.equal(store.isCancelled(id), false);

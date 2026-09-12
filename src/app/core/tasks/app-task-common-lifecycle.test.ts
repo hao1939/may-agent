@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { TaskMode } from "@may-agent/sdk";
 import { AppTaskController } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { readAppTaskLiveEvent, readAppTaskReconciliationEvents } from "./app-task-context.js";
@@ -22,7 +21,7 @@ import {
   observeAppTaskIntent,
   recordAppTaskTrigger,
   readAppTaskAdmissionOutcome,
-  stopAppTask,
+  reportAppTaskFailure,
 } from "./app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -34,7 +33,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(mode: TaskMode = "achieve") {
+function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-common-lifecycle-"));
   roots.push(root);
   const databasePath = join(root, "host.sqlite");
@@ -51,7 +50,7 @@ function fixture(mode: TaskMode = "achieve") {
     parentId: "root",
     outcome: "Discuss and return requested measurements",
     acceptance: ["Explain evidence honestly"],
-    mode,
+
   };
   observeAppTaskIntent(config, {
     intent,
@@ -236,7 +235,7 @@ describe("common Task lifecycle source PoC", () => {
       if (id === "measurement") deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Get measurement",
         conditions: [{ id: "measurement", type: "project.task.reconciled", subject: "task:measurement", expected: "done",
           owner: "app:fixture", reviewAfterMs: 60_000 }] });
-      else stopAppTask(f.config, f.claim(), { summary: "This extra question is too expensive", evidence: ["cost:unjustified"] });
+      else reportAppTaskFailure(f.config, f.claim(), { summary: "This extra question is too expensive", evidence: ["cost:unjustified"] });
     }
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:expensive-question")).toBeNull();
@@ -274,19 +273,19 @@ describe("common Task lifecycle source PoC", () => {
     admitTaskRequest(f.config, input("second"));
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
     const second = f.claim();
-    stopAppTask(f.config, second, { summary: "Unavailable", result: { abandoned: true }, evidence: ["cost:too-high"] });
+    reportAppTaskFailure(f.config, second, { summary: "Unavailable", result: { abandoned: true }, evidence: ["cost:too-high"] });
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")?.result).toEqual({ value: 17 });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
     expect(f.config.resourceStore.readAttempt(second.attemptId)?.acceptedResult)
-      .toMatchObject({ state: "stopped", result: { abandoned: true } });
+      .toMatchObject({ state: "incomplete", result: { abandoned: true } });
     const resource = f.config.resourceStore.readTask("conversation")!;
     closeAppTask(f.config, { appId: "sample", taskId: "conversation", reason: "Owner ended the work",
       expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion });
     f.reopen();
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:first")?.result).toEqual({ value: 17 });
     expect(readAppTaskAdmissionOutcome(f.config, "conversation", "task:second")).toBeNull();
-    expect(f.config.resourceStore.readAttempt(second.attemptId)?.acceptedResult?.state).toBe("stopped");
+    expect(f.config.resourceStore.readAttempt(second.attemptId)?.acceptedResult?.state).toBe("incomplete");
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")?.closed).toBe(true);
     expect(readAppTaskAdmissionOutcome(f.config, "another-task", "task:first")).toBeNull();
   });
@@ -319,7 +318,6 @@ describe("common Task lifecycle source PoC", () => {
         parentId: "conversation",
         outcome: "Temporary work",
         acceptance: ["Return evidence"],
-        mode: "achieve",
       },
     });
     const before = f.config.resourceStore.readTask("child");
@@ -510,7 +508,7 @@ describe("common Task lifecycle source PoC", () => {
   });
 
   it("owner closure interrupts an active attempt and retains an honest unfinished disposition", () => {
-    const f = fixture("maintain");
+    const f = fixture();
     const current = f.claim();
     const resource = f.config.resourceStore.readTask("conversation")!;
     const closed = closeAppTask(f.config, {
@@ -535,9 +533,9 @@ describe("common Task lifecycle source PoC", () => {
     expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
   });
 
-  for (const mode of ["achieve", "maintain"] as const) {
-    it(`${mode} accepts an outcome, rests without capacity, and accepts later input`, () => {
-      const f = fixture(mode);
+  {
+    it(`Task accepts an outcome, rests without capacity, and accepts later input`, () => {
+      const f = fixture();
       const first = f.claim();
       completeAppTask(f.config, first, {
         summary: "First answer",
@@ -571,8 +569,8 @@ describe("common Task lifecycle source PoC", () => {
       expect(f.config.resourceStore.readTrigger("conversation")).toBeNull();
     });
 
-    it(`${mode} can be explicitly closed during execution without accepting late output`, () => {
-      const f = fixture(mode);
+    it(`Task can be explicitly closed during execution without accepting late output`, () => {
+      const f = fixture();
       const current = f.claim();
       const resource = f.config.resourceStore.readTask("conversation")!;
       const control = {

@@ -81,7 +81,7 @@ export type HumanTaskHistory = {
 
 export type HumanTaskDiagnostics = Pick<
   AppTaskResource["spec"],
-  "parentId" | "owner" | "mode" | "priority" | "workflow" | "executor" | "category" | "outputs"
+  "parentId" | "owner" | "priority" | "workflow" | "executor" | "category" | "outputs"
 > & {
   observedGeneration: number;
   ready: boolean;
@@ -677,7 +677,7 @@ const TASK_HISTORY_LIMIT = 20;
 
 function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
   const { spec, status } = JSON.parse(row.payload!) as AppTaskResource;
-  const { parentId, owner, mode, priority, workflow, executor, category, outputs } = spec;
+  const { parentId, owner, priority, workflow, executor, category, outputs } = spec;
   const conditionIds = status.conditionIds ?? [];
   const dependencyIds = spec.dependsOn ?? [];
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
@@ -687,7 +687,6 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
   return {
     parentId,
     owner,
-    mode,
     priority,
     workflow,
     executor,

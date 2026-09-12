@@ -43,7 +43,6 @@ describe("Codex goal Task generation fencing", () => {
       parentId: "operations",
       outcome: "Review the design",
       acceptance: ["The review cites current evidence"],
-      mode: "achieve" as const,
       input: { revision: 1 },
     };
     const observed = observeAppTaskIntent(config, { intent: firstIntent, appAgent: "app-owner" });

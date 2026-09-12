@@ -93,7 +93,6 @@ function fixture() {
     input: { kind: "message", data: { text } },
     intent: {
       parentId: "root",
-      mode: "maintain" as const,
       outcome: "Discuss with the human",
       acceptance: ["Explain supported conclusions"],
       executor: "conversation",
@@ -354,7 +353,6 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
         parentId: "root",
         outcome: "Get evidence",
         acceptance: ["Measure"],
-        mode: "achieve" as const,
       },
     },
   };
@@ -417,7 +415,7 @@ function cancellationFixture(source: "human" | "system" = "human") {
   );
   const config = appTaskContext({ ...f.context(), resourceStore: store });
   const intent = { id: "job", parentId: "root", outcome: "Measure the sample", acceptance: ["Return evidence"] };
-  observeAppTaskIntent(config, { appAgent: worker.id, intent: { ...intent, mode: "maintain" } });
+  observeAppTaskIntent(config, { appAgent: worker.id, intent: { ...intent } });
   createConversationTopic(f.db, {
     id: "work",
     appId: app.id,
@@ -491,7 +489,7 @@ test("a target revision after preparation rolls back the proposed cancellation a
   const proposal = await c.prepare();
   observeAppTaskIntent(c.config, {
     appAgent: c.worker.id,
-    intent: { ...c.intent, outcome: "Measure another sample", mode: "maintain" },
+    intent: { ...c.intent, outcome: "Measure another sample" },
   });
   expect(() => completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, proposal)).toThrow(
     "generation changed",
@@ -545,7 +543,6 @@ test("the common controller returns a delegated answer to the real Conversation 
         parentId: "root",
         outcome: "Measure the sample",
         acceptance: ["Return a measured value"],
-        mode: "achieve",
       },
     }),
   });
@@ -778,7 +775,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
               parentId: "root",
               outcome: "Collect evidence",
               acceptance: ["Measure"],
-              mode: "achieve",
+             
             },
           },
         },
@@ -1076,7 +1073,6 @@ test("bounded change discovery advances across Conversations, retains Stop and f
       intent: {
         id: taskId,
         parentId: "root",
-        mode: "achieve",
         outcome: "Measure sample",
         acceptance: ["Observed value"],
       },
@@ -1166,7 +1162,6 @@ test("closure input validates the exact source and rolls admission back without 
     attachment: { kind: "desired", intent: {
       id: "sample",
       parentId: "root",
-      mode: "achieve",
       outcome: "Measure sample",
       acceptance: ["Observed value"],
     } },

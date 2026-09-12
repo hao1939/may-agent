@@ -94,7 +94,7 @@ function resourceTaskDetail(
   return {
     ...resourceTaskView(resource, phase, closed),
     parentId: resource.spec.parentId,
-    mode: resource.spec.mode,
+
     acceptance: [...resource.spec.acceptance],
     input: structuredClone(resource.spec.input ?? {}),
     ...(resource.spec.owner ? { agent: resource.spec.owner, owner: resource.spec.owner } : {}),

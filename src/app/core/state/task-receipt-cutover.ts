@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { appTaskSpecHash } from "../tasks/app-task-reconciler.js";
+import { matchesAppTaskSpecHash } from "../tasks/app-task-reconciler.js";
 import type { AppTaskAttempt, AppTaskResource } from "../tasks/app-task-state.js";
 import type { AppTaskContext, TaskCompletionReceipt } from "../tasks/app-task-store.js";
 import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
@@ -75,7 +75,7 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
         if (
           current.metadata.generation < receipt.metadata.generation ||
           (current.metadata.generation === receipt.metadata.generation &&
-            appTaskSpecHash({ id: taskId, ...current.spec }, receipt.owner) !== receipt.specHash)
+            !matchesAppTaskSpecHash({ id: taskId, ...current.spec }, receipt.owner, receipt.specHash))
         )
           throw new Error(`Completion receipt conflicts with the retained Task ${taskId}`);
       } else mutation.expectMissingTaskIds!.push(taskId);
@@ -105,7 +105,6 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
           owner: receipt.owner,
           // Receipt-only history no longer has a complete executable spec.
           // This inert projection is closed before it becomes visible.
-          mode: "achieve",
           workflow: receipt.workflow,
           executor: receipt.executor,
           input: receipt.input,

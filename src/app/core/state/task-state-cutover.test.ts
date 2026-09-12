@@ -12,7 +12,7 @@ import {
   cancelAppTask,
   readAppTaskAdmissionOutcome,
   stopAppTaskAttempt,
-  stopAppTask,
+  reportAppTaskFailure,
   recordAppTaskTrigger,
 } from "../tasks/app-task-reconciler.js";
 import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
@@ -71,7 +71,6 @@ function fixture() {
           intent: {
             id: taskId,
             parentId: "root",
-            mode: "maintain",
             outcome: "Measure samples and explain results",
             acceptance: ["Retain measured evidence"],
           },
@@ -282,7 +281,7 @@ test("an old worker self-stop becomes retained failure evidence and paced contin
   expect(f.store.readCancellation("work")).toBeNull();
   expect(f.store.readAttempt(old.attemptId)?.retiredCancellation).toEqual(selfStop);
   expect(f.store.readAttempt(old.attemptId)?.acceptedResult).toMatchObject({
-    state: "stopped",
+    state: "incomplete",
     summary: "Instrument unavailable",
   });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:measurement")).toBeNull();
@@ -290,7 +289,7 @@ test("an old worker self-stop becomes retained failure evidence and paced contin
   f.reopen();
   f.advance();
   const claim = f.claim();
-  expect(claim.previousAttempt?.acceptedResult?.state).toBe("stopped");
+  expect(claim.previousAttempt?.acceptedResult?.state).toBe("incomplete");
   completeAppTask(f.config, claim, { summary: "Instrument is now available", result: { value: 17 } });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:measurement")?.result).toEqual({ value: 17 });
   expect(f.store.isCancelled("work")).toBe(false);
@@ -381,7 +380,7 @@ test("structural-wait failure rolls back the composed cutover, including first-p
     coordination: { tasks: 1, replayedInputs: 1, reviews: 1 },
   });
   expect(f.store.readCancellation("work")).toBeNull();
-  expect(f.store.readAttempt(old.attemptId)?.acceptedResult?.state).toBe("stopped");
+  expect(f.store.readAttempt(old.attemptId)?.acceptedResult?.state).toBe("incomplete");
 });
 
 test("workflow-to-agent handoff retains its original input without turning into another workflow retry", () => {
@@ -497,9 +496,9 @@ test("offline cutover restores only the first accepted failure for its exact inp
   const f = fixture();
   f.ask("first");
   const first = f.claim();
-  stopAppTask(f.config, first, { summary: "Source unavailable", evidence: ["HTTP:503"] });
+  reportAppTaskFailure(f.config, first, { summary: "Source unavailable", evidence: ["HTTP:503"] });
   f.advance();
-  stopAppTask(f.config, f.claim(), { summary: "Source still unavailable", evidence: ["HTTP:503"] });
+  reportAppTaskFailure(f.config, f.claim(), { summary: "Source still unavailable", evidence: ["HTTP:503"] });
   const saved = f.store.readTaskContext({ taskIds: [], admissionIds: ["task:first"] }).appTaskAdmissions!["task:first"]!;
   delete saved.reportAttemptId;
   f.store.commit({ fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],

@@ -2,7 +2,7 @@ import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import {
-  appTaskSpecHash,
+  matchesAppTaskSpecHash,
   appendTaskTriggerEvent,
   preferredTriggerFromEvents,
   readAppTaskAgent,
@@ -78,7 +78,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
           !observed ||
           observed.state !== "completed" ||
           !resource.status.summary ||
-          observed.specHash !== appTaskSpecHash({ id: taskId, ...resource.spec }, observed.owner)
+          !matchesAppTaskSpecHash({ id: taskId, ...resource.spec }, observed.owner, observed.specHash)
         )
           throw new Error(`Accepted attempt is missing or conflicts with Task ${taskId}`);
         observed.acceptedResult = {
@@ -100,7 +100,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
           throw new Error(`Worker stop evidence conflicts with Task ${taskId}`);
         attempt.retiredCancellation = structuredClone(selfStop);
         attempt.acceptedResult = {
-          state: "stopped",
+          state: "incomplete",
           summary: selfStop.reason,
           response: selfStop.response,
           result: selfStop.result,
@@ -171,7 +171,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
         // Recover only a proven first report, never infer one from current status.
         if (!admission.reportAttemptId) {
           const report = attempts.find((attempt) =>
-            attempt.acceptedResult?.state === "stopped" && attempt.specHash === admission.specHash &&
+            attempt.acceptedResult?.state === "incomplete" && attempt.specHash === admission.specHash &&
             taskInputAdmissionKeys(attemptEvents(attempt), attempt.continuedInputKeys).includes(key));
           if (report) admission.reportAttemptId = report.metadata.id;
         }

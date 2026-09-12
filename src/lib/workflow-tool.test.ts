@@ -352,7 +352,7 @@ export const name = "report";
 export const description = "Direct Task report";
 export async function execute(ctx) {
   const fact = await ctx.events.read("sample.observed", "sample");
-  return { state: "stopped", summary: "Source unavailable", evidence: ["event:" + fact.eventId] };
+  return { state: "incomplete", summary: "Source unavailable", evidence: ["event:" + fact.eventId] };
 }`,
     );
     const reads: string[][] = [];
@@ -373,7 +373,7 @@ export async function execute(ctx) {
     });
     expect(await runner.run("report", "review")).toMatchObject({
       type: "done",
-      output: { state: "stopped", evidence: ["event:41"] },
+      output: { state: "incomplete", evidence: ["event:41"] },
     });
     expect(reads).toEqual([["sample.observed", "sample"]]);
     const unowned = createWorkflowRunner({ manager: {} as any, workflowDir: root });
@@ -854,7 +854,6 @@ export async function execute(ctx) {
         generation: 2,
         resourceVersion: 3,
         owner: "owner",
-        mode: "maintain",
         outcome: "Keep the sample current",
         acceptance: ["Sample is current"],
         input: { itemId: "app_123" },
@@ -873,7 +872,6 @@ export async function execute(ctx) {
           generation: 2,
           resourceVersion: 3,
           owner: "owner",
-          mode: "maintain",
           children: { live: [], completed: [] },
         },
       },

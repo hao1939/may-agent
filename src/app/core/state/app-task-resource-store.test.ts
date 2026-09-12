@@ -26,7 +26,7 @@ import {
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
-  stopAppTask,
+  reportAppTaskFailure,
 } from "../tasks/app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -42,7 +42,6 @@ function resource(id: string, phase: AppTaskResource["status"]["phase"] = "pendi
       outcome: `finish ${id}`,
       acceptance: ["done"],
       parentId: "project",
-      mode: "achieve",
       priority: "P2",
     },
     status: {
@@ -132,7 +131,7 @@ describe("AppTaskResourceStore", () => {
       );
       observeAppTaskIntent(config, {
         appAgent: "example",
-        intent: { id: "work", parentId: "root", mode: "achieve", outcome: "Background work", acceptance: ["Handled"] },
+        intent: { id: "work", parentId: "root", outcome: "Background work", acceptance: ["Handled"] },
       });
       const commit = store.commit.bind(store);
       let raced = false;
@@ -156,7 +155,6 @@ describe("AppTaskResourceStore", () => {
         input: { kind: "message", data: { text: "Discuss the paused work" } },
         intent: {
           parentId: "root",
-          mode: "maintain",
           executor: "conversation",
           outcome: "Discuss",
           acceptance: ["Reply"],
@@ -460,7 +458,7 @@ describe("AppTaskResourceStore", () => {
       });
       const claim = claimObservedAppTask(config, { taskId: "optional", appAgent: "owner", handler: "agent" });
       if (claim.kind !== "claimed") throw new Error(`expected optional Task claim, got ${JSON.stringify(claim)}`);
-      stopAppTask(config, claim, {
+      reportAppTaskFailure(config, claim, {
         summary: "Optional work is not feasible",
         evidence: ["analysis:feasibility"],
         result: { partial: "Findings" },
@@ -1017,7 +1015,6 @@ describe("AppTaskResourceStore", () => {
           parentId: "project",
           outcome: "handle new task",
           acceptance: ["done"],
-          mode: "achieve",
         },
       }),
     ).toMatchObject({ kind: "observed", taskId: "new-task", generation: 1 });
@@ -1056,7 +1053,6 @@ describe("AppTaskResourceStore", () => {
           parentId: "project",
           outcome: "handle the first request",
           acceptance: ["done"],
-          mode: "achieve",
         },
       }),
     ).toMatchObject({ kind: "observed", taskId: "first-request", generation: 1 });

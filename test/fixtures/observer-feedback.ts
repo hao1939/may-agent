@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AppDefinition, AppObserver, TaskAttempt, TaskIntent, TaskReconcileResult } from "@may-agent/sdk";
+import type { AppDefinition, AppObserver, TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
 import { createTestAppRead, createTestAppLogger } from "@may-agent/sdk/testing";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
@@ -146,12 +146,12 @@ export async function observerFeedbackFixture(definition: AppDefinition, observe
     executeWith(fn: typeof execute) {
       execute = fn;
     },
-    createTask(id: string, mode: TaskIntent["mode"] = "maintain") {
+    createTask(id: string) {
       return observeAppTaskIntent(config, {
         appAgent: config.agent,
         intent: {
           id,
-          mode,
+
           parentId: rootGroup,
           outcome: `Review ${id}`,
           acceptance: ["Input reviewed"],

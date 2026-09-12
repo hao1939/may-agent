@@ -5,38 +5,38 @@ import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultS
 const workflowOptions = { allowNeedsAgent: true };
 
 describe("App stop contract", () => {
-  const stopped = {
-    state: "stopped",
+  const incomplete = {
+    state: "incomplete",
     summary: "Optional export is not feasible",
     evidence: ["analysis:export"],
     result: { partial: "Feasibility findings" },
   };
   it("admits a non-success decision and keeps normalization replayable", () => {
-    expect(Check(taskAgentResultSchema, stopped)).toBe(true);
-    const admitted = admitTaskReconcileResult(stopped, workflowOptions);
-    expect(admitted).toEqual({ ok: true, result: stopped });
+    expect(Check(taskAgentResultSchema, incomplete)).toBe(true);
+    const admitted = admitTaskReconcileResult(incomplete, workflowOptions);
+    expect(admitted).toEqual({ ok: true, result: incomplete });
     if (!admitted.ok) throw new Error("expected admitted stop");
     expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
   });
   it.each([{ evidence: [] }, { actions: [] }, { conditions: [] }, { dependencies: [] }])(
     "rejects incomplete or mixed stop decisions: %j",
     (extra) => {
-      expect(Check(taskAgentResultSchema, { ...stopped, ...extra })).toBe(false);
-      expect(admitTaskReconcileResult({ ...stopped, ...extra }, workflowOptions).ok).toBe(false);
+      expect(Check(taskAgentResultSchema, { ...incomplete, ...extra })).toBe(false);
+      expect(admitTaskReconcileResult({ ...incomplete, ...extra }, workflowOptions).ok).toBe(false);
     },
   );
 });
 
 describe("project task handler contract", () => {
   it("agrees with the finish schema on quiet waits and explicit evidence-backed reports", () => {
-    for (const state of ["waiting", "stopped", "converged", "needs-agent"] as const) {
+    for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const evidence of [[], ["source:access-denied"]]) {
         for (const report of [undefined, true, false]) {
           const output = { state, summary: "Access is missing", evidence,
             ...(report === undefined ? {} : { report }) };
           const valid = state !== "needs-agent" && report !== false &&
             (report !== true || (state !== "converged" && evidence.length > 0)) &&
-            (state !== "stopped" || evidence.length > 0);
+            (state !== "incomplete" || evidence.length > 0);
           expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
           const admitted = admitTaskReconcileResult(output, { allowNeedsAgent: false });
           expect({ output, valid: admitted.ok }).toEqual({ output, valid });
@@ -305,7 +305,7 @@ describe("project task handler contract", () => {
     ).toEqual({ ok: false, error: "actions[0].agent conflicts with legacy owner" });
   });
 
-  it("preserves domain input, dependencies, and explicit standing mode", () => {
+  it("preserves domain input and dependencies", () => {
     const admitted = admitTaskReconcileResult(
       {
         state: "converged",
@@ -318,7 +318,6 @@ describe("project task handler contract", () => {
             expectedGeneration: 1,
             outcome: "Keep the signal observed.",
             acceptance: ["The latest signal is represented."],
-            mode: "maintain",
             input: { signal: "pipeline" },
             dependsOn: ["bootstrap"],
           },
@@ -328,7 +327,6 @@ describe("project task handler contract", () => {
     );
 
     expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
-      mode: "maintain",
       input: { signal: "pipeline" },
       dependsOn: ["bootstrap"],
     });
@@ -502,7 +500,7 @@ describe("project task handler contract", () => {
   it("keeps failure outside the public handler states", () => {
     expect(
       admitTaskReconcileResult({ state: "failed", summary: "attempt failed", evidence: [] }, workflowOptions),
-    ).toEqual({ ok: false, error: "state must be converged, waiting, stopped, or needs-agent" });
+    ).toEqual({ ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" });
   });
 
   it("allows needs-agent only at the workflow boundary", () => {

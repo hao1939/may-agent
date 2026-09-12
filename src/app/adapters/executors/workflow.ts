@@ -104,7 +104,7 @@ async function executeTaskCapability(
         resourceVersion: attempt.resourceVersion,
         agent: attempt.role.agent,
         handler: input.handler,
-        mode: taskDetail.mode ?? "achieve",
+
         outcome: taskDetail.outcome,
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},
@@ -191,7 +191,7 @@ async function executeTaskCapability(
         resourceVersion: attempt.resourceVersion,
         agent: attempt.role.agent,
         owner: attempt.role.agent,
-        mode: taskDetail.mode ?? "achieve",
+
         outcome: taskDetail.outcome,
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},

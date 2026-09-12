@@ -58,7 +58,6 @@ describe("App event admission store", () => {
             id: "work/f-1",
             outcome: "Resolve finding f-1",
             acceptance: ["The finding is resolved."],
-            mode: "achieve",
           },
           conditionTaskIds: ["wait/f-1"],
         },

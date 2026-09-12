@@ -19,7 +19,6 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
     desired: {
       outcome: "Review and refine the current design",
       acceptance: ["Findings cite current code", "The recommendation is actionable"],
-      mode: "achieve",
       input: { document: "docs/design.md" },
     },
     role: {

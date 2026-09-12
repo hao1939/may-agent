@@ -84,7 +84,6 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
       status: "running",
       outcome: "Review the Task mental model",
       acceptance: ["Cite exact current evidence"],
-      mode: "achieve",
       agent: "evaluator",
       executor: "codex-goal",
       input: { targetProject: "may-agent.app", readOnly: true },

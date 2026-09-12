@@ -34,7 +34,6 @@ function fixture() {
               parentId: "root",
               outcome: "Finish the requested review",
               acceptance: ["The reviewed result is proven"],
-              mode: "achieve",
             },
             status: {
               observedGeneration: 0,

@@ -128,7 +128,6 @@ async function fixture(
       input: { kind: "message", data: { text } },
       intent: {
         parentId: "root",
-        mode: "maintain",
         outcome: "Discuss with the human",
         acceptance: ["Address the input"],
         executor: "conversation",
@@ -427,7 +426,6 @@ test("an unrelated executor named conversation retains the ordinary Task contrac
     intent: {
       id: "ordinary",
       parentId: "root",
-      mode: "achieve",
       executor: "conversation",
       outcome: "Ordinary work",
       acceptance: ["Handled"],
@@ -450,7 +448,6 @@ const background = defineApp({
     intent: {
       id: "sample",
       parentId: "root",
-      mode: "achieve",
       outcome: "Get the sample measurement",
       acceptance: ["Measurement obtained"],
       executor: "measure",
@@ -657,7 +654,6 @@ test("ordinary inbox work and Conversation input share a Conversation without bl
       intent: {
         id: `goal/${id}`,
         parentId: "root",
-        mode: "achieve",
         executor: "measure",
         outcome: "Collect a measurement",
         acceptance: ["Return the measured value"],
@@ -893,7 +889,7 @@ function measurementReply(context: AppInputContext): ConversationTurnResult {
   expect(input.appId).toBe(background.id);
   expect(input.taskId).toBe("sample");
   expect(input.attemptId).toBeTruthy();
-  if (input.outcome.state === "stopped")
+  if (input.outcome.state === "incomplete")
     return {
       summary: "Observed failed measurement attempt",
       response: "The measurement is unavailable. Its Task is still trying.",
@@ -930,7 +926,6 @@ test.each(["live", "restart", "admission-write-failure"])(
         resolve: () => ({
           id: "legacy-review",
           parentId: "root",
-          mode: "maintain",
           outcome: "Old follow-up owner",
           acceptance: ["Review Task update"],
           executor: "legacy",
@@ -1154,7 +1149,7 @@ test("a waiting report reaches Conversation, survives reopen and finishes the sa
   }
 });
 
-test.each(["stopped", "execution-error"])(
+test.each(["incomplete", "execution-error"])(
   "a failed child report returns to Conversation without closing its assignment or human Request (%s)",
   async (failure) => {
     const repair = Promise.withResolvers<void>();
@@ -1187,7 +1182,7 @@ test.each(["stopped", "execution-error"])(
             if (++runs <= 3) {
               if (failure === "execution-error") throw new Error(`Synthetic source offline (${runs})`);
               return {
-                state: "stopped",
+                state: "incomplete",
                 summary: `Could not obtain measurement: source offline (${runs})`,
                 evidence: ["measurement source: unavailable"],
               };
@@ -1243,7 +1238,7 @@ test.each(["stopped", "execution-error"])(
           : {
               state: "completed",
               acceptedResult: {
-                state: "stopped",
+                state: "incomplete",
                 summary: "Could not obtain measurement: source offline (1)",
                 evidence: ["measurement source: unavailable"],
               },
@@ -1652,7 +1647,6 @@ test("public Stop commits before abort and preserves queued input across Task ru
     intent: {
       id: "independent",
       parentId: "root",
-      mode: "achieve",
       outcome: "Independent work",
       acceptance: ["Verified"],
     },
@@ -1826,7 +1820,6 @@ test("human Conversation input keeps capacity beside same-App background work; s
         intent: {
           id,
           parentId: "root",
-          mode: "achieve",
           executor: "hold",
           priority: "P0",
           outcome: "Independent work",
@@ -1904,7 +1897,6 @@ test("a paused App answers human input through its Task across restart while bac
       intent: {
         id: "background",
         parentId: "root",
-        mode: "achieve",
         executor: "count",
         outcome: "Wait while paused",
         acceptance: ["Handled"],
@@ -1983,7 +1975,6 @@ test("the Conversation delegates and steers same-App work through the Task runti
       intent: {
         id: "goal/review",
         parentId: "root",
-        mode: "achieve",
         executor: "inspect",
         outcome: "Review the design",
         acceptance: ["Return evidence-backed findings"],
@@ -2166,7 +2157,6 @@ const contextTaskApp = defineApp({
     intent: {
       id: `work/${id}`,
       parentId: "root",
-      mode: "achieve",
       outcome: "Review the current evidence",
       acceptance: ["Return supported findings"],
     },
@@ -2179,7 +2169,6 @@ const manualContextTasks = (_root: string, appDir: string): Partial<AppTaskRunti
 const olderReview = {
   id: "work/older",
   parentId: "root",
-  mode: "achieve" as const,
   outcome: "Review earlier evidence",
   acceptance: ["Return supported findings"],
 };

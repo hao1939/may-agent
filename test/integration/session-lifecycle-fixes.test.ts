@@ -495,7 +495,7 @@ describe("workflow call empty final turn recovery", () => {
       autoClose: "immediate",
       requireFinish: true,
       outputSchema: Type.Object({
-        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("stopped")]),
+        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("incomplete")]),
         summary: Type.String(),
         evidence: Type.Array(Type.String()),
       }),
@@ -717,7 +717,7 @@ describe("workflow call empty final turn recovery", () => {
           status: "failure",
           summary: "Verified terminal failure.",
           result: {
-            state: "stopped",
+            state: "incomplete",
             summary: "Verified terminal failure.",
             evidence: ["runtime-check:failed"],
           },
@@ -735,7 +735,7 @@ describe("workflow call empty final turn recovery", () => {
     expect(result.status).toBe(expectedStatus);
     expect(result.error).toBeUndefined();
     expect(result.structuredResult).toEqual({
-      state: "stopped",
+      state: "incomplete",
       summary: "Verified terminal failure.",
       evidence: ["runtime-check:failed"],
     });
@@ -747,7 +747,7 @@ describe("workflow call empty final turn recovery", () => {
       type: "session.end",
       data: {
         status: expectedStatus,
-        finishParams: { status: "failure", result: { state: "stopped" } },
+        finishParams: { status: "failure", result: { state: "incomplete" } },
       },
     });
   });

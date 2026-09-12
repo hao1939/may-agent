@@ -1,8 +1,6 @@
 import type { AppEvent } from "./event.js";
 import type { AppInput } from "./app.js";
 
-/** Retained App intent labels; both use the same lifecycle and require owner closure. */
-export type TaskMode = "achieve" | "maintain";
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 /** Stable executor adapter name selected by durable Task intent. */
 export type TaskExecutorName = string;
@@ -14,7 +12,6 @@ export type TaskIntent = {
   parentId: string;
   outcome: string;
   acceptance: string[];
-  mode: TaskMode;
   /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
@@ -45,10 +42,10 @@ export type Condition = {
 
 /**
  * Attempt judgment, not Task lifetime. `converged` accepts an outcome and leaves
- * the Task open. `stopped` reports an unsuccessful attempt; unfinished work retries
+ * the Task open. `incomplete` reports an unsuccessful attempt; unfinished work retries
  * with backoff until progress or owner closure.
  */
-export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "stopped";
+export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "incomplete";
 
 /** One exact App input whose answer is needed; independent of the Task hierarchy. */
 export type TaskAppDependency = {
@@ -68,7 +65,6 @@ export type TaskAction =
       expectedGeneration: number;
       parentId?: string;
       outcome?: string;
-      mode?: TaskMode;
       outputs?: string[];
       acceptance?: string[];
       priority?: TaskPriority;
@@ -116,7 +112,7 @@ export type TaskReconcileResult = {
       evidence: [string, ...string[]];
     }))
   | {
-      state: "stopped";
+      state: "incomplete";
       /** Select a new caller-relevant report while the same assignment retries. */
       report?: true;
       /** At least one observation supporting this unsuccessful attempt. */

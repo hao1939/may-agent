@@ -38,7 +38,7 @@ test.each(["waiting", "running"] as const)(
       id: "sample", version: 1, agent: "may", inputSchema: { type: "object" },
       workspace: { kind: "local", localPath: "." }, tasks: {},
       task() { return { kind: "desired", intent: {
-        id: "work/main", parentId: "sample", mode: "achieve", workflow: "task-startup-probe",
+        id: "work/main", parentId: "sample", workflow: "task-startup-probe",
         outcome: "Wait for the exact fixture fact", acceptance: ["Fact observed and result accepted"]
       } }; },
       schedules: [{ id: "disabled", intervalMs: 1000, input: { kind: "probe", data: {} } }]

@@ -37,7 +37,7 @@ describe("admitCodexGoalTaskResult", () => {
 
     expect(rejected.kind).toBe("retry");
     if (rejected.kind !== "retry") throw new Error("expected rejected result");
-    expect(rejected.reason).toContain("state must be converged, waiting, stopped, or needs-agent");
+    expect(rejected.reason).toContain("state must be converged, waiting, incomplete, or needs-agent");
     expect(rejected.nextAttemptContext).toContain("The May Task remains pending");
     expect(rejected.nextAttemptContext).not.toContain("proof.txt contains once");
   });

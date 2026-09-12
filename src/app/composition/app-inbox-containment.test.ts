@@ -38,7 +38,7 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
         if (broken && id === "first" && failure !== "link-write") throw new Error("mapping unavailable");
         return {
           kind: "desired",
-          intent: { id, parentId: "root", mode: "achieve", outcome: "Answer", acceptance: ["Verified"] },
+          intent: { id, parentId: "root", outcome: "Answer", acceptance: ["Verified"] },
         };
       },
     });

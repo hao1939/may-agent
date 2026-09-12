@@ -25,7 +25,7 @@ function fixture(
 ): TaskTree {
   const resource: AppTaskResource = {
     metadata: { id: "task-1", generation: 3, resourceVersion: 8 },
-    spec: { outcome: "coordinate", acceptance: ["done"], parentId: "project", mode: "achieve" },
+    spec: { outcome: "coordinate", acceptance: ["done"], parentId: "project" },
     status: {
       observedGeneration: 2,
       phase: "running",
@@ -56,7 +56,7 @@ function fixture(
   };
   const child: AppTaskResource = {
     metadata: { id: "child-1", generation: 1, resourceVersion: 1 },
-    spec: { outcome: "handle child", acceptance: ["done"], parentId: "task-1", mode: "achieve" },
+    spec: { outcome: "handle child", acceptance: ["done"], parentId: "task-1" },
     status: { observedGeneration: 1, phase: "waiting", updatedAt: new Date().toISOString() },
   };
   return {
@@ -431,13 +431,11 @@ describe("AppTaskEmitter", () => {
       attemptId: "attempt-1",
       owner: "may",
       handler: "workflow:test",
-      mode: "achieve",
       intent: {
         id: "task-1",
         parentId: "project",
         outcome: "coordinate",
         acceptance: ["done"],
-        mode: "achieve",
       },
       events: [],
       eventsTruncated: false,

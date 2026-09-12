@@ -32,7 +32,6 @@ afterEach(() => {
 function receipt(id = "measurement", parentId = "root"): TaskCompletionReceipt {
   const spec = {
     parentId,
-    mode: "achieve" as const,
     outcome: "Measure the sample",
     acceptance: ["Read the instrument"],
     input: { sample: "first" },
@@ -70,7 +69,6 @@ function resource(result: TaskCompletionReceipt, generation = 1): AppTaskResourc
     metadata: { id: result.metadata.id, generation, resourceVersion: 7 },
     spec: {
       parentId: result.parentId,
-      mode: "achieve",
       outcome: result.outcome,
       acceptance: result.acceptance,
       input: result.input,

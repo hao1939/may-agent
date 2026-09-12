@@ -115,7 +115,7 @@ describe("Task context projections", () => {
           resources: {
             current: {
               metadata: { id: "current", generation: 1, resourceVersion: 1 },
-              spec: { parentId: "root", outcome: "Review", acceptance: ["Reviewed"], mode: "achieve" },
+              spec: { parentId: "root", outcome: "Review", acceptance: ["Reviewed"] },
               status: {
                 observedGeneration: 1,
                 phase: "waiting",

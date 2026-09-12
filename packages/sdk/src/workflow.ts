@@ -27,7 +27,7 @@ export type TaskView = {
 /** Exact desired Task detail returned only by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
   parentId: string;
-  mode?: "achieve" | "maintain";
+
   acceptance: string[];
   input: Record<string, unknown>;
   /** Agent selected for the next bounded attempt. */
@@ -325,7 +325,7 @@ export type TaskAttempt = {
     workspacePath?: string;
     /** Exact admitted report, when one exists. An execution error need not have one. */
     acceptedResult?: {
-      state: "converged" | "waiting" | "stopped";
+      state: "converged" | "waiting" | "incomplete";
       summary: string;
       response?: string;
       result?: Record<string, unknown>;
@@ -396,7 +396,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   agent: string;
   /** @deprecated Use `agent`. */
   owner: string;
-  mode: "achieve" | "maintain";
+
   outcome: string;
   acceptance: string[];
   input: TInput;

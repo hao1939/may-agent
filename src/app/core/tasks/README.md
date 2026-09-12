@@ -42,7 +42,7 @@ authorized owner -> close Task -> fence running execution and future wakes
 | Dispatch | `controller.ts` -> `reconcileTask()` (or the composition-supplied worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
 | Execute | `reconcileTask()` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
 | Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; execution failures and the diagnostic wrapper share `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
-| Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. The legacy-named `stopAppTask()` records a worker failure report and retries; it does not close the Task |
+| Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. `reportAppTaskFailure()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains evidence for normal execution and validation |
 
 These entry points are in `app-task-runtime.ts` or `app-task-reconciler.ts`
@@ -59,14 +59,14 @@ Composition refreshes exact input feedback and linked Conversation observations
 from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`
 for both live delivery and recovery: `blocked` returns the input's selected
 report; `done` returns its answer or owner closure. A report may be accepted
-`stopped`/`waiting` evidence or a factual failed-attempt reference, never an
+`incomplete`/`waiting` evidence or a factual failed-attempt reference, never an
 invented answer. `failAppTaskAttempt()` saves the first failure report in the
 same transaction as retry state; its diagnostic wrapper shares that path.
 Internal workflow-to-agent handoff does not select a failure report.
 `app-task-condition-tracker.ts` wakes the caller once per selected report
 revision while keeping the wait unsatisfied. Automatic retries remain quiet.
 An agent may deliberately select new feedback with `report: true` on `waiting`
-or `stopped`, with non-empty evidence. Omitting the flag keeps an ordinary wait
+or `incomplete`, with non-empty evidence. Omitting the flag keeps an ordinary wait
 quiet and preserves the first failure report during retries. Delayed older reports cannot
 replace the latest selection. This does not guarantee every intermediate update.
 The later answer satisfies the wait, even if the caller is retrying its own work.
@@ -74,13 +74,12 @@ Conversation uses the same saved selection; answer or closure suppresses newly
 admitting obsolete reports without erasing inputs already admitted as history.
 This is not a general progress stream. Apps can still declare relevant event routes.
 
-## Read the retained names correctly
+## Outcome and control names
 
 | Name in code | Meaning in this lifecycle |
 | --- | --- |
-| `achieve` / `maintain` | Retained App intent labels; neither selects a different lifetime |
 | `converged` / SDK `done` | An accepted outcome; later input can run the same open Task. Owner closure preserves this outcome status; read `closed` separately |
-| Worker result `stopped` / `stopAppTask()` | Unsuccessful attempt evidence; unfinished work retries with backoff |
+| Worker result `incomplete` / `reportAppTaskFailure()` | Unsuccessful attempt evidence; unfinished work retries with backoff |
 | Turn Stop / `stopAppTaskAttempt()` | Stop the observed attempt; keep the Task and accepted Requests |
 | `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained evidence remains readable |
 
@@ -137,7 +136,7 @@ A completed workflow call alone never establishes an accepted Task outcome.
 `app-task-emitter.ts` exposes scoped publication and exact publication reads.
 A workflow can read its original fact from `core/state/task-emissions.ts` after
 losing result acceptance, then propose the same outcome from that evidence.
-The local effect key follows admitted work, not attempt or mode. It remains
+The local effect key follows admitted work, not attempt number. It remains
 App-owned; a new input on the same open Task may need a distinct key. A read
 proves publication only, and same-key/different-payload writes still fail.
 
@@ -154,3 +153,7 @@ Agent handoff remains distinct; no new retry state or scheduling policy is added
 A new rejection or handoff diagnostic replaces the current evidence links;
 omitting them clears that list. An execution failure alone retains prior links.
 Neither transition changes the evidence in historical accepted attempts.
+
+New Task contracts omit mode and use `incomplete` for unsuccessful reports.
+Historical labels are normalized only when reading retained resources/attempts;
+new authoring must use the current contract. Upgrade Host and App code together.

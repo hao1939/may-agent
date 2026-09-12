@@ -20,7 +20,6 @@ describe("App dependency catalog", () => {
           parentId: "evaluation",
           outcome: "Review evidence",
           acceptance: ["Evidence is reviewed"],
-          mode: "achieve" as const,
         },
       }),
       tasks: {},
@@ -94,7 +93,6 @@ describe("App dependency catalog", () => {
           parentId: "operations",
           outcome: "Perform the operation",
           acceptance: ["Done"],
-          mode: "achieve" as const,
         },
       }),
       tasks: {},
@@ -136,7 +134,6 @@ describe("App dependency catalog", () => {
           parentId: "incomplete",
           outcome: "Review evidence",
           acceptance: ["Reviewed"],
-          mode: "achieve" as const,
         },
       }),
     });
