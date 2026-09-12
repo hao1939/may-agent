@@ -759,6 +759,6 @@ installed tool catalog. Real service repair, long-running retention/scale and
 installation rollout/rollback remain unproved. Those questions do not require
 another core framework before they can be tested.
 
-See the [PoC runner instructions](../../../may-agent/scripts/poc/controller-judgment/README.md)
+See the [PoC runner instructions](https://github.com/hao1939/may-agent/blob/38a048da5c105bea91dc7163010d94483a60b747/scripts/poc/controller-judgment/README.md)
 for the three repeatable trial commands and their bounds. Raw reports, transcripts
 and provider usage stay local; only synthetic findings are published here.

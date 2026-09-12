@@ -1,5 +1,14 @@
 # Teaching May through conversation: next-phase results
 
+**Harness status:** Retired from the current Host candidate by the
+[scripts retirement decision](poc-retirement-and-knowledge-20260912.md).
+The source remains at the exact trial revisions recorded below; its final
+main copy is at Host `38a048da5c105bea91dc7163010d94483a60b747`.
+Historical invocations require that isolated source, not current main.
+The [original commands and prerequisites](https://github.com/hao1939/may-agent/blob/38a048da5c105bea91dc7163010d94483a60b747/scripts/poc/conversation-adoption.README.md)
+remain available with the retired harness; use the extracted daemon test for
+current portable activation checks.
+
 **Status:** Isolated experiment completed, September 12, 2026. Both source PRs
 have passing exact-head checks and resolved review threads and are ready for
 maintainer review. No live installation, guidance, Task state or deployment changed.

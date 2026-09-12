@@ -989,7 +989,7 @@ The source remains an offline helper, not an operational upgrade runner.
 
 Eight conversion tests and the owning storage/accepted-result suites pass
 **46 tests**. The reproducible
-[`task-state-cutover.ts`](../../../may-agent/scripts/poc/task-state-cutover.ts)
+[`task-state-cutover.ts`](https://github.com/hao1939/may-agent/blob/38a048da5c105bea91dc7163010d94483a60b747/scripts/poc/task-state-cutover.ts)
 trial additionally writes a fresh SQLite database through old Host `a8f65188`,
 closes it, runs the candidate's normal Host schema upgrade and imports its real
 receipt. The original ask returns the original measurement, its old attempt
@@ -1050,7 +1050,7 @@ results, child and Condition returns across intervening input/restart, deadline
 retention, failure pacing and pause, obsolete claims, human Stop, worker stops,
 atomic rollback, App isolation, and refusal of missing or mismatched acceptance
 identity. The expanded
-[`task-state-cutover.ts`](../../../may-agent/scripts/poc/task-state-cutover.ts)
+[`task-state-cutover.ts`](https://github.com/hao1939/may-agent/blob/38a048da5c105bea91dc7163010d94483a60b747/scripts/poc/task-state-cutover.ts)
 trial also uses actual old Host `a8f65188` writers for a maintained result, a
 Condition wait, failure, in-flight work, worker self-stop and human cancellation.
 After the candidate schema/state upgrade, the wait and three unfinished Tasks
@@ -1202,7 +1202,7 @@ unchanged from `26dce52f`. Net production growth remains 632 lines against
 Host `4e216338` and paired App `0823556a` pass two live trials with
 `gpt-5.6-sol`, using the same App declaration, seed, May role instructions and
 shared common sense. Both source checkouts were clean. The
-[shared-loop script](../../../may-agent/scripts/poc/controller-judgment/shared-loop.ts)
+[shared-loop script](https://github.com/hao1939/may-agent/blob/38a048da5c105bea91dc7163010d94483a60b747/scripts/poc/controller-judgment/shared-loop.ts)
 records their revisions and copied-file hashes. The second run changes only
 the measurement; its instructions were not tuned after the first result.
 
@@ -1578,7 +1578,7 @@ portable CI does not certify old-version cutover or the whole installation.
 
 ## Real daemon cutover
 
-The committed [`task-runtime-cutover.ts`](../../../may-agent/scripts/poc/task-runtime-cutover.ts)
+The committed [`task-runtime-cutover.ts`](https://github.com/hao1939/may-agent/blob/38a048da5c105bea91dc7163010d94483a60b747/scripts/poc/task-runtime-cutover.ts)
 trial passes from clean old Host **`a8f65188`** to clean candidate **`d2e1e2dc`**.
 It starts actual daemon entrypoints and workflow workers using temporary App
 files, SQLite and a local scripted provider. It calls no real model or installed

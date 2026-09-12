@@ -364,17 +364,25 @@ policy. Reuse its process and protocol discipline, not its one-shot lifecycle.
 
 ## Resumable adapter
 
-The stable implementation lives in
-`projects/may-agent/src/app/codex-goal-*.ts` and is selected only by the
-`codex-goal` executor name. `codex-goal-poc` remains a compatibility alias for
-already-durable trial Tasks. The default managed agent and one-shot
-`codex`/`claude` executors remain unchanged. Protocol drift checks, resource
-measurement, and manual smoke commands remain under `scripts/poc`; Runtime
-does not import them.
-The focused fixture command is:
+The current implementation lives in
+`projects/may-agent/src/app/adapters/executors/codex/`. Historical selection and
+trial aliases below describe the evaluated source; the executor README and
+native-worker design own current behavior. Protocol drift verification remains
+supported directly under `scripts/` and in the container smoke gate.
+
+The resource sampler and manual model smoke are retired by the
+[scripts decision](../../proposals/poc-retirement-and-knowledge-20260912.md).
+Their final main source remains at Host `38a048da5c105bea91dc7163010d94483a60b747`,
+under `scripts/poc/codex-goal-smoke.ts` and `codex-goal-resources.ts`.
+No maintained diagnostic consumed the sampler independently. The original
+observations below retain their own tested revisions and limitations; code
+retirement creates no new model evidence. Runtime never imports these trials.
+
+Current focused fixture and protocol commands are:
 
 ```bash
-bun test src/app/codex-goal-*.test.ts scripts/poc/codex-goal-*.test.ts
+bun test src/app/adapters/executors/codex/ scripts/codex-goal-protocol.test.ts
+bun run check:codex-goal-protocol
 ```
 
 ### Stage A: protocol fixture

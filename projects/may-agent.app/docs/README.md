@@ -31,6 +31,13 @@ small shared state boundary.
 
 ## Current focus
 
+The [scripts review proposal](proposals/poc-retirement-and-knowledge-20260912.md)
+accounts for the refreshed 54-file Host inventory, including all 27 files in
+`scripts/poc/`. Its isolated implementation removes that folder, retains useful
+checks in maintained suites, and preserves findings with exact historical source
+references. Command-safety fixes are reviewed separately; Gym compatibility stays
+until its consumers/storage migrate together. This is not a merged/deployed claim.
+
 The [caller-feedback proposal](proposals/caller-feedback-and-waiting.md) explores
 returning problems to the exact caller without another escalation lifecycle.
 Its isolated PoC exercises Task and Conversation returns, reporting while

@@ -132,6 +132,9 @@ current-design list.
 
 Active reviews are:
 
+- [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md)
+  — accepted disposition of all 54 Host script files: remove the PoC directory,
+  retain useful checks/findings, and maintain the explicit command surface;
 - [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md)
   — proposed conversational teaching, scoped adoption and verified activation;
   [guidance PoC](proposals/agent-adoption-poc-20260912.md) and

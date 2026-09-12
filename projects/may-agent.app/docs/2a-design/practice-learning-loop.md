@@ -118,6 +118,15 @@ A landed change is not proof of improvement. Its evidence names:
 
 ## Remaining adoption gaps
 
+The bounded [agent-operated](../proposals/agent-operated-improvement-poc-20260912.md)
+and [ordinary-Task](../proposals/task-improvement-poc-20260912.md) trials show why
+evidence must distinguish saved source, successful activation, fresh execution
+and useful behavior. Their unsuccessful wiring/scoring trials remain visible;
+they are not automatically failures of the target agent. Those trials support
+the mechanism, not an installed autonomous improvement service. Their completed
+harnesses follow the [retirement decision](../proposals/poc-retirement-and-knowledge-20260912.md);
+use the existing runtime/activation regressions, not obsolete main-branch commands.
+
 The [local integration candidate](../proposals/feedback-adoption-integration-20260912.md)
 restores Evaluation-owned generated feedback and labels source-only promotion
 as unverified owner attention. Four isolated model checks prove the reference

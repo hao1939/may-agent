@@ -1,7 +1,7 @@
 # Return problems to the caller
 
 **Status:** Isolated mechanics and bounded live-agent adoption tested; not a deployed contract.
-**Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169) (draft).
+**Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169).
 **Baseline:** Host `8026aff97585edd7f728fa4ce360fdde71bc740a` (PR #164).
 **Current integration base:** Host `38a048da5c105bea91dc7163010d94483a60b747` (PR #167).
 
@@ -395,7 +395,11 @@ measurement fulfills the human Request; the worker Task stays open and its exact
 accepted answer survives another runtime/database reopen. No cancellation is
 used to fake successful completion.
 
-Run with explicit model authority and configured endpoint:
+Run at the retained experiment checkpoint `2433b88c` on
+`poc/caller-feedback-wait-20260912`, with explicit model authority and configured
+endpoint. These are experiment-branch commands, not a supported main surface
+after [PoC retirement](poc-retirement-and-knowledge-20260912.md). Keep this source
+for audit; a later production rebase must not restore `scripts/poc/` on main:
 
 ```sh
 bun scripts/poc/controller-judgment/managed-conversation.ts --live --model MODEL --out /tmp/caller-feedback-development --fault caller-feedback
