@@ -15,6 +15,7 @@ import type {
 } from "./execution.js";
 import { appTaskSessionBinding } from "./session-binding.js";
 import { getDb } from "../../../lib/db/connection.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { admitTaskRequest } from "../state/inbox.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import {
@@ -67,7 +68,12 @@ import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { createAppTaskEvents, type AppTaskEmission, type AppTaskEvents } from "./app-task-emitter.js";
+import {
+  createAppTaskEvents,
+  subscribeAppTaskPublications,
+  type AppTaskEmission,
+  type AppTaskEvents,
+} from "./app-task-emitter.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import type { AppTaskQueueOptions } from "./queue.js";
 import {
@@ -80,11 +86,9 @@ import {
   eventData,
   EVENT_DELIVERY_RESULT,
   EVENT_ROW_ID,
-  EVENT_TASK_EMISSION_FENCE,
   type AgentEvent,
   type DeliveryResult,
   type EventBus,
-  type EventTaskEmissionFence,
 } from "../events/bus.js";
 import {
   assertAppTaskEffectFresh,
@@ -438,36 +442,26 @@ function runtimeTaskAttempt(input: {
   const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
-  // Publication already gives this attempt the fact. Record its exact receipt
-  // synchronously: optional live listeners may run only after settlement. The
-  // hidden fence covers tools, workflows and executor publication alike; public
-  // source/emission fields cannot acknowledge somebody else's input. Settlement
-  // consumes these IDs only with a valid result, leaving failed attempts replayable.
-  const unsubscribePublications = opts.bus.subscribe(
-    (incoming) => {
-      const publication = incoming as AgentEvent & {
-        [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence;
-        [EVENT_ROW_ID]?: number;
-        target?: Record<string, unknown>;
-      };
-      const fence = publication[EVENT_TASK_EMISSION_FENCE];
-      const target = publication.target;
+  // The exact publication receipt is already known to this attempt, including
+  // retry-safe returns that skip EventBus fan-out. Only valid settlement may
+  // consume it. Tools and executors share the same fenced emitter boundary.
+  const unsubscribePublications = subscribeAppTaskPublications(
+    opts.bus,
+    { appId: descriptor.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+    (publication, eventId) => {
+      const target = (publication as AgentEvent & { target?: Record<string, unknown> }).target;
+      const appId = [target?.appId, target?.project]
+        .find((value): value is string => typeof value === "string" && Boolean(value.trim()))
+        ?.trim()
+        .replace(/\.app$/, "");
       if (
-        closed ||
-        fence?.appId !== descriptor.id ||
-        fence.taskId !== claim.taskId ||
-        fence.taskGeneration !== claim.generation ||
-        fence.attemptId !== claim.attemptId ||
-        String(target?.appId ?? target?.project ?? "")
-          .trim()
-          .replace(/\.app$/, "") !== descriptor.id ||
-        String(target?.taskId ?? "").trim() !== claim.taskId
+        !closed &&
+        appId === descriptor.id &&
+        typeof target?.taskId === "string" &&
+        target.taskId.trim() === claim.taskId
       )
-        return;
-      const eventId = Number(publication[EVENT_ROW_ID]);
-      if (Number.isSafeInteger(eventId) && eventId > 0) selfPublishedEventIds.add(eventId);
+        selfPublishedEventIds.add(eventId);
     },
-    { label: "task-attempt-publications" },
   );
   const unsubscribeCancellation = events.onEvent((incoming) => {
     if (incoming.type !== "app.task.cancelled" && incoming.type !== "app.task.attempt.stopped") return;
@@ -2093,7 +2087,13 @@ type AppTaskAdmissionResult = {
   supersededSessionIds: string[];
 };
 
-function admitResolvedAppTaskEvent(input: {
+function admitResolvedAppTaskEvent(input: Parameters<typeof applyResolvedAppTaskEvent>[0]): AppTaskAdmissionResult {
+  // Receipt lookup and all selected Task/Condition changes share one boundary
+  // with worker publication and claim on other database connections.
+  return stateTransaction(input.descriptor.resourceStore.db, () => applyResolvedAppTaskEvent(input));
+}
+
+function applyResolvedAppTaskEvent(input: {
   descriptor: AppTaskRuntimeDescriptor;
   controller?: AppTaskController;
   event: Record<string, unknown>;
@@ -2108,6 +2108,8 @@ function admitResolvedAppTaskEvent(input: {
   const selectedConditionTaskIds = [
     ...new Set((input.conditionTaskIds ?? []).map((taskId) => taskId.trim()).filter(Boolean)),
   ];
+  // Check before Condition admission, which can link this same first input.
+  const duplicateIntent = intent && config.resourceStore.hasTaskEvent(intent.id, event);
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
   const wokenTaskIds = new Set(conditionWakes.map((wake) => wake.taskId));
   if (controller) {
@@ -2138,11 +2140,25 @@ function admitResolvedAppTaskEvent(input: {
         supersededSessionIds: [],
       };
     }
+    if (triggerResult.kind === "duplicate") {
+      return {
+        delivery: appTaskDelivery(descriptor, targetedTaskId, "targeted task event already received"),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
+    }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
     return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
   }
   if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+  if (duplicateIntent) {
+    return {
+      delivery: appTaskDelivery(descriptor, intent.id, "resolved task event already received"),
+      taskIds: [...wokenTaskIds],
+      supersededSessionIds: [],
+    };
+  }
   const observation = observeAppTaskIntent(config, {
     intent,
     appAgent: descriptor.agent,

@@ -43,6 +43,31 @@ type TaskEventMux = {
 
 const taskEventMuxByBus = new WeakMap<EventBus, TaskEventMux>();
 
+type PublicationListener = (event: AgentEvent, eventId: number) => void;
+const publicationListeners = new WeakMap<EventBus, Map<string, Set<PublicationListener>>>();
+type PublicationScope = { appId: string; taskId: string; generation: number; attemptId: string };
+function publicationKey(scope: PublicationScope): string {
+  return JSON.stringify([scope.appId, scope.taskId, scope.generation, scope.attemptId]);
+}
+
+/** Observe receipts, including idempotent returns that deliberately skip bus fan-out. */
+export function subscribeAppTaskPublications(
+  bus: EventBus,
+  scope: PublicationScope,
+  listener: PublicationListener,
+): () => void {
+  const scopes = publicationListeners.get(bus) ?? new Map<string, Set<PublicationListener>>();
+  publicationListeners.set(bus, scopes);
+  const key = publicationKey(scope);
+  const listeners = scopes.get(key) ?? new Set<PublicationListener>();
+  scopes.set(key, listeners);
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) scopes.delete(key);
+  };
+}
+
 function normalizedAppId(value: unknown): string {
   return typeof value === "string" ? value.trim().replace(/\.app$/, "") : "";
 }
@@ -51,9 +76,7 @@ function taskTargetKey(event: AgentEvent): string | null {
   const envelope = event as AgentEvent & { target?: Record<string, unknown> };
   const target =
     envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target) ? envelope.target : {};
-  const appId = normalizedAppId(
-    (target as Record<string, unknown>).appId ?? (target as Record<string, unknown>).project,
-  );
+  const appId = [target.appId, target.project].map(normalizedAppId).find(Boolean) ?? "";
   const taskId =
     typeof (target as Record<string, unknown>).taskId === "string"
       ? String((target as Record<string, unknown>).taskId).trim()
@@ -162,6 +185,9 @@ export function createAppTaskEmitter(input: {
       const eventId = Number(accepted[EVENT_ROW_ID]);
       if (!Number.isSafeInteger(eventId) || eventId <= 0) {
         throw new Error(`Task emission ${key} did not receive a durable event identity`);
+      }
+      for (const listener of publicationListeners.get(input.bus)?.get(publicationKey(scope)) ?? []) {
+        listener(accepted, eventId);
       }
       return eventId;
     },

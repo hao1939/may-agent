@@ -842,7 +842,11 @@ export class DbWriter {
     eventId: number,
     observedAt: number,
   ): void {
-    const appId = String(target.appId ?? target.project ?? "").trim().replace(/\.app$/, "");
+    const appId =
+      [target.appId, target.project]
+        .find((value): value is string => typeof value === "string" && Boolean(value.trim()))
+        ?.trim()
+        .replace(/\.app$/, "") ?? "";
     const taskId = String(target.taskId ?? "").trim();
     if (!appId || !taskId) return;
     const authority = this.db
@@ -881,10 +885,12 @@ export class DbWriter {
       event: canonical,
       observedAt: observedAtIso,
     };
-    this.db.prepare(
-      `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
+    this.db
+      .prepare(
+        `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
        VALUES (?, ?, ?, ?, ?)`,
-    ).run(appId, taskId, `event:${eventId}`, observedAt, JSON.stringify(canonical));
+      )
+      .run(appId, taskId, `event:${eventId}`, observedAt, "{}");
     this.db.prepare(
       `UPDATE app_tasks
        SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?,

@@ -3,6 +3,7 @@ import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
   Type,
@@ -15,6 +16,7 @@ import {
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
+import { loadPersistedEvent } from "../events/persisted.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
@@ -42,6 +44,7 @@ import {
   recoverInstalledAppTasks,
   retryLoadedFailedAppTask,
 } from "./app-task-runtime.js";
+import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
@@ -4238,7 +4241,10 @@ describe("canonical App task runtime", () => {
               expect(Date.now()).toBeGreaterThanOrEqual(Date.parse(wait.subject.slice(5)));
               const event = {
                 type: "time.reached",
-                target: { appId: "sample", taskId },
+                target:
+                  publisher === "tasks tool"
+                    ? { appId: "", project: "sample.app", taskId: ` ${taskId} ` }
+                    : { appId: "sample", taskId },
                 data: { time: wait.subject.slice(5), state: true },
               };
               const localKey = `observed:${wait.conditionId}`;
@@ -4340,6 +4346,12 @@ describe("canonical App task runtime", () => {
           ...(count > 1 ? { acceptedLiveEventIds: [facts[count - 2]] } : {}),
         });
         expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+        if (count > 1) {
+          const eventId = facts[count - 2]!;
+          const event = loadPersistedEvent(getDb(join(f.root, "state")), eventId, join(f.root, "state"))!;
+          bus.redeliverPersisted(event, eventId);
+          expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+        }
         await run(); // No pending input may immediately start an echo attempt.
         expect(calls).toBe(count);
         if (count < 3) setSystemTime(Date.now() + 60_001);
@@ -4353,6 +4365,206 @@ describe("canonical App task runtime", () => {
       await recoverInstalledAppTasks(bus);
       await run();
       expect(calls).toBe(3);
+    },
+  );
+
+  it("keeps late repeated worker publications consumed after child settlement", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const writer = new DbWriter(join(f.root, "state"));
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const taskId = "work/worker-publication";
+    const { installed } = await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: "delayed-worker-parent",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    for (const id of [taskId, "work/peer"])
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id,
+          parentId: "operations",
+          mode: "achieve",
+          executor: "publisher",
+          outcome: "Publish feedback",
+          acceptance: ["Publication is retained without an echo"],
+        },
+      });
+    const settledAtRelay: boolean[] = [];
+    const woken: string[][] = [];
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "sample.observed") return;
+      settledAtRelay.push(
+        acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary === "Worker settled before relay",
+      );
+      const admitted = admitStandaloneCanonicalAppTaskEvent({
+        descriptor: installed[0]!,
+        event,
+        intent: null,
+        targetedTaskId: String((event as AgentEvent & { target: { taskId: string } }).target.taskId),
+      });
+      woken.push(admitted.taskIds);
+      return admitted.delivery;
+    });
+    const execute = createTaskAttemptProcessExecutor({
+      bus,
+      timeoutMs: 10_000,
+      spawnWorker: () =>
+        spawn(
+          process.execPath,
+          [
+            fileURLToPath(new URL("../../../../test/integration/fixtures/task-publication-worker.ts", import.meta.url)),
+            f.root,
+            taskId,
+          ],
+          { stdio: ["ignore", "ignore", "inherit", "ipc"], serialization: "json" },
+        ),
+    });
+    await execute({
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(settledAtRelay).toEqual([true, true, true, true]);
+    expect(woken).toEqual([[], [], ["work/peer"], ["work/peer"]]);
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.acceptedLiveEventIds).toHaveLength(1);
+    expect(config.resourceStore.readTrigger("work/peer")?.events).toHaveLength(1);
+    expect(claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:publisher" }).kind).toBe(
+      "completed",
+    );
+  }, 20_000);
+
+  it.each(
+    ["during execution", "after acceptance", "after restart", "after upgrade"].flatMap((phase) =>
+      ["exact", "intent"].map((route) => ({ phase, route })),
+    ),
+  )(
+    "ignores duplicate Task feedback $phase through $route admission and preserves new input",
+    async ({ phase, route }) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      const taskId = "work/duplicate-feedback";
+      let bus = eventBus();
+      let first: AgentEvent & { [EVENT_ROW_ID]?: number };
+      let calls = 0;
+      const install = async () => {
+        const writer = new DbWriter(persistDir);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        const { installed } = await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          executors: {
+            receiver: async () => {
+              calls += 1;
+              if (calls === 1 && phase === "during execution") {
+                bus.redeliverPersisted(first, first[EVENT_ROW_ID]!);
+                expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+              }
+              return { state: "converged", summary: "Feedback handled", evidence: ["fixture:handled"] };
+            },
+          },
+          appRegistrySnapshot: {
+            id: "duplicate-feedback",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: definition() }],
+          },
+        });
+        bus.subscribeDurableRoute((event) => {
+          if (event.type !== "sample.observed") return;
+          return admitStandaloneCanonicalAppTaskEvent({
+            descriptor: installed[0]!,
+            event,
+            ...(route === "exact"
+              ? { intent: null, targetedTaskId: taskId }
+              : {
+                  intent: {
+                    id: taskId,
+                    parentId: "operations",
+                    mode: "achieve",
+                    outcome: `Handle revision ${event.data.revision}`,
+                    acceptance: ["Handle each input once"],
+                    executor: "receiver",
+                  },
+                }),
+          }).delivery;
+        });
+      };
+      await install();
+      observeAppTaskIntent(loadedTaskConfig(f), {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          mode: "achieve",
+          outcome: "Handle feedback",
+          acceptance: ["Handle each input once"],
+          executor: "receiver",
+        },
+      });
+      first = bus.emit({
+        type: "sample.observed",
+        source: "fixture",
+        owner: "app:sample",
+        target: { appId: "sample", taskId },
+        data: { revision: 1 },
+      } as AgentEvent);
+      bus.redeliverPersisted(first, first[EVENT_ROW_ID]!); // Repeat before claim.
+      expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await run();
+      expect(acceptedTaskAttempt(loadedTaskConfig(f), taskId)?.acceptedResult?.summary).toBe("Feedback handled");
+      if (phase === "after restart" || phase === "after upgrade") {
+        if (phase === "after upgrade") {
+          // Version 2 deleted Task-event links on claim/settlement. Preserve
+          // the real accepted attempt and verify startup rebuilds its identity.
+          const db = getDb(persistDir);
+          db.prepare("DELETE FROM app_task_events WHERE app_id = 'sample'").run();
+          db.prepare(
+            "UPDATE app_task_store_meta SET value = '2' WHERE app_id = 'sample' AND key = 'schema_version'",
+          ).run();
+        }
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      }
+      bus.redeliverPersisted(first, first[EVENT_ROW_ID]!);
+      expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+      await run();
+      expect(calls).toBe(1);
+      const changed = bus.emit({
+        type: "sample.observed",
+        source: "fixture",
+        owner: "app:sample",
+        target: { appId: "sample", taskId },
+        data: { revision: 2 },
+      } as AgentEvent);
+      bus.redeliverPersisted(first, first[EVENT_ROW_ID]!); // An older repeat cannot replace new input.
+      expect(
+        loadedTaskConfig(f)
+          .resourceStore.readTrigger(taskId)
+          ?.events?.map(({ event }) => event.eventId),
+      ).toEqual([changed[EVENT_ROW_ID]]);
+      await run();
+      expect(calls).toBe(2);
+      expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+      if (route === "intent")
+        expect(loadedTaskConfig(f).resourceStore.readTask(taskId)?.spec.outcome).toBe("Handle revision 2");
     },
   );
 

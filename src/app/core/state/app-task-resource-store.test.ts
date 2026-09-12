@@ -107,6 +107,46 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
+  it("upgrades retained input identities once without retaining duplicate event bodies", () => {
+    const store = open();
+    try {
+      const tree = fixture();
+      const attempt = tree.attempts!["attempt-1"]!;
+      attempt.events = [{ event: { type: "sample.fact", eventId: 11 }, observedAt: attempt.startedAt }];
+      attempt.acceptedResult = { state: "converged", summary: "Accepted", evidence: [], acceptedLiveEventIds: [13] };
+      tree.attempts!["legacy"] = {
+        ...attempt,
+        metadata: { id: "legacy", resourceVersion: 1 },
+        state: "completed",
+        events: undefined,
+        acceptedResult: undefined,
+        trigger: { type: "sample.fact", eventId: 12 },
+      };
+      store.bootstrapSnapshot(tree, "fixture");
+      const pending = store.readTrigger("human");
+      // Recreate the version-2 projection while retaining real resource rows.
+      store.db.prepare("DELETE FROM app_task_events WHERE task_id = 'active'").run();
+      store.db.prepare("UPDATE app_task_store_meta SET value = '2' WHERE key = 'schema_version'").run();
+      const upgraded = AppTaskResourceStore.fromDb(store.db, "example");
+      for (const eventId of [11, 12, 13]) expect(upgraded.hasTaskEvent("active", { eventId })).toBeTrue();
+      expect(upgraded.hasTaskEvent("human", { eventId: 11 })).toBeFalse();
+      expect(upgraded.readTrigger("human")).toEqual(pending);
+      expect(upgraded.readTrigger("active")).toBeNull();
+      expect(store.db.prepare("SELECT DISTINCT event_json FROM app_task_events").all()).toEqual([{ event_json: "{}" }]);
+      // Identities outlive later attempt-history pruning; reopen does not need
+      // that history again and does not change Task state.
+      expect(
+        upgraded.commit({
+          fences: [{ taskId: "active", resourceVersion: upgraded.readTask("active")!.metadata.resourceVersion }],
+          deleteAttemptIds: ["legacy"],
+        }),
+      ).toBeTrue();
+      expect(AppTaskResourceStore.fromDb(store.db, "example").hasTaskEvent("active", { eventId: 12 })).toBeTrue();
+    } finally {
+      store.close();
+    }
+  });
+
   it("fences a background claim against another writer's pause while permitting admitted human Conversation input", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-pause-fence-"));
     roots.push(root);
@@ -223,7 +263,7 @@ describe("AppTaskResourceStore", () => {
     const store = AppTaskResourceStore.fromDb(db, "example");
     expect(
       db.prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'schema_version'").get("example"),
-    ).toEqual({ value: "2" });
+    ).toEqual({ value: "3" });
     expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
     expect(
       db
