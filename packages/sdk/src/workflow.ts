@@ -235,7 +235,6 @@ export type TaskReconciliationChild = {
       | "ready"
       | "dependency-blocked"
       | "condition-blocked"
-      | "child-blocked"
       | "capacity-blocked"
       | "paused"
       | "not-applicable";

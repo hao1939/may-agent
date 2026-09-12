@@ -343,7 +343,7 @@ describe("worker failure evidence and owner closure", () => {
     },
   );
 
-  it.each(["report", "closure"] as const)("rolls back the %s and parent wake if storage fails", (kind) => {
+  it.each(["report", "closure"] as const)("rolls back the %s atomically if storage fails", (kind) => {
     const { config, intent, claim } = setup();
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent" } });
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });

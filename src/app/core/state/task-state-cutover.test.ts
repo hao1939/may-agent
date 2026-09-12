@@ -334,6 +334,56 @@ test("failed import restores a worker's original stop and leaves all state uncha
   expect(f.store.revision()).toBe(version);
 });
 
+test("structural-wait failure rolls back the composed cutover, including first-phase writes", () => {
+  const { f, old, selfStop } = stoppedFixture();
+  const resource = f.store.readTask("work")!;
+  // The retained wait outlived its admission. The first phase restores the real
+  // input and failure evidence and removes the old cancellation before retirement fails.
+  resource.status.inputWaits = {
+    "task:missing": {
+      taskGeneration: resource.metadata.generation,
+      conditions: [],
+      ...{ children: [{ id: "old-child", generation: 1 }] },
+    },
+  };
+  expect(
+    f.store.commit({
+      fences: [{ taskId: "work", resourceVersion: resource.metadata.resourceVersion }],
+      tasks: [{ resource, ready: false }],
+    }),
+  ).toBe(true);
+  const before = f.store.readSnapshot();
+  const revision = f.store.revision();
+  expect(before.attempts![old.attemptId]!.acceptedResult).toBeUndefined();
+  expect(before.appTaskAdmissions!["task:measurement"]!.inputEvent).toBeUndefined();
+  expect(() => f.migrate()).toThrow("Original input missing for structural wait: work, task:missing");
+  expect(f.store.readSnapshot()).toEqual(before);
+  expect(f.store.revision()).toBe(revision);
+  f.reopen();
+  expect(f.store.readSnapshot()).toEqual(before);
+  expect(f.store.revision()).toBe(revision);
+  expect(f.store.readCancellation("work")).toEqual(selfStop);
+
+  // Repair only the broken reference; the same fixture must apply real work in
+  // both phases, showing the rollback check did not exercise an empty migration.
+  const repaired = f.store.readTask("work")!;
+  repaired.status.inputWaits = { "task:measurement": repaired.status.inputWaits!["task:missing"]! };
+  expect(
+    f.store.commit({
+      fences: [{ taskId: "work", resourceVersion: repaired.metadata.resourceVersion }],
+      tasks: [{ resource: repaired, ready: false }],
+    }),
+  ).toBe(true);
+  expect(f.migrate()).toMatchObject({
+    tasks: 1,
+    workerStops: 1,
+    inputs: 1,
+    coordination: { tasks: 1, replayedInputs: 1, reviews: 1 },
+  });
+  expect(f.store.readCancellation("work")).toBeNull();
+  expect(f.store.readAttempt(old.attemptId)?.acceptedResult?.state).toBe("stopped");
+});
+
 test("workflow-to-agent handoff retains its original input without turning into another workflow retry", () => {
   const f = fixture();
   f.ask("measurement");

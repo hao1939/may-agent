@@ -202,6 +202,11 @@ try {
     closed: 0,
     linkedInputs: 0,
   });
+  const hasStructuralWaitDiagnostic = () =>
+    buildAppTaskTreeProjection(store!.readSnapshot(), 1).integrity.some(
+      (finding) => finding.task_id === "structural" && finding.code === "waiting-without-condition",
+    );
+  assert.equal(hasStructuralWaitDiagnostic(), true, "Live children must not hide the retired wait");
   assert.deepEqual(migrateOpenTaskState(current, { oldRuntimeStopped: true }), {
     tasks: 7,
     outcomes: 3,
@@ -210,6 +215,7 @@ try {
     inputs: 42,
     coordination: { tasks: 2, replayedInputs: 1, reviews: 1 },
   });
+  assert.equal(hasStructuralWaitDiagnostic(), false, "Conversion must retire the invalid wait");
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "maintained", "maintained")?.result, { value: 23 });
   assert.equal(store.readTask("maintained")?.status.observedAttemptId, maintained.attemptId);
   assert.equal(store.isCancelled("maintained"), false);
@@ -298,6 +304,7 @@ try {
       humanClosurePreserved: true,
       retiredSupervisor: true,
       structuralWaitReviewed: true,
+      structuralWaitDiagnosed: true,
       structuralBacklogOrdered: true,
       humanInputIncluded: true,
       structuralClaimBatchSizes: [review.events.length, remaining.events.length],

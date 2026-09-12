@@ -108,7 +108,7 @@ export type TaskReconcileResult = {
       result?: Record<string, unknown>;
       actions?: TaskAction[];
       conditions?: Condition[];
-      /** New child App requests; code retains unchanged waits. */
+      /** Typed App inputs whose answers are needed; code retains unchanged waits. */
       dependencies?: TaskAppDependency[];
     }
   | {

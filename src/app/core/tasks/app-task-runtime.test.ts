@@ -2465,7 +2465,7 @@ describe("canonical App task runtime", () => {
     expect(emitted).toHaveLength(emittedBeforeReuse);
   });
 
-  it("turns a typed child App dependency into deterministic input and an exact completion Condition", () => {
+  it("turns a typed App dependency into deterministic input and an exact completion Condition", () => {
     const f = fixture();
     const bus = eventBus();
     const emitted: Array<Record<string, unknown>> = [];

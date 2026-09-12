@@ -1516,7 +1516,6 @@ export type AppTaskChildContext = {
         | "ready"
         | "dependency-blocked"
         | "condition-blocked"
-        | "child-blocked"
         | "capacity-blocked"
         | "paused"
         | "not-applicable";
@@ -1566,7 +1565,6 @@ export type AppTaskSnapshotContext = {
       | "ready"
       | "dependency-blocked"
       | "condition-blocked"
-      | "child-blocked"
       | "capacity-blocked"
       | "paused"
       | "not-applicable";
