@@ -1,6 +1,6 @@
 # Return problems to the caller
 
-**Status:** Proposal refined through three isolated mechanics trials; not a deployed contract.
+**Status:** Isolated mechanics and bounded live-agent adoption tested; not a deployed contract.
 **Baseline:** Host `8026aff97585edd7f728fa4ce360fdde71bc740a` (PR #164).
 
 ## The idea
@@ -194,7 +194,9 @@ the complete Host gate. Model-backed adoption and deployment remain separate.
 ## Experiment record
 
 Local branch: `poc/caller-feedback-wait-20260912`, based on the revision above.
-Candidate commit: `0882cad717b3e2ff162a0133e9ea8bba7f53e606` (local, not pushed).
+Initial Task-to-Task candidate: `0882cad717b3e2ff162a0133e9ea8bba7f53e606`.
+Conversation/live-trial extension: `9584ea5965c992c53e6ef6987467f28d267a0657`.
+Both are local commits, not pushed.
 The portable experiment extends `src/app/core/tasks/app-task-runtime.test.ts`
 under `caller feedback PoC`, reusing its real runtime/SQLite fixtures. Run it in
 that checkout with:
@@ -257,22 +259,20 @@ retains revisions, scenarios, failed trial findings, counts and limitations.
 
 ### What is not proved or implemented
 
-- Scripted executors make all judgments. No live model, actual provider failure,
-  process-kill recovery, installed App, console or Telegram was exercised.
-- Automatic controllers are disabled for deterministic dispatch. Tests invoke the
+- The six original Task-to-Task scenarios use scripted judgments. Their automatic
+  controllers are disabled for deterministic dispatch. Tests invoke the
   actual runtime, recovery and Condition tracker; they do not prove timer latency,
   worker-process transport or scheduling fairness under load.
-- Typed caller feedback is the tested return path. Topic-linked Conversation
-  discovery still selects accepted `converged`/`stopped` results and has **not**
-  been extended for waiting reports or runtime-error reports. This is a concrete
-  integration gap, not just an unrun UI test.
+- The follow-through trial below exercises managed models and Conversation reply
+  storage, not an installed May App, console/Telegram delivery, actual provider
+  outage or process-kill recovery. Its source and repair event are synthetic.
 - The prototype allows explicit new reports on `waiting`, not on later `stopped`
   outcomes. It is not a general-purpose progress/reporting API.
 - Reporting a thrown exception is proved; arbitrary process death, admission
   failure, verification rejection and unavailable workflow paths need their own
   contract checks before claiming all failure boundaries.
-- Managed-agent protocol text and canonical Task docs are not yet aligned with
-  the candidate. Schema availability alone does not prove natural agent adoption.
+- Compact managed-agent guidance now describes the candidate. Canonical Task docs
+  still need the baseline corrections noted above before production promotion.
 - A report points to full attempt/workflow evidence; the runtime-failure summary
   is truncated to 1,024 characters. Safe presentation and evidence access still
   need review across the actual caller and human boundaries.
@@ -285,8 +285,118 @@ separation and explicit agent choice. The first-only rule is too restrictive for
 the demonstrated failure-to-actionable-wait sequence; revision-based delivery
 is a small justified addition, not an escalation framework.
 
-Next align the Conversation consumer and compact agent guidance, then run one
-bounded model-backed trial where the agent discovers a prerequisite problem,
-reports it, waits, and uses ordinary caller feedback to finish the same assignment.
-Keep the mechanics checks; do not claim that a scripted successful answer proves
-the agent understood the user's goal. Promotion is a separate reviewed change.
+The Conversation return path and compact agent guidance are now included in the
+isolated candidate. Keep these small additions and the focused contract checks;
+do not introduce a separate escalation service. Promotion remains a reviewed
+change, including canonical design alignment and remaining boundary checks.
+
+### Conversation follow-through
+
+The first extension found two outdated filters: Conversation discovery selected
+only converged/stopped results, and the runtime adapter rejected waiting and
+execution-error reports before admission. Both now use saved report selection.
+Task callers and Conversation reuse one factual-failure projection; an error
+never becomes an accepted agent result merely to make delivery work.
+
+Recovery selects the latest report still relevant to an unanswered, open input.
+An answer or owner closure prevents newly admitting an obsolete report. Existing
+Conversation inputs remain history, including a report already admitted before
+an answer; no extra queue or delivery lifecycle is introduced.
+
+Seventy focused checks pass across Conversation state/runtime and agent protocol.
+They include report/wait → reply asking for help → runtime/storage reopen → exact
+repair fact → answer from the same Task → explicit fulfillment of the original
+Request. Repeated execution failures produce one report, not a new answer or
+repeated human-facing work. A state test also loses intermediate reports and
+rejects older notifications after a newer selection, answer or closure.
+
+The first full regression run exposed an old expectation that six failed
+executions must remain invisible to Conversation. That test now checks one
+factual report from the first failure, no accepted answer, unchanged Request
+ownership, and the existing atomic reply/Request-closure behavior. This is an
+intentional contract update, not an unrelated flaky-test workaround.
+
+### Bounded live adoption
+
+The existing managed-Conversation harness now has a `caller-feedback` mode.
+It uses the normal controller, managed worker, finish schema, durable input,
+Conversation result storage and temporary file-backed SQLite. The human asks
+for the measurement App; models choose the handoff details, waiting report,
+explanation, continuation and Request fulfillment. No fixture supplies the
+agent's `report: true` result or final answer.
+
+The first live trial passed but exposed an unnecessary fixture capability:
+the older recovery harness offered a value-recording tool, which the worker
+used although this assignment only needed a read. The refined trial removes
+that tool and unrelated recording guidance. Keep the fixture as narrow as the
+question; do not add a Host-wide tool restriction from this observation.
+
+The read-only development trial returned a denied-access report, asked the human
+for help, retained the original Request and worker through reopen, then returned
+the measured `0.92` against minimum `0.90` after repair. It made one denied read
+and one successful read, with no writes. The model correctly explained the
+`0.02` passing margin. Four Conversation attempts and two worker attempts used
+eight model-stream starts and about 50.3 seconds. This demonstrates adoption in
+this fixture, not a general cost or reliability estimate.
+
+The first lower-value transfer trial correctly returned `0.78`, below the
+`0.90` minimum by `0.12`, and preserved the original work. Its automated gate
+passed, but manual review found an incorrect help judgment: May said the human
+need not act and sent the worker to repair access. The fixture had called the
+measurement App the source owner without distinguishing who could change
+permissions. It took three worker attempts and two denied reads. Do not count
+that run as successful human-help behavior.
+
+The revised source observation states the missing domain fact explicitly:
+only the human requester can restore permissions; the App only reads. This is
+fixture/domain knowledge, not a new Host classifier or mandatory human routing.
+The next trial exposed an invalid agent-authored Condition owner. The actual
+error report reached May, which asked the same worker to correct it; the worker
+then reported the human permission blocker. The harness incorrectly inspected
+the earlier error reply before the matching waiting report had settled and
+exited nonzero. It now waits for that exact attempt's Conversation input. Keep
+both the invalid result and failed trial in the evidence, not just the retry.
+
+This reveals a small existing usability gap: the finish schema describes
+Condition `owner` as a nonempty string, while result normalization requires
+`human` or `kind:identity`. Aligning that field's schema/guidance is a separate
+candidate improvement; do not turn one format error into another escalation
+lifecycle. The current PoC deliberately preserves validation and error feedback.
+
+With the exact-report gate and clarified source facts, both final trials passed
+using unchanged prompts/code; only the measured value changed:
+
+| Trial | Human help and final answer, manually reviewed | Worker / Conversation attempts | Model-stream starts | Time |
+| --- | --- | --- | --- | --- |
+| Development, `0.92` | Correctly asks requester to restore access; reports `0.02` above `0.90` | 3 / 5 | 11 | 63.5 s |
+| Transfer, `0.78` | Correctly asks requester to restore access; reports `0.12` below `0.90` | 3 / 5 | 11 | 64.7 s |
+
+Both naturally encountered the invalid Condition owner, recovered through factual
+feedback, then returned a newer actionable waiting report and the original
+answer. Each made two denied reads and one successful read, with no writes.
+The comparison Request was fulfilled in both: a below-minimum sample is an
+unfavorable measurement, not failure to perform the requested comparison.
+The complete portable suite passed **2,877 tests**, with **three installation-only
+skips and zero failures** (143.22 seconds). Final type, boundary and lint checks,
+the live harness's standalone type check, and canonical design checks passed.
+The last harness-only refinements were verified by the two live trials; they
+did not change the product code exercised by the full suite.
+
+Repair supplies both ordinary human input and the source's exact access-restored
+fact. The human message alone is not claimed to satisfy a Condition. Successful
+measurement fulfills the human Request; the worker Task stays open and its exact
+accepted answer survives another runtime/database reopen. No cancellation is
+used to fake successful completion.
+
+Run with explicit model authority and configured endpoint:
+
+```sh
+bun scripts/poc/controller-judgment/managed-conversation.ts --live --model MODEL --out /tmp/caller-feedback-development --fault caller-feedback
+bun scripts/poc/controller-judgment/managed-conversation.ts --live --model MODEL --out /tmp/caller-feedback-transfer --fault caller-feedback --value 0.78
+```
+
+The limits are 180 seconds, eight Conversation calls and 24 model-stream starts.
+They bound this experiment, not Task lifetime. Conversation calls exclude worker
+attempts; dispatch profiles can also include no-op checks and must not be counted
+as attempts. Raw transcripts, configuration and temporary state remain private;
+the evidence summary keeps only portable findings and counts.

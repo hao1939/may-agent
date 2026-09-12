@@ -6,6 +6,7 @@
   "branch": "poc/caller-feedback-wait-20260912",
   "status": "isolated mechanics proof; not production ready",
   "environment": {
+    "scope": "original deterministic Task-to-Task trials; see followThrough for the later Conversation and live trials",
     "bun": "1.3.14",
     "node": "v24.20.0",
     "executors": "scripted",
@@ -113,6 +114,193 @@
       ]
     }
   ],
+  "followThrough": {
+    "candidate": "9584ea5965c992c53e6ef6987467f28d267a0657",
+    "scope": "Conversation return path and managed-agent adoption in temporary Apps; no deployment",
+    "scripted": {
+      "conversationChecks": 70,
+      "requestRegressionChecks": 12,
+      "originalTaskToTaskChecks": 6
+    },
+    "validation": {
+      "ci": {
+        "passed": 2877,
+        "skipped": 3,
+        "failed": 0,
+        "files": 291,
+        "testDurationSeconds": 143.22
+      },
+      "finalTypeBoundaryLintCheck": true,
+      "liveHarnessStandaloneTypeCheck": true,
+      "canonicalDesign": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    "model": "gpt-5.6-sol",
+    "provider": "authorized local LiteLLM",
+    "liveTrials": [
+      {
+        "variant": "initial-recording-capability",
+        "value": 0.92,
+        "mechanicsPassed": true,
+        "durationMs": 50370,
+        "modelStreamStarts": 9,
+        "attemptsByApp": [
+          {
+            "app_id": "chat",
+            "count": 4
+          },
+          {
+            "app_id": "measurement",
+            "count": 2
+          }
+        ],
+        "sourceRevision": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+        "sourcePatchHash": "d6173206348350687b35bb52618d9c510bc741a163b4d5ae1fa27b0d5a47d24f",
+        "deniedReads": 1,
+        "originalAnswerRetained": true,
+        "requestFulfilled": true,
+        "review": "Mechanics pass; an irrelevant recording tool was used, so the later fixture removes it."
+      },
+      {
+        "variant": "read-only-development",
+        "value": 0.92,
+        "mechanicsPassed": true,
+        "durationMs": 50345,
+        "modelStreamStarts": 8,
+        "attemptsByApp": [
+          {
+            "app_id": "chat",
+            "count": 4
+          },
+          {
+            "app_id": "measurement",
+            "count": 2
+          }
+        ],
+        "sourceRevision": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+        "sourcePatchHash": "1f705534b7317bc00edd62032d18eaf2ff809d8aa15b482fa398a00d6734ab47",
+        "deniedReads": 1,
+        "successfulReads": 1,
+        "originalAnswerRetained": true,
+        "requestFulfilled": true,
+        "review": "Help and passing comparison manually reviewed as correct. Original taskAttempts field counted dispatch profiles; the authoritative SQLite attempt counts here correct it."
+      },
+      {
+        "variant": "ambiguous-repair-owner-transfer",
+        "value": 0.78,
+        "mechanicsPassed": true,
+        "durationMs": 48574,
+        "modelStreamStarts": 10,
+        "attemptsByApp": [
+          {
+            "app_id": "chat",
+            "count": 4
+          },
+          {
+            "app_id": "measurement",
+            "count": 3
+          }
+        ],
+        "sourceRevision": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+        "sourcePatchHash": "7e01f09dd4b0ffea6c38086b3fa5d5a69cd4c771e7681d0537b1c524a03094b6",
+        "deniedReads": 2,
+        "successfulReads": 1,
+        "originalAnswerRetained": true,
+        "requestFulfilled": true,
+        "review": "Mechanics pass; human-help judgment failed manual review. The fixture did not distinguish reporting ownership from permission-repair authority."
+      },
+      {
+        "variant": "explicit-repair-owner-premature-harness-gate",
+        "value": 0.92,
+        "mechanicsPassed": false,
+        "durationMs": 39937,
+        "modelStreamStarts": 7,
+        "attemptsByApp": [
+          {
+            "app_id": "chat",
+            "count": 3
+          },
+          {
+            "app_id": "measurement",
+            "count": 2
+          }
+        ],
+        "sourceRevision": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+        "sourcePatchHash": "cec2f6d01ffd7dbe9bfd6a53af874b058ae5d08c81848a6c28eccbb67013158d",
+        "failure": "Conversation did not communicate the access problem while retaining the original request",
+        "originalAnswerRetained": false,
+        "review": "Trial failed before repair. The model's invalid Condition owner was reported and corrected. The harness evaluated the earlier error reply instead of awaiting the exact waiting report."
+      },
+      {
+        "variant": "exact-report-development",
+        "value": 0.92,
+        "mechanicsPassed": true,
+        "durationMs": 63516,
+        "modelStreamStarts": 11,
+        "attemptsByApp": [
+          {
+            "app_id": "chat",
+            "count": 5
+          },
+          {
+            "app_id": "measurement",
+            "count": 3
+          }
+        ],
+        "sourceRevision": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+        "sourcePatchHash": "08be4d461f3c216d05845120c1338d015ac4f13df4cd96f6b00701a3fb547258",
+        "deniedReads": 2,
+        "successfulReads": 1,
+        "originalAnswerRetained": true,
+        "requestFulfilled": true,
+        "review": "Help and passing comparison manually reviewed as correct; same Task recovered from invalid Condition owner, reported the blocker and answered after repair."
+      },
+      {
+        "variant": "exact-report-transfer",
+        "value": 0.78,
+        "mechanicsPassed": true,
+        "durationMs": 64720,
+        "modelStreamStarts": 11,
+        "attemptsByApp": [
+          {
+            "app_id": "chat",
+            "count": 5
+          },
+          {
+            "app_id": "measurement",
+            "count": 3
+          }
+        ],
+        "sourceRevision": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+        "sourcePatchHash": "08be4d461f3c216d05845120c1338d015ac4f13df4cd96f6b00701a3fb547258",
+        "deniedReads": 2,
+        "successfulReads": 1,
+        "originalAnswerRetained": true,
+        "requestFulfilled": true,
+        "failures": [
+          "Handler result was rejected: conditions[0].owner must be a canonical kind:identity"
+        ],
+        "review": "Help and below-minimum comparison manually reviewed as correct; same Task recovered from invalid Condition owner, reported the blocker and answered after repair."
+      }
+    ],
+    "limits": {
+      "elapsedSecondsPerTrial": 180,
+      "conversationCallsPerTrial": 8,
+      "modelStreamStartsPerTrial": 24
+    },
+    "limitations": [
+      "Only synthetic Apps, source facts, tools and human input; no installed May role/catalog, console or Telegram transport.",
+      "Human explicitly requested the measurement App; natural selection of delegation is not scored.",
+      "Repair supplied human input and the exact source event; human text alone is not claimed to satisfy the wait.",
+      "Full CI covered final product code/tests; later opt-in harness refinements also passed type/lint checks and paired live trials.",
+      "Model cost, timer latency under load, arbitrary process death and all failure boundaries are not proved.",
+      "Canonical Task docs and Condition owner schema need alignment before promotion.",
+      "Automated passage does not replace manual review of who must act or the comparison.",
+      "No push, PR or deployment."
+    ]
+  },
   "comparison": {
     "existingStopThenWaitWorkerAttempts": 3,
     "combinedReportWaitWorkerAttempts": 2,
@@ -150,10 +338,10 @@
     }
   },
   "limitations": [
-    "No model or human-interface adoption proof.",
+    "No installed May App or human-interface transport adoption proof; bounded managed-model trials are recorded under followThrough.",
     "No arbitrary process-death, timer-latency or load test.",
     "Condition ingress and dispatch are explicitly driven through production primitives.",
-    "Topic-linked Conversation discovery and managed-agent protocol are not aligned yet.",
+    "Conversation discovery and managed-agent protocol are aligned in the follow-through candidate; canonical Task docs still need alignment before promotion.",
     "Explicit updated reports are limited to waiting results.",
     "Latest selected feedback can supersede undelivered earlier reports; history preserves attempts.",
     "All failure boundaries and concurrent publication/closure still need review.",
