@@ -192,13 +192,12 @@ function renderEvalExtra(row) {
   return parts.length ? `<div class="eval-extra">${parts.join('')}</div>` : '';
 }
 
-function renderEvalRows(rows, sessionId, idPrefix = 'eval-feedback') {
+function renderEvalRows(rows, sessionId) {
   let html = '';
-  rows.forEach((row, idx) => {
+  rows.forEach((row) => {
     const line = Number(row.line || 0);
     const source = row.source || row.author || 'eval';
     const scoreClass = row.score === 'issue' ? 'error' : row.score === 'ok' ? 'good' : '';
-    const feedbackId = `${idPrefix}-${line}-${idx}`;
     html += `<div class="eval-row" id="eval-line-${esc(line)}">
       <div class="eval-row-head">
         ${sourceLineChip(sessionId, line, row.rawSource || row.rawContext?.source)}
@@ -208,10 +207,6 @@ function renderEvalRows(rows, sessionId, idPrefix = 'eval-feedback') {
       </div>
       <div class="eval-comment">${esc(row.comment || row.judgment || row.raw || '')}</div>
       ${renderEvalExtra(row)}
-      <div class="eval-feedback">
-        <textarea id="${attrEsc(feedbackId)}" placeholder="Add human feedback for session.jsonl:${esc(line)}"></textarea>
-        <button class="ask-btn" onclick="submitEvalFeedback(${jsStringAttr(sessionId)}, ${line}, ${jsStringAttr(feedbackId)})">Save feedback</button>
-      </div>
     </div>`;
   });
   return html;
@@ -220,7 +215,7 @@ function renderEvalRows(rows, sessionId, idPrefix = 'eval-feedback') {
 function renderTurnEval(rows, sessionId, turnIndex) {
   return `<aside class="turn-eval-cell">
     <div class="turn-eval-head"><b>Eval</b>${flowChip('turn ' + turnIndex)}${flowChip(`${rows.length} note${rows.length === 1 ? '' : 's'}`)}</div>
-    ${rows.length ? renderEvalRows(rows, sessionId, `eval-feedback-turn-${turnIndex}`) : '<div class="turn-eval-empty">No eval trail yet for this turn.</div>'}
+    ${rows.length ? renderEvalRows(rows, sessionId) : '<div class="turn-eval-empty">No saved review notes for this turn.</div>'}
   </aside>`;
 }
 
@@ -323,39 +318,19 @@ function renderSessionConversation(transData, opts = {}) {
 
 async function openSessionEval(sessionId) {
   const btn = document.getElementById('session-eval-btn');
-  if (btn) { btn.textContent = 'Evaluating...'; btn.disabled = true; }
+  if (btn) { btn.textContent = 'Loading notes...'; btn.disabled = true; }
   try {
-    let r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval`);
-    let data = await r.json();
+    const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval`);
+    const data = await r.json();
     if (!r.ok) throw new Error(data.error || r.statusText);
-    if (!data.exists) {
-      r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval`, { method: 'POST' });
-      data = await r.json();
-      if (!r.ok) throw new Error(data.error || r.statusText);
-    }
     currentSessionEval = data;
     await loadSessionDetail(sessionId, { evalData: data, preserveScroll: true });
   } catch (e) {
-    alert('Evaluation failed: ' + (e.message || String(e)));
+    alert('Could not load review notes: ' + (e.message || String(e)));
   } finally {
     const nextBtn = document.getElementById('session-eval-btn');
-    if (nextBtn) { nextBtn.textContent = 'Evaluate'; nextBtn.disabled = false; }
+    if (nextBtn) { nextBtn.textContent = 'Review notes'; nextBtn.disabled = false; }
   }
-}
-
-async function submitEvalFeedback(sessionId, line, textareaId) {
-  const el = document.getElementById(textareaId);
-  const comment = (el?.value || '').trim();
-  if (!comment) return;
-  const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval/comment`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ line, comment, author: 'human' })
-  });
-  const data = await r.json();
-  if (!r.ok) { alert(data.error || r.statusText); return; }
-  currentSessionEval = { sessionId, exists: true, rows: data.rows };
-  await loadSessionDetail(sessionId, { evalData: currentSessionEval, preserveScroll: true });
 }
 
 async function showRawLog(sessionId, line, label, sourceEl) {
@@ -465,7 +440,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
         <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
-        <button class="ask-btn" id="session-eval-btn" onclick="openSessionEval('${esc(s.sessionId)}')">Evaluate</button>
+        <button class="ask-btn" id="session-eval-btn" onclick="openSessionEval('${esc(s.sessionId)}')">Review notes</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -497,6 +472,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
     // C. Unified enriched session chat surface; evaluation/review and live mode reuse it.
     const evalData = opts.evalData || currentSessionEval;
     if (evalData) {
+      if (!evalData.rows?.length) html += '<div class="section">No saved review notes for this session.</div>';
       html += `</div>${renderSessionConversation(transData, { evalData })}<div class="panel session-inspector session-inspector-secondary">`;
     } else {
       html += renderSessionConversation(transData);

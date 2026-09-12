@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
@@ -66,6 +66,30 @@ describe("HTTP event reads", () => {
     expect(response.status).toBe(200);
     return response.json();
   }
+
+  it("reads saved session notes without Evaluation and rejects retired writes", async () => {
+    const dir = join(root, "sessions", "s_notes");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "session.jsonl"), '{"role":"user","content":"Review the result"}\n');
+    const path = join(dir, "session.eval.jsonl");
+    const endpoint = "/api/sessions/s_notes/eval";
+    expect(await read(endpoint)).toMatchObject({ exists: false, rows: [] });
+    for (const suffix of ["", "/comment"]) {
+      const response = await fetch(`${baseUrl}${endpoint}${suffix}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ line: 1, comment: "Must not be saved by HTTP" }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      expect(response.status).toBe(404);
+    }
+    expect(existsSync(path)).toBe(false);
+    const note = { type: "line", line: 1, source: "human-feedback", comment: "Retained review" };
+    const saved = JSON.stringify(note) + "\n";
+    writeFileSync(path, saved);
+    expect(await read(endpoint)).toMatchObject({ exists: true, rows: [note] });
+    expect(readFileSync(path, "utf8")).toBe(saved);
+    expect(await read("/api/events?type=evaluation.session.requested")).toEqual([]);
+  });
 
   it("opens failed workflow facts through HTTP without a daemon or metric collector", async () => {
     const workflows = join(root, "workflows");
