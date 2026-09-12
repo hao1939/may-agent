@@ -434,7 +434,12 @@ Shared execution is not the end of simplification. The
 [direct admission cleanup](controller-poc-deeper-review.md#direct-admission-cleanup)
 removes ordinary inbox claims, pump, capacity and remapping from the candidate.
 It retains input receipts, an exact result projection and bounded recovery of
-failed admissions or missed result notifications. Delegation still has several
+failed admissions or missed result notifications. The
+[saved-answer check](controller-poc-deeper-review.md#saved-answers-and-remaining-scaffolding)
+also repairs the gap after a receipt commits but before its completion Event is
+published: recovery returns the exact stored answer through the existing
+Condition transition. Checkpoint reviews have no count-based final-review label;
+closure remains the assigning owner's decision. Delegation still has several
 return protocols; the [next deletion sequence](controller-poc-deeper-review.md#next-deletion-in-order)
 targets one saved caller link before unifying those routes.
 

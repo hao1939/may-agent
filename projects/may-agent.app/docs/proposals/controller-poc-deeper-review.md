@@ -117,8 +117,8 @@ matrices are retired; normal settlement keeps the outcome/action checks.
 The focused recovery/failure-report run passes 25 cases. Full `bun run ci` at
 `2d837d20` passes: **2,883 passed, 3 installation-dependent skips, 0 failures**;
 2,886 tests across 291 files in 152 seconds. Types, architecture and lint pass.
-Design checks and 66 changed-document links pass. Hosted checks on the pushed
-revision are pending. The earlier live trials retain their original revisions;
+Design checks and 66 changed-document links pass. Later candidate verification
+is recorded below. The earlier live trials retain their original revisions;
 this source experiment makes no new model-cost or deployment claim.
 
 ## Direct admission cleanup
@@ -183,9 +183,60 @@ tests). A 254-line test-only helper retains historical row construction for
 upgrade/read coverage; it is not another runtime. Full `bun run ci` at
 **`84cb6364`** passes: **2,852 passed, 3 installation-dependent skips, 0 failures**
 (2,855 tests across 290 files, 133 seconds). Types, architecture and lint pass.
-Design checks and 51 changed-document links pass. Hosted checks on the pushed
-revision are pending.
+Design checks and 51 changed-document links pass. Hosted Quality and Container
+also passed on that exact revision (run `34677906080`).
 This is a mechanical source experiment; it adds no live model or deployment claim.
+
+## Saved answers and remaining scaffolding
+
+The next source check found a real gap between result projection and return.
+If an input's accepted answer was saved but its completion notification failed
+before Event publication, the caller's Condition stayed open. Journal replay
+had nothing to deliver. A periodic review could see the receipt's `done` status,
+but its prompt did not carry the answer. The caller should not have to discover
+that result through its own polling.
+
+`recoverTaskConditions()` now reads the exact completed input receipt for each
+retained App dependency and applies it through the existing Condition transition.
+`core/inbox/input-result.ts` constructs the same answer for live notification and
+recovery. No new queue, delivery flag or retry worker is added. Saved input identity
+selects the result; the destination Task's latest outcome cannot replace it.
+The cost is an exact receipt lookup for each open App-dependency route during
+existing recovery, and recovery-interval latency when the notification is lost.
+
+The regression first failed against `84cb6364`, both with and without restart:
+recovery did not wake the caller. The revised test saves the first answer,
+fails its publication, lets the worker produce a different answer, then recovers
+the caller. It receives the first answer once, including its structured result
+and evidence. Repeated recovery does not rerun either Task. A saved result for
+an unrelated system input cannot satisfy an App return link.
+
+This follow-up also removes three remnants of the earlier model:
+
+- The controller no longer counts wait reviews or labels the third one `final`.
+  Checkpoint timing remains; the assigning owner decides whether to continue.
+- Input context preparation no longer follows historical inbox waits. Human
+  origin uses one shared read, while results arrive as Task input. The old
+  Conversation execution cutover requirement still applies.
+- Fixtures no longer pass removed inbox capacity/frontend-selection options.
+  Admission checks assert synchronous exact attachment; real Task-capacity tests
+  retain their coverage.
+
+The execution and admission model is now clearer, but the system is not yet
+uniform at every boundary. Child transitions, App input receipts and Topic-linked
+follow-up still express result return differently. Keep the next change focused
+on that contract; simply moving these functions or adding a universal event
+adapter would preserve their maintenance cost. The saved-answer regression is a
+prerequisite for that change, not proof that the return protocols are unified.
+
+Host commits `3203fedd` (saved-answer recovery) and `6319aa55` (scaffolding
+cleanup) remove **61 net production TypeScript lines** against `84cb6364`
+(62 added, 123 removed under `src/` and `packages/`, excluding tests).
+Full `bun run ci` at **`6319aa55`** passes: **2,852 passed, 3 installation-dependent
+skips, 0 failures** (2,855 tests across 290 files, 137 seconds). Types,
+architecture and lint pass. Canonical design checks and 43 changed-document
+links pass. Hosted checks on this revision are pending. Earlier live trials keep
+their actual revisions; this check adds no live-model or deployment claim.
 
 ## Next deletion, in order
 
@@ -194,8 +245,8 @@ the source candidate. The exact input-result projection remains a separate saved
 view, and delegation still has several result-return protocols.
 
 Then make human follow-up and nested delegation use that same saved return link.
-Prove **A → B → C → B → A**, concurrent human input, owner withdrawal and a result
-committed before notification is lost. Convert or drain retained links during
+Prove **A → B → C → B → A**, concurrent human input and owner withdrawal through
+that common link. Retain the saved-answer/lost-notification regression above. Convert or drain retained links during
 the already planned offline cutover. Do not keep another runtime switch or ask
 the agent to reproduce old request identifiers on every attempt.
 
