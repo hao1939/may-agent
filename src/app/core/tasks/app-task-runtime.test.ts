@@ -4631,66 +4631,124 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.readTask("wait-context")?.status.conditionIds).toEqual(["source"]);
   });
 
-  it("reads full published facts through the installed Task workflow capability", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    const base = options(f, bus);
-    const writer = new DbWriter(base.persistDir);
-    bus.setPersistenceSubscriber(writer.handler);
-    bus.setDeliveryRecorder(writer.recordDelivery);
-    const agentsRoot = join(f.root, "agents");
-    const dir = join(agentsRoot, "sample-owner", "workflows");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      join(dir, "read-fact.ts"),
-      `
+  it.each(["result rejection", "execution failure"])(
+    "replays full published facts through the installed workflow after %s and reopen",
+    async (failure) => {
+      setSystemTime(Date.now());
+      const f = fixture();
+      let bus = eventBus();
+      const persistDir = join(f.root, "state");
+      const agentsRoot = join(f.root, "agents");
+      const dir = join(agentsRoot, "sample-owner", "workflows");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "read-fact.ts"),
+        `
       export const name = "read-fact";
-      export const description = "Read complete publication evidence";
+      export const description = "Reuse complete publication evidence after failed acceptance";
       export async function execute(ctx) {
         const text = "evidence ".repeat(1000);
-        await ctx.events.emit({ type: "sample.observed", localKey: "large", data: { text } });
         const fact = await ctx.events.read("sample.observed", "large");
-        if (fact?.data.text !== text) throw new Error("Published body was not read in full");
+        if (!fact) {
+          await ctx.events.emit({ type: "sample.observed", localKey: "large", data: { text } });
+          if (${JSON.stringify(failure)} === "execution failure") throw new Error("Lost result after publication");
+          return { state: "invalid", summary: "Reject this result after publication", evidence: [] };
+        }
+        if (fact.data.text !== text) throw new Error("Published body was not read in full");
         return { state: "converged", summary: "Verified original fact", evidence: ["event:" + fact.eventId],
           result: { length: fact.data.text.length } };
       }
     `,
-    );
-    await installAppTaskRuntimes({
-      ...base,
-      agentsRoot,
-      sharedRoot: join(f.root, "shared"),
-      installControllers: false,
-      appRegistrySnapshot: {
-        id: "full-event-read",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    });
-    const config = loadedTaskConfig(f);
-    observeAppTaskIntent(config, {
-      appAgent: "sample-owner",
-      intent: {
-        id: "read-fact",
-        parentId: "operations",
-        mode: "achieve",
-        outcome: "Read publication",
-        acceptance: ["Full evidence"],
-        workflow: "read-fact",
-      },
-    });
-    await reconcileLoadedAppTaskOnce({
-      bus,
-      appId: "sample",
-      taskId: "read-fact",
-      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
-    });
-    expect(acceptedTaskAttempt(config, "read-fact")?.acceptedResult).toMatchObject({
-      state: "converged",
-      result: { length: 9000 },
-      evidence: [expect.stringMatching(/^event:\d+$/)],
-    });
-  });
+      );
+      const install = async () => {
+        const writer = new DbWriter(persistDir);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        await installAppTaskRuntimes({
+          ...options(f, bus),
+          agentsRoot,
+          sharedRoot: join(f.root, "shared"),
+          installControllers: false,
+          appRegistrySnapshot: {
+            id: "full-event-read",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: definition() }],
+          },
+        });
+      };
+      await install();
+      let config = loadedTaskConfig(f);
+      const taskId = "read-fact";
+      const admissionKey = "ask:read-fact";
+      admitTaskRequest(config, {
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            mode: "achieve",
+            outcome: "Read publication",
+            acceptance: ["Full evidence"],
+            workflow: "read-fact",
+          },
+        },
+        idempotencyKey: admissionKey,
+        request: { id: "read-fact", source: { kind: "app", id: "caller" }, input: { kind: "read" } },
+      });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      const answer = () => readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey });
+      await run();
+      const published = getDb(persistDir)
+        .prepare("SELECT id, body_ref, body_sha256 FROM events WHERE event_type = 'sample.observed'")
+        .get()!;
+      expect(published.body_ref).toBeString();
+      expect(answer()).toBeNull();
+      const task = config.resourceStore.readTask(taskId)!;
+      expect(task.status).toMatchObject({ phase: "pending", executionFailures: 1 });
+      const attempts = Object.values(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {});
+      expect(attempts).toHaveLength(1);
+      const first = attempts[0]!;
+      expect(first).toMatchObject({
+        state: "failed",
+        failureReason: failure === "result rejection" ? "HandlerResultInvalid" : "HandlerExecutionFailed",
+      });
+      expect(first.acceptedResult).toBeUndefined();
+
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      config = loadedTaskConfig(f);
+      await run();
+      expect(Object.keys(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {})).toHaveLength(1);
+      expect(answer()).toBeNull();
+      setSystemTime(task.status.executionRetryAt!);
+      await run();
+      const accepted = acceptedTaskAttempt(config, taskId)!;
+      expect(accepted.metadata.id).not.toBe(first.metadata.id);
+      expect(accepted.taskGeneration).toBe(first.taskGeneration);
+      expect(accepted.acceptedResult).toMatchObject({
+        state: "converged",
+        result: { length: 9000 },
+        evidence: ["event:" + published.id],
+      });
+      expect(answer()).toMatchObject({ attemptId: accepted.metadata.id, result: { length: 9000 } });
+      expect(config.resourceStore.readAttempt(first.metadata.id)).toEqual(first);
+      expect(
+        getDb(persistDir)
+          .prepare("SELECT id, body_ref, body_sha256 FROM events WHERE event_type = 'sample.observed'")
+          .all(),
+      ).toEqual([published]);
+      expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+    },
+  );
 
   it("admits a direct workflow failure report, retries, and rejects an invalid direct result", async () => {
     const f = fixture();

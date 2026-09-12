@@ -3737,7 +3737,7 @@ export function markAppTaskAttention(
     evidence?: string[];
   },
 ): { status: "applied" | "stale"; summary: string; retryAt?: number | null } {
-  const failure = failAppTaskAttempt(config, claim, input.summary, input);
+  const failure = failAppTaskAttempt(config, claim, input.summary, { ...input, evidence: input.evidence ?? [] });
   return {
     status: failure.status === "superseded" ? "stale" : "applied",
     summary: failure.summary,

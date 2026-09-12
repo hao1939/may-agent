@@ -141,3 +141,7 @@ The fact's stored emission scope is verified before data crosses the capability.
 Failure notifications use `retrying` for retained work. `retryAt` is the stored
 backoff deadline, or `null` when fresh human input permits an immediate attempt.
 Agent handoff remains distinct; no new retry state or scheduling policy is added.
+
+A new rejection or handoff diagnostic replaces the current evidence links;
+omitting them clears that list. An execution failure alone retains prior links.
+Neither transition changes the evidence in historical accepted attempts.
