@@ -14,7 +14,6 @@ import {
   appTaskContext,
   claimObservedAppTask,
   completeAppTask,
-  deferAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
   stopAppTask,
@@ -201,7 +200,7 @@ for (const scenario of scenarios) {
       });
       const hostAdmission =
         hostContract && run.status === "done"
-          ? admitTaskReconcileResult(run.structuredResult, { allowNeedsAgent: false, defaultParentId: "owner" })
+          ? admitTaskReconcileResult(run.structuredResult, { allowNeedsAgent: false })
           : undefined;
       const hostResult = hostAdmission?.ok ? hostAdmission.result : undefined;
       const valid =
@@ -243,28 +242,9 @@ for (const scenario of scenarios) {
             evidence: evidenceReferences,
           },
         );
-      } else if (decision.decision === "delegate" && decision.work) {
-        settlement = deferAppTask(context(), claim, {
-          disposition: "waiting",
-          summary: decision.reason,
-          result: decision,
-          evidence: evidenceReferences,
-          actions: [
-            {
-              kind: "create-task",
-              id: "follow-up",
-              parentId: "owner",
-              mode: "maintain",
-              outcome: decision.work.outcome,
-              acceptance: decision.work.acceptance,
-              outputs: [],
-              priority: "P2",
-            },
-          ],
-        });
       }
-      // Ask/wait judgments are recorded for inspection only in this harness.
-      // Never fake their future interface and wait transitions.
+      // Delegate/ask/wait judgments are recorded for inspection only here.
+      // The common-loop harness exercises typed delegation through real App admission.
       const attemptedTools = run.messages.flatMap((message) =>
         message.role === "assistant"
           ? message.content.flatMap((part) => (part.type === "toolCall" ? [part.name] : []))
@@ -276,9 +256,7 @@ for (const scenario of scenarios) {
         ? acceptedState === "converged"
         : decision?.decision === "give-up"
           ? acceptedState === "stopped"
-          : decision?.decision === "delegate"
-            ? Boolean(store.readTask("follow-up"))
-            : undefined; // Ask/wait cases only measure judgment in this harness.
+          : undefined; // Delegate/ask/wait cases only measure judgment here.
       const item = {
         scenario: scenario.id,
         model,

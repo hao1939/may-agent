@@ -1057,25 +1057,18 @@ describe("App task reconciler state", () => {
       eventId: 101,
       data: { state: "corrected" },
     });
-    const action = {
-      kind: "create-task" as const,
-      id: "work/from-stale-result",
-      parentId: claim.taskId,
-      outcome: "Act on the latest correction",
-      acceptance: ["The correction is handled"],
-      mode: "achieve" as const,
-      outputs: [],
-    };
+    const action = { kind: "update-task" as const, taskId: "categorized-task",
+      expectedGeneration: 1, outcome: "Act on the latest correction" };
 
     const output = {
       summary: "Act on the older snapshot", evidence: ["snapshot:old"],
-      result: { inventory: [action.id] }, actions: [action],
+      result: { inventory: [action.taskId] }, actions: [action],
     };
     expect(() => state === "waiting"
       ? deferAppTask(config, claim, { ...output, disposition: "waiting" })
       : completeAppTask(config, claim, output)
     ).toThrow("newer Task evidence is pending");
-    expect(readTaskSnapshot(config).resources?.[action.id]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.[action.taskId]?.spec.outcome).toBe("Categorized bounded work");
     expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.result).toBeUndefined();
     expect(readTaskSnapshot(config).attempts?.[claim.attemptId]?.state).toBe("running");
     expect(readTaskSnapshot(config).taskTriggers?.[claim.taskId]?.events?.map((row) => row.event.eventId)).toEqual([101]);
@@ -1087,7 +1080,7 @@ describe("App task reconciler state", () => {
         actions: [action],
         acceptedLiveEventIds: [101],
       }),
-    ).toMatchObject({ status: "applied", actionsApplied: [`created ${action.id}`] });
+    ).toMatchObject({ status: "applied", actionsApplied: [`updated ${action.taskId}`] });
   });
 
   it.each(["converged", "attention"] as const)("preserves open waits and %s findings for reevaluation", (state) => {
@@ -1155,23 +1148,17 @@ describe("App task reconciler state", () => {
     recordAppTaskTrigger(config, claim.taskId, { type: "project.task.tick", eventId: 101 });
     expect(() => assertAppTaskEffectFresh(config, claim)).not.toThrow();
     const result = {
-      summary: "Admit useful independent child work",
+      summary: "Update the existing assignment",
       evidence: ["inventory:current"],
-      actions: [{
-        kind: "create-task" as const,
-        id: "work/next-child",
-        parentId: claim.taskId,
-        mode: "achieve" as const,
-        outcome: "Process the next item",
-        acceptance: ["Exact proof"],
-        outputs: [],
-      }],
+      conditions: [{ id: "proof", type: "proof.ready", subject: "id:proof", expected: true,
+        owner: "app:sample", reviewAfterMs: 60_000 }],
+      actions: [{ kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" }],
     };
     const applied = state === "waiting"
       ? deferAppTask(config, claim, { ...result, disposition: "waiting" })
       : completeAppTask(config, claim, result);
-    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["created work/next-child"] });
-    expect(config.resourceStore.readTask("work/next-child")).not.toBeNull();
+    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["updated categorized-task"] });
+    expect(config.resourceStore.readTask("categorized-task")?.metadata.generation).toBe(2);
     // Both results retain the latest wake for the next pass without discarding
     // an accepted child action or treating time alone as conflicting evidence.
     expect(config.resourceStore.readTrigger(claim.taskId)?.events?.map((row) => row.event.eventId)).toEqual(
@@ -1341,15 +1328,7 @@ describe("App task reconciler state", () => {
             expectedGeneration: claim.generation,
             input: { sessionId: "session-2" },
           },
-          {
-            kind: "create-task",
-            id: "unrelated-followup",
-            parentId: "operations",
-            outcome: "Do unrelated work",
-            mode: "achieve",
-            outputs: [],
-            acceptance: ["The unrelated work completes"],
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
         ],
       }),
     ).toThrow("assignment changes belong to its assigning owner");
@@ -4775,19 +4754,11 @@ describe("App task reconciler state", () => {
       completeAppTask(config, primary, {
         summary: "late primary result",
         actions: [
-          {
-            kind: "create-task",
-            id: "stale-action-must-not-apply",
-            parentId: "operations",
-            outcome: "This task must not exist",
-            mode: "achieve",
-            outputs: ["proof.md"],
-            acceptance: ["Never applied"],
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
         ],
       }).status,
     ).toBe("stale");
-    expect(readTaskSnapshot(config).resources?.["stale-action-must-not-apply"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
     expect(completeAppTask(config, fallback, { summary: "owner handled exception" }).status).toBe("applied");
   });
 
@@ -4917,19 +4888,11 @@ describe("App task reconciler state", () => {
         summary: "late result",
         evidence: ["stale result must not apply actions"],
         actions: [
-          {
-            kind: "create-task",
-            id: "stale-action-must-not-apply",
-            parentId: "operations",
-            outcome: "This task must not exist",
-            mode: "achieve",
-            outputs: ["proof.md"],
-            acceptance: ["Never applied"],
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
         ],
       }),
     ).toMatchObject({ status: "stale", actionsApplied: [] });
-    expect(readTaskSnapshot(config).resources?.["stale-action-must-not-apply"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
 
     expect(releaseStaleAppTaskResult(config, claim)).toEqual({
       status: "released",
@@ -5034,36 +4997,15 @@ describe("App task reconciler state", () => {
       summary: "owner proposed a bounded child",
       evidence: ["owner packet reviewed"],
       actions: [
-        {
-          kind: "create-task",
-          id: "owner-created-task",
-          parentId: "operations",
-          outcome: "Verify the owner action boundary",
-          mode: "achieve",
-          outputs: ["proof.md"],
-          acceptance: ["The reconciler creates this task"],
-          input: { specId: "spec.network-cni.example" },
-          dependsOn: ["categorized-task"],
-        },
+        { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
       ],
     });
 
-    expect(applied).toEqual({
-      status: "applied",
-      actionsApplied: ["created owner-created-task"],
-      dependentTaskIds: ["owner-created-task"],
-      supersededSessionIds: [],
-    });
-    const tree = readTaskSnapshot(config);
-    expect(readAppTaskIntent(config, "owner-created-task")).toMatchObject({
-      mode: "achieve",
-      input: { specId: "spec.network-cni.example" },
-      dependsOn: ["categorized-task"],
-    });
-    expect(tree.resources?.["owner-created-task"]).toMatchObject({
-      metadata: { generation: 1 },
-      status: { phase: "pending" },
-    });
+    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["updated categorized-task"],
+      dependentTaskIds: ["categorized-task"], supersededSessionIds: [] });
+    expect(config.resourceStore.readTask("categorized-task")).toMatchObject({
+      metadata: { generation: 2 }, spec: { outcome: "Updated by owner" }, status: { phase: "pending" } });
+    expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.state).toBe("converged");
   });
 
   it("applies the same fenced action rules to runtime-prefixed task identities", () => {
@@ -5114,21 +5056,12 @@ describe("App task reconciler state", () => {
         summary: "Created one bounded follow-up",
         evidence: ["review:follow-up"],
         actions: [
-          {
-            kind: "create-task",
-            id: "runtime/owner-review/follow-up",
-            parentId: "runtime/owner-review",
-            outcome: "Complete the bounded follow-up",
-            mode: "achieve",
-            outputs: [],
-            acceptance: ["The follow-up is complete"],
-            priority: "P2",
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
         ],
       }),
     ).toMatchObject({
       status: "applied",
-      actionsApplied: ["created runtime/owner-review/follow-up"],
+      actionsApplied: ["updated categorized-task"],
     });
   });
 
@@ -5358,7 +5291,7 @@ describe("App task reconciler state", () => {
     ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
   });
 
-  it("rejects project as a fake workflow in create actions", () => {
+  it("rejects project as a fake workflow in owner updates", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
       intent: intent("maintain"),
@@ -5372,21 +5305,11 @@ describe("App task reconciler state", () => {
         summary: "owner proposed a bounded child",
         evidence: ["owner packet reviewed"],
         actions: [
-          {
-            kind: "create-task",
-            id: "owner-created-task",
-            parentId: "operations",
-            outcome: "Verify the owner action boundary",
-            mode: "achieve",
-            outputs: ["proof.md"],
-            acceptance: ["The reconciler creates this task"],
-            owner: "branch-owner",
-            workflow: "project",
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, workflow: "project" },
         ],
       }),
     ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
-    expect(readTaskSnapshot(config).resources?.["owner-created-task"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.metadata.generation).toBe(1);
   });
 
   it("updates task mode without overwriting its domain category", () => {
@@ -5573,15 +5496,7 @@ describe("App task reconciler state", () => {
         summary: "invalid batch",
         evidence: ["batch validation test"],
         actions: [
-          {
-            kind: "create-task",
-            id: "must-roll-back",
-            parentId: "operations",
-            outcome: "Must not be persisted",
-            mode: "achieve",
-            outputs: ["proof.md"],
-            acceptance: ["No partial apply"],
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
           {
             kind: "update-task",
             taskId: "missing-task",
@@ -5592,7 +5507,7 @@ describe("App task reconciler state", () => {
       }),
     ).toThrow("Handler action task not found: missing-task");
     const tree = readTaskSnapshot(config);
-    expect(tree.resources?.["must-roll-back"]).toBeUndefined();
+    expect(tree.resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("running");
   });
 
@@ -5610,16 +5525,7 @@ describe("App task reconciler state", () => {
         summary: "invalid output root",
         evidence: ["path boundary test"],
         actions: [
-          {
-            kind: "create-task",
-            id: "must-not-escape",
-            parentId: "operations",
-            outcome: "Write outside the project",
-            mode: "achieve",
-            outputs: ["../../outside/result.txt"],
-            acceptance: ["Never accepted"],
-            priority: "P2",
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outputs: ["../../outside/result.txt"] },
         ],
       }),
     ).toThrow("escapes the app/domain roots");
@@ -5703,7 +5609,7 @@ describe("App task reconciler state", () => {
     expect(tree.receipts?.["categorized-task"]).toBeUndefined();
   });
 
-  it("rejects recreation of an owner-closed Task even with an identical spec", () => {
+  it("rejects mutation of an owner-closed Task", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
       appAgent: "app-owner",
@@ -5736,12 +5642,8 @@ describe("App task reconciler state", () => {
         summary: "attempted completed-task recreation",
         evidence: ["receipt inspection"],
         actions: [
-          {
-            kind: "create-task",
-            id: "categorized-task",
-            ...target.spec,
-            outputs: target.spec.outputs ?? [],
-          },
+          { kind: "update-task", taskId: "categorized-task",
+            expectedGeneration: target.metadata.generation, outcome: "Try to revive closed work" },
         ],
       }),
     ).toThrow("Handler action cannot mutate cancelled task categorized-task");
@@ -5750,81 +5652,6 @@ describe("App task reconciler state", () => {
     expect(tree.resources?.["receipt-create-review"]?.status.phase).toBe("running");
     expect(config.resourceStore.isCancelled("categorized-task")).toBe(true);
     expect(tree.receipts?.["categorized-task"]).toBeUndefined();
-  });
-
-  it("treats an identical create action for an existing live task as idempotent", () => {
-    const { config } = fixture();
-    const childIntent: AppTaskIntent = {
-      id: "already-created-child",
-      parentId: "operations",
-      outcome: "Complete deterministic child work",
-      acceptance: ["The child converges once"],
-      mode: "achieve",
-      owner: "branch-owner",
-      workflow: "known-workflow",
-      input: { workKey: "same-work" },
-      outputs: ["proof.md"],
-      priority: "P1",
-    };
-    observeAppTaskIntent(config, { intent: childIntent, appAgent: "app-owner" });
-    const review = declareAndClaimTask(config, {
-      intent: {
-        id: "live-create-review",
-        parentId: "operations",
-        outcome: "Reconcile deterministic child creation",
-        acceptance: ["Concurrent creation is harmless"],
-        mode: "maintain",
-      },
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-    });
-    if (review.kind !== "claimed") throw new Error("expected review claim");
-
-    expect(
-      completeAppTask(config, review, {
-        summary: "the desired child already exists",
-        evidence: ["current task resource"],
-        actions: [{ kind: "create-task", ...childIntent }],
-      }),
-    ).toMatchObject({ status: "applied", actionsApplied: ["already exists already-created-child"] });
-    const tree = readTaskSnapshot(config);
-    expect(tree.resources?.["already-created-child"]?.metadata.generation).toBe(1);
-    expect(tree.resources?.["live-create-review"]?.status.phase).toBe("converged");
-  });
-
-  it("rejects an existing live task with a different specification", () => {
-    const { config } = fixture();
-    const review = declareAndClaimTask(config, {
-      intent: {
-        id: "live-create-conflict-review",
-        parentId: "operations",
-        outcome: "Reject conflicting deterministic child creation",
-        acceptance: ["Intent is not overwritten"],
-        mode: "maintain",
-      },
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-    });
-    if (review.kind !== "claimed") throw new Error("expected review claim");
-
-    expect(() =>
-      completeAppTask(config, review, {
-        summary: "attempted conflicting reuse",
-        evidence: ["current task resource"],
-        actions: [
-          {
-            kind: "create-task",
-            id: "categorized-task",
-            parentId: "operations",
-            outcome: "Replace existing intent",
-            acceptance: ["This action must be rejected"],
-            mode: "achieve",
-            outputs: [],
-          },
-        ],
-      }),
-    ).toThrow("Handler action task already exists with a different specification: categorized-task");
-    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
   });
 
   it("rejects malformed action payloads and blank evidence before mutation", () => {
@@ -5841,27 +5668,19 @@ describe("App task reconciler state", () => {
         summary: "invalid runtime payload",
         evidence: ["  "],
         actions: [
-          {
-            kind: "create-task",
-            id: "must-not-apply",
-            parentId: "operations",
-            outcome: "Must not be persisted",
-            mode: "achieve",
-            outputs: ["proof.md"],
-            acceptance: ["No partial apply"],
-          },
+          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
         ],
       }),
     ).toThrow("require non-empty evidence");
-    expect(readTaskSnapshot(config).resources?.["must-not-apply"]).toBeUndefined();
+    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.spec.outcome).toBe("Categorized bounded work");
 
     expect(() =>
       completeAppTask(config, claim, {
         summary: "invalid runtime payload",
         evidence: ["runtime validation test"],
-        actions: [{ kind: "create-task", id: "bad-shape" } as never],
+        actions: [{ kind: "update-task", taskId: "categorized-task" } as never],
       }),
-    ).toThrow("parentId requires a non-empty string");
+    ).toThrow("requires a non-negative expectedGeneration");
     expect(readTaskSnapshot(config).resources?.["bad-shape"]).toBeUndefined();
     expect(readTaskSnapshot(config).resources?.[claim.taskId]?.status.phase).toBe("running");
   });
@@ -6187,64 +6006,6 @@ describe("App task reconciler state", () => {
     expect(second.events.map(({ event }) => event.eventId)).toEqual([802]);
   });
 
-  it("keeps a decomposition parent open while applying child task actions", () => {
-    const state = fixture();
-    const { config } = state;
-    const claim = declareAndClaimTask(config, {
-      intent: intent("achieve"),
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-
-    expect(
-      deferAppTask(config, claim, {
-        disposition: "waiting",
-        summary: "declared bounded child work for the parent",
-        evidence: ["frontier selected child-a and child-b"],
-        actions: [
-          {
-            kind: "create-task",
-            id: "work/child-a",
-            parentId: claim.taskId,
-            outcome: "Finish child A",
-            acceptance: ["Child A converges"],
-            mode: "achieve",
-            outputs: [],
-          },
-          {
-            kind: "create-task",
-            id: "work/child-b",
-            parentId: claim.taskId,
-            outcome: "Finish child B",
-            acceptance: ["Child B converges"],
-            mode: "achieve",
-            outputs: [],
-          },
-        ],
-      }),
-    ).toMatchObject({
-      status: "applied",
-      actionsApplied: ["created work/child-a", "created work/child-b"],
-    });
-
-    const tree = readTaskSnapshot(config);
-    expect(tree.resources?.[claim.taskId]?.status).toMatchObject({
-      phase: "waiting",
-      conditionIds: [],
-    });
-    expect(tree.resources?.["work/child-a"]).toMatchObject({
-      spec: { parentId: claim.taskId },
-      status: { phase: "pending" },
-    });
-    expect(tree.resources?.["work/child-b"]).toMatchObject({
-      spec: { parentId: claim.taskId },
-      status: { phase: "pending" },
-    });
-    expect(tree.conditions ?? {}).toEqual({});
-    expect(listRunnableAppTaskIds(config)).toEqual(expect.arrayContaining(["work/child-a", "work/child-b"]));
-  });
-
   it("delivers every child transition to the parent in one ordered event batch", () => {
     const { config } = fixture();
     const parent = declareAndClaimTask(config, {
@@ -6254,7 +6015,6 @@ describe("App task reconciler state", () => {
     });
     if (parent.kind !== "claimed") throw new Error("expected parent claim");
     const child = (id: string) => ({
-      kind: "create-task" as const,
       id,
       parentId: parent.taskId,
       outcome: `Complete ${id}`,
@@ -6263,12 +6023,13 @@ describe("App task reconciler state", () => {
       outputs: [],
       priority: "P2" as const,
     });
+    for (const id of ["work/child-one", "work/child-two"])
+      observeAppTaskIntent(config, { appAgent: "app-owner", intent: child(id) });
     expect(
       deferAppTask(config, parent, {
         disposition: "waiting",
         summary: "waiting for both children",
         evidence: ["decomposition:two-children"],
-        actions: [child("work/child-one"), child("work/child-two")],
       }),
     ).toMatchObject({ status: "applied" });
 

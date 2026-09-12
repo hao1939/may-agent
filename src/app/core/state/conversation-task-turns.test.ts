@@ -647,21 +647,23 @@ test("one controller returns B through A to the real Conversation after interven
           if ("admittedTasks" in result) for (const task of result.admittedTasks) controller.enqueue(task.taskId);
           topicId = getAppInboxItem(f.db, "first")!.topicId!;
         } else if (taskId === "A" && !f.store.readTask("B")) {
+          // Fixture App declares B; typed nested delegation is covered by the common-loop integration suite.
+          observeAppTaskIntent(f.context(), {
+            appAgent: "owner",
+            intent: {
+              id: "B",
+              parentId: "A",
+              outcome: "Read sample",
+              acceptance: ["Return measured value"],
+              mode: "achieve",
+              outputs: [],
+            },
+          });
+          controller.enqueue("B");
           const result = deferAppTask(f.context(), claim, {
             disposition: "waiting",
             summary: "Get measurement from B",
             evidence: ["Measurement required"],
-            actions: [
-              {
-                kind: "create-task",
-                id: "B",
-                parentId: "A",
-                outcome: "Read sample",
-                acceptance: ["Return measured value"],
-                mode: "achieve",
-                outputs: [],
-              },
-            ],
           });
           for (const id of result.reconcileTaskIds) controller.enqueue(id);
         } else if (taskId === "B" && !claim.trigger?.ready) {

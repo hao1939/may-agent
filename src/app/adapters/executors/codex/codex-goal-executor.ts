@@ -411,7 +411,6 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         const answer = finalAnswer(await client.readThread(threadId, true), completedTurnId);
         const admitted = admitCodexGoalTaskResult(answer, {
           allowNeedsAgent: false,
-          defaultParentId: attempt.task.parentId,
         });
         if (admitted.kind === "retry") {
           correction = admitted.nextAttemptContext;

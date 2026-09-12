@@ -2978,9 +2978,8 @@ describe("canonical App task runtime", () => {
         worker: async () => {
           calls++;
           return { state: "waiting", summary: "Recorded run 42", result: { runId: 42 },
-            ...(change === "action" ? { actions: [{ kind: "create-task" as const, id: "work/persistence-child",
-              parentId: taskId, outcome: "Follow current intent", acceptance: ["Reviewed"], mode: "achieve" as const,
-              outputs: [] }] } : {}),
+            ...(change === "action" ? { actions: [{ kind: "update-task" as const, taskId: "work/persistence-target",
+              expectedGeneration: 1, outcome: "Follow current intent" }] } : {}),
             evidence: ["run:42"], conditions: [{ id: "run:42", type: "sample.run.done", subject: "run:42",
               expected: "done", owner: "app:sample", reviewAfterMs: 60_000 }] };
         },
@@ -2990,6 +2989,10 @@ describe("canonical App task runtime", () => {
     });
     const config = loadedTaskConfig(f);
     const taskId = "work/persistence-contention";
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: "work/persistence-target", parentId: "operations", outcome: "Original assignment",
+      acceptance: ["Reviewed"], mode: "achieve", executor: "worker",
+    } });
     const taskIntent = { id: taskId, parentId: "operations", outcome: "Retain completed work",
       acceptance: ["Current outcome"], mode: "achieve" as const, agent: "sample-owner", executor: "worker" };
     observeAppTaskIntent(config, { appAgent: "sample-owner", intent: taskIntent });
@@ -3031,7 +3034,8 @@ describe("canonical App task runtime", () => {
       expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
     } else {
       expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
-      expect(tree.resources?.["work/persistence-child"]).toBeUndefined();
+      expect(tree.resources?.["work/persistence-target"]?.spec.outcome).toBe("Original assignment");
+      expect(tree.resources?.["work/persistence-target"]?.metadata.generation).toBe(1);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("interrupted");
       expect(saveAttempts).toBe(change === "persistent" ? 2 : 1);
       if (change === "action")
@@ -4536,16 +4540,13 @@ describe("canonical App task runtime", () => {
             evidence: ["provider:evidence"],
             ...("actions" in scenario && calls === 1
               ? {
-                  result: { admittedChild: "work/proposed-child" },
+                  result: { updatedTask: "work/existing-target" },
                   actions: [
                     {
-                      kind: "create-task" as const,
-                      id: "work/proposed-child",
-                      parentId: "work/workspace-rejection",
-                      outcome: "Must not be reported as admitted",
-                      acceptance: ["Current intent"],
-                      mode: "achieve" as const,
-                      outputs: [],
+                      kind: "update-task" as const,
+                      taskId: "work/existing-target",
+                      expectedGeneration: 1,
+                      outcome: "Must not be reported as applied",
                     },
                   ],
                 }
@@ -4569,6 +4570,10 @@ describe("canonical App task runtime", () => {
     });
     const config = loadedTaskConfig(f);
     const taskId = "work/workspace-rejection";
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: "work/existing-target", parentId: "operations", outcome: "Original assignment",
+      acceptance: ["Reviewed"], mode: "achieve", executor: "residue",
+    } });
     observeAppTaskIntent(config, {
       appAgent: "sample-owner",
       intent: {
@@ -4603,7 +4608,8 @@ describe("canonical App task runtime", () => {
     const tree = readTaskSnapshot(config);
     expect(tree.receipts?.[taskId]).toBeUndefined();
     expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
-    expect(tree.resources?.["work/proposed-child"]).toBeUndefined();
+    expect(tree.resources?.["work/existing-target"]?.spec.outcome).toBe("Original assignment");
+    expect(tree.resources?.["work/existing-target"]?.metadata.generation).toBe(1);
     expect(Object.values(tree.attempts ?? {})).toEqual([
       expect.objectContaining({
         ...(scenario.state === "stopped"
@@ -4640,7 +4646,7 @@ describe("canonical App task runtime", () => {
       workspace: { disposition: "removed" },
     });
     expect(config.resourceStore.isCancelled(taskId)).toBe(false);
-    expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+    expect(config.resourceStore.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain(taskId);
     expect(readFileSync(join(f.appDir, "retained.txt"), "utf8")).toBe("unfinished source\n");
   });
 
@@ -4835,19 +4841,6 @@ describe("canonical App task runtime", () => {
             state: "waiting",
             summary: "Verify the delivery before accepting it",
             evidence: ["test:verification-required"],
-            actions: [
-              {
-                kind: "create-task",
-                id: childId,
-                parentId,
-                outcome: "Verify the delivery",
-                acceptance: ["Verification passes"],
-                mode: "achieve",
-                outputs: [],
-                priority: "P2",
-                executor: "verify",
-              },
-            ],
           };
         },
         verify: async () => {
@@ -4898,14 +4891,22 @@ describe("canonical App task runtime", () => {
           }),
         });
       };
-      await install(!restart);
+      await install(false);
       host!.admit({
         id: "request-delivery",
         appId: "sample",
         source: { kind: "human", id: "operator" },
         input: { kind: "sample", data: {} },
       });
-
+      // This scenario covers an App-declared hierarchy, not worker-created work.
+      observeAppTaskIntent(loadedTaskConfig(f), { appAgent: "sample-owner", intent: {
+        id: childId, parentId, outcome: "Verify the delivery", acceptance: ["Verification passes"],
+        mode: "achieve", executor: "verify",
+      } });
+      if (!restart) {
+        await closeInstalledAppTaskRuntimes(bus);
+        await install(true);
+      }
 
       if (restart) {
         const run = (taskId: string) =>

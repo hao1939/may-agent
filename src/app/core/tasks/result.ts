@@ -40,8 +40,6 @@ export function normalizeTaskHandlerResult(
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
   options: {
     allowNeedsAgent?: boolean;
-    defaultParentId?: string;
-    rootParentAliases?: string[];
     validateAction?: (action: AppTaskAction) => string | null;
     validateCondition?: (condition: AppTaskConditionSpec) => string | null;
   } = {},
@@ -56,8 +54,6 @@ export function normalizeTaskHandlerResult(
   }
   const admission = admitAppTaskHandlerResult(output, {
     allowNeedsAgent: options.allowNeedsAgent ?? true,
-    defaultParentId: options.defaultParentId ?? "project",
-    rootParentAliases: options.rootParentAliases,
   });
   if (!admission.ok) {
     return {

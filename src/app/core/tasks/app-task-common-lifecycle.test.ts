@@ -172,10 +172,19 @@ describe("common Task lifecycle source PoC", () => {
       request: { id, source: { kind: "app", id: "caller" }, input: { kind: "question", data: { id } } },
     });
     ask("measurement");
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: {
+        id: "sampler",
+        parentId: "conversation",
+        mode: "achieve",
+        outcome: "Measure the sample",
+        acceptance: ["Return observed value"],
+        outputs: [],
+      },
+    });
     deferAppTask(f.config, f.claim(), {
       disposition: "waiting", summary: "Get the measurement", evidence: ["measurement:needed"],
-      actions: [{ kind: "create-task", id: "sampler", parentId: "conversation", mode: "achieve",
-        outcome: "Measure the sample", acceptance: ["Return observed value"], outputs: [] }],
     });
     f.reopen();
     ask("explanation");
@@ -252,19 +261,39 @@ describe("common Task lifecycle source PoC", () => {
         appId: "sample", attachment: { kind: "existing", taskId: "conversation" }, idempotencyKey: `task:${name}`,
         request: { id: name, source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { name } } },
       });
+      observeAppTaskIntent(f.config, {
+        appAgent: "owner",
+        intent: {
+          id: name,
+          parentId: "conversation",
+          mode: "achieve",
+          outcome: `Measure ${name}`,
+          acceptance: ["Return measured value"],
+          outputs: [],
+        },
+      });
       deferAppTask(f.config, f.claim(), {
         disposition: "waiting", summary: `Measure ${name}`, evidence: ["measurement:needed"],
-        actions: [{ kind: "create-task", id: name, parentId: "conversation", mode: "achieve",
-          outcome: `Measure ${name}`, acceptance: ["Return measured value"], outputs: [] }],
+        actions: [{ kind: "update-task", taskId: name, expectedGeneration: 1, priority: "P1" }],
       });
     }
     completeAppTask(f.config, f.claim("second"), { summary: "First observation", result: { value: 2 } });
     const reconsider = f.claim();
     expect(reconsider.continuedInputKeys).toEqual(["task:second"]);
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: {
+        id: "second-check",
+        parentId: "conversation",
+        mode: "achieve",
+        outcome: "Recheck second sample",
+        acceptance: ["Return measured value"],
+        outputs: [],
+      },
+    });
     deferAppTask(f.config, reconsider, {
       disposition: "waiting", summary: "Check the second sample again", evidence: ["measurement:inconclusive"],
-      actions: [{ kind: "create-task", id: "second-check", parentId: "conversation", mode: "achieve",
-        outcome: "Recheck second sample", acceptance: ["Return measured value"], outputs: [] }],
+      actions: [{ kind: "update-task", taskId: "second-check", expectedGeneration: 1, priority: "P1" }],
     });
     f.reopen();
     completeAppTask(f.config, f.claim("first"), { summary: "First sample measured", result: { value: 1 } });
@@ -348,9 +377,20 @@ describe("common Task lifecycle source PoC", () => {
       request: { id, source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { id } } },
     });
     ask("first");
-    deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: "Measure first sample", evidence: ["measurement:needed"],
-      actions: [{ kind: "create-task", id: "sampler", parentId: "conversation", mode: "achieve",
-        outcome: "Measure first sample", acceptance: ["Return measured value"], outputs: [] }] });
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: {
+        id: "sampler",
+        parentId: "conversation",
+        mode: "achieve",
+        outcome: "Measure first sample",
+        acceptance: ["Return measured value"],
+        outputs: [],
+      },
+    });
+    deferAppTask(f.config, f.claim(), {
+      disposition: "waiting", summary: "Measure first sample", evidence: ["measurement:needed"],
+    });
     const firstChild = f.claim("sampler");
     completeAppTask(f.config, firstChild, { summary: "First measurement", result: { value: 17 } });
     completeAppTask(f.config, f.claim(), { summary: "First answer", result: { value: 17 } });
@@ -435,20 +475,30 @@ describe("common Task lifecycle source PoC", () => {
 
   it("rejects legacy closure in an action batch without accepting any result or earlier action", () => {
     const f = fixture();
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: {
+        id: "child",
+        parentId: "conversation",
+        outcome: "Temporary work",
+        acceptance: ["Return evidence"],
+        mode: "achieve",
+      },
+    });
+    const before = f.config.resourceStore.readTask("child");
     const claim = f.claim();
     expect(() => completeAppTask(f.config, claim, {
       summary: "Withdraw scope",
       evidence: ["owner:withdrawal"],
       actions: [
         {
-          kind: "create-task", id: "child", parentId: "conversation",
-          outcome: "Temporary work", acceptance: ["Return evidence"], mode: "achieve", outputs: [],
+          kind: "update-task", taskId: "child", expectedGeneration: 1, outcome: "Changed work",
         },
         // A previously persisted/provider-generated action must fail atomically.
         { kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" } as never,
       ],
     })).toThrow("unsupported action kind: close-task");
-    expect(f.config.resourceStore.readTask("child")).toBeNull();
+    expect(f.config.resourceStore.readTask("child")).toEqual(before);
     expect(f.config.resourceStore.readReceipt("child")).toBeNull();
     expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     expect(f.config.resourceStore.readTask("conversation")?.status.currentAttemptId).toBe(claim.attemptId);
@@ -462,8 +512,6 @@ describe("common Task lifecycle source PoC", () => {
       summary: "Make the requirement easier",
       evidence: ["The measurement is unavailable"],
       actions: [
-        { kind: "create-task" as const, id: "child", parentId: "conversation", mode: "achieve" as const,
-          outcome: "Find the measurement", acceptance: ["Return evidence"], outputs: [] },
         { kind: "update-task" as const, taskId: "conversation", expectedGeneration: claim.generation,
           outcome: "Explain why the measurement is unavailable", acceptance: ["An explanation is enough"] },
       ],
@@ -523,22 +571,22 @@ describe("common Task lifecycle source PoC", () => {
 
   it("returns an honest failure to its owner and retains continuation until the owner closes it", () => {
     const f = fixture("maintain");
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: {
+        id: "report",
+        parentId: "conversation",
+        outcome: "Recover a disposable report",
+        acceptance: ["Return the report within its cost limit"],
+        mode: "maintain",
+        outputs: [],
+        priority: "P2",
+      },
+    });
     deferAppTask(f.config, f.claim(), {
       disposition: "waiting",
       summary: "Get the report",
       evidence: ["input:report"],
-      actions: [
-        {
-          kind: "create-task",
-          id: "report",
-          parentId: "conversation",
-          outcome: "Recover a disposable report",
-          acceptance: ["Return the report within its cost limit"],
-          mode: "maintain",
-          outputs: [],
-          priority: "P2",
-        },
-      ],
     });
     const child = f.claim("report");
     expect(
@@ -695,22 +743,22 @@ describe("common Task lifecycle source PoC", () => {
 
   it("supplies exact accepted outcomes to an executor after later cycles and restart", () => {
     const f = fixture();
+    observeAppTaskIntent(f.config, {
+      appAgent: "owner",
+      intent: {
+        id: "sample",
+        parentId: "conversation",
+        outcome: "Measure the sample",
+        acceptance: ["Verify the value"],
+        mode: "achieve",
+        outputs: [],
+        priority: "P2",
+      },
+    });
     deferAppTask(f.config, f.claim(), {
       disposition: "waiting",
       summary: "Get a sample",
       evidence: ["input:sample"],
-      actions: [
-        {
-          kind: "create-task",
-          id: "sample",
-          parentId: "conversation",
-          outcome: "Measure the sample",
-          acceptance: ["Verify the value"],
-          mode: "achieve",
-          outputs: [],
-          priority: "P2",
-        },
-      ],
     });
     const first = f.claim("sample");
     completeAppTask(f.config, first, { summary: "Measured", result: { value: 17 }, evidence: ["sample:first"] });
@@ -808,7 +856,7 @@ describe("common Task lifecycle source PoC", () => {
     });
   }
 
-  it("one controller returns B -> A -> Conversation and handles human input while B runs", async () => {
+  it("one controller follows App-declared B -> A -> Conversation links while handling human input", async () => {
     const f = fixture();
     const bRunning = signal();
     const releaseB = signal();
@@ -831,22 +879,23 @@ describe("common Task lifecycle source PoC", () => {
         const childId = taskId === "conversation" ? "A" : "B";
         if (taskId === "conversation") conversationRuns++;
         if (taskId !== "B" && !f.config.resourceStore.readTask(childId)) {
+          observeAppTaskIntent(f.config, {
+            appAgent: "owner",
+            intent: {
+              id: childId,
+              parentId: taskId,
+              outcome: "Verify the requested measurement",
+              acceptance: ["Return verified measurement"],
+              mode: childId === "A" ? "achieve" : "maintain",
+              outputs: [],
+              priority: "P2",
+            },
+          });
+          controller.enqueue(childId);
           settlement = deferAppTask(f.config, claim, {
             disposition: "waiting",
             summary: "Get the needed measurement",
             evidence: ["input:measurement"],
-            actions: [
-              {
-                kind: "create-task",
-                id: childId,
-                parentId: taskId,
-                outcome: "Verify the requested measurement",
-                acceptance: ["Return verified measurement"],
-                mode: childId === "A" ? "achieve" : "maintain",
-                outputs: [],
-                priority: "P2",
-              },
-            ],
           });
         } else if (taskId === "B") {
           bRunning.resolve();

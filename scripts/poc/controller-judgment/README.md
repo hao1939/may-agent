@@ -25,13 +25,13 @@ managed adapter, installed App or cross-App dependency calls. A valid `stopped`
 judgment must survive `finish(status: "failure")` as completed execution and
 be accepted as evidence; the continuing-Task design also requires a later attempt for unfinished work. Check `settlementPass` as well as
 `decisionPass`; either failing makes the experiment exit nonzero. The harness
-does not score source settlement for its judgment-only ask/wait cases.
+does not score source settlement for its judgment-only delegate/ask/wait cases.
 
 Run development before the held-back transfer set; do not tune the contract to
 transfer answers. Each case starts a fresh agent with ordinary work and fixture
 evidence, using the real direct-agent executor. It has no coding, task-control,
 subscription or delegation tool. The agent returns a judgment; code supplies
-identities, persists accepted results or admits a child through production Task
+identities, persists accepted answers and failure reports through production Task
 functions, and releases the production controller slot. There are no workers
 delegated to perform this development task and no live App/production changes.
 
@@ -49,10 +49,9 @@ paths. Provider cost metadata is not a verified bill. A nonzero exit indicates
 a bad/invalid action choice, rejected source settlement or experiment failure. A zero exit does not certify
 all lifecycle gates. No response-to-user delivery or deployed May agent is used.
 
-`ask` and `wait` are judgment-only cases in this harness; their interface and
-wait transitions are not exercised. `give-up` records an accepted non-success
-outcome without closing the Task. Its unfinished input now retains a retry deadline; this one-decision harness does not run that retry. Delegation admits a real child
-but does not run that child or route its result in this harness. Likewise,
+`delegate`, `ask` and `wait` are judgment-only cases in this harness; their
+admission, interface and wait transitions are not exercised. `give-up` records an accepted non-success
+outcome without closing the Task. Its unfinished input now retains a retry deadline; this one-decision harness does not run that retry. Delegation execution and return are exercised by the shared-loop harness below. Likewise,
 discussion cases test the agent's choice, not concurrent inbox availability.
 Each `run.ts` case stops after one decision. The fixture closes its controller on
 a dispatch error, so invalid output is visible. The underlying agent executor retains
@@ -170,47 +169,20 @@ input during background waits, full migration and retirement of the old owner
 still need their own proof. The trial bounds its own model calls, attempts and
 elapsed time; those fixture limits are not a Task lifetime policy.
 
-## Follow-through across attempts
+## Earlier follow-through trial
 
-The separate `follow-through.ts` trial uses three fresh model executions under
-one production Task controller: request independent measurement, explain a
-threshold while measurement waits, then assess the returned value. Between the
-explanation and result, it closes/reopens SQLite and replaces the controller.
-Code creates the child identity, runs a deterministic measurement fixture,
-routes the accepted result and supplies the original ask through `continuedInputs`.
-The model does not copy admission keys, poll, subscribe or redeclare a wait.
+The early `follow-through.ts` harness (available at Host revision `9d34e90b`)
+tested three fresh judgments: delegate measurement, answer an intervening
+question, then assess the returned value across SQLite reopen. It used raw
+worker child creation and an experimental judgment schema. That contract and
+harness are retired; the shared-loop trials above now exercise typed App input,
+A → B → C → B → A, and human discussion through production admission.
 
-```sh
-bun scripts/poc/controller-judgment/follow-through.ts --live --model MODEL --out /tmp/follow-through-development --value 0.92
-bun scripts/poc/controller-judgment/follow-through.ts --live --model MODEL --out /tmp/follow-through-transfer --value 0.78
-```
-
-Run the second case without changing the contract or instructions. Both use a
-0.90 minimum, so the assessment must differ. The gate checks an exact original
-caller answer, an unchanged intervening answer, three model decisions and no
-ready recovery work. An explanation must use a null assessment; delegation and
-give-up cannot include an assessment. A loose optional-field schema previously
-allowed unsupported placeholder scores despite correct prose, so the fixture
-now validates distinct decision shapes and tests intermediate outcomes too.
-
-This is an experimental App judgment schema mapped to real Task state
-operations. It is not the installed App or the full managed Task adapter. The
-measurement executor is deterministic fixture code, not another model. There
-are no real Conversation, Topic or Request records in this trial, and no
-transport delivery or inbox cutover. Passing it proves the exercised Task
-follow-through and model judgment, not the complete unified lifecycle.
-
-The first trial required exact evidence IDs in model output. Models sometimes
-returned useful citations with extra text, failing that bookkeeping rule. The
-refined contract leaves evidence correlation to code and asks the model only
-for its decision and explanation. Retained references identify evidence given
-to the judgment; they do not assert that every fact was independently verified.
-
-The later shared-loop trials above exercise A → B → C → B → A with human
-discussion and real model judgment. They have broader scope than this early
-judgment probe. Runtime, state, process and cutover coverage are mapped in
-[test coverage ownership](../../../test/README.md). No one probe establishes
-the whole lifecycle or lower maintenance cost.
+The early results remain historical evidence, not validation of the current
+protocol. `run.ts` still records delegate/ask/wait judgments for inspection;
+only answer and failure judgments settle actual Task state there. Use the
+shared-loop harness for execution and return behavior. Coverage boundaries
+are listed in [test coverage ownership](../../../test/README.md).
 
 ## Recovery and backoff
 

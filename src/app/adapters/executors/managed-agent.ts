@@ -98,7 +98,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "For another Task's work, return a stable dependency { id, appId, input }. Your App may own it. Add taskId to continue an exact Task. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Delegate useful independent work with a clear outcome and acceptance. Code runs it and supplies its accepted result through the return event, including while the child stays open. Judge that evidence; unrelated input can be answered while delegated work continues. dependsOn currently blocks execution and must not be used for an optional follow-up.",
-    "Task actions must use the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Accepted outcomes remain evidence; closure is a separate owner control.",
+    "Task actions only update or unblock existing Tasks, using the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Accepted outcomes remain evidence; closure is a separate owner control.",
     "Keep evidence concise and include the artifact/session paths needed to inspect the result. Code handles persistence, scheduling and result return; do not poll merely to keep follow-through alive.",
     "For unresolved human work, give an exact useful response or a bounded wait with reviewAfterMs of at least 60000. Do not expose delivery or Host internals.",
     "Treat new feedback as evidence for this Task. Address the human's actual concern against its goal and Open Waits. Existing obligations remain recorded; create different work only when the changed goal requires it.",
@@ -270,8 +270,6 @@ async function executeTaskAgent(
       },
       {
         allowNeedsAgent: false,
-        defaultParentId: input.defaultParentId,
-        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
         validateCondition: input.descriptor.app.tasks?.validateCondition,
       },

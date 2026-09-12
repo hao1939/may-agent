@@ -82,6 +82,17 @@ A missed Condition checkpoint reports which waits are due. It carries no "final
 review" count: repeated reviews keep the declared timing, and the owner decides
 whether the assignment should continue.
 
+New work is requested through `TaskReconcileResult.dependencies`: the destination
+App validates `input` and chooses its Task specification and executor. Workers
+cannot return raw `create-task` actions. `update-task` and `unblock-task` target
+existing assignments and require their current generation. `admitTaskAppDependencies()`
+in `app-task-runtime.ts` publishes delegated input; `app-task-inputs.ts` resumes
+the caller's exact saved input when its wait is satisfied.
+
+App-declared parent/child relationships still have separate implicit wait and
+child-transition behavior. That retained path is not the new delegation API;
+removing raw creation does not by itself unify every return protocol.
+
 New dependencies add work; stored waits survive omission from later results.
 The agent need not repeat old requests to add another one for the same App.
 Exact request reuse, duplicate detection and stale-effect fences remain; the

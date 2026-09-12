@@ -59,27 +59,8 @@ export type TaskAppDependency = {
   input: AppInput;
 };
 
-/** Mutations of other Tasks returned by a fenced attempt; workers cannot rewrite their own assignment. */
+/** Update existing Tasks through a fenced attempt. Assign new work through dependencies; workers cannot rewrite their own assignment. */
 export type TaskAction =
-  | {
-      kind: "create-task";
-      id: string;
-      parentId: string;
-      outcome: string;
-      mode: TaskMode;
-      outputs: string[];
-      acceptance: string[];
-      priority: TaskPriority;
-      /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
-      agent?: string;
-      /** @deprecated Use `agent`. */
-      owner?: string;
-      workflow?: string;
-      executor?: TaskExecutorName;
-      input?: Record<string, unknown>;
-      dependsOn?: string[];
-      category?: string;
-    }
   | {
       kind: "update-task";
       taskId: string;

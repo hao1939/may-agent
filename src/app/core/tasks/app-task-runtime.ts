@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { Check } from "typebox/value";
 import type { EventEnvelope } from "../events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
@@ -919,7 +919,6 @@ async function runRegisteredTaskExecutor(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
-  defaultParentId: string;
   executionPaths: AppTaskExecutionPaths;
   declaredOutputPaths: string[];
   childContext: AppTaskChildContext;
@@ -947,8 +946,6 @@ async function runRegisteredTaskExecutor(input: {
             { type: "done", summary: `${input.name} executor completed`, runId },
             {
               allowNeedsAgent: true,
-              defaultParentId: input.defaultParentId,
-              rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
               validateAction: input.descriptor.app.tasks?.validateAction,
               validateCondition: input.descriptor.app.tasks?.validateCondition,
             },
@@ -1182,10 +1179,6 @@ async function reconcileTask(input: {
     const config = appTaskConfig(descriptor);
     activeConfig = config;
     const claimStartedAt = performance.now();
-    const defaultParentId = config.resourceStore.rootTaskId();
-    if (!defaultParentId) {
-      throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
-    }
     const primary = claimObservedAppTask(config, {
       taskId: input.taskId,
       appAgent: descriptor.agent,
@@ -1440,7 +1433,6 @@ async function reconcileTask(input: {
           task: `Reconcile task through workflow ${workflowKey}`,
         },
         claim: primary,
-        defaultParentId,
         executionPaths,
         declaredOutputPaths,
         childContext,
@@ -1464,7 +1456,6 @@ async function reconcileTask(input: {
           opts,
           descriptor,
           claim: primary,
-          defaultParentId,
           executionPaths,
           declaredOutputPaths,
           childContext,
@@ -1511,7 +1502,6 @@ async function reconcileTask(input: {
           opts,
           descriptor,
           claim: primary,
-          defaultParentId,
           executionPaths,
           declaredOutputPaths,
           childContext,

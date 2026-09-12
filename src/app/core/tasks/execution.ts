@@ -30,7 +30,6 @@ export type TaskExecutionApp = { id: string; appDir: string; projectDir: string;
 type TaskExecutionInput = {
   descriptor: TaskExecutionApp;
   attempt: TaskAttempt;
-  defaultParentId: string;
   executionPaths: AppTaskExecutionPaths;
   childContext: AppTaskChildContext;
   event?: EventEnvelope;

@@ -23,6 +23,16 @@ not claim live Telegram, model, or deployed-App acceptance.
 
 ## Shared Task execution coverage
 
+Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` rejects
+it; action fencing and rollback tests now mutate existing fixture assignments.
+`src/app/task-worker-integration.test.ts` owns real worker coverage for typed
+App delegation, nested A → B → C → B → A, continued human input, and reopen.
+Hierarchy-specific reconciler/state fixtures declare their children through App
+intent; they prove retained parent/child behavior, not typed delegation.
+The early `follow-through.ts` model harness is retired; use
+`scripts/poc/controller-judgment/shared-loop.ts` for the broader opt-in trial.
+
+
 Conversation is a Task's human-facing role. Tests exercise its handler through
 the same Task claim, attempt and recovery used for delegated work.
 

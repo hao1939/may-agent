@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { appTaskTestContext } from "../tasks/app-task-test-support.js";
 import {
   appTaskContext,
+  observeAppTaskIntent,
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
@@ -162,21 +163,21 @@ test("quiet maintained outcomes keep their exact attempt, rest across reopen and
 test("an old child wait carries its original input through unrelated input and another restart", () => {
   const f = fixture();
   f.ask("measurement");
+  observeAppTaskIntent(f.config, {
+    appAgent: "worker",
+    intent: {
+      id: "sampler",
+      parentId: "work",
+      mode: "achieve",
+      outcome: "Measure the sample",
+      acceptance: ["Read instrument"],
+      outputs: [],
+    },
+  });
   deferAppTask(f.config, f.claim(), {
     disposition: "waiting",
     summary: "Await the instrument",
     evidence: ["instrument:requested"],
-    actions: [
-      {
-        kind: "create-task",
-        id: "sampler",
-        parentId: "work",
-        mode: "achieve",
-        outcome: "Measure the sample",
-        acceptance: ["Read instrument"],
-        outputs: [],
-      },
-    ],
   });
   f.legacy();
   expect(f.migrate().outcomes).toBe(1);
@@ -449,21 +450,21 @@ test.each(["missing", "different-spec"])(
 test("a retained parent wait follows its child after migration reopens that child's worker self-stop", () => {
   const f = fixture();
   f.ask("measurement");
+  observeAppTaskIntent(f.config, {
+    appAgent: "worker",
+    intent: {
+      id: "sampler",
+      parentId: "work",
+      mode: "achieve",
+      outcome: "Measure",
+      acceptance: ["Read instrument"],
+      outputs: [],
+    },
+  });
   deferAppTask(f.config, f.claim(), {
     disposition: "waiting",
     summary: "Await child measurement",
     evidence: ["instrument:requested"],
-    actions: [
-      {
-        kind: "create-task",
-        id: "sampler",
-        parentId: "work",
-        mode: "achieve",
-        outcome: "Measure",
-        acceptance: ["Read instrument"],
-        outputs: [],
-      },
-    ],
   });
   const child = f.claim("sampler");
   cancelAppTask(f.config, {

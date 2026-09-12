@@ -230,8 +230,6 @@ async function executeTaskCapability(
       },
       {
         allowNeedsAgent: true,
-        defaultParentId: input.defaultParentId,
-        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
         validateAction: input.descriptor.app.tasks?.validateAction,
         validateCondition: input.descriptor.app.tasks?.validateCondition,
       },
