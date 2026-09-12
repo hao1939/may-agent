@@ -66,7 +66,7 @@ export async function observerFeedbackFixture(definition: AppDefinition, observe
   let execute = async (_attempt: TaskAttempt): Promise<TaskReconcileResult> => ({
     state: "converged",
     summary: "Fixture reviewed the input",
-    evidence: ["fixture:reviewed"],
+    facts: ["fixture:reviewed"],
   });
   await registry.reload();
   await installAppTaskRuntimes(

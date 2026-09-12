@@ -54,7 +54,7 @@ describe("SQLite health observations", () => {
     expect(readWorkflowHealth(db, query("sourcePath=other"), now).totals.successRate).toBeNull();
   });
 
-  test("invalid duration and unplaceable finished evidence are visible, not fabricated zeros", () => {
+  test("invalid duration and unplaceable finished facts are visible, not fabricated zeros", () => {
     run("bad-time", "done", now - 10, null, now - 1);
     run("missing-end", "error", null);
     run("bad-outcome", "unexpected");

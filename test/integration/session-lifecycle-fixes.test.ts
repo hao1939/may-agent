@@ -497,7 +497,7 @@ describe("workflow call empty final turn recovery", () => {
       outputSchema: Type.Object({
         state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("incomplete")]),
         summary: Type.String(),
-        evidence: Type.Array(Type.String()),
+        facts: Type.Array(Type.String()),
       }),
       toolCalls: 0,
       turnCount: 1,
@@ -517,7 +517,7 @@ describe("workflow call empty final turn recovery", () => {
       expect(transcript).toHaveLength(1);
       expect(transcript[0]).toMatchObject({ role: "user", content: [{ type: "text", text: "review owner message" }] });
       // The model boundary is synthetic; the real manager must allow continued
-      // work on this same call, rather than demand a judgment with no evidence.
+      // work on this same call, rather than demand a judgment with no facts.
       transcript.push({
         role: "assistant",
         content: [{ type: "toolCall", id: "read-after-empty", name: "read", arguments: { path: "proof.txt" } }],
@@ -528,21 +528,21 @@ describe("workflow call empty final turn recovery", () => {
       } as any);
       transcript.push(finishCall("finish-after-empty", {
         status: "success", summary: "Completed after inspecting current source",
-        result: { state: "converged", summary: "Inspection complete", evidence: ["Current source inspected"] },
+        result: { state: "converged", summary: "Inspection complete", facts: ["Current source inspected"] },
       }));
       transcript.push(finishResult("finish-after-empty", "SUCCESS: Inspection complete"));
     });
 
     const result = await (manager as any).executeSession(session);
 
-    expect(result).toMatchObject({ sessionId, status: "done", structuredResult: { evidence: ["Current source inspected"] } });
+    expect(result).toMatchObject({ sessionId, status: "done", structuredResult: { facts: ["Current source inspected"] } });
     expect(prompts).toHaveLength(2);
     expect(messages.filter((message: any) => message.toolCallId === "read-after-empty")).toHaveLength(1);
     expect(events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toHaveLength(1);
   });
 
-  it.each(["read", "write"])("preserves successful %s evidence after final synthesis throws 429", async (toolName) => {
-    const evidence = toolName === "write" ? "Committed proof.txt successfully" : "29 tests passed; replay tree matched";
+  it.each(["read", "write"])("preserves successful %s facts after final synthesis throws 429", async (toolName) => {
+    const facts = toolName === "write" ? "Committed proof.txt successfully" : "29 tests passed; replay tree matched";
     const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
       if (promptText === "review owner message") {
         transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
@@ -554,7 +554,7 @@ describe("workflow call empty final turn recovery", () => {
           role: "toolResult",
           toolCallId: "work-1",
           toolName,
-          content: [{ type: "text", text: evidence }],
+          content: [{ type: "text", text: facts }],
           isError: false,
         } as any);
         throw new Error("OpenAI API error (429): No deployments available for selected model, Try again in 5 seconds.");
@@ -563,7 +563,7 @@ describe("workflow call empty final turn recovery", () => {
       expect(promptText).toContain("inspect current state before repeating an uncertain effect");
       expect(transcript).toContainEqual(expect.objectContaining({
         role: "toolResult", toolCallId: "work-1", isError: false,
-        content: [{ type: "text", text: evidence }],
+        content: [{ type: "text", text: facts }],
       }));
       transcript.push(
         finishCall("finish-1", {
@@ -572,7 +572,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "Recovered from transient final synthesis failure.",
-            evidence: [evidence],
+            facts: [facts],
           },
         }),
       );
@@ -586,14 +586,14 @@ describe("workflow call empty final turn recovery", () => {
     expect(result.structuredResult).toEqual({
       state: "converged",
       summary: "Recovered from transient final synthesis failure.",
-      evidence: [evidence],
+      facts: [facts],
     });
     expect(prompts).toHaveLength(2);
     expect(prompts[1]).toContain("transient runtime/provider failure or no visible answer");
     expect(prompts[1]).toContain("schema-validated result payload");
     expect(messages).toContainEqual(expect.objectContaining({
       role: "toolResult",
-      content: [{ type: "text", text: evidence }],
+      content: [{ type: "text", text: facts }],
     }));
     expect(messages.filter((message: any) => message.toolCallId === "work-1")).toHaveLength(1);
 
@@ -608,7 +608,7 @@ describe("workflow call empty final turn recovery", () => {
           status: "success",
           result: {
             state: "converged",
-            evidence: [evidence],
+            facts: [facts],
           },
         },
       },
@@ -625,7 +625,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "Validated exact Responses aborted finish.",
-            evidence: ["captured complete finish"],
+            facts: ["captured complete finish"],
           },
         }),
         stopReason: "aborted",
@@ -644,7 +644,7 @@ describe("workflow call empty final turn recovery", () => {
         result: Type.Object({
           state: Type.Literal("converged"),
           summary: Type.String(),
-          evidence: Type.Array(Type.String()),
+          facts: Type.Array(Type.String()),
         }),
       }),
       execute: async () => {
@@ -673,7 +673,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "Accepted exact pass proof.",
-            evidence: ["pipeline-run:175634889"],
+            facts: ["pipeline-run:175634889"],
           },
         }),
       );
@@ -689,7 +689,7 @@ describe("workflow call empty final turn recovery", () => {
     expect(result.structuredResult).toEqual({
       state: "converged",
       summary: "Accepted exact pass proof.",
-      evidence: ["pipeline-run:175634889"],
+      facts: ["pipeline-run:175634889"],
     });
     const persisted = readSessionMeta(persistDir, result.sessionId);
     expect(persisted?.status).toBe("done");
@@ -719,7 +719,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "incomplete",
             summary: "Verified terminal failure.",
-            evidence: ["runtime-check:failed"],
+            facts: ["runtime-check:failed"],
           },
         }),
       );
@@ -737,7 +737,7 @@ describe("workflow call empty final turn recovery", () => {
     expect(result.structuredResult).toEqual({
       state: "incomplete",
       summary: "Verified terminal failure.",
-      evidence: ["runtime-check:failed"],
+      facts: ["runtime-check:failed"],
     });
     expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({ status: expectedStatus });
     const end = events.find(
@@ -813,7 +813,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "This unexecuted result must not commit.",
-            evidence: ["tool-call-only"],
+            facts: ["tool-call-only"],
           },
         }),
       );
@@ -853,7 +853,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "This rejected result must not commit.",
-            evidence: ["rejected-tool-result"],
+            facts: ["rejected-tool-result"],
           },
         }),
       );

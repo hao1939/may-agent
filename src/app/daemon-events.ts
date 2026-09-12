@@ -40,7 +40,7 @@ function emitRuntimeEscalation(
       reason: input.reason,
       requestedAction: input.requestedAction,
       severity: "P1",
-      evidence: { trigger: input.trigger },
+      facts: { trigger: input.trigger },
       resume: {
         kind: "session",
         sessionId: input.sourceSessionId,

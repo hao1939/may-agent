@@ -23,7 +23,7 @@ export type FinishParams = {
   completed_items?: string[];
   new_items?: string[];
   lessons?: { category: string; content: string }[];
-  verification_evidence?: string[];
+  verification_facts?: string[];
   context_updates?: { action: string; content: string }[];
   result?: unknown;
 };
@@ -47,7 +47,7 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
           completed_items: args.completed_items,
           new_items: args.new_items,
           lessons: args.lessons,
-          verification_evidence: args.verification_evidence,
+          verification_facts: args.verification_facts,
           context_updates: args.context_updates,
           result: args.result,
         };

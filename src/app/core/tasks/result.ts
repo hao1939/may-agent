@@ -30,7 +30,7 @@ export type NormalizedTaskHandlerResult = {
   response?: string;
   report?: true;
   result?: Record<string, unknown>;
-  evidence: string[];
+  facts: string[];
   actions: AppTaskAction[];
   conditions?: AppTaskConditionSpec[];
   dependencies?: TaskAppDependency[];
@@ -49,7 +49,7 @@ export function normalizeTaskHandlerResult(
     return {
       state: "error",
       summary: fallback.summary,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
@@ -61,7 +61,7 @@ export function normalizeTaskHandlerResult(
       state: "error",
       resultRejected: true,
       summary: `Handler result was rejected: ${admission.error}`,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
@@ -74,7 +74,7 @@ export function normalizeTaskHandlerResult(
           state: "error",
           resultRejected: true,
           summary: `Handler result was rejected: actions[${index}] ${problem}`,
-          evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+          facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
         };
       }
@@ -89,7 +89,7 @@ export function normalizeTaskHandlerResult(
           state: "error",
           resultRejected: true,
           summary: `Handler result was rejected: conditions[${index}] ${problem}`,
-          evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+          facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
         };
       }

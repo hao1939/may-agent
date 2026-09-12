@@ -17,13 +17,12 @@ export {
 export type {
   AppAction,
   AppDefinition,
-  AppRequestDecision,
   ConversationTurnResult,
-  AppRequestFollowUp,
-  AppRequestPolicy,
-  AppRequestTaskControl,
-  AppRequestTaskObservation,
-  AppRequestTopicDecision,
+  ConversationDelegation,
+  AppConversationPolicy,
+  ConversationTaskControl,
+  TaskObservation,
+  ConversationTopicDecision,
   AppConversationTopic,
   AppConversationTopicPage,
   AppDependencyObservation,
@@ -40,7 +39,6 @@ export type {
   AppObserverResult,
   AppRead,
   AppInputContext,
-  AppRequest,
   AppResult,
   AppSchedule,
   AppTaskAttachment,
@@ -49,7 +47,7 @@ export type {
   AppWorkspace,
   EventSelector,
   ExecutionResult,
-  CliCallEvidence,
+  CliCallFacts,
   ExecutionView,
   Logger,
   MetricDefinition,
@@ -77,7 +75,7 @@ export type {
   WorkflowMetricCapability,
   AgentCallOptions,
 } from "./app.js";
-export { appRequestAgentResultSchema, conversationTurnResultSchema } from "./app.js";
+export { conversationTurnResultSchema } from "./app.js";
 export type {
   Condition,
   TaskAcceptanceBasis,

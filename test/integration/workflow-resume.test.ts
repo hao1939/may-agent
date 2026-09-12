@@ -81,7 +81,7 @@ function createArchivedSession(sessionId: string, agentName: string, task: strin
         arguments: {
           status: "success",
           summary: responseText,
-          verification_evidence: ["Recovered archived workflow step."],
+          verification_facts: ["Recovered archived workflow step."],
         },
       },
     ],

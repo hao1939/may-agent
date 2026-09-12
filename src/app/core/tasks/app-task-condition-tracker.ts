@@ -243,8 +243,8 @@ export function matchesAppTaskCondition(
           Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))));
 }
 
-/** Recognize the evidence that belongs to a wait, including an already observed fact. */
-export function matchesAppTaskConditionEvidence(condition: unknown, event: Record<string, unknown>): condition is AppTaskCondition {
+/** Recognize the facts that belong to a wait, including an already observed fact. */
+export function matchesAppTaskConditionFacts(condition: unknown, event: Record<string, unknown>): condition is AppTaskCondition {
   return isCondition(condition) && (matches(condition, event) || isAppInputReport(condition, event));
 }
 
@@ -254,7 +254,7 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
       ? { summary: eventField(event, "summary"), response: eventField(event, "response"),
           reportAttemptId: eventField(event, "reportAttemptId"),
           reportRevision: eventField(event, "reportRevision"),
-          result: eventField(event, "result"), evidence: eventField(event, "evidence") }
+          result: eventField(event, "result"), facts: eventField(event, "facts") }
       : {}),
     eventType: event.type,
     source: event.source,
@@ -301,7 +301,7 @@ function applyConditionEvent(
         state: report ? "false" : "true",
         observed: observation(event),
         observedAt: now,
-        evidence: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
+        facts: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
       };
       changedConditionIds?.add(id);
       changed = true;

@@ -48,7 +48,7 @@ function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): Ta
     summary: receipt.summary,
     response: receipt.response,
     result: receipt.result ? structuredClone(receipt.result) : undefined,
-    evidence: [...receipt.evidence],
+    facts: [...receipt.facts],
   };
 }
 
@@ -66,7 +66,7 @@ function resourceTaskView(
     summary: resource.status.summary,
     response: resource.status.response,
     result: resource.status.result ? structuredClone(resource.status.result) : undefined,
-    evidence: resource.status.evidence ? [...resource.status.evidence] : undefined,
+    facts: resource.status.facts ? [...resource.status.facts] : undefined,
   };
 }
 

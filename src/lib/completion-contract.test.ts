@@ -28,7 +28,7 @@ describe("prepared completion contract", () => {
         name,
         description: "Review one bounded result",
         domain: "fixture",
-        systemPrompt: "Review the supplied evidence; report a typed verdict.",
+        systemPrompt: "Review the supplied facts; report a typed verdict.",
         model: getBuiltinModel("anthropic", "claude-sonnet-4-20250514"),
         tools: [createFinishTool({ agentName: name, projectRoot })],
       },
@@ -71,7 +71,7 @@ describe("prepared completion contract", () => {
   const review = {
     status: "success",
     summary: "Reviewed the supplied result",
-    verification_evidence: ["Compared the supplied result with the requested contract"],
+    verification_facts: ["Compared the supplied result with the requested contract"],
     result: { verdict: "pass" },
   };
 
@@ -111,7 +111,7 @@ describe("prepared completion contract", () => {
       result: {
         state: "waiting",
         summary: "The requester must restore access",
-        evidence: ["source:sample"],
+        facts: ["source:sample"],
         conditions: [{
           id: "access", type: "source.access", subject: "source:sample",
           expected: true, owner: "human requester", reviewAfterMs: 60_000,
@@ -128,20 +128,20 @@ describe("prepared completion contract", () => {
   it.each(["waiting", "incomplete"])("rejects an empty %s report before finish and accepts its correction", async (state) => {
     const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
     const args = { ...review, status: "partial", result: {
-      state, report: true, summary: "Access is missing", evidence: [] as string[],
+      state, report: true, summary: "Access is missing", facts: [] as string[],
     } };
     expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
-    args.result.evidence.push("source:access-denied");
+    args.result.facts.push("source:access-denied");
     const ctx = context(args);
     const params = validateToolArguments(finish, ctx.toolCall);
     expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
     expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
   });
 
-  it("does not terminate successful attempts that lack evidence or claim nonexistent files", async () => {
+  it("does not terminate successful attempts that lack facts or claim nonexistent files", async () => {
     const { finish, context } = prepare();
     for (const [args, error] of [
-      [{ ...review, verification_evidence: [] }, "verification_evidence"],
+      [{ ...review, verification_facts: [] }, "verification_facts"],
       [{ ...review, deliverables: [{ path: "missing.txt", description: "missing proof" }] }, "Deliverables not found"],
     ] as const) {
       const ctx = context(args);

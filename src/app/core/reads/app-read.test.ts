@@ -72,7 +72,7 @@ describe("App read projections", () => {
     });
     const claim = claimAppInboxItem(db, "app_read_result", "host-1", 1_000, 100);
     expect(claim).not.toBeNull();
-    completeAppInboxClaim(db, claim!, { summary: "probe complete", response: "ok", evidence: ["canary"] }, 200);
+    completeAppInboxClaim(db, claim!, { summary: "probe complete", response: "ok", facts: ["canary"] }, 200);
     const read = createRuntimeAppRead({
       getDb: () => db,
     });
@@ -80,7 +80,7 @@ describe("App read projections", () => {
     await expect(read.appResult("app_read_result")).resolves.toEqual({
       summary: "probe complete",
       response: "ok",
-      evidence: ["canary"],
+      facts: ["canary"],
     });
     await expect(read.appResult("missing")).resolves.toBeNull();
     await expect(read.metric("missing")).rejects.toThrow("Metric reporting is unavailable");
@@ -199,7 +199,7 @@ describe("App read projections", () => {
       id: "review/standing",
       parentId: "review",
       outcome: "Keep source findings current",
-      acceptance: ["Current source evidence reviewed"],
+      acceptance: ["Current source facts reviewed"],
       agent: "evaluation",
     };
     observeAppTaskIntent(config, { appAgent: "evaluation", intent });
@@ -273,7 +273,7 @@ describe("App read projections", () => {
     const claim = claimObservedAppTask(config, { taskId: "result", appAgent: "evaluation", handler: "agent:evaluation" });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     expect(completeAppTask(config, claim, {
-      summary: "Measured", result: { value: 17 }, evidence: ["measurement:17"],
+      summary: "Measured", result: { value: 17 }, facts: ["measurement:17"],
     }).status).toBe("applied");
     const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
     expect((await read.tasks.get("result"))?.closed).not.toBe(true);
@@ -286,13 +286,13 @@ describe("App read projections", () => {
     }).applied).toBe(true);
     const page = await read.tasks.list();
     expect(page.items).toEqual([expect.objectContaining({
-      id: "result", status: "done", closed: true, result: { value: 17 }, evidence: ["measurement:17"],
+      id: "result", status: "done", closed: true, result: { value: 17 }, facts: ["measurement:17"],
     })]);
     expect(await read.tasks.get("result")).toMatchObject(page.items[0]!);
     expect(await read.tasks.list({ status: ["done"] })).toEqual(page);
     expect(await read.tasks.list({ status: ["attention", "pending", "running"] })).toEqual({ items: [] });
     expect(readAppTaskChildContext(config, "review").cancelled).toEqual([
-      expect.objectContaining({ taskId: "result", kind: "closed", evidence: ["measurement:17"] }),
+      expect.objectContaining({ taskId: "result", kind: "closed", facts: ["measurement:17"] }),
     ]);
     const reporting = {
       appDir: config.appDir,

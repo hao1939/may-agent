@@ -165,7 +165,7 @@ function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: st
   const taskId = typeof event.target?.taskId === "string" ? event.target.taskId.trim() : "";
   if (!taskId) return null;
   // Exact-task routing authority is entirely in the canonical envelope target.
-  // App/project identities in data remain correlation and lifecycle evidence.
+  // App/project identities in data remain correlation and lifecycle facts.
   const selectedAppId = [event.target?.appId, event.target?.project].find(
     (value) => typeof value === "string" && value.trim(),
   );
@@ -912,7 +912,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (identity) {
         const eventId = eventRowId(event)!;
         const frozenPlan = getAppEventAdmissionPlan(options.db, eventId);
-        // A timed-out plan remains as immutable routing evidence, but it is no
+        // A timed-out plan remains as immutable routing facts, but it is no
         // longer admission authority. An explicit retry of the unhandled event
         // must not reclassify it or report the superseded commands as pending.
         if (frozenPlan) {

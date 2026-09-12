@@ -8,7 +8,7 @@ describe("App dependency catalog", () => {
       id: "evaluation",
       version: 1,
       agent: "evaluator",
-      description: "Owns evidence-based evaluation outcomes.",
+      description: "Owns facts-based evaluation outcomes.",
       inputSchema: Type.Union([
         Type.Object({ kind: Type.Literal("owner-review"), data: Type.Record(Type.String(), Type.Unknown()) }),
         Type.Object({ kind: Type.Literal("deep-eval"), data: Type.Record(Type.String(), Type.Unknown()) }),
@@ -18,8 +18,8 @@ describe("App dependency catalog", () => {
         intent: {
           id: "review",
           parentId: "evaluation",
-          outcome: "Review evidence",
-          acceptance: ["Evidence is reviewed"],
+          outcome: "Review facts",
+          acceptance: ["Facts are reviewed"],
         },
       }),
       tasks: {},
@@ -31,7 +31,7 @@ describe("App dependency catalog", () => {
         Type.Object({ kind: Type.Literal("message"), data: Type.Record(Type.String(), Type.Unknown()) }),
         Type.Object({ kind: Type.Literal("goal"), data: Type.Record(Type.String(), Type.Unknown()) }),
       ]),
-      requests: { mode: "agent" as const, inputKinds: ["message"] },
+      conversation: { mode: "agent" as const, inputKinds: ["message"] },
     };
     const catalog = appDependencyCatalog(
       [
@@ -44,7 +44,7 @@ describe("App dependency catalog", () => {
     expect(catalog).toEqual([
       {
         appId: "evaluation",
-        description: "Owns evidence-based evaluation outcomes.",
+        description: "Owns facts-based evaluation outcomes.",
         inputs: [
           { kind: "deep-eval", requiredData: [], dataTypes: {}, fixedData: {} },
           { kind: "owner-review", requiredData: [], dataTypes: {}, fixedData: {} },
@@ -52,13 +52,13 @@ describe("App dependency catalog", () => {
       },
       {
         appId: "may",
-        description: "Owns evidence-based evaluation outcomes.",
+        description: "Owns facts-based evaluation outcomes.",
         inputs: [{ kind: "goal", requiredData: [], dataTypes: {}, fixedData: {} }],
       },
     ]);
     expect(
       appDependencyCatalog(
-        [{ appDir: "/fixtures/may.app", definition: { ...source, requests: { mode: "agent" } } }],
+        [{ appDir: "/fixtures/may.app", definition: { ...source, conversation: { mode: "agent" } } }],
         "may",
       ),
     ).toEqual([]);
@@ -74,7 +74,7 @@ describe("App dependency catalog", () => {
           kind: Type.Literal("general-operation"),
           data: Type.Object({
             outcome: Type.String(),
-            evidence: Type.Array(Type.String()),
+            facts: Type.Array(Type.String()),
             constraints: Type.Optional(Type.Array(Type.String())),
           }),
         }),
@@ -103,8 +103,8 @@ describe("App dependency catalog", () => {
     ).toEqual([
       {
         kind: "general-operation",
-        requiredData: ["evidence", "outcome"],
-        dataTypes: { constraints: "string[]", evidence: "string[]", outcome: "string" },
+        requiredData: ["facts", "outcome"],
+        dataTypes: { constraints: "string[]", facts: "string[]", outcome: "string" },
         fixedData: {},
       },
       {
@@ -132,7 +132,7 @@ describe("App dependency catalog", () => {
         intent: {
           id: "review",
           parentId: "incomplete",
-          outcome: "Review evidence",
+          outcome: "Review facts",
           acceptance: ["Reviewed"],
         },
       }),

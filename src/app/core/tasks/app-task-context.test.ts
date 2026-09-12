@@ -59,7 +59,7 @@ describe("Task context projections", () => {
     },
   );
 
-  it("keeps requested and resolved Task identities distinct without mutating wait evidence", () => {
+  it("keeps requested and resolved Task identities distinct without mutating wait facts", () => {
     const waits: Parameters<typeof projectAppTaskWaitPromptContext>[0] = [
       {
         conditionId: "wait:review",
@@ -163,7 +163,7 @@ describe("Task context projections", () => {
         },
         hasLiveChildren: false,
         summary: `Still waiting ${"s".repeat(800)}`,
-        evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
+        facts: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
       })),
       cancelled: [
         {
@@ -172,7 +172,7 @@ describe("Task context projections", () => {
           generation: 1,
           outcome: `Optional work ${"o".repeat(800)}`,
           summary: `Not achieved ${"s".repeat(800)}`,
-          evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
+          facts: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
           cancelledAt: "2026-08-20T00:00:00.000Z",
         },
       ],
@@ -186,7 +186,7 @@ describe("Task context projections", () => {
         conditions: [],
         hasLiveChildren: false,
         summary: `Completed ${"s".repeat(800)}`,
-        evidence: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
+        facts: Array.from({ length: 4 }, () => `evidence-${"e".repeat(800)}`),
         completedAt: "2026-08-20T00:00:00.000Z",
       })),
     };
@@ -212,7 +212,7 @@ describe("Task context projections", () => {
     expect(projected.completed[0]).not.toHaveProperty("owner");
     expect(projected.cancelled?.[0]).toMatchObject({ taskId: "cancelled-0", generation: 1 });
     expect(projected.cancelled?.[0]?.summary.length).toBeLessThanOrEqual(256);
-    expect(projected.cancelled?.[0]?.evidence).toHaveLength(2);
+    expect(projected.cancelled?.[0]?.facts).toHaveLength(2);
     expect(projected.live.some((child) => child.taskId === "cancelled-0")).toBe(false);
     expect(projected.completed.some((child) => child.taskId === "cancelled-0")).toBe(false);
   });

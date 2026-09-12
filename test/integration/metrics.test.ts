@@ -212,7 +212,7 @@ describe("MetricService", () => {
       sourceQuery: "SELECT 12 AS value",
       sourceCommand: undefined,
     });
-    service.alert("custom.queue-depth", "Queue depth needs attention", { priority: "P1", evidence: "manual test" });
+    service.alert("custom.queue-depth", "Queue depth needs attention", { priority: "P1", facts: "manual test" });
 
     const metric = db.prepare("SELECT owner, source_query FROM metrics WHERE id = ?").get("custom.queue-depth") as any;
     expect(metric).toMatchObject({ owner: "may", source_query: "SELECT 12 AS value" });

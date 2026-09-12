@@ -36,7 +36,7 @@ export type CliAgentInput = {
 };
 type FailureCategory = "timeout" | "cancelled" | "permission" | "tool" | "no_output" | "output_schema" | "process";
 export type CliAgentResult = {
-  /** Compatibility correlation key for existing CLI event/evidence readers, not a durable Task. */
+  /** Compatibility correlation key for existing CLI event/facts readers, not a durable Task. */
   taskId: string;
   status: "completed" | "failed";
   tool: CliTool;
@@ -44,7 +44,7 @@ export type CliAgentResult = {
   resultPath: string;
   structuredResultPath: string;
   eventsPath: string;
-  evidenceRefs: string[];
+  factsRefs: string[];
   nativeSessionId?: string;
   exitCode?: number;
   error?: string;
@@ -431,7 +431,7 @@ export async function runCliAgent(input: CliAgentInput, opts: CliAgentOptions): 
     resultPath,
     structuredResultPath,
     eventsPath,
-    evidenceRefs: [promptPath, resultPath, eventsPath],
+    factsRefs: [promptPath, resultPath, eventsPath],
     effectiveSandbox: "danger-full-access",
     ...(input.sandbox && input.sandbox !== "danger-full-access"
       ? {
@@ -546,7 +546,7 @@ export async function runCliAgent(input: CliAgentInput, opts: CliAgentOptions): 
     });
   } catch (error) {
     // Losing an observation must not hide an executed patch or invite an
-    // accidental retry. Return its real outcome and evidence with the warning.
+    // accidental retry. Return its real outcome and facts with the warning.
     result.observationError = error instanceof Error ? error.message : String(error);
     writeFileSync(structuredResultPath, JSON.stringify(result, null, 2) + "\n");
   }

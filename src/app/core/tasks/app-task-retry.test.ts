@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { admitTaskRequest } from "../state/inbox.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskController } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
@@ -36,8 +36,8 @@ function fixture() {
   cleanup.push(() => { config.resourceStore.close(); rmSync(root, { recursive: true, force: true }); });
   const intent = { id: "work", parentId: "root", outcome: "Read the measurement", acceptance: ["Return observed value"] };
   observeAppTaskIntent(config, { intent, appAgent: "owner" });
-  admitTaskRequest(config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
-    idempotencyKey: "ask:measure", request: { id: "measure", source: { kind: "app", id: "caller" },
+  admitTaskInput(config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "ask:measure", inputContext: { id: "measure", source: { kind: "app", id: "caller" },
       input: { kind: "measure", data: { sample: "one" } } } });
   return {
     get config() { return config; }, intent, databasePath,
@@ -205,11 +205,11 @@ it("retains ordered failure input and newer human steering through a paced retry
 });
 
 function admitHuman(f: ReturnType<typeof fixture>, id = "correction") {
-  return admitTaskRequest(f.config, {
+  return admitTaskInput(f.config, {
     appId: "sample",
     attachment: { kind: "existing", taskId: "work" },
     idempotencyKey: `human:${id}`,
-    request: {
+    inputContext: {
       id,
       source: { kind: "human", id },
       input: { kind: "message", data: { text: "Use the corrected source" } },
@@ -236,11 +236,11 @@ it("a new human admission waives one cooldown across reopen without resetting fa
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(2);
   admitHuman(f); // Durable replay must not buy another early attempt.
   recordAppTaskTrigger(f.config, "work", { type: "project.task.tick", eventId: 100 });
-  admitTaskRequest(f.config, {
+  admitTaskInput(f.config, {
     appId: "sample",
     attachment: { kind: "existing", taskId: "work" },
     idempotencyKey: "system:review",
-    request: {
+    inputContext: {
       id: "review",
       source: { kind: "system", id: "timer" },
       humanRequested: true,
@@ -287,7 +287,7 @@ it("keeps an internal workflow handoff quiet, then returns the agent failure thr
   const f = fixture();
   const workflow = f.claim("workflow:measure");
   markAppTaskAttention(f.config, workflow, {
-    summary: "Need agent judgment", reason: "needs-agent", evidence: ["workflow:observation"],
+    summary: "Need agent judgment", reason: "needs-agent", facts: ["workflow:observation"],
   });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toBeNull();
@@ -296,7 +296,7 @@ it("keeps an internal workflow handoff quiet, then returns the agent failure thr
   expect(agent.handoff?.reason).toBe("needs-agent");
   expect(agent.events).toEqual(workflow.events);
   markAppTaskAttention(f.config, agent, {
-    summary: "Agent result failed verification", reason: "HandlerResultInvalid", evidence: ["verifier:rejected"],
+    summary: "Agent result failed verification", reason: "HandlerResultInvalid", facts: ["verifier:rejected"],
   });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
@@ -356,15 +356,15 @@ it.each(["execution error", "failure report"])("allows an explicit owner retry d
   const f = fixture();
   const first = f.claim();
   if (kind === "execution error") failAppTaskAttempt(f.config, first, "Provider unavailable");
-  else reportAppTaskFailure(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
-  const evidence = f.config.resourceStore.readAttempt(first.attemptId);
+  else reportAppTaskFailure(f.config, first, { summary: "Source unavailable", facts: ["source:offline"] });
+  const facts = f.config.resourceStore.readAttempt(first.attemptId);
   const resource = f.config.resourceStore.readTask("work")!;
   const instruction = { appId: "sample", taskId: "work", controlKey: "owner-retry",
     expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion };
   const receipt = retryFailedAppTask(f.config, instruction);
   expect(retryFailedAppTask(f.config, instruction)).toEqual(receipt);
   expect(f.config.resourceStore.nextDueAt()).toBeNull();
-  expect(f.config.resourceStore.readAttempt(first.attemptId)).toEqual(evidence);
+  expect(f.config.resourceStore.readAttempt(first.attemptId)).toEqual(facts);
   const next = f.claim();
   expect(next.events).toEqual(first.events);
   expect(next.generation).toBe(first.generation);
@@ -372,12 +372,12 @@ it.each(["execution error", "failure report"])("allows an explicit owner retry d
 });
 
 it.each(["omitted", "explicit", "execution"])(
-  "keeps diagnostic evidence scoped when the next failure is %s",
+  "keeps diagnostic facts scoped when the next failure is %s",
   (kind) => {
     setSystemTime(Date.now());
     const f = fixture();
     const first = f.claim();
-    reportAppTaskFailure(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
+    reportAppTaskFailure(f.config, first, { summary: "Source unavailable", facts: ["source:offline"] });
     const accepted = f.config.resourceStore.readAttempt(first.attemptId);
     setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
     const next = f.claim();
@@ -386,13 +386,13 @@ it.each(["omitted", "explicit", "execution"])(
       markAppTaskAttention(f.config, next, {
         summary: "Later result was rejected",
         reason: "HandlerResultInvalid",
-        ...(kind === "explicit" ? { evidence: ["result:invalid"] } : {}),
+        ...(kind === "explicit" ? { facts: ["result:invalid"] } : {}),
       });
     f.reopen();
     expect(f.config.resourceStore.readTask("work")?.status).toMatchObject({
       phase: "pending",
       executionFailures: 2,
-      evidence: kind === "execution" ? ["source:offline"] : kind === "explicit" ? ["result:invalid"] : [],
+      facts: kind === "execution" ? ["source:offline"] : kind === "explicit" ? ["result:invalid"] : [],
     });
     expect(f.config.resourceStore.readAttempt(first.attemptId)).toEqual(accepted);
     expect(f.config.resourceStore.readAttempt(next.attemptId)?.acceptedResult).toBeUndefined();
@@ -403,13 +403,13 @@ it.each(["omitted", "explicit", "execution"])(
   },
 );
 
-it("accepts failure evidence without resolving the ask, then succeeds on the same assignment", () => {
+it("accepts failure facts without resolving the ask, then succeeds on the same assignment", () => {
   const f = fixture();
   const first = f.claim();
-  reportAppTaskFailure(f.config, first, { summary: "Could not read this measurement", result: { problem: "source offline" }, evidence: ["source:offline"] });
+  reportAppTaskFailure(f.config, first, { summary: "Could not read this measurement", result: { problem: "source offline" }, facts: ["source:offline"] });
   f.reopen();
   expect(f.config.resourceStore.readAttempt(first.attemptId)).toMatchObject({ state: "completed",
-    acceptedResult: { state: "incomplete", evidence: ["source:offline"] } });
+    acceptedResult: { state: "incomplete", facts: ["source:offline"] } });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
   const due = f.config.resourceStore.readTask("work")!.status.executionRetryAt!;
   expect(() => f.claim()).toThrow("waiting");
@@ -426,12 +426,12 @@ it("accepts failure evidence without resolving the ask, then succeeds on the sam
       state: "incomplete",
       summary: "Could not read this measurement",
       result: { problem: "source offline" },
-      evidence: ["source:offline"],
+      facts: ["source:offline"],
     },
   });
-  next.previousAttempt!.acceptedResult!.evidence.push("untrusted consumer edit");
-  expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult?.evidence).toEqual(["source:offline"]);
-  expect(f.config.resourceStore.readTask("work")?.status.evidence).toEqual(["source:offline"]);
+  next.previousAttempt!.acceptedResult!.facts.push("untrusted consumer edit");
+  expect(f.config.resourceStore.readAttempt(first.attemptId)?.acceptedResult?.facts).toEqual(["source:offline"]);
+  expect(f.config.resourceStore.readTask("work")?.status.facts).toEqual(["source:offline"]);
   completeAppTask(f.config, next, { summary: "Source repaired; measurement read", result: { value: 17 } });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toMatchObject({ attemptId: next.attemptId, result: { value: 17 } });

@@ -10,7 +10,7 @@
  */
 
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
-import { readWorkflowEvidence } from "./workflow-evidence.js";
+import { readWorkflowFacts } from "./workflow-facts.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
 import { prepareAgentExecution } from "./agent-execution.js";
 import { extractFinishParams } from "./agent-result.js";
@@ -492,7 +492,7 @@ export class SubagentManager {
         outputSchema: opts.outputSchema ?? meta.outputSchema,
         toolPolicy: opts.toolPolicy ?? meta.toolPolicy,
         executionRoot: opts.executionRoot ?? meta.executionRoot,
-        // Transcript metadata is evidence, not authority for a new attempt.
+        // Transcript metadata is facts, not authority for a new attempt.
         taskBinding: opts.taskBinding,
       });
     } catch (err) {
@@ -990,9 +990,9 @@ export class SubagentManager {
       try {
         this.cancel(sessionId);
       } catch (error) {
-        // cancel() signals the runner before writing its evidence. A storage
+        // cancel() signals the runner before writing its facts. A storage
         // outage must not escape the AbortSignal callback as a fatal exception.
-        console.error(`[session:${sessionId}] cancellation evidence failed: ${String(error)}`);
+        console.error(`[session:${sessionId}] cancellation facts failed: ${String(error)}`);
       }
     };
     opts?.signal?.addEventListener("abort", cancel, { once: true });
@@ -1528,7 +1528,7 @@ export class SubagentManager {
 
     return {
       targetId,
-      evidence: readWorkflowEvidence(this._persistDir, targetId),
+      facts: readWorkflowFacts(this._persistDir, targetId),
       tree: {
         type: "session",
         id: rootSessionId,
@@ -2445,7 +2445,7 @@ export class SubagentManager {
                   pendingSkillReads.set((event as any).toolCallId, skill);
                 }
               } catch {
-                // The read tool reports path failures; no activation evidence is emitted.
+                // The read tool reports path failures; no activation facts are emitted.
               }
             }
           }

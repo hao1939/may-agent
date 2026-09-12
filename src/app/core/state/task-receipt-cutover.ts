@@ -31,7 +31,7 @@ function receiptAttempt(receipt: TaskCompletionReceipt): AppTaskAttempt {
       summary: receipt.summary,
       response: receipt.response,
       result: receipt.result,
-      evidence: receipt.evidence,
+      facts: receipt.facts,
       acceptanceBasis: receipt.acceptanceBasis,
     },
   };
@@ -126,10 +126,10 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
         summary: receipt.summary,
         response: receipt.response,
         result: receipt.result,
-        evidence: receipt.evidence,
+        facts: receipt.facts,
         updatedAt: receipt.completedAt,
       };
-      // A stale duplicate may still have an old claim. Preserve its evidence,
+      // A stale duplicate may still have an old claim. Preserve its facts,
       // invalidate that claim, and never allow it to replace accepted history.
       for (const old of Object.values(tree.attempts ?? {})) {
         if (old.taskId !== taskId || old.state !== "running") continue;
@@ -156,7 +156,7 @@ export function migrateTaskCompletionReceipts(config: AppTaskContext, input: { o
         summary: receipt.summary,
         response: receipt.response,
         result: receipt.result,
-        evidence: receipt.evidence,
+        facts: receipt.facts,
         cancelledAt: receipt.completedAt,
         decidedBy: { kind: "app-policy" },
       });

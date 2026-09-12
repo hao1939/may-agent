@@ -34,7 +34,7 @@ export type AppTaskAttacher = (input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppInputContext>;
+  inputContext: Readonly<AppInputContext>;
   /** Persist the input-to-Task link in the Task admission transaction. */
   inboxInputId?: string;
   now?: number;
@@ -54,7 +54,7 @@ export type AdmitAppInput = {
   id?: string;
   appId: string;
   parentId?: string;
-  /** Attach this request to one exact existing Task in the target App. */
+  /** Attach this inputContext to one exact existing Task in the target App. */
   targetTaskId?: string;
   /** Existing Conversation Topic that this admitted work belongs to. */
   topicId?: string;
@@ -326,9 +326,9 @@ export class AppInboxHost {
     const app = this.#requiredApp(input.appId);
     validateInput(app, input.input);
     const conversationInput = Boolean(
-      app.requests && (!app.requests.inputKinds || app.requests.inputKinds.includes(input.input.kind)),
+      app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
     );
-    const defaultConversationId = app.requests?.conversationId?.trim();
+    const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =
       conversationInput &&
       input.conversationId === undefined &&
@@ -397,7 +397,7 @@ export class AppInboxHost {
     if (item.lease && item.lease.expiresAt > this.#now()) return;
     try {
       const app = this.#requiredApp(item.appId);
-      if (app.requests && (!app.requests.inputKinds || app.requests.inputKinds.includes(item.input.kind)))
+      if (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind)))
         throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (item.waitingOn?.kind === "task") {
         // An old Host may have stopped while projecting an already attached
@@ -414,16 +414,16 @@ export class AppInboxHost {
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       validateInput(app, item.input);
-      const request = readInputContext(this.#db, item);
+      const inputContext = readInputContext(this.#db, item);
       const attachment = item.targetTaskId
         ? { kind: "existing" as const, taskId: item.targetTaskId }
-        : app.task(request);
+        : app.task(inputContext);
       if (!attachment || typeof attachment !== "object")
         throw new Error(`App ${app.id} task resolver returned no Task attachment`);
       this.#attachTask({
         appId: app.id,
         attachment,
-        request,
+        inputContext,
         inboxInputId: item.id,
         idempotencyKey: `task:${item.id}`,
         now: this.#now(),
@@ -490,7 +490,7 @@ export class AppInboxHost {
         summary: observed.summary ?? `Task ${observed.id} requires owner review (${observed.status})`,
         response: observed.response,
         result: observed.result,
-        evidence: observed.evidence,
+        facts: observed.facts,
       };
       if (!completeTaskInput(this.#db, { ...item, taskAdmissionKey: admissionKey }, result, this.#now())) return;
       try {

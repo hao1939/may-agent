@@ -63,7 +63,7 @@ describe("escalation lifecycle", () => {
         outcome: "answered",
         summary: "Use option B",
         resumeInstruction: "Continue with option B",
-        evidence: { decision: "B" },
+        facts: { decision: "B" },
       },
     } as never);
 

@@ -137,7 +137,7 @@ function projectTaskList(label, values) {
   return values?.length ? `<h4>${esc(label)}</h4><ul>${values.map((v) => `<li>${esc(v)}</li>`).join("")}</ul>` : "";
 }
 
-function projectTaskEvidenceHref(reference) {
+function projectTaskFactsHref(reference) {
   const [kind, ...rest] = String(reference || "").split(":");
   const target = rest.join(":");
   if (!target) return "";
@@ -146,11 +146,11 @@ function projectTaskEvidenceHref(reference) {
   return "";
 }
 
-function projectTaskEvidenceList(values) {
+function projectTaskFactsList(values) {
   return values?.length
-    ? `<h4>Evidence</h4><ul>${values
+    ? `<h4>Facts</h4><ul>${values
         .map((v) => {
-          const href = projectTaskEvidenceHref(v);
+          const href = projectTaskFactsHref(v);
           return `<li>${href ? `<a href="${attrEsc(href)}">${esc(v)}</a>` : esc(v)}</li>`;
         })
         .join("")}</ul>`
@@ -190,14 +190,14 @@ function projectTaskDetailHtml(task) {
       ${field("Resource version", task.resourceVersion)}${field("Updated", projectTaskFormatTime(task.updatedAt))}
       ${d ? `${field("Parent", d.parentId)}${field("Owner override", d.owner || "not specified")}${field("Priority", d.priority || "P2")}${field("Category", d.category || "work")}${field("Mechanism", d.workflow ? `workflow ${d.workflow}` : d.executor || "agent")}${field("Ready to claim", d.ready ? "yes" : "no")}${field("Retained attempts", d.attemptCount)}` : ""}
     </div>
-    ${projectTaskList("Outputs", d?.outputs)}${projectTaskEvidenceList(task.evidence)}
-    ${task.execution ? `<h4>Current attempt</h4><p>${esc(task.execution.attemptId)}${d?.attempt ? ` · ${esc(d.attempt.handler)} · ${esc(d.attempt.state)} · ${esc(d.attempt.reason)} · ${esc(projectTaskFormatTime(d.attempt.startedAt))}` : ""}</p>${projectTaskEvidenceList(task.execution.sessionId ? [`session:${task.execution.sessionId}`] : [])}` : ""}
+    ${projectTaskList("Outputs", d?.outputs)}${projectTaskFactsList(task.facts)}
+    ${task.execution ? `<h4>Current attempt</h4><p>${esc(task.execution.attemptId)}${d?.attempt ? ` · ${esc(d.attempt.handler)} · ${esc(d.attempt.state)} · ${esc(d.attempt.reason)} · ${esc(projectTaskFormatTime(d.attempt.startedAt))}` : ""}</p>${projectTaskFactsList(task.execution.sessionId ? [`session:${task.execution.sessionId}`] : [])}` : ""}
     ${d?.attempt?.trigger ? `<details><summary>Attempt trigger</summary><pre>${esc(JSON.stringify(d.attempt.trigger, null, 2))}</pre></details>` : ""}
     ${d?.conditions.length ? `<h4>Conditions</h4><ul>${d.conditions.map(projectTaskConditionHtml).join("")}</ul>` : ""}
     ${d?.conditionsTruncated ? "<p>Only the first 100 Conditions are shown.</p>" : ""}
     ${d?.dependencies.length ? `<h4>Dependencies</h4><ul>${d.dependencies.map((dep) => `<li>${["missing", "group"].includes(dep.status) ? esc(dep.id) : `<button onclick="showTaskDetail(${jsStringAttr(dep.id)})">${esc(dep.id)}</button>`} · ${esc(dep.status)}</li>`).join("")}</ul>` : ""}
     ${d?.dependenciesTruncated ? "<p>Only the first 100 dependencies are shown.</p>" : ""}
-    <h4>Recent reconciliation history</h4><p class="task-reason">Historical evidence, including older generations/attempts; not the current Task state.</p>
+    <h4>Recent reconciliation history</h4><p class="task-reason">Historical facts, including older generations/attempts; not the current Task state.</p>
     ${task.historyError ? `<p>History unavailable: ${esc(task.historyError)}</p>` : projectTaskHistoryHtml(task.history)}
     ${task.historyTruncated ? "<p>Only the newest 20 records are shown.</p>" : ""}
     ${!task.terminal ? projectTaskSteeringHtml() : ""}`;
@@ -266,7 +266,7 @@ function prefillTaskSteering(action) {
   const task = selectedTaskForSteering();
   const textarea = document.getElementById("kanban-steer-text");
   if (!task || !textarea) return;
-  textarea.value = `[task-app-request]\nproject: ${task.appId}\ntask: ${task.taskId}\naction: ${action}\noutcome: ${task.outcome}\nstate: ${task.status}\ngeneration: ${task.generation}\nsummary: ${task.summary || "none"}\n\nExpected response: inspect current evidence, then record concrete progress, an exact wait, an escalation, a task split, or an accepted no-op.`;
+  textarea.value = `[task-app-request]\nproject: ${task.appId}\ntask: ${task.taskId}\naction: ${action}\noutcome: ${task.outcome}\nstate: ${task.status}\ngeneration: ${task.generation}\nsummary: ${task.summary || "none"}\n\nExpected response: inspect current facts, then record concrete progress, an exact wait, an escalation, a task split, or an accepted no-op.`;
   textarea.focus();
 }
 
@@ -303,7 +303,7 @@ async function sendProjectSteering() {
     if (textarea) textarea.value = "";
     if (status)
       status.textContent = body.eventId
-        ? `Recorded as event ${body.eventId}. Await later delivery and reconciliation evidence.`
+        ? `Recorded as event ${body.eventId}. Await later delivery and reconciliation facts.`
         : "Request sent, but no durable event receipt was returned.";
   } catch (error) {
     if (status) status.textContent = `Failed: ${error.message}`;

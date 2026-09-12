@@ -41,7 +41,7 @@ for (let index = 0; index < completedCount; index += 1) {
     owner: "may",
     handler: "owner",
     summary: "done",
-    evidence: [],
+    facts: [],
     acceptanceBasis: { kind: "owner" },
     failureFingerprints: [],
     completedAt: new Date(completedAt).toISOString(),

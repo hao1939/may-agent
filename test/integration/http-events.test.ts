@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
@@ -67,7 +67,31 @@ describe("HTTP event reads", () => {
     return response.json();
   }
 
-  it("opens failed workflow evidence through HTTP without a daemon or metric collector", async () => {
+  it("reads saved session notes without Evaluation and rejects retired writes", async () => {
+    const dir = join(root, "sessions", "s_notes");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "session.jsonl"), '{"role":"user","content":"Review the result"}\n');
+    const path = join(dir, "session.eval.jsonl");
+    const endpoint = "/api/sessions/s_notes/eval";
+    expect(await read(endpoint)).toMatchObject({ exists: false, rows: [] });
+    for (const suffix of ["", "/comment"]) {
+      const response = await fetch(`${baseUrl}${endpoint}${suffix}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ line: 1, comment: "Must not be saved by HTTP" }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      expect(response.status).toBe(404);
+    }
+    expect(existsSync(path)).toBe(false);
+    const note = { type: "line", line: 1, source: "human-feedback", comment: "Retained review" };
+    const saved = JSON.stringify(note) + "\n";
+    writeFileSync(path, saved);
+    expect(await read(endpoint)).toMatchObject({ exists: true, rows: [note] });
+    expect(readFileSync(path, "utf8")).toBe(saved);
+    expect(await read("/api/events?type=evaluation.session.requested")).toEqual([]);
+  });
+
+  it("opens failed workflow facts through HTTP without a daemon or metric collector", async () => {
     const workflows = join(root, "workflows");
     mkdirSync(workflows);
     writeFileSync(join(workflows, "report.ts"), `
@@ -81,11 +105,11 @@ describe("HTTP event reads", () => {
     const result = await runner.run("report", "fixture");
     if (result.type !== "error" || !result.workflowRunId) throw new Error("Expected failed workflow identity");
     const trace = await read(`/api/loop-trace?workflowRunId=${result.workflowRunId}`);
-    expect(trace.workflowEvidence.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
-    expect(trace.workflowEvidence.diagnostics).toMatchObject({ state: "available", truncated: false,
+    expect(trace.workflowFacts.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
+    expect(trace.workflowFacts.diagnostics).toMatchObject({ state: "available", truncated: false,
       entries: [{ level: "info", message: "prepared partial report" }] });
-    expect(trace.workflowEvidence.stepsTruncated).toBe(false);
-    expect((await read("/api/loop-trace?workflowRunId=wr_missing")).workflowEvidence).toBeNull();
+    expect(trace.workflowFacts.stepsTruncated).toBe(false);
+    expect((await read("/api/loop-trace?workflowRunId=wr_missing")).workflowFacts).toBeNull();
   });
 
   function event(
@@ -100,7 +124,7 @@ describe("HTTP event reads", () => {
         .prepare(
           `INSERT INTO events
       (event_type, source, owner, data, timestamp, delivery_status, ttl_ms)
-      VALUES (?, 'test', ?, '{"evidence":"kept"}', ?, ?, ?)`,
+      VALUES (?, 'test', ?, '{"facts":"kept"}', ?, ?, ?)`,
         )
         .run(type, owner, timestamp, status, ttl).lastInsertRowid,
     );
@@ -115,7 +139,7 @@ describe("HTTP event reads", () => {
     const rows = await read("/api/events?owner=agent%3Amay&type=sample");
     expect(rows.map((row: { id: number }) => row.id)).toEqual([newest, second, first]);
     expect(rows).toEqual(createQueryService({ getDb: () => db }).events({ owner: "agent:may", type: "sample" }).rows);
-    expect(rows[0]).toMatchObject({ event_type: "sample", owner: "agent:may", data: '{"evidence":"kept"}' });
+    expect(rows[0]).toMatchObject({ event_type: "sample", owner: "agent:may", data: '{"facts":"kept"}' });
     expect(await read("/api/events?owner=missing")).toEqual([]);
     expect(await read("/api/events?owner=&type=")).toHaveLength(5);
   });
@@ -137,7 +161,7 @@ describe("HTTP event reads", () => {
     }
   });
 
-  it("retains the four health groups, lookback, TTL rules, pair evidence, and ordering", async () => {
+  it("retains the four health groups, lookback, TTL rules, pair facts, and ordering", async () => {
     const now = Date.now();
     const minute = 60_000;
     const unhandled = event("unhandled", now - minute);
@@ -186,7 +210,7 @@ describe("HTTP event reads", () => {
     expect(health.orphanPairs[0]).toMatchObject({
       openEventId: unhandled,
       openEventType: "unhandled",
-      openEventData: '{"evidence":"kept"}',
+      openEventData: '{"facts":"kept"}',
     });
   });
 

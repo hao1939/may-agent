@@ -8,7 +8,7 @@ describe("App stop contract", () => {
   const incomplete = {
     state: "incomplete",
     summary: "Optional export is not feasible",
-    evidence: ["analysis:export"],
+    facts: ["analysis:export"],
     result: { partial: "Feasibility findings" },
   };
   it("admits a non-success decision and keeps normalization replayable", () => {
@@ -18,7 +18,7 @@ describe("App stop contract", () => {
     if (!admitted.ok) throw new Error("expected admitted stop");
     expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
   });
-  it.each([{ evidence: [] }, { actions: [] }, { conditions: [] }, { dependencies: [] }])(
+  it.each([{ facts: [] }, { actions: [] }, { conditions: [] }, { dependencies: [] }])(
     "rejects incomplete or mixed stop decisions: %j",
     (extra) => {
       expect(Check(taskAgentResultSchema, { ...incomplete, ...extra })).toBe(false);
@@ -28,15 +28,15 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
-  it("agrees with the finish schema on quiet waits and explicit evidence-backed reports", () => {
+  it("agrees with the finish schema on quiet waits and explicit facts-backed reports", () => {
     for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
-      for (const evidence of [[], ["source:access-denied"]]) {
+      for (const facts of [[], ["source:access-denied"]]) {
         for (const report of [undefined, true, false]) {
-          const output = { state, summary: "Access is missing", evidence,
+          const output = { state, summary: "Access is missing", facts,
             ...(report === undefined ? {} : { report }) };
           const valid = state !== "needs-agent" && report !== false &&
-            (report !== true || (state !== "converged" && evidence.length > 0)) &&
-            (state !== "incomplete" || evidence.length > 0);
+            (report !== true || (state !== "converged" && facts.length > 0)) &&
+            (state !== "incomplete" || facts.length > 0);
           expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
           const admitted = admitTaskReconcileResult(output, { allowNeedsAgent: false });
           expect({ output, valid: admitted.ok }).toEqual({ output, valid });
@@ -70,7 +70,7 @@ describe("project task handler contract", () => {
       const output = {
         state: "waiting",
         summary: "Waiting for source access",
-        evidence: ["source:sample"],
+        facts: ["source:sample"],
         conditions: [{
           id: "source-access", type: "source.access", subject: "source:sample",
           expected: true, owner, reviewAfterMs: 60_000,
@@ -90,7 +90,7 @@ describe("project task handler contract", () => {
     const result = {
       state: "converged",
       summary: "Withdraw the child scope",
-      evidence: ["owner:withdrawal"],
+      facts: ["owner:withdrawal"],
       actions: [{ kind: "close-task", taskId: "child", expectedGeneration: 1, summary: "No longer needed" }],
     };
     expect(Check(taskAgentResultSchema, result)).toBe(false);
@@ -107,7 +107,7 @@ describe("project task handler contract", () => {
           state: "converged",
           summary: "Conversation request answered",
           response: "Here is the answer the caller asked for.",
-          evidence: ["request:conversation-1"],
+          facts: ["request:conversation-1"],
         },
         workflowOptions,
       ),
@@ -117,13 +117,13 @@ describe("project task handler contract", () => {
         state: "converged",
         summary: "Conversation request answered",
         response: "Here is the answer the caller asked for.",
-        evidence: ["request:conversation-1"],
+        facts: ["request:conversation-1"],
         actions: [],
       },
     });
     expect(
       admitTaskReconcileResult(
-        { state: "converged", summary: "Answered", response: "   ", evidence: [] },
+        { state: "converged", summary: "Answered", response: "   ", facts: [] },
         workflowOptions,
       ),
     ).toEqual({ ok: false, error: "response must be a non-empty string" });
@@ -134,7 +134,7 @@ describe("project task handler contract", () => {
       state: "converged" as const,
       summary: "Classified the terminal run",
       result: { productVerdict: "none", cause: "pipeline-artifact" },
-      evidence: ["pipeline-run:42"],
+      facts: ["pipeline-run:42"],
     };
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
       ok: true,
@@ -170,7 +170,7 @@ describe("project task handler contract", () => {
         {
           state: "waiting",
           summary: "Waiting for independent review",
-          evidence: ["dependency:evaluation/review"],
+          facts: ["dependency:evaluation/review"],
           dependencies: [dependency],
         },
         workflowOptions,
@@ -180,7 +180,7 @@ describe("project task handler contract", () => {
       result: {
         state: "waiting",
         summary: "Waiting for independent review",
-        evidence: ["dependency:evaluation/review"],
+        facts: ["dependency:evaluation/review"],
         actions: [],
         dependencies: [dependency],
       },
@@ -190,7 +190,7 @@ describe("project task handler contract", () => {
         {
           state: "converged",
           summary: "Invalid early completion",
-          evidence: [],
+          facts: [],
           dependencies: [dependency],
         },
         workflowOptions,
@@ -202,7 +202,7 @@ describe("project task handler contract", () => {
           state: "waiting",
           summary: "The dependency is still running",
           response: "I will tell you when it finishes.",
-          evidence: [],
+          facts: [],
           dependencies: [dependency],
         },
         workflowOptions,
@@ -216,7 +216,7 @@ describe("project task handler contract", () => {
         {
           state: "waiting",
           summary: "Invalid target",
-          evidence: [],
+          facts: [],
           dependencies: [{ ...dependency, taskId: " " }],
         },
         workflowOptions,
@@ -225,7 +225,7 @@ describe("project task handler contract", () => {
   });
 
   it("rejects raw child specifications in both schema and admission", () => {
-    const output = { state: "waiting", summary: "Delegate work", evidence: ["needed"],
+    const output = { state: "waiting", summary: "Delegate work", facts: ["needed"],
       actions: [{ kind: "create-task", id: "child", outcome: "Measure", acceptance: ["Measured"] }] };
     expect(Check(taskAgentResultSchema, output)).toBeFalse();
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({ ok: false,
@@ -236,7 +236,7 @@ describe("project task handler contract", () => {
     const result = {
       state: "waiting",
       summary: "Waiting for the operator",
-      evidence: [],
+      facts: [],
       conditions: [
         {
           id: "auth-restored",
@@ -256,7 +256,7 @@ describe("project task handler contract", () => {
     const canonicalOutput = {
       state: "converged" as const,
       summary: "Selected a specialist",
-      evidence: [] as string[],
+      facts: [] as string[],
       actions: [
         {
           kind: "update-task" as const,
@@ -287,7 +287,7 @@ describe("project task handler contract", () => {
         {
           state: "converged",
           summary: "Ambiguous selection",
-          evidence: [],
+          facts: [],
           actions: [
             {
               kind: "update-task",
@@ -310,7 +310,7 @@ describe("project task handler contract", () => {
       {
         state: "converged",
         summary: "Declared standing work",
-        evidence: [],
+        facts: [],
         actions: [
           {
             kind: "update-task",
@@ -337,7 +337,7 @@ describe("project task handler contract", () => {
       {
         state: "converged",
         summary: "Removed a stale workflow binding",
-        evidence: ["workflow:no-longer-registered"],
+        facts: ["workflow:no-longer-registered"],
         actions: [
           {
             kind: "update-task",
@@ -365,7 +365,7 @@ describe("project task handler contract", () => {
       {
         state: "converged",
         summary: "Use the inherited App agent",
-        evidence: [],
+        facts: [],
         actions: [
           {
             kind: "update-task",
@@ -389,7 +389,7 @@ describe("project task handler contract", () => {
         {
           state: "converged",
           summary: "Ambiguous update",
-          evidence: [],
+          facts: [],
           actions: [
             {
               kind: "update-task",
@@ -410,7 +410,7 @@ describe("project task handler contract", () => {
       {
         state: "converged",
         summary: "Delegated one bounded implementation",
-        evidence: [],
+        facts: [],
         actions: [
           {
             kind: "update-task",
@@ -431,7 +431,7 @@ describe("project task handler contract", () => {
         {
           state: "converged",
           summary: "Ambiguous delegation",
-          evidence: [],
+          facts: [],
           actions: [
             {
               kind: "update-task",
@@ -453,7 +453,7 @@ describe("project task handler contract", () => {
         {
           state: "converged",
           summary: "Invalid executor",
-          evidence: [],
+          facts: [],
           actions: [
             {
               kind: "update-task",
@@ -477,7 +477,7 @@ describe("project task handler contract", () => {
     const output = {
       state: "converged",
       summary: "Revise the assignment",
-      evidence: [],
+      facts: [],
       actions: [{ kind: "update-task", taskId: "work/child", expectedGeneration: 1, mode }],
     };
     expect(Check(taskAgentResultSchema, output)).toBeFalse();
@@ -493,7 +493,7 @@ describe("project task handler contract", () => {
         {
           state: "converged",
           summary: "Attempted a legacy update",
-          evidence: ["task:work/stale"],
+          facts: ["task:work/stale"],
           actions: [
             {
               kind: "update-task",
@@ -513,12 +513,12 @@ describe("project task handler contract", () => {
 
   it("keeps failure outside the public handler states", () => {
     expect(
-      admitTaskReconcileResult({ state: "failed", summary: "attempt failed", evidence: [] }, workflowOptions),
+      admitTaskReconcileResult({ state: "failed", summary: "attempt failed", facts: [] }, workflowOptions),
     ).toEqual({ ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" });
   });
 
   it("allows needs-agent only at the workflow boundary", () => {
-    const output = { state: "needs-agent", summary: "Novel judgment", evidence: ["scope:novel"] };
+    const output = { state: "needs-agent", summary: "Novel judgment", facts: ["scope:novel"] };
     expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(true);
     expect(admitTaskReconcileResult(output, { ...workflowOptions, allowNeedsAgent: false })).toEqual({
       ok: false,
@@ -529,18 +529,18 @@ describe("project task handler contract", () => {
   it("normalizes the legacy needs-owner result at admission", () => {
     expect(
       admitTaskReconcileResult(
-        { state: "needs-owner", summary: "Legacy handoff", evidence: ["legacy:workflow"] },
+        { state: "needs-owner", summary: "Legacy handoff", facts: ["legacy:workflow"] },
         workflowOptions,
       ),
     ).toEqual({
       ok: true,
-      result: { state: "needs-agent", summary: "Legacy handoff", evidence: ["legacy:workflow"] },
+      result: { state: "needs-agent", summary: "Legacy handoff", facts: ["legacy:workflow"] },
     });
   });
 
   it("uses the model schema as the exact runtime admission boundary", () => {
     const withUnknownResultField = admitTaskReconcileResult(
-      { state: "converged", summary: "done", evidence: [], unexpected: true },
+      { state: "converged", summary: "done", facts: [], unexpected: true },
       workflowOptions,
     );
     expect(withUnknownResultField.ok).toBe(false);
@@ -549,7 +549,7 @@ describe("project task handler contract", () => {
       {
         state: "converged",
         summary: "created",
-        evidence: ["proof"],
+        facts: ["proof"],
         actions: [
           {
             kind: "update-task",
@@ -569,7 +569,7 @@ describe("project task handler contract", () => {
       admitTaskVerificationResult({
         accepted: true,
         summary: "verified",
-        evidence: [],
+        facts: [],
         unexpected: true,
       }).ok,
     ).toBe(false);
@@ -577,7 +577,7 @@ describe("project task handler contract", () => {
 
   it("admits waiting for runtime validation against newly declared or saved waits", () => {
     expect(
-      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", evidence: [], conditions: [] }, workflowOptions)
+      admitTaskReconcileResult({ state: "waiting", summary: "Waiting", facts: [], conditions: [] }, workflowOptions)
         .ok,
     ).toBe(true);
 
@@ -586,7 +586,7 @@ describe("project task handler contract", () => {
         {
           state: "waiting",
           summary: "Waiting for credential observation",
-          evidence: ["credential is absent"],
+          facts: ["credential is absent"],
           conditions: [
             {
               id: "credential-ready:xhs",
@@ -606,7 +606,7 @@ describe("project task handler contract", () => {
     const untypedConditionResult = {
       state: "waiting",
       summary: "Waiting for approval",
-      evidence: [],
+      facts: [],
       conditions: [
         {
           id: "approval",
@@ -627,7 +627,7 @@ describe("project task handler contract", () => {
         {
           state: "waiting",
           summary: "Waiting with an invalid busy review loop",
-          evidence: [],
+          facts: [],
           conditions: [
             {
               id: "credential-ready:xhs",
@@ -646,7 +646,7 @@ describe("project task handler contract", () => {
     const incompleteCondition = {
       state: "waiting",
       summary: "Waiting without accountable recovery",
-      evidence: [],
+      facts: [],
       conditions: [
         {
           id: "credential-ready:xhs",
@@ -690,7 +690,7 @@ describe("project task handler contract", () => {
           {
             state: "waiting",
             summary: "Waiting on internal task state",
-            evidence: [],
+            facts: [],
             conditions: [
               {
                 id: `internal-${type}`,
@@ -714,21 +714,21 @@ describe("project task handler contract", () => {
       admitTaskVerificationResult({
         accepted: true,
         summary: "Postcondition holds.",
-        evidence: ["artifact:present"],
+        facts: ["artifact:present"],
       }),
     ).toEqual({
       ok: true,
       result: {
         accepted: true,
         summary: "Postcondition holds.",
-        evidence: ["artifact:present"],
+        facts: ["artifact:present"],
       },
     });
     expect(
       admitTaskVerificationResult({
         accepted: "yes",
         summary: "Ambiguous verdict",
-        evidence: [],
+        facts: [],
       }),
     ).toEqual({ ok: false, error: "verifier accepted must be boolean" });
   });

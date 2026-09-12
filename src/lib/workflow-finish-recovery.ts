@@ -42,7 +42,7 @@ export function shouldRequestBoundedWorkflowFinish(
 
 export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
   return (
-    "Bounded completion guardrail: stop expanding the investigation. Use only evidence already gathered and call finish() now with the smallest evidence-honest payload" +
+    "Bounded completion guardrail: stop expanding the investigation. Use only facts already gathered and call finish() now with the smallest facts-honest payload" +
     (outputSchema ? ", including every required schema-validated result field." : ".")
   );
 }
@@ -55,8 +55,8 @@ export function workflowFinishRecoveryPrompt(outputSchema?: TSchema, reason?: st
     prefix +
     "Continue the original bounded assignment within its scope and remaining budget. " +
     "Do not repeat successful work or committed effects. " +
-    "Use the App's instructions and current evidence to choose the next step; inspect current state before repeating an uncertain effect. " +
-    "When the evidence supports an outcome, call finish() with all required fields" +
+    "Use the App's instructions and current facts to choose the next step; inspect current state before repeating an uncertain effect. " +
+    "When the facts support an outcome, call finish() with all required fields" +
     (outputSchema
       ? ", including the schema-validated result payload. If you are blocked, use finish() with a blocked/partial status and include the required result payload."
       : ".")

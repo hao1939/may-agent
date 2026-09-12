@@ -21,7 +21,7 @@ import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-
 import type { TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { admitTaskRequest } from "./inbox.js";
+import { admitTaskInput } from "./inbox.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { migrateOpenTaskState } from "./task-state-cutover.js";
@@ -62,17 +62,17 @@ function fixture() {
     },
     request,
     ask(id: string, taskId = "work") {
-      return admitTaskRequest(config, {
+      return admitTaskInput(config, {
         appId: "sample",
         idempotencyKey: `task:${id}`,
-        request: request(id),
+        inputContext: request(id),
         attachment: {
           kind: "intent",
           intent: {
             id: taskId,
             parentId: "root",
             outcome: "Measure samples and explain results",
-            acceptance: ["Retain measured evidence"],
+            acceptance: ["Retain measured facts"],
           },
         },
       });
@@ -141,12 +141,12 @@ test("quiet maintained outcomes keep their exact attempt, rest across reopen and
   completeAppTask(f.config, claim, {
     summary: "Measured first sample",
     result: { value: 17 },
-    evidence: ["instrument:17"],
+    facts: ["instrument:17"],
   });
   f.legacy();
   expect(f.migrate()).toMatchObject({ tasks: 1, outcomes: 1, continued: 0, inputs: 1 });
   const first = readAppTaskAdmissionOutcome(f.config, "work", "task:first");
-  expect(first).toMatchObject({ attemptId: claim.attemptId, result: { value: 17 }, evidence: ["instrument:17"] });
+  expect(first).toMatchObject({ attemptId: claim.attemptId, result: { value: 17 }, facts: ["instrument:17"] });
   expect(first?.acceptanceBasis).toBeUndefined();
   expect(f.store.isCancelled("work")).toBe(false);
   expect(f.store.listRecoveryCandidates().items).toEqual([]);
@@ -161,13 +161,13 @@ test("quiet maintained outcomes keep their exact attempt, rest across reopen and
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:second")?.result).toEqual({ value: 23 });
 });
 
-test("old Condition waits retain their evidence and review deadline, then continue the matching input", () => {
+test("old Condition waits retain their facts and review deadline, then continue the matching input", () => {
   const f = fixture();
   f.ask("measurement");
   deferAppTask(f.config, f.claim(), {
     disposition: "waiting",
     summary: "Await a measurement",
-    evidence: [],
+    facts: [],
     conditions: [
       {
         id: "measurement",
@@ -275,7 +275,7 @@ function stoppedFixture() {
   return { f, old, selfStop };
 }
 
-test("an old worker self-stop becomes retained failure evidence and paced continuation on the same Task", () => {
+test("an old worker self-stop becomes retained failure facts and paced continuation on the same Task", () => {
   const { f, old, selfStop } = stoppedFixture();
   expect(f.migrate()).toMatchObject({ continued: 1, workerStops: 1 });
   expect(f.store.readCancellation("work")).toBeNull();
@@ -326,9 +326,9 @@ test("failed import restores a worker's original stop and leaves all state uncha
   const before = f.store.readSnapshot();
   const version = f.store.revision();
   f.store.db.exec(
-    "CREATE TRIGGER reject_import BEFORE UPDATE ON app_task_attempts BEGIN SELECT RAISE(ABORT, 'evidence unavailable'); END",
+    "CREATE TRIGGER reject_import BEFORE UPDATE ON app_task_attempts BEGIN SELECT RAISE(ABORT, 'facts unavailable'); END",
   );
-  expect(() => f.migrate()).toThrow("evidence unavailable");
+  expect(() => f.migrate()).toThrow("facts unavailable");
   expect(f.store.readSnapshot()).toEqual(before);
   expect(f.store.revision()).toBe(version);
 });
@@ -337,7 +337,7 @@ test("structural-wait failure rolls back the composed cutover, including first-p
   const { f, old, selfStop } = stoppedFixture();
   const resource = f.store.readTask("work")!;
   // The retained wait outlived its admission. The first phase restores the real
-  // input and failure evidence and removes the old cancellation before retirement fails.
+  // input and failure facts and removes the old cancellation before retirement fails.
   resource.status.inputWaits = {
     "task:missing": {
       taskGeneration: resource.metadata.generation,
@@ -439,7 +439,7 @@ test("missing original input or conflicting acceptance aborts rather than assign
 });
 
 test.each(["missing", "different-spec"])(
-  "an accepted cycle with %s attempt evidence is preserved for explicit repair",
+  "an accepted cycle with %s attempt facts are preserved for explicit repair",
   (problem) => {
     const f = fixture();
     f.ask("measurement");
@@ -496,9 +496,9 @@ test("offline cutover restores only the first accepted failure for its exact inp
   const f = fixture();
   f.ask("first");
   const first = f.claim();
-  reportAppTaskFailure(f.config, first, { summary: "Source unavailable", evidence: ["HTTP:503"] });
+  reportAppTaskFailure(f.config, first, { summary: "Source unavailable", facts: ["HTTP:503"] });
   f.advance();
-  reportAppTaskFailure(f.config, f.claim(), { summary: "Source still unavailable", evidence: ["HTTP:503"] });
+  reportAppTaskFailure(f.config, f.claim(), { summary: "Source still unavailable", facts: ["HTTP:503"] });
   const saved = f.store.readTaskContext({ taskIds: [], admissionIds: ["task:first"] }).appTaskAdmissions!["task:first"]!;
   delete saved.reportAttemptId;
   f.store.commit({ fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],
@@ -631,11 +631,11 @@ test("structural-wait replay keeps admission order across bounded claims and res
     f.ask(id);
   }
   setSystemTime(start + 35);
-  admitTaskRequest(f.config, {
+  admitTaskInput(f.config, {
     appId: "sample",
     idempotencyKey: "task:human",
     attachment: { kind: "existing", taskId: "work" },
-    request: { ...f.request("human"), source: { kind: "human", id: "fixture" } },
+    inputContext: { ...f.request("human"), source: { kind: "human", id: "fixture" } },
   });
   f.reopen();
   expect(migrateTaskCoordination(f.config, { oldRuntimeStopped: true })).toEqual({
