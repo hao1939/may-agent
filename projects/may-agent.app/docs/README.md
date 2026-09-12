@@ -47,8 +47,10 @@ discovery and isolated cross-agent teaching. It identifies feedback delivery
 and post-promotion activation as the next integration gaps.
 The [first integration candidate](proposals/feedback-adoption-integration-20260912.md)
 restores reachable feedback and keeps unverified source adoption pending; four
-model checks confirm the feedback read/update/clear path. Deployment and the
-activation-to-Task completion handoff remain separate.
+model checks confirm the feedback read/update/clear path. Its ordinary-Task
+follow-up verifies adoption in fresh dispatches while retaining an unsuccessful
+immediate-wake timing case. Deployment and Gym's activation-to-result handoff
+remain separate.
 
 The [Telegram experience proposal](proposals/telegram-conversation-experience.md)
 tracks candidate fixes for five reproduced reliability defects alongside

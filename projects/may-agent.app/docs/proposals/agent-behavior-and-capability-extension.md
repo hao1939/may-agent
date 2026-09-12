@@ -548,7 +548,11 @@ Four additional model checks used the real projection: later reads saw saved,
 updated and cleared feedback without definition reload. Gym keeps source-only
 promotion at existing owner attention; exact activation and subsequent Task
 adoption still need integration. The candidate is not deployed, and the report
-retains three pre-existing Evaluation heartbeat-test failures.
+retains three pre-existing Evaluation heartbeat-test failures. Its ordinary-Task
+follow-up records five model executions: an immediate-wake arm used old source
+after reload, while the three fresh-dispatch checks used the expected source.
+The same Task and generation survived. Adoption means the actual execution
+used the change; a reload receipt alone does not prove that.
 
 The isolated teaching slice is complete; production adoption is not. Review
 the focused [runtime PR #159](https://github.com/hao1939/may-agent/pull/159) and

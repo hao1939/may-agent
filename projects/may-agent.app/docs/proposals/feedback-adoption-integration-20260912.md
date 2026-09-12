@@ -1,7 +1,8 @@
 # Reachable feedback and honest source promotion
 
-**Status:** Isolated source candidate and four model checks completed, September
-12, 2026. Not merged into installation source, activated or deployed.
+**Status:** Isolated source candidate, four feedback model checks and the
+ordinary-Task follow-up below, September 12, 2026. Not merged into installation
+source, activated or deployed. The follow-up retains an unsuccessful timing arm.
 **Parent:** [Agent-extension proposal](agent-behavior-and-capability-extension.md).
 
 ## What changed
@@ -97,7 +98,87 @@ storage for unusual identities, but do not prove an agent can discover its
 hashed feedback key from the generic `<you>.md` instruction. That lookup remains
 unverified; safe storage alone is not proof of reachability for every identity.
 
-## Verification and known baseline failure
+## Ordinary Task follow-up: activation is an execution boundary
+
+The next trial used a temporary real daemon and one ordinary App Task,
+`sample/work/capacity`, through its normal input, exact owner comments,
+Conditions, isolated workflow workers and bounded agent calls. The fixture
+operator committed an authorized Orion staging rule; the agent did not author
+this change. This tests adoption through work, not the complete Gym approval
+and activation handoff.
+
+The final source was the existing [Host #158](https://github.com/hao1939/may-agent/pull/158)
+candidate `94864da1`. Its reload observer came from the isolated teaching
+harness at `dbb39fee`; no production Host change or new controller was added.
+The experiment is App commit `20baad01d6`, with exact hashes in the
+[sanitized evidence](evidence/task-guidance-adoption-20260912.json).
+
+### Keep the unsuccessful timing arm
+
+A fast no-model preflight passed, but the first model-backed trial did not
+establish adoption. Its second execution still used the old definition after
+reload reported success. Both model executions completed; the experiment
+stopped on the source/adoption assertion and did not run its third case.
+
+Earlier no-model tracing on the older Host showed extra worker dispatches
+before reload publication, including repeated inbox attachments and overlapping
+Condition/exact-target wakes. An already-dispatched worker pins its source;
+it can start claiming later input after the global source link changes. The
+current candidate passed the fast control, but the longer model-backed case
+still exposed old-source execution. Those observations do not isolate every
+extra-dispatch cause on the current candidate.
+
+This is not evidence that a new rule was available to the model and ignored.
+The workflow's own recorded source was old too. Nor is a displayed waiting
+Task proof that no worker is already starting. Do not fix this by assuming
+another approval, killing all workers on reload, or calling every subsequent
+input a fresh execution.
+
+### A genuinely fresh dispatch used the change
+
+The second arm explicitly observed prior temporary Task-worker exit through
+Linux `/proc` before advancing. This is fixture synchronization, not a new
+production interface or proof of an atomic system-wide idle barrier. Recorded
+execution-source checks remain the acceptance evidence.
+
+| State | Fresh execution result |
+| --- | --- |
+| Rule committed, not reloaded | Computed demand 13; reported the missing policy and unknown eligibility. |
+| Rule activated by successful reload | Used the scoped limit 12 and correctly rejected demand 13. |
+| Invalid replacement committed; reload rejected | Kept the previously active limit 12, not the rejected limit 60. |
+
+All three calls used `gpt-5.6-sol` and completed. The same Task and generation
+1 remained throughout; four attempts include the initial no-model wait. The
+last result was accepted and the Task retained. No owner-close operation was
+requested. Sessions were distinct executions, with actual Task bindings.
+
+Across both arms there were **five model executions**, no automatic retries.
+The successful arm's recorded session times were 14.2, 5.4 and 4.9 seconds;
+this is not a speed comparison. When policy was missing the agent queried
+Task state repeatedly and needed a corrected finish call. Useful adoption
+does not establish optimal discovery or perfect execution efficiency.
+
+The explicit TypeScript check and no-model preflight pass. On exact Host
+`94864da1`, **14 existing worker/restart tests pass** across two files. No
+whole-Host CI, compiled-image trial or installed deployment was run for this
+follow-up. The daemon used source execution; the tested workflow's source
+inspection is experimental instrumentation, not an SDK instruction to App authors.
+
+### Refine the contract, not the number of controllers
+
+Say “activated for newly dispatched executions,” not “every next message
+already uses it.” Existing work may still be using the previous snapshot.
+For adoption evidence, bind the source revision to the actual relevant
+execution and accepted Task result. Keep the same Task through that wait.
+Publication, the worker's selected source, useful behavior and owner closure
+are separate facts.
+
+The experiment does not certify immediate post-reload adoption, restart of
+this particular model-backed Task, installed operator authority, cross-agent
+promotion, or Gym's source-only checkpoint completion. Preserve the unsuccessful
+arm instead of treating the settled arm as a fix for all timing cases.
+
+## Source-slice verification and known baseline failure
 
 - **107 focused tests pass**, covering both App input routes, projection and
   the candidate approval/replay path. These are not separate from the suites below.
@@ -119,9 +200,10 @@ silenced or removed to make this change pass.
 ## Source and next boundary
 
 Local branch: `fix/learning-feedback-adoption-20260912`, based on workspace
-`60d6ab989d`. Model execution used candidate `0588a7ba1a` and Host PoC source
-`886ae455`. Later changes add documentation, clarify the harness comment and add
-a completion-verifier assertion; they are not a second model trial. The candidate
+`60d6ab989d`. The four feedback checks used candidate `0588a7ba1a` and Host PoC
+source `886ae455`. Commit `35254b8411` adds documentation, clarifies the harness
+comment and adds a completion-verifier assertion; it does not rerun those checks.
+The ordinary-Task follow-up uses the separate revisions recorded above. The candidate
 reduces production code by about 199 lines; the separate experimental harness is
 not shipped runtime code.
 This `/app` repository has no GitHub PR workflow; the candidate remains local
@@ -136,9 +218,20 @@ bun scripts/poc/feedback-adoption.ts --host-poc-root /path/to/host-method-matrix
 bun scripts/poc/feedback-adoption.ts --host-poc-root /path/to/host-method-matrix --live
 ```
 
-Next, connect one **authorized activation and subsequent ordinary Task execution**
-to its existing owning work. Verify the exact active source, retain the same
-Task through any wait, and admit completion only from the actual result. Do not
-unblock the source-only checkpoint with a model assertion or a plain change
-event. The Host details view's old `last-eval.md` prompt label remains a separate
-presentation defect; this App change neither injects that file nor repairs the UI.
+The runtime adoption path now has isolated same-Task evidence; next connect it
+to Gym's **exact approved candidate and owning improvement Task**. That complete
+handoff remains unimplemented. Verify the execution's selected source, retain
+the same Task through any wait, and admit completion only from the actual
+result. Do not unblock the source-only checkpoint with a model assertion or a
+plain change event. The Host details view's old `last-eval.md` prompt label
+remains a separate presentation defect; this App change neither injects that
+file nor repairs the UI.
+
+Reproduce the ordinary-Task follow-up from the candidate App checkout:
+
+```sh
+bunx tsc --noEmit -p scripts/poc/tsconfig.task-adoption.json
+bun scripts/poc/task-adoption.ts --host-poc-root /path/to/host-94864da1 --fixture-tools-root /path/to/teaching-dbb39fee --settle-workers
+# With separate model authority/credentials, add --live (at most three calls).
+# Omit --settle-workers to investigate the immediate-wake timing arm.
+```

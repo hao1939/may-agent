@@ -121,9 +121,11 @@ A landed change is not proof of improvement. Its evidence names:
 The [local integration candidate](../proposals/feedback-adoption-integration-20260912.md)
 restores Evaluation-owned generated feedback and labels source-only promotion
 as unverified owner attention. Four isolated model checks prove the reference
-can be read and updated without reload. It is not deployed, and automatic
-activation/fresh-Task verification remains unimplemented. The following source
-findings describe the baseline that motivated that candidate.
+can be read and updated without reload. Its ordinary-Task follow-up proves
+adoption in fresh dispatches and retains an unsuccessful immediate-wake trial:
+an already-dispatched worker may still use old source after reload succeeds.
+It is not deployed, and Gym's activation-to-result handoff remains unimplemented.
+The following source findings describe the baseline that motivated that candidate.
 
 Source review and the [isolated method trial](../proposals/extension-methods-poc-20260912.md)
 distinguish three existing boundaries; the trial changes no production policy:
