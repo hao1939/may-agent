@@ -58,7 +58,7 @@ function fixture() {
   let sequence = 0;
   const now = Date.now() - 10_000;
   function seed(
-    phase: "pending" | "executing" | "decided" | "failed" | "incomplete" | "done",
+    phase: "pending" | "executing" | "decided" | "failed" | "stopped" | "done",
     conversationId = "primary",
   ) {
     const at = now + ++sequence;
