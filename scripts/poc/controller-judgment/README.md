@@ -103,9 +103,11 @@ bun scripts/poc/controller-judgment/shared-loop.ts --live --nested --app-root /p
 The nested trial checks the exact C admission/result as well as B's return to
 A. It allows ten dispatches within the same six-minute experiment limit.
 Recorded waits remain readable but do not trigger a caller attempt. An exact
-answer or owner closure returns to a typed caller. Accepted failure reports
-currently return through Topic links; typed failures remain unfinished while
-the worker retries. That difference remains a convergence gap.
+answer or owner closure returns to a typed caller. The first accepted failure
+also returns through the saved input link, leaving that input unfinished and
+its caller's wait unsatisfied while the worker retries. Input-backed Topic
+follow-up selects the same first report; repeated failures do not add caller
+input. The owner-repair probes below exercise this feedback and its limits.
 A pending wait is preserved once its typed
 input is durably published; the worker need not obtain a synchronous receipt
 from the parent process. Publication does not claim that execution succeeded.

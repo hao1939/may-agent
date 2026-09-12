@@ -49,24 +49,28 @@ These entry points are in `app-task-runtime.ts` or `app-task-reconciler.ts`
 unless a path is given. Result rejection retains unfinished work and paces its
 next attempt. Queues and events help discover work, while stored Tasks, attempts
 and Conditions retain it. A timer rediscovers eligible work; it does not create
-a separate maintenance lifecycle. `recoverTaskConditions()` reads exact completed
-App input receipts and replays retained external Events through the same Condition
-transition. The caller receives the saved answer even if its completion notification
-never reached the journal; no extra delivery queue is needed.
+a separate maintenance lifecycle. `recoverTaskConditions()` reads exact input
+answers and first failure reports, then replays them and retained external Events
+through the same Condition transition. Feedback survives a missed notification;
+no extra delivery queue is needed.
 
 `project.task.reconciled` and `app.task.cancelled` also notify result readers.
-Composition refreshes exact input answers and linked Conversation observations
-from those facts. There is no separate `app.dependency.updated` relay or special
-Condition-matching path for progress. Typed callers await their saved answer;
-routine waits and failed retries stay readable until a review or explicit input
-calls for judgment. Apps can still declare relevant event routes.
+Composition refreshes exact input feedback and linked Conversation observations
+from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`
+for both live delivery and recovery: `blocked` returns the input's first accepted
+failure report; `done` returns its answer or owner closure.
+`app-task-condition-tracker.ts` wakes the caller once for that report while
+keeping the wait unsatisfied. Repeated worker failures do not add caller input.
+The later answer satisfies the wait, even if the caller is retrying its own work.
+Ordinary waits and later reports remain readable for review or fresh input;
+this is not a general progress stream. Apps can still declare relevant event routes.
 
 ## Read the retained names correctly
 
 | Name in code | Meaning in this lifecycle |
 | --- | --- |
 | `achieve` / `maintain` | Retained App intent labels; neither selects a different lifetime |
-| `converged` / SDK `done` | An accepted outcome; later input can run the same open Task |
+| `converged` / SDK `done` | An accepted outcome; later input can run the same open Task. Owner closure preserves this outcome status; read `closed` separately |
 | Worker result `stopped` / `stopAppTask()` | Unsuccessful attempt evidence; unfinished work retries with backoff |
 | Turn Stop / `stopAppTaskAttempt()` | Stop the observed attempt; keep the Task and accepted Requests |
 | `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained evidence remains readable |
@@ -87,7 +91,7 @@ App validates `input` and chooses its Task specification and executor. Workers
 cannot return raw `create-task` actions. `update-task` and `unblock-task` target
 existing assignments and require their current generation. `admitTaskAppDependencies()`
 in `app-task-runtime.ts` publishes delegated input; `app-task-inputs.ts` resumes
-the caller's exact saved input when its wait is satisfied.
+the caller's exact saved input when feedback arrives through its retained wait.
 
 App-declared parent/child relationships still have separate implicit wait and
 child-transition behavior. That retained path is not the new delegation API;
