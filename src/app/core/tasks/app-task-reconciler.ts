@@ -3742,10 +3742,10 @@ export function deferAppTask(
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
-  const conditions = input.conditions;
-  const preserveConditions = conditions === undefined && (resource.status.conditionIds ?? []).some((id) => {
+  // Retained and redeclared waits must renew due checkpoints the same way.
+  const conditions = input.conditions ?? taskConditionIds(tree, claim.taskId).flatMap((id) => {
     const condition = tree.conditions?.[id];
-    return condition && condition.status.state !== "true";
+    return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
   });
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
@@ -3756,8 +3756,7 @@ export function deferAppTask(
   const waitsForChildren = pendingChildTaskIds(tree, claim.taskId).length > 0;
   if (
     input.disposition === "waiting" &&
-    !conditions?.length &&
-    !preserveConditions &&
+    !conditions.length &&
     !waitsForChildren &&
     pendingTrigger?.type === "project.task.child-transitioned"
   ) {
@@ -3769,16 +3768,16 @@ export function deferAppTask(
     });
   }
   validateConditions(conditions, {
-    required: input.disposition === "waiting" && !waitsForChildren && !preserveConditions,
+    required: input.disposition === "waiting" && !waitsForChildren,
     taskId: claim.taskId,
   });
   const now = new Date().toISOString();
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   match.attempt.acceptedResult = acceptedResult;
   finishAttempt(tree, resource, "completed", input.summary, now);
-  if (conditions?.length) {
+  if (conditions.length) {
     materializeWaitingConditions(tree, claim.taskId, conditions, now);
-  } else if (!preserveConditions) {
+  } else {
     unlinkTaskConditions(tree, claim.taskId);
   }
   if (inputKeys.length) {
@@ -3804,7 +3803,7 @@ export function deferAppTask(
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
     evidence: [...(input.evidence ?? [])],
-    ...(!conditions?.length && !preserveConditions ? { conditionIds: [] } : {}),
+    ...(!conditions.length ? { conditionIds: [] } : {}),
   });
 
   // New input remains pending until accepted, whether or not it satisfies a

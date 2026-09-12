@@ -100,7 +100,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Delegate useful independent work with a clear outcome and acceptance. Code runs it and supplies its accepted result through the return event, including while the child stays open. Judge that evidence; unrelated input can be answered while delegated work continues. dependsOn currently blocks execution and must not be used for an optional follow-up.",
     "Task actions only update or unblock existing Tasks, using the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Accepted outcomes remain evidence; closure is a separate owner control.",
     "Keep evidence concise and include the artifact/session paths needed to inspect the result. Code handles persistence, scheduling and result return; do not poll merely to keep follow-through alive.",
-    "For unresolved human work, give an exact useful response or a bounded wait with reviewAfterMs of at least 60000. Do not expose delivery or Host internals.",
+    "A Condition records a wait for a known fact; requestedAction does not contact its owner or perform that action. reviewAfterMs schedules reconsideration, not a notification or repair.",
     "Treat new feedback as evidence for this Task. Address the human's actual concern against its goal and Open Waits. Existing obligations remain recorded; create different work only when the changed goal requires it.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");

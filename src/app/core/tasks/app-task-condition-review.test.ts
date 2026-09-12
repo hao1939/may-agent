@@ -94,7 +94,7 @@ afterEach(() => {
 });
 
 describe("App task Condition review checkpoint", () => {
-  it("reconciles unexpected input across restart while retaining independent waits and deadlines", () => {
+  it.each(["redeclared", "retained"])("preserves independent %s waits and future deadlines across input and restart", (route) => {
     const config = fixture();
     const conditions = [
       {
@@ -115,6 +115,7 @@ describe("App task Condition review checkpoint", () => {
       },
     ];
     const wait = { disposition: "waiting" as const, summary: "Still waiting for both facts", conditions };
+    const unchangedWait = route === "redeclared" ? wait : { disposition: "waiting" as const, summary: wait.summary };
     deferAppTask(config, claim(config), wait);
     const before = readTaskSnapshot(config).conditions;
     const due = config.resourceStore.nextDueAt();
@@ -135,12 +136,12 @@ describe("App task Condition review checkpoint", () => {
       expect(
         claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind,
       ).toBe("busy");
-      deferAppTask(config, first, wait);
+      deferAppTask(config, first, unchangedWait);
       expect(readTaskSnapshot(config).conditions).toEqual(before);
       expect(config.resourceStore.nextDueAt()).toBe(due);
       const second = claim(config);
       expect(second.events.map(({ event }) => event.eventId)).toEqual([402]);
-      deferAppTask(config, second, wait);
+      deferAppTask(config, second, unchangedWait);
       expect(listRunnableAppTaskIds(config)).toEqual([]);
 
       // Observation-only broadcasts are not exact Task input and match neither wait.
@@ -155,7 +156,7 @@ describe("App task Condition review checkpoint", () => {
       const third = claim(config);
       expect(third.events.map(({ event }) => event.eventId)).toEqual([403]);
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["pipeline", "decision"]);
-      deferAppTask(config, third, { ...wait, conditions: [conditions[1]] });
+      deferAppTask(config, third, route === "redeclared" ? { ...wait, conditions: [conditions[1]] } : unchangedWait);
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
       expect(readTaskSnapshot(config).conditions?.decision).toEqual(before?.decision);
       const decision = { type: "project.task.reconciled", eventId: 404, taskId: "decision", state: "converged" };
@@ -306,7 +307,7 @@ describe("App task Condition review checkpoint", () => {
     expect(listRunnableAppTaskIds(config)).toEqual([]);
   });
 
-  it("keeps an unchanged checkpoint recoverable after repeated owner reviews", () => {
+  it.each(["redeclared", "retained"])("paces repeated reviews of an unchanged %s wait", (route) => {
     const config = fixture();
     const condition = {
       id: "external-review-finished",
@@ -340,14 +341,24 @@ describe("App task Condition review checkpoint", () => {
         disposition: "waiting",
         summary: "The same external result is still pending",
         evidence: [`review:unchanged:${reviewAttempt}`],
-        conditions: [condition],
+        ...(route === "redeclared" ? { conditions: [condition] } : {}),
       });
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+      expect(config.resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
+      expect(readTaskSnapshot(config).conditions?.[condition.id]?.status.state).toBe("unknown");
+      if (reviewAttempt === 2) {
+        config.resourceStore.close();
+        config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+        expect(listRunnableAppTaskIds(config)).toEqual([]);
+        expect(config.resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
+      }
     }
 
     const state = readTaskSnapshot(config);
     expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
     expect(listRunnableAppTaskIds(config)).toEqual([]);
     expect(config.resourceStore.nextDueAt()).not.toBeNull();
+    config.resourceStore.close();
   });
 
   it("replaces an obsolete recovery date with the declared review checkpoint", () => {
