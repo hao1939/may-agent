@@ -457,6 +457,8 @@
     }
   },
   "observations": [
+    "Review correction: historical ownerClosure records actually used cancellation (kind cancelled), not owner close tied to an accepted attempt. They do not establish preservation of successful Task projection through owner closure; the original raw records and digests remain unchanged.",
+    "Historical holdout passed flags omitted policy-reference and reply checks. The final retained answers contain references and a proper welcome, but the flags alone are narrower evidence. The corrected fixture reports explicit mechanicalPassed smoke checks, not general semantic quality; its checks and closure fix are not new live trials.",
     "The 2c9e9d6c resume trial completed its mechanism and four holdouts but retained one refused excess probe and one out-of-snapshot relative shared-file read. It is not a zero-error result.",
     "7f2abb05 aligns prompt and relative read roots with the immutable source, without widening access. The final resume trial used that source; the withdrawal trial used 2c9e9d6c, with identical Task-harness source but the earlier target read root.",
     "The final resume trial had zero improver and post-change target tool errors. Its uninformed baseline still had 23 unsuccessful reads; no general lookup-efficiency or performance claim.",

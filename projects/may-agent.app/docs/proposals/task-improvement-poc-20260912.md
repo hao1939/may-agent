@@ -2,7 +2,7 @@
 
 **Status:** Positive and withdrawal live trials completed, September 12, 2026. No production changes.
 **Publication:** [Host PR #163](https://github.com/hao1939/may-agent/pull/163)
-is the single draft PR against `main`. #165 was merged into that PR's branch
+is the single open PR against `main`. #165 was merged into that PR's branch
 as `38c08c7d`, not into main. Neither source integration nor validation authorizes
 deployment.
 **Parent:** [Agent extension proposal](agent-behavior-and-capability-extension.md).
@@ -19,6 +19,28 @@ This is bounded mechanism evidence, not a claim of general learning quality,
 production readiness or crash safety. The unsuccessful trials below remain part
 of the result. The largest lesson was to verify the actual execution boundary,
 not only the registered tool or a reassuring status message.
+
+**Review correction:** the live trials below used cancellation in a field named
+`ownerClosure`. They did not establish successful owner closure: the operation
+recorded `kind: cancelled` and replaced the successful Task projection with an
+attention/cancellation report. Accepted attempt history and the earlier returned
+answer remained, but that is not the promised closure contract. The corrected
+fixture at Host `26fbc4c4` uses existing `closeAppTask` with `afterResult`, rejects an older accepted
+attempt, and checks `kind: closed`, exact accepted-result linkage and preserved
+Task/attempt/caller results through runtime/storage reopen. That correction has
+no-model coverage; it does not prove an installed owner-control interface.
+
+Historical holdout `passed` flags also omitted citation and response checks.
+Current verdicts expose named smoke checks and `mechanicalPassed`: expected
+fields/revision, reported policy version, nonempty reply, and an explicitly
+requested one-sentence English welcome without capacity-policy discussion.
+This is not a general semantic judge. The retained final answers contain the
+policy references and a proper welcome, but raw historical flags alone do not
+establish that. Preserve the old artifacts; do not credit them as new live trials.
+All 12 focused checks and the explicit PoC TypeScript/lint checks pass. Rechecking
+the four retained final answers against the new smoke verdict also passes; the
+clarified prompts have not been rerun against a model. Design integrity, examples
+and App-boundary checks pass.
 
 ## Question and intended boundary
 
@@ -94,7 +116,8 @@ attempts and all nine post-change target executions had zero tool errors.
    active revision `5c79fdac27a150a3788a0affacfec8fca2e95507`.
 6. The original input received the accepted result; no replacement ask was
    created. The Task stayed open on convergence. A subsequent explicit fixture
-   owner control closed it. This checks the control boundary, not human review.
+   owner control cancelled it; despite its `ownerClosure` label, this did not
+   check successful owner-close semantics. See the review correction above.
 
 Independent withheld checks all passed:
 
@@ -316,6 +339,6 @@ recovery timeout; that case passes separately. These files are unchanged by the
 PoC. Their broader-run failures remain unexplained, not silently retried away
 or fixed by changing unrelated runtime code. After consolidation, #163's
 Quality and Container passed at `38c08c7d`; the failed observations remain
-recorded and are not explained by that success. Only #163 remains open/draft.
+recorded and are not explained by that success. Only #163 remains open.
 
 These checks do not claim deployment or model coverage in CI.
