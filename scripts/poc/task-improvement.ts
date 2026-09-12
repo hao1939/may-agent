@@ -37,7 +37,10 @@ const condition: Condition = {
 };
 
 export function validateActivationCondition(value: Condition): string | null {
-  return isDeepStrictEqual(value, condition) ? null : "must use the exact fixture activation Condition";
+  // requestedAction is an optional explanation, not the fact's predicate or an
+  // executed instruction. The agent may describe its next step without changing readiness.
+  const { requestedAction: _requestedAction, ...fact } = value;
+  return isDeepStrictEqual(fact, condition) ? null : "must use the exact fixture activation Condition";
 }
 
 export function taskImprover(withdraw = false): ImprovementRunner {
@@ -233,7 +236,10 @@ export function taskImprover(withdraw = false): ImprovementRunner {
                 evidence: ["fixture"],
                 actions: [],
                 ...(attempt === 1
-                  ? { conditions: [condition], result: { checkpoint: "candidate saved" } }
+                  ? {
+                      conditions: [{ ...condition, requestedAction: "Activate the saved candidate when ready" }],
+                      result: { checkpoint: "candidate saved" },
+                    }
                   : { result: { accepted: true } }),
               },
             },
@@ -382,10 +388,10 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       await profiled(1);
       const task = runtime.store.readTask("improve-guidance")!;
       report.beforeRestart = task;
-      const first = runtime.store.readAttempt(task.status.observedAttemptId!)!;
+      const first = runtime.store.readAttempt([...profiledAttempts][0]!);
       report.firstAttempt = first;
       assert.equal(
-        first.acceptedResult?.state,
+        first?.acceptedResult?.state,
         "waiting",
         "Agent must save a real wait instead of polling or claiming success",
       );

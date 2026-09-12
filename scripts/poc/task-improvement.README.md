@@ -81,8 +81,9 @@ Task recovery also profiles no-op wait checks. The harness waits for distinct
 actual attempt IDs, not arbitrary profiling events. The preflight exercises a
 real redundant wake while waiting to retain that regression.
 
-Readiness uses the exact Condition returned by the fixture, including its
-predicate. No-model checks reject altered/wildcard Conditions through normal
+Readiness uses the fixture's exact fact fields and predicate. An optional
+`requestedAction` description may differ; it does not execute an action or
+change readiness. No-model checks reject altered/wildcard Conditions through normal
 result admission and publish false-predicate and wrong-subject facts before a
 no-op wake. Neither may start the next attempt. Source checks compare the
 committed candidate and active revision before and after reopen/withdrawal.

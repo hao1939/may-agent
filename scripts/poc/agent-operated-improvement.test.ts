@@ -161,8 +161,11 @@ for (const mode of ["direct", "task-resume", "task-withdraw"] as const)
             JSON.parse(message.content.find((part) => part.type === "text")!.text),
           )
           .find((result: { state?: string }) => result.state === "waiting");
-        expect(closedWindow.condition).toEqual(condition);
+        expect(condition).toMatchObject(closedWindow.condition);
         expect(validateActivationCondition(condition)).toBeNull();
+        expect(
+          validateActivationCondition({ ...condition, requestedAction: "Describe the next authorized step" }),
+        ).toBeNull();
         for (const patch of [
           { expected: {} },
           { expected: { field: "ready", equals: false } },
