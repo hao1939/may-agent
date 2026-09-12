@@ -16,7 +16,6 @@ import {
   observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
 import { AppTaskController } from "../tasks/controller.js";
-import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
@@ -530,7 +529,7 @@ test("Conversation control preparation requires human authority and an exact con
   expect(human.store.isCancelled("job")).toBe(false);
 });
 
-test("one controller returns B through A to the real Conversation after intervening input and restart", async () => {
+test("the common controller returns a delegated answer to the real Conversation after intervening input and restart", async () => {
   const f = fixture();
   const first = f.admit("first", 1, "Get the sample measurement in the background and report it here.");
   const workerApp = defineApp({
@@ -646,27 +645,7 @@ test("one controller returns B through A to the real Conversation after interven
           });
           if ("admittedTasks" in result) for (const task of result.admittedTasks) controller.enqueue(task.taskId);
           topicId = getAppInboxItem(f.db, "first")!.topicId!;
-        } else if (taskId === "A" && !f.store.readTask("B")) {
-          // Fixture App declares B; typed nested delegation is covered by the common-loop integration suite.
-          observeAppTaskIntent(f.context(), {
-            appAgent: "owner",
-            intent: {
-              id: "B",
-              parentId: "A",
-              outcome: "Read sample",
-              acceptance: ["Return measured value"],
-              mode: "achieve",
-              outputs: [],
-            },
-          });
-          controller.enqueue("B");
-          const result = deferAppTask(f.context(), claim, {
-            disposition: "waiting",
-            summary: "Get measurement from B",
-            evidence: ["Measurement required"],
-          });
-          for (const id of result.reconcileTaskIds) controller.enqueue(id);
-        } else if (taskId === "B" && !claim.trigger?.ready) {
+        } else if (taskId === "A" && !claim.trigger?.ready) {
           deferAppTask(f.context(), claim, {
             disposition: "waiting",
             summary: "Source is not ready",
@@ -682,14 +661,7 @@ test("one controller returns B through A to the real Conversation after interven
             ],
           });
         } else {
-          let measurement: Record<string, unknown> = { value: 17 };
-          if (taskId === "A") {
-            const returned = readAppTaskReconciliationEvents(f.store, claim).items.find(
-              ({ event }) => event.data.childTaskId === "B",
-            )?.event.data;
-            expect(returned?.acceptedResult).toMatchObject({ state: "converged", result: { value: 17 } });
-            measurement = (returned!.acceptedResult as { result: Record<string, unknown> }).result;
-          }
+          const measurement = { value: 17 };
           const result = completeAppTask(f.context(), claim, { summary: "Measured", result: measurement });
           for (const id of result.dependentTaskIds) controller.enqueue(id);
           if (taskId === "A") {
@@ -708,7 +680,7 @@ test("one controller returns B through A to the real Conversation after interven
   let controller = makeController();
   try {
     controller.enqueue(first.taskId);
-    await until(() => f.store.readTask("B")?.status.phase === "waiting" && !controller.snapshot().running.length);
+    await until(() => f.store.readTask("A")?.status.phase === "waiting" && !controller.snapshot().running.length);
     f.admit("explanation", 2, "Meanwhile, what is a threshold?");
     controller.enqueue(first.taskId);
     await until(() => getAppInboxItem(f.db, "explanation")?.status === "done" && !controller.snapshot().running.length);
@@ -721,10 +693,10 @@ test("one controller returns B through A to the real Conversation after interven
       trackAppTaskConditionEventForTasks(
         f.context(),
         { type: "sample.available", sample: "one", state: true, ready: true },
-        ["B"],
+        ["A"],
       ),
     ).toHaveLength(1);
-    controller.enqueue("B");
+    controller.enqueue("A");
     await until(
       () =>
         readConversationRequest(f.db, app.id, "chat", "measurement")?.status === "closed" &&
@@ -754,7 +726,6 @@ test("one controller returns B through A to the real Conversation after interven
     expect(judgments).toHaveLength(3);
     expect(f.store.isCancelled(first.taskId)).toBe(false);
     expect(f.store.isCancelled("A")).toBe(false);
-    expect(f.store.isCancelled("B")).toBe(false);
     expect(
       f.db.prepare("SELECT id FROM app_inbox_items WHERE lease_owner IS NOT NULL OR lease_generation != 0").all(),
     ).toEqual([]);
@@ -873,7 +844,6 @@ test("old inbox cannot execute Task-owned Conversation input or later unconverte
   });
   expect(claimAppInboxItem(f.db, input.item.id, "legacy", 1_000)).toBeNull();
   expect(claimAppInboxItem(f.db, "old-route", "legacy", 1_000)).toBeNull();
-
 
   await host.recoverAdmissions();
   expect(executions).toBe(0);

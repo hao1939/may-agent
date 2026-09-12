@@ -1,3 +1,4 @@
+import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import {
@@ -179,7 +180,8 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
           else if (observed.acceptedResult?.state === "waiting" && resource.status.phase === "waiting")
             (resource.status.inputWaits ??= {})[key] ??= {
               taskGeneration: resource.metadata.generation,
-              children,
+              // Temporary old representation is retired atomically below.
+              ...{ children },
               conditions,
             };
         }
@@ -246,6 +248,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
     }
     if (mutation.fences.length && !store.commit(mutation))
       throw new Error("Task state cutover lost its resource fence");
-    return { tasks: mutation.fences.length, outcomes, continued, workerStops, inputs: mutation.admissions!.length };
+    const coordination = migrateTaskCoordination(config, input);
+    return { tasks: mutation.fences.length, outcomes, continued, workerStops, inputs: mutation.admissions!.length, coordination };
   });
 }

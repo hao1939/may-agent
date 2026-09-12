@@ -51,7 +51,7 @@ function projection(resources: Record<string, AppTaskResource>, extra: Partial<T
 }
 
 describe("canonical project task projection", () => {
-  it("classifies ready, dependency-bound, condition-waiting, child-waiting, and healthy standing work", () => {
+  it("classifies readiness and diagnoses a conditionless wait even with live children", () => {
     const result = projection(
       {
         ready: resource("ready", "pending"),
@@ -99,10 +99,18 @@ describe("canonical project task projection", () => {
       related_ids: ["pipeline-run:42-completed"],
     });
     expect(result.tasks.parent.readiness).toEqual({
-      state: "child-blocked",
-      reason: "Waiting for child work: child",
-      related_ids: ["child"],
+      state: "condition-blocked",
+      reason: "Waiting without a linked Condition",
+      related_ids: [],
     });
+    expect(result.integrity.filter((finding) => finding.code === "waiting-without-condition")).toEqual([
+      {
+        code: "waiting-without-condition",
+        task_id: "parent",
+        related_ids: [],
+        message: "Waiting task has no linked Condition",
+      },
+    ]);
     expect(result.tasks.standing).toMatchObject({
       mode: "maintain",
       phase: "converged",
@@ -138,7 +146,7 @@ describe("canonical project task projection", () => {
     expect(result.tasks.pending.readiness).toMatchObject({ state: "capacity-blocked" });
     expect(result.tasks.woken.readiness).toMatchObject({ state: "capacity-blocked" });
     expect(result.integrity.map((finding) => finding.code)).toEqual(
-      expect.arrayContaining(["running-without-attempt", "waiting-without-condition-or-child"]),
+      expect.arrayContaining(["running-without-attempt", "waiting-without-condition"]),
     );
   });
 

@@ -186,7 +186,7 @@ describe("durable execution backoff", () => {
     expect(claim().generation).toBe(3);
   });
 
-  it("notifies the existing parent without requiring it to unblock continued attempts", () => {
+  it("retries independently without notifying the structural parent", () => {
     const { config, intent, claim } = setup();
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent" } });
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
@@ -194,12 +194,11 @@ describe("durable execution backoff", () => {
       if (index) advanceToTaskRetry(config, intent.id);
       expect(failAppTaskAttempt(config, claim(), `Failure ${index + 1}`)).toMatchObject({
         status: "retrying",
-        parentTaskId: "parent",
       });
     }
     const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
     if (parent.kind !== "claimed") throw new Error("expected parent review");
-    expect(parent.events.some((entry) => JSON.stringify(entry.event).includes("Failure 4"))).toBe(true);
+    expect(parent.events.some((entry) => JSON.stringify(entry.event).includes("Failure 4"))).toBe(false);
     completeAppTask(config, parent, { summary: "Reported the source problem", evidence: ["test:source-offline"] });
     advanceToTaskRetry(config, intent.id);
     expect(claim().generation).toBe(1);
@@ -228,11 +227,11 @@ describe("worker failure evidence and owner closure", () => {
     return { config, intent, claim };
   }
 
-  it("retains attributed failure evidence and wakes the parent without closing the assignment", () => {
+  it("retains attributed failure evidence without implicitly notifying the parent", () => {
     const { config, intent, claim } = setup();
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent" } });
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
-    expect(stopAppTask(config, claim, decision)).toMatchObject({ status: "applied", parentTaskId: "parent" });
+    expect(stopAppTask(config, claim, decision)).toMatchObject({ status: "applied" });
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
     expect(config.resourceStore.readAttempt(claim.attemptId)).toMatchObject({
       owner: claim.agent,
@@ -255,7 +254,7 @@ describe("worker failure evidence and owner closure", () => {
     ).toMatchObject({ kind: "waiting", dependencyIds: [intent.id] });
     const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
     if (parent.kind !== "claimed") throw new Error("expected parent review");
-    expect(JSON.stringify(parent.events)).toContain("Outcome not achieved");
+    expect(JSON.stringify(parent.events)).not.toContain("Outcome not achieved");
     recordAppTaskTrigger(config, intent.id, { type: "sample.wake", eventId: 77 });
     expect(claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" }).kind).toBe(
       "waiting",
@@ -344,7 +343,7 @@ describe("worker failure evidence and owner closure", () => {
     },
   );
 
-  it.each(["report", "closure"] as const)("rolls back the %s and parent wake if storage fails", (kind) => {
+  it.each(["report", "closure"] as const)("rolls back the %s atomically if storage fails", (kind) => {
     const { config, intent, claim } = setup();
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent" } });
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
@@ -1531,7 +1530,6 @@ describe("App task reconciler state", () => {
     completeAppTask(config, maintainClaim, { summary: "monitor converged" });
 
     expect(listRunnableAppTaskIds(config)).toEqual(["work/attention", "categorized-task", "work/pending"]);
-
 
     observeAppTaskIntent(config, {
       intent: attentionIntent,
@@ -4555,7 +4553,7 @@ describe("App task reconciler state", () => {
         summary: "bounded domain fix completed",
         evidence: ["proof:domain-fix"],
       }),
-    ).toMatchObject({ status: "applied", dependentTaskIds: [parentIntent.id] });
+    ).toMatchObject({ status: "applied", dependentTaskIds: [] });
     expect(readAppTaskTrigger(config, parentIntent.id)).toEqual(commentTrigger);
 
     const interruptedTree = config.resourceStore.readTaskContext({ taskIds: [parentIntent.id] });
@@ -6004,59 +6002,6 @@ describe("App task reconciler state", () => {
     });
     if (second.kind !== "claimed") throw new Error("expected second Condition claim");
     expect(second.events.map(({ event }) => event.eventId)).toEqual([802]);
-  });
-
-  it("delivers every child transition to the parent in one ordered event batch", () => {
-    const { config } = fixture();
-    const parent = declareAndClaimTask(config, {
-      intent: { ...intent("maintain"), id: "work/parent-batch" },
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (parent.kind !== "claimed") throw new Error("expected parent claim");
-    const child = (id: string) => ({
-      id,
-      parentId: parent.taskId,
-      outcome: `Complete ${id}`,
-      acceptance: [`${id} converges`],
-      mode: "achieve" as const,
-      outputs: [],
-      priority: "P2" as const,
-    });
-    for (const id of ["work/child-one", "work/child-two"])
-      observeAppTaskIntent(config, { appAgent: "app-owner", intent: child(id) });
-    expect(
-      deferAppTask(config, parent, {
-        disposition: "waiting",
-        summary: "waiting for both children",
-        evidence: ["decomposition:two-children"],
-      }),
-    ).toMatchObject({ status: "applied" });
-
-    for (const childTaskId of ["work/child-one", "work/child-two"]) {
-      const childClaim = claimObservedAppTask(config, {
-        taskId: childTaskId,
-        appAgent: "app-owner",
-        handler: "workflow:known-workflow",
-        reason: "child",
-      });
-      if (childClaim.kind !== "claimed") throw new Error(`expected claim for ${childTaskId}`);
-      expect(
-        completeAppTask(config, childClaim, {
-          summary: `${childTaskId} converged`,
-          evidence: [`proof:${childTaskId}`],
-        }),
-      ).toMatchObject({ status: "applied", dependentTaskIds: [parent.taskId] });
-    }
-
-    const resumed = claimObservedAppTask(config, {
-      taskId: parent.taskId,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-      reason: "children-transitioned",
-    });
-    if (resumed.kind !== "claimed") throw new Error("expected resumed parent claim");
-    expect(resumed.events.map(({ event }) => event.childTaskId)).toEqual(["work/child-one", "work/child-two"]);
   });
 
   it("filters task Conditions by subject and expected state", () => {

@@ -1635,6 +1635,222 @@ describe("canonical App task runtime", () => {
       .toEqual(expect.arrayContaining([{ sample: 1 }, { sample: 2 }]));
   });
 
+  it.each(["live", "lost-notification", "restart", "owner-cancel"] as const)(
+    "follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (%s)",
+    async (route) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let host: AppInboxHost;
+      let sourceReady = false;
+      const calls: string[] = [];
+      const contexts: Parameters<TaskExecutor>[0][] = [];
+      const app = defineApp({
+        ...definition(),
+        task: ({ input }) => ({
+          kind: "desired",
+          intent: {
+            id: String((input.data as { taskId: string }).taskId),
+            parentId: "operations",
+            mode: "achieve",
+            executor: "chain",
+            outcome: "Return the exact requested measurement",
+            acceptance: ["Retain source evidence"],
+          },
+        }),
+      });
+      const install = async () => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          appRegistrySnapshot: { id: "explicit-chain", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+          executors: {
+            chain: async (attempt) => {
+              const id = attempt.task.id;
+              calls.push(id);
+              contexts.push(attempt);
+              if (
+                attempt.events.items.some(
+                  ({ event }) => (event.data.request as { id?: string } | undefined)?.id === "discussion",
+                )
+              )
+                return {
+                  state: "converged",
+                  summary: "We can discuss the threshold while the measurement runs",
+                  evidence: ["discussion"],
+                };
+              if (id === "C")
+                return sourceReady
+                  ? { state: "converged", summary: "Measured", result: { value: 17 }, evidence: ["measurement:17"] }
+                  : { state: "stopped", summary: "Owner must restore the source", evidence: ["source:unavailable"] };
+              const feedback = attempt.events.items.findLast(({ event }) => event.type === "app.dependency.updated")
+                ?.event.data;
+              if (feedback?.status === "blocked")
+                return {
+                  state: "stopped",
+                  summary: "Owner must restore the source",
+                  evidence: ["source:unavailable"],
+                };
+              if (feedback?.status === "done")
+                return {
+                  state: "converged",
+                  summary: "Returned the exact measurement",
+                  result: feedback.result as Record<string, unknown>,
+                  evidence: ["measurement:17"],
+                };
+              return {
+                state: "waiting",
+                summary: "Measure through the responsible App",
+                evidence: [],
+                dependencies: [
+                  {
+                    id: "measurement",
+                    appId: "sample",
+                    input: { kind: "measure", data: { taskId: id === "A" ? "B" : "C" } },
+                  },
+                ],
+              };
+            },
+          },
+        });
+        host = new AppInboxHost({
+          db: getDb(persistDir),
+          apps: [app],
+          attachTask: (input) => admitTaskRequest(loadedTaskConfig(f), input),
+          readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+          onRequestUpdated(item, result, status) {
+            if (route !== "live" && route !== "owner-cancel") throw new Error("Simulated missed notification");
+            const event = appInputFeedbackEvent(item, result, status);
+            if (event) admitLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event, intent: null });
+          },
+        });
+        bus.subscribe((event) => {
+          if (event.type !== "app.input.requested") return;
+          host.admit({
+            id: String(event.data.requestId),
+            appId: "sample",
+            source: { kind: "app", id: "sample" },
+            input: event.data.input as { kind: string; data: unknown },
+            idempotencyKey: String(event.data.idempotencyKey),
+          });
+          return { accepted: true, by: "fixture", route: "direct" };
+        });
+      };
+      const run = (taskId: string) =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      const refresh = async () => {
+        await host.recoverTaskResults();
+        await recoverInstalledAppTasks(bus);
+      };
+      const reopen = async () => {
+        host.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      };
+      await install();
+      try {
+        host!.admit({
+          id: "original",
+          appId: "sample",
+          source: { kind: "system", id: "owner" },
+          input: { kind: "measure", data: { taskId: "A" } },
+        });
+        await run("A");
+        await run("B");
+        // An organizational child must neither gate A nor subscribe it to outcomes.
+        observeAppTaskIntent(loadedTaskConfig(f), {
+          appAgent: "sample-owner",
+          intent: {
+            id: "independent",
+            parentId: "A",
+            outcome: "Independent work",
+            acceptance: ["Own evidence"],
+            mode: "achieve",
+            executor: "chain",
+          },
+        });
+        host!.admit({
+          id: "discussion",
+          appId: "sample",
+          source: { kind: "human", id: "operator" },
+          input: { kind: "discuss", data: { taskId: "A" } },
+        });
+        await run("A");
+        await refresh();
+        expect(host!.get("discussion")?.result?.summary).toContain("discuss the threshold");
+        expect(host!.get("original")?.status).toBe("handling");
+        expect(loadedTaskConfig(f).resourceStore.readTask("A")?.status.conditionIds).toHaveLength(1);
+        await run("C");
+        await refresh();
+        if (route === "restart") {
+          await reopen();
+          await refresh();
+        }
+        await run("B");
+        await refresh();
+        await run("A");
+        await refresh();
+        expect(calls).toEqual(["A", "B", "A", "C", "B", "A"]);
+        expect(host!.get("original")?.status).toBe("handling");
+        expect(contexts.filter((ctx) => ctx.task.id === "B").at(-1)?.waits.open[0]?.state).toBe("false");
+        expect(
+          readLoadedAppTaskInputResult({
+            bus,
+            appDir: f.appDir,
+            taskId: "A",
+            admissionKey: host!.get("original")!.taskAdmissionKey!,
+            kind: "report",
+          })?.summary,
+        ).toContain("restore the source");
+        if (route === "owner-cancel") {
+          const resource = loadedTaskConfig(f).resourceStore.readTask("A")!;
+          cancelLoadedAppTask({
+            bus,
+            appId: "sample",
+            taskId: "A",
+            expectedGeneration: resource.metadata.generation,
+            expectedResourceVersion: resource.metadata.resourceVersion,
+            reason: "Owner no longer needs the measurement",
+          });
+        }
+        sourceReady = true;
+        const due = Math.max(
+          ...["A", "B", "C"].map((id) => loadedTaskConfig(f).resourceStore.readTask(id)?.status.executionRetryAt ?? 0),
+        );
+        setSystemTime(due + 1);
+        await run("C");
+        await refresh();
+        await run("B");
+        await refresh();
+        await run("A");
+        await refresh();
+        expect(loadedTaskConfig(f).resourceStore.readTask("B")?.status.result).toEqual({ value: 17 });
+        expect(loadedTaskConfig(f).resourceStore.readTask("C")?.status.result).toEqual({ value: 17 });
+        if (route === "owner-cancel") {
+          expect(calls.filter((id) => id === "A")).toHaveLength(3);
+          expect(host!.get("original")?.result?.summary).toContain("closed without an accepted outcome");
+        } else {
+          expect(host!.get("original")?.result?.result).toEqual({ value: 17 });
+          const result = host!.get("original")?.result;
+          await reopen();
+          await refresh();
+          expect(host!.get("original")?.result).toEqual(result);
+        }
+        for (const id of ["B", "C", "independent"]) expect(loadedTaskConfig(f).resourceStore.isCancelled(id)).toBe(false);
+        expect(loadedTaskConfig(f).resourceStore.readTrigger("A")).toBeNull();
+      } finally {
+        host!.close();
+      }
+    },
+  );
+
   it.each([false, true])(
     "returns the exact saved App answer after its notification is lost (restart: %j)",
     async (restart) => {
@@ -2249,7 +2465,7 @@ describe("canonical App task runtime", () => {
     expect(emitted).toHaveLength(emittedBeforeReuse);
   });
 
-  it("turns a typed child App dependency into deterministic input and an exact completion Condition", () => {
+  it("turns a typed App dependency into deterministic input and an exact completion Condition", () => {
     const f = fixture();
     const bus = eventBus();
     const emitted: Array<Record<string, unknown>> = [];
@@ -3893,188 +4109,6 @@ describe("canonical App task runtime", () => {
     });
   });
 
-  it("queues the loaded executable parent when its child is cancelled by a human", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    const parentId = "work/assessment";
-    const childId = "work/optional";
-    const seen: Parameters<TaskExecutor>[0][] = [];
-    await installCoreTaskRuntimes({
-      ...options(f, bus),
-      hostCapacity: new HostCapacity(1),
-      executors: {
-        assess: async (attempt) => {
-          seen.push(attempt);
-          return {
-            state: "converged",
-            summary: "Assessment delivered; optional implementation was cancelled",
-            evidence: ["assessment:reviewed"],
-          };
-        },
-      },
-      appRegistrySnapshot: {
-        id: "parent-cancel",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    });
-    // Admission is storage-only. The parent's only queue entry below must come
-    // from cancelLoadedAppTask, not attachment, a child return, or recovery.
-    const config = loadedTaskConfig(f);
-    const intent = {
-      id: parentId,
-      parentId: "operations",
-      outcome: "Assess the optional feature",
-      acceptance: ["Return a useful assessment"],
-      mode: "achieve" as const,
-      executor: "assess",
-    };
-    observeAppTaskIntent(config, { appAgent: "sample-owner", intent });
-    observeAppTaskIntent(config, {
-      appAgent: "sample-owner",
-      intent: {
-        ...intent,
-        id: childId,
-        parentId,
-        outcome: "Try an optional implementation",
-      },
-    });
-    const parent = claimObservedAppTask(config, { taskId: parentId, appAgent: "sample-owner", handler: "auto" });
-    if (parent.kind !== "claimed") throw new Error("expected parent claim");
-    deferAppTask(config, parent, { disposition: "waiting", summary: "Await child findings", evidence: [] });
-    expect(seen).toHaveLength(0);
-    const settled = new Promise<AgentEvent>((resolve) => {
-      bus.subscribe((event) => {
-        if (event.type === "project.task.reconciled" && event.data.taskId === parentId) resolve(event);
-      });
-    });
-    const child = config.resourceStore.readTask(childId)!;
-    expect(
-      cancelLoadedAppTask({
-        bus,
-        appId: "sample",
-        taskId: childId,
-        expectedGeneration: child.metadata.generation,
-        expectedResourceVersion: child.metadata.resourceVersion,
-        reason: "Optional implementation no longer needed",
-      }).applied,
-    ).toBe(true);
-    expect((await settled).data.disposition).toBe("converged");
-    expect(seen).toHaveLength(1);
-    expect(seen[0]?.task.id).toBe(parentId);
-    expect(seen[0]?.children).toMatchObject({
-      live: [],
-      completed: [],
-      cancelled: [{ taskId: childId, summary: expect.stringContaining("Cancelled by human") }],
-    });
-    expect(readAcceptedRuntimeAttempt(config, parentId)?.acceptedResult?.summary).toContain("Assessment delivered");
-    expect(config.resourceStore.isCancelled(parentId)).toBe(false);
-    expect(config.resourceStore.readReceipt(childId)).toBeNull();
-    expect(config.resourceStore.readCancellation(childId)?.decidedBy).toEqual({ kind: "human" });
-  }, 5_000);
-
-  it("aborts the exact registered executor attempt after durable Task cancellation", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    let startedAttemptId = "";
-    let activeSignal: AbortSignal | undefined;
-    let markStarted = () => {};
-    let markAborted = () => {};
-    const started = new Promise<void>((resolve) => {
-      markStarted = resolve;
-    });
-    const aborted = new Promise<void>((resolve) => {
-      markAborted = resolve;
-    });
-
-    await installAppTaskRuntimes({
-      ...options(f, bus),
-      executors: {
-        reviewer: async (attempt) => {
-          startedAttemptId = attempt.attemptId;
-          activeSignal = attempt.signal;
-          markStarted();
-          await new Promise<never>((_, reject) => {
-            const stop = () => {
-              markAborted();
-              reject(attempt.signal.reason);
-            };
-            attempt.signal.addEventListener("abort", stop, { once: true });
-            if (attempt.signal.aborted) stop();
-          });
-        },
-      },
-      appRegistrySnapshot: {
-        id: "boot:registered-executor-cancel",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    });
-    await attachLoadedAppTask({
-      bus,
-      appDir: f.appDir,
-      appId: "sample",
-      attachment: {
-        kind: "desired",
-        intent: {
-          id: "work/cancel-executor",
-          parentId: "operations",
-          outcome: "Cancel one replaceable executor",
-          acceptance: ["The active attempt stops"],
-          mode: "achieve",
-          agent: "sample-owner",
-          executor: "reviewer",
-        },
-      },
-      idempotencyKey: "attach:cancel-executor",
-      request: {
-        id: "request-cancel-executor",
-        source: { kind: "human", id: "operator" },
-        input: { kind: "sample", data: {} },
-      },
-    });
-    await started;
-    bus.emit({
-      type: "app.task.cancelled",
-      source: "app-task-reconciler",
-      owner: "human:operator",
-      target: { appId: "sample", taskId: "work/cancel-executor" },
-      data: {
-        appId: "sample",
-        taskId: "work/cancel-executor",
-        attemptId: "older-attempt",
-        reason: "stale cancellation signal",
-      },
-    });
-    await Bun.sleep(1);
-    expect(activeSignal?.aborted).toBeFalse();
-
-    const humanTasks = new HumanTaskService(getDb(join(f.root, "state")), {
-      snapshot: () => ({
-        id: "test:cancel",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      }),
-    });
-    const current = humanTasks.getTask({ appId: "sample", taskId: "work/cancel-executor" });
-    if (!current) throw new Error("expected cancellable Task");
-    expect(
-      cancelLoadedAppTask({
-        bus,
-        appId: current.appId,
-        taskId: current.taskId,
-        expectedGeneration: current.generation,
-        expectedResourceVersion: current.resourceVersion,
-        reason: "no longer needed",
-      }),
-    ).toMatchObject({ applied: true, cancelledAttemptId: startedAttemptId });
-    await aborted;
-    expect(startedAttemptId).not.toBe("");
-    expect(humanTasks.getTask({ appId: "sample", taskId: "work/cancel-executor" })).toMatchObject({
-      status: "cancelled",
-    });
-  });
-
   it("retries a restored executor through durable eligibility while independent Tasks keep working", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4535,6 +4569,68 @@ describe("canonical App task runtime", () => {
     expect(recoveries).toBe(1);
   });
 
+  it("supplies accepted waits to workflow judgment without inferring them from children", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const dir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "wait-context.ts"),
+      `
+        export const name = "wait-context";
+        export const description = "Use the common saved wait context";
+        export async function execute(ctx) {
+          const waits = ctx.reconciliation.waits.open;
+          return ctx.done("Reviewed input", waits.length
+            ? { state: "converged", summary: "Answered another input", evidence: ["saved-wait"], result: { waits } }
+            : { state: "waiting", summary: "Wait for the source", evidence: [], conditions: [{
+                id: "source", type: "source.available", subject: "source:sample", expected: true,
+                owner: "app:source", reviewAfterMs: 60000,
+              }] });
+        }
+      `,
+    );
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      agentsRoot,
+      sharedRoot: join(f.root, "shared"),
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: "workflow-waits",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "wait-context",
+        parentId: "operations",
+        mode: "achieve",
+        outcome: "Answer inputs while retaining a wait",
+        acceptance: ["Use saved facts"],
+        workflow: "wait-context",
+      },
+    });
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId: "wait-context",
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    await run();
+    expect(config.resourceStore.readTask("wait-context")?.status).toMatchObject({ phase: "waiting" });
+    recordAppTaskTrigger(config, "wait-context", { type: "sample.discussion", data: { text: "Explain the source" } });
+    await run();
+    expect(acceptedTaskAttempt(config, "wait-context")?.acceptedResult?.result).toMatchObject({
+      waits: [{ conditionId: "source", type: "source.available", subject: "source:sample", state: "unknown" }],
+    });
+    expect(config.resourceStore.readTask("wait-context")?.status.conditionIds).toEqual(["source"]);
+  });
+
   it("retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4953,201 +5049,6 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.isCancelled("work/broken")).toBe(false);
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
   });
-
-  it.each([false, true])(
-    "lets the parent repair a prerequisite while its child continues through normal retry (restart: %j)",
-    async (restart) => {
-      const f = fixture();
-      let bus = eventBus();
-      const persistDir = join(f.root, "state");
-      const parentId = "work/delivery";
-      const childId = "work/verification";
-      let childCalls = 0;
-      let repaired = false;
-      const reviews: Array<Pick<Parameters<TaskExecutor>[0], "children" | "events">> = [];
-      const pendingCallerStates: Array<ReturnType<AppInboxHost["get"]>> = [];
-      let host: AppInboxHost;
-      const executors: Record<string, TaskExecutor> = {
-        owner: async ({ children, events }) => {
-          reviews.push(structuredClone({ children, events }));
-          pendingCallerStates.push(host.get("request-delivery"));
-          const child = children.live.find((entry) => entry.taskId === childId);
-          if (child?.status === "pending" && child.summary?.includes("Verification prerequisite unavailable")) {
-            // The App repairs the prerequisite. The existing controller retries
-            // the same child at its saved deadline without a separate unblock decision.
-            repaired = true;
-            return {
-              state: "waiting",
-              summary: "Prerequisite repaired; verify the same child again",
-              evidence: ["test:prerequisite-repaired"],
-            };
-          }
-          if (child?.status === "done") {
-            return {
-              state: "converged",
-              summary: "Owner accepted the verified delivery",
-              response: "Delivered and independently verified.",
-              evidence: ["test:aggregate-accepted"],
-            };
-          }
-          return {
-            state: "waiting",
-            summary: "Verify the delivery before accepting it",
-            evidence: ["test:verification-required"],
-          };
-        },
-        verify: async () => {
-          childCalls += 1;
-          if (!repaired) throw new Error("Verification prerequisite unavailable");
-          return {
-            state: "converged",
-            summary: "Delivery verification passed",
-            evidence: ["test:verification-passed"],
-          };
-        },
-      };
-      const app = defineApp({
-        ...definition(),
-        task: () => ({
-          kind: "desired" as const,
-          intent: {
-            id: parentId,
-            parentId: "operations",
-            outcome: "Deliver a verified result",
-            acceptance: ["Owner accepts the verified delivery"],
-            mode: "achieve" as const,
-            executor: "owner",
-          },
-        }),
-      });
-      const install = async (controllers: boolean) => {
-        await installCoreTaskRuntimes({
-          ...options(f, bus),
-          hostCapacity: new HostCapacity(1),
-          installControllers: controllers,
-          executors,
-          appRegistrySnapshot: {
-            id: "boot:parent-review",
-            generation: 1,
-            entries: [{ appDir: f.appDir, definition: app }],
-          },
-        });
-        host = new AppInboxHost({
-          db: getDb(persistDir),
-          apps: [app],
-          attachTask: (input) => {
-            if (controllers) return attachLoadedAppTask({ ...input, bus, appDir: f.appDir });
-            return admitTaskRequest(loadedTaskConfig(f), input);
-          },
-          readDependency: ({ dependency, admissionKey }) => createAppTaskCapability({ bus }).readDependency({
-            appDir: f.appDir, dependency, admissionKey,
-          }),
-        });
-      };
-      await install(false);
-      host!.admit({
-        id: "request-delivery",
-        appId: "sample",
-        source: { kind: "human", id: "operator" },
-        input: { kind: "sample", data: {} },
-      });
-      // This scenario covers an App-declared hierarchy, not worker-created work.
-      observeAppTaskIntent(loadedTaskConfig(f), { appAgent: "sample-owner", intent: {
-        id: childId, parentId, outcome: "Verify the delivery", acceptance: ["Verification passes"],
-        mode: "achieve", executor: "verify",
-      } });
-      if (!restart) {
-        await closeInstalledAppTaskRuntimes(bus);
-        await install(true);
-      }
-
-      if (restart) {
-        const run = (taskId: string) =>
-          reconcileLoadedAppTaskOnce({
-            bus,
-            appId: "sample",
-            taskId,
-            dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
-          });
-        await run(parentId);
-        expect(await run(childId)).toEqual([parentId]);
-        const config = loadedTaskConfig(f);
-        expect(config.resourceStore.readTask(childId)?.status).toMatchObject({
-          phase: "pending",
-          executionFailures: 1,
-        });
-        expect(config.resourceStore.readTask(parentId)?.status.phase).toBe("waiting");
-        const parentTrigger = readTaskSnapshot(config).taskTriggers?.[parentId];
-        expect(parentTrigger?.events).toHaveLength(1);
-        for (let index = 0; index < 3; index += 1) expect(await run(childId)).toEqual([]);
-        expect(childCalls).toBe(1);
-        expect(readTaskSnapshot(config).taskTriggers?.[parentId]).toEqual(parentTrigger);
-        await host!.recoverTaskResults();
-
-        // Drop all in-memory wake hints before the owner reviews the failure.
-        // Startup must find the persisted parent trigger, not rerun the child.
-        await closeInstalledAppTaskRuntimes(bus);
-        closeDb(persistDir);
-        bus = eventBus();
-        await install(true);
-      }
-
-      const config = loadedTaskConfig(f);
-      const deadline = Date.now() + 5_000;
-      while (
-        readAcceptedRuntimeAttempt(config, parentId)?.acceptedResult?.state !== "converged" &&
-        Date.now() < deadline
-      )
-        await Bun.sleep(5);
-      expect(readAcceptedRuntimeAttempt(config, parentId)?.acceptedResult?.summary).toBe(
-        "Owner accepted the verified delivery",
-      );
-      expect(childCalls).toBe(2);
-      expect(reviews).toHaveLength(3);
-      expect(reviews[1]!.children.live).toContainEqual(
-        expect.objectContaining({
-          taskId: childId,
-          generation: 1,
-          status: "pending",
-          summary: expect.stringContaining("Verification prerequisite unavailable"),
-        }),
-      );
-      expect(JSON.stringify(reviews[1]!.events)).toContain("Verification prerequisite unavailable");
-      expect(reviews[2]!.children.live).toContainEqual(
-        expect.objectContaining({
-          taskId: childId,
-          generation: 1,
-          status: "done",
-          summary: "Delivery verification passed",
-          evidence: ["test:verification-passed"],
-        }),
-      );
-      expect(pendingCallerStates).toHaveLength(3);
-      for (const item of pendingCallerStates) {
-        expect(item).toMatchObject({ status: "handling", waitingOn: { kind: "task", id: parentId } });
-      }
-
-
-      await host!.recoverTaskResults();
-      expect(host!.get("request-delivery")).toMatchObject({
-        status: "done",
-        result: {
-          summary: "Owner accepted the verified delivery",
-          response: "Delivered and independently verified.",
-          evidence: ["test:aggregate-accepted"],
-        },
-      });
-      const snapshot = readTaskSnapshot(config);
-      expect(Object.keys(snapshot.resources ?? {}).sort()).toEqual([parentId, childId].sort());
-      expect(Object.keys(snapshot.receipts ?? {})).toEqual([]);
-      expect(config.resourceStore.isCancelled(parentId)).toBe(false);
-      expect(config.resourceStore.isCancelled(childId)).toBe(false);
-      expect(Object.values(snapshot.attempts ?? {}).filter((attempt) => attempt.taskId === childId)).toHaveLength(2);
-      for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
-      expect(reviews).toHaveLength(3);
-      expect(childCalls).toBe(2);
-    },
-  );
 
   it.each(["normal", "direct-agent"])(
     "retains a worker failure report and resumes the same input after reopen (%s)",

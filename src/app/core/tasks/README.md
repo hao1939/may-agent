@@ -93,9 +93,17 @@ existing assignments and require their current generation. `admitTaskAppDependen
 in `app-task-runtime.ts` publishes delegated input; `app-task-inputs.ts` resumes
 the caller's exact saved input when feedback arrives through its retained wait.
 
-App-declared parent/child relationships still have separate implicit wait and
-child-transition behavior. That retained path is not the new delegation API;
-removing raw creation does not by itself unify every return protocol.
+Parent links organize work and scope reads/actions. They neither wait for nor
+subscribe to child outcomes. Typed dependencies return exact input answers;
+Conditions await facts. `dependsOn` remains a static execution gate, not a return
+link. Workflow reconciliation receives the same saved waits as registered
+executors.
+
+Before adopting this breaking change, retire saved implicit waits offline using
+`migrateTaskCoordination()` in `core/state` (also included by `migrateOpenTaskState`).
+It replays original unfinished inputs for one review without inventing answers
+from current child status. Missing input aborts conversion; accepted answers and
+owner closure are retained. The old workers must be stopped.
 
 New dependencies add work; stored waits survive omission from later results.
 The agent need not repeat old requests to add another one for the same App.

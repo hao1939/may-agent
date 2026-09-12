@@ -100,7 +100,7 @@ describe("project task handler contract", () => {
     ).toEqual({ ok: false, error: "result exceeds the 16384-byte limit" });
   });
 
-  it("admits typed child App dependencies only while waiting", () => {
+  it("admits typed App dependencies only while waiting", () => {
     const dependency = {
       id: "review",
       appId: "evaluation",
@@ -505,7 +505,7 @@ describe("project task handler contract", () => {
     ).toBe(false);
   });
 
-  it("admits waiting for runtime validation against Conditions or live children", () => {
+  it("admits waiting for runtime validation against newly declared or saved waits", () => {
     expect(
       admitTaskReconcileResult({ state: "waiting", summary: "Waiting", evidence: [], conditions: [] }, workflowOptions)
         .ok,

@@ -10,6 +10,7 @@ export type TaskExecutorName = string;
 /** Desired durable outcome handed to the task reconciler. */
 export type TaskIntent = {
   id: string;
+  /** Organizational/authority context only; no implicit wait or result subscription. */
   parentId: string;
   outcome: string;
   acceptance: string[];
@@ -49,7 +50,7 @@ export type Condition = {
  */
 export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "stopped";
 
-/** One child App outcome required by the current task. */
+/** One exact App input whose answer is needed; independent of the Task hierarchy. */
 export type TaskAppDependency = {
   /** Stable name within this task generation. */
   id: string;
@@ -107,7 +108,7 @@ export type TaskReconcileResult = {
       result?: Record<string, unknown>;
       actions?: TaskAction[];
       conditions?: Condition[];
-      /** New child App requests; code retains unchanged waits. */
+      /** Typed App inputs whose answers are needed; code retains unchanged waits. */
       dependencies?: TaskAppDependency[];
     }
   | {

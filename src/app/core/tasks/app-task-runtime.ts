@@ -1234,9 +1234,7 @@ async function reconcileTask(input: {
           : primary.kind === "waiting"
             ? primary.dependencyIds?.length
               ? { reason: "dependencies-open", dependencyIds: primary.dependencyIds }
-              : primary.childIds?.length
-                ? { reason: "children-open", childIds: primary.childIds }
-                : { reason: "conditions-open", conditionIds: primary.conditionIds }
+              : { reason: "conditions-open", conditionIds: primary.conditionIds }
             : primary.kind === "attention"
               ? { reason: "attention-required", generation: primary.generation, summary: primary.summary }
               : { reason: "already-completed", generation: primary.generation };
@@ -1244,7 +1242,7 @@ async function reconcileTask(input: {
         route: "task-controller",
         ...skip,
       });
-      return primary.kind === "attention" && primary.parentTaskId ? [primary.parentTaskId] : [];
+      return [];
     }
     activeClaim = primary;
     timing.attemptId = primary.attemptId;
@@ -1598,7 +1596,7 @@ async function reconcileTask(input: {
           summary: applied.summary ?? primaryHandlerResult.summary,
           evidence,
         });
-        return staleResult?.reconcileTaskIds ?? (applied.parentTaskId ? [applied.parentTaskId] : []);
+        return staleResult?.reconcileTaskIds ?? [];
       } catch (error) {
         const staleResult = rejectStaleEffect(error);
         if (staleResult) return staleResult.reconcileTaskIds;
@@ -1869,7 +1867,7 @@ async function reconcileTask(input: {
         summary: retry.summary,
       });
       // The persisted deadline and existing recovery scheduler own the retry.
-      return retry.parentTaskId ? [retry.parentTaskId] : [];
+      return [];
     }
     let attention: ReturnType<typeof markAppTaskAttention>;
     try {
@@ -1892,7 +1890,6 @@ async function reconcileTask(input: {
                   : primaryHandlerResult.state === "needs-agent"
                     ? "needs-agent"
                     : "handler-blocked",
-          wakeParent: !agentHandoff,
         }),
       );
     } catch (error) {
@@ -1909,11 +1906,7 @@ async function reconcileTask(input: {
         input: intent.input ?? {},
         summary: primaryHandlerResult.summary,
       });
-      return attention.taskContinues
-        ? [intent.id]
-        : attention.status === "applied" && attention.parentTaskId
-          ? [attention.parentTaskId]
-          : [];
+      return attention.taskContinues ? [intent.id] : [];
     }
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
@@ -1983,7 +1976,7 @@ async function reconcileTask(input: {
             summary: retry.summary,
           },
         );
-        return retry.parentTaskId ? [retry.parentTaskId] : [];
+        return [];
       } catch {
         // Preserve the original failure. Recovery still fences attempts whose
         // persistence boundary itself is unavailable.
@@ -2663,14 +2656,6 @@ export function cancelLoadedAppTask(input: {
 function publishTaskCancellation(bus: EventBus, result: ReturnType<typeof cancelAppTask>): void {
   if (result.applied) {
     const { appId, taskId } = result.cancellation;
-    if (result.parentTaskId)
-      bus.emit({
-        type: "app.task.ready",
-        source: "app-task-reconciler",
-        owner: "human:operator",
-        target: { appId, taskId: result.parentTaskId },
-        data: { appId, taskId: result.parentTaskId },
-      });
     bus.emit({
       type: "app.task.cancelled",
       source: "app-task-reconciler",

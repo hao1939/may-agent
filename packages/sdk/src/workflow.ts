@@ -235,7 +235,6 @@ export type TaskReconciliationChild = {
       | "ready"
       | "dependency-blocked"
       | "condition-blocked"
-      | "child-blocked"
       | "capacity-blocked"
       | "paused"
       | "not-applicable";
@@ -354,7 +353,7 @@ export type TaskAttempt = {
       cancelledAt: string;
     }>;
   };
-  /** Exact accepted waits that currently keep this Task from converging. */
+  /** Exact accepted waits for inputs still awaiting feedback; other inputs may be answered. */
   waits: {
     open: Array<{
       conditionId: string;
@@ -402,6 +401,8 @@ export type TaskReconciliationContext<TInput = unknown> = {
   acceptance: string[];
   input: TInput;
   children: TaskAttempt["children"];
+  /** Same exact saved waits supplied to registered executors. */
+  waits: TaskAttempt["waits"];
   previousAttempt?: TaskAttempt["previousAttempt"];
   /**
    * Bounded projection of the App's other live tasks for workflows that review
