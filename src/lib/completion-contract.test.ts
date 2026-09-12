@@ -87,12 +87,12 @@ describe("prepared completion contract", () => {
     });
   }
 
-  it("keeps the actual finish-facts warning observable and nonblocking", async () => {
+  it("keeps the actual finish-evidence warning observable and nonblocking", async () => {
     const { prepared, onGuard, context } = prepare();
     const ctx = context({ ...review, deliverables: [{ path: "proof.txt", description: "claimed output" }] });
-    expect(await prepared.runner.beforeToolCall!(ctx)).toMatchObject({ guardName: "finish-facts", block: false });
+    expect(await prepared.runner.beforeToolCall!(ctx)).toMatchObject({ guardName: "finish-evidence", block: false });
     expect(onGuard).toHaveBeenCalledTimes(1);
-    expect(onGuard.mock.calls[0][0]).toMatchObject({ guard: "finish-facts", block: false });
+    expect(onGuard.mock.calls[0][0]).toMatchObject({ guard: "finish-evidence", block: false });
   });
 
   it("still rejects missing or invalid caller-defined results before execution", () => {

@@ -255,7 +255,7 @@ describe("caller feedback PoC", () => {
         });
         host = new AppInboxHost({
           db: getDb(persistDir), apps: [app],
-          attachTask: (input) => admitTaskRequest(loadedTaskConfig(f), input),
+          attachTask: (input) => admitTaskInput(loadedTaskConfig(f), input),
           readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
           // Deliberately lose live feedback before publication. Recovery must
           // use saved input/attempt facts, not an event captured by the test.

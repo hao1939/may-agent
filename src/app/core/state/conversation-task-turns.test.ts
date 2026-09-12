@@ -24,7 +24,7 @@ import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { readAppConversationResource, linkConversationTopicTask, createConversationTopic } from "./conversations.js";
 import { readConversationRequest } from "./conversation-requests.js";
-import { admitTaskRequest } from "./inbox.js";
+import { admitTaskInput } from "./inbox.js";
 import {
   admitConversationTaskInput,
   admitConversationTaskChange,
@@ -1153,10 +1153,10 @@ test("closure input validates the exact source and rolls admission back without 
     "closure-fixture",
   );
   const worker = appTaskContext({ ...f.context(), resourceStore: source });
-  admitTaskRequest(worker, {
+  admitTaskInput(worker, {
     appId: source.appId,
     idempotencyKey: "measurement-input",
-    request: { id: input.item.id, source: input.item.source, input: { kind: "measure", data: {} } },
+    inputContext: { id: input.item.id, source: input.item.source, input: { kind: "measure", data: {} } },
     topicId: topic.id,
     attachment: { kind: "desired", intent: {
       id: "sample",
