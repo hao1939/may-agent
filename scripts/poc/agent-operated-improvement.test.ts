@@ -89,40 +89,60 @@ test("later retries need their own successful active-source result", () => {
   }
 });
 
-test("agent-operated trial preflight confines edits and distinguishes saving from activation", async () => {
-  let root: string | undefined;
-  let stdout = "";
-  const trial = promisify(execFile)("bun", [join(import.meta.dirname, "agent-operated-improvement.ts")], {
-    // Own both the harness and daemon so timeout/failure cannot orphan either.
-    detached: true,
-    timeout: 330_000,
-  });
-  trial.child.stdout?.on("data", (chunk) => {
-    stdout += chunk.toString();
-    root ??= stdout.match(/(?:^|\n)Experiment artifacts: ([^\r\n]+)\r?\n/)?.[1];
-  });
-  try {
-    await trial;
-    expect(root?.startsWith(join(tmpdir(), "may-e2e-"))).toBe(true);
-    const result = JSON.parse(readFileSync(join(root!, "results.json"), "utf8"));
-    expect(result.executions).toBe(0);
-    expect(result.checks.failure).toBeUndefined();
-    expect(result.checks.preflight).toEqual({
-      confinedWrites: true,
-      committedNotActive: true,
-      rejectedBeforeAdmission: true,
-      realReloadRecovered: true,
-      modelExecutions: 0,
-      compactEvidence: true,
-      finalSourceMatchesActive: true,
+for (const mode of ["direct", "task-resume", "task-withdraw"] as const)
+  test(`agent-operated ${mode} preflight confines edits and preserves lifecycle boundaries`, async () => {
+    let root: string | undefined;
+    let stdout = "";
+    const trial = promisify(execFile)(
+      "bun",
+      [
+        join(import.meta.dirname, mode === "direct" ? "agent-operated-improvement.ts" : "task-improvement.ts"),
+        ...(mode === "task-withdraw" ? ["--withdraw"] : []),
+      ],
+      {
+        // Own both the harness and daemon so timeout/failure cannot orphan either.
+        detached: true,
+        timeout: 330_000,
+      },
+    );
+    trial.child.stdout?.on("data", (chunk) => {
+      stdout += chunk.toString();
+      root ??= stdout.match(/(?:^|\n)Experiment artifacts: ([^\r\n]+)\r?\n/)?.[1];
     });
-  } finally {
     try {
-      if (trial.child.pid) process.kill(-trial.child.pid, "SIGKILL");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      await trial;
+      expect(root?.startsWith(join(tmpdir(), "may-e2e-"))).toBe(true);
+      const result = JSON.parse(readFileSync(join(root!, "results.json"), "utf8"));
+      expect(result.executions).toBe(0);
+      expect(result.checks.failure).toBeUndefined();
+      expect(result.checks.preflight).toEqual({
+        confinedWrites: true,
+        committedNotActive: true,
+        rejectedBeforeAdmission: true,
+        realReloadRecovered: true,
+        modelExecutions: 0,
+        compactEvidence: true,
+        finalSourceMatchesActive: true,
+      });
+      if (mode !== "direct") {
+        const task = JSON.parse(readFileSync(join(root!, "task-trial.json"), "utf8"));
+        expect(task.passed).toBe(true);
+        expect(task.restarted).toBe(true);
+        expect(task.scopedToolsAfterPreparation).toBe(true);
+        expect(task.noopWaitCheck).toBe(true);
+        expect(task.controls.providerCalls).toBe(0);
+        expect(task.controls.attempts).toBe(mode === "task-resume" ? 2 : 1);
+        expect(task.controls.forwardedReloadCalls).toBe(0); // Scripted judgment submits no reload.
+        if (mode === "task-withdraw") expect(task.lateTargetedWake).toBeNull();
+        else expect(task.inputs[0].status).toBe("done");
+      }
     } finally {
-      if (root?.startsWith(join(tmpdir(), "may-e2e-"))) rmSync(root, { recursive: true, force: true });
+      try {
+        if (trial.child.pid) process.kill(-trial.child.pid, "SIGKILL");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      } finally {
+        if (root?.startsWith(join(tmpdir(), "may-e2e-"))) rmSync(root, { recursive: true, force: true });
+      }
     }
-  }
-}, 340_000);
+  }, 340_000);

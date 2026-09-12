@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } fro
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Type } from "@may-agent/sdk";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
+import type { SubagentDefinition } from "../../src/lib/types.js";
 import { buildSandbox } from "../../test/e2e/lib/sandbox.js";
 import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
 import { buildAgentDefinition } from "../../src/app/loader/agent-definition.js";
@@ -119,7 +120,17 @@ export function reloadRecoveryEvidence(
   return { handled: !!retry && !pending, trace };
 }
 
-export async function runTrial(live = false) {
+export type ImprovementRunner = (input: {
+  definition: SubagentDefinition;
+  objective: string;
+  root: string;
+  live: boolean;
+}) => Promise<(DirectAgentExecutionResult & { attemptCount?: number }) | undefined>;
+
+export async function runTrial(live = false, operate?: ImprovementRunner) {
+  // Reserve both managed attempts before offering probes; four holdouts and
+  // one baseline must fit the same twelve-execution trial allowance.
+  const maxProbes = operate ? 5 : 6;
   process.env.E2E_KEEP = "1";
   const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket"], instance: "adoption" });
   console.log(`Experiment artifacts: ${sb.root}`);
@@ -304,6 +315,7 @@ export async function runTrial(live = false) {
           live,
           objective,
           maxExecutions: 12,
+          maxProbes,
           operatorTimeoutMs: 300_000,
           targetTimeoutMs: 60_000,
           note: "Real daemon reload; direct fresh target executions. Tool adapters are fixture wiring, not an installed improvement service. One synthetic pre-admission reload failure. No Gym, production activation, or human mid-run steps.",
@@ -445,6 +457,19 @@ export async function runTrial(live = false) {
         compactEvidence: true,
         finalSourceMatchesActive: true,
       };
+      if (operate)
+        await operate({
+          definition: {
+            name: "improver",
+            description: "Mechanical Task preflight",
+            domain: "fixture",
+            model: model(),
+            tools: [fixtureRead({ projectRoot: sb.root }), fixtureWrite({ projectRoot: sb.root }), source],
+          },
+          objective,
+          root: sb.root,
+          live,
+        });
     } else {
       const baselineResult = await target(
         "baseline",
@@ -460,12 +485,11 @@ export async function runTrial(live = false) {
       const tryTarget: AgentTool = {
         name: "try_agent",
         label: "Try a fresh target execution",
-        description:
-          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. The target can read only its active definition snapshot; your evidence directory is not accessible to it. Returns actual revision, answer, tool-error count and a detailed evidence reference. The target cannot edit guidance or policy; finish may record lessons as fixture evidence, not future guidance. At most six trials. Use results to judge your change; no hidden expected answers are supplied.",
+        description: `Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. The target can read only its active definition snapshot; your evidence directory is not accessible to it. Returns actual revision, answer, tool-error count and a detailed evidence reference. The target cannot edit guidance or policy; finish may record lessons as fixture evidence, not future guidance. At most ${maxProbes} trials. Use results to judge your change; no hidden expected answers are supplied.`,
         parameters: Type.Object({ request: Type.String({ minLength: 1, maxLength: 4000 }) }),
         execute: async (_id, input, signal) => {
           signal?.throwIfAborted();
-          if (++probes > 6) throw new Error("Six target probes exhausted; report remaining uncertainty");
+          if (++probes > maxProbes) throw new Error("Target probe allowance exhausted; report remaining uncertainty");
           const result = await target(`agent-probe-${probes}`, (input as { request: string }).request);
           signal?.throwIfAborted();
           return response(exposeEvidence(result));
@@ -494,7 +518,18 @@ export async function runTrial(live = false) {
         task: objective,
       });
       assert(++executions <= 12);
-      const result = await executePreparedAgent(prepared, { timeoutMs: 300_000 });
+      const result = operate
+        ? await operate({ definition: prepared.definition, objective, root: sb.root, live })
+        : await executePreparedAgent(prepared, { timeoutMs: 300_000 });
+      if (!result) {
+        checks.taskTrial = "Ended without an improvement claim; inspect task-trial.json for withdrawal evidence";
+        save();
+        return sb.root;
+      }
+      if ("attemptCount" in result && typeof result.attemptCount === "number") {
+        executions += result.attemptCount - 1;
+        assert(executions <= 12, "Model execution budget exhausted");
+      }
       recordExecution("improver", result, { objective, systemPrompt: prepared.systemPrompt });
       const finalSource = await inspectSource(baseline!);
       const recovery = reloadRecoveryEvidence(result.messages, injectedCallId, finalSource.head);
