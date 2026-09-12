@@ -43,11 +43,15 @@ if [ ${#SCENARIOS[@]} -eq 0 ]; then
     echo "Usage: gym-baseline.sh --tier smoke --agent coder"
     exit 1
   fi
+  scenario_list=$("$PROJECT_ROOT/scripts/gym-run.sh" --list "${LIST_ARGS[@]}") || {
+    echo "Could not list Gym scenarios." >&2; exit 1;
+  }
   while IFS= read -r line; do
     name=$(echo "$line" | awk '{print $1}')
     [ -n "$name" ] && SCENARIOS+=("$name")
-  done < <("$PROJECT_ROOT/scripts/gym-run.sh" --list "${LIST_ARGS[@]}" 2>&1)
+  done <<< "$scenario_list"
 fi
+if [ ${#SCENARIOS[@]} -eq 0 ]; then echo "No Gym scenarios selected." >&2; exit 1; fi
 
 echo "=== Gym Baseline: ${#SCENARIOS[@]} scenarios, agent=$AGENT, batch=$BATCH_ID ==="
 echo "Started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -63,41 +67,42 @@ for scenario in "${SCENARIOS[@]}"; do
   
   # Run scenario, capture all output
   tmpfile=$(mktemp /tmp/gym-XXXXXX.txt)
-  GYM_NO_RECORD=1 timeout 360 "$PROJECT_ROOT/scripts/gym-run.sh" "$scenario" --agent "$AGENT" > "$tmpfile" 2>&1 || true
+  runner_rc=0
+  GYM_NO_RECORD=1 timeout 360 "$PROJECT_ROOT/scripts/gym-run.sh" "$scenario" --agent "$AGENT" > "$tmpfile" 2>&1 || runner_rc=$?
   
-  # Extract JSON result (last valid JSON object in output)
-  result_json=$(python3 -c "
-import json
-text = open('$tmpfile').read()
-depth = 0; start = -1; end = -1
-for i in range(len(text)-1, -1, -1):
-    if text[i] == '}':
-        if depth == 0: end = i
-        depth += 1
-    elif text[i] == '{':
-        depth -= 1
-        if depth == 0:
-            start = i
-            break
-if start >= 0:
-    try:
-        d = json.loads(text[start:end+1])
-        print(json.dumps(d))
-    except: pass
-" 2>/dev/null)
+  # The CLI prints one result object after diagnostics. Parse JSON, not brace
+  # counts (braces inside a summary are ordinary text). Never infer a verdict
+  # from empty checks or override an explicit failure with passing subchecks.
+  result_json=$(python3 -c '
+import json, sys
+text = open(sys.argv[1]).read()
+for offset in [0] + [i + 1 for i, c in enumerate(text) if c == "\n"]:
+    if not text[offset:].startswith("{"): continue
+    try: d = json.loads(text[offset:])
+    except ValueError: continue
+    if not isinstance(d, dict) or type(d.get("passed")) is not bool: continue
+    if not all(isinstance(d.get(k), str) and d[k].strip() for k in ("scenario", "agent")): continue
+    checks = d.get("checks", [])
+    if not isinstance(checks, list) or not all(isinstance(c, dict) and type(c.get("passed")) is bool for c in checks): continue
+    print(json.dumps(d)); break
+' "$tmpfile")
   
   if [ -n "$result_json" ]; then
     # Record to may.db with batch/tag
     echo "$result_json" > "$tmpfile.json"
     record_args=(--result "$tmpfile.json" --batch "$BATCH_ID")
     [ -n "$RUN_TAG" ] && record_args+=(--tag "$RUN_TAG")
-    record_out=$(bun "$PROJECT_ROOT/scripts/gym-record.ts" "${record_args[@]}" 2>&1)
+    record_rc=0
+    record_out=$(bun "$PROJECT_ROOT/scripts/gym-record.ts" "${record_args[@]}" 2>&1) || record_rc=$?
     
     # Check pass/fail
-    passed=$(echo "$result_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print('true' if d.get('passed') or all(c.get('passed') for c in d.get('checks',[])) else 'false')" 2>/dev/null)
+    passed=$(echo "$result_json" | python3 -c "import json,sys; print('true' if json.load(sys.stdin)['passed'] else 'false')")
     checks=$(echo "$result_json" | python3 -c "import json,sys; d=json.load(sys.stdin); cs=d.get('checks',[]); p=sum(1 for c in cs if c.get('passed')); print(f'{p}/{len(cs)}')" 2>/dev/null)
     
-    if [ "$passed" = "true" ]; then
+    if [ "$record_rc" -ne 0 ] || { [ "$runner_rc" -ne 0 ] && [ "$passed" = "true" ]; }; then
+      echo "ERROR (runner exit $runner_rc, recorder exit $record_rc)"
+      ERROR=$((ERROR + 1))
+    elif [ "$passed" = "true" ]; then
       echo "✅ PASS ($checks)"
       PASS=$((PASS + 1))
     else
@@ -116,3 +121,4 @@ echo ""
 echo "=== Results: $PASS pass, $FAIL fail, $ERROR error (${#SCENARIOS[@]} total) ==="
 echo "Finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "Results saved to .state/may.db (batch: $BATCH_ID)"
+[ "$FAIL" -eq 0 ] && [ "$ERROR" -eq 0 ]

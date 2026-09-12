@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 
-import { resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { openReadOnlyDatabase } from "../src/lib/db.js";
 import { backfillEventPairTraces, checkEventTraceIntegrity } from "../src/lib/db/event-traces.js";
 import { closeDb, getDb } from "../src/lib/requests.js";
 
@@ -16,7 +18,11 @@ const stateDir = resolve(argValue("--state-dir") ?? process.env.MAY_STATE_DIR ??
 const shouldBackfill = process.argv.includes("--backfill");
 const limit = Number(argValue("--limit") ?? 100000);
 
-const db = getDb(stateDir);
+const path = join(stateDir, "may.db");
+if (!existsSync(path)) throw new Error(`Event inspection requires an existing database: ${path}`);
+// Inspection must not initialize, restore or migrate Host state. Backfill is
+// the explicitly requested write path; it retains the Host's schema handling.
+const db = shouldBackfill ? getDb(stateDir) : openReadOnlyDatabase(path);
 try {
   let backfilled = 0;
   if (shouldBackfill) {
@@ -27,6 +33,11 @@ try {
   const integrity = checkEventTraceIntegrity(db);
   console.log(JSON.stringify({ stateDir, backfilled, integrity }, null, 2));
   if (!integrity.ok) process.exitCode = 1;
+} catch (error) {
+  throw new Error(
+    `Cannot ${shouldBackfill ? "backfill" : "inspect"} event traces in ${path}; verify the database schema: ${String(error)}`,
+  );
 } finally {
-  closeDb(stateDir);
+  if (shouldBackfill) closeDb(stateDir);
+  else db.close();
 }

@@ -9,6 +9,14 @@ import {
   readDeployReceiptForTask,
 } from "../src/app/adapters/executors/agent-workspace.js";
 import { requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
+import { appTaskTestContext } from "../src/app/core/tasks/app-task-test-support.js";
+import {
+  cancelAppTask,
+  claimObservedAppTask,
+  closeAppTask,
+  completeAppTask,
+  observeAppTaskIntent,
+} from "../src/app/core/tasks/app-task-reconciler.js";
 
 function fixture() {
   const projectDir = mkdtempSync(join(tmpdir(), "deploy-receipt-"));
@@ -19,21 +27,47 @@ function fixture() {
 
 function taskDatabase(projectDir: string, appId: string, taskIds: string[]): string {
   const path = join(projectDir, "may.db");
-  const db = new Database(path, { create: true });
-  db.exec(`
-    CREATE TABLE app_task_store_meta (
-      app_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
-      PRIMARY KEY(app_id, key)
-    );
-    CREATE TABLE app_tasks (
-      app_id TEXT NOT NULL, task_id TEXT NOT NULL,
-      PRIMARY KEY(app_id, task_id)
-    );
-  `);
-  db.query("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'authority', 'resources')").run(appId);
-  const insert = db.query("INSERT INTO app_tasks(app_id, task_id) VALUES (?, ?)");
-  for (const taskId of taskIds) insert.run(appId, taskId);
-  db.close();
+  const config = appTaskTestContext({
+    appDir: projectDir,
+    appId,
+    maxConcurrent: 1,
+    agent: "owner",
+    databasePath: path,
+    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+  });
+  try {
+    for (const id of taskIds) {
+      observeAppTaskIntent(config, {
+        appAgent: "owner",
+        intent: {
+          id,
+          parentId: "root",
+          mode: "achieve",
+          outcome: "Verify deployment",
+          acceptance: ["Return deployment evidence"],
+        },
+      });
+      if (id === "answered") {
+        const claim = claimObservedAppTask(config, { taskId: id, appAgent: "owner", handler: "agent" });
+        if (claim.kind !== "claimed") throw new Error("Expected fixture claim");
+        completeAppTask(config, claim, { summary: "Verified", evidence: ["fixture:deployment"] });
+      }
+      if (id === "closed" || id === "cancelled") {
+        const task = config.resourceStore.readTask(id)!;
+        const control = {
+          appId,
+          taskId: id,
+          reason: "Owner closed fixture work",
+          expectedGeneration: task.metadata.generation,
+          expectedResourceVersion: task.metadata.resourceVersion,
+        };
+        if (id === "closed") closeAppTask(config, control);
+        else cancelAppTask(config, control);
+      }
+    }
+  } finally {
+    config.resourceStore.close();
+  }
   return path;
 }
 
@@ -62,7 +96,7 @@ describe("restart-aware deploy receipts", () => {
   it("rejects a stale exact-task wake before deployment", () => {
     const f = fixture();
     try {
-      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live"]);
+      const dbPath = taskDatabase(f.projectDir, "may-agent", ["live", "answered", "closed", "cancelled"]);
       expect(() => validateDeployTaskTarget(dbPath, "may-agent", "missing")).toThrow(
         "does not exist; refusing to emit an unresolvable targeted wake",
       );
@@ -70,6 +104,9 @@ describe("restart-aware deploy receipts", () => {
         "May runtime deployment belongs to may-agent, not other",
       );
       expect(() => validateDeployTaskTarget(dbPath, "may-agent", "live")).not.toThrow();
+      expect(() => validateDeployTaskTarget(dbPath, "may-agent", "answered")).not.toThrow();
+      for (const id of ["closed", "cancelled"])
+        expect(() => validateDeployTaskTarget(dbPath, "may-agent", id)).toThrow("is closed");
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
