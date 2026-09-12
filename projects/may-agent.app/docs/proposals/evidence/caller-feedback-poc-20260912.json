@@ -5,6 +5,29 @@
   "candidate": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
   "branch": "poc/caller-feedback-wait-20260912",
   "status": "isolated mechanics proof; not production ready",
+  "publication": {
+    "pullRequest": "https://github.com/hao1939/may-agent/pull/169",
+    "draft": true,
+    "headRevision": "2433b88c92547025459b50f82bd00f1278bddf50",
+    "copilotReviewRequested": true,
+    "ciRun": "https://github.com/hao1939/may-agent/actions/runs/34697270384",
+    "hostedChecks": {
+      "quality": "passed",
+      "qualityDurationSeconds": 174,
+      "testsPassed": 2905,
+      "testsSkipped": 3,
+      "testsFailed": 0,
+      "testDurationSeconds": 135.41,
+      "container": "passed",
+      "containerDurationSeconds": 127,
+      "imageBuiltAndSmokeTested": true,
+      "imagePublished": false
+    },
+    "reviewStatus": "Copilot requested; independent review pending",
+    "overlappingPullRequest": "https://github.com/hao1939/may-agent/pull/168",
+    "integrationOrder": "Whichever PR lands second must rebase and verify schema, retained-report reads and full CI. Existing Apps need no code change; enable new report authoring only after the Host/SDK contract lands.",
+    "deployed": false
+  },
   "environment": {
     "scope": "original deterministic Task-to-Task trials; see followThrough for the later Conversation and live trials",
     "bun": "1.3.14",
@@ -422,7 +445,7 @@
     "remaining": [
       "Independent source review and hosted image checks before merge.",
       "All failure boundaries, arbitrary process-death and concurrent publication/closure are not universally certified by these focused checks.",
-      "No remote push, PR or deployment occurred."
+      "No remote push, PR or deployment had occurred at this integration stage; later publication is recorded separately."
     ]
   },
   "comparison": {
@@ -469,6 +492,6 @@
     "Explicit updated reports are limited to waiting results.",
     "Latest selected feedback can supersede undelivered earlier reports; history preserves attempts.",
     "All failure boundaries and concurrent publication/closure still need review.",
-    "No remote push, PR or deployment."
+    "Draft PR publication is recorded separately; no merge or deployment."
   ]
 }

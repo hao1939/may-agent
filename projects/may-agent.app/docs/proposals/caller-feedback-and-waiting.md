@@ -1,6 +1,7 @@
 # Return problems to the caller
 
 **Status:** Isolated mechanics and bounded live-agent adoption tested; not a deployed contract.
+**Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169) (draft).
 **Baseline:** Host `8026aff97585edd7f728fa4ce360fdde71bc740a` (PR #164).
 **Current integration base:** Host `38a048da5c105bea91dc7163010d94483a60b747` (PR #167).
 
@@ -199,7 +200,8 @@ baseline above; the main integration below records the current rebased revision.
 Initial Task-to-Task candidate: `0882cad717b3e2ff162a0133e9ea8bba7f53e606`.
 Conversation/live-trial extension: `9584ea5965c992c53e6ef6987467f28d267a0657`.
 Owner-schema follow-up: `590b02444b11e393a0657b0459461139de91a85b`.
-All are local commits, not pushed.
+These were local-only revisions at that stage; publication of the rebased
+candidate is recorded below.
 The portable experiment extends `src/app/core/tasks/app-task-runtime.test.ts`
 under `caller feedback PoC`, reusing its real runtime/SQLite fixtures. Run it in
 that checkout with:
@@ -280,7 +282,8 @@ retains revisions, scenarios, failed trial findings, counts and limitations.
 - A report points to full attempt/workflow evidence; the runtime-failure summary
   is truncated to 1,024 characters. Safe presentation and evidence access still
   need review across the actual caller and human boundaries.
-- No production upgrade, compatibility cutover or PR publication occurred.
+- No production upgrade or compatibility cutover occurred. The later PR
+  publication does not promote this candidate to deployed behavior.
 
 ### Recommendation after the PoC
 
@@ -496,3 +499,30 @@ for tests). Type, App-boundary and lint checks passed. The opt-in live harness's
 standalone type check and canonical design checks also passed. No failing gate
 was bypassed or retried to conceal a failure. The added tests and documentation
 are committed locally; the Host branch is clean and includes the fetched main.
+
+### PR publication and integration order
+
+Published the clean integrated Host revision `2433b88c` as draft
+[PR #169](https://github.com/hao1939/may-agent/pull/169). Copilot review was
+requested and recorded by GitHub; its review is pending. Hosted Quality and
+Container checks passed in
+[CI run 34697270384](https://github.com/hao1939/may-agent/actions/runs/34697270384):
+Quality in 2m54s and Container in 2m7s. Container built and smoke-tested the
+actual image; it was not skipped or published.
+Publication is not merge or deployment approval. The source, synthetic fixtures
+and guide are published; local runtime state, raw transcripts and configuration
+are not.
+
+Draft [PR #168](https://github.com/hao1939/may-agent/pull/168) independently
+removes Task modes and renames `stopped` to `incomplete`. It overlaps this
+candidate's schema, report selection and fixtures, but does not replace the
+report/wait behavior. Keep each PR scoped. Whichever lands second must rebase,
+preserve saved-report compatibility and rerun the contract and full CI checks;
+do not merge both without that integration review. No change was made to #168.
+
+Existing quiet waits need no executable App change. Land the reviewed Host/SDK
+contract before enabling `report: true` in Apps. Existing saved report pointers
+without a revision read as revision 1. No migration was run, and older Host
+code is not claimed to understand the candidate's waiting/error report pointers;
+an installation rollback therefore needs its own state/consumer review. The
+remaining promotion limits above still apply.
