@@ -341,6 +341,15 @@ That reduces the long build window; it does not hold a lease or replace normal
 Host admission fencing. Full local CI: **2,908 passed, three installation-only
 skips, zero failures**. GitHub Quality and Container pass. #172 is ready for review.
 
+The final review raised a separate pre-existing Runtime concern: a closed exact
+Task target returns no delivery, so its retained admission may keep retrying.
+The script preflight does **not** solve that recovery policy, and an owner can
+close work even after restart begins. Investigate/settle closed-target admission
+at its owning Runtime boundary in focused work; do not introduce a cross-database,
+filesystem and process lease just for deployment. Database-open failures already
+fail nonzero without repair; a uniform contextual prefix is optional diagnostic
+polish rather than another blocker for this cleanup.
+
 The reviewed retirement code is `63e8ac222863eb65c54f90f2869655ba341627d7`.
 The root README now describes repository-local UI staging, and the three owning
 UI design pages distinguish build from deployment. A suggested double-escaping
