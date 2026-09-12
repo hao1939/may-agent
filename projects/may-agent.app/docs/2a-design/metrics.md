@@ -102,6 +102,24 @@ snapshot event. This path creates no Task and calls no agent. A query may return
 `value` plus optional `sampleSize`, `measuredAt`, and `note` columns so the
 sample retains its evidence.
 
+The [metric-source candidate (#177)](https://github.com/hao1939/may-agent/pull/177) also lets a command return
+`{"samples":{"example.count":{"value":7,"sampleSize":10}}}`. Metrics using
+that producer declare the **same exact** `sourceCommand`; the collector runs it
+once per sampling pass and selects each metric by its ID. A single due metric
+uses the same contract. A missing or invalid entry records a measurement failure,
+not zero; undeclared entries are ignored. A failed command is not rerun for each
+metric within that pass. Existing numeric and single-sample command output
+remains supported; a valid top-level `value` takes precedence over an extra
+`samples` field. Query-backed definitions do not execute a command as well.
+
+The candidate removes filename-specific rewriting of `project-metrics.ts` and
+`focus-metric-sample.ts` commands. Existing individual `--json` commands still
+execute as declared, but no longer receive implicit batching. Before adopting
+the Host candidate on an installation with those producers, update their App
+definitions and output together, and verify invocation counts/cost. No stored
+commands are rewritten automatically. This is a candidate contract, not a
+claim that installed producers have changed.
+
 `measureInterval` is the metric's minimum normal sampling cadence. The shared
 five-minute event only checks what is due; it does not force every source to
 run. Runtime keeps this optional cadence gate in memory, so a restart may take

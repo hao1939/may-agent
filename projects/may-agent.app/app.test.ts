@@ -8,10 +8,10 @@ import app, {
   OWNER_REVIEW_DELIVERY_ACCEPTANCE,
   OWNER_REVIEW_TASK_ID,
   PLATFORM_REVIEW_INTERVAL_MS,
-  resolveHostOperationsTask,
-  taskForHostOperationsInput,
+  resolveMaintenanceTask,
+  taskForMaintenanceInput,
   taskInputForEvent,
-  validateHostOperationsCondition,
+  validateMaintenanceCondition,
 } from "./app.ts";
 
 function event(
@@ -30,7 +30,7 @@ function admittedInput(input: AppInput) {
   };
 }
 
-describe("Host Operations App", () => {
+describe("maintenance App", () => {
   it("owns one manifest and keeps addressed work separate from task wakes", () => {
     expect(app).toMatchObject({
       id: "may-agent",
@@ -39,9 +39,9 @@ describe("Host Operations App", () => {
       tasks: { maxConcurrent: 2 },
     });
     expect(app).not.toHaveProperty("inbox");
-    expect(app.task).toBe(taskForHostOperationsInput);
+    expect(app.task).toBe(taskForMaintenanceInput);
     expect(app.route).toBeUndefined();
-    expect(app.tasks?.resolve).toBe(resolveHostOperationsTask);
+    expect(app.tasks?.resolve).toBe(resolveMaintenanceTask);
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "project-comment",
       "project-owner-request",
@@ -55,9 +55,9 @@ describe("Host Operations App", () => {
     expect(existsSync(new URL("./inbox.ts", import.meta.url))).toBe(false);
   });
 
-  it("does not turn unfinished Host Operations work into a self-owned wait", () => {
+  it("does not turn unfinished maintenance work into a self-owned wait", () => {
     expect(
-      validateHostOperationsCondition({
+      validateMaintenanceCondition({
         id: "deploy-later",
         type: "deployment.completed",
         subject: "deployment:runtime-repair",
@@ -67,7 +67,7 @@ describe("Host Operations App", () => {
       }),
     ).toContain("perform or durably submit that work first");
     expect(
-      validateHostOperationsCondition({
+      validateMaintenanceCondition({
         id: "agent-does-it-later",
         type: "runtime.capability",
         subject: "runtime:repair",
@@ -77,7 +77,7 @@ describe("Host Operations App", () => {
       }),
     ).toContain("perform or durably submit that work first");
     expect(
-      validateHostOperationsCondition({
+      validateMaintenanceCondition({
         id: "approval",
         type: "human-decision",
         subject: "human-decision:runtime-repair",
@@ -190,7 +190,7 @@ describe("Host Operations App", () => {
 
 describe("may-agent task routing", () => {
   it("routes App-owned platform facts to the runnable canonical owner", () => {
-    const intent = resolveHostOperationsTask(
+    const intent = resolveMaintenanceTask(
       event("project.tick", { reason: "scheduled" }),
     );
     expect(intent).toMatchObject({
@@ -201,21 +201,21 @@ describe("may-agent task routing", () => {
     });
     expect(intent).not.toHaveProperty("workflow");
     expect(
-      resolveHostOperationsTask(event("project.ops_health.tick")),
+      resolveMaintenanceTask(event("project.ops_health.tick")),
     ).toBeNull();
     expect(
-      resolveHostOperationsTask(event("project.ops_digest.tick")),
+      resolveMaintenanceTask(event("project.ops_digest.tick")),
     ).toBeNull();
   });
 
   it("keeps mechanical session recovery and one-time state migration in Runtime", () => {
     expect(
-      resolveHostOperationsTask(
+      resolveMaintenanceTask(
         event("session.recovery.requested", { sessionId: "s_failed/17" }),
       ),
     ).toBeNull();
     expect(
-      resolveHostOperationsTask(
+      resolveMaintenanceTask(
         event("may-agent.resource-migration.requested"),
       ),
     ).toBeNull();
@@ -275,7 +275,7 @@ describe("may-agent task routing", () => {
         metric: { alertId: 4657, current: 5 },
       },
     });
-    expect(resolveHostOperationsTask(sourceFailure)).toMatchObject({
+    expect(resolveMaintenanceTask(sourceFailure)).toMatchObject({
       id: OWNER_REVIEW_TASK_ID,
       mode: "maintain",
       agent: "tech-lead",
@@ -299,7 +299,7 @@ describe("may-agent task routing", () => {
     ];
 
     const attachments = inputs.map((input, index) =>
-      taskForHostOperationsInput({
+      taskForMaintenanceInput({
         ...admittedInput(input),
         id: `request-${index + 1}`,
       }),
@@ -336,15 +336,15 @@ describe("may-agent task routing", () => {
         externalWait: "approval:candidate-abc",
       },
     };
-    const first = taskForHostOperationsInput({
+    const first = taskForMaintenanceInput({
       ...admittedInput(independent),
       id: "request-independent-1",
     });
-    const replay = taskForHostOperationsInput({
+    const replay = taskForMaintenanceInput({
       ...admittedInput(independent),
       id: "request-independent-2",
     });
-    const other = taskForHostOperationsInput({
+    const other = taskForMaintenanceInput({
       ...admittedInput({
         ...independent,
         data: { ...independent.data, goalKey: "deploy-runtime-candidate-def" },
@@ -395,7 +395,7 @@ describe("may-agent task routing", () => {
     for (const [index, input] of inputs.entries()) {
       expect(Check(app.inputSchema, input)).toBeTrue();
       expect(
-        taskForHostOperationsInput({
+        taskForMaintenanceInput({
           ...admittedInput(input),
           id: `aks-request-${index + 1}`,
         }),
@@ -450,7 +450,7 @@ describe("may-agent task routing", () => {
       expect(Check(app.inputSchema, input)).toBeFalse();
     }
     expect(() =>
-      taskForHostOperationsInput({
+      taskForMaintenanceInput({
         id: "wrong-source",
         source: { kind: "system", id: "test" },
         input: {
@@ -472,12 +472,12 @@ describe("may-agent task routing", () => {
         },
       }),
     ).toThrow(
-      "Unsupported Host Operations input kind: protected-agent-config-repair",
+      "Unsupported maintenance input kind: protected-agent-config-repair",
     );
     expect(() =>
-      taskForHostOperationsInput(
+      taskForMaintenanceInput(
         admittedInput({ kind: "request", data: { outcome: "generic" } }),
       ),
-    ).toThrow("Unsupported Host Operations input kind: request");
+    ).toThrow("Unsupported maintenance input kind: request");
   });
 });

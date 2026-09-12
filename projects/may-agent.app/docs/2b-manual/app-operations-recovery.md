@@ -177,6 +177,19 @@ authoritative binding among `sourceCommit`, `artifactSha`, the loaded artifact,
 health, and the originating `{project, taskId, correlation}`. Internal
 activation markers and their disappearance are not completion evidence.
 
+The [deployment-boundary candidate (#179)](https://github.com/hao1939/may-agent/pull/179) moves receipt interpretation out of the
+generic Task executor. Its restarter attaches the settled `deploymentReceipt`
+to a `deployment.settled` fact with canonical
+`target: { appId, taskId }`. This is operation evidence, not a replaceable timer
+tick. When that best-effort wake is lost, the maintenance App
+can run `bun scripts/deploy-receipt.ts read-task RECEIPT_DIR may-agent TASK_ID`
+from reviewed Host source (or invoke the staged `bundle/deploy-receipt.ts`).
+Use the actual configured receipt directory, including an installation override.
+This command only reads, matches both App and Task, and returns the latest
+receipt or `null`. Invalid/unreadable evidence fails visibly; it is not absence
+or authority to deploy. Adoption requires the maintenance-agent guidance and
+Host source together; this document does not claim the running image changed.
+
 A successful proof requires `phase: succeeded`,
 `loadedArtifactSha == artifactSha`, `health: healthy`, and
 `duplicateDeploy: false`. Cross-check that receipt against

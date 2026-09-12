@@ -9,6 +9,12 @@ Host `649d801c` still registers a legacy resolution-to-resume subscriber and
 emits legacy recovery escalations. Its retirement requires the consumer and
 unfinished-obligation checks in the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md).
 
+The caller-owned-recovery candidate in [PR #178](https://github.com/hao1939/may-agent/pull/178)
+closes a narrower gap: circuit-breaking a bounded call preserves its exact
+cancellation reason without opening an independent escalation to May. Its
+caller already owns the failed attempt. Standalone-job compatibility and the
+legacy resolution subscriber remain; this is not a live-obligation migration.
+
 ## Purpose
 
 Return problems to the exact caller, who can decide what to do next.

@@ -1,10 +1,12 @@
 # Keep domain policy in Apps, keep the Host generic
 
-**Status:** Accepted; documentation and the first source slice are applied for
-review. The broader cleanup is not complete. Deployment and live
+**Status:** Accepted; documentation and five focused Host source slices are
+implemented for review. The broader cleanup is not complete. Deployment and live
 permission/state changes remain separate and are not authorized here.
-**Reviewed:** September 12, 2026, against fetched Host `main`
-`649d801c134ec321c9e43dfca21aaa7392ae9e41` and the current workspace design documents.
+**Reviewed:** September 12–13, 2026. Initial Host baseline `649d801c`; the
+candidates now include fetched `main` `c0cbb59e7245924e50ac0d2c6cd5a82232418964`
+after Task-contract PR #168 merged. The discovery table below records the
+initial findings; the application record distinguishes fixes from remaining gaps.
 This is source evidence, not a claim about the running installation.
 
 ## Proposal in plain language
@@ -251,10 +253,47 @@ authority. Do not restart or alter the current installation to review this draft
 
 ## Application record — September 13, 2026
 
-The first Host slice is [PR #176](https://github.com/hao1939/may-agent/pull/176),
-source `d651f3f492c9e57ca669caa83d267690d9987647`, based on `649d801c`.
-It is independent of the open Task-contract work in #168. No production
-activation, model call, permission change or state migration was performed.
+Five source slices implement independent parts of this proposal. They have not
+been merged or deployed by this work. The current Task-contract baseline is
+merged #168, not the stale local Host checkout. No production activation, model
+call, permission change or state migration was performed.
+
+| Source slice | Change | Adoption boundary |
+| --- | --- | --- |
+| [#176](https://github.com/hao1939/may-agent/pull/176) | Remove Markdown mutation, owner fallback and misleading comment receipts; retain declared App subscriptions. | Unsupported App intake fails visibly and the browser retains input. |
+| [#177](https://github.com/hao1939/may-agent/pull/177) | Run exact declared metric commands, optionally sharing an ID-keyed sample envelope; remove Coach-specific dashboard counts. | Old single-sample commands still work. Producer and definition changes must land together to retain batching; installed definitions are not rewritten. |
+| [#178](https://github.com/hao1939/may-agent/pull/178) | Return bounded-call circuit-break failures to the caller, retain the exact cancellation reason, and remove misleading tool-error handoff/bypass instructions. | Standalone-job recovery and old restricted tool-policy presets remain compatible. |
+| [#179](https://github.com/hao1939/may-agent/pull/179) | Move deployment receipt interpretation out of generic agent execution; provide exact fact delivery and a read-only receipt lookup. | Adopt with maintenance-agent guidance. Preserve the current deployment-owner restriction, atomic activation, rollback and duplicate-effect protection. |
+| [#180](https://github.com/hao1939/may-agent/pull/180) | Replace name-based file-write grants with exact reviewed configuration; separate installation protection root from App working directory. | Stacked on #178. Review needed installation grants before deployment; absent grants deny protected edits. |
+
+The last PR is a deliberate behavior change, not a universal administrator
+role. Its guards cover coding `write`/`edit`, not shell, native CLI, custom code
+or symlink aliases. Granting an `agent.json` permits administration of that
+profile, including its grants. The loader guide states this explicitly.
+
+### Verification and review
+
+- Current-main candidates were tested together on an isolated integration
+  branch: **2,946 passed, three existing installation-only skips, zero failures**
+  across 297 files, including actual browser and daemon tests. This baseline
+  precedes the final #179 review fixes; their refreshed evidence is recorded below.
+- #176's refreshed socket/browser cases passed (three tests, 44 assertions).
+  #180 includes a real loader plus write/edit check of canonical ownership,
+  explicit grants, self-config rejection, invalid configuration and retained
+  old-generation scope. Each Host candidate also passed static checks.
+- Review of #177 found a compatibility issue: a valid legacy sample could
+  contain an extra `samples` field. The parser now gives its top-level `value`
+  precedence, with real command regressions. The review thread is resolved.
+- Review of #179 identified that timer ticks could coalesce away operation
+  evidence and flat IDs were not routing authority. The correction uses
+  `deployment.settled` with canonical `{appId, taskId}` targeting, not
+  a new routing subsystem. Receipt validation also checks common, optional and
+  terminal fields. Exact admission/coalescing and malformed-evidence tests are
+  required before marking that PR ready.
+- Hosted Quality and Container results belong to each exact PR head. A prior
+  green run is not proof for a later push; review and merge remain separate.
+
+### Initial project-comment slice
 
 ### Applied in this slice
 
@@ -280,7 +319,7 @@ Markdown handler. It remains available after a definitive message-schema
 rejection. Evaluation and Scout also declare comment subscriptions. A
 record-only fact is still not a completion or work-acceptance claim.
 
-Verification at that source revision:
+Initial verification at #176 source `d651f3f4` (before the main refresh):
 
 - Three focused router regressions first reproduced legacy Markdown/status
   mutation. They now cover shared and agent-local history, with and without
@@ -300,20 +339,41 @@ Verification at that source revision:
 - Hosted checks and independent review are recorded on #176, separately
   from local validation. Do not infer merge or deployment from this record.
 
+### Read-only installation audit
+
+The inspected installation had no legacy escalation lifecycle events, no
+escalation event-pair rows, and no `session-recovery` workflow runs. Its 514
+recorded sessions were all bounded `call` sessions: 456 done, 48 error and ten
+interrupted. This supports fixing current call recovery without treating it
+as permission to delete compatibility for every installation.
+
+The audit also found 23 metric-snapshot triggers and 39 saved active metric
+definitions referencing scripts from the removed local AKS App; neither
+producer script exists locally. No definitions were retired, scripts restored
+or local AKS work restarted. Those records are an installation-data cleanup
+decision, not a reason to return healthy zeros or add filename policy.
+
+The legacy session-policy metadata was not comprehensively audited; old
+restricted presets remain in place. All of these observations are a
+point-in-time read, not a live migration or a claim about other installations.
+
 ### Still open, deliberately not weakened
 
 | Boundary | Remaining work and reason |
 | --- | --- |
-| Named file-tool permissions | `cross-edit-guard.ts` still contains name-based grants. The existing tool factory has no trusted scope input; the workflow guard loader is fail-open and is not a permissions replacement. Design the narrow trusted binding before removing exceptions. These guards are not a shell/filesystem sandbox. |
-| Deployment | The exact open `may-agent` Task requirement and executor receipt prompt remain. An App-owned replacement must preserve receipt discovery, exact artifact/Task correlation, interrupted-operation evidence and activation protection before removing this coupling. |
-| Legacy escalation | Daemon error recovery still emits legacy events, the lifecycle subscriber still resumes correlated sessions, and the maintenance App still configures a consumer. Map unfinished installed obligations read-only before retiring this path; never guess their new owner. |
-| Maintenance and metric policy | Private jobs still mix mechanical recovery, review/digest policy and the metric catalog. The sampler's two filename-specific batching rules remain; removing them blindly could multiply producer work. Move the producer contract and verify cadence/failure evidence together, without a new scheduler. |
-| Optional learning presentation | The generic status dashboard still counts a named Coach's `growth-cycle` sessions. Remove or replace that presentation with App-owned reporting while preserving generic evaluation/session reads. Existing Gym imports remain supported. |
+| Installation permission adoption | #180 supplies the narrow trusted file scope, but no installed grant list is changed. The retained evaluation-path list is a protection floor, not a privileged name. Old deputy policies cannot be removed without checking retained sessions. |
+| Deployment authority | #179 removes the generic executor's receipt prompt and scanner. The exact open `may-agent` Task requirement remains until a reviewed trusted installation binding replaces it. Agent-supplied IDs or flags must not broaden this authority. |
+| Legacy escalation | #178 fixes bounded calls, not standalone jobs. The legacy lifecycle subscriber, configured escalation handler and session-recovery workflow still have source consumers. Retire them with correlated obligations and paired App/Host adoption, never by assuming a quiet database proves global disuse. |
+| Private maintenance and metric policy | Session cleanup, global metric queries, health reviews and digests still use private handler capabilities. Public observers cannot read the required global Host health data. Keep this explicit gap until a narrow supported read/fact contract is reviewed; do not export SQL/runtime context, duplicate timers, or replace deterministic sampling with model polling. |
+| Reporting activation | #177 removes filename policy and Coach counts, not the collector's dependency on `trigger.metrics-snapshot` cadence. Decoupling that cadence must retain one collector and honest due/failure behavior. |
 
-These are source gaps, not completed work or new architectural components.
-The next slice should select one narrow boundary and its consumer/regression
-evidence. Do not bundle a permission redesign and a live escalation cutover
-into the verified project-comment change.
+These are remaining source/adoption gaps, not completed work. The reviewer
+approved a narrow read-only Host health snapshot for ordinary App observers on
+September 13. Implement it through optional reporting and existing observer
+reads, with bounded facts, explicit coverage and visible failure when unavailable.
+No SQL, raw private messages, thresholds, work assignment or runtime controls
+belong in that contract. This does not authorize live configuration edits,
+dropping accepted obligations or changing deployment authority.
 
 ## What makes this worthwhile
 

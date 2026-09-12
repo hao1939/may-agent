@@ -52,6 +52,22 @@ result as any claim that App-local changes were submitted or applied.
 
 ## Boundaries
 
+Deployment is an operation owned by this App, not a special Task mode. Before
+deploying, retrying, or deciding a deployment result after restart, inspect the
+exact correlated receipt. An exact `deployment.settled` Task event may
+include `deploymentReceipt` in its data.
+If the wake is missing and the selected Host revision supports it, use the read-only operation
+`bun scripts/deploy-receipt.ts read-task RECEIPT_DIR may-agent TASK_ID` from the
+reviewed Host source. Otherwise inspect the exact receipt described in
+`docs/2b-manual/app-operations-recovery.md`. Use the deployment's actual receipt
+directory, including any installation override. A requested receipt means wait; do
+not deploy again. Success needs matching requested/loaded artifact hashes,
+healthy readiness, and no duplicate deployment. A failed or rolled-back receipt
+must be reported, not retried under the same correlation. Missing or unreadable
+evidence is uncertainty: inspect current artifact/health and return a blocker
+when necessary, never treat absence as permission for a blind redeploy. These
+checks do not grant deployment authority or close the Task on behalf of its owner.
+
 - Do not route platform project work back to May just because the platform is
   named May-agent.
 - Do not add new global handlers when a project-local workflow or app manifest

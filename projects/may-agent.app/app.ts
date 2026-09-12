@@ -11,7 +11,7 @@ import {
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
-const hostOperationsAgent = "tech-lead";
+const maintenanceAgent = "tech-lead";
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const nonEmptyString = Type.String({ minLength: 1 });
 const stringList = Type.Array(nonEmptyString, { minItems: 1 });
@@ -36,15 +36,15 @@ export const GROUPED_GOAL_ACCEPTANCE = [
 export const PLATFORM_REVIEW_INTERVAL_MS = 28_800_000;
 export const OWNER_HEARTBEAT_INTERVAL_MS = 86_400_000;
 
-export function validateHostOperationsCondition(
+export function validateMaintenanceCondition(
   condition: Condition,
 ): string | null {
   const owner = condition.owner?.trim().replace(/^(?:app|agent):/, "");
   if (
-    (owner === projectId || owner === hostOperationsAgent || owner === "may") &&
+    (owner === projectId || owner === maintenanceAgent || owner === "may") &&
     condition.requestedAction?.trim()
   ) {
-    return "cannot wait for unfinished work assigned back to Host Operations; perform or durably submit that work first";
+    return "cannot wait for unfinished work assigned back to maintenance; perform or durably submit that work first";
   }
   return null;
 }
@@ -134,7 +134,7 @@ function isPlatformMetric(event: AppEvent<Record<string, unknown>>): boolean {
   const owner = stringValue(
     event.owner ?? data.owner ?? event.target?.owner,
   ).replace(/^agent:/, "");
-  return !owner || owner === hostOperationsAgent || owner === "may";
+  return !owner || owner === maintenanceAgent || owner === "may";
 }
 
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
@@ -161,7 +161,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           parentId: "platform-system-review-feedback-loop",
           outcome:
             stringValue(data.outcome) ||
-            `Complete the independent Host Operations goal ${goalKey}.`,
+            `Complete the independent maintenance goal ${goalKey}.`,
           acceptance: [
             ...(requestedAcceptance.length > 0
               ? requestedAcceptance
@@ -172,7 +172,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
             ...GROUPED_GOAL_ACCEPTANCE,
           ],
           mode: "achieve",
-          agent: hostOperationsAgent,
+          agent: maintenanceAgent,
           input: { kind: input.kind, data: { ...data, goalKey } },
           priority: "P1",
         };
@@ -188,7 +188,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           ...GROUPED_GOAL_ACCEPTANCE,
         ],
         mode: "maintain",
-        agent: hostOperationsAgent,
+        agent: maintenanceAgent,
         input: { scope: "may-agent-platform" },
         priority: "P1",
       };
@@ -209,7 +209,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
               "Return a terminal, evidence-backed platform disposition through the supported control plane.",
             ],
         mode: "achieve",
-        agent: hostOperationsAgent,
+        agent: maintenanceAgent,
         input: { kind: input.kind, data },
         priority: "P1",
       };
@@ -249,20 +249,20 @@ export function taskInputForEvent(
   }
 }
 
-export function resolveHostOperationsTask(
+export function resolveMaintenanceTask(
   event: AppEvent<Record<string, unknown>>,
 ): TaskIntent | null {
   const input = taskInputForEvent(event);
   return input ? taskIntentForInput(input) : null;
 }
 
-export function taskForHostOperationsInput(
+export function taskForMaintenanceInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
   const resolved = taskIntentForInput(admitted.input);
   if (!resolved) {
     throw new Error(
-      `Unsupported Host Operations input kind: ${admitted.input.kind}`,
+      `Unsupported maintenance input kind: ${admitted.input.kind}`,
     );
   }
   const requestTaskId = `app-request/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`;
@@ -291,11 +291,11 @@ function scheduledEvent(
 const app = defineApp({
   id: projectId,
   version: 1,
-  agent: hostOperationsAgent,
+  agent: maintenanceAgent,
   description:
     "Maintains May: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
-  task: taskForHostOperationsInput,
+  task: taskForMaintenanceInput,
   workspace: { kind: "local", localPath: "../may-agent" },
   subscriptions: [
     {
@@ -363,8 +363,8 @@ const app = defineApp({
       "metric.breach",
       "metric.stalled",
     ],
-    resolve: resolveHostOperationsTask,
-    validateCondition: validateHostOperationsCondition,
+    resolve: resolveMaintenanceTask,
+    validateCondition: validateMaintenanceCondition,
     maxConcurrent: 2,
   },
 });
