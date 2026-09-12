@@ -417,6 +417,18 @@ without success and a need for human input return through exact saved links too.
 No owner keeps an execution slot merely to wait. A saved result subscription
 is enough for follow-up; no per-Task watcher or generic dependency graph is added.
 
+In the source candidate, new assignments use typed App input through
+`TaskReconcileResult.dependencies`; workers no longer return `create-task`.
+The destination App owns the Task specification and execution choice. Existing
+Task revision and closure controls remain. The
+[raw-creation retirement](controller-poc-deeper-review.md#retire-raw-worker-creation)
+records the breaking SDK change, remaining App migration gates and scenario
+coverage. Retained parent/child waits and Topic observations still have distinct
+return behavior; the diagram describes the common mental model, not completed
+storage convergence. In particular, typed failure reports still retry unfinished
+work instead of immediately answering the caller; shared failure return remains
+pending.
+
 New delegation **adds work**. Omitted saved waits remain attached, so adding
 another request to the same App does not require the worker to repeat earlier
 requests. Exact reuse, duplicate checks and stale-effect fences remain. A new
@@ -450,7 +462,8 @@ published: recovery returns the exact stored answer through the existing
 Condition transition. Checkpoint reviews have no count-based final-review label;
 closure remains the assigning owner's decision. Delegation still has several
 return protocols; the [next deletion sequence](controller-poc-deeper-review.md#next-deletion-in-order)
-targets one saved caller link before unifying those routes.
+now removes raw worker creation first, then targets one saved caller link for
+those remaining routes.
 
 One controller implementation can serve independent Task keys concurrently.
 Do not serialize the Host globally or require generic Tasks to carry Conversation,

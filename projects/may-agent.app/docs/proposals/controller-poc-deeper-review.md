@@ -308,32 +308,104 @@ TypeScript lines removed** from `6319aa55`. Final full `bun run ci` at
 canonical design checks and 56 changed-document links pass. Hosted checks for
 this revision are pending. No new model trial or production operation ran.
 
+## Retire raw worker creation
+
+The user accepts breaking contracts when the design and useful scenarios remain
+sound. That makes the next small deletion worthwhile now: workers request new
+work through typed App input, instead of authoring raw child Task specifications.
+The destination App validates the input and chooses the specification, identity
+and executor. The Host keeps the input and exact return link. The worker judges
+the desired work and returned evidence without managing the return process.
+
+The source candidate removes `create-task` from `TaskAction`, the model schema,
+result admission and reconciliation. It also removes creation-only defaults,
+root aliases, replay-spec matching and missing-resource mutation bookkeeping.
+Existing `update-task` and `unblock-task` actions still require exact target
+identity/generation; a worker cannot rewrite its own assignment. Authorized
+owner closure remains separate. There is no compatibility adapter.
+
+A worker returns `state: "waiting"` and a stable dependency
+`{ id, appId, input: { kind, data } }`; it chooses a supported input from the App
+catalog. Optional `taskId` continues exact existing work. The App can reject an
+unsupported request or map it to existing work. Independent work must actually
+map to a distinct Task, not recursively delegate to the caller itself. Accepted
+outcomes still leave Tasks open; waiting for a reply does not reserve execution.
+
+This slice removes **273 net production TypeScript lines** from Host `9d34e90b`
+(20 added, 293 removed under `src/` and `packages/`, excluding tests). It also
+retires the 302-line early `follow-through.ts` harness. Its revision-bound live
+results remain historical evidence; the broader `shared-loop.ts` trial is the
+current execution harness. `run.ts` measures delegate/ask/wait judgment only;
+it no longer translates a delegate decision into raw child creation.
+
+The retained hierarchy is an explicit limit. App-declared and previously stored
+children still use implicit parent waits, `TaskAttempt.children` and
+`project.task.child-transitioned`. Tests declare those fixtures through App
+intent; they do not introduce a replacement creation adapter or claim the
+hierarchy proves typed delegation. In particular, waiting on all pending children
+can include unrelated work; the exact-target action test verifies separate caller
+answers when work returns out of order. New assignment uses typed input and its
+saved correlation instead.
+
+The paired Host Operations workflow now preserves typed dependencies and no
+longer rewrites raw creation into waiting. Its prompt explains independent App
+input and existing-Task actions. Its disclosure schema composes with the SDK
+result union, preserving failure/result validation rather than reading nonexistent
+union properties. Focused workflow, schema and App-routing checks pass.
+
+A wider source audit found more consumers in Evaluation's owner-review guards
+and Scout's knowledge planner. They still contain raw-creation rules and removed
+normalization options. **They must be migrated and scenario-tested before those
+Apps are adopted with this Host.** Do not install this SDK beneath unchanged App
+consumers or silently route them through a compatibility shim. Their optional
+capability can be omitted only after dealing with its retained work. This source
+slice is not installation readiness.
+
+### Scenario evidence for this deletion
+
+- Real worker tests exercise typed A → B → C → B → A, human input while work
+  continues, original answers across reopen, process loss and affordable redo.
+- Reconciler/runtime tests retain failure backoff, owner prerequisite repair,
+  revised generation fencing, owner closure, and rejected late effects.
+- Saved-answer tests retain exact correlation after newer worker outcomes and
+  a lost completion notification. Repeated recovery cannot create another answer.
+- Raw creation is rejected by both the SDK schema and admission. Atomic-effect
+  tests use supported updates and assert the existing target remains unchanged
+  after rejection. The paired App accepts typed dependencies and rejects raw creation.
+
+These automated checks add no new model, deployed-App or transport trial. Earlier
+live adoption/withdrawal/correction evidence below keeps its original revisions.
+Host **`94864da1`** passes the complete `bun run ci`: **2,849 passed,
+3 installation-dependent skips, 0 failures** (2,852 tests across 290 files,
+140 seconds), with types, architecture and lint passing. The four fewer tests
+than `9d34e90b` reflect retired creation-specific expectations; supported atomic,
+stale-effect and input-return scenarios remain. Paired App **`3b70d285e3`**
+passes **21 focused workflow/schema/routing tests** against the candidate SDK.
+Canonical design checks and **45 changed-document links** pass. Hosted checks
+on the new Host revision are pending; optional App migration is still a gate.
+
 ## Next deletion, in order
 
-The ordinary inbox worker and session-result acceptance path are now removed in
-the source candidate. The exact input-result projection remains a separate saved
-view, and delegation still has several result-return protocols.
+Raw worker creation is now removed before combining return links: the breaking
+source contract has a proven typed-input replacement, so it need not wait for a
+larger state migration. This changes the earlier proposed order without claiming
+that every retained child return path has disappeared.
 
 Next evaluate one saved caller link for human follow-up and nested delegation,
-including exact input answers versus ongoing Topic observation.
-Prove **A → B → C → B → A**, concurrent human input and owner withdrawal through
-that common link. Retain the saved-answer/lost-notification regression above. Convert or drain retained links during
-the already planned offline cutover. Do not keep another runtime switch or ask
-the agent to reproduce old request identifiers on every attempt.
+including exact input answers versus ongoing Topic observation. Prove
+**A → B → C → B → A**, concurrent human input and owner withdrawal through that
+common link; retain the saved-answer/lost-notification regression. Typed failures
+currently remain unfinished while their worker retries; Topic links can report
+accepted failure evidence. Decide that difference explicitly before retiring
+implicit parent failure/progress wakes. Convert or drain retained links during
+the planned offline cutover. Do not make agents reproduce old request identifiers
+or introduce another runtime switch.
 
-After that, test retiring worker `create-task` delegation in favor of typed App
-input, which already lets the App choose the Task specification. Keep explicit
-owner revision/closure controls and hierarchy where they support reads or
-authority. Avoid retaining both raw child-spec creation and App-input delegation
-as permanent ways to assign the same work. This retirement needs an audit of App
-consumers and retained child waits before any deletion.
-
-Only then reconsider the remaining tree scheduling and mutable snapshot writes.
-Measure deleted state transitions and branches, not just moved lines. Each slice
-should name the old contract it retires, the code that disappears and the cost
-we accept. The return-link and raw child-spec changes remain proposed; the current source
-experiment removes session-result recovery, the ordinary inbox worker and the
-automatic dependency-progress relay.
+Only then reconsider remaining tree scheduling and mutable snapshot writes.
+Measure deleted transitions and branches, not moved lines. Each slice names its
+retired contract, remaining scenarios and accepted cost. The current candidate
+removes session-result recovery, the ordinary inbox worker, automatic dependency
+progress relays and raw worker creation; shared return-link storage is still pending.
 
 ## What the live trials established
 
