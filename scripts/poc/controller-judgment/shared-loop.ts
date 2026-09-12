@@ -182,8 +182,6 @@ const start = async () => {
     db,
     bus,
     persistDir: paths.persistDir,
-    hostCapacity,
-    conversationAppId: "may",
     schedulesEnabled: false,
     attachTask: tasks.attach,
     readDependency: tasks.readDependency,

@@ -13,7 +13,14 @@ Mapping failures retain the input for the bounded recovery scan. Accepted Task
 outcomes are projected by exact admission identity, using events and a recovery
 scan; failure of that projection cannot roll back the Task outcome.
 
-[`input-context.ts`](input-context.ts) reads and freezes caller context.
+[`input-context.ts`](input-context.ts) reads and freezes input identity and human
+origin. Returned answers enter through Task input; context preparation no longer
+follows historical inbox waits. [`input-result.ts`](input-result.ts) builds the
+same exact caller answer for live notification and recovery from a saved receipt.
+The Task Condition recovery path can return that receipt even when publication
+stopped before any completion Event was saved. It never substitutes the worker's
+latest result for the caller's earlier answer.
+
 Execution context and judgment are prepared in
 [`composition/conversation-task-turn.ts`](../../composition/conversation-task-turn.ts)
 under the Task's claim.

@@ -237,8 +237,7 @@ describe("Telegram durable input and natural follow-up", () => {
       }, { deferRecovery: true });
       const tasks = createAppTaskCapability({ bus: f.bus });
       return startAppInboxRuntime({
-        registry, db: f.db, bus: f.bus, persistDir: f.root,
-        hostCapacity, conversationAppId: "may", deferStart: true,
+        registry, db: f.db, bus: f.bus, persistDir: f.root, deferStart: true,
         admitConversation: tasks.admitConversation,
         admitConversationChange: tasks.admitConversationChange,
         stopConversationTurn: tasks.stopTurn,

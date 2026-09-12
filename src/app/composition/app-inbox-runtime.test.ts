@@ -19,7 +19,6 @@ import {
 import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
 import { conversationTaskId } from "../core/state/conversation-task-turns.js";
-import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 import { claimNextAppInboxItem, waitAppInboxClaim } from "../../../test/fixtures/legacy-inbox.js";
 import {
@@ -131,8 +130,6 @@ describe("App inbox runtime", () => {
       observations,
       attached,
       options: {
-        hostCapacity: new HostCapacity(4),
-        conversationAppId: "may",
         attachTask: fakeTaskAttacher(db, (input: any) => {
           const taskId = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
           attached.push(taskId);
@@ -547,137 +544,122 @@ describe("App inbox runtime", () => {
     expect(task.attached.sort()).toEqual(["probe/live-request", "probe/recovered-request"]);
   });
 
-  it("keeps bounded background input progressing without a conversational App selection", async () => {
+  it("admits a burst of inputs synchronously to their exact Tasks", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
-    const capacity = new HostCapacity(3);
-    const foreground = spyOn(capacity, "acquireForegroundCancellable");
     runtime = await startAppInboxRuntime({
       registry: await loadedRegistry(root),
       db,
       bus,
       ...task.options,
-      conversationAppId: undefined,
-      hostCapacity: capacity,
-      maxConcurrentRequests: 3,
       scanIntervalMs: 10_000,
     });
-    try {
-      for (const requestId of ["one", "two", "three"]) {
-        bus.emit({
-          type: "app.input.requested",
-          source: "test",
-          owner: "app:evaluation",
-          data: {
-            appId: "evaluation",
-            requestId,
-            source: { kind: "system", id: "test" },
-            input: { kind: "probe", data: { value: requestId } },
-          },
-        });
-      }
-      await waitUntil(() => task.attached.length === 3 && capacity.snapshot().running === 0);
-      expect(task.attached.sort()).toEqual(["probe/one", "probe/three", "probe/two"]);
-      expect(foreground).not.toHaveBeenCalled();
-      expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
-      for (const id of ["one", "two", "three"]) {
-        expect(runtime.host.get(id)?.waitingOn).toEqual({ kind: "task", id: `probe/${id}` });
-      }
-    } finally {
-      foreground.mockRestore();
+    for (const requestId of ["one", "two", "three"]) {
+      bus.emit({
+        type: "app.input.requested",
+        source: "test",
+        owner: "app:evaluation",
+        data: {
+          appId: "evaluation",
+          requestId,
+          source: { kind: "system", id: "test" },
+          input: { kind: "probe", data: { value: requestId } },
+        },
+      });
+    }
+    expect(task.attached).toEqual(["probe/one", "probe/two", "probe/three"]);
+    for (const id of ["one", "two", "three"]) {
+      expect(runtime.host.get(id)?.waitingOn).toEqual({ kind: "task", id: `probe/${id}` });
+      expect(runtime.host.get(id)?.lease).toBeUndefined();
     }
   });
 
-  it.each(["evaluation", "assistant", undefined])(
-    "routes exact Task changes independently of selected frontend (%s)",
-    async (conversationAppId) => {
-      const bus = persistentBus();
-      const task = capabilities(bus);
-      const messages: unknown[] = [];
-      const admitted: unknown[] = [];
-      const changes: unknown[] = [];
-      bus.subscribe((event) => {
-        if (event.type === "conversation.message.created") messages.push(event.data);
-        if (event.type === "conversation.task.changed") changes.push(event.data);
-      });
-      createConversationTopic(db, {
-        id: "topic",
-        appId: "evaluation",
-        conversationId: "chat",
-        title: "Review",
-        openedBy: "human",
-        originMessageId: "original",
-      });
-      linkConversationTopicTask(db, "topic", "evaluation", "probe/current");
-      const executionTaskId = conversationTaskId("evaluation", "chat");
-      linkConversationTopicTask(db, "topic", "evaluation", executionTaskId);
-      runtime = await startAppInboxRuntime({
-        registry: await loadedRegistry(root),
-        db,
-        bus,
-        ...task.options,
-        conversationAppId,
-        deferStart: true,
-        admitConversationChange(input) {
-          admitted.push(input);
-          return { taskId: executionTaskId, created: true };
-        },
-      });
-      const publish = (taskId: string, attemptId?: string) =>
-        bus.emit({
-          type: "project.task.reconciled",
-          source: "fixture",
-          data: {
-            project: "evaluation",
-            taskId,
-            generation: 1,
-            disposition: "waiting",
-            attemptId,
-            summary: "Untrusted notification text",
-          },
-        });
-      // A waiting/progress notification without an outcome cannot launch a review.
-      publish("probe/current");
-      expect(admitted).toEqual([]);
-      publish("probe/current", "accepted-attempt");
-      expect(admitted).toEqual([
-        {
-          appId: "evaluation",
-          conversationId: "chat",
-          topicId: "topic",
-          taskAppId: "evaluation",
-          taskId: "probe/current",
-          attemptId: "accepted-attempt",
-        },
-      ]);
-      expect(changes).toEqual([
-        {
-          appId: "evaluation",
-          conversationId: "chat",
-          topicId: "topic",
-          taskRef: { appId: "evaluation", taskId: "probe/current" },
-          attemptId: "accepted-attempt",
-        },
-      ]);
-      publish(executionTaskId, "own-attempt");
-      expect(admitted).toHaveLength(1);
+  it("routes exact linked Task changes without turning notification text into a reply", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    const messages: unknown[] = [];
+    const admitted: unknown[] = [];
+    const changes: unknown[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "conversation.message.created") messages.push(event.data);
+      if (event.type === "conversation.task.changed") changes.push(event.data);
+    });
+    createConversationTopic(db, {
+      id: "topic",
+      appId: "evaluation",
+      conversationId: "chat",
+      title: "Review",
+      openedBy: "human",
+      originMessageId: "original",
+    });
+    linkConversationTopicTask(db, "topic", "evaluation", "probe/current");
+    const executionTaskId = conversationTaskId("evaluation", "chat");
+    linkConversationTopicTask(db, "topic", "evaluation", executionTaskId);
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      deferStart: true,
+      admitConversationChange(input) {
+        admitted.push(input);
+        return { taskId: executionTaskId, created: true };
+      },
+    });
+    const publish = (taskId: string, attemptId?: string) =>
       bus.emit({
-        type: "app.task.cancelled",
+        type: "project.task.reconciled",
         source: "fixture",
-        data: { appId: "evaluation", taskId: "probe/current", generation: 1 },
+        data: {
+          project: "evaluation",
+          taskId,
+          generation: 1,
+          disposition: "waiting",
+          attemptId,
+          summary: "Untrusted notification text",
+        },
       });
-      expect(admitted.at(-1)).toEqual({
+    // A waiting/progress notification without an outcome cannot launch a review.
+    publish("probe/current");
+    expect(admitted).toEqual([]);
+    publish("probe/current", "accepted-attempt");
+    expect(admitted).toEqual([
+      {
         appId: "evaluation",
         conversationId: "chat",
         topicId: "topic",
         taskAppId: "evaluation",
         taskId: "probe/current",
-        closedGeneration: 1,
-      });
-      // Presentation and judgment happen only when the real Task accepts a reply.
-      expect(messages).toEqual([]);
-    },
-  );
+        attemptId: "accepted-attempt",
+      },
+    ]);
+    expect(changes).toEqual([
+      {
+        appId: "evaluation",
+        conversationId: "chat",
+        topicId: "topic",
+        taskRef: { appId: "evaluation", taskId: "probe/current" },
+        attemptId: "accepted-attempt",
+      },
+    ]);
+    publish(executionTaskId, "own-attempt");
+    expect(admitted).toHaveLength(1);
+    bus.emit({
+      type: "app.task.cancelled",
+      source: "fixture",
+      data: { appId: "evaluation", taskId: "probe/current", generation: 1 },
+    });
+    expect(admitted.at(-1)).toEqual({
+      appId: "evaluation",
+      conversationId: "chat",
+      topicId: "topic",
+      taskAppId: "evaluation",
+      taskId: "probe/current",
+      closedGeneration: 1,
+    });
+    // Presentation and judgment happen only when the real Task accepts a reply.
+    expect(messages).toEqual([]);
+  });
 
   it("recovers an exact Task wait after restart", async () => {
     const bus = persistentBus();
@@ -1030,7 +1012,6 @@ describe("App inbox runtime", () => {
       registry: await loadedRegistry(root),
       db,
       bus,
-      hostCapacity: new HostCapacity(2),
       admitTaskEvent: () => {
         admitted += 1;
         return { accepted: true, by: "test-task", route: "direct" };
@@ -1067,7 +1048,6 @@ describe("App inbox runtime", () => {
       registry: await loadedRegistry(root),
       db,
       bus,
-      hostCapacity: new HostCapacity(2),
       admitTaskEvent: () => {
         localAdmissions += 1;
         return { accepted: true, by: "unexpected-local-task", route: "direct" };
@@ -1146,7 +1126,6 @@ describe("App inbox runtime", () => {
       registry: await loadedRegistry(root),
       db,
       bus,
-      hostCapacity: new HostCapacity(2),
       admitTaskEvent: () => {
         attempts += 1;
         if (!available) throw new Error("temporary admission failure");
@@ -1190,7 +1169,6 @@ describe("App inbox runtime", () => {
       registry: await loadedRegistry(root),
       db,
       bus,
-      hostCapacity: new HostCapacity(2),
       admitTaskEvent: () => {
         admitted += 1;
         return { accepted: true, by: "test-task", route: "direct" };

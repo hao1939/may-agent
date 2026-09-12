@@ -1,4 +1,4 @@
-import { freezeInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
+import { readInputContext, observeTaskDependency, type AppDependencyReader } from "./input-context.js";
 import { completeTaskInput, recoverTaskInputAdmissionKey } from "../state/inbox.js";
 import {
   matchesEventSelector,
@@ -117,10 +117,6 @@ const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["st
   "interrupted",
   "unknown",
 ]);
-export function appInboxHumanRequestId(itemId: string): string {
-  return `app-inbox-human:${requiredText(itemId, "App inbox item id")}`;
-}
-
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} must be a non-empty string`);
   return value.trim();
@@ -418,14 +414,7 @@ export class AppInboxHost {
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       validateInput(app, item.input);
-      const parent = item.parentId ? this.get(item.parentId) : null;
-      const request: AppInputContext = freezeInputContext({
-        id: item.id,
-        source: item.source,
-        input: item.input,
-        parentId: item.parentId,
-        ...(item.source.kind === "human" || parent?.source.kind === "human" ? { humanRequested: true as const } : {}),
-      });
+      const request = readInputContext(this.#db, item);
       const attachment = item.targetTaskId
         ? { kind: "existing" as const, taskId: item.targetTaskId }
         : app.task(request);

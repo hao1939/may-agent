@@ -324,7 +324,7 @@ describe("App task Condition review checkpoint", () => {
       conditions: [condition],
     });
 
-    for (let reviewAttempt = 1; reviewAttempt <= 3; reviewAttempt += 1) {
+    for (let reviewAttempt = 1; reviewAttempt <= 5; reviewAttempt += 1) {
       makeConditionReviewDue(config, condition.id);
 
       const review = claim(config);
@@ -332,10 +332,10 @@ describe("App task Condition review checkpoint", () => {
         type: "project.task.condition-review.missed",
         data: {
           conditionIds: [condition.id],
-          reviewAttempt,
-          finalReview: reviewAttempt === 3,
         },
       });
+      expect(review.trigger?.data).not.toHaveProperty("reviewAttempt");
+      expect(review.trigger?.data).not.toHaveProperty("finalReview");
       deferAppTask(config, review, {
         disposition: "waiting",
         summary: "The same external result is still pending",

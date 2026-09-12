@@ -207,8 +207,6 @@ async function start() {
     db,
     bus,
     persistDir: root,
-    hostCapacity,
-    conversationAppId: definition.id,
     schedulesEnabled: false,
     admitConversation: tasks.admitConversation,
     admitConversationChange: tasks.admitConversationChange,

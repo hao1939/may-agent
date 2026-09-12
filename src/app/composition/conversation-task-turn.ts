@@ -26,7 +26,7 @@ export async function prepareConversationTaskTurn(input: {
   const request = await prepareConversationInput(
     config.resourceStore.db,
     item,
-    await readInputContext(config.resourceStore.db, item, input.readDependency),
+    readInputContext(config.resourceStore.db, item),
     input.readDependency,
   );
   request.inputs = items.map(({ id, source, input }) => ({ id, source, input }));

@@ -27,52 +27,14 @@ export async function observeTaskDependency(
   return observed ?? null;
 }
 
-/** Input identity and exact caller/Task observations; no conversational context selection. */
-export async function readInputContext(
-  db: SqliteDb,
-  item: AppInboxItem,
-  readDependency?: AppDependencyReader,
-): Promise<AppInputContext> {
+/** Immutable admission identity; returned results arrive as Task input, not a second inbox wait. */
+export function readInputContext(db: SqliteDb, item: AppInboxItem): Readonly<AppInputContext> {
   const parent = item.parentId ? getAppInboxItem(db, item.parentId) : null;
-  const request: AppInputContext = {
+  return freezeInputContext({
     id: item.id,
     source: item.source,
-    ...(item.source.kind === "human" || parent?.source.kind === "human" ? { humanRequested: true } : {}),
+    ...(item.source.kind === "human" || parent?.source.kind === "human" ? { humanRequested: true as const } : {}),
     parentId: item.parentId,
     input: item.input,
-  };
-  const waitingOn = item.waitingOn;
-  if (!waitingOn) return freezeInputContext(request);
-
-  if (waitingOn.kind === "app") {
-    const child = getAppInboxItem(db, waitingOn.id);
-    request.dependency = child
-      ? {
-          kind: "app",
-          id: child.id,
-          status:
-            child.status === "done"
-              ? "done"
-              : child.status === "pending"
-                ? "pending"
-                : child.lease
-                  ? "running"
-                  : "waiting",
-          summary: child.result?.summary,
-          response: child.result?.response,
-          result: child.result?.result,
-          evidence: child.result?.evidence,
-        }
-      : { kind: "app", id: waitingOn.id, status: "unknown" };
-    return freezeInputContext(request);
-  }
-
-  // Legacy session/analysis links are retained evidence; current execution
-  // and recovery belong to the Task.
-  if (waitingOn.kind !== "task") return freezeInputContext(request);
-  const dependency = { kind: "task", id: waitingOn.id } as const;
-
-  const observed = await observeTaskDependency(readDependency, item.appId, dependency, item.taskAdmissionKey);
-  request.dependency = observed ?? { ...dependency, status: "unknown" };
-  return freezeInputContext(request);
+  });
 }

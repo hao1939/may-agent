@@ -612,8 +612,6 @@ async function startConversationIngress(f: Awaited<ReturnType<typeof fixture>>) 
     db: f.db,
     bus: f.bus,
     persistDir: f.root,
-    hostCapacity: f.options.hostCapacity,
-    conversationAppId: app.id,
     schedulesEnabled: false,
     attachTask: tasks.attach,
     readDependency: tasks.readDependency,

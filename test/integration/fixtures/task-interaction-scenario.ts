@@ -279,8 +279,6 @@ async function delegation(nested = false) {
       db: f.db,
       bus: f.bus,
       persistDir: f.persistDir,
-      hostCapacity,
-      conversationAppId: "sample",
       schedulesEnabled: false,
       attachTask: tasks.attach,
       readDependency: tasks.readDependency,

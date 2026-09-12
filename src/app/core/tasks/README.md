@@ -49,7 +49,10 @@ These entry points are in `app-task-runtime.ts` or `app-task-reconciler.ts`
 unless a path is given. Result rejection retains unfinished work and paces its
 next attempt. Queues and events help discover work, while stored Tasks, attempts
 and Conditions retain it. A timer rediscovers eligible work; it does not create
-a separate maintenance lifecycle.
+a separate maintenance lifecycle. `recoverTaskConditions()` reads exact completed
+App input receipts and replays retained external Events through the same Condition
+transition. The caller receives the saved answer even if its completion notification
+never reached the journal; no extra delivery queue is needed.
 
 ## Read the retained names correctly
 
@@ -68,6 +71,9 @@ timer (250 ms to 30 seconds). Neither path has a failure-count stop. These timer
 pace different work: a dispatch may only retry a storage operation; an attempt
 may spend model tokens or perform effects. Backoff limits frequency, not lifetime
 spending. The owner can revise, pause or close the assignment.
+A missed Condition checkpoint reports which waits are due. It carries no "final
+review" count: repeated reviews keep the declared timing, and the owner decides
+whether the assignment should continue.
 
 New dependencies add work; stored waits survive omission from later results.
 The agent need not repeat old requests to add another one for the same App.

@@ -35,7 +35,6 @@ import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 import { continuedTaskInputKeys, retainTaskInputWait, taskInputAdmissionKeys } from "./app-task-inputs.js";
 
-const MAX_UNCHANGED_CONDITION_REVIEWS = 3;
 const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
 
 function managedAgentHandler(agent: string): string {
@@ -811,39 +810,6 @@ function missedTaskConditionCheckpointIds(tree: TaskTree, taskId: string, nowMs 
     }
     return nowMs >= observedAtMs + Number(reviewAfterMs) ? [id] : [];
   });
-}
-
-function completedConditionReviewCount(tree: TaskTree, taskId: string, conditionId: string): number {
-  const generation = tree.resources?.[taskId]?.metadata.generation;
-  if (!Number.isInteger(generation)) return 0;
-  const matchingAttempts = Object.values(tree.attempts ?? {})
-    .filter(
-      (attempt) =>
-        attempt.taskId === taskId &&
-        attempt.taskGeneration === generation &&
-        attempt.state !== "running" &&
-        attempt.reason === "condition-review-checkpoint-missed",
-    )
-    .filter((attempt) => {
-      const trigger = attemptTrigger(attempt);
-      const data = isRecord(trigger?.data) ? trigger.data : {};
-      const conditionIds = Array.isArray(data.conditionIds)
-        ? data.conditionIds.filter((value): value is string => typeof value === "string")
-        : [];
-      return conditionIds.includes(conditionId);
-    });
-  const highestRecordedAttempt = matchingAttempts.reduce((highest, attempt) => {
-    const trigger = attemptTrigger(attempt);
-    const data = isRecord(trigger?.data) ? trigger.data : {};
-    const reviewAttempt = Number(data.reviewAttempt);
-    return Number.isInteger(reviewAttempt) ? Math.max(highest, reviewAttempt) : highest;
-  }, 0);
-  const legacyAttemptCount = matchingAttempts.filter((attempt) => {
-    const trigger = attemptTrigger(attempt);
-    const data = isRecord(trigger?.data) ? trigger.data : {};
-    return !Number.isInteger(Number(data.reviewAttempt));
-  }).length;
-  return Math.max(highestRecordedAttempt, legacyAttemptCount);
 }
 
 function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
@@ -2670,14 +2636,6 @@ export function claimObservedAppTask(
   const openConditionIds = openTaskConditionIds(tree, input.taskId);
   const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);
   const missedCheckpointConditionIds = missedTaskConditionCheckpointIds(tree, input.taskId);
-  const conditionReviewAttempt =
-    missedCheckpointConditionIds.length > 0
-      ? Math.max(
-          ...missedCheckpointConditionIds.map(
-            (conditionId) => completedConditionReviewCount(tree, input.taskId, conditionId) + 1,
-          ),
-        )
-      : 0;
   const childIds = liveChildTaskIds(tree, input.taskId);
   if (
     resource.status.phase === "waiting" &&
@@ -2739,8 +2697,6 @@ export function claimObservedAppTask(
             task_id: input.taskId,
             reason: "condition-review-checkpoint-missed",
             conditionIds: missedCheckpointConditionIds,
-            reviewAttempt: conditionReviewAttempt,
-            finalReview: conditionReviewAttempt >= MAX_UNCHANGED_CONDITION_REVIEWS,
             synthetic: "controller-review-trigger",
           },
         }
