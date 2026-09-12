@@ -477,7 +477,7 @@ describe("project task handler contract", () => {
     const output = {
       state: "converged",
       summary: "Revise the assignment",
-      evidence: [],
+      facts: [],
       actions: [{ kind: "update-task", taskId: "work/child", expectedGeneration: 1, mode }],
     };
     expect(Check(taskAgentResultSchema, output)).toBeFalse();
