@@ -1,0 +1,50 @@
+# Optional Host health read
+
+Ordinary App observers can call `ctx.read.hostHealth({ lookbackMs })`. The
+default is the last hour; the largest allowed window is one day. The shipped
+composition supplies this read through optional reporting. Without it, the
+call rejects. No new collector, scheduler, storage, tool policy or recovery
+path is introduced.
+
+The snapshot contains current running execution counts, ended execution
+outcomes, undated terminal-row counts, and selected Host-boundary failure
+events. It includes success, error, blocked, interrupted and unknown statuses
+separately. These are all retained agent/workflow executions, including nested
+calls and retries—not unique Tasks, product failures or App acceptance.
+
+Ended executions and events use `[window.start, window.end)`. Running counts
+describe the current read. Undated counts only cover recognized terminal rows
+which started in the window; they are not a complete historical corruption
+audit. Retention may have removed older rows. No counts imply complete lifetime
+coverage or a healthy/unhealthy verdict.
+
+The report is aggregate-only. It returns no execution, event, Task or App IDs;
+real IDs could be passed to existing readers to retrieve private content.
+Totals are not capped and no per-resource detail lists are provided. Reports
+omit transcript text, task instructions, agent configuration, provider errors
+and raw event payloads. Detailed investigation remains with separately
+authorized evidence access; this read does not add a global resource-discovery
+capability or change existing reader permissions. The failure-event vocabulary is the explicit
+`HOST_HEALTH_FAILURE_EVENTS` list in `host-health.ts`, not every domain event
+ending in `.failed`. Passive facts without a consumer are not counted as failures.
+
+These are recorded event-type counts, not authenticated Host provenance.
+Installed App code can publish the same event types through the shared fact
+contract. This report does not verify who produced a row or certify that a
+reported failure really occurred. Use it as a signal to investigate, not as
+proof of a Host defect or authority to repair anything. Adding producer identity
+or isolating untrusted App code is a separate boundary, not a new responsibility
+of this read-only report. Apps can already request owner review directly; a
+health signal does not give them additional authority.
+
+An App owns thresholds, interpretation and any route to work. For example,
+an observer can return an App fact containing the snapshot; its subscription
+may ask its existing owner Task to investigate. Neither the report nor its
+collector chooses an agent, opens a Task or repairs state. `host-health-observer`
+tests that path through the shipped daemon, event admission and workflow.
+
+This API is for observer collection. Bounded workers receive relevant facts
+through their App, not a global SQL or private-context escape hatch. Maintenance
+App source and its registration changes require paired adoption after this Host
+capability is available. Do not enable both the old private health job and its
+replacement observer, and do not infer deployment authority from this source PR.

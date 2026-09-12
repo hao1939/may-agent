@@ -320,15 +320,20 @@ export async function runAppRuntime(opts: {
       const log = (level: string, message: string) =>
         bus.emit({ type: "info", message: `[app:${appId}:observer:${level}] ${message}` });
       return {
-        read: createRuntimeAppRead({
-          getDb: () => getDb(opts.persistDir),
-          readMetric: opts.reporting?.readMetric,
-          taskRead: {
-            list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
-            outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
-            get: async (taskId) => appTasks.get({ appId, taskId }),
-          },
-        }),
+        read: {
+          ...createRuntimeAppRead({
+            getDb: () => getDb(opts.persistDir),
+            readMetric: opts.reporting?.readMetric,
+            taskRead: {
+              list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
+              outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
+              get: async (taskId) => appTasks.get({ appId, taskId }),
+            },
+          }),
+          hostHealth: opts.reporting?.readHostHealth ?? (async () => {
+            throw new Error("Host health reporting is not installed");
+          }),
+        },
         workspace: { appRoot: appDir, projectRoot: projectDir },
         log: {
           debug: (message) => log("debug", message),

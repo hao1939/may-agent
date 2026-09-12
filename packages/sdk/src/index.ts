@@ -55,6 +55,8 @@ export type {
   MetricView,
   ObserverContext,
   ObserverSnapshot,
+  HostHealthSnapshot,
+  HostExecutionHealth,
   Static,
   TaskAttempt,
   TaskDetail,

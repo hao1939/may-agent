@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppDefinition, AppObserver, TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
-import { createTestAppRead, createTestAppLogger } from "@may-agent/sdk/testing";
+import { createTestObserverContext } from "@may-agent/sdk/testing";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
@@ -102,14 +102,14 @@ export async function observerFeedbackFixture(definition: AppDefinition, observe
     previewTaskEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus }),
     previewTaskEventRoutes: (input) => previewLoadedCanonicalAppTaskEventRoutes({ ...input, bus }),
   });
-  const read = createTestAppRead();
+  const { read } = createTestObserverContext();
   read.tasks.get = async (taskId) => readLoadedAppTaskView({ bus, appDir, taskId });
   let current: ReturnType<AppObserver["run"]> | undefined;
   let dispatchId = 0;
   const runtime = createAppObserverRuntime({
     bus,
     now: () => now,
-    context: () => ({ read, log: createTestAppLogger(), workspace: { appRoot: appDir, projectRoot: appDir } }),
+    context: () => createTestObserverContext({ read, workspace: { appRoot: appDir, projectRoot: appDir } }),
   });
   runtime.replace([
     {
