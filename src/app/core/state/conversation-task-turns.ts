@@ -20,7 +20,7 @@ import {
   type AppTaskClaim,
   type AppTaskCancellationResult,
 } from "../tasks/app-task-reconciler.js";
-import { admitTaskRequest } from "./inbox.js";
+import { admitTaskInput } from "./inbox.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
@@ -45,7 +45,6 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
   if (!root) throw new Error("Conversation App has no structural root");
   return {
     parentId: root,
-    mode: "maintain",
     executor: "conversation",
     outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
     acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
@@ -186,13 +185,13 @@ export function admitConversationTaskInput(
     const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
-    const observed = admitTaskRequest(config, {
+    const observed = admitTaskInput(config, {
       appId: input.appId,
       attachment: config.resourceStore.readTask(taskId)
         ? { kind: "existing", taskId }
         : { kind: "desired", intent: { ...input.intent, id: taskId } },
       idempotencyKey: admissionKey,
-      request: { id: item.id, source: item.source, input: item.input },
+      inputContext: { id: item.id, source: item.source, input: item.input },
     });
     db.run(
       `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
@@ -239,7 +238,7 @@ export function readConversationTaskInputs(config: AppTaskContext, claim: AppTas
   });
   if (!items.length) throw new Error("Conversation attempt has no admitted input");
   // The final item supplies the Turn's current ask and reply destination.
-  // Keep system evidence before human input, including retained input from an earlier attempt.
+  // Keep system facts before human input, including retained input from an earlier attempt.
   return items.sort((left, right) => Number(left.source.kind === "human") - Number(right.source.kind === "human"));
 }
 
@@ -279,10 +278,10 @@ export function completeConversationTaskTurn(
       summary: decision.summary,
       response: decision.response,
       result: { conversation: decision },
-      evidence: decision.evidence,
+      facts: decision.facts,
       acceptanceBasis: options.acceptanceBasis,
     });
-    // New, unreviewed evidence may retain this as progress. Such an attempt
+    // New, unreviewed facts may retain this as progress. Such an attempt
     // must not publish a final answer or apply its proposed Request closure.
     if (accepted.status !== "applied" || !config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult)
       return accepted;
@@ -310,7 +309,7 @@ export function completeConversationTaskTurn(
       summary: decision.summary,
       response: decision.response,
       result: { conversation: decision },
-      evidence: decision.evidence,
+      facts: decision.facts,
     };
     applyConversationRequestUpdates(db, {
       appId: item.appId,
@@ -351,11 +350,11 @@ export function completeConversationTaskTurn(
         : null;
       if (decision.followUp.requestId && request?.status !== "open")
         throw new Error("Conversation follow-up must serve an open accepted Request");
-      const admitted = admitTaskRequest(target, {
+      const admitted = admitTaskInput(target, {
         appId: decision.followUp.appId,
         attachment,
         idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
-        request: { id: item.id, source: item.source, input: decision.followUp.input },
+        inputContext: { id: item.id, source: item.source, input: decision.followUp.input },
         topicId,
         ...(request
           ? { requestLink: { appId: item.appId, conversationId, id: request.id, revision: request.revision } }
@@ -399,11 +398,11 @@ export type ConversationTaskChangeRef = {
 
 /** Successful admissions remove themselves from discovery; the limit bounds returned work. */
 // Input-backed work exposes its selected report until answered or closed.
-// Seeded work has no input receipt; preserve its per-attempt stopped observations.
+// Seeded work has no input receipt; preserve its per-attempt incomplete observations.
 // Both event admission and recovery use this predicate (aliases: attempt, topic).
 const returnedAttemptSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
-  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'stopped'
+  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped')
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id

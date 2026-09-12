@@ -37,7 +37,8 @@ const NON_SOURCE_DIRECTORIES = new Set([
   ".state",
   "archive",
   "artifacts",
-  "evidence",
+  "evidence", // Retained runtime directories stay outside source releases.
+  "facts",
   "generated",
   "node_modules",
   "outputs",

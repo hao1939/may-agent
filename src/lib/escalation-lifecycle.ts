@@ -114,8 +114,9 @@ function resumeInstruction(
   if (summary) lines.push(`Summary: ${summary}`);
   const instruction = nonEmptyString(data.resumeInstruction);
   if (instruction) lines.push(`Instruction: ${instruction}`);
-  if (data.evidence && typeof data.evidence === "object") {
-    lines.push(`Evidence: ${JSON.stringify(data.evidence)}`);
+  const facts = data.facts ?? data.evidence;
+  if (facts && typeof facts === "object") {
+    lines.push(`Facts: ${JSON.stringify(facts)}`);
   }
   return lines.join("\n");
 }

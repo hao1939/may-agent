@@ -19,12 +19,11 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
     desired: {
       outcome: "Review and refine the current design",
       acceptance: ["Findings cite current code", "The recommendation is actionable"],
-      mode: "achieve",
       input: { document: "docs/design.md" },
     },
     role: {
       agent: "reviewer",
-      instructions: "Prefer direct evidence and keep changes bounded.",
+      instructions: "Prefer direct facts and keep changes bounded.",
     },
     events: {
       items: [
@@ -36,7 +35,7 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
       ],
       throughEventId: 41,
       truncated: false,
-      checkpoint: { summary: "Read the proposal", evidence: ["docs/design.md"] },
+      checkpoint: { summary: "Read the proposal", facts: ["docs/design.md"] },
     },
     observations: {
       children: {
@@ -52,7 +51,7 @@ function packet(overrides: Partial<CanonicalTaskAttemptPacket> = {}): CanonicalT
             conditions: [],
             hasLiveChildren: false,
             status: "done",
-            evidence: ["test:pass"],
+            facts: ["test:pass"],
             completedAt: "2026-08-23T08:00:00.000Z",
           },
         ],

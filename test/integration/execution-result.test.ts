@@ -47,7 +47,7 @@ describe("ExecutionResult", () => {
       traceId: "s1",
       owner: "dev",
       projectId: "p1",
-      evidence: { agent: "dev", task: "fix bug", duration: "1.2s", turnsUsed: 2 },
+      facts: { agent: "dev", task: "fix bug", duration: "1.2s", turnsUsed: 2 },
     });
   });
 
@@ -56,7 +56,7 @@ describe("ExecutionResult", () => {
       type: "blocked",
       workflow: "goal-driver",
       workflowRunId: "wr1",
-      reason: "missing evidence",
+      reason: "missing facts",
       completedSteps: [],
     };
 
@@ -64,9 +64,9 @@ describe("ExecutionResult", () => {
       id: "wr1",
       kind: "workflow",
       status: "blocked",
-      summary: "missing evidence",
+      summary: "missing facts",
       traceId: "wr1",
-      evidence: { workflow: "goal-driver", completedSteps: 0 },
+      facts: { workflow: "goal-driver", completedSteps: 0 },
     });
   });
 
@@ -88,7 +88,7 @@ describe("ExecutionResult", () => {
       traceId: "s_missing",
       owner: "missing-agent",
       projectId: "p1",
-      evidence: {
+      facts: {
         owner: "missing-agent",
         agent: "missing-agent",
         category: "agent_not_registered",
@@ -114,7 +114,7 @@ describe("ExecutionResult", () => {
       status: "interrupted",
       summary: "Workflow definition missing",
       traceId: "wr_missing",
-      evidence: {
+      facts: {
         owner: "may",
         workflow: "goal-driver",
         category: "workflow_definition_missing",
@@ -144,7 +144,7 @@ describe("ExecutionResult", () => {
       projectId: "p1",
       startedAt: 100,
       endedAt: 200,
-      evidence: { agent: "arc", kind: "call", source: "workflow:test", workflowRunId: "wr_parent", opCount: 3 },
+      facts: { agent: "arc", kind: "call", source: "workflow:test", workflowRunId: "wr_parent", opCount: 3 },
     });
   });
 
@@ -167,7 +167,7 @@ describe("ExecutionResult", () => {
       projectId: "p1",
       startedAt: 100,
       endedAt: 300,
-      evidence: { workflow: "goal-driver", task: "project: x", depth: 2, parentSessionId: "s_parent", resumedFromRunId: "wr_old" },
+      facts: { workflow: "goal-driver", task: "project: x", depth: 2, parentSessionId: "s_parent", resumedFromRunId: "wr_old" },
     });
   });
 });

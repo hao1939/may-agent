@@ -26,7 +26,7 @@ import {
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
-  stopAppTask,
+  reportAppTaskFailure,
 } from "../tasks/app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -42,7 +42,6 @@ function resource(id: string, phase: AppTaskResource["status"]["phase"] = "pendi
       outcome: `finish ${id}`,
       acceptance: ["done"],
       parentId: "project",
-      mode: "achieve",
       priority: "P2",
     },
     status: {
@@ -113,7 +112,7 @@ describe("AppTaskResourceStore", () => {
       const tree = fixture();
       const attempt = tree.attempts!["attempt-1"]!;
       attempt.events = [{ event: { type: "sample.fact", eventId: 11 }, observedAt: attempt.startedAt }];
-      attempt.acceptedResult = { state: "converged", summary: "Accepted", evidence: [], acceptedLiveEventIds: [13] };
+      attempt.acceptedResult = { state: "converged", summary: "Accepted", facts: [], acceptedLiveEventIds: [13] };
       tree.attempts!["legacy"] = {
         ...attempt,
         metadata: { id: "legacy", resourceVersion: 1 },
@@ -172,7 +171,7 @@ describe("AppTaskResourceStore", () => {
       );
       observeAppTaskIntent(config, {
         appAgent: "example",
-        intent: { id: "work", parentId: "root", mode: "achieve", outcome: "Background work", acceptance: ["Handled"] },
+        intent: { id: "work", parentId: "root", outcome: "Background work", acceptance: ["Handled"] },
       });
       const commit = store.commit.bind(store);
       let raced = false;
@@ -196,7 +195,6 @@ describe("AppTaskResourceStore", () => {
         input: { kind: "message", data: { text: "Discuss the paused work" } },
         intent: {
           parentId: "root",
-          mode: "maintain",
           executor: "conversation",
           outcome: "Discuss",
           acceptance: ["Reply"],
@@ -242,6 +240,10 @@ describe("AppTaskResourceStore", () => {
       );
     `);
     db.prepare("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', '1')").run("example");
+    db.prepare("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'app_metadata', ?)").run(
+      "example",
+      JSON.stringify({ project: "example", root_task_id: "project" }),
+    );
     db.prepare(
       `INSERT INTO app_tasks(
          app_id, task_id, generation, resource_version, observed_generation, phase, lane,
@@ -256,7 +258,13 @@ describe("AppTaskResourceStore", () => {
       JSON.stringify({
         metadata: { id: "legacy-condition", generation: 1, resourceVersion: 1 },
         spec: { type: "legacy.completed", subject: "legacy", expected: "done" },
-        status: { state: "unknown", observedGeneration: 0, updatedAt: "2026-08-21T00:00:00.000Z" },
+        status: {
+          state: "unknown",
+          observedGeneration: 0,
+          updatedAt: "2026-08-21T00:00:00.000Z",
+          evidence: ["Saved Condition observation"],
+          observed: { evidence: "App-owned data" },
+        },
       }),
     );
 
@@ -273,7 +281,26 @@ describe("AppTaskResourceStore", () => {
         )
         .all(),
     ).toEqual([{ source_task_id: "legacy", relation_kind: "parent", target_task_id: "project" }]);
+    const saved = db.prepare("SELECT condition_json FROM app_task_conditions").get();
     db.close();
+    const reopened = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
+    try {
+      const conditions = [
+        reopened.readTaskConditions("legacy")[0],
+        reopened.readConditionRoutes("legacy.completed")[0]?.condition,
+        reopened.readConditionRoutesForAllApps("legacy.completed")[0]?.condition,
+        reopened.readSnapshot().conditions?.["legacy-condition"],
+        reopened.readTaskContext({ taskIds: ["legacy"] }).conditions?.["legacy-condition"],
+      ];
+      for (const condition of conditions) {
+        expect(condition?.status.facts).toEqual(["Saved Condition observation"]);
+        expect(condition?.status).not.toHaveProperty("evidence");
+        expect(condition?.status.observed).toEqual({ evidence: "App-owned data" });
+      }
+      expect(reopened.db.prepare("SELECT condition_json FROM app_task_conditions").get()).toEqual(saved);
+    } finally {
+      reopened.close();
+    }
   });
 
   it("reads direct children and dependents through exact relationship indexes", () => {
@@ -334,7 +361,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("keeps cancelled children out of the live context limit and reads their terminal evidence separately", () => {
+  it("keeps cancelled children out of the live context limit and reads their terminal facts separately", () => {
     const store = open();
     try {
       const tree = fixture();
@@ -500,9 +527,9 @@ describe("AppTaskResourceStore", () => {
       });
       const claim = claimObservedAppTask(config, { taskId: "optional", appAgent: "owner", handler: "agent" });
       if (claim.kind !== "claimed") throw new Error(`expected optional Task claim, got ${JSON.stringify(claim)}`);
-      stopAppTask(config, claim, {
+      reportAppTaskFailure(config, claim, {
         summary: "Optional work is not feasible",
-        evidence: ["analysis:feasibility"],
+        facts: ["analysis:feasibility"],
         result: { partial: "Findings" },
       });
       expect(source.readCancellation("optional")).toBeNull();
@@ -643,7 +670,7 @@ describe("AppTaskResourceStore", () => {
         const accepted = structuredClone(current);
         accepted.metadata.id = "accepted-previous";
         accepted.state = "completed";
-        accepted.summary = "Previous accepted evidence";
+        accepted.summary = "Previous accepted facts";
         delete accepted.lease;
         delete accepted.sessionId;
         tree.attempts![accepted.metadata.id] = accepted;
@@ -979,7 +1006,7 @@ describe("AppTaskResourceStore", () => {
     deferAppTask(config, claim, {
       disposition: "waiting",
       summary: "Wait for review",
-      evidence: [],
+      facts: [],
       conditions: [
         {
           id: "review",
@@ -1040,7 +1067,7 @@ describe("AppTaskResourceStore", () => {
     expect(store.readTask("normal")?.status.currentAttemptId).toBe(claim.attemptId);
     expect(store.readAttempt(claim.attemptId)?.state).toBe("running");
     expect(store.readTrigger("normal")).toBeNull();
-    expect(completeAppTask(config, claim, { summary: "resource task complete", evidence: ["test"] }).status).toBe(
+    expect(completeAppTask(config, claim, { summary: "resource task complete", facts: ["test"] }).status).toBe(
       "applied",
     );
     expect(store.readTask("normal")?.status.phase).toBe("converged");
@@ -1057,7 +1084,6 @@ describe("AppTaskResourceStore", () => {
           parentId: "project",
           outcome: "handle new task",
           acceptance: ["done"],
-          mode: "achieve",
         },
       }),
     ).toMatchObject({ kind: "observed", taskId: "new-task", generation: 1 });
@@ -1096,7 +1122,6 @@ describe("AppTaskResourceStore", () => {
           parentId: "project",
           outcome: "handle the first request",
           acceptance: ["done"],
-          mode: "achieve",
         },
       }),
     ).toMatchObject({ kind: "observed", taskId: "first-request", generation: 1 });
@@ -1149,7 +1174,7 @@ describe("AppTaskResourceStore", () => {
     });
     expect(claim.kind).toBe("claimed");
     if (claim.kind !== "claimed") throw new Error("expected dependency claim");
-    expect(completeAppTask(config, claim, { summary: "dependency complete", evidence: ["test"] })).toMatchObject({
+    expect(completeAppTask(config, claim, { summary: "dependency complete", facts: ["test"] })).toMatchObject({
       status: "applied",
       dependentTaskIds: [dependent.metadata.id],
     });

@@ -41,7 +41,6 @@ test("one-App worker tools read exact registered peer Tasks without installing t
           intent: {
             id: "same-id",
             parentId: "root",
-            mode: "achieve",
             outcome: `${appId} outcome`,
             acceptance: ["Verified"],
             outputs: [],
@@ -127,7 +126,6 @@ test("one-App worker tools read exact registered peer Tasks without installing t
       intent: {
         id: "same-id",
         parentId: "root",
-        mode: "achieve",
         outcome: "Updated peer outcome",
         acceptance: ["Verified"],
         outputs: [],

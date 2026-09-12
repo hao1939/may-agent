@@ -317,7 +317,7 @@ export type SystemEvent =
         summary?: string;
         response?: string;
         result?: Record<string, unknown>;
-        evidence?: string[];
+        facts?: string[];
       };
     }
   | {
@@ -463,7 +463,7 @@ export type SystemEvent =
         projectPath?: string;
         parentEscalationId?: string;
         blockedOn?: string;
-        evidence?: Record<string, unknown>;
+        facts?: Record<string, unknown>;
         resume?: Record<string, unknown>;
         dedupKey?: string;
       };
@@ -489,7 +489,7 @@ export type SystemEvent =
         resolverAgent?: string;
         outcome: "fixed" | "answered" | "dismissed" | "needs_human" | "expired" | string;
         summary: string;
-        evidence?: Record<string, unknown>;
+        facts?: Record<string, unknown>;
         resumeInstruction?: string;
         childEscalationId?: string;
       };
@@ -815,14 +815,14 @@ export type SystemEvent =
         alertId: string | number;
         verdict?: string;
         reason?: string;
-        evidence?: Record<string, unknown>;
+        facts?: Record<string, unknown>;
       };
     }
   | {
       type: "agent.decision";
       source?: string;
       owner: string;
-      data: { agent: string; sessionId?: string; decision: string; evidence?: Record<string, unknown> };
+      data: { agent: string; sessionId?: string; decision: string; facts?: Record<string, unknown> };
     }
   | {
       type: "context.read";
@@ -1281,7 +1281,7 @@ export class EventBus {
         }
       }
       // Pending retry recovery deliberately uses only the built-in idempotent
-      // pair/evidence/owner routes below. Ordinary fan-out subscribers may
+      // pair/facts/owner routes below. Ordinary fan-out subscribers may
       // already have performed an effect before the original process stopped.
       if (!retry[EVENT_REDELIVERY_REQUIRED]) {
         for (const fn of this.firstSubscribers) {

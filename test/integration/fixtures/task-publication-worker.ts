@@ -29,7 +29,6 @@ try {
     projectRoot: root,
     projectsRoot: join(root, "projects"),
     persistDir: join(root, "state"),
-    manager: { hasAgent: () => true } as never,
     hostCapacity: new HostCapacity(1),
     bus,
     installControllers: false,
@@ -45,7 +44,7 @@ try {
           target: { appId: "sample", taskId: "work/peer" },
           data: { revision: 1 },
         });
-        return { state: "converged", summary: "Worker settled before relay", evidence: ["fixture:published"] };
+        return { state: "converged", summary: "Worker settled before relay", facts: ["fixture:published"] };
       },
     },
     appRegistrySnapshot: {

@@ -293,7 +293,7 @@ try {
 export const name = "reload-probe";
 export const description = "Complete fixture work without a model.";
 export async function execute(ctx) {
-  return ctx.done("fixture result", { state: "converged", summary: "Task processing remains active", evidence: ["fixture"] });
+  return ctx.done("fixture result", { state: "converged", summary: "Task processing remains active", facts: ["fixture"] });
 }`,
     );
   }
@@ -515,13 +515,12 @@ export async function execute(ctx) {
         appDir: join(root, "projects/fixture.app"),
         appId: "fixture",
         idempotencyKey: taskId,
-        request: { id: taskId, source: { kind: "human", id: "fixture" }, input: { kind: "probe", data: {} } },
+        inputContext: { id: taskId, source: { kind: "human", id: "fixture" }, input: { kind: "probe", data: {} } },
         attachment: {
           kind: "desired",
           intent: {
             id: taskId,
             parentId: "fixture",
-            mode: "achieve",
             workflow: "reload-probe",
             outcome: "Verify reload preserves Task processing",
             acceptance: ["Fixture result accepted"],

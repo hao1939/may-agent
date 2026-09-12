@@ -3,9 +3,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./db/connection.js";
-import { listWorkflowRunIds } from "./db/workflows.js";
+import { getWorkflowRun, insertWorkflowRun, listWorkflowRunIds } from "./db/workflows.js";
+import { writeJsonArtifact, workflowRunRef } from "./artifacts.js";
 import { createWorkflowRunner } from "./workflow-tool.js";
-import { readWorkflowEvidence } from "./workflow-evidence.js";
+import { readWorkflowFacts } from "./workflow-facts.js";
 import {
   createWorkflowDiagnostics,
   MAX_WORKFLOW_DIAGNOSTICS_BYTES,
@@ -16,7 +17,7 @@ import { MAX_WORKFLOW_PAYLOAD_BYTES, retainWorkflowPayload } from "./workflow-pa
 
 const roots: string[] = [];
 function fixture() {
-  const root = mkdtempSync(join(tmpdir(), "workflow-evidence-"));
+  const root = mkdtempSync(join(tmpdir(), "workflow-facts-"));
   roots.push(root);
   const workflows = join(root, "workflows");
   mkdirSync(workflows);
@@ -29,7 +30,35 @@ afterEach(() => {
   }
 });
 
-describe("workflow evidence without reporting", () => {
+describe("workflow facts without reporting", () => {
+  it.each([
+    { state: "available", value: { kind: "evidence", evidence: ["App-owned data"] }, redacted: false },
+    { state: "unavailable", reason: "too-large" },
+  ])("normalizes a saved blocked payload after reopen without rewriting it: %j", (payload) => {
+    const { root } = fixture();
+    const runId = "wr_legacy";
+    insertWorkflowRun(root, {
+      runId, workflow: "saved", task: "Retain the blocked result", parentSessionId: null,
+      parentWorkflowRunId: null, depth: 1, status: "blocked", startedAt: 1, endedAt: 2,
+      result_summary: null, result_reason: "Waiting for access", resumedFromRunId: null,
+    });
+    const ref = workflowRunRef(runId);
+    const path = join(root, ref);
+    const artifact = JSON.parse(readFileSync(path, "utf8"));
+    artifact.result_payload = { kind: "evidence", ...payload };
+    const descriptor = writeJsonArtifact(root, ref, artifact);
+    getDb(root).prepare("UPDATE workflow_runs SET artifact_sha256 = ?, artifact_bytes = ? WHERE runId = ?")
+      .run(descriptor.sha256, descriptor.bytes, runId);
+    const saved = readFileSync(path, "utf8");
+    closeDb(root);
+
+    expect(getWorkflowRun(root, runId)?.result_payload).toEqual({ kind: "facts", ...payload });
+    expect(readWorkflowFacts(root, runId)?.run.result_payload).toEqual({ kind: "facts", ...payload });
+    expect(readFileSync(path, "utf8")).toBe(saved);
+    expect(getDb(root).prepare("SELECT artifact_sha256 FROM workflow_runs WHERE runId = ?").get(runId))
+      .toEqual({ artifact_sha256: descriptor.sha256 });
+  });
+
   it("bounds payload traversal without invoking authored accessors, serializers or proxy traps", () => {
     let invoked = 0;
     const hook = () => { invoked++; throw new Error("Authored hook must not run"); };
@@ -65,7 +94,7 @@ describe("workflow evidence without reporting", () => {
         join(workflows, "packet.ts"),
         `
       export const name = "packet";
-      export const description = "Evidence fixture";
+      export const description = "Facts fixture";
       export async function execute(ctx) {
         return ctx.${status}("collected", {
           revision: "v1", attempts: [{status: 503}, {status: 200}],
@@ -81,9 +110,9 @@ describe("workflow evidence without reporting", () => {
       const path = join(root, "workflow-runs", result.workflowRunId, "run.json");
       expect(readFileSync(path, "utf8")).not.toContain(secret);
       closeDb(root);
-      const retained = readWorkflowEvidence(root, result.workflowRunId)!;
+      const retained = readWorkflowFacts(root, result.workflowRunId)!;
       expect(retained.run.result_payload).toEqual({
-        kind: status === "done" ? "output" : "evidence",
+        kind: status === "done" ? "output" : "facts",
         state: "available",
         redacted: true,
         value: {
@@ -98,12 +127,12 @@ describe("workflow evidence without reporting", () => {
         status === "done" && result.type === "done" ? result.output : result.type === "blocked" ? result.context : null,
       ).toMatchObject({ token: secret });
       writeFileSync(path, JSON.stringify({ ...retained.run, result_payload: { value: "tampered" } }));
-      expect(readWorkflowEvidence(root, result.workflowRunId)?.run).toMatchObject({
+      expect(readWorkflowFacts(root, result.workflowRunId)?.run).toMatchObject({
         artifact_error: "workflow artifact integrity mismatch",
       });
-      expect(readWorkflowEvidence(root, result.workflowRunId)?.run.result_payload).toBeUndefined();
+      expect(readWorkflowFacts(root, result.workflowRunId)?.run.result_payload).toBeUndefined();
       rmSync(path);
-      expect(readWorkflowEvidence(root, result.workflowRunId)?.run).toMatchObject({
+      expect(readWorkflowFacts(root, result.workflowRunId)?.run).toMatchObject({
         artifact_error: "workflow artifact missing",
       });
     },
@@ -129,7 +158,7 @@ describe("workflow evidence without reporting", () => {
     expect(result.type).toBe("done");
     if (result.type !== "done") throw new Error("Expected completed run");
     closeDb(root);
-    expect(readWorkflowEvidence(root, result.workflowRunId)?.run.result_payload).toEqual({
+    expect(readWorkflowFacts(root, result.workflowRunId)?.run.result_payload).toEqual({
       kind: "output",
       state: "unavailable",
       reason,
@@ -137,7 +166,7 @@ describe("workflow evidence without reporting", () => {
   });
 
   it.each(["insert", "started-event", "finalize"] as const)(
-    "reports honest evidence when workflow setup or persistence fails: %s",
+    "reports honest facts when workflow setup or persistence fails: %s",
     async (failure) => {
       const { root, workflows } = fixture();
       writeFileSync(
@@ -177,16 +206,16 @@ describe("workflow evidence without reporting", () => {
       if (failure === "started-event") {
         expect(runIds).toHaveLength(1);
         expect(result).toMatchObject({ workflowRunId: runIds[0] });
-        const evidence = readWorkflowEvidence(root, runIds[0]!)!;
-        expect(evidence.run).toMatchObject({ status: "error", result_reason: "fixture workflow.started failed" });
-        expect(evidence.run.endedAt).toBeGreaterThanOrEqual(evidence.run.startedAt);
-        expect(evidence.run.artifact_error).toBeUndefined();
-        expect(evidence.steps).toEqual([]);
+        const facts = readWorkflowFacts(root, runIds[0]!)!;
+        expect(facts.run).toMatchObject({ status: "error", result_reason: "fixture workflow.started failed" });
+        expect(facts.run.endedAt).toBeGreaterThanOrEqual(facts.run.startedAt);
+        expect(facts.run.artifact_error).toBeUndefined();
+        expect(facts.steps).toEqual([]);
         expect(seen).not.toContain("workflow.completed");
       } else {
         expect(result).not.toHaveProperty("workflowRunId");
         expect(runIds).toHaveLength(failure === "insert" ? 0 : 1);
-        if (failure === "finalize") expect(readWorkflowEvidence(root, runIds[0]!)?.run.status).toBe("running");
+        if (failure === "finalize") expect(readWorkflowFacts(root, runIds[0]!)?.run.status).toBe("running");
       }
     },
   );
@@ -227,15 +256,15 @@ describe("workflow evidence without reporting", () => {
     expect(result.type).toBe("done");
     if (result.type !== "done") throw new Error("Expected completed run");
     closeDb(root);
-    const evidence = readWorkflowEvidence(root, result.workflowRunId)!;
-    expect(evidence.run).toMatchObject({ status: "done", result_summary: "delivered" });
-    expect(evidence.diagnostics.entries.map((entry) => entry.message)).toEqual(["prepared report", "retrying upload"]);
-    expect(evidence.childRunIds.map((id) => readWorkflowEvidence(root, id)!.run.status)).toEqual(["error", "done"]);
-    expect(readWorkflowEvidence(root, evidence.childRunIds[0]!)!.run.result_reason).toBe("Upload unavailable");
+    const facts = readWorkflowFacts(root, result.workflowRunId)!;
+    expect(facts.run).toMatchObject({ status: "done", result_summary: "delivered" });
+    expect(facts.diagnostics.entries.map((entry) => entry.message)).toEqual(["prepared report", "retrying upload"]);
+    expect(facts.childRunIds.map((id) => readWorkflowFacts(root, id)!.run.status)).toEqual(["error", "done"]);
+    expect(readWorkflowFacts(root, facts.childRunIds[0]!)!.run.result_reason).toBe("Upload unavailable");
     const trace = new SubagentManager({ persistDir: root }).trace(result.workflowRunId);
-    expect(trace.evidence).toEqual(evidence);
+    expect(trace.facts).toEqual(facts);
     expect(trace.tree.children[0]).toMatchObject({ status: "done", summary: "delivered" });
-    expect(readWorkflowEvidence(root, "wr_missing")).toBeNull();
+    expect(readWorkflowFacts(root, "wr_missing")).toBeNull();
   });
 
   it("keeps the original failure and logs when a presentation logger throws", async () => {
@@ -264,9 +293,9 @@ describe("workflow evidence without reporting", () => {
     const result = await runner.run("fail", "test");
     expect(result).toMatchObject({ type: "error", error: "original upload error" });
     if (result.type !== "error" || !result.workflowRunId) throw new Error("Missing failed run identity");
-    const evidence = readWorkflowEvidence(root, result.workflowRunId)!;
-    expect(evidence.run).toMatchObject({ status: "error", result_reason: "original upload error" });
-    expect(evidence.diagnostics.entries[0]?.message).toBe("prepared partial output");
+    const facts = readWorkflowFacts(root, result.workflowRunId)!;
+    expect(facts.run).toMatchObject({ status: "error", result_reason: "original upload error" });
+    expect(facts.diagnostics.entries[0]?.message).toBe("prepared partial output");
   });
 
   it("bounds and redacts diagnostics, and exposes missing or corrupt detail honestly", () => {
@@ -275,12 +304,12 @@ describe("workflow evidence without reporting", () => {
     const secret = "test-credential-".repeat(5);
     record("info", `token=${secret}`);
     for (let i = 0; i < 100; i++) record("warn", "长".repeat(10_000));
-    const evidence = readWorkflowDiagnostics(root, "wr_bounded");
-    expect(evidence).toMatchObject({ state: "available", truncated: true });
-    const path = join(root, evidence.ref);
+    const facts = readWorkflowDiagnostics(root, "wr_bounded");
+    expect(facts).toMatchObject({ state: "available", truncated: true });
+    const path = join(root, facts.ref);
     expect(statSync(path).size).toBeLessThanOrEqual(MAX_WORKFLOW_DIAGNOSTICS_BYTES);
     expect(readFileSync(path, "utf8")).not.toContain(secret);
-    expect(evidence.entries[0]?.message).toContain("[REDACTED]");
+    expect(facts.entries[0]?.message).toContain("[REDACTED]");
     writeFileSync(path, "broken");
     expect(readWorkflowDiagnostics(root, "wr_bounded").state).toBe("unavailable");
     expect(readWorkflowDiagnostics(root, "wr_legacy").state).toBe("unavailable");
