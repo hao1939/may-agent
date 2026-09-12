@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
 import { buildTools } from "./loader/toolset-loader.js";
-import { buildAgentDefinition } from "./loader/agent-definition.js";
+import { agentFileWriteScope, buildAgentDefinition } from "./loader/agent-definition.js";
 import type { EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
@@ -111,20 +111,24 @@ export async function prepareDaemonAgents(opts: {
     const appFolder = basename(appDir);
     const projectId = appFolder.replace(/\.app$/, "");
     const domainDir = resolve(opts.canonicalProjectsRoot ?? opts.projectsRoot, projectId);
+    const source = {
+      name: basename(agentDir),
+      dir: agentDir,
+      agentsRoot: dirname(agentDir),
+      projectId,
+      projectDir: existsSync(domainDir) ? domainDir : appDir,
+      // agentDir may be in a source release; writes belong to the installation.
+      relativeDir: `projects/${appFolder}/agents/${basename(agentDir)}`,
+    };
+    const fileWriteScope = agentFileWriteScope(opts.projectRoot, source, config);
     const definition = await buildAgentDefinition({
       config,
-      source: {
-        name: basename(agentDir),
-        dir: agentDir,
-        agentsRoot: dirname(agentDir),
-        projectId,
-        projectDir: existsSync(domainDir) ? domainDir : appDir,
-        // agentDir may be in a source release; writes belong to the installation.
-        relativeDir: `projects/${appFolder}/agents/${basename(agentDir)}`,
-      },
+      source,
+      fileWriteScope,
       model,
       tools: await buildTools(config, {
         ...loaderOpts,
+        fileWriteScope,
         agentsRoot: resolve(appDir, "agents"),
         globalAgentsRoot: opts.agentsRoot,
         agentDir,

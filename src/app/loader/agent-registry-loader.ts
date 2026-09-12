@@ -12,7 +12,7 @@ import {
   listRuntimeAgentDirectories,
 } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
-import { buildAgentDefinition } from "./agent-definition.js";
+import { agentFileWriteScope, buildAgentDefinition } from "./agent-definition.js";
 import { prepareMaintenance } from "../composition/maintenance.js";
 
 export interface AgentLoaderOptions {
@@ -184,15 +184,16 @@ export async function prepareAgents(
         );
       }
       const effectiveProjectRoot = agentProjectRoot(source, projectRoot);
+      const fileWriteScope = agentFileWriteScope(projectRoot, source, config);
       const definition = await buildAgentDefinition({
+        fileWriteScope,
         config,
         source,
         model: models[config.model],
         tools: await buildTools(config, {
           ...opts,
           projectRoot: effectiveProjectRoot,
-          installationRoot: projectRoot,
-          agentWriteDirectory: resolve(projectRoot, source.relativeDir),
+          fileWriteScope,
           agentsRoot: agentsRootForAgentDir(source),
           globalAgentsRoot: agentsRoot,
           agentDir: source.dir,

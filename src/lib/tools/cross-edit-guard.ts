@@ -43,6 +43,12 @@ export interface FileWriteScope {
   agentWriteDirectory?: string;
 }
 
+/** Permissions captured with one trusted agent definition, independent of execution cwd. */
+export interface AgentFileWriteScope extends FileWriteScope {
+  installationRoot: string;
+  agentWriteDirectory: string;
+}
+
 export function validProtectedFileWrites(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(path => typeof path === "string" && path.trim() === path &&
     path.length > 0 && !isAbsolute(path) && !path.includes("\\") && !path.includes("\0") &&
@@ -157,10 +163,7 @@ export function checkCrossEditGuard(
   const displayPath = `${displayPrefix}${sep}${relPath}`;
 
   const targetDirLower = targetDir.toLowerCase();
-  const agentNameLower = agentName?.toLowerCase();
-  const ownDirectory = scope.agentWriteDirectory
-    ? resolve(scope.agentWriteDirectory) === agentPath.directory
-    : targetDirLower === agentNameLower;
+  const ownDirectory = Boolean(scope.agentWriteDirectory && resolve(scope.agentWriteDirectory) === agentPath.directory);
 
   // Shared system guidance always needs an explicit protected-file grant.
   const protectedSharedFiles = new Set([

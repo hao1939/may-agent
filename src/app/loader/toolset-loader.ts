@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "../../lib/manager.js";
+import type { AgentFileWriteScope } from "../../lib/tools/cross-edit-guard.js";
 import { createCodingTools } from "../../lib/tools/coding.js";
 import { createReadTool } from "../../lib/tools/read.js";
 import { createWorkflowTool } from "../../lib/workflow-tool.js";
@@ -29,9 +30,7 @@ export interface ToolsetLoaderOptions {
   canonicalProjectsRoot?: string;
   appDirectories?: readonly string[];
   projectRoot: string;
-  /** Writable installation root, not an App workspace or immutable definition snapshot. */
-  installationRoot?: string;
-  agentWriteDirectory?: string;
+  fileWriteScope: Readonly<AgentFileWriteScope>;
   persistDir: string;
   manager: SubagentManager;
   bus: EventBus;
@@ -65,9 +64,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       case "coding":
         tools.push(...createCodingTools(projectRoot, {
           agentName: config.name,
-          guardRoot: opts.installationRoot ?? projectRoot,
-          agentWriteDirectory: opts.agentWriteDirectory ?? agentDir,
-          protectedFileWrites: config.protectedFileWrites,
+          ...opts.fileWriteScope,
         }));
         break;
 

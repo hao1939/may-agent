@@ -8,7 +8,7 @@ import type { FileWriteScope } from "./cross-edit-guard.js";
 
 export interface CodingToolsOptions extends FileWriteScope {
   /** Installation root for guards, distinct from an App's working directory. */
-  guardRoot?: string;
+  installationRoot?: string;
   /** Working directory for all tools */
   cwd?: string;
   /** Agent name for cross-edit protection */
@@ -23,7 +23,7 @@ export function createCodingTools(projectRoot: string, options?: CodingToolsOpti
   const agentName = options?.agentName;
   const scope = {
     agentName,
-    projectRoot: options?.guardRoot ?? projectRoot,
+    projectRoot: options?.installationRoot ?? projectRoot,
     agentWriteDirectory: options?.agentWriteDirectory,
     protectedFileWrites: options?.protectedFileWrites?.slice(),
   };

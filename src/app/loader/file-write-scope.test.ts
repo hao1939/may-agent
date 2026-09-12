@@ -2,12 +2,13 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { prepareAgentExecution } from "../../lib/agent-execution.js";
 import { EventBus } from "../core/events/bus.js";
 import { discardAgentGeneration, prepareAgents, type PreparedAgentGeneration } from "./agent-registry-loader.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import type { ModelWithApiKey } from "../../lib/types.js";
 
-test("loaded App profiles get only reviewed exact-file grants, independently of names and cwd", async () => {
+test.each(["registered", "installation", "workspace"])("loaded App grants survive %s execution", async (mode) => {
   const root = mkdtempSync(join(tmpdir(), "may-file-write-scope-"));
   const generations: PreparedAgentGeneration[] = [];
   try {
@@ -25,21 +26,48 @@ test("loaded App profiles get only reviewed exact-file grants, independently of 
     writeFileSync(foreignPath, "Another identity");
     const configPath = join(agentDir, "agent.json");
     const load = async (name: string, protectedFileWrites?: unknown) => {
-      writeFileSync(configPath, JSON.stringify({
-        name, description: "Fixture profile", domain: "test", model: "fixture", tools: ["coding"],
-        ...(protectedFileWrites === undefined ? {} : { protectedFileWrites }),
-      }));
-      const generation = await prepareAgents({
-        agentsRoot, sharedRoot, projectsRoot, projectRoot: root, persistDir: join(root, ".state"),
-        models: { fixture: { id: "fixture", provider: "test", apiKey: "fixture" } as unknown as ModelWithApiKey },
-        manager: { hasAgent: () => false } as unknown as SubagentManager,
-        bus: new EventBus(), cronEnabled: false,
-      }, { getAgentSessionId: () => undefined });
+      writeFileSync(
+        configPath,
+        JSON.stringify({
+          name,
+          description: "Fixture profile",
+          domain: "test",
+          model: "fixture",
+          tools: ["coding"],
+          ...(protectedFileWrites === undefined ? {} : { protectedFileWrites }),
+        }),
+      );
+      const generation = await prepareAgents(
+        {
+          agentsRoot,
+          sharedRoot,
+          projectsRoot,
+          projectRoot: root,
+          persistDir: join(root, ".state"),
+          models: { fixture: { id: "fixture", provider: "test", apiKey: "fixture" } as unknown as ModelWithApiKey },
+          manager: { hasAgent: () => false } as unknown as SubagentManager,
+          bus: new EventBus(),
+          cronEnabled: false,
+        },
+        { getAgentSessionId: () => undefined },
+      );
       generations.push(generation);
-      const definition = generation.definitions.find(item => item.name === name)!;
+      const definition = generation.definitions.find((item) => item.name === name)!;
       expect(definition.projectRoot).toBe(appDir);
-      return async (toolName: string, args: Record<string, unknown>) =>
-        definition.tools.find(tool => tool.name === toolName)!.execute("fixture", args);
+      return async (toolName: string, args: Record<string, unknown>) => {
+        // Rebase after a reload too: the retained generation must keep its scope.
+        const tools =
+          mode === "registered"
+            ? definition.tools
+            : prepareAgentExecution({
+                definition,
+                projectRoot: root,
+                executionRoot: mode === "installation" ? root : join(root, "work"),
+                sessionId: "fixture",
+                task: "Exercise file grants",
+              }).tools;
+        return tools.find((tool) => tool.name === toolName)!.execute("fixture", args);
+      };
     };
 
     const ungranted = await load("reviewer");

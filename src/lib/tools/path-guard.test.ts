@@ -5,12 +5,16 @@ const PROJECT_ROOT = "/app";
 
 /** Helper: returns true if write is allowed */
 function isAllowed(absolutePath: string, agentName: string): boolean {
-  return !checkCrossEditGuard(absolutePath, agentName, PROJECT_ROOT).blocked;
+  return !checkCrossEditGuard(absolutePath, agentName, PROJECT_ROOT, {
+    agentWriteDirectory: `${PROJECT_ROOT}/agents/${agentName}`,
+  }).blocked;
 }
 
 /** Helper: returns the block message (or undefined if allowed) */
 function blockMessage(absolutePath: string, agentName: string): string | undefined {
-  return checkCrossEditGuard(absolutePath, agentName, PROJECT_ROOT).message;
+  return checkCrossEditGuard(absolutePath, agentName, PROJECT_ROOT, {
+    agentWriteDirectory: `${PROJECT_ROOT}/agents/${agentName}`,
+  }).message;
 }
 
 describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
@@ -19,7 +23,9 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   });
 
   it("blocks writes to own agent agent.json (P70: immutable self-config)", () => {
-    const result = checkCrossEditGuard("/app/agents/bob/agent.json", "bob", PROJECT_ROOT);
+    const result = checkCrossEditGuard("/app/agents/bob/agent.json", "bob", PROJECT_ROOT, {
+      agentWriteDirectory: "/app/agents/bob",
+    });
     expect(result.blocked).toBe(true);
     expect(result.message).toContain("P70");
     expect(result.message).toContain("agent.json");

@@ -18,11 +18,15 @@ an `agent.json` grants control of that profile's configuration, including its
 grants; review it as authority to administer that profile, not merely to change
 one setting. Do not grant it for routine guidance editing.
 
-The loader resolves scope against the writable installation root, not the
-App's working directory or its immutable source snapshot. Its discovered
-canonical identity folder determines self-owned guidance; an agent with the
-same name in another folder is not the same owner. Normal self-guidance and
-non-protected writes retain their existing behavior. Shared guidance, identity
+Normal loading, App auto-registration and direct runs capture the same file-write
+scope: installation root, canonical agent directory and reviewed grants. The
+definition and its tools share that scope. A workflow can change its execution
+directory without changing these permissions. Readable isolated agent copies
+and immutable source snapshots do not become writable ownership identities.
+The discovered canonical identity folder determines self-owned guidance; an agent with the
+same name in another folder is not the same owner. Missing canonical ownership
+does not grant self-guidance access. With canonical ownership, normal self-guidance
+and non-protected writes retain their existing behavior. Shared guidance, identity
 configuration and the legacy evaluation-truth paths retain their protection.
 The legacy evaluation path list is a protection floor, not a name-based grant.
 
@@ -43,4 +47,4 @@ confine shell commands, native agents, custom tools, symlink aliases or arbitrar
 code running under the installation's OS account. Those capabilities need their
 own trusted construction and operating-system isolation when required. Direct
 tool constructors must supply the correct installation root and ownership
-context; the hosted loader supplies them automatically.
+context; the normal, direct and auto-registration loaders supply them automatically.

@@ -1,6 +1,7 @@
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./persistence.js";
+import type { AgentFileWriteScope } from "./tools/cross-edit-guard.js";
 import type { SkillCatalog } from "./skills.js";
 
 /**
@@ -39,6 +40,9 @@ export interface SubagentDefinition {
 
   /** Immutable shared prompt/skill source selected with this definition generation. */
   sharedRoot?: string;
+
+  /** Captured file-tool permissions; changing execution cwd does not change authority. */
+  fileWriteScope?: Readonly<AgentFileWriteScope>;
 
   // Capabilities
   tools: AgentTool[];

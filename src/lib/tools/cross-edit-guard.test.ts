@@ -51,7 +51,9 @@ it("denies the old implicit exception: undefined agentName bypasses all guards",
 
   describe("own files", () => {
     it("agent can edit its own AGENTS.md", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "bob", ROOT);
+      const r = checkCrossEditGuard(agentPath("bob", "AGENTS.md"), "bob", ROOT, {
+        agentWriteDirectory: agentPath("bob"),
+      });
       expect(r.blocked).toBe(false);
     });
 
@@ -61,7 +63,9 @@ it("denies the old implicit exception: undefined agentName bypasses all guards",
     });
 
     it("agent can edit its own heartbeat.md", () => {
-      const r = checkCrossEditGuard(agentPath("coach", "heartbeat.md"), "coach", ROOT);
+      const r = checkCrossEditGuard(agentPath("coach", "heartbeat.md"), "coach", ROOT, {
+        agentWriteDirectory: agentPath("coach"),
+      });
       expect(r.blocked).toBe(false);
     });
   });
@@ -106,7 +110,9 @@ it("denies the old implicit exception: undefined agentName bypasses all guards",
 
   describe("app-local agent roots", () => {
     it("allows an app-local agent to edit its own AGENTS.md", () => {
-      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "AGENTS.md"), "bob", ROOT);
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "AGENTS.md"), "bob", ROOT, {
+        agentWriteDirectory: appAgentPath("may-agent.app", "bob"),
+      });
       expect(r.blocked).toBe(false);
     });
 
@@ -117,7 +123,9 @@ it("denies the old implicit exception: undefined agentName bypasses all guards",
     });
 
     it("blocks app-local self agent.json edits", () => {
-      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "agent.json"), "bob", ROOT);
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "agent.json"), "bob", ROOT, {
+        agentWriteDirectory: appAgentPath("may-agent.app", "bob"),
+      });
       expect(r.blocked).toBe(true);
       expect(r.message).toContain("P70");
     });
@@ -161,7 +169,9 @@ it("denies the old implicit exception: tech-lead can edit other agent's agent.js
 
   describe("P70: self agent.json immutability", () => {
     it("blocks agent from editing its own agent.json", () => {
-      const r = checkCrossEditGuard(agentPath("bob", "agent.json"), "bob", ROOT);
+      const r = checkCrossEditGuard(agentPath("bob", "agent.json"), "bob", ROOT, {
+        agentWriteDirectory: agentPath("bob"),
+      });
       expect(r.blocked).toBe(true);
       expect(r.message).toContain("P70");
       expect(r.message).toContain("agent.json");
@@ -173,7 +183,9 @@ it("denies the old implicit exception: tech-lead can edit its own agent.json (ex
     });
 
     it("optimizer cannot edit its own agent.json", () => {
-      const r = checkCrossEditGuard(agentPath("optimizer", "agent.json"), "optimizer", ROOT);
+      const r = checkCrossEditGuard(agentPath("optimizer", "agent.json"), "optimizer", ROOT, {
+        agentWriteDirectory: agentPath("optimizer"),
+      });
       expect(r.blocked).toBe(true);
       expect(r.message).toContain("P70");
     });
@@ -305,10 +317,14 @@ it("denies the old implicit exception: evaluator can edit its own criteria files
       expect(r.blocked).toBe(true);
     });
 
-    it("case sensitivity: agent name comparison is case-insensitive", () => {
-      // Agent "Bob" should be able to edit their own dir (lowercase "bob")
+    it("allows ordinary workspace files regardless of agent name casing", () => {
       const r = checkCrossEditGuard(agentPath("bob", "workspace", "notes.md"), "Bob", ROOT);
       expect(r.blocked).toBe(false);
     });
   });
+});
+
+it.each(["AGENTS.md", "heartbeat.md"])("a name without canonical ownership cannot authorize %s", (file) => {
+  expect(checkCrossEditGuard(appAgentPath("other.app", "bob", file), "bob", ROOT).blocked).toBe(true);
+  expect(checkCrossEditGuard(agentPath("bob", file), "bob", ROOT).blocked).toBe(true);
 });
