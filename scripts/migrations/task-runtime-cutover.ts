@@ -32,7 +32,6 @@ assert(
   "Use --legacy-source OLD_HOST --out REPORT_DIR",
 );
 const source = resolve(arg("--legacy-source")!);
-const legacyInboxStore = await import(pathToFileURL(join(source, "src/app/core/state/app-inbox-store.ts")).href);
 const output = resolve(arg("--out")!);
 const candidate = fileURLToPath(new URL("../../", import.meta.url));
 mkdirSync(output, { recursive: true });
@@ -364,7 +363,7 @@ try {
     });
     assert.throws(
       () =>
-        legacyInboxStore.assertAppInboxClaim(
+        assertAppInboxClaim(
           db,
           {
             item: getAppInboxItem(db, String(originalInput!.id))!,
