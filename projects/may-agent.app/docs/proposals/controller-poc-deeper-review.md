@@ -240,6 +240,10 @@ their actual revisions; this check adds no live-model or deployment claim.
 
 ## One Task notification; no automatic retry relay
 
+This section records the baseline before `860f3a2e`. The later
+[nested caller-feedback slice](#nested-caller-feedback-poc) adds one accepted
+blocker report per input; it does not restore per-retry or passive-wait relays.
+
 The next audit found a smaller deletion before combining return links. Every
 Task outcome already publishes `project.task.reconciled`, and owner closure
 publishes `app.task.cancelled`. The runtime also published a second Task-level
@@ -493,11 +497,118 @@ role text and App mapping match the live **`1ec74e3760`** revision.
 The owner-repair gate restores the source only after the human-facing Task
 handles failure evidence and explains the needed help. The fixture then sends
 ordinary human input and requires the original Request, same worker, exact
-result and restart recall. This proves Topic-linked feedback only. A nested
-typed caller still receives an exact answer or closure, but no automatic failure
-report; its wait context supplies correlation/status without failure evidence.
-Do not claim that scheduled review alone gives that caller enough information,
-or retire the remaining return paths before this gap has a demonstrated solution.
+result and restart recall. Those trials prove Topic-linked feedback only. At
+`3f6c79d6`, a nested typed caller receives an exact answer or closure, but no
+automatic failure evidence. The next slice below tests that gap directly.
+
+## Nested caller-feedback PoC
+
+The first implementation is Host **`860f3a2e`**. It saves the first accepted
+failure attempt against the exact admitted input, separately from its eventual
+answer. The acceptance transaction writes both the failure evidence and input
+reference. `app.dependency.updated` returns either `blocked` evidence or `done`
+(answer/owner closure) through the existing Condition route. These are feedback
+values, not additional Task phases. A blocker leaves the wait false and the
+input unfinished. Its observation remains in the caller's Open Waits.
+
+Live notification and saved-state recovery use the same event builder and
+Condition transition. A caller in retry backoff can still receive the eventual
+answer. Repeated worker failures do not create more caller input after the
+first report, although a caller that reports its own failure still retries its
+own unfinished work. Input-backed Topic follow-up uses the same first-report
+selection, including recovery; the admission target index bounds that lookup.
+Seeded Tasks without admitted input retain existing per-attempt Topic reports.
+This shares feedback mechanics without claiming all relationship storage is unified.
+
+The deterministic cases cover live delivery, lost publication and restart,
+original input retention, report deduplication with changing failure prose,
+eventual answer while the caller is pending, and unchanged Task lifetime.
+The Topic case makes three failed attempts and verifies one returned failure
+input before success. Offline-cutover cases preserve wait identity when renaming
+the event and restore only an accepted report tied to its original input;
+replay is idempotent. Existing closure and exact-answer regressions remain.
+
+The first live nested trial exposed an App judgment gap. The collector accepted
+source unavailability as a completed diagnostic; the reviewer then put the
+needed human action into a passive Condition. No first `stopped` report existed
+to return. The agent also made an invalid Condition-owner proposal, which the
+Host rejected before accepting its later wait. A successful diagnostic does
+not establish success of the containing assignment, and recording a wait does
+not contact the human.
+
+Paired App **`86bcf3d8ef`** now tells May to carry the required outcome into its
+delegation and to report a blocker when its own assignment cannot progress,
+even when a diagnostic child legitimately returned an answer. This is guidance
+owned by the App; core does not interpret HTTP errors, task prose or diagnoses.
+
+| Nested trial | Host / App | Outcome | Worker dispatches / model responses | Elapsed | Reported tokens |
+| --- | --- | --- | --- | --- | --- |
+| Initial guidance | `860f3a2e` / `29dc9e2b94` | Failed: a completed diagnostic followed by a passive help wait never notified the human; hit the six-minute experiment limit | 6 / 7 | 376.0 s including cleanup | 63,798 |
+| Clarified delegation and blocker guidance | `860f3a2e` / `86bcf3d8ef` | Passed: C → B → A blocker, human repair, same C → B → A answer, original Request and restart recall | 13 / 18 | 113.4 s | 181,653 |
+| Below-threshold diagnostic repair | `ba4bae9e` / `86bcf3d8ef` | Passed: same collector accepts fresh input after repair, original diagnostic answer stays intact, correct 0.78 conclusion and restart recall | 15 / 20 | 163.8 s | 201,755 |
+
+The successful trial returned useful human feedback **30.4 seconds** after the
+first failed HTTP response. The source was read twice: one 503 and one successful
+measurement after simulated human repair. Its 13 attempts comprise six
+human-facing turns, five reviewer attempts and two collector attempts. The
+reviewer reported its own failure twice before the owner responded, then waited
+for the same collector after repair. Only its first failure became Topic input.
+The final response correctly judged **0.92 above 0.90 by 0.02**, and restart
+recall retained both the result and the one-sample limitation. One tool call
+failed because `python` was absent; the agent continued using an available tool.
+
+The below-threshold trial used the diagnostic-answer path. Useful human feedback
+arrived after **43.1 seconds**. It made one failed HTTP read and one successful
+read, then correctly judged **0.78 below 0.90 by 0.12**. The earlier diagnostic
+answer remained unchanged; new input on the same collector carried the later
+measurement. All three Task identities remained open. Its 15 worker dispatches
+produced 14 started attempts (six human-facing, six reviewer, two collector),
+20 model responses and zero tool errors. One reviewer result conflicted with
+newly admitted evidence and was fenced; retry used current state.
+
+These numbers show capability and its cost, not a reliability rate or measured
+savings. Nested interpretation and forwarding add model calls, and first-report
+suppression does not stop the reviewer's own retries. One simulated human repair
+was still required. Provider token totals include cache reads; they are not
+verified charges. The initial failure matters: mechanics cannot compensate for
+an App accepting the wrong outcome or recording help in an unreturned wait.
+
+A below-threshold transfer at **`3e9b980c` / `86bcf3d8ef`** reached the human
+with a useful blocker, then stopped after 52.8 seconds at the PoC's assertion
+that the collector input must remain unfinished. Its reviewer had explicitly
+allowed the collector to return either a measurement or precise failure evidence;
+that diagnostic input was legitimately answered. The larger Request remained
+open. This result is **incomplete**, not evidence of end-to-end repair and not a
+lost runtime notification.
+
+The PoC now accepts either declared contract. For continuing acquisition, it
+requires the original input to receive its report and later measurement. For a
+completed diagnostic, it requires fresh input on the same collector after repair
+and proves the earlier answer remains unchanged. Both use ordinary typed input;
+there is no new runtime mode or synthetic feedback translator. App guidance
+should favor continuing acquisition when the actual responsibility is to obtain
+a measurement; a one-shot diagnostic is useful when that narrower answer has value.
+
+The follow-up Host **`3e9b980c`** shortens its protocol to keep the existing 4 KiB
+prompt limit and strengthens assertions outside the executor boundary, where
+runtime failure containment cannot swallow them. The test verifies both accepted
+caller results and original input in `continuedInputs`, then admits a different
+input to the same worker and proves it cannot inherit the earlier report.
+
+Validation: at **`3e9b980c`**, the complete Host gate passes **2,856 tests,
+3 installation-dependent skips, 0 failures**, across 290 files in 150.4 seconds.
+The later `ba4bae9e` change is PoC-only: its type check and live diagnostic-repair
+trial pass. `d3e41b39` only updates experiment usage. Paired App `86bcf3d8ef`
+passes **28** routing/schema/workflow checks. Canonical design checks and local
+links pass; hosted checks on the final source are tracked in PR #158. Host/App
+changes still await human review and separate adoption; no deployment was made.
+
+This slice deliberately returns one initial blocker and the eventual answer or
+closure. Later different blockers and useful intermediate progress need a
+separate value/cost decision; they remain readable in attempt history. First-report
+suppression is not a general progress subscription and does not prove low cost
+during a long outage. Do not retire ongoing Topic or retained child observations
+on the strength of this narrow trial.
 
 ## Next deletion, in order
 
@@ -514,10 +625,11 @@ that every retained child return path has disappeared.
 Next evaluate one saved caller link for human follow-up and nested delegation,
 including exact input answers versus ongoing Topic observation. Prove
 **A → B → C → B → A**, concurrent human input and owner withdrawal through that
-common link; retain the saved-answer/lost-notification regression. Typed failures
-currently remain unfinished while their worker retries; Topic links can report
-accepted failure evidence. Decide that difference explicitly before retiring
-implicit parent failure/progress wakes. Convert or drain retained links during
+common link; retain the saved-answer/lost-notification regression. The first
+caller-feedback slice returns one accepted blocker without settling the input,
+and uses the same selection for input-backed Topic work. General progress,
+changed blockers and seeded work still need an explicit cost/benefit decision
+before retiring implicit parent failure/progress wakes. Convert or drain retained links during
 the planned offline cutover. Do not make agents reproduce old request identifiers
 or introduce another runtime switch.
 

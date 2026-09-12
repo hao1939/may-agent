@@ -261,8 +261,10 @@ Condition, including its `requestedAction`, does not send a human a question or
 perform that action. Its review timer only asks the worker to reconsider. May's
 App guidance uses `stopped` for a missing prerequisite that prevents progress;
 this preserves an honest failure report and paced continuation, not closure.
-Topic-linked reports can reach the human today; nested typed failure feedback is
-still a [return-path gap](controller-poc-deeper-review.md#next-deletion-in-order).
+The [first caller-feedback slice](#first-caller-feedback-slice) returns accepted
+blocker evidence through nested typed input as well as Topic-linked work. Its
+App guidance must distinguish an unavailable prerequisite from a finished
+one-shot diagnostic; a passive wait still does not notify a human.
 
 Code retains unchanged waits when an agent omits them. An accepted review must
 renew an overdue checkpoint identically whether the wait was supplied again or
@@ -465,9 +467,50 @@ Task revision and closure controls remain. The
 records the breaking SDK change, remaining App migration gates and scenario
 coverage. Retained parent/child waits and Topic observations still have distinct
 return behavior; the diagram describes the common mental model, not completed
-storage convergence. In particular, typed failure reports still retry unfinished
-work instead of immediately answering the caller; shared failure return remains
-pending.
+storage convergence. The first caller-feedback slice below returns failure
+evidence without answering unfinished input. Topic observation and typed input
+correlation still have different storage and admission rules.
+
+### First caller-feedback slice
+
+Implemented in Host **`860f3a2e`**, with live trials and tradeoffs recorded in the
+[deeper review](controller-poc-deeper-review.md#nested-caller-feedback-poc).
+
+Return the first accepted unsuccessful attempt as feedback through the exact
+input's saved caller link. Keep its input unfinished and its Task open; a later
+answer or owner closure still returns through that link. Rename the existing
+dependency event to `app.dependency.updated`: `blocked` asks the caller to judge
+evidence, while `done` satisfies its wait. A failure is not an answer.
+
+Persist the first report's attempt reference alongside the input's eventual
+answer reference in the acceptance transaction. Reuse that evidence for live
+delivery and recovery. The caller's saved Condition remembers the report, so
+repeated retry outcomes or notification recovery do not cause repeated caller
+attempts. The original input accompanies its returned evidence, including when
+the caller itself has a caller. Existing Topic follow-up uses the same first
+report selection for input-backed work. Seeded Tasks without input admissions
+retain their existing per-attempt Topic observations; their notification volume
+has not been changed by this slice.
+
+This is deliberately one initial failure report per input, followed by its
+answer or closure. Later diagnoses remain in attempt history; a review or new
+input is needed to reconsider them. Do not add progress polling, semantic text
+comparison or a configurable notification policy. General progress updates and
+changed-blocker reporting need a demonstrated use case beyond this first slice.
+
+The live PoC proves C's failure reaches B, B explains the need to A, and the
+human can repair the source without replacement work. Repeated C failures do
+not add new input to B; B may still retry its own unfinished work under normal
+backoff. Eventual success returns C → B → A. A second trial covers a completed
+diagnostic: the same collector accepts fresh input after repair, while its old
+answer remains intact. Neither an input's answer nor a failure report closes the
+Task or automatically fulfills the containing human Request. Deterministic tests
+cover lost notification, restart and exact input correlation; existing owner
+closure checks remain. Source, costs and limits are recorded in the deeper review. During offline
+cutover, rename retained typed Conditions from `app.dependency.completed` to
+`app.dependency.updated`, preserve their identities, and restore a first report
+only when an accepted attempt proves its exact input. Historical journal entries
+remain unchanged; saved-state recovery supplies missed feedback.
 
 New delegation **adds work**. Omitted saved waits remain attached, so adding
 another request to the same App does not require the worker to repeat earlier

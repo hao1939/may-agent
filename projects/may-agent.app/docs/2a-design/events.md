@@ -491,11 +491,13 @@ Adapters declare which source fields matter, while the agent decides their
 meaning; no central table of provider-specific repair strategies is needed.
 
 The continuing-Task candidate in Host #158 applies this to typed delegation:
-`project.task.reconciled` and `app.task.cancelled` refresh saved answers and linked
-Conversation observations. Only the saved App answer emits
-`app.dependency.completed`. Routine waits and failed retries do not automatically
-relay another caller wake; explicit routes and existing review deadlines remain.
-See the [source cleanup and its limits](../proposals/controller-poc-deeper-review.md#one-task-notification-no-automatic-retry-relay).
+`project.task.reconciled` and `app.task.cancelled` refresh saved input feedback
+and linked Conversation observations. `app.dependency.updated` carries the exact
+input's first accepted failure (`blocked`) or its answer/owner closure (`done`).
+A blocker wakes the caller with evidence but keeps its wait and input unfinished.
+The saved report suppresses repeated retry notifications; routine waits do not
+relay caller wakes. Recovery uses the same saved evidence and Condition path.
+See the [first slice and limits](../proposals/conversation-input-unification.md#first-caller-feedback-slice).
 
 When execution resumes, supply a bounded view of the objective, changed facts,
 current work/waits and evidence references. The agent can read deeper using
