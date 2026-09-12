@@ -368,11 +368,12 @@ point-in-time read, not a live migration or a claim about other installations.
 
 ### Read-only Host health and ordinary maintenance observation
 
-The approved read is implemented in #181, Host source `d75c1b9b`, through
+The approved read is implemented in #181, Host source `35294614`, through
 `ObserverContext.read.hostHealth`. Its default window is one hour, maximum one
 day. It reports retained running and ended executions, separate outcome counts,
-missing end timestamps, selected Host failure event counts and at most 20 recent
-IDs per detail list. Totals are not capped; coverage and truncation are explicit.
+missing end timestamps and selected Host failure event counts. Totals are not
+capped; coverage is explicit and fixed categories keep the report small. It is
+aggregate-only, with no execution, event, Task or App identifiers or detail lists.
 It reports executions and events, including retries and nested calls, not unique
 Tasks, incidents, product failures or an overall health verdict. It reveals no
 transcripts, configuration, task text, raw event data or provider error text.
@@ -382,7 +383,8 @@ rejects rather than returning healthy zeros. Its SQL runs in a read-only
 snapshot; failure preserves the caller's surrounding transaction. No collector,
 database table, scheduler, global workflow capability or policy hook was added.
 
-The companion App candidate is commit `e79c7f44f7` on local branch
+The companion App candidate is commit `e79c7f44f7`, refined for aggregate-only
+reporting at `01e036c139`, on local branch
 `refactor/maintenance-health-observer-20260913`, in isolated worktree
 `/home/hao/workspace-worktrees/app-maintenance-health-20260913`. The active App
 tree is unchanged. Its 80-line observer replaces the private health job and
@@ -406,23 +408,41 @@ tradeoff and paired adoption order; it is not described as a lossless migration.
 The deleted handler and old tests remain recoverable in Git; production files,
 generated evidence and accepted Tasks are untouched.
 
+Review found a material composed-capability leak in the first candidate:
+diagnostic execution IDs could be passed to the existing unscoped execution
+reader to retrieve private content. Checking only the serialized snapshot did
+not catch that interaction. The fix removes all resource IDs and detail lists,
+including event IDs, rather than adding a permission layer or claiming that
+opaque-looking IDs are safe. Regression assertions now pin the complete allowed
+shape using foreign executions and private stored content. Detailed diagnosis
+requires separately authorized evidence access, not this global summary.
+
+The reviewer also found an old reusable observer fixture missing the new method.
+It and the observer-runtime factories now use the shared SDK context helper.
+An integration case checks both reject-by-default reporting and explicit reader
+injection. Both findings are fixed; the published thread is replied to/resolved
+and Copilot re-review is requested.
+
 Verification so far:
 
 - Stable-main full Host CI: **2,946 passed, three installation-only skips, zero
   failures**. An earlier run overlapped a main merge and failed two changed
   contract tests; it is not used as proof. The stable run passed without changing
-  those contracts. Final-head `d75c1b9b` full CI, after extra window and
+  those contracts. Pre-review `d75c1b9b` full CI, after extra window and
   failed-read transaction regressions and formatting: **2,947 passed, three
   installation-only skips, zero failures; 12,877 assertions across 297 files**.
-- Final focused report/runtime/real-daemon checks: **19 passed, 50 assertions**;
-  public SDK export check: **one passed**. The daemon proof follows an ordinary
+- Review-fix focused report/runtime/fixture/SDK/real-daemon checks:
+  **23 passed, 66 assertions**. The daemon proof follows an ordinary
   observer read through a recorded fact and declared App subscription to an
   accepted workflow result. It makes no model call.
 - Companion manifest, routing and observer checks: **22 passed, 117 assertions**;
   source and new observer tests type-check against the new Host SDK, and the
   App bundles. This does not claim whole-installation type compatibility.
-- #181 current-head Quality and Container passed. It is ready for review;
-  Copilot review was requested. Merge and final maintainer review remain separate.
+- Aggregate-only source `35294614`: full local CI **2,948 passed, three
+  installation-only skips, zero failures; 12,883 assertions across 297 files**.
+  The 11 observer-runtime tests also pass. Current-head Quality and Container
+  passed. #181 is ready for review with both initial findings fixed; Copilot
+  re-review is requested. Merge and final maintainer review remain separate.
 
 Adoption requires the new Host first and then the App definition plus cron
 removal together, with no overlapping old job. No live restart, permission,
