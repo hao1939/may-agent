@@ -54,11 +54,11 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       allowedCommit?: string;
       attempts: number;
       providerCalls: number;
-      activations: number;
+      forwardedReloadCalls: number;
     };
     const read = () => JSON.parse(readFileSync(journalPath, "utf8")) as Controls;
     const change = (patch: Partial<Controls>) => writeFileSync(journalPath, JSON.stringify({ ...read(), ...patch }));
-    writeFileSync(journalPath, JSON.stringify({ ready: false, attempts: 0, providerCalls: 0, activations: 0 }));
+    writeFileSync(journalPath, JSON.stringify({ ready: false, attempts: 0, providerCalls: 0, forwardedReloadCalls: 0 }));
     const report: Record<string, unknown> = {
       live,
       withdraw,
@@ -125,7 +125,9 @@ export function taskImprover(withdraw = false): ImprovementRunner {
                   state.allowedCommit,
                   "Window does not authorize a different candidate revision",
                 );
-                change({ activations: state.activations + 1 });
+                // Count calls forwarded to the reload adapter, not successful
+                // activations. The adapter may report a not-submitted failure.
+                change({ forwardedReloadCalls: read().forwardedReloadCalls + 1 });
               }
               const result = await tool.execute(id, input, signal);
               const content = result.content.find((item) => item.type === "text");
@@ -313,7 +315,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
       );
       const candidate = await fixtureGit(root, ["rev-parse", "HEAD"]);
       const before = read();
-      assert.equal(before.activations, 0);
+      assert.equal(before.forwardedReloadCalls, 0);
       await runtime.close();
       runtime = undefined;
       runtime = await start();
@@ -375,7 +377,7 @@ export function taskImprover(withdraw = false): ImprovementRunner {
         runtime = await start();
         assert(runtime.store.isCancelled("improve-guidance"));
         assert.equal(read().attempts, 1);
-        assert.equal(read().activations, 0);
+        assert.equal(read().forwardedReloadCalls, 0);
       } else {
         await profiled(2);
         const finished = runtime.store.readTask("improve-guidance")!;

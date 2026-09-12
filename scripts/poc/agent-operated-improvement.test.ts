@@ -125,7 +125,7 @@ for (const mode of ["direct", "task-resume", "task-withdraw"] as const)
         expect(task.noopWaitCheck).toBe(true);
         expect(task.controls.providerCalls).toBe(0);
         expect(task.controls.attempts).toBe(mode === "task-resume" ? 2 : 1);
-        expect(task.controls.activations).toBe(0); // Scripted judgment is not activation proof.
+        expect(task.controls.forwardedReloadCalls).toBe(0); // Scripted judgment submits no reload.
         if (mode === "task-withdraw") expect(task.lateTargetedWake).toBeNull();
         else expect(task.inputs[0].status).toBe("done");
       }

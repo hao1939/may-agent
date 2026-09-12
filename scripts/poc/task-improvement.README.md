@@ -3,6 +3,25 @@
 Opt-in extension of [the direct improvement experiment](agent-operated-improvement.README.md).
 No production runtime change, installation operation, or learning controller.
 
+## Recommendation
+
+Use one ordinary App-owned Task for an improvement that needs its own
+follow-through. A small correction can finish in the current Conversation Task.
+The agent chooses edits and probes; existing code preserves work, enforces
+scoped effects and returns evidence. Do not give each edit/probe a new Task or
+install these fixture tools as a production improvement API.
+
+```text
+one Task -> author candidate -> wait -> reopen -> same Task resumes
+         -> activate exact candidate -> check fresh target -> return result
+```
+
+`converged` accepts the result but leaves the Task open. Its assigning owner
+decides closure or withdrawal. Keep committed source, active source, actual
+target revision and useful behavior distinct; none proves the next by itself.
+
+## Run
+
 ```sh
 bun scripts/poc/task-improvement.ts
 bun scripts/poc/task-improvement.ts --withdraw
@@ -39,6 +58,9 @@ reopen. Committed source is retained, not activated or deleted.
 - Both `results.json` and `task-trial.json` matter. The latter covers Task
   mechanics; the former includes independent final behavior checks. Temporary
   artifacts are retained for review, not publication.
+- `forwardedReloadCalls` counts calls passed to the reload adapter, including
+  its injected rejection, not successful activations. Source and target evidence
+  in `results.json` establish activation and behavior separately.
 
 The Host deliberately rebuilds standard `read`/`write` tools for a Task workspace.
 Cross-target fixture capabilities therefore use `fixture_read`/`fixture_write`.
@@ -60,7 +82,7 @@ executions had zero tool errors. One scoped nine-line guidance addition remained
 
 A separate live withdrawal trial completed baseline and one improver execution.
 The agent committed a candidate and waited. Owner cancellation blocked later
-execution and there were zero reload calls.
+execution and no reload was forwarded to the source adapter.
 
 Unsuccessful evidence is retained too: an initial mechanical fixture bypassed
 Condition observation; an interrupted live fixture lost its constrained adapters
@@ -73,3 +95,16 @@ one ordinary Task plus scoped capabilities, without proving abrupt crash safety,
 mid-effect cancellation, changed-owner-input handling or installed authority.
 The separately maintained App proposal owns the recommendation and sanitized
 evidence: `docs/proposals/task-improvement-poc-20260912.md`.
+
+The successful live trials used these harness SHA-256 hashes:
+
+- Task harness: `1459afa9a2e40254439f7e6e626fe0084c98d5352c0e25b61f47a1db2dd2e59c`.
+- Shared direct harness: `475de2497bdfbc45ca4ce2d02adff6f5e6758665db3135e5fe6a6fd6ca157f92`.
+
+Later publication refinements have no-model coverage, not another live trial:
+five-probe budget advertisement; exact input/result and one-Task assertions;
+a real no-op-wake regression; the 300-second limit at actual managed dispatch;
+final-commit/active-source equality; and truthful reload-call naming. Earlier
+live attempts finished within 48 seconds, but did not test the revised timeout.
+Old raw reports retain the former `activations` field; its value counted calls,
+including the rejection, and must not be read as successful activations.
