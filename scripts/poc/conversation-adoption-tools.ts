@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { Type } from "@may-agent/sdk";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { createReadTool } from "../../src/lib/tools/read.js";
@@ -49,7 +50,7 @@ export async function fixtureReload(persistDir: string, signal?: AbortSignal) {
       (link) => link.kind === "operation" && ["succeeded", "failed"].includes(link.state ?? ""),
     );
     if (terminal) return { requestId, eventId: receipt.eventId, ...terminal };
-    await Bun.sleep(50);
+    await delay(50, undefined, { signal });
   }
   return pending;
 }
