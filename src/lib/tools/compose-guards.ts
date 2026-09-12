@@ -20,7 +20,7 @@ export interface BeforeToolCallContext extends Omit<PiBeforeToolCallContext, "ar
 export interface BeforeToolCallResult {
   block: boolean;
   reason: string;
-  /** Stable detector identity propagated into guard.triggered evidence. */
+  /** Stable detector identity propagated into guard.triggered facts. */
   guardName?: string;
 }
 

@@ -29,7 +29,7 @@ describe("control-socket operator event boundary", () => {
     });
   });
 
-  it("preserves an explicit malformed exact-task target for subscriber failure evidence", () => {
+  it("preserves an explicit malformed exact-task target for subscriber failure facts", () => {
     expect(
       operatorEventInput({
         type: "trigger.metrics-snapshot",

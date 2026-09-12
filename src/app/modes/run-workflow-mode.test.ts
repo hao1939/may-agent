@@ -27,7 +27,7 @@ describe("run workflow mode", () => {
         export const description = "Inspect this definition";
         export async function execute(ctx) {
           writeFileSync(${JSON.stringify(marker)}, "unexpected effect");
-          return ${kind === "task" ? '{ state: "converged", summary: "Answer", evidence: [] }' : 'ctx.done("Answer")'};
+          return ${kind === "task" ? '{ state: "converged", summary: "Answer", facts: [] }' : 'ctx.done("Answer")'};
         }
       `,
         );

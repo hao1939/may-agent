@@ -55,7 +55,7 @@ describe("workflow finish recovery", () => {
     const messages = [
       abortedFinish({
         status: "success",
-        summary: "Evidence complete",
+        summary: "Facts complete",
         result: { state: "converged" },
       }),
     ];
@@ -115,7 +115,7 @@ describe("workflow finish recovery", () => {
       messages,
       tools: [
         finishTool(async () => ({
-          content: [{ type: "text", text: "finish() error: evidence is not honest" }],
+          content: [{ type: "text", text: "finish() error: facts are not honest" }],
         })),
       ],
       reason: RESPONSES_STREAM_TERMINAL_ERROR,

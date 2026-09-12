@@ -529,9 +529,9 @@ describe("shared agent execution preparation", () => {
     const finish = prepared.tools.find((candidate) => candidate.name === "finish");
     const result = await finish!.execute("call-1", {
       status: "success",
-      summary: "verified worktree evidence",
+      summary: "verified worktree facts",
       deliverables: [{ path: "proof.txt", description: "worktree proof" }],
-      verification_evidence: ["read(proof.txt) showed task workspace"],
+      verification_facts: ["read(proof.txt) showed task workspace"],
     } as never);
     expect(JSON.stringify(result)).not.toContain("Deliverables not found on disk");
     expect(JSON.stringify(result)).toContain("SUCCESS");
@@ -539,7 +539,7 @@ describe("shared agent execution preparation", () => {
 });
 
 describe("direct structured judgment execution", () => {
-  const judgment = { state: "stopped", summary: "Further recovery exceeds the authorized budget." };
+  const judgment = { state: "incomplete", summary: "Further recovery exceeds the authorized budget." };
   const finishArgs = {
     status: "failure",
     summary: judgment.summary,
@@ -555,7 +555,7 @@ describe("direct structured judgment execution", () => {
         name: "judge",
         description: "Synthetic judgment fixture",
         domain: "tests",
-        systemPrompt: "Judge the supplied evidence.",
+        systemPrompt: "Judge the supplied facts.",
         model: streamTestModel,
         tools: [createFinishTool({ agentName: "judge", projectRoot: root })],
       },
@@ -563,7 +563,7 @@ describe("direct structured judgment execution", () => {
       sessionId: "judgment-fixture",
       task: "Decide whether recovery is worthwhile.",
       requireFinish: true,
-      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("stopped"), summary: Type.String() }) } : {}),
+      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }) } : {}),
     });
   }
 

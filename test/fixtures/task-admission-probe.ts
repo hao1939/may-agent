@@ -79,7 +79,6 @@ const command: AppEventAdmissionCommand = {
     parentId: "root",
     outcome: "Reconcile current state",
     acceptance: ["State examined"],
-    mode: "maintain",
     agent: "sample-owner",
   },
 };

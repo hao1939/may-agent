@@ -12,11 +12,11 @@ import type { AppTaskContext } from "../tasks/app-task-store.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
 
-export type TaskRequestInput = {
+export type TaskInputAdmission = {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppInputContext>;
+  inputContext: Readonly<AppInputContext>;
   authorize?: () => void;
   inboxInputId?: string;
   now?: number;
@@ -25,7 +25,7 @@ export type TaskRequestInput = {
 };
 
 /** Persist resolved Task input and Conversation links. No App mapping, execution or notification calls. */
-export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
+export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
     const db = config.resourceStore.db;
@@ -33,10 +33,10 @@ export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput
     if (input.inboxInputId) {
       if (
         !item ||
-        item.id !== input.request.id ||
+        item.id !== input.inputContext.id ||
         item.appId !== input.appId ||
-        !isDeepStrictEqual(item.input, input.request.input) ||
-        !isDeepStrictEqual(item.source, input.request.source)
+        !isDeepStrictEqual(item.input, input.inputContext.input) ||
+        !isDeepStrictEqual(item.source, input.inputContext.source)
       )
         throw new Error("Task admission does not match its saved input");
       if (input.idempotencyKey !== `task:${item.id}`)
@@ -46,7 +46,7 @@ export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput
         if (!task) throw new Error(`Attached Task ${item.waitingOn.id} is missing`);
         const target = input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id;
         if (target !== item.waitingOn.id) throw new Error("Cannot remap an admitted input to different work");
-        return admitAuthorizedTaskRequest(config, {
+        return admitAuthorizedTaskInput(config, {
           ...input,
           idempotencyKey: item.taskAdmissionKey ?? input.idempotencyKey,
         });
@@ -68,7 +68,7 @@ export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput
       const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
       input = { ...input, idempotencyKey: keys.find((key) => admissions?.[key]) ?? input.idempotencyKey };
     }
-    const observation = admitAuthorizedTaskRequest(config, input);
+    const observation = admitAuthorizedTaskInput(config, input);
     if (item) linkTaskInput(db, item.id, observation.taskId, input.idempotencyKey, input.now);
     const topicId = item?.topicId ?? input.topicId;
     if (topicId) linkConversationTopicTask(db, topicId, input.appId, observation.taskId);
@@ -81,8 +81,8 @@ export function admitTaskRequest(config: AppTaskContext, input: TaskRequestInput
   });
 }
 
-function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestInput): AppTaskObservationResult {
-  if (input.appId !== config.resourceStore.appId) throw new Error("Task request belongs to another App");
+function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmission): AppTaskObservationResult {
+  if (input.appId !== config.resourceStore.appId) throw new Error("Task input belongs to another App");
   const idempotencyKey = input.idempotencyKey.trim();
   if (!idempotencyKey) throw new Error("App task idempotency key must be non-empty");
   let intent;
@@ -92,7 +92,7 @@ function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestIn
     const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [idempotencyKey] })
       .appTaskAdmissions?.[idempotencyKey];
     if (admission) {
-      if (admission.taskId !== taskId) throw new Error("Task request identity was reused for different work");
+      if (admission.taskId !== taskId) throw new Error("Task input identity was reused for different work");
       if (!config.resourceStore.readTask(taskId)) {
         throw new Error(`Admitted Task ${taskId} is missing`);
       }
@@ -108,13 +108,13 @@ function admitAuthorizedTaskRequest(config: AppTaskContext, input: TaskRequestIn
     trigger: {
       type: "app.task.requested",
       source:
-        input.request.source.kind === "human" || input.request.humanRequested === true
+        input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true
           ? "human"
           : `app-inbox:${input.appId}`,
       owner: `agent:${config.agent}`,
       target: { project: input.appId, taskId: intent.id },
       idempotencyKey,
-      data: { project: input.appId, taskId: intent.id, appId: input.appId, idempotencyKey, request: input.request },
+      data: { project: input.appId, taskId: intent.id, appId: input.appId, idempotencyKey, request: input.inputContext },
     },
   });
 }

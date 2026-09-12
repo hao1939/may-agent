@@ -12,7 +12,7 @@ describe("admitCodexGoalTaskResult", () => {
         state: "converged",
         summary: "The bounded proof passed",
         response: "The task is complete.",
-        evidence: ["bun test: passed"],
+        facts: ["bun test: passed"],
       }),
       options,
     );
@@ -23,7 +23,7 @@ describe("admitCodexGoalTaskResult", () => {
         state: "converged",
         summary: "The bounded proof passed",
         response: "The task is complete.",
-        evidence: ["bun test: passed"],
+        facts: ["bun test: passed"],
         actions: [],
       },
     });
@@ -31,13 +31,13 @@ describe("admitCodexGoalTaskResult", () => {
 
   it("rejects valid JSON with a non-May terminal state", () => {
     const rejected = admitCodexGoalTaskResult(
-      JSON.stringify({ state: "complete", summary: "Done", evidence: ["proof.txt contains once"] }),
+      JSON.stringify({ state: "complete", summary: "Done", facts: ["proof.txt contains once"] }),
       options,
     );
 
     expect(rejected.kind).toBe("retry");
     if (rejected.kind !== "retry") throw new Error("expected rejected result");
-    expect(rejected.reason).toContain("state must be converged, waiting, stopped, or needs-agent");
+    expect(rejected.reason).toContain("state must be converged, waiting, incomplete, or needs-agent");
     expect(rejected.nextAttemptContext).toContain("The May Task remains pending");
     expect(rejected.nextAttemptContext).not.toContain("proof.txt contains once");
   });
@@ -46,8 +46,8 @@ describe("admitCodexGoalTaskResult", () => {
     for (const candidate of [
       null,
       "Done.",
-      '```json\n{"state":"converged","summary":"Done","evidence":[]}\n```',
-      JSON.stringify({ state: "converged", summary: "Done", evidence: "not-an-array" }),
+      '```json\n{"state":"converged","summary":"Done","facts":[]}\n```',
+      JSON.stringify({ state: "converged", summary: "Done", facts: "not-an-array" }),
     ]) {
       expect(admitCodexGoalTaskResult(candidate, options).kind).toBe("retry");
     }
@@ -55,13 +55,13 @@ describe("admitCodexGoalTaskResult", () => {
 
   it("admits only the corrected result", () => {
     const first = admitCodexGoalTaskResult(
-      JSON.stringify({ state: "complete", summary: "Wrong state", evidence: [] }),
+      JSON.stringify({ state: "complete", summary: "Wrong state", facts: [] }),
       options,
     );
     expect(first.kind).toBe("retry");
 
     const second = admitCodexGoalTaskResult(
-      JSON.stringify({ state: "converged", summary: "Corrected state", evidence: ["verified on retry"] }),
+      JSON.stringify({ state: "converged", summary: "Corrected state", facts: ["verified on retry"] }),
       options,
     );
     expect(second).toMatchObject({

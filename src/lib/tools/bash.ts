@@ -203,7 +203,7 @@ export const DEFAULT_BASH_TIMEOUT = 120;
 /**
  * Maximum captured output copied into the Host when a local shell settles.
  *
- * The command's capture file remains the complete evidence. The in-process
+ * The command's capture file remains the complete facts. The in-process
  * tool loop needs only enough recent output to update the agent and construct
  * its bounded result; replaying a multi-megabyte build log through the daemon
  * would make execution volume control-plane work.
@@ -405,7 +405,7 @@ const defaultBashOperations = createLocalBashOperations();
 // ── Error-time nudges ───────────────────────────────────────────────────
 // When a bash command fails with a recognizable pattern, append an actionable
 // hint so the agent doesn't spiral trying the same broken approach.
-// Evidence: 16-18 ops wasted per session on DB tool confusion spirals.
+// Facts: 16-18 ops wasted per session on DB tool confusion spirals.
 
 export interface ErrorNudge {
 	/** Regex to test against the combined stdout+stderr output */

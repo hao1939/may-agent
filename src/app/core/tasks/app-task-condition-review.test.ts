@@ -34,7 +34,6 @@ function fixture() {
               parentId: "root",
               outcome: "Finish the requested review",
               acceptance: ["The reviewed result is proven"],
-              mode: "achieve",
             },
             status: {
               observedGeneration: 0,
@@ -197,7 +196,7 @@ describe("App task Condition review checkpoint", () => {
       const fourth = claim(config);
       expect(fourth.events.map(({ event }) => event.eventId)).toEqual([404]);
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual(["decision"]);
-      completeAppTask(config, fourth, { summary: "Both facts verified", evidence: ["pipeline:42", "decision:done"] });
+      completeAppTask(config, fourth, { summary: "Both facts verified", facts: ["pipeline:42", "decision:done"] });
       expect(readTaskSnapshot(config).resources["human-request"].status.conditionIds).toEqual([]);
     } finally {
       config.resourceStore.close();
@@ -210,7 +209,7 @@ describe("App task Condition review checkpoint", () => {
     deferAppTask(config, claim(config), {
       disposition: "waiting",
       summary: "Wait for external review",
-      evidence: [],
+      facts: [],
       conditions: [
         {
           id: "external-review",
@@ -257,7 +256,7 @@ describe("App task Condition review checkpoint", () => {
       deferAppTask(config, claim(config), {
         disposition: "waiting",
         summary: "Wait for an exact capability or its fallback review",
-        evidence: [],
+        facts: [],
         conditions: [
           {
             id: "capability-ready",
@@ -302,7 +301,7 @@ describe("App task Condition review checkpoint", () => {
     deferAppTask(config, claim(config), {
       disposition: "waiting",
       summary: "Waiting for external review proof",
-      evidence: ["review:queued"],
+      facts: ["review:queued"],
       conditions: [condition],
     });
 
@@ -331,7 +330,7 @@ describe("App task Condition review checkpoint", () => {
     deferAppTask(config, review, {
       disposition: "waiting",
       summary: "Checkpoint reviewed; the same external result is still pending",
-      evidence: ["review:still-running"],
+      facts: ["review:still-running"],
       conditions: [condition],
     });
     expect(listRunnableAppTaskIds(config)).toEqual([]);
@@ -351,7 +350,7 @@ describe("App task Condition review checkpoint", () => {
     deferAppTask(config, claim(config), {
       disposition: "waiting",
       summary: "Waiting for external review proof",
-      evidence: ["review:queued"],
+      facts: ["review:queued"],
       conditions: [condition],
     });
 
@@ -370,7 +369,7 @@ describe("App task Condition review checkpoint", () => {
       deferAppTask(config, review, {
         disposition: "waiting",
         summary: "The same external result is still pending",
-        evidence: [`review:unchanged:${reviewAttempt}`],
+        facts: [`review:unchanged:${reviewAttempt}`],
         ...(route === "redeclared" ? { conditions: [condition] } : {}),
       });
       expect(listRunnableAppTaskIds(config)).toEqual([]);
@@ -398,7 +397,7 @@ describe("App task Condition review checkpoint", () => {
     deferAppTask(config, claim(config), {
       disposition: "waiting",
       summary: "Waiting for an approval event",
-      evidence: ["approval:unchanged"],
+      facts: ["approval:unchanged"],
       conditions: [
         {
           id: "approval-submitted",

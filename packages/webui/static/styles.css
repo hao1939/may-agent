@@ -227,9 +227,6 @@
   .eval-extra { display: grid; gap: 6px; padding: 0 9px 8px; font-size: 11px; color: var(--fg2); }
   .eval-extra-item { border-left: 2px solid var(--border); padding-left: 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .eval-extra-item b { color: var(--fg); display: block; margin-bottom: 2px; }
-  .eval-feedback { display: grid; gap: 6px; padding: 8px 9px; border-top: 1px solid var(--border); }
-  .eval-feedback textarea { width: 100%; min-height: 54px; resize: vertical; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 7px; font: inherit; font-size: 12px; }
-  .eval-feedback button { justify-self: end; }
   .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   @media (max-width: 1200px) { .turn-eval-row { grid-template-columns: 1fr; } }
   .tool-grid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--border); }

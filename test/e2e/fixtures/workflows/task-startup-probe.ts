@@ -14,11 +14,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult<Tas
   return ctx.done(
     "fixture result",
     released
-      ? { state: "converged", summary: "Exact fact observed", evidence: ["project.approval.submitted"] }
+      ? { state: "converged", summary: "Exact fact observed", facts: ["project.approval.submitted"] }
       : {
           state: "waiting",
           summary: "Waiting for fixture fact",
-          evidence: [],
+          facts: [],
           conditions: [
             {
               id: "release",

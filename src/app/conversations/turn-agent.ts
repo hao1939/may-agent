@@ -23,14 +23,14 @@ import type { TaskBinding } from "../../lib/persistence.js";
 
 export type AppInputResolver = (input: {
   app: Readonly<AppDefinition>;
-  request: Readonly<AppInputContext>;
+  inputContext: Readonly<AppInputContext>;
   execution: { signal: AbortSignal; sessionStarted: (sessionId: string) => void; taskBinding: TaskBinding };
 }) => Promise<ConversationTurnResult>;
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
 
-function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext>): AgentTool | null {
-  const conversation = request.conversation;
+function conversationContextTool(db: SqliteDb, inputContext: Readonly<AppInputContext>): AgentTool | null {
+  const conversation = inputContext.conversation;
   if (!conversation) return null;
   const result = (value: unknown): AgentToolResult<unknown> => ({
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
@@ -93,18 +93,18 @@ function conversationContextTool(db: SqliteDb, request: Readonly<AppInputContext
   };
 }
 
-function requestPrompt(
+function conversationInputPrompt(
   app: Readonly<AppDefinition>,
-  request: Readonly<AppInputContext>,
+  inputContext: Readonly<AppInputContext>,
   registry: Pick<AppRegistry, "snapshot">,
 ): string {
   const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
   return [
     `You are ${app.agent ?? app.owner}, the conversational agent for App ${app.id}.`,
     "Understand the human's meaning in the exact bounded context collected by code, then make one structured decision. Do not infer intent with keywords or invent another tracking mechanism.",
-    "When inputs are supplied, consider that ordered batch and preserve each source's meaning. System input supplies evidence for existing work; it is not a new human instruction. A system Turn may omit response when no useful human update is needed. Its summary remains internal.",
+    "When inputs are supplied, consider that ordered batch and preserve each source's meaning. System input supplies facts for existing work; it is not a new human instruction. A system Turn may omit response when no useful human update is needed. Its summary remains internal.",
     "Treat the selected App, focused Task, selected or replied Topic, and last rendered view as the current subject, not as automatic authority to mutate it.",
-    "Answer questions, give suggestions, and state an opinion directly when the supplied evidence supports a useful answer. A focused Task is evidence for advice; reading or discussing it does not by itself authorize a Task effect.",
+    "Answer questions, give suggestions, and state an opinion directly when the supplied facts support a useful answer. A focused Task is facts for advice; reading or discussing it does not by itself authorize a Task effect.",
     "Runtime already executes this Conversation through its Task. Use a separate Task for background continuation, later steering, or restart-safe coordination, not merely because a tool is needed. If a material ambiguity remains, state the likely interpretation and ask one concrete question that minimizes human effort.",
     "For self-contained authorized work, use your available tools to investigate, edit, and verify directly, then return the result without a separate Task or handoff. Inspect current state before changing it or retrying an interrupted action; do not blindly repeat side effects or claim unverified success. Do not launch detached work or bypass an existing Task owner's controls.",
     `For durable work, return exactly one followUp with the understood outcome, material constraints, acceptance proof, selected appId and schema-valid input, and an exact supplied Task only when this is feedback for that unfinished Task. Creating a Task is not delegation: ${app.id} may own and execute an ordinary Task. Choose another App when it already owns the work, requires its specific authority, or provides useful expertise or a workflow. Do not hand off just because an App has a matching name. Do not return dependencies; Runtime admits the follow-up directly to the responsible Task and links that Task to the Topic.`,
@@ -124,7 +124,7 @@ function requestPrompt(
     "",
     "## Input and context",
     "```json",
-    JSON.stringify(request, null, 2),
+    JSON.stringify(inputContext, null, 2),
     "```",
     "",
     "## Installed Apps",
@@ -140,18 +140,18 @@ export function createConversationAgentResolver(options: {
   db: SqliteDb;
   definitions?: ReadonlyMap<string, SubagentDefinition>;
 }): AppInputResolver {
-  return async ({ app, request, execution: binding }) => {
+  return async ({ app, inputContext, execution: binding }) => {
     const agent = (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "");
     if (!agent) throw new Error(`App ${app.id} has no conversational agent`);
     const registered = options.definitions ? options.definitions.get(agent) : options.manager.getAgentDefinition(agent);
     if (!registered) throw new Error(`Agent ${agent} is not registered`);
-    const contextTool = conversationContextTool(options.db, request);
+    const contextTool = conversationContextTool(options.db, inputContext);
     const definition = contextTool ? { ...registered, tools: [...registered.tools, contextTool] } : registered;
     const execution = await options.manager.callAgentDefinition(
       definition,
-      requestPrompt(app, request, options.registry),
+      conversationInputPrompt(app, inputContext, options.registry),
       {
-        source: "app-request-agent",
+        source: "app-conversation-agent",
         projectId: app.id,
         recoveryOwner: APP_TASK_RECOVERY_OWNER,
         taskBinding: binding.taskBinding,
@@ -166,7 +166,7 @@ export function createConversationAgentResolver(options: {
     );
     if (execution.status !== "done" || !execution.structuredResult) {
       throw new Error(
-        execution.error || execution.lastAssistantText || `Agent ${agent} did not return a request decision`,
+        execution.error || execution.lastAssistantText || `Agent ${agent} did not return a Conversation decision`,
       );
     }
     return execution.structuredResult as ConversationTurnResult;

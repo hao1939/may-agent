@@ -88,7 +88,7 @@ describe("simple event interface", () => {
       now: 100,
     });
     const claim = claimAppInboxItem(db, "request/report", "fixture", 1000, 100)!;
-    completeAppInboxClaim(db, claim, { summary: "Accepted work", evidence: ["fixture"] }, 200);
+    completeAppInboxClaim(db, claim, { summary: "Accepted work", facts: ["fixture"] }, 200);
     const read = createRuntimeAppRead({ getDb: () => db });
     const failure = Promise.withResolvers<void>();
     const report = Promise.withResolvers<unknown>();

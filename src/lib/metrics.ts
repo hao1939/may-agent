@@ -39,7 +39,7 @@ export interface MetricRecordOptions {
 export interface ManualAlertOptions {
   priority?: MetricPriority;
   alertType?: string;
-  evidence?: string;
+  facts?: string;
 }
 
 export interface MetricFilter {
@@ -567,7 +567,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       .prepare("SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1")
       .get(id) as { id: number } | null;
     const alertType = opts?.alertType ?? "manual";
-    const finalMessage = opts?.evidence ? `${message}\n\nEvidence: ${opts.evidence}` : message;
+    const finalMessage = opts?.facts ? `${message}\n\nFacts: ${opts.facts}` : message;
     if (openAlert) {
       db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [
         alertType,
