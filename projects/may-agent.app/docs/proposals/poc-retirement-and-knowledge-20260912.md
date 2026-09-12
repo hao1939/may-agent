@@ -5,8 +5,11 @@ candidate prepared; not merged or deployed. Removing `scripts/poc/` is a firm
 completion requirement, not an optional follow-up.
 **Original inventory:** `8026aff97585edd7f728fa4ce360fdde71bc740a` (#164): 48 files,
 21 in `poc/` and 27 directly under `scripts/`.
-**Refreshed Host baseline:** `38a048da5c105bea91dc7163010d94483a60b747` (#167):
-54 tracked script files, **27 in `poc/`** and 27 directly under `scripts/`.
+**Implementation baseline:** `b1c7cbef` (#169, after #172): 57 tracked script
+files, **28 in `poc/`** and 29 directly under `scripts/`. The earlier inventory
+at `38a048da5c105bea91dc7163010d94483a60b747` (#167) contained 54 files: 27 in
+`poc/` and 27 at root. #172 added two command regressions; #169 added the
+caller-feedback guide and refined the managed trial. All are accounted for below.
 The six additions from #163 are dispositioned below. Scope includes callers,
 tests and design/evidence references. Active experimental branches are preserved;
 they must not reintroduce the folder into main.
@@ -175,6 +178,21 @@ permission model. The recorded limitation and production preparation tests
 remain; copying the full synthetic improvement App would preserve the PoC under
 another name. There is no new installed improvement capability in this cleanup.
 
+### Caller-feedback addition after #169
+
+`caller-feedback/README.md` is the 28th PoC file. Delete it with the rest of the
+tree after preserving its source at `b1c7cbef`. Its mechanics, invocation,
+live-trial revisions, unsuccessful findings and limitations already belong in
+the [caller-feedback proposal](caller-feedback-and-waiting.md). That record now
+names the final retained source and the production test homes explicitly.
+
+Retire the updated `controller-judgment/managed-conversation.ts` and its guide
+as planned. Keep **all #169 production changes and regressions**, including the
+clean-process bundler check; they sit outside the retired tree. Removing a live
+trial does not remove exact-caller report/wait, retry, duplicate/stale feedback,
+restart, Topic attribution or original-answer coverage. No model rerun or new
+copy of the harness is needed to preserve these findings.
+
 ## Disposition of the other 27 files (root level)
 
 Paths below are relative to Host `scripts/`. These files comprise 17 executable
@@ -278,11 +296,30 @@ are deleted. Retired source remains recoverable from Git.
 
 ## Implementation record
 
-The candidate removes the full 27-file PoC collection: four protocol files now
+The updated candidate removes the full 28-file PoC collection: four protocol files now
 live directly in `scripts/`, two supported prior-lifecycle verification tools
-live in `scripts/migrations/`, and the remaining 21 files are deleted. No archive
+live in `scripts/migrations/`, and the remaining 22 files are deleted. No archive
 copy is created. `smoke-steering.ts` and its package command are also removed.
 The CI contract checks that the retired directory is absent.
+
+**Current integration:** #172 and #169 are merged. #174 is rebased directly onto
+`b1c7cbef`; its two modify/delete conflicts retain deletion of the experimental
+managed trial and guide. It also removes #169's added caller-feedback README.
+The pre-rebase retirement source remains on
+`audit/poc-retirement-before-main-20260912` at `4c66e70f`. The sections below
+retain earlier checks; new exact-head CI and review are required before readiness.
+
+Rebased candidate `578411ae` has no runtime/SDK change relative to main. Both
+retained upgrade tools pass with clean old `a8f65188` and clean candidate source:
+the daemon trial stopped four old processes, retained the historical reply,
+continued the original input and measurement, and accepted fresh input through
+one open Task. It made four local scripted-provider calls and zero real-model
+calls. Protocol verification matches all 22 schemas for CLI 0.154.0; the
+20,000-row benchmark and canonical design checks pass. Full local CI passes:
+**2,917 tests, three existing installation-only skips, zero failures** (146.99 s).
+The pushed head is still draft pending fresh review and hosted checks in
+[run 34701309783](https://github.com/hao1939/may-agent/actions/runs/34701309783).
+No deployment is claimed.
 
 The retirement review is [Host #174](https://github.com/hao1939/may-agent/pull/174),
 initial head `b83873c6e63ec4df3448cb2b3d408549e2491154`, stacked on #172. It includes
@@ -382,13 +419,14 @@ that all model trials ran on #167. Historical invocations below those records
 are explicitly version-bound. Raw transcripts and credentials remain private.
 No paid trial was rerun merely for retirement.
 
-Active caller-feedback work remains on `poc/caller-feedback-wait-20260912`
-([#169](https://github.com/hao1939/may-agent/pull/169)). Its reviewed harness
-checkpoint `2433b88c` is retained. Land that runtime work before retirement, or
-rebase it to keep the harness only on its experiment branch while landing its
-production changes/tests. Do not resolve delete/modify conflicts by restoring
-`scripts/poc/`. The draft Task contract/facts/execution-path changes (#168, #170,
-#171) also need to retain this boundary. No active branch/worktree is removed.
+Caller feedback [#169](https://github.com/hao1939/may-agent/pull/169) merged as
+`b1c7cbef`, before retirement. Its experiment branch and reviewed harness
+checkpoint `2433b88c` are retained; the final guide/trial also remain in Git at
+the merged revision. #174 preserves its production changes/tests while retiring
+the harness. Do not resolve delete/modify conflicts by restoring `scripts/poc/`.
+The open Task contract/facts/execution-path changes (#168, #170, #171) and HTTP
+slice #173 also need to retain this boundary when rebasing. No active
+branch/worktree is removed.
 
 Gym's four compatibility wrappers and its existing result database deliberately
 stay in place. Coordinated consumer/storage migration remains a follow-up, not

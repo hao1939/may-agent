@@ -1,9 +1,10 @@
 # Return problems to the caller
 
-**Status:** Isolated mechanics and bounded live-agent adoption tested; not a deployed contract.
-**Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169).
+**Status:** Source merged as `b1c7cbef` on September 12, 2026; isolated mechanics
+and bounded live-agent adoption tested. Deployment remains separate.
+**Review:** [Host PR #169](https://github.com/hao1939/may-agent/pull/169), merged.
 **Baseline:** Host `8026aff97585edd7f728fa4ce360fdde71bc740a` (PR #164).
-**Current integration base:** Host `f6a11d1c` (PR #172); the original published candidate used #167.
+**Reviewed integration base:** Host `f6a11d1c` (PR #172); the original published candidate used #167.
 
 ## The idea
 
@@ -610,3 +611,32 @@ review discussions have fix/evidence replies and are resolved. A fresh Copilot
 review was requested after the push. Exact-head hosted verification is
 [run 34700292522](https://github.com/hao1939/may-agent/actions/runs/34700292522);
 its current status belongs to the PR, not a deployment claim.
+
+### Source promotion and experiment retirement
+
+#169 merged as `b1c7cbef` after exact-head Quality and Container passed on
+`6b1e49d0`. The final Copilot review generated no new comments. Human review
+and source promotion do not establish installed adoption.
+
+[Retirement #174](poc-retirement-and-knowledge-20260912.md) removes
+`scripts/poc/caller-feedback/README.md` and the updated managed-conversation
+harness from main. Their final source remains at `b1c7cbef`; the bounded live
+trials above retain their actual earlier revisions and prerequisites. Use those
+recorded versions in an isolated checkout for historical reproduction, not a
+current-main command. Raw transcripts and model configuration remain private.
+
+The portable production checks stay in their owning suites:
+
+```sh
+bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'caller feedback PoC'
+bun test src/app/core/state/conversation-task-turns.test.ts src/app/core/tasks/conversation-runtime.test.ts src/app/core/tasks/app-task-runtime-policy.test.ts
+bun test src/app/core/tasks/app-task-retry.test.ts packages/sdk/src/task-contract.test.ts
+bun run ci
+```
+
+They cover exact caller/Topic reporting, explicit wait/retry reports, quiet
+automatic retries, delayed/duplicate feedback, lost-notification recovery and
+the original answer after runtime/storage reopen. SDK/finish checks retain
+nonempty reporting evidence and valid Condition-owner rules. These are fixture
+mechanics, not paid-model reruns, external-effect safety or delivery guarantees.
+No second escalation or learning lifecycle is introduced by retirement.
