@@ -23,14 +23,14 @@ export type TaskCapabilityRun = {
 
 export type NormalizedTaskHandlerResult = {
   /** `error` is an attempt/runtime outcome, never a valid handler decision. */
-  state: "converged" | "waiting" | "needs-agent" | "stopped" | "error";
+  state: "converged" | "waiting" | "needs-agent" | "incomplete" | "error";
   /** A rejected contract needs correction, not a transport retry. Host-only. */
   resultRejected?: true;
   summary: string;
   response?: string;
   report?: true;
   result?: Record<string, unknown>;
-  evidence: string[];
+  facts: string[];
   actions: AppTaskAction[];
   conditions?: AppTaskConditionSpec[];
   dependencies?: TaskAppDependency[];
@@ -49,7 +49,7 @@ export function normalizeTaskHandlerResult(
     return {
       state: "error",
       summary: fallback.summary,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
@@ -61,7 +61,7 @@ export function normalizeTaskHandlerResult(
       state: "error",
       resultRejected: true,
       summary: `Handler result was rejected: ${admission.error}`,
-      evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+      facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
       actions: [],
     };
   }
@@ -74,7 +74,7 @@ export function normalizeTaskHandlerResult(
           state: "error",
           resultRejected: true,
           summary: `Handler result was rejected: actions[${index}] ${problem}`,
-          evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+          facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
         };
       }
@@ -89,7 +89,7 @@ export function normalizeTaskHandlerResult(
           state: "error",
           resultRejected: true,
           summary: `Handler result was rejected: conditions[${index}] ${problem}`,
-          evidence: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
+          facts: fallback.runId ? [`workflow-run:${fallback.runId}`] : [],
           actions: [],
         };
       }

@@ -920,28 +920,28 @@ async function loadLoopTrace(target) {
   }
 }
 
-function renderWorkflowEvidence(evidence) {
-  if (!evidence) return '<p class="health-warning">Workflow evidence is unavailable or expired.</p>';
-  const run = evidence.run;
-  const diagnostics = evidence.diagnostics;
+function renderWorkflowFacts(facts) {
+  if (!facts) return '<p class="health-warning">Workflow facts are unavailable or expired.</p>';
+  const run = facts.run;
+  const diagnostics = facts.diagnostics;
   const links = [
     run.parentWorkflowRunId ? `<a href="${esc(workflowRunLink(run.parentWorkflowRunId))}">Parent run</a>` : '',
     run.resumedFromRunId ? `<a href="${esc(workflowRunLink(run.resumedFromRunId))}">Earlier execution</a>` : '',
-    `<a href="/api/loop-trace?workflowRunId=${encodeURIComponent(run.runId)}">Full retained evidence (JSON)</a>`,
+    `<a href="/api/loop-trace?workflowRunId=${encodeURIComponent(run.runId)}">Full retained facts (JSON)</a>`,
   ].filter(Boolean).join(' · ');
-  return `<section class="health-section" data-workflow-evidence><h3>Workflow evidence · ${esc(run.runId)}</h3>
+  return `<section class="health-section" data-workflow-facts><h3>Workflow facts · ${esc(run.runId)}</h3>
     <p>${esc(run.workflow)} · ${esc(run.status)} · ${esc(healthTime(run.startedAt))} → ${esc(healthTime(run.endedAt))}</p>
-    <p>${links}</p><h4>Purpose</h4><pre class="health-text">${esc((run.task || '').slice(0, 2000))}${run.task?.length > 2000 ? '\n[preview limited; open full evidence]' : ''}</pre>
+    <p>${links}</p><h4>Purpose</h4><pre class="health-text">${esc((run.task || '').slice(0, 2000))}${run.task?.length > 2000 ? '\n[preview limited; open full facts]' : ''}</pre>
     <h4>Recorded result / reason</h4><pre class="health-text">${esc(run.result_summary || '')}\n${esc(run.result_reason || 'No reason recorded.')}</pre>
     <p class="health-note">Source: ${esc(run.sourcePath || 'unknown')} · entry hash ${esc(run.entryContentHash || 'unknown')}. Workflow completion is not Task acceptance.</p>
     <p class="health-note">Artifact reference: ${esc(run.artifact_ref || 'none')}${run.artifact_error ? ' · ' + esc(run.artifact_error) : ''}</p>
-    <h4>Steps / agent calls</h4>${evidence.steps.length ? evidence.steps.map(step => `<div class="health-task"><a href="/sessions/${encodeURIComponent(step.sessionId)}">${esc(step.stepLabel || step.sessionId)}</a> · ${esc(step.status)} · ${esc(step.agent)}<pre class="health-text">${esc(step.error || step.outcome || '')}</pre></div>`).join('') : '<p>No retained step sessions.</p>'}
-    ${evidence.stepsTruncated ? '<p class="health-warning">Step list truncated.</p>' : ''}
-    <h4>Child workflows</h4>${evidence.childRunIds.length ? evidence.childRunIds.map(id => `<a href="${esc(workflowRunLink(id))}">${esc(id)}</a>`).join(' · ') : '<p>No retained child links.</p>'}
-    ${evidence.childrenTruncated ? '<p class="health-warning">Child list truncated.</p>' : ''}
+    <h4>Steps / agent calls</h4>${facts.steps.length ? facts.steps.map(step => `<div class="health-task"><a href="/sessions/${encodeURIComponent(step.sessionId)}">${esc(step.stepLabel || step.sessionId)}</a> · ${esc(step.status)} · ${esc(step.agent)}<pre class="health-text">${esc(step.error || step.outcome || '')}</pre></div>`).join('') : '<p>No retained step sessions.</p>'}
+    ${facts.stepsTruncated ? '<p class="health-warning">Step list truncated.</p>' : ''}
+    <h4>Child workflows</h4>${facts.childRunIds.length ? facts.childRunIds.map(id => `<a href="${esc(workflowRunLink(id))}">${esc(id)}</a>`).join(' · ') : '<p>No retained child links.</p>'}
+    ${facts.childrenTruncated ? '<p class="health-warning">Child list truncated.</p>' : ''}
     <h4>Run diagnostics</h4>${diagnostics.state === 'available' ? `<pre class="health-text">${esc(diagnostics.entries.map(e => `${healthTime(e.at)} [${e.level}] ${e.message}`).join('\n') || 'No messages recorded.')}</pre>` : '<p class="health-warning">Diagnostics unavailable: not recorded, expired or unreadable.</p>'}
     ${diagnostics.truncated ? '<p class="health-warning">Diagnostics truncated by recording limits.</p>' : ''}
-    <p class="health-note">Diagnostics are bounded and best-effort; known-secret redaction is not a guarantee of complete or secret-free evidence.</p></section>`;
+    <p class="health-note">Diagnostics are bounded and best-effort; known-secret redaction is not a guarantee of complete or secret-free facts.</p></section>`;
 }
 
 function renderLoopTrace(trace) {
@@ -968,7 +968,7 @@ function renderLoopTrace(trace) {
   html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`;
   for (const chip of chips) html += `<span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:2px 8px">${esc(chip)}</span>`;
   html += `</div>`;
-  if (trace.target.kind === 'workflow') html += renderWorkflowEvidence(trace.workflowEvidence);
+  if (trace.target.kind === 'workflow') html += renderWorkflowFacts(trace.workflowFacts);
   if (trace.handler?.name || trace.handler?.reason) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:8px">handler: <b style="color:var(--fg)">${esc(trace.handler.name || '—')}</b>${trace.handler.status ? ` · ${esc(trace.handler.status)}` : ''}${trace.handler.reason ? ` · ${esc(trace.handler.reason)}` : ''}</div>`;
   }

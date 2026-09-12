@@ -58,7 +58,7 @@ describe("Task startup session recovery", () => {
     const outputSchema = Type.Object({
       state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
       summary: Type.String({ minLength: 1 }),
-      evidence: Type.Array(Type.String({ minLength: 1 })),
+      facts: Type.Array(Type.String({ minLength: 1 })),
     });
     const persisted: PersistedSession = {
       ...session(appDir, "workflow:platform-owner-review", "project-app-task-reconciler"),

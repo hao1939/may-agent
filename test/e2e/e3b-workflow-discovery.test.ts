@@ -76,7 +76,7 @@ describe("E3b: workflow discovery and scheduled execution", () => {
         taskId: "work/main",
         taskGeneration: 1,
         state: "completed",
-        acceptedResult: { summary: "Scheduled workflow verified", evidence: ["e2e.workflow_ran"] },
+        acceptedResult: { summary: "Scheduled workflow verified", facts: ["e2e.workflow_ran"] },
       });
       expect(store.readTask("work/main")?.metadata).toMatchObject({ id: "work/main", generation: 1 });
       expect(store.isCancelled("work/main")).toBe(false);

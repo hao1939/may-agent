@@ -18,7 +18,6 @@ describe("canonical App definition validation", () => {
           parentId: "evaluation",
           outcome: `Handle ${input.kind}`,
           acceptance: ["Input handled"],
-          mode: "achieve",
         },
       }),
       subscriptions: [
@@ -169,7 +168,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         agent: "may",
         inputSchema,
-        requests: { mode: "agent", conversationId: "may:primary" },
+        conversation: { mode: "agent", conversationId: "may:primary" },
       }),
     ).toEqual([]);
     expect(
@@ -178,27 +177,27 @@ describe("canonical App definition validation", () => {
         version: 1,
         agent: "may",
         inputSchema,
-        requests: { mode: "agent", conversationId: "  " },
+        conversation: { mode: "agent", conversationId: "  " },
       }),
-    ).toContain("App invalid-may requests conversationId must be a non-empty string");
+    ).toContain("App invalid-may conversation conversationId must be a non-empty string");
     expect(
       validateAppDefinition({
         id: "ambiguous-may",
         version: 1,
         agent: "may",
         inputSchema,
-        requests: { mode: "agent" },
+        conversation: { mode: "agent" },
         task: () => ({ kind: "existing", taskId: "conversation/duplicate" }),
         tasks: {},
       }),
-    ).toContain("App ambiguous-may with both requests and task must declare requests.inputKinds");
+    ).toContain("App ambiguous-may with both conversation and task must declare conversation.inputKinds");
     expect(
       validateAppDefinition({
         id: "split-may",
         version: 1,
         agent: "may",
         inputSchema,
-        requests: { mode: "agent", inputKinds: ["probe"] },
+        conversation: { mode: "agent", inputKinds: ["probe"] },
         task: () => ({ kind: "existing", taskId: "goal/current" }),
         tasks: {},
       }),

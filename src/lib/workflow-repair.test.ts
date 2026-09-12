@@ -145,7 +145,7 @@ export const guard = {
     ["blocked", { ...success(), finishResult: { status: "blocked", summary: "Cannot verify" } }],
     ["interrupted", { ...success(), status: "interrupted" }],
   ] as const) {
-    it(`exposes ${label} as repair evidence without inventing a blocking policy`, async () => {
+    it(`exposes ${label} as repair facts without inventing a blocking policy`, async () => {
       const h = setup({ result });
       const outcome = await h.runner.run("bounded", "test");
       expect(outcome.type).toBe("done");

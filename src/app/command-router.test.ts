@@ -71,8 +71,8 @@ describe("command router", () => {
         return { accepted: true, by: "app:sample", route: "direct", note: "declared App consumer" };
       }
     });
-    // A later passive listener observes completion of synchronous listener work,
-    // including the old Markdown mutation; no sleep guesses at delivery timing.
+    // A later passive listener provides a deterministic delivery barrier;
+    // no sleep guesses when the event has reached its observers.
     const unsubscribeObserved = f.bus.listen(() => { delivered.resolve(); }, {
       label: "comment-observed", types: ["project.comment.created"],
     });

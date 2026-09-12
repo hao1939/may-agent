@@ -122,14 +122,14 @@ describe("daemon Task executor compatibility", () => {
     expect(daemonAgentInternals.hasRetainedCodexGoalTrialTask(persistDir)).toBeFalse();
     insert.run("sample", "current", JSON.stringify({ spec: { executor: "codex-goal" } }));
     expect(daemonAgentInternals.hasRetainedCodexGoalTrialTask(persistDir)).toBeFalse();
-    insert.run("sample", "trial", JSON.stringify({ spec: { executor: "codex-goal-poc", mode: "achieve" } }));
+    insert.run("sample", "trial", JSON.stringify({ spec: { executor: "codex-goal-poc" } }));
     expect(daemonAgentInternals.hasRetainedCodexGoalTrialTask(persistDir)).toBeTrue();
 
     db.prepare("UPDATE app_tasks SET phase = 'converged' WHERE app_id = 'sample' AND task_id = 'trial'").run();
-    expect(daemonAgentInternals.hasRetainedCodexGoalTrialTask(persistDir)).toBeFalse();
+    expect(daemonAgentInternals.hasRetainedCodexGoalTrialTask(persistDir)).toBeTrue();
 
     db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = 'sample' AND task_id = 'trial'").run(
-      JSON.stringify({ spec: { executor: "codex-goal-poc", mode: "maintain" } }),
+      JSON.stringify({ spec: { executor: "codex-goal-poc" } }),
     );
     expect(daemonAgentInternals.hasRetainedCodexGoalTrialTask(persistDir)).toBeTrue();
 

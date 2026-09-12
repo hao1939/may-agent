@@ -28,11 +28,13 @@
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
+import { upsertSession } from "../../src/lib/db/sessions.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 
 const E2E_NO_UI = process.env.E2E_NO_UI === "1";
 
@@ -76,6 +78,7 @@ if (!probe.ok) console.warn(`[E8] skipped: ${probe.reason}`);
 
 describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () => {
   let sb: Sandbox;
+  const retainedDiscussion = "# Retained discussion\n\nKeep the previous owner's decision visible.\n";
 
   beforeAll(async () => {
     sb = await buildSandbox({
@@ -87,11 +90,13 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       daemonArgs: ["--cron", "--socket", "--web"],
     });
     await sb.daemonReady;
+    writeFileSync(join(sb.projectsRoot, "platform", "discussion.md"), retainedDiscussion);
     if (!sb.waitForWeb) throw new Error("sandbox web port not allocated");
     await sb.waitForWeb(15000);
   }, 60_000);
 
   afterAll(async () => {
+    if (sb) closeDb(sb.stateDir);
     if (sb) await sb.close();
   });
 
@@ -154,6 +159,24 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       );
       expect(helpersPresent).toBe(true);
 
+      const judgments = await page.evaluate(() => {
+        const ui = window as typeof window & {
+          renderAlertJudgment: (alert: { latestJudgment: Record<string, unknown> }) => string;
+        };
+        return [
+          { evidence: "Saved <detail>" },
+          { facts: "Current <detail>", evidence: "Superseded detail" },
+        ].map((detail) => ui.renderAlertJudgment({ latestJudgment: {
+          operation: "reviewed", summary: "Less specific summary", ...detail,
+        } }));
+      });
+      expect(judgments[0]).toContain("Saved &lt;detail&gt;");
+      expect(judgments[1]).toContain("Current &lt;detail&gt;");
+      for (const rendered of judgments) {
+        expect(rendered).not.toContain("Less specific summary");
+        expect(rendered).not.toContain("Superseded detail");
+      }
+
       const platformRouteAttr = await page.evaluate(() => {
         const rows = Array.from(document.querySelectorAll('tr[onclick*="routeTo"]'));
         const row = rows.find((r) => (r.textContent ?? "").includes("platform"));
@@ -190,6 +213,17 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       const projectBefore = readFileSync(PROJECT_FILE, "utf-8");
       const discussionBefore = readFileSync(DISC_FILE, "utf-8");
       expect(statusOf(projectBefore)).toBe("waiting");
+      await page.click('button[onclick="switchProjectTab(this,\'discussion\')"]');
+      await page.waitForFunction(
+        () => {
+          const content = document.getElementById("project-tab-content");
+          return content?.dataset.projectTab === "discussion"
+            && content.textContent?.includes("Keep the previous owner's decision visible.");
+        },
+        { timeout: 5000 },
+      );
+      expect(await page.$eval("#project-tab-content", (el) => el.textContent)).toContain("Retained discussion");
+      expect(discussionBefore).toBe(retainedDiscussion);
 
       const stamp = "e8-" + new Date().toISOString();
       const commentText = "ui e2e: " + stamp;
@@ -311,6 +345,32 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         restored: { bold: "Hello", text: "Hello KE-123 continued", label: "Raw" },
         fallback: { text: "<b>unparsed</b>", html: "&lt;b&gt;unparsed&lt;/b&gt;" },
       });
+
+      // Saved notes are a read-only view, including when no notes exist yet.
+      const sessionId = "s_review_notes";
+      const sessionDir = join(sb.stateDir, "sessions", sessionId);
+      mkdirSync(sessionDir, { recursive: true });
+      writeFileSync(join(sessionDir, "session.jsonl"), '{"role":"user","content":"Inspect this result"}\n');
+      upsertSession(sb.stateDir, { sessionId, agent: "may", task: "Inspect this result",
+        status: "done", startedAt: 1, endedAt: 2 });
+      const noteRequests: string[] = [];
+      page.on("request", (req) => {
+        if (req.url().includes(`/api/sessions/${sessionId}/eval`)) noteRequests.push(req.method());
+      });
+      await page.evaluate(async (id) => {
+        const ui = window as typeof window & { loadSessionDetail: (id: string) => Promise<void> };
+        await ui.loadSessionDetail(id);
+      }, sessionId);
+      expect(await page.$eval("#session-eval-btn", (el) => el.textContent)).toBe("Review notes");
+      await page.$eval("#session-eval-btn", (el) => (el as HTMLButtonElement).click());
+      await page.waitForFunction(() => document.getElementById("detail-panel")?.textContent?.includes("No saved review notes for this session."));
+      writeFileSync(join(sessionDir, "session.eval.jsonl"), JSON.stringify({
+        type: "line", line: 1, source: "human-feedback", comment: "Saved note from a previous review",
+      }) + "\n");
+      await page.$eval("#session-eval-btn", (el) => (el as HTMLButtonElement).click());
+      await page.waitForFunction(() => document.querySelector(".eval-comment")?.textContent === "Saved note from a previous review");
+      expect(await page.$$(".eval-feedback textarea")).toHaveLength(0);
+      expect(noteRequests).toEqual(["GET", "GET"]);
     } finally {
       await browser.close();
     }

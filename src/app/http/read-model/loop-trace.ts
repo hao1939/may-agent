@@ -32,7 +32,7 @@ export interface LoopTrace {
   failoverEvents: Row[];
   metricSnapshots: Row[];
   executions: LoopTraceExecution[];
-  evidence: {
+  facts: {
     workflowCount: number;
     sessionCount: number;
     guardSignalCount: number;
@@ -52,7 +52,7 @@ export interface LoopTraceExecution {
   parentId?: string;
   startedAt?: number;
   endedAt?: number;
-  evidence: Record<string, unknown>;
+  facts: Record<string, unknown>;
 }
 
 function parseData(row: Row | null | undefined): Record<string, unknown> {
@@ -125,9 +125,9 @@ function compact(text: unknown, fallback: string): string {
 function toLoopTraceExecution(result: ExecutionResult): LoopTraceExecution {
   return {
     ...result,
-    owner: stringValue(result.owner ?? result.evidence?.agent ?? result.evidence?.owner) ?? null,
+    owner: stringValue(result.owner ?? result.facts?.agent ?? result.facts?.owner) ?? null,
     projectId: stringValue(result.projectId) ?? null,
-    evidence: result.evidence ?? {},
+    facts: result.facts ?? {},
   };
 }
 
@@ -190,7 +190,7 @@ function failoverExecution(row: Row): LoopTraceExecution | null {
       nextAction: resumeNextAction(eventType, data),
     }),
   );
-  execution.evidence.eventType = eventType;
+  execution.facts.eventType = eventType;
   return execution;
 }
 
@@ -476,7 +476,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     failoverEvents: uniqueFailoverEvents,
     metricSnapshots,
     executions,
-    evidence: {
+    facts: {
       workflowCount: uniqueWorkflows.length,
       sessionCount: uniqueSessions.length,
       guardSignalCount: uniqueGuardSignals.length,
