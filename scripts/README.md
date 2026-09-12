@@ -69,7 +69,9 @@ browser regression uses the actual persistence writer and synthetic data only.
 ## Retired experiments
 
 There is no supported `scripts/poc/` tree. Completed harnesses remain in Git at
-**`38a048da5c105bea91dc7163010d94483a60b747`** (Host main before retirement).
+**`b1c7cbef`** (Host main after caller feedback #169, before retirement).
+That revision also retains the final caller-feedback guide and managed trial;
+the companion evidence records the exact earlier revisions used by live trials.
 Historical invocations must run in an isolated checkout of the recorded source,
 with its dependencies and any exact App revision identified by the evidence;
 they are not commands for current main. Model trials require explicit authority,
