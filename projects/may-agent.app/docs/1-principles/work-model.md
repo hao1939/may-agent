@@ -29,8 +29,9 @@ A conversational Request is an accepted ask that May must close the loop on.
 May recognizes or refines the ask, explains the intended action, and returns
 its outcome. A turn can finish while the Request and its linked Task remain
 open. Request tracking references work without owning another execution loop.
-The current Host request row tracks input handling; it does not yet implement
-that complete conversational contract.
+Host input rows track admission/caller correlation; separate accepted-Request
+records preserve scope, exact Task links and closure. Their storage does not
+by itself prove correct conversational judgment.
 [Message Lifecycle](../2a-design/message-lifecycle.md#requests-acceptance-and-closure)
 owns the policy and implementation gap; [System Model](../2a-design/system-model.md)
 defines the shared vocabulary.
@@ -108,8 +109,9 @@ Expected domain difficulty is not `needs-agent`, `attention`, or escalation.
 The workflow should use its selected agent to handle merge conflicts, failed
 tests, rejected hypotheses, and similar in-scope work. `needs-agent` is the
 exception path when the reusable process has exhausted its safe in-scope moves
-and the App needs one bounded agent judgment on the same task. Escalation is
-used only when the required action crosses to another App or a human.
+and the App needs one bounded agent judgment on the same task. Return problems
+to the exact caller; that owner decides whether different authority is needed.
+A cross-App call alone does not make the work an escalation.
 
 Do not create a workflow merely because work uses an agent or repeats on a
 schedule. Extract one when a stable sequence, branching rule, retry, safety
@@ -169,9 +171,10 @@ automation.
 
 ## Standalone agents
 
-Standalone agents without an app may use heartbeat as a recurring wake for
-self-maintenance. App-owned work uses app schedules, events, and task resources
-instead of a second heartbeat-driven project loop.
+Direct agent execution remains available for bounded calls and experiments.
+Recurring responsibility uses ordinary App schedules, events and Tasks, not an
+automatically discovered standalone heartbeat workflow. See
+[Heartbeat terminology](../2a-design/heartbeat.md).
 
 ## Invariants
 

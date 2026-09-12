@@ -1,8 +1,9 @@
-# Host Operations App (`may-agent`)
+# The App that maintains May (`may-agent`)
 
-This directory contains the ordinary App that owns operation of the May Host.
-Its human name is **Host Operations App**. Its stable technical App ID remains
-`may-agent` so retained Task identities do not change.
+This directory contains the ordinary App that maintains and improves May.
+Runtime knowledge, investigation, review and deployment policy are its domain,
+not a special Host subsystem. Its stable technical App ID remains `may-agent`
+so retained Task identities do not change.
 
 Its contribution to [May's overall goal](docs/1-principles/design-philosophy.md#mays-goal)
 is to keep the Host dependable and affordable to operate and change, so May
@@ -15,7 +16,7 @@ for proposals, implementation choices, and reviews.
 
 - `../may-agent/` is the platform/runtime code workspace. It should remain a
   normal portable repo.
-- `app.ts` is the single canonical Host Operations App manifest: addressed
+- `app.ts` is the single canonical maintenance App manifest: addressed
   input, event schedules, task subscriptions, actions, and task policy.
 - `../may.app/app.ts` is the separate May App (`appId: may`): it owns the
   Conversation, answers human requests directly, or requests typed work from
@@ -36,7 +37,7 @@ for proposals, implementation choices, and reviews.
 
 | Path | Purpose |
 | --- | --- |
-| `app.ts` | Host Operations App declaration and Task admission policy. |
+| `app.ts` | Maintenance App declaration and Task admission policy. |
 | `agents/` | App-local execution profiles and their callable code or curated knowledge. |
 | `docs/1-principles/` | Stable design principles. |
 | `docs/2a-design/` | Current system contracts. |

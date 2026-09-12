@@ -5,8 +5,10 @@
 activation and startup recovery are independent of `--cron`. Shared timing
 serves core duties and optional registrations. App schedules publish input or
 facts; named Host maintenance has no standalone workflow execution path.
-Host Operations declares metric snapshots in the tech-lead Cron job; Runtime
-samples App-defined sources on that event and applies each source's cadence.
+The installed maintenance App still declares metric snapshots in an agent-local
+Cron job; Runtime samples App-defined sources on that event and applies each
+source's cadence. This is a remaining installation coupling, not a required
+named owner in the [accepted boundary](../proposals/app-policy-and-host-boundary-cleanup.md).
 
 ## Purpose
 
@@ -17,7 +19,8 @@ Under the accepted [one-lifecycle baseline](task-resource-engine.md#one-lifecycl
 ordinary work, maintenance and Conversation use the same Task engine. Any may
 receive timer input; none needs it merely to remain open. Quiet Tasks do not
 trigger model work. An owner closes a Task explicitly, and later timer input
-cannot reopen it. Those lifecycle changes are pending implementation.
+cannot reopen it. Shared execution and explicit closure are implemented in
+#158; removal of old SDK mode names is tracked separately.
 
 ```text
 due slot -> publish required App-input event
@@ -204,7 +207,7 @@ one execution authority for each duty.
 | Every due slot requires independent judgment/result           | Input schedule                                    |
 | Time wakes one standing desired outcome                       | Event schedule -> exact task/Condition            |
 | Time publishes a diagnostic/lifecycle fact                    | Event schedule -> observation only                |
-| Time checks for missed conversational follow-up                | Event schedule -> bounded state query -> eligible conversation input (accepted, pending implementation) |
+| Time checks for missed conversational follow-up                | Event schedule -> bounded state query -> eligible conversation input |
 | Time must first read an external provider                     | Observer -> facts                                 |
 | Time inspects Runtime-owned ledgers or repairs host mechanics | Host-private scheduled maintenance handler        |
 | Time repairs generic runtime mechanics                        | Internal runtime maintenance, not an App schedule |

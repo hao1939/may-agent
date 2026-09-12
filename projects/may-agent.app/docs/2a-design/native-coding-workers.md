@@ -168,7 +168,7 @@ Before changing the running Host:
 2. Integrate this App guidance and the matching Host revision together. Keep
    current user edits when applying the companion skill change. Retained
    historical records/session maps need not be deleted.
-3. Apply through the normal Host Operations deployment boundary. A merge is
+3. Apply through the authorized installation deployment procedure. A merge is
    not deployment authority.
 
 Portable verification covers both native protocols, exact concurrent caller

@@ -253,10 +253,10 @@ linkage, the shared human/system input handler, direct advice, exact feedback, a
 plain-language response rules. [Human Control Surfaces](human-control-surfaces.md)
 owns focused App/Task context and supported human controls.
 
-The Host Operations App (`app:may-agent`) is an ordinary App for desired Host
-changes. May may address it through typed input, but routine Task feedback,
-cancellation, and presentation remain on the shared Task and adapter
-boundaries; Host Operations is not an intermediary.
+Maintenance is an ordinary App domain. An installed App may own desired Host
+changes and receive typed input, just like any other domain App. Routine Task
+feedback, cancellation and presentation stay on the shared Task and adapter
+boundaries; no maintenance App is an intermediary for them.
 
 ## Events and subscriptions
 

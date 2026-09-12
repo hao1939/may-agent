@@ -1,9 +1,10 @@
 # Projects
 
 **Design status:** Accepted.
-**Implementation status:** Implemented through sibling canonical Apps.
-Historical Markdown project files are evidence only and are not a runtime
-compatibility path.
+**Implementation status:** Canonical Apps own current work. Historical Markdown
+is intended to be read-only evidence. The command router in reviewed Host
+`649d801c` still mutates it; the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md)
+tracks removal of that path and its socket/browser regression evidence.
 
 ## Purpose
 
@@ -33,7 +34,7 @@ See [system-model.md](system-model.md) for the whole-system model and
 
 ## Canonical Layout
 
-Standing projects use a sibling `.app` control plane:
+Standing projects keep their App definition and policy in a sibling `.app` directory:
 
 ```text
 projects/<id>/              # optional portable domain workspace
@@ -48,7 +49,7 @@ projects/<id>.app/
   .state/                   # host-managed runtime state
 ```
 
-The `.app` folder is an App's durable policy and control surface. Domain
+The `.app` folder contains an App's durable policy, not a separate service. Domain
 product source and artifacts stay in the portable workspace.
 
 ## Project Manifest
@@ -143,17 +144,17 @@ input/fact/schedule
   -> selected agent runs directly or applies one of its workflows
   -> structured result says converged, waiting, or needs agent
   -> runtime atomically applies task changes and observed status
-  -> completion receipt closes finite work and wakes dependents
+  -> accepted result wakes exact callers; the owner separately decides closure
 ```
 
-Each bounded attempt must leave a machine-readable result:
+Each bounded attempt leaves its result and supporting evidence on the Task.
+Waiting names an exact Condition or dependency. A failed attempt reports the
+problem to its caller; it does not rewrite project posture or automatically
+start a separate escalation lifecycle. A converged outcome may leave the Task
+open until its owner closes it.
 
-- open task work exists;
-- project posture records an exact wait/review/pause/terminal reason;
-- or an external escalation records the requested action and resume context.
-
-An `active` project with no open work is an integrity failure, not implicit
-completion.
+An `active` project without work or a useful wake deserves a consistency review,
+not an inferred completion or automatically invented work.
 
 ## Policy
 

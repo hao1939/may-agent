@@ -2,7 +2,7 @@
   "name": "@may-agent/may-agent-app",
   "private": true,
   "type": "module",
-  "description": "Host Operations App for the May runtime and platform.",
+  "description": "The ordinary App that maintains and improves May.",
   "scripts": {
     "bundle": "rm -rf .state/bundle && bun build ./app.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",

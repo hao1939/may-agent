@@ -5,8 +5,10 @@
 and event-driven follow-through are implemented at the [source baseline](../README.md).
 The accepted baseline below uses one Task execution lifecycle for Conversation,
 ordinary work and maintenance, with explicit outcomes and owner-controlled
-closure. It replaces separate conversation execution and supervision;
-these changes are [not yet implemented](../proposals/conversation-input-unification.md).
+closure. Shared execution replaced separate conversation execution and
+supervision in [#158](../proposals/conversation-input-unification.md). At reviewed
+Host `649d801c`, old Task mode names remain in the SDK; their removal is tracked
+separately in [the simplification proposal](../proposals/authority-boundary-simplification.md).
 The focused Conversation review at Host `99bc1a31` confirms accepted Request
 storage, durable turn Stop and Esc/button bindings. Current-turn steering remains
 [open](human-control-surfaces.md#current-turn-control); App judgment
@@ -77,8 +79,9 @@ Esc/Stop ends only the current Turn, so later discussion remains possible.
 [Architecture](architecture.md#one-reconciliation-model) defines the execution
 boundary. The [proposal](../proposals/conversation-input-unification.md) records
 controls, exact-result correlation, migration and the code deletion to prove.
-These are accepted target semantics; current source still uses separate inbox
-execution and `achieve`/`maintain` Task rules.
+Shared execution is implemented. Removing the retained `achieve`/`maintain`
+SDK vocabulary is separate from that execution change and does not imply
+another Task controller.
 
 ## A turn or a Task?
 
@@ -186,10 +189,13 @@ component boundaries, absence behavior and code organization.
 
 ## Names and detailed contracts
 
-**May** is `app:may`, with policy in `projects/may.app`. An identifier such as
-`agent:may` names an execution profile. **Host Operations** is `app:may-agent`,
-with policy and these docs in `projects/may-agent.app`; it owns Host changes.
-`projects/may-agent` contains the generic Host implementation.
+In this workspace, **May** is `app:may`, with policy in `projects/may.app`.
+An identifier such as `agent:may` names an execution profile, not a privileged
+role. The ordinary App `app:may-agent` maintains May, with its domain policy
+in `projects/may-agent.app`. This directory also hosts the system documentation;
+that location does not make the maintenance App part of core. The generic Host
+implementation lives in `projects/may-agent` and does not require these specific
+App identities to execute unrelated work.
 
 Read [Architecture](architecture.md) for how the components fit,
 [App Contract](agent-app.md) for declarations,

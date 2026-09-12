@@ -317,9 +317,11 @@ wakes its task. Session recovery follows this path:
 Host detects failed session
   -> Runtime resolves its owning attempt and task
   -> repair mechanical session state and requeue the same task
-  -> only a repeated platform-contract defect becomes a Host Operations Task
+  -> expose remaining failure evidence to its exact caller or declared App route
 ```
 
+An App judges whether a runtime defect warrants separate maintenance work;
+the recovery mechanism cannot invent that assignment or select a named owner.
 The Host does not call a model to decide mechanical recovery. Consecutive
 error-only turns cause one bounded cancellation, interrupted unbound sessions
 receive at most two delayed resume attempts, and exhaustion emits an

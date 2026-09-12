@@ -51,9 +51,9 @@ learned improvement help the next comparable case? Establish evidence from
 actual use before setting numerical targets. Lower supervision is valuable
 only alongside satisfactory results; activity counts alone cannot show this.
 
-The Host contributes reusable execution and coordination mechanics. Host
-Operations keeps those mechanics dependable and affordable to operate and
-change. Domain Apps own their particular outcomes. Core boundaries, events,
+The Host contributes reusable execution and coordination mechanics. An ordinary
+App may own keeping those mechanics dependable and affordable to operate and
+change, just as other Apps own their domain outcomes. Core boundaries, events,
 recovery, and extensibility are technical choices whose value comes from that
 contribution. More machinery or wider feature coverage needs an actual use.
 

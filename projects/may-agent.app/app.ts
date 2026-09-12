@@ -293,7 +293,7 @@ const app = defineApp({
   version: 1,
   agent: hostOperationsAgent,
   description:
-    "Host Operations App: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
+    "Maintains May: runtime contracts, execution, persistence, SDK, UI, and App conventions.",
   inputSchema: platformInputSchema,
   task: taskForHostOperationsInput,
   workspace: { kind: "local", localPath: "../may-agent" },

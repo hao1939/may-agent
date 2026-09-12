@@ -9,11 +9,11 @@ also implemented. Console correlates a canonical Conversation result with its
 exact watched Task and suppresses the equivalent supporting terminal card.
 Human-action projection follows exact dependency leaves and preserves legacy
 `Hao` approval visibility while canonical `human:<role>` ownership is adopted.
-Durable May admission exposes the responsible Task directly; the supervision
-Task remains separately visible for diagnostics. Its replacement by the
+Durable May admission exposes the responsible Task directly. The
 [shared conversation-input handler](message-lifecycle.md#one-conversation-input-path)
-is accepted but not implemented; source-aware system Turn display and Stop
-reuse must be verified as part of that change.
+runs through the Conversation's stable Task, including linked-result reviews;
+it replaced the separate supervision Task in #158. Historical supervision
+records are not an additional current work owner.
 The focused review at Host `99bc1a31` includes durable turn Stop, accepted Request
 storage/closure, Console Esc and Telegram/browser Stop-button bindings. Current-turn
 steering remains open. App judgment needs separate
@@ -66,8 +66,9 @@ In the accepted design, linked Task facts and timer-discovered follow-up enter t
 handler as human input. The active Turn exposes its source and the same Stop
 control; users need no supervisor or subscription command. May may own ordinary
 goal Tasks when it owns the responsibility.
-The Host Operations App (`may-agent`) owns platform Tasks. An agent run named
-`may` is only a bounded turn decision or an attempt selected by an App.
+The installed maintenance App owns its assigned runtime-change Tasks. An agent
+run named `may` is an execution profile selected for a bounded attempt, not an
+implicit runtime administrator.
 
 The target distinguishes an accepted outcome from Task closure in reads and
 controls. Esc/Stop ends the current Turn; Request closure resolves an ask; Task

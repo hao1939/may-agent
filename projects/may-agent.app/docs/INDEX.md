@@ -90,11 +90,11 @@ owning document and keep implementation details there.
 | [events.md](2a-design/events.md)                                 | Event admission, routing, and acceptance.             |
 | [event-graph.md](2a-design/event-graph.md)                       | Causality, closure, and trace read model.            |
 | [cron.md](2a-design/cron.md)                                     | Time-based event production.                         |
-| [heartbeat.md](2a-design/heartbeat.md)                           | Agent heartbeat workflows and App schedules.         |
+| [heartbeat.md](2a-design/heartbeat.md)                           | Liveness observations versus ordinary periodic App review. |
 | [metrics.md](2a-design/metrics.md)                               | Metrics, alerts, pairs, and blind spots.             |
 | [guards.md](2a-design/guards.md)                                 | Detection signals and observability.                 |
 | [escalation.md](2a-design/escalation.md)                         | Cross-App and human-boundary requests.               |
-| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Evaluation evidence to learned improvement.          |
+| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Optional Evaluation/Gym integration, not a required learning subsystem. |
 | [session-eval-trail.md](2a-design/session-eval-trail.md)         | Session summary and append-only evaluation evidence. |
 
 ### Human and network interfaces
@@ -132,6 +132,10 @@ current-design list.
 
 Active reviews are:
 
+- [Keep domain policy in Apps, keep the Host generic](proposals/app-policy-and-host-boundary-cleanup.md)
+  — accepted direction with source application in progress: clear domain
+  ownership, retirement of legacy project policy, and explicit remaining
+  permission/deployment/maintenance dependencies;
 - [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md)
   — accepted disposition of all 54 Host script files: remove the PoC directory,
   retain useful checks/findings, and maintain the explicit command surface;

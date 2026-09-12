@@ -141,6 +141,14 @@ and exposes observations.
 Do not put domain policy in queues, adapters, sessions, or storage code. Do not
 make App code manage leases, retries, delivery bookkeeping, or database rows.
 
+Domain policy can be deterministic code. A rule selecting a maintenance agent
+or a benchmark is still App policy; a rule rejecting an obsolete attempt result
+is generic Host mechanics. Agent names do not inherently grant privileges.
+Trusted installation/tool policy supplies operational scope and execution code
+enforces it. Existing name-based exceptions remain an
+[implementation gap](../proposals/app-policy-and-host-boundary-cleanup.md), not
+a reason to weaken current safeguards before their replacement is verified.
+
 ## Event-driven integration
 
 Use meaningful events to connect independent producers and consumers. React

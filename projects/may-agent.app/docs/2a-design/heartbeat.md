@@ -1,136 +1,51 @@
-# Heartbeat
+# Heartbeat terminology
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for standalone global-agent duties.
-Apps use canonical schedules, observers, task inputs, and exact wakes.
+**Implementation status:** Reviewed Host `649d801c` has no standalone heartbeat
+workflow loader or public heartbeat-start command. Recurring App work uses
+declared schedules and the shared Task runtime.
 
-## Purpose
+## Two meanings, neither a new lifecycle
 
-A heartbeat is the recurring review cadence for a standalone agent's standing
-responsibility. It gives an otherwise reactive agent a bounded opportunity to
-inspect owned signals, decide whether work is needed, and record evidence.
-
-```text
-timer.tick -> standalone heartbeat workflow -> agent judgment -> evidence/events
-```
-
-A heartbeat is a trigger, not a work identity, queue, or project lifecycle.
-The workflow/session it starts is one bounded execution. It may publish evidence
-or facts, but it cannot become durable project work outside an App request
-or task.
-
-## Scope
-
-Use a standalone heartbeat only when an agent has a standing responsibility
-that no App owns.
-
-| Owner type              | Recurring review mechanism                                        |
-| ----------------------- | ----------------------------------------------------------------- |
-| Standalone global agent | `agents/<name>/workflows/<name>-heartbeat.ts`                     |
-| App                     | App input schedule or exact Task-wake schedule declared in `app.ts` |
-| Host mechanics          | Host-private schedule/handler; facts route any domain judgment    |
-
-Do not run both a standalone heartbeat and an App cadence for the same
-responsibility. App-local agents set `"heartbeat": false`. A workflow whose
-name contains `heartbeat` may remain as ordinary App-owned workflow code, but
-only the canonical App input-to-task path may invoke it autonomously.
-
-A host-private operations-health handler is not an App-local agent heartbeat.
-It performs bounded deterministic inspection of Runtime-owned ledgers and
-publishes evidence/facts. If domain judgment is required, the fact enters the
-canonical App input-to-task path; the handler does not start or resume an agent
-directly.
-
-## Work Context
-
-The standalone heartbeat workflow builds a compact context from:
-
-- agent identity and `heartbeat.md` guidance;
-- owned inbox events and messages;
-- current metrics and open alerts;
-- recent sessions and unresolved outcomes;
-- any explicit standalone projects still owned by the agent.
-
-The agent judges the packet. It may act, start bounded work, send a message,
-record a no-op, or escalate across an ownership boundary. A red metric is a
-signal, not an automatic task.
-
-## Runtime Contract
-
-A standalone heartbeat workflow collects bounded facts with its granted
-capabilities; there is no public SDK heartbeat service. The Host's
-auto-heartbeat loader discovers enabled standalone agents with a matching
-workflow and creates timer entries.
+- A **runtime heartbeat** is a liveness observation, such as
+  `runtime.daemon.heartbeat`. It does not judge work or start an agent.
+- An App may call its periodic review a **heartbeat**, but that is ordinary
+  domain vocabulary. It runs through the same input, Task and attempt path as
+  other App work.
 
 ```text
-agent.json heartbeat enabled
-  + agents/<name>/workflows/<name>-heartbeat.ts
-  -> generated timer entry
-  -> workflow run on cadence
+App schedule -> input or fact -> exact Task -> bounded attempt -> outcome/wait
 ```
 
-Rules:
+Use an input schedule when the due review needs its own correlated result.
+Use an event schedule when a fact should wake existing work. An observer may
+first collect provider facts. See [Scheduling and Observation](cron.md) for
+the declaration and delivery contracts.
 
-- Skip when the agent already has conflicting active work unless the heartbeat
-  explicitly owns recovery of that work.
-- Keep the cadence bounded and inexpensive.
-- Emit observable skipped/failed/completed lifecycle evidence.
-- Do not encode long-term plans in the timer prompt; durable goals belong in a
-  App or agent-owned knowledge/context.
-- Urgent P0 signals may start immediate bounded work; lower-priority signals
-  normally wait for the next review cadence or owning project event.
+## Domain policy and Host mechanics
 
-## App Review
+The App decides what to review, what evidence matters and whether a new
+observation deserves work. It may suppress unchanged observations or record a
+no-op; no particular fingerprint, agent name or review algorithm is mandatory.
+The Host owns timing, durable admission, bounded execution and recovery.
 
-Apps may use a low-frequency creative/health review. Existing Apps may retain
-`owner-review` as a domain input kind, but it is an App input schedule—not a
-standalone agent heartbeat or a second ownership lifecycle:
+Host-private cleanup is not a recurring agent responsibility. Required runtime
+recovery remains independent of optional App schedules. Operations digests and
+domain health reviews belong to their App even when their code is deterministic.
+The remaining private-handler coupling is tracked in the
+[boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md).
 
-```text
-app schedule
-  -> correlated App input { reason: "scheduled-owner-review" }
-  -> resolve or revise one standing task
-```
+## Existing names and safe retirement
 
-If time only refreshes deterministic desired work, the schedule instead emits
-one fact addressed to an exact task or matching Condition. The
-schedule never dispatches an agent session directly or creates another work
-authority.
+An existing workflow file may retain `heartbeat` in its name; that does not
+give it a second scheduler or automatic discovery rule. Explicit App bindings
+select workflows and agents. Do not restore `heartbeat-loader.ts`, infer a
+job from an agent name, or create a Task merely to keep an idle agent alive.
 
-An observer records every bounded packet but wakes the Task only when the
-canonical signal-family fingerprint changes, a previously reported signal
-recovers, or an explicit recheck is due. The persisted fingerprint contains
-stable signal identity and decision-relevant values, not timestamps or packet
-paths. Repeated unchanged red observations remain visible in health history and
-do not spend another agent session.
+Historical `heartbeat.md` files and old run evidence may remain readable.
+They do not authorize execution. Preserve any accepted Task obligations when
+disabling a schedule or removing an App.
 
-## Human Steering
-
-Human steering should target the relevant request, session, App action, or task
-directly.
-“Trigger heartbeat now” is only appropriate for a standalone agent whose
-standing review context is the intended target. Project steering should emit
-a correlated App input or an exact task control; it should not depend on an
-agent heartbeat.
-
-## Health
-
-A standalone heartbeat is healthy when it:
-
-- runs near its configured cadence;
-- reviews current owned signals rather than stale prompt text;
-- records an evidence-backed action or no-op;
-- avoids duplicate dispatch and repeated blind retries;
-- surfaces provider/runtime failures visibly.
-
-An App is healthy based on App requests, task workflow runs, task
-motion, delivery, and evidence—not on standalone heartbeat coverage.
-
-## Implementation
-
-- Auto-generation: `projects/may-agent/src/app/loader/heartbeat-loader.ts`.
-- Standalone workflows: `agents/<name>/workflows/<name>-heartbeat.ts`.
-- App schedules: `projects/<id>.app/app.ts`.
-- Explicit host-maintenance schedules: owning agent `cron.json` plus a typed
-  host-private handler.
-- Governing App contract: [agent-app.md](agent-app.md).
+Humans steer the relevant Conversation, App input or Task directly. Health
+comes from current results, failures, waits and evidence, not the presence of
+a standalone heartbeat run.

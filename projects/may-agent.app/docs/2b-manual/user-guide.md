@@ -41,9 +41,10 @@ your decision in the same Conversation. A progress update, blocker, or “Task
 started” acknowledgment does not by itself resolve an outstanding ask.
 
 May may answer directly or send typed input to the responsible App. The target
-App then owns its own Task. For example, Runtime deployment work belongs to the
-Host Operations App (`appId: may-agent`), not to May and not to the bounded
-agent run named `may`.
+App then owns its own Task. In this installation, runtime deployment requires
+the maintenance App's Task (`appId: may-agent`) and the documented deployment
+procedure. Neither a conversational request nor an agent named `may` grants
+deployment access. This is installation policy, not a special core App role.
 
 ### May Console controls
 

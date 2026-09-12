@@ -76,7 +76,7 @@ the same outcome should wake or update that Task rather than create siblings.
 - Task changes return through the normal reconciliation result.
 - Human input returns through an exact Condition or typed feedback to the same
   Task.
-- Runtime or schema repair belongs to a Host Operations Task.
+- Runtime or schema changes follow the maintenance App's authorized procedure.
 - Raw writes to `.state/*.db`, `metrics`, `metric_alerts`, Tasks, or Event rows
   are not an operational shortcut.
 

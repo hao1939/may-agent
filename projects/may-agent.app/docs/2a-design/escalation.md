@@ -3,19 +3,27 @@
 **Design status:** Accepted.
 **Implementation status:** Exact task/human Conditions and typed Runtime-managed
 cross-App Task dependencies are implemented. Request dispositions are removed.
-Historical event-pair and source-session records are read-only evidence, not
-work authority.
+New caller feedback uses the shared Task path merged in #169. Historical
+event-pair and source-session records should be evidence only, but the reviewed
+Host `649d801c` still registers a legacy resolution-to-resume subscriber and
+emits legacy recovery escalations. Its retirement requires the consumer and
+unfinished-obligation checks in the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md).
 
 ## Purpose
 
-Escalation is an explicit request across a real ownership boundary.
+Return problems to the exact caller, who can decide what to do next.
+"Escalation" describes asking someone with different authority to decide or
+act; it is not a resource or a required response to failure. Different authority
+can exist within one App. Ordinary cross-App delegation is not automatically
+an escalation. The [caller-feedback contract](../proposals/caller-feedback-and-waiting.md)
+owns reporting during waits and unsuccessful attempts.
 
 ```text
-source obligation
-  -> current App proves the next action is outside its responsibility
-  -> child request addressed to the App that can decide or act
-  -> source waits on that exact child result
-  -> source task reconciles the result
+source assignment
+  -> do safe in-scope work; report facts and any needed decision to the caller
+  -> caller decides whether to continue, revise, wait or seek other authority
+  -> any required delegation uses an ordinary exact Task dependency
+  -> the source keeps its identity and applies the returned result
 ```
 
 Escalation is not a synonym for failure, waiting, retry, attention, or workflow
@@ -189,8 +197,9 @@ Health readouts surface:
   source obligation.
 
 Historical escalation events and traces remain readable as evidence. New work
-uses App request/task dependencies. Compatibility projections never admit new
-legacy pairs or source-session resume ownership.
+uses caller reports and App request/task dependencies. The still-active legacy
+runtime path noted above is an implementation gap; it must not be advertised
+as read-only until its actions have actually been retired.
 
 ## Integrity checklist
 

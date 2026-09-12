@@ -139,8 +139,9 @@ without confirming that `/proc/<pid>/cmdline` is the running daemon.
 
 ## Runtime deployment target
 
-A correlated Runtime deployment must name an existing **Host Operations App**
-Task with `appId: may-agent`. A May human request is not deployment authority,
+A correlated Runtime deployment in this installation must name an existing
+maintenance App Task with `appId: may-agent`. This restriction is enforced by
+the current scripts; it is not a universal App role. A May human request is not deployment authority,
 even when May routed the request. Before
 building or restarting, the deploy preflight reads that exact `{appId, taskId}`
 from the Host database (`$STATE_DIR/may.db`, normally `/app/.state/may.db`) and
@@ -169,7 +170,7 @@ cutover. Deployment must not consult, recreate, or mutate it.
 ### Read-only deployment verification
 
 Verification of an exact live commit is not another deployment attempt. Begin
-with the requested source commit, correlation, or Host Operations Task and
+with the requested source commit, correlation, or maintenance Task and
 inspect only matching JSON receipts under
 `/app/projects/may-agent/.state/deploy-receipts/`. The terminal receipt is the
 authoritative binding among `sourceCommit`, `artifactSha`, the loaded artifact,

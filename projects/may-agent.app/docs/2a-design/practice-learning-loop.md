@@ -1,6 +1,6 @@
-# Practice Learning Loop
+# Agent improvement: an optional App integration
 
-**Design status:** Accepted.
+**Design status:** Accepted as an App integration, not a required Host subsystem.
 **Implementation status:** Implemented for Evaluation evidence, generated agent
 feedback, and Gym's May-improvement intake. Actual feedback consumption and
 verified activation after approved source promotion remain adoption gaps below;
@@ -12,8 +12,14 @@ this is not yet a verified end-to-end installed improvement loop.
 
 ## Purpose
 
-The May system learns from real work without turning evaluation into an automatic
-prompt writer or a second work system.
+Agents can improve behavior using ordinary Tasks, evidence, authorized source
+edits, isolated checks and verified activation. No Coach, Gym or Evaluation App
+is required by the generic execution mechanism. The responsible App chooses
+the method and judges its result; the human need not operate every step.
+
+This document describes the workspace's Evaluation/Gym integration. Its scoring,
+benchmark and promotion rules belong to those Apps. It is one way to learn from
+real work, not a mandatory organization or another work lifecycle:
 
 ```text
 session ends
@@ -77,8 +83,8 @@ May finding creates an incident review request.
 
 Gym preserves approved benchmark truth and withheld evaluation boundaries. It
 may build and test an isolated candidate, but production May changes only after
-the exact fingerprinted artifact passes required comparisons and Hao approves
-that artifact.
+the exact fingerprinted artifact passes required comparisons and the authorized
+human approves that artifact under this integration's promotion policy.
 
 This makes Evaluation and Gym independent:
 

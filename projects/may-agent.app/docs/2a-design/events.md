@@ -4,9 +4,9 @@
 **Implementation status:** Event persistence, frozen admission journaling,
 deferred request-to-Task coordination, exact wakes, Condition wakes, and
 ordered per-attempt Event batches are implemented. All current Apps use that
-single path; request dispositions have been removed. May's current supervision
-Task observes direct Topic-to-responsible-Task links; it is not an intermediate
-assignment or a proxy for destination work.
+single path; request dispositions have been removed. May's Conversation Task
+handles linked Task facts through the same input path as human discussion;
+there is no separate current supervision Task or proxy for destination work.
 
 ## Purpose
 
@@ -338,11 +338,12 @@ external input and nonexistent required targets create no event receipt.
 In the current Host, a Task result completes linked Task-based caller records
 through their exact stored identities. A bounded frontend's handling record
 instead completes after its direct result or durable follow-up admission.
-Topics retain the responsible Task links, and semantic changes may wake May's
-supervision Task. The accepted [shared-input design](message-lifecycle.md#one-conversation-input-path)
-will route those Task facts and timer-discovered reviews into the conversation
-input path instead. Under the accepted [one-lifecycle baseline](task-resource-engine.md#one-lifecycle-baseline),
-that input wakes the Conversation's execution Task. These changes are pending.
+Topics retain the responsible Task links. The merged
+[shared-input design](message-lifecycle.md#one-conversation-input-path) routes
+qualifying Task facts and timer-discovered reviews into the conversation input
+path. Under the [one-lifecycle baseline](task-resource-engine.md#one-lifecycle-baseline),
+that input wakes the Conversation's execution Task, not a separate supervision
+Task. These changes are implemented in Host #158; deployment is a separate check.
 An accepted child outcome can wake a caller while the child remains open;
 correlate the exact assignment/result, not resource closure or an old success.
 Closure is an authorized state operation whose consequences may publish facts;

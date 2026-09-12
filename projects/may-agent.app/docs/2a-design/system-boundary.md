@@ -1,8 +1,10 @@
 # Host And App Boundary
 
 **Design status:** Accepted.
-**Implementation status:** The Host/App boundary is implemented for current
-Apps. Task runtimes and test fixtures use resource authority; the legacy JSON
+**Implementation status:** The shared Task boundary is implemented for current
+Apps. Named-agent permissions, deployment policy and private maintenance still
+contain [domain-policy gaps](../proposals/app-policy-and-host-boundary-cleanup.md).
+Task runtimes and test fixtures use resource authority; the legacy JSON
 store and completed offline cutover path have been removed. The retired inbox
 delivery table is retained only as historical schema evidence. Incident-shaped public
 inputs remain a convergence gap rather than an alternate accepted boundary.
@@ -67,12 +69,17 @@ existing measurements cannot become acceptance authority.
 
 The Host also validates and loads complete App definitions. Reload either
 publishes a complete replacement or keeps the previous definition active.
-Replacing Host code is different: deployment is owned by the **Host Operations
-App** (stable `appId: may-agent`), requires a Task whose canonical identity has
-that App ID, and accepts only a candidate containing current canonical May
-source. The May App may understand and route the human request, but its own
-`appId: may` Task cannot authorize a Host deployment. A domain App may request
-the change but cannot deploy the Host from its own Task.
+Replacing Host code is a separately authorized deployment operation. The
+responsible App owns the desired change and acceptance; installation policy
+grants operational scope; deployment tooling enforces exact artifact checks,
+safe activation and recovery. A particular App name is not a core authority.
+
+The current deployment scripts still require a canonical `may-agent` Task.
+That installation-specific restriction remains in force until a tested
+replacement exists; this boundary correction does not grant other Apps
+deployment access. The exact procedure belongs in
+[Operations and Recovery](../2b-manual/app-operations-recovery.md#runtime-deployment-target),
+not in the generic App contract.
 
 Host maintenance may inspect and repair Host-owned state. If it discovers a
 domain decision, it publishes a fact to an App. A maintenance file cannot

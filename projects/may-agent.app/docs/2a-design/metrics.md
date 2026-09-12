@@ -2,7 +2,7 @@
 
 **Design status:** Accepted.
 **Implementation status:** `MetricService` and App/workflow-owned measurement
-are implemented, and Cron is the sole Host snapshot scheduler. Host Operations
+are implemented, and Cron is the sole Host snapshot scheduler. The maintenance App
 still carries a legacy central catalog for Host measurements and domain metrics
 not yet moved to their Apps. That remaining authority gap is tracked in the
 convergence tracker. The expanded default core-metrics proposal and later

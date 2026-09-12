@@ -1,15 +1,12 @@
 # Message Lifecycle
 
 **Design status:** Accepted; one Task lifecycle baseline refined September 11, 2026.
-**Implementation status:** The [source baseline](../README.md) implements human
-Turns, direct Task handoff, accepted Requests and atomic closure. Task follow-up
-still runs through May's separate supervision Task. Routing Task and timer
-reviews through the conversation inbox is accepted design, **not implemented**.
+**Implementation status:** Reviewed Host `649d801c` implements human Turns,
+direct Task handoff, accepted Requests and atomic closure. Human input and linked
+Task/timer reviews execute through one stable Conversation Task, merged in #158.
 The [unification review](../proposals/conversation-input-unification.md) records
-the whole-system fit, scope reduction, code changes and acceptance checks.
-The baseline now makes one stable Task the Conversation's execution owner,
-with explicit outcomes and owner-controlled closure. That lifecycle replaces
-`achieve`/`maintain` and the separate inbox execution path; it is not implemented.
+the paired App changes and acceptance evidence. Remaining old SDK mode names
+are a separate contract cleanup, not a second inbox or supervision executor.
 Current-turn steering remains separate work. Conversational child waits were
 retired in Host #140; retained-state behavior is described below.
 
@@ -601,41 +598,20 @@ this split and absence behavior. It does not create a fifth core component.
 
 ## Current implementation and gaps
 
-### Unified inputs are not implemented yet
+### Shared execution is implemented; adoption is a separate fact
 
-At Host `5857529e` and the current May App, human messages enter the conversation
-inbox, while `conversation.task.linked` / `conversation.task.changed` resolve
-`may/conversation/follow-up`, a separate maintain Task. Its
-`result.conversation` is projected back into the discussion. The App's
-15-minute recovery schedule uses that same Task and can revisit quiet unchanged
-work. It does not yet implement the selective scan described above.
+Host #158 replaced separate conversational execution and supervision with
+the common Task runtime. Linked results, owner closure and timer-discovered
+follow-up enter that same Conversation Task. Human and system origin remain
+distinct for capacity and control authority; a system review cannot acquire
+human permissions or close its own execution Task.
 
-The unmerged [source PoC](../proposals/controller-poc-recovery-review.md#returning-linked-outcomes-through-conversation-input)
-now routes accepted Task outcomes and timer-discovered results into the stable
-Conversation Task. Its checks include failed admission, honest non-success,
-duplicate notifications, quiet ticks, late links and restart. The subsequent
-[closure checkpoint](../proposals/controller-poc-recovery-review.md#returning-owner-closure-through-conversation-input)
-returns owner closure without manufacturing a result or closing a human
-Request. Stop of that review Turn survives discovery; newer human input can
-still resolve the Request. The [managed-model trials](../proposals/controller-poc-recovery-review.md#managed-conversation-recovery)
-also pass empty-response, interrupted-effect and restart recovery using normal
-prior-attempt context, without duplicate writes. Retained-state cutover,
-old-consumer retirement, live child-chain follow-through and the worker
-subprocess remain gaps. Full CI is still red; the installation is unchanged.
-The [human-control checkpoint](../proposals/controller-poc-recovery-review.md#human-task-controls-through-conversation)
-applies an explained cancellation from a direct human Turn in the same state
-transaction as the reply. The existing cancellation event then interrupts the
-exact attempt. A failed reply write or stale Turn cannot leave a half-applied
-control. System-only Turns cannot issue human controls, and a Conversation worker cannot
-close its own Task.
-
-Unification requires typed system-input admission, source-aware context and
-authority, a quiet result, pending-human priority and capacity selection, and
-durable handled-change checks. Existing retry and closure mechanics should be reused, not assumed to
-cover the new route without tests. The
-[implementation review](../proposals/conversation-input-unification.md) owns
-that bounded work and safe retirement of the old consumer. This document does
-not activate the route or change the deployed App.
+The [implementation review](../proposals/conversation-input-unification.md)
+owns the paired App revision, retained-state cutover and validation evidence.
+Earlier unsuccessful trials and the previous `may/conversation/follow-up`
+design remain in the linked review history, not as another current execution
+path. Source integration does not establish the installed version or prove
+that every real conversation receives appropriate App judgment.
 
 ### Accepted Request storage
 
@@ -782,12 +758,12 @@ protocol with explicit human or system origin; linked-result judgment belongs
 to May's policy. Ordinary Task attempts keep the existing Task protocol.
 There is no new role router or prompt registry.
 
-Until unification lands, the separate supervision declaration still supplies
-its guidance through Task input. Retained Tasks may carry older input and use
-the existing pointer to `mayFollowUpTask`; reload alone does not rewrite those
-records. The cutover removes this special follow-up prompt dependency after
-draining/fencing the old Task. Context tests prove available guidance, not
-model judgment.
+The #158 cutover retires the separate supervision Task and its special
+follow-up prompt dependency. Retained historical input may still mention
+`mayFollowUpTask`; it does not authorize restoring the retired executor.
+Context tests prove available guidance, not model judgment. Use the existing
+cutover evidence to assess an older installation rather than assuming a
+definition reload rewrites its stored work.
 
 Every conversational Turn uses the same result schema: answer, authorized Task
 control, or direct `followUp`; the unified design also admits an explicit quiet
