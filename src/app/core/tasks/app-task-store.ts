@@ -182,12 +182,6 @@ export function cacheTaskSnapshots(context: AppTaskContext): void {
   taskSnapshotCaches.set(context, {});
 }
 
-export function normalizeStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && Boolean(item));
-  if (typeof value === "string" && value) return [value];
-  return [];
-}
-
 export function readTaskSnapshot(
   context: AppTaskContext,
   scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string>; conditionIds?: Iterable<string> },

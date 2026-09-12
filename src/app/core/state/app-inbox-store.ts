@@ -589,20 +589,3 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
   }
   return { item, created: false };
 }
-
-export function listUnlinkedAppDelegations(db: SqliteDb, limit = 100): AppInboxItem[] {
-  if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error("Delegation query limit must be positive");
-  return (
-    db
-      .prepare(
-        `SELECT * FROM app_inbox_items
-         WHERE parent_id IS NOT NULL
-           AND source_kind = 'app'
-           AND origin_event_id IS NULL
-           AND idempotency_key LIKE 'delegate:%'
-         ORDER BY created_at, id
-         LIMIT ?`,
-      )
-      .all(limit) as InboxRow[]
-  ).map(rowToItem);
-}

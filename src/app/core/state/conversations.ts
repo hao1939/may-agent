@@ -344,15 +344,6 @@ export function readAppConversationResource(
   };
 }
 
-export function listConversationTopics(
-  db: SqliteDb,
-  appId: string,
-  conversationId: string,
-  limit = 12,
-): AppConversationTopic[] {
-  return listConversationTopicPage(db, appId, conversationId, { limit }).items;
-}
-
 type ConversationTopicRow = {
   id: string;
   title: string;

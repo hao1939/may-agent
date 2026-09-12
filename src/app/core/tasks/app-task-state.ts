@@ -86,11 +86,6 @@ export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Dat
     ? at : undefined;
 }
 
-/** Attention is visible evidence, independently of retry scheduling. */
-export function isTaskAttentionReadyForReview(resource: AppTaskResource | null, hasPendingInput: boolean): boolean {
-  return resource?.status.phase === "attention" && (!hasPendingInput || resource.status.executionRetryAt !== undefined);
-}
-
 export type AppTaskAttemptLease = {
   id: string;
   version: number;
