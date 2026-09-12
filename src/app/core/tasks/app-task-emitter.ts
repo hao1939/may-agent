@@ -7,6 +7,8 @@ import {
   type EventTaskEmissionFence,
 } from "../events/bus.js";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
+import type { SqliteDb } from "../../../lib/db.js";
+import { readTaskEmission, taskEmissionIdentity } from "../state/task-emissions.js";
 
 export type AppTaskEmission = {
   type: string;
@@ -23,6 +25,8 @@ export type AppTaskEmitter = {
 };
 
 export type AppTaskEvents = {
+  /** Read the original published fact before redoing work with external effects. */
+  read(type: string, localKey: string): { eventId: number; data: Record<string, unknown> } | null;
   /** Publish one durable fact from the current fenced attempt. */
   publish(localKey: string, event: AppTaskEmission): number;
   /**
@@ -77,6 +81,7 @@ function taskEventMux(bus: EventBus): TaskEventMux {
 /** One executor-neutral Task event interface for a claimed attempt. */
 export function createAppTaskEvents(input: {
   bus: EventBus;
+  db: SqliteDb;
   appId: string;
   claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
@@ -85,6 +90,7 @@ export function createAppTaskEvents(input: {
   const appId = normalizedAppId(input.appId);
   const key = `${appId}\0${input.claim.taskId}`;
   return {
+    read: (type, localKey) => readTaskEmission(input.db, { appId, ...input.claim }, type, localKey),
     publish: emitter.emit,
     onEvent(listener) {
       const mux = taskEventMux(input.bus);
@@ -119,7 +125,7 @@ export function createAppTaskEmitter(input: {
       if (emitted.type === "app.input.requested") {
         throw new Error("Cross-App result work must use a typed Task dependency, not events.emit");
       }
-      const idempotencyKey = `task:${appId}:${input.claim.taskId}:${input.claim.generation}:emit:${key}`;
+      const idempotencyKey = taskEmissionIdentity({ appId, ...input.claim }, key);
       const event = {
         type: emitted.type,
         source: `app-task:${appId}`,

@@ -425,6 +425,7 @@ function runtimeTaskAttempt(input: {
   }
   const events = createAppTaskEvents({
     bus: opts.bus,
+    db: descriptor.resourceStore.db,
     appId: descriptor.id,
     claim,
     ...(input.event ? { parentEvent: input.event as AgentEvent } : {}),
@@ -1878,7 +1879,6 @@ async function reconcileTask(input: {
           // Task mutations as accepted through the diagnostic path either.
           result: primaryHandlerResult.actions.length ? undefined : primaryHandlerResult.result,
           evidence: primaryHandlerResult.evidence,
-          acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           reason: primaryHandlerResult.resultRejected
             ? "HandlerResultInvalid"
             : primaryResult.unavailable
@@ -1897,16 +1897,17 @@ async function reconcileTask(input: {
       if (!stale) throw error;
       return stale.reconcileTaskIds;
     }
+    if (attention.status === "stale") return [];
     if (!agentHandoff) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: attention.taskContinues ? "progress" : "attention",
+        disposition: "retrying",
         input: intent.input ?? {},
-        summary: primaryHandlerResult.summary,
+        summary: attention.summary,
       });
-      return attention.taskContinues ? [intent.id] : [];
+      return [];
     }
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
@@ -2877,6 +2878,7 @@ export function publishLoadedAppTaskEvent(input: {
   }
   return createAppTaskEvents({
     bus: input.bus,
+    db: descriptor.resourceStore.db,
     appId,
     claim: {
       taskId: input.binding.taskId,

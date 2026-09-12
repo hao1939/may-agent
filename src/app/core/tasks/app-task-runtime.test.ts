@@ -4582,12 +4582,12 @@ describe("canonical App task runtime", () => {
         export const description = "Use the common saved wait context";
         export async function execute(ctx) {
           const waits = ctx.reconciliation.waits.open;
-          return ctx.done("Reviewed input", waits.length
+          return waits.length
             ? { state: "converged", summary: "Answered another input", evidence: ["saved-wait"], result: { waits } }
             : { state: "waiting", summary: "Wait for the source", evidence: [], conditions: [{
                 id: "source", type: "source.available", subject: "source:sample", expected: true,
                 owner: "app:source", reviewAfterMs: 60000,
-              }] });
+              }] };
         }
       `,
     );
@@ -4629,6 +4629,81 @@ describe("canonical App task runtime", () => {
       waits: [{ conditionId: "source", type: "source.available", subject: "source:sample", state: "unknown" }],
     });
     expect(config.resourceStore.readTask("wait-context")?.status.conditionIds).toEqual(["source"]);
+  });
+
+  it("admits a direct workflow failure report, retries, and rejects an invalid direct result", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const dir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "direct.ts"),
+      `
+      export const name = "direct";
+      export const description = "One Task outcome";
+      export async function execute(ctx) {
+        return { state: ctx.input.state, summary: "Source unavailable", evidence: ["HTTP:503"] };
+      }
+    `,
+    );
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      agentsRoot,
+      sharedRoot: join(f.root, "shared"),
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: "direct-result",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "direct";
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    const observe = (state: string) =>
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          mode: "achieve",
+          outcome: "Obtain the sample",
+          acceptance: ["Return evidence"],
+          workflow: "direct",
+          input: { state },
+        },
+      });
+    observe("stopped");
+    await run();
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "stopped",
+      evidence: ["HTTP:503"],
+    });
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "pending", executionFailures: 1 });
+    expect(config.resourceStore.readCancellation(taskId)).toBeNull();
+    const retryAt = config.resourceStore.readTask(taskId)!.status.executionRetryAt!;
+    expect(retryAt).toBeGreaterThan(Date.now());
+    setSystemTime(retryAt + 1);
+    await run();
+    expect(config.resourceStore.readTask(taskId)?.status.executionFailures).toBe(2);
+    observe("invalid");
+    await run();
+    const invalid = config.resourceStore.readTask(taskId)!;
+    expect(invalid.status.phase).toBe("pending");
+    expect(invalid.status.summary).toContain("Handler result was rejected");
+    const attempts = Object.values(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {}).filter(
+      (attempt) => attempt.taskGeneration === invalid.metadata.generation,
+    );
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toBeUndefined();
+    expect(attempts[0]?.failureReason).toBe("HandlerResultInvalid");
   });
 
   it("retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input", async () => {

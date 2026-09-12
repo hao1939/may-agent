@@ -96,8 +96,8 @@ describe("App inbox runtime", () => {
   });
 
   async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
+    const deadline = performance.now() + timeoutMs;
+    while (performance.now() < deadline) {
       if (predicate()) return;
       await Bun.sleep(5);
     }

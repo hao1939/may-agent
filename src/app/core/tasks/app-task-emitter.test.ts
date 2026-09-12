@@ -89,10 +89,34 @@ function harness(sessionId: string | null = "session-1") {
 }
 
 describe("AppTaskEmitter", () => {
+  it("reads the original published fact after reopen only within its exact scope", () => {
+    const { root, emitter } = harness(null);
+    const eventId = emitter.emit("original", { type: "sample.observed", data: { value: 0.92, createdAt: 100 } });
+    closeDb(root);
+    const db = getDb(root);
+    const read = (appId = "sample", taskId = "task-1", generation = 3) =>
+      createAppTaskEvents({
+        bus: new EventBus(),
+        db,
+        appId,
+        claim: { taskId, generation, attemptId: "replacement-attempt", agent: "may" },
+      });
+    expect(read().read("sample.observed", "original")).toMatchObject({
+      eventId,
+      data: { value: 0.92, createdAt: 100 },
+    });
+    expect(read("other").read("sample.observed", "original")).toBeNull();
+    expect(read("sample", "other").read("sample.observed", "original")).toBeNull();
+    expect(read("sample", "task-1", 4).read("sample.observed", "original")).toBeNull();
+    expect(read().read("sample.other", "original")).toBeNull();
+    expect(read().read("sample.observed", "missing")).toBeNull();
+  });
+
   it("exposes one scoped publish and live inbound-event interface", async () => {
-    const { bus } = harness();
+    const { bus, db } = harness();
     const events = createAppTaskEvents({
       bus,
+      db,
       appId: "sample",
       claim: { taskId: "task-1", generation: 3, attemptId: "attempt-1", owner: "may" },
     });

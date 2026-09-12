@@ -439,6 +439,8 @@ export type WorkflowContext<TInput = unknown> = {
   };
   events: {
     emit(event: AppEvent): Promise<void>;
+    /** Original published fact in this Task generation. Requires a Task-owned workflow. */
+    read(type: string, localKey: string): Promise<{ eventId: number; data: Record<string, unknown> } | null>;
     /** Live convenience for events addressed to the current Task; durable replay remains authoritative. */
     onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
   };

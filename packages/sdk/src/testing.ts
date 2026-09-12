@@ -92,6 +92,7 @@ export type TestAppWorkflowContextOptions<TInput> = {
   callAgent?: WorkflowContext["agents"]["call"];
   runWorkflow?: WorkflowContext["workflows"]["run"];
   emit?: WorkflowContext["events"]["emit"];
+  readEvent?: WorkflowContext["events"]["read"];
   onEvent?: WorkflowContext["events"]["onEvent"];
   recordMetric?: WorkflowContext["metrics"]["record"];
   workspace?: WorkflowContext["workspace"];
@@ -123,6 +124,7 @@ export function createTestAppWorkflowContext<TInput>(
     },
     events: {
       emit: options.emit ?? fn(async () => undefined),
+      read: options.readEvent ?? fn(async () => null),
       onEvent: options.onEvent ?? fn(() => () => undefined),
     },
     metrics: {

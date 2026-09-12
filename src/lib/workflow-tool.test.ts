@@ -343,6 +343,58 @@ export async function execute(ctx) {
 });
 
 describe("App workflow authoring context", () => {
+  it("returns a direct Task result only under a Task owner and forwards published-fact reads", async () => {
+    const root = workflowRoot("task-workflow-result-");
+    writeFileSync(
+      join(root, "report.ts"),
+      `
+export const name = "report";
+export const description = "Direct Task report";
+export async function execute(ctx) {
+  const fact = await ctx.events.read("sample.observed", "sample");
+  return { state: "stopped", summary: "Source unavailable", evidence: ["event:" + fact.eventId] };
+}`,
+    );
+    const reads: string[][] = [];
+    const runner = createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      taskBinding: { appId: "sample", taskId: "review", generation: 1, attemptId: "attempt-1" },
+      taskEmitter: {
+        read(type, key) {
+          reads.push([type, key]);
+          return { eventId: 41, data: {} };
+        },
+        publish: () => {
+          throw new Error("Read must not publish");
+        },
+        onEvent: () => () => {},
+      },
+    });
+    expect(await runner.run("report", "review")).toMatchObject({
+      type: "done",
+      output: { state: "stopped", evidence: ["event:41"] },
+    });
+    expect(reads).toEqual([["sample.observed", "sample"]]);
+    const unowned = createWorkflowRunner({ manager: {} as any, workflowDir: root });
+    expect(await unowned.run("report", "review")).toMatchObject({
+      type: "error",
+      error: expect.stringContaining("Only a Task-owned workflow"),
+    });
+    writeFileSync(
+      join(root, "plain.ts"),
+      `
+export const name = "plain";
+export const description = "Unowned direct result";
+export async function execute() { return { state: "converged", summary: "Answer", evidence: [] }; }
+`,
+    );
+    expect(await unowned.run("plain", "review")).toMatchObject({
+      type: "error",
+      error: expect.stringContaining("invalid terminal execution result"),
+    });
+  });
+
   it("does not let a resource-backed Task bypass the fenced event capability", async () => {
     const root = workflowRoot("app-workflow-unfenced-event-");
     const workflowDir = join(root, "workflows");
@@ -361,7 +413,7 @@ export async function execute(ctx) {
     const runner = createWorkflowRunner({
       manager: {} as any,
       workflowDir,
-      taskEmitter: { publish: () => 41, onEvent: () => () => {} },
+      taskEmitter: { read: () => null, publish: () => 41, onEvent: () => () => {} },
     });
 
     expect(await runner.run("emit", "test")).toMatchObject({
@@ -391,6 +443,7 @@ export async function execute(ctx) {
       manager: {} as any,
       workflowDir,
       taskEmitter: {
+        read: () => null,
         publish(localKey, event) {
           emissions.push({ localKey, type: event.type });
           return 41;
@@ -503,6 +556,7 @@ export async function execute(ctx) {
       workflowDir,
       agentName: "owner",
       taskEmitter: {
+        read: () => null,
         publish: () => 41,
         onEvent(listener) {
           taskListener = listener;
