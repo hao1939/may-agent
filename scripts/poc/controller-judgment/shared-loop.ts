@@ -354,6 +354,10 @@ try {
           return item.input.kind === "task-outcome" && item.status === "done" &&
             data.taskId === taskB && data.outcome?.state === "stopped";
         })) : undefined;
+      const readMeasurementAnswer = (item: typeof measurementAdmission) => item?.taskAdmissionKey && taskC
+        ? readLoadedAppTaskInputResult({ bus, appDir: join(root, "projects/may.app"),
+            taskId: taskC, admissionKey: item.taskAdmissionKey }) : null;
+      let diagnosticAnswer: ReturnType<typeof readLoadedAppTaskInputResult> = null;
       releaseSource.resolve();
       if (ownerFeedback) {
         await ownerFeedback;
@@ -362,14 +366,23 @@ try {
         assert.equal(openAsk.status, "open", "A failure report must not close the original ask");
         assert.equal(store().isCancelled(taskB), false, "The failed worker's assignment remains open");
         if (measurementAdmission) {
-          assert.equal(getAppInboxItem(db, measurementAdmission.id)?.status, "handling");
-          const firstReport = readLoadedAppTaskInputResult({ bus, appDir: join(root, "projects/may.app"),
-            taskId: taskC!, admissionKey: measurementAdmission.taskAdmissionKey!, kind: "report" });
-          assert(firstReport?.state === "stopped", "The nested worker must return its accepted failure without answering");
-          assert(events.some(({ event }) => event.type === "app.dependency.updated" &&
-            event.data.id === measurementAdmission.id && event.data.status === "blocked"),
-            "The original caller relationship must carry the blocker");
-          report = { ...report, firstReportAttemptId: firstReport.attemptId };
+          const currentInput = getAppInboxItem(db, measurementAdmission.id)!;
+          if (currentInput.status === "done") {
+            // An explicitly diagnostic subtask can answer with unavailability.
+            // Its parent remains blocked and must later request fresh evidence.
+            diagnosticAnswer = readMeasurementAnswer(measurementAdmission);
+            assert(diagnosticAnswer?.state === "converged", "A finished diagnostic needs an exact accepted answer");
+            report = { ...report, feedbackPath: "diagnostic-answer", diagnosticAnswer };
+          } else {
+            assert.equal(currentInput.status, "handling");
+            const firstReport = readLoadedAppTaskInputResult({ bus, appDir: join(root, "projects/may.app"),
+              taskId: taskC!, admissionKey: measurementAdmission.taskAdmissionKey!, kind: "report" });
+            assert(firstReport?.state === "stopped", "Unfinished acquisition must return its accepted failure");
+            assert(events.some(({ event }) => event.type === "app.dependency.updated" &&
+              event.data.id === measurementAdmission.id && event.data.status === "blocked"),
+              "The original caller relationship must carry the blocker");
+            report = { ...report, feedbackPath: "first-blocker", firstReportAttemptId: firstReport.attemptId };
+          }
         }
         const ownerReply = conversation().messages.filter((message) => message.author.kind === "agent").at(-1)?.text;
         assert(ownerReply && /unavailable|restor|503|repair/i.test(ownerReply), "Owner must explain the source problem");
@@ -399,17 +412,18 @@ try {
       const childOutcome = store().readAttempt(tasks[taskB]!.status.observedAttemptId!)!;
       assert.equal(childOutcome.acceptedResult?.state, "converged");
       const measurementOutcome = taskC ? store().readAttempt(tasks[taskC]!.status.observedAttemptId!)! : undefined;
-      const measurementInput = measurementAdmission ? getAppInboxItem(db, measurementAdmission.id) : undefined;
+      const measurementInput = taskC ? listAppInboxItems(db, { appId: "may" }).find((item) =>
+        item.waitingOn?.id === taskC && readMeasurementAnswer(item)?.attemptId === measurementOutcome?.metadata.id) : undefined;
       if (taskC) {
         assert.equal(measurementOutcome?.acceptedResult?.state, "converged");
         assert.equal(measurementInput?.status, "done");
-        const exact = readLoadedAppTaskInputResult({
-          bus,
-          appDir: join(root, "projects/may.app"),
-          taskId: taskC,
-          admissionKey: measurementAdmission!.taskAdmissionKey!,
-        });
+        const exact = readMeasurementAnswer(measurementInput);
         assert.equal(exact?.attemptId, measurementOutcome!.metadata.id);
+        if (diagnosticAnswer) {
+          assert.notEqual(measurementInput?.id, measurementAdmission?.id, "A completed diagnostic needs fresh input");
+          assert.deepEqual(readMeasurementAnswer(measurementAdmission), diagnosticAnswer,
+            "The new measurement must not replace the original diagnostic answer");
+        } else assert.equal(measurementInput?.id, measurementAdmission?.id);
         assert.deepEqual(measurementInput?.result?.result, exact?.result);
       }
       const resultInput = listAppInboxItems(db, { appId: "may" }).find(
