@@ -1839,7 +1839,7 @@ export function recordAppTaskTrigger(
   config: AppTaskContext,
   taskId: string,
   event: Record<string, unknown>,
-): { kind: "recorded" | "missing" | "closed" } {
+): { kind: "recorded" | "duplicate" | "missing" | "closed" } {
   // A wake updates one existing Task. Its children and attempt history do
   // not participate in trigger selection, so keep this interface-path read
   // proportional to the exact Task rather than its whole subtree.
@@ -1848,6 +1848,14 @@ export function recordAppTaskTrigger(
   if (!resource) return { kind: "missing" };
   if (config.resourceStore.isCancelled(taskId)) return { kind: "closed" };
   const previous = tree.taskTriggers?.[taskId];
+  if (config.resourceStore.hasTaskEvent(taskId, event)) {
+    // A worker may have persisted this wake before its first parent relay.
+    // Keep existing pending work schedulable without appending another copy.
+    const pending =
+      previous &&
+      taskTriggerEvents(previous).some((entry) => taskEventIdentity(entry.event) === taskEventIdentity(event));
+    return { kind: pending ? "recorded" : "duplicate" };
+  }
   const resourceVersion = resource.metadata.resourceVersion;
   // Input shares the Task row; invalidate writers that read before this wake.
   resource.metadata.resourceVersion += 1;

@@ -3,6 +3,7 @@ import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjectio
 import { resolve } from "node:path";
 import { Check } from "typebox/value";
 import { getDb } from "../../../lib/db/connection.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
@@ -163,7 +164,10 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
   };
 }
 
-/** Canonical durable Task event envelope plus its event-journal identity. */
+/**
+ * Convert the live EVENT_ROW_ID symbol to serializable eventId before admission.
+ * Receipt lookup and pending-input comparisons below use this stored envelope.
+ */
 function canonicalTaskEvent(event: AgentEvent): Record<string, unknown> {
   const canonical = canonicalAppEvent(event) as Record<string, unknown>;
   const envelope = event as unknown as Record<string, unknown>;
@@ -244,7 +248,13 @@ type AppTaskAdmissionResult = {
   supersededSessionIds: string[];
 };
 
-function admitResolvedAppTaskEvent(input: {
+function admitResolvedAppTaskEvent(input: Parameters<typeof applyResolvedAppTaskEvent>[0]): AppTaskAdmissionResult {
+  // Receipt lookup and all selected Task/Condition changes share one boundary
+  // with worker publication and claim on other database connections.
+  return stateTransaction(input.descriptor.resourceStore.db, () => applyResolvedAppTaskEvent(input));
+}
+
+function applyResolvedAppTaskEvent(input: {
   descriptor: AppTaskRuntimeDescriptor;
   controller?: AppTaskController;
   event: Record<string, unknown>;
@@ -259,6 +269,8 @@ function admitResolvedAppTaskEvent(input: {
   const selectedConditionTaskIds = [
     ...new Set((input.conditionTaskIds ?? []).map((taskId) => taskId.trim()).filter(Boolean)),
   ];
+  // Check before Condition admission, which can link this same first input.
+  const duplicateIntent = intent && config.resourceStore.hasTaskEvent(intent.id, event);
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
   const wokenTaskIds = new Set(conditionWakes.map((wake) => wake.taskId));
   if (controller) {
@@ -289,11 +301,25 @@ function admitResolvedAppTaskEvent(input: {
         supersededSessionIds: [],
       };
     }
+    if (triggerResult.kind === "duplicate") {
+      return {
+        delivery: appTaskDelivery(descriptor, targetedTaskId, "targeted task event already received"),
+        taskIds: [...wokenTaskIds],
+        supersededSessionIds: [],
+      };
+    }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
     return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
   }
   if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+  if (duplicateIntent) {
+    return {
+      delivery: appTaskDelivery(descriptor, intent.id, "resolved task event already received"),
+      taskIds: [...wokenTaskIds],
+      supersededSessionIds: [],
+    };
+  }
   const observation = observeAppTaskIntent(config, {
     intent,
     appAgent: descriptor.agent,

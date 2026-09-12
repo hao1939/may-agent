@@ -3,6 +3,7 @@ import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
   Type,
@@ -15,6 +16,7 @@ import {
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
+import { loadPersistedEvent } from "../events/persisted.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
@@ -28,7 +30,7 @@ import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
-
+  admitStandaloneCanonicalAppTaskEvent,
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
@@ -41,10 +43,12 @@ import {
   recoverInstalledAppTasks,
   retryLoadedFailedAppTask,
 } from "./app-task-runtime.js";
+import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { admitTaskAppDependencies } from "./dependency-admission.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
+import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import type { TaskAgentRunner, TaskWorkflowRunner, TaskSessionRecovery } from "./execution.js";
 import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
@@ -4178,6 +4182,641 @@ describe("canonical App task runtime", () => {
     });
   });
 
+  it.each(["executor", "tasks tool"] as const)(
+    "runs three periodic reviews without self-published clock echoes through %s",
+    async (publisher) => {
+      setSystemTime(Date.now());
+      const f = fixture();
+      const bus = eventBus();
+      const writer = new DbWriter(join(f.root, "state"));
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const taskId = "work/periodic-review";
+      const facts: number[] = [];
+      let calls = 0;
+      const { installed } = await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        executors: {
+          reviewer: async (attempt) => {
+            calls += 1;
+            const count = Number(attempt.previousAttempt?.acceptedResult?.result?.count ?? 0) + 1;
+            expect(calls).toBe(count);
+            if (count > 1) {
+              const liveEvents: unknown[] = [];
+              const unsubscribe = attempt.onEvent((event) => liveEvents.push(event));
+              const notified = new Promise<void>((resolve) => {
+                const stop = bus.listen(
+                  () => {
+                    stop();
+                    resolve();
+                  },
+                  { types: ["time.reached"] },
+                );
+              });
+              const wait = attempt.waits.open[0]!;
+              expect(Date.now()).toBeGreaterThanOrEqual(Date.parse(wait.subject.slice(5)));
+              const event = {
+                type: "time.reached",
+                target:
+                  publisher === "tasks tool"
+                    ? { appId: "", project: "sample.app", taskId: ` ${taskId} ` }
+                    : { appId: "sample", taskId },
+                data: { time: wait.subject.slice(5), state: true },
+              };
+              const localKey = `observed:${wait.conditionId}`;
+              if (publisher === "executor") {
+                facts.push((await attempt.publish(localKey, event)).eventId);
+              } else {
+                const tool = createAppTaskReadTool({
+                  bus,
+                  scope: () => ({
+                    appId: "sample",
+                    taskId,
+                    generation: attempt.task.generation,
+                    attemptId: attempt.attemptId,
+                  }),
+                });
+                const receipt = await tool.execute("publish-clock", {
+                  action: "publish",
+                  localKey,
+                  eventType: event.type,
+                  target: event.target,
+                  data: event.data,
+                });
+                const content = receipt.content[0];
+                if (content?.type !== "text") throw new Error("Expected publication receipt");
+                const body = JSON.parse(content.text);
+                expect(body.error).toBeUndefined();
+                facts.push(body.eventId);
+              }
+              await notified;
+              unsubscribe();
+              expect(liveEvents).toEqual([]);
+            }
+            return count === 3
+              ? {
+                  state: "converged",
+                  summary: "Three reviews complete",
+                  facts: ["fixture:reviewed"],
+                  result: { count },
+                }
+              : {
+                  state: "waiting",
+                  summary: "Review complete; next review pending",
+                  facts: ["fixture:reviewed"],
+                  result: { count },
+                  conditions: [
+                    {
+                      id: `review-${count + 1}`,
+                      type: "time.reached",
+                      subject: `time:${new Date(Date.now() + 60_000).toISOString()}`,
+                      expected: true,
+                      owner: "app:sample",
+                      reviewAfterMs: 60_000,
+                    },
+                  ],
+                };
+          },
+        },
+        appRegistrySnapshot: {
+          id: "self-clock",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      });
+      bus.subscribeDurableRoute((event) => {
+        if (event.type !== "time.reached") return;
+        return admitStandaloneCanonicalAppTaskEvent({
+          descriptor: installed[0]!,
+          event,
+          intent: null,
+          targetedTaskId: taskId,
+          conditionTaskIds: [taskId],
+        }).delivery;
+      });
+      const config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          outcome: "Three periodic reviews",
+          acceptance: ["Three reviews and no echo attempts"],
+          executor: "reviewer",
+        },
+      });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      for (let count = 1; count <= 3; count += 1) {
+        await run();
+        expect(calls).toBe(count);
+        expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+          state: count === 3 ? "converged" : "waiting",
+          result: { count },
+          ...(count > 1 ? { acceptedLiveEventIds: [facts[count - 2]] } : {}),
+        });
+        expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+        if (count > 1) {
+          const eventId = facts[count - 2]!;
+          const event = loadPersistedEvent(getDb(join(f.root, "state")), eventId, join(f.root, "state"))!;
+          bus.redeliverPersisted(event, eventId);
+          expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+        }
+        await run(); // No pending input may immediately start an echo attempt.
+        expect(calls).toBe(count);
+        if (count < 3) setSystemTime(Date.now() + 60_001);
+      }
+      expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+        phase: "converged",
+        conditionIds: [],
+      });
+      expect(facts).toHaveLength(2);
+      setSystemTime(Date.now() + 120_000);
+      await recoverInstalledAppTasks(bus);
+      await run();
+      expect(calls).toBe(3);
+    },
+  );
+
+  it("admits the first broadcast Condition fact and retains its identity through settlement", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const writer = new DbWriter(join(f.root, "state"));
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const taskId = "work/broadcast-condition";
+    let calls = 0;
+    const { installed } = await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      executors: {
+        receiver: async () => {
+          calls += 1;
+          return calls === 1
+            ? {
+                state: "waiting",
+                summary: "Await pipeline completion",
+                facts: [],
+                conditions: [
+                  {
+                    id: "pipeline",
+                    type: "pipeline-run.state",
+                    subject: "pipeline-run:42",
+                    expected: "completed",
+                    owner: "app:sample",
+                    reviewAfterMs: 60_000,
+                  },
+                ],
+              }
+            : { state: "converged", summary: "Pipeline observed", facts: ["fixture:pipeline-42"] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "broadcast-condition",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Observe pipeline completion",
+        acceptance: ["Pipeline completed"],
+        executor: "receiver",
+      },
+    });
+    const receivedBefore: boolean[] = [];
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "pipeline-run.state") return;
+      const eventId = event[EVENT_ROW_ID];
+      expect(eventId).toBeGreaterThan(0);
+      expect((event as unknown as Record<string, unknown>).eventId).toBeUndefined();
+      receivedBefore.push(config.resourceStore.hasTaskEvent(taskId, { eventId }));
+      return admitStandaloneCanonicalAppTaskEvent({
+        descriptor: installed[0]!,
+        event,
+        intent: null,
+        conditionTaskIds: [taskId],
+      }).delivery;
+    });
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    await run();
+    expect(calls).toBe(1);
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "waiting",
+      summary: "Await pipeline completion",
+    });
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    const event = bus.emit({
+      type: "pipeline-run.state",
+      source: "fixture",
+      owner: "app:sample",
+      data: { pipelineRunId: "42", state: "completed" },
+    } as AgentEvent);
+    const eventId = event[EVENT_ROW_ID]!;
+    expect(receivedBefore).toEqual([false]); // No exact target: Condition admission creates the first receipt.
+    expect(config.resourceStore.readTrigger(taskId)?.events?.map(({ event }) => event.eventId)).toEqual([eventId]);
+    bus.redeliverPersisted(event, eventId);
+    expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
+    await run();
+    expect(calls).toBe(2);
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Pipeline observed");
+    bus.redeliverPersisted(event, eventId);
+    expect(receivedBefore).toEqual([false, true, true]);
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    await run();
+    expect(calls).toBe(2);
+  });
+
+  it("keeps late repeated worker publications consumed after child settlement", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const writer = new DbWriter(join(f.root, "state"));
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const taskId = "work/worker-publication";
+    const { installed } = await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: "delayed-worker-parent",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    for (const id of [taskId, "work/peer"])
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id,
+          parentId: "operations",
+          executor: "publisher",
+          outcome: "Publish feedback",
+          acceptance: ["Publication is retained without an echo"],
+        },
+      });
+    const settledAtRelay: boolean[] = [];
+    const woken: string[][] = [];
+    bus.subscribeDurableRoute((event) => {
+      if (event.type !== "sample.observed") return;
+      expect(event[EVENT_ROW_ID]).toBeGreaterThan(0);
+      expect((event as unknown as Record<string, unknown>).eventId).toBeUndefined();
+      settledAtRelay.push(
+        acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary === "Worker settled before relay",
+      );
+      const admitted = admitStandaloneCanonicalAppTaskEvent({
+        descriptor: installed[0]!,
+        event,
+        intent: null,
+        targetedTaskId: String((event as AgentEvent & { target: { taskId: string } }).target.taskId),
+      });
+      woken.push(admitted.taskIds);
+      return admitted.delivery;
+    });
+    const execute = createTaskAttemptProcessExecutor({
+      bus,
+      timeoutMs: 10_000,
+      spawnWorker: () =>
+        spawn(
+          process.execPath,
+          [
+            fileURLToPath(new URL("../../../../test/integration/fixtures/task-publication-worker.ts", import.meta.url)),
+            f.root,
+            taskId,
+          ],
+          { stdio: ["ignore", "ignore", "inherit", "ipc"], serialization: "json" },
+        ),
+    });
+    await execute({
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(settledAtRelay).toEqual([true, true, true, true]);
+    expect(woken).toEqual([[], [], ["work/peer"], ["work/peer"]]);
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.acceptedLiveEventIds).toHaveLength(1);
+    expect(config.resourceStore.readTrigger("work/peer")?.events).toHaveLength(1);
+    expect(claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:publisher" }).kind).toBe(
+      "completed",
+    );
+  }, 20_000);
+
+  it.each(
+    ["during execution", "after acceptance", "after restart", "after upgrade"].flatMap((phase) =>
+      ["exact", "intent"].map((route) => ({ phase, route })),
+    ),
+  )(
+    "ignores duplicate Task feedback $phase through $route admission and preserves new input",
+    async ({ phase, route }) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      const taskId = "work/duplicate-feedback";
+      let bus = eventBus();
+      let first: AgentEvent & { [EVENT_ROW_ID]?: number };
+      let calls = 0;
+      const install = async () => {
+        const writer = new DbWriter(persistDir);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        const { installed } = await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          executors: {
+            receiver: async (attempt) => {
+              calls += 1;
+              if (phase === "during execution") {
+                const live: number[][] = [[], []];
+                for (const seen of live)
+                  attempt.onEvent((event, accept) => {
+                    seen.push(Number(event.data.revision));
+                    accept();
+                  });
+                const relay = async (event: AgentEvent, eventId: number) => {
+                  const delivered = new Promise<void>((resolve) => {
+                    const stop = bus.listen(
+                      () => {
+                        stop();
+                        resolve();
+                      },
+                      { types: ["sample.observed"] },
+                    );
+                  });
+                  bus.fanoutPersisted({ ...event }, eventId);
+                  await delivered;
+                };
+                await relay(first, first[EVENT_ROW_ID]!);
+                expect(live).toEqual([[], []]); // Already in the claimed input batch.
+                expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+                if (calls === 1 && route === "exact") {
+                  const fresh = bus.emit({
+                    type: "sample.observed",
+                    source: "fixture",
+                    owner: "app:sample",
+                    target: { appId: "sample", taskId },
+                    data: { revision: 1.5 },
+                  } as AgentEvent);
+                  await relay(fresh, fresh[EVENT_ROW_ID]!);
+                  expect(live).toEqual([[1.5], [1.5]]);
+                }
+              }
+              return { state: "converged", summary: "Feedback handled", facts: ["fixture:handled"] };
+            },
+          },
+          appRegistrySnapshot: {
+            id: "duplicate-feedback",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: definition() }],
+          },
+        });
+        bus.subscribeDurableRoute((event) => {
+          if (event.type !== "sample.observed") return;
+          return admitStandaloneCanonicalAppTaskEvent({
+            descriptor: installed[0]!,
+            event,
+            ...(route === "exact"
+              ? { intent: null, targetedTaskId: taskId }
+              : {
+                  intent: {
+                    id: taskId,
+                    parentId: "operations",
+                    outcome: `Handle revision ${event.data.revision}`,
+                    acceptance: ["Handle each input once"],
+                    executor: "receiver",
+                  },
+                }),
+          }).delivery;
+        });
+      };
+      await install();
+      observeAppTaskIntent(loadedTaskConfig(f), {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          outcome: "Handle feedback",
+          acceptance: ["Handle each input once"],
+          executor: "receiver",
+        },
+      });
+      first = bus.emit({
+        type: "sample.observed",
+        source: "fixture",
+        owner: "app:sample",
+        target: { appId: "sample", taskId },
+        data: { revision: 1 },
+      } as AgentEvent);
+      bus.redeliverPersisted(first, first[EVENT_ROW_ID]!); // Repeat before claim.
+      expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await run();
+      expect(acceptedTaskAttempt(loadedTaskConfig(f), taskId)?.acceptedResult?.summary).toBe("Feedback handled");
+      if (phase === "after restart" || phase === "after upgrade") {
+        if (phase === "after upgrade") {
+          // Version 2 deleted Task-event links on claim/settlement. Preserve
+          // the real accepted attempt and verify startup rebuilds its identity.
+          const db = getDb(persistDir);
+          db.prepare("DELETE FROM app_task_events WHERE app_id = 'sample'").run();
+          db.prepare(
+            "UPDATE app_task_store_meta SET value = '2' WHERE app_id = 'sample' AND key = 'schema_version'",
+          ).run();
+        }
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      }
+      bus.redeliverPersisted(first, first[EVENT_ROW_ID]!);
+      expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+      await run();
+      expect(calls).toBe(1);
+      const changed = bus.emit({
+        type: "sample.observed",
+        source: "fixture",
+        owner: "app:sample",
+        target: { appId: "sample", taskId },
+        data: { revision: 2 },
+      } as AgentEvent);
+      bus.redeliverPersisted(first, first[EVENT_ROW_ID]!); // An older repeat cannot replace new input.
+      expect(
+        loadedTaskConfig(f)
+          .resourceStore.readTrigger(taskId)
+          ?.events?.map(({ event }) => event.eventId),
+      ).toEqual([changed[EVENT_ROW_ID]]);
+      await run();
+      expect(calls).toBe(2);
+      expect(loadedTaskConfig(f).resourceStore.readTrigger(taskId)).toBeNull();
+      if (route === "intent")
+        expect(loadedTaskConfig(f).resourceStore.readTask(taskId)?.spec.outcome).toBe("Handle revision 2");
+    },
+  );
+
+  it.each(["execution failure", "invalid result", "external input", "superseded"] as const)(
+    "preserves other consumers and recovery after self-publication with %s",
+    async (scenario) => {
+      setSystemTime(Date.now());
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let calls = 0;
+      let ownFact = 0;
+      let otherFact = 0;
+      let externalFact = 0;
+      const taskId = "work/publisher";
+      const peerId = "work/consumer";
+      const intent = {
+        id: taskId,
+        parentId: "operations",
+        outcome: "Publish a fact",
+        acceptance: ["Use current facts"],
+        executor: "reviewer",
+      };
+      const install = async () => {
+        const writer = new DbWriter(persistDir);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        const { installed } = await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          executors: {
+            reviewer: async (attempt) => {
+              calls += 1;
+              if (calls > 1) {
+                const ids = attempt.events.items.map(({ eventId }) => eventId);
+                if (scenario === "superseded") expect(attempt.task.generation).toBe(2);
+                else expect(ids).toContain(scenario === "external input" ? externalFact : ownFact);
+                return {
+                  state: "converged",
+                  summary: "Recovered original work",
+                  facts: ["fixture:verified"],
+                };
+              }
+              ownFact = (
+                await attempt.publish("own-fact", {
+                  type: "sample.observed",
+                  target: { appId: "sample", taskId },
+                  data: { state: true },
+                })
+              ).eventId;
+              otherFact = (
+                await attempt.publish("other-fact", {
+                  type: "sample.observed",
+                  target: { appId: "sample", taskId: peerId },
+                  data: { state: true },
+                })
+              ).eventId;
+              if (scenario === "execution failure") throw new Error("Interrupted after publication");
+              if (scenario === "invalid result") return { state: "invalid" } as never;
+              if (scenario === "external input") {
+                // Public producer metadata must never acknowledge new input.
+                externalFact = Number(
+                  bus.emit({
+                    type: "sample.observed",
+                    source: "app-task:sample",
+                    owner: "app:sample",
+                    target: { appId: "sample", taskId },
+                    data: {
+                      state: false,
+                      emission: {
+                        appId: "sample",
+                        taskId,
+                        generation: attempt.task.generation,
+                        localKey: "fake",
+                      },
+                      attemptId: attempt.attemptId,
+                    },
+                  } as AgentEvent)[EVENT_ROW_ID],
+                );
+              } else {
+                observeAppTaskIntent(loadedTaskConfig(f), {
+                  appAgent: "sample-owner",
+                  intent: { ...intent, outcome: "Publish and verify the revised outcome" },
+                });
+              }
+              return { state: "converged", summary: "First result", facts: ["fixture:published"] };
+            },
+          },
+          appRegistrySnapshot: {
+            id: "publication-recovery",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: definition() }],
+          },
+        });
+        bus.subscribeDurableRoute((event) => {
+          if (event.type !== "sample.observed") return;
+          return admitStandaloneCanonicalAppTaskEvent({
+            descriptor: installed[0]!,
+            event,
+            intent: null,
+            targetedTaskId: String((event as AgentEvent & { target: { taskId: string } }).target.taskId),
+          }).delivery;
+        });
+      };
+      await install();
+      let config = loadedTaskConfig(f);
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent });
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...intent, id: peerId } });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      await run();
+      expect(calls).toBe(1);
+      expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
+      expect(config.resourceStore.readTrigger(peerId)?.event.eventId).toBe(otherFact);
+      const pending = config.resourceStore.readTrigger(taskId);
+      if (scenario === "superseded") {
+        expect(config.resourceStore.readTask(taskId)?.metadata.generation).toBe(2);
+      } else {
+        expect(pending?.events?.map(({ event }) => event.eventId)).toContain(
+          scenario === "external input" ? externalFact : ownFact,
+        );
+        if (scenario === "external input")
+          expect(pending?.events?.map(({ event }) => event.eventId)).not.toContain(ownFact);
+      }
+      const retryAt = config.resourceStore.readTask(taskId)?.status.executionRetryAt;
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      config = loadedTaskConfig(f);
+      if (retryAt) setSystemTime(retryAt);
+      await run();
+      expect(calls).toBe(2);
+      expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered original work");
+      expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+      expect(config.resourceStore.readTrigger(peerId)?.event.eventId).toBe(otherFact);
+      expect(
+        getDb(persistDir).prepare("SELECT id FROM events WHERE event_type = 'sample.observed'").all(),
+      ).toHaveLength(scenario === "external input" ? 3 : 2);
+    },
+  );
+
   it("atomically consumes live input incorporated by a registered executor", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -4191,6 +4830,7 @@ describe("canonical App task runtime", () => {
     });
     let calls = 0;
     let sawLiveFeedback = false;
+    let secondListenerSawFeedback = false;
     let wakeFirstAttempt = () => {};
     const firstAttemptReady = new Promise<void>((resolve) => {
       wakeFirstAttempt = resolve;
@@ -4242,6 +4882,9 @@ describe("canonical App task runtime", () => {
                 accept();
                 unsubscribe();
                 resolve();
+              });
+              attempt.onEvent((event) => {
+                if (event.type === "sample.feedback") secondListenerSawFeedback = true;
               });
               wakeFirstAttempt();
             });
@@ -4301,6 +4944,7 @@ describe("canonical App task runtime", () => {
     }
     expect(calls).toBe(1);
     expect(sawLiveFeedback).toBeTrue();
+    expect(secondListenerSawFeedback).toBeTrue();
     expect(published).toHaveLength(1);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })).toMatchObject({
       status: "done",
@@ -6520,7 +7164,7 @@ describe("canonical App task runtime", () => {
         const writer = new DbWriter(f.base.persistDir);
         const sourceBus = eventBus();
         sourceBus.setPersistenceSubscriber(writer.handler);
-        await installCoreTaskRuntimes(f.base);
+        const { installed } = await installCoreTaskRuntimes(f.base);
         f.observe("external-wait");
         f.terminalResult.state = "waiting";
         delete f.terminalResult.response;
@@ -6547,6 +7191,17 @@ describe("canonical App task runtime", () => {
         await requeueSavedAttempt(f, claim, route);
         await f.run(claim.taskId);
         expect(readTaskSnapshot(f.config).conditions?.["proof-ready"]?.status.state).toBe("true");
+        // A route selected before recovery may deliver after journal readback.
+        for (let delivery = 0; delivery < 2; delivery++) {
+          admitStandaloneCanonicalAppTaskEvent({
+            descriptor: installed[0]!,
+            event: fact,
+            intent: null,
+            conditionTaskIds: [claim.taskId],
+          });
+          expect(f.config.resourceStore.readTrigger(claim.taskId)?.events).toHaveLength(1);
+        }
+        expect(f.config.resourceStore.readTrigger(claim.taskId)?.event.eventId).toBe(fact[EVENT_ROW_ID]);
         expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
         expect(f.agentCalls()).toBe(1);
         f.terminalResult.state = "converged";
@@ -6555,11 +7210,74 @@ describe("canonical App task runtime", () => {
         expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.acceptedResult?.result).toEqual(f.payload);
         expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
         expect(f.agentCalls()).toBe(2);
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        closeDb(f.base.persistDir);
+        const reopened = await installCoreTaskRuntimes(f.base);
+        f.config = appTaskContext({
+          ...f.config,
+          resourceStore: AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!,
+        });
         await recoverInstalledAppTasks(f.base.bus);
+        admitStandaloneCanonicalAppTaskEvent({
+          descriptor: reopened.installed[0]!,
+          event: fact,
+          intent: null,
+          conditionTaskIds: [claim.taskId],
+        });
+        expect(f.config.resourceStore.readTrigger(claim.taskId)).toBeNull();
         await f.run(claim.taskId);
         expect(f.agentCalls()).toBe(2);
       },
     );
+
+    it("reads a consumed journal fact for a newly declared Condition after restart", async () => {
+      const f = setup();
+      const sourceBus = eventBus();
+      sourceBus.setPersistenceSubscriber(new DbWriter(f.base.persistDir).handler);
+      await installCoreTaskRuntimes(f.base);
+      f.observe("readback");
+      f.terminalResult.state = "waiting";
+      delete f.terminalResult.response;
+      const condition = {
+        id: "first-proof",
+        type: "sample.proof.ready",
+        subject: "id:proof-1",
+        expected: "ready",
+        owner: "app:sample",
+        reviewAfterMs: 60_000,
+      };
+      f.terminalResult.conditions = [condition];
+      const fact = sourceBus.emit({
+        type: "sample.proof.ready",
+        source: "fixture",
+        owner: "app:sample",
+        target: { project: "sample" },
+        data: { project: "sample", id: "proof-1", status: "ready" },
+      } as AgentEvent);
+      await f.run("readback");
+      expect(readTaskSnapshot(f.config).conditions?.["first-proof"]?.status.state).toBe("true");
+      await closeInstalledAppTaskRuntimes(f.base.bus);
+      closeDb(f.base.persistDir);
+      await installCoreTaskRuntimes(f.base);
+      f.config = appTaskContext({
+        ...f.config,
+        resourceStore: AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!,
+      });
+      // Consuming the first wake does not erase evidence for a different wait.
+      f.terminalResult.conditions = [{ ...condition, id: "second-proof" }];
+      await f.run("readback");
+      expect(f.agentCalls()).toBe(2);
+      expect(readTaskSnapshot(f.config).conditions?.["second-proof"]?.status.state).toBe("true");
+      expect(f.config.resourceStore.readTrigger("readback")?.events).toHaveLength(1);
+      expect(f.config.resourceStore.readTrigger("readback")?.event.eventId).toBe(fact[EVENT_ROW_ID]);
+      f.terminalResult.state = "converged";
+      delete f.terminalResult.conditions;
+      await f.run("readback");
+      await recoverInstalledAppTasks(f.base.bus);
+      await f.run("readback");
+      expect(f.agentCalls()).toBe(3);
+      expect(f.config.resourceStore.readTrigger("readback")).toBeNull();
+    });
 
     it.each([
       ["converged", "drain"],

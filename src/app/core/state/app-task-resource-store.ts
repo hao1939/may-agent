@@ -1,8 +1,11 @@
 import { storedResultFacts } from "./result-facts.js";
-import { createHash } from "node:crypto";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as transaction } from "../../../lib/db/transaction.js";
-import { advanceTaskResourceRevision, ensureTaskResourceSchema } from "../../../lib/db/task-resource-schema.js";
+import {
+  advanceTaskResourceRevision,
+  backfillTaskEventReceipts,
+  ensureTaskResourceSchema,
+} from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
 import { pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
@@ -21,7 +24,7 @@ import {
   type TaskTree,
 } from "../tasks/app-task-store.js";
 
-const TASK_RESOURCE_SCHEMA_VERSION = 2;
+const TASK_RESOURCE_SCHEMA_VERSION = 3;
 const MAX_CONTEXT_ATTEMPTS_PER_TASK = 16;
 
 // Read projection only: new input can await a claim while the last accepted
@@ -100,10 +103,10 @@ function parseTaskCondition(value: unknown): AppTaskCondition {
   return condition;
 }
 
-function eventKey(event: Record<string, unknown>): string {
+function eventKey(event: Record<string, unknown>): string | null {
   const eventId = Number(event.eventId);
   if (Number.isSafeInteger(eventId) && eventId > 0) return `event:${eventId}`;
-  return `sha256:${createHash("sha256").update(json(event)).digest("hex")}`;
+  return null;
 }
 
 function taskChanged(resource: AppTaskResource, trigger: AppTaskTrigger | undefined): boolean {
@@ -374,6 +377,8 @@ export class AppTaskResourceStore {
         this.putTask(resource, trigger, ready.has(resource.metadata.id), null);
         for (const entry of trigger?.events ??
           (trigger ? [{ event: trigger.event, observedAt: trigger.observedAt }] : [])) {
+          const key = eventKey(entry.event);
+          if (!key) continue;
           this.db
             .prepare(
               `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
@@ -382,9 +387,9 @@ export class AppTaskResourceStore {
             .run(
               this.appId,
               resource.metadata.id,
-              eventKey(entry.event),
+              key,
               epoch(entry.observedAt) ?? 0,
-              json(entry.event),
+              "{}",
             );
         }
       }
@@ -446,6 +451,7 @@ export class AppTaskResourceStore {
           root_task_id: tree.root_task_id,
         }),
       );
+      backfillTaskEventReceipts(this.db, this.appId);
       this.setMeta("source_revision", sourceRevision);
       this.setMeta("authority", "resources");
       this.setMeta("activated_at", new Date().toISOString());
@@ -564,6 +570,16 @@ export class AppTaskResourceStore {
         FROM app_tasks WHERE app_id = ? AND task_id = ?`)
       .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closed: number } | null;
     return row ? { resource: parseTaskResource(row.resource_json), phase: row.phase, closed: Boolean(row.closed) } : null;
+  }
+
+  hasTaskEvent(taskId: string, event: Record<string, unknown>): boolean {
+    const eventId = Number(event.eventId);
+    if (!Number.isSafeInteger(eventId) || eventId <= 0) return false;
+    return Boolean(
+      this.db
+        .prepare("SELECT 1 FROM app_task_events WHERE app_id = ? AND task_id = ? AND event_key = ?")
+        .get(this.appId, taskId, `event:${eventId}`),
+    );
   }
 
   readTrigger(taskId: string): AppTaskTrigger | null {
@@ -1346,12 +1362,13 @@ export class AppTaskResourceStore {
       }
       for (const write of mutation.tasks ?? []) {
         this.putTask(write.resource, write.trigger, write.ready, write.nextCheckAt ?? null);
-        this.db
-          .prepare("DELETE FROM app_task_events WHERE app_id = ? AND task_id = ?")
-          .run(this.appId, write.resource.metadata.id);
+        // Retain exact receipt identities after claim/settlement. Pending
+        // bodies belong to trigger_json; delivery retries must not become input again.
         const trigger = write.trigger;
         for (const entry of trigger?.events ??
           (trigger ? [{ event: trigger.event, observedAt: trigger.observedAt }] : [])) {
+          const key = eventKey(entry.event);
+          if (!key) continue;
           this.db
             .prepare(
               `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
@@ -1360,9 +1377,9 @@ export class AppTaskResourceStore {
             .run(
               this.appId,
               write.resource.metadata.id,
-              eventKey(entry.event),
+              key,
               epoch(entry.observedAt) ?? 0,
-              json(entry.event),
+              "{}",
             );
         }
       }

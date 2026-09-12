@@ -127,6 +127,57 @@ CREATE INDEX IF NOT EXISTS idx_app_task_admissions_target
     json_extract(admission_json, '$.taskGeneration'));
 `;
 
+/** Rebuild compact delivery identities from retained Task input/attempt evidence. */
+export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
+  db.prepare(`
+    INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
+    SELECT app_id, task_id, 'event:' || event_id, observed_at, '{}'
+    FROM (
+      SELECT a.app_id, a.task_id, a.started_at AS observed_at,
+             json_extract(e.value, '$.event.eventId') AS event_id
+      FROM app_task_attempts a JOIN app_tasks t USING (app_id, task_id)
+      JOIN json_each(a.attempt_json, '$.events') e WHERE a.app_id = ?1
+      UNION ALL
+      SELECT a.app_id, a.task_id, a.started_at, json_extract(a.attempt_json, '$.trigger.eventId')
+      FROM app_task_attempts a JOIN app_tasks t USING (app_id, task_id) WHERE a.app_id = ?1
+      UNION ALL
+      SELECT a.app_id, a.task_id, a.started_at, e.value
+      FROM app_task_attempts a JOIN app_tasks t USING (app_id, task_id)
+      JOIN json_each(a.attempt_json, '$.acceptedResult.acceptedLiveEventIds') e WHERE a.app_id = ?1
+      UNION ALL
+      SELECT t.app_id, t.task_id, t.updated_at, json_extract(e.value, '$.event.eventId')
+      FROM app_tasks t JOIN json_each(t.trigger_json, '$.events') e WHERE t.app_id = ?1
+      UNION ALL
+      SELECT app_id, task_id, updated_at, json_extract(trigger_json, '$.event.eventId')
+      FROM app_tasks WHERE app_id = ?1
+    ) WHERE typeof(event_id) = 'integer' AND event_id > 0 AND event_id <= 9007199254740991
+  `).run(appId);
+  // Synthetic hints have no durable delivery identity and remain coalescible
+  // in the pending trigger, without accumulating lifetime receipt hashes.
+  db.prepare("DELETE FROM app_task_events WHERE app_id = ? AND event_key NOT LIKE 'event:%'").run(appId);
+  // Bodies remain in pending input, attempts and Events under their own retention.
+  db.prepare("UPDATE app_task_events SET event_json = '{}' WHERE app_id = ? AND event_json <> '{}'").run(appId);
+}
+
+function migrateTaskEventReceipts(db: SqliteDb): void {
+  const apps = db.prepare(
+    "SELECT app_id FROM app_task_store_meta WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 3",
+  ).all() as Array<{ app_id: string }>;
+  if (!apps.length) return;
+  db.exec("SAVEPOINT task_event_receipts");
+  try {
+    for (const { app_id: appId } of apps) {
+      backfillTaskEventReceipts(db, appId);
+      db.prepare("UPDATE app_task_store_meta SET value = '3' WHERE app_id = ? AND key = 'schema_version'").run(appId);
+    }
+    db.exec("RELEASE SAVEPOINT task_event_receipts");
+  } catch (error) {
+    db.exec("ROLLBACK TO SAVEPOINT task_event_receipts");
+    db.exec("RELEASE SAVEPOINT task_event_receipts");
+    throw error;
+  }
+}
+
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
   db.exec(APP_INBOX_SCHEMA);
@@ -138,6 +189,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
     .get();
   if (!needsConditionRouteBackfill && !needsRelationBackfill) {
     db.exec(TASK_RESOURCE_SCHEMA);
+    migrateTaskEventReceipts(db);
     return;
   }
   // This helper is used both by the top-level schema transaction and by
@@ -175,6 +227,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
           AND dependency.value <> ''
       `);
     }
+    migrateTaskEventReceipts(db);
     db.exec("RELEASE SAVEPOINT task_resource_schema");
   } catch (error) {
     try {

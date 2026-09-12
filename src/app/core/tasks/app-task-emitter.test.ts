@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js";
+import { createAppTaskEmitter, createAppTaskEvents, subscribeAppTaskPublications } from "./app-task-emitter.js";
 import { renewAppTaskAttemptLease } from "./app-task-reconciler.js";
 import { EVENT_ROW_ID, EVENT_TASK_EMISSION_FENCE, EventBus } from "../events/bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
@@ -258,6 +258,17 @@ describe("AppTaskEmitter", () => {
   it("persists before immediate visibility and deduplicates a stable local key", () => {
     const { db, bus, emitter } = harness();
     const visible: number[] = [];
+    const receipts: number[] = [];
+    const unsubscribe = subscribeAppTaskPublications(
+      bus,
+      {
+        appId: "sample",
+        taskId: "task-1",
+        generation: 3,
+        attemptId: "attempt-1",
+      },
+      (_event, eventId) => receipts.push(eventId),
+    );
     bus.subscribe((event) => {
       if (event.type !== "sample.child.requested") return;
       visible.push(
@@ -271,6 +282,10 @@ describe("AppTaskEmitter", () => {
     expect(first).toBeGreaterThan(0);
     expect(retry).toBe(first);
     expect(visible).toEqual([1]);
+    expect(receipts).toEqual([first, first]);
+    unsubscribe();
+    emitter.emit("child-one", { type: "sample.child.requested", data: { child: "one" } });
+    expect(receipts).toEqual([first, first]);
   });
 
   it("persists a task-owned workflow's first fenced event before any child Agent session", () => {

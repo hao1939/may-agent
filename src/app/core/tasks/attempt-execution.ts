@@ -1,3 +1,4 @@
+import { readTaskEventTarget } from "../events/task-target.js";
 import {
   taskAgentResultSchema as appTaskAgentResultSchema,
   type TaskAttempt,
@@ -14,7 +15,12 @@ import {
   readAppTaskReconciliationEvents,
   readAppTaskWaitPromptContext,
 } from "./app-task-context.js";
-import { createAppTaskEvents, type AppTaskEmission, type AppTaskEvents } from "./app-task-emitter.js";
+import {
+  createAppTaskEvents,
+  subscribeAppTaskPublications,
+  type AppTaskEmission,
+  type AppTaskEvents,
+} from "./app-task-emitter.js";
 import { type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import {
   APP_TASK_ATTEMPT_LEASE_DURATION_MS,
@@ -157,8 +163,21 @@ function runtimeTaskAttempt(input: {
   });
   const subscriptions = new Set<() => void>();
   const acceptedLiveEventIds = new Set<number>();
+  const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
+  // The exact publication receipt is already known to this attempt, including
+  // retry-safe returns that skip EventBus fan-out. Only valid settlement may
+  // consume it. Tools and executors share the same fenced emitter boundary.
+  const unsubscribePublications = subscribeAppTaskPublications(
+    opts.bus,
+    { appId: descriptor.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+    (publication, eventId) => {
+      const target = readTaskEventTarget((publication as AgentEvent & { target?: unknown }).target);
+      if (!closed && target?.appId === descriptor.id && target.taskId === claim.taskId)
+        selfPublishedEventIds.add(eventId);
+    },
+  );
   const unsubscribeCancellation = events.onEvent((incoming) => {
     if (incoming.type !== "app.task.cancelled" && incoming.type !== "app.task.attempt.stopped") return;
     const cancellation =
@@ -216,8 +235,26 @@ function runtimeTaskAttempt(input: {
       },
       onEvent(listener) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
+        // Each listener receives new input once; registering two listeners
+        // must not let one listener's acknowledgment hide it from the other.
+        const seenEventIds = new Set(
+          claim.events.map(({ event }) => Number(event.eventId)).filter((id) => Number.isSafeInteger(id) && id > 0),
+        );
         const unsubscribe = events.onEvent((incoming) => {
           const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
+          if (closed || selfPublishedEventIds.has(eventId) || seenEventIds.has(eventId)) return;
+          if (Number.isSafeInteger(eventId) && eventId > 0) {
+            if (descriptor.resourceStore.hasTaskEvent(claim.taskId, { eventId })) {
+              const pending = descriptor.resourceStore.readTrigger(claim.taskId);
+              if (
+                !(pending?.events ?? (pending ? [{ event: pending.event }] : [])).some(
+                  ({ event }) => Number(event.eventId) === eventId,
+                )
+              )
+                return;
+            }
+            seenEventIds.add(eventId);
+          }
           listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
             if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
             acceptedLiveEventIds.add(eventId);
@@ -234,10 +271,12 @@ function runtimeTaskAttempt(input: {
         return stop;
       },
     },
-    acceptedLiveEventIds: () => [...acceptedLiveEventIds].sort((left, right) => left - right),
+    acceptedLiveEventIds: () =>
+      [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right),
     close() {
       if (closed) return;
       closed = true;
+      unsubscribePublications();
       unsubscribeCancellation();
       for (const unsubscribe of [...subscriptions]) unsubscribe();
     },
