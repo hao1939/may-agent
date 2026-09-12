@@ -615,6 +615,22 @@ describe("source-query metric measurement", () => {
     expect(existsSync(marker)).toBe(false);
   });
 
+  it("preserves legacy sample values even when an extra field is named samples", async () => {
+    const metrics = createMetricService({ getDb: () => getDb(persistDir) });
+    const ids = ["legacy.extra-number", "legacy.extra-map"];
+    for (const [index, id] of ids.entries()) {
+      const sample = { value: 7, samples: index === 0 ? 10 : { [id]: 99 } };
+      metrics.define({
+        id, name: id, type: "gauge", owner: "fixture",
+        sourceCommand: `printf '%s' '${JSON.stringify(sample)}'`,
+      });
+    }
+    const result = await measureSourceMetrics({ bus, persistDir, isDue: row => ids.includes(row.id) });
+    expect(result.failures).toEqual([]);
+    expect(result.measured).toHaveLength(2);
+    for (const id of ids) expect(metrics.get(id)?.observation?.value).toBe(7);
+  });
+
   it("uses measureInterval as a lightweight minimum cadence and allows an explicit forced sample", async () => {
     const db = getDb(persistDir);
     db.run(

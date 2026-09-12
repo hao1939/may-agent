@@ -102,6 +102,9 @@ function parseCommandOutput(output: string, metricId: string): CommandSample | n
   if (!trimmed) return null;
   try {
     const parsed = JSON.parse(trimmed);
+    // Preserve the single-sample contract, including ignored extension fields.
+    const single = commandSample(parsed);
+    if (single) return single;
     // A producer may report several observations in one invocation. The Host
     // selects only this declared metric; missing entries are not zero samples.
     if (parsed && typeof parsed === "object" && Object.hasOwn(parsed, "samples")) {
@@ -110,7 +113,7 @@ function parseCommandOutput(output: string, metricId: string): CommandSample | n
         ? commandSample(samples[metricId])
         : null;
     }
-    return commandSample(parsed);
+    return null;
   } catch {
     const value = Number(trimmed);
     return Number.isFinite(value) ? { value } : null;
