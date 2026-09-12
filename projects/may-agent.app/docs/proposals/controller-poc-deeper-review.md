@@ -395,7 +395,7 @@ more App code, model attempts or human intervention also has a cost.
 
 | Choice | Value gained | Capability reduced or cost added | Current judgment |
 | --- | --- | --- | --- |
-| Typed App input replaces raw worker creation | One assignment route; the App owns specification and executor selection; fewer creation and replay rules | Workers cannot directly invent arbitrary child specifications or select executors. Work outside the App's input mapping may need an App change. Evaluation and Scout still need migration. | Promising for the core, conditional on ordinary work fitting simple App inputs. Nested delegation is proved; broad ad hoc delegation coverage and migration cost are not. |
+| Typed App input replaces raw worker creation | One assignment route; the App owns specification and executor selection; fewer creation and replay rules | Workers cannot directly invent arbitrary child specifications or select executors. Work outside the App's input mapping may need an App change. Evaluation and Scout still need migration. | Nested delegation and an unfamiliar manifest audit use the existing general goal input. Broad ad hoc delegation coverage and migration cost remain unproved. |
 | Remove automatic retry/progress relays | Fewer redundant owner attempts and notification rules | Owners can learn about failure later through a scheduled review, explicit input or inspection. Backoff reduces retry frequency but does not bound lifetime spending. | Quiet routine waits are useful. Measure intervention delay and extra retry spending before treating failure-feedback convergence as complete. |
 | Redo an unaccepted attempt instead of accepting a saved session result | One acceptance authority and less recovery state | Extra compute, delay and possible repeated external effects | Suitable where redo or checking the existing effect is affordable. Process tests prove exercised cases; they do not make arbitrary external actions safe to repeat. |
 | Combine exact input answers and ongoing Topic/child observations | Potentially one correlation and return mechanism | A once-only answer cannot by itself replace later outcomes, failure reports or closure updates that matter to an owner | Keep useful follow-through in the common path. Retire ongoing observation only when its scenario's value does not justify the cost; no such blanket retirement is justified yet. |
@@ -415,15 +415,89 @@ expected lifetime. For an uncertain experiment, immediate usefulness and learnin
 can justify affordable temporary inefficiency. High-consequence failures still
 need protection even when their average expected cost looks small.
 
-The automated scenarios and earlier live trials support retained abilities;
-there is no controlled before/after measurement of total maintenance effort,
-model cost or human supervision. The 273-line reduction is a concrete deletion,
-not an estimate of those savings. The next PoC should compare the same useful
-work through the common path, including an unfamiliar assignment, a worker that
-needs owner help, continued discussion and a later result or closure. Observe
-whether it succeeds, agent understanding, manual intervention, model work and
-time to a useful response. Reject or revise the simplification if displaced
-work and lost capability outweigh its recurring benefit.
+The automated scenarios and live trials support retained abilities; there is
+no controlled before/after measurement of total maintenance effort, model cost
+or human supervision. The 273-line reduction is a concrete deletion, not an
+estimate of those savings. The [capability probes](#capability-and-owner-help-probes)
+exercise unfamiliar work and owner help, including a failed run and the fix it
+motivated. Reject or revise a simplification if displaced work and lost
+capability outweigh its recurring benefit.
+
+## Capability and owner-help probes
+
+These trials use the same generic May `goal` input, real worker processes,
+temporary SQLite, and `gpt-5.6-sol`. The source supplies synthetic measurements
+or a release manifest. The App declaration and role text are copied unchanged;
+the experiment selects the model and restricts tools to coding and finish.
+The human asks a separate discussion question while the source is held, then
+checks the result again after reopening the runtime and database.
+
+| Trial | Host / App revision | Outcome | Attempts / model responses | Elapsed | Reported tokens |
+| --- | --- | --- | --- | --- | --- |
+| Fresh natural measurement ask | `94864da1` / `c3d23a56b6` | Delegated without an explicit background-work instruction; correct 0.92 versus 0.90 result, discussion and recall | 5 / 6 | 41.7 s | 54,930 |
+| Unfamiliar manifest audit | `91b7e210` / `c3d23a56b6` | Existing App input handled 3,200 total compressed bytes and the missing `parser` license; discussion and recall preserved | 5 / 7 | 49.2 s | 64,845 |
+| Source requires human repair, before polish | `91b7e210` / `c3d23a56b6` | Failed: help remained in a wait; exhausted the experiment allowance without notifying the human | 12 / 28 | 236.3 s | 245,125 |
+| Same repair scenario, after polish | `3f6c79d6` / `1ec74e3760` | Human informed; original Request and worker retained; recovered 0.92 result and recall | 8 / 11 | 88.0 s | 109,363 |
+| Repair with a below-threshold sample | `3f6c79d6` / `1ec74e3760` | Same path; correctly judged 0.78 below 0.90 after repair, and recalled the limitation | 8 / 12 | 80.9 s | 118,228 |
+
+The first two trials each read the source once. The failed repair trial made
+12 failed HTTP reads. Its thirteenth dispatch request was rejected by the
+experiment limit before another worker started. Those three recorded zero tool
+execution errors: a command can complete successfully while the HTTP source
+reports failure. Provider token totals include reported cache reads; they are
+observations, not verified charges or estimates of production spending.
+
+After polish, owner feedback arrived **25.6 seconds** after the first failed
+response, following one failed read; the worker then made one successful read.
+The below-threshold run used unchanged source/guidance, reported the need after
+**23.6 seconds**, and made three failed reads before one successful read. It
+also attempted to read an absent optional feedback file, recorded one tool error,
+and continued correctly. This is a small recoverable cost of the reduced App
+fixture, not a failed result or evidence of faultless tool use.
+
+Both repaired runs required one simulated human restoration plus its ordinary
+message. Their eight attempts include failure feedback, the repair discussion,
+the worker retry, final return and restart recall. The fixture restored the source
+as soon as useful feedback arrived; it does not measure real human response time
+or prolonged-outage spending. These are single trials, not a reliability rate or
+a controlled estimate of savings from the overall refactor.
+
+The failed run exposed two different problems:
+
+- **Meaning:** the worker correctly diagnosed the unavailable source but put
+  the human's needed action in a new Condition. That records a wait; it does
+  not notify its owner. Waiting outcomes deliberately do not trigger ordinary
+  caller attempts. May's guidance now uses an honest failure report when a
+  missing prerequisite prevents assigned work. The Host protocol explains
+  what a Condition and its review timer actually do.
+- **Mechanics:** after the first timed review, the agent followed the rule to
+  omit unchanged waits. That preserved the Condition but left its review date
+  overdue, causing immediate further attempts. Settlement now resolves retained
+  or supplied waits into one list and uses the existing scheduling path for both.
+  It renews due reviews, preserves future deadlines and never asserts that the
+  awaited fact became true. No new queue, state field or retry mechanism is added.
+
+The regression first failed against the old implementation. Both forms of wait
+now pass repeated review and restart checks; independent future waits retain
+their dates and satisfied waits are removed. The focused reconciler, checkpoint
+and protocol run passes **191 tests**. This fixes a real recurring execution
+cost while removing a separate settlement branch.
+
+Full Host `bun run ci` at **`3f6c79d6`** passes: **2,851 passed,
+3 installation-dependent skips, 0 failures**, across 290 files in 138 seconds.
+Paired App **`29dc9e2b94`** passes 28 May/Host Operations routing, schema and
+workflow checks against that SDK. It adds the guidance used in the live trials
+and removes a stale assertion for exact Conversation-specific wording; the
+role text and App mapping match the live **`1ec74e3760`** revision.
+
+The owner-repair gate restores the source only after the human-facing Task
+handles failure evidence and explains the needed help. The fixture then sends
+ordinary human input and requires the original Request, same worker, exact
+result and restart recall. This proves Topic-linked feedback only. A nested
+typed caller still receives an exact answer or closure, but no automatic failure
+report; its wait context supplies correlation/status without failure evidence.
+Do not claim that scheduled review alone gives that caller enough information,
+or retire the remaining return paths before this gap has a demonstrated solution.
 
 ## Next deletion, in order
 

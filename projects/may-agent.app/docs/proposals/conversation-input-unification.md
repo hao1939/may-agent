@@ -250,11 +250,26 @@ intervene. No new recovery App, escalation ladder or metric service is required.
 
 Retry means **reconcile current state again**, not blindly replay the failed
 commands. Cheap safe work may be redone. Inspect durable evidence or receipts
-before repeating an effect whose duplication matters. When an action lacks
-permission or a prerequisite, keep that action waiting, report the need and
-recheck appropriately; neither a timer nor persistence grants new authority.
+before repeating an effect whose duplication matters. When a missing permission
+or prerequisite prevents assigned work, report the unsuccessful attempt and the
+help needed from its owner; neither a timer nor persistence grants new authority.
 An invalid model result is failure evidence for correction, not a reason to
 invent a domain blocker or discard the assignment.
+
+A **wait** is for existing work or a fact with a known return route. Recording a
+Condition, including its `requestedAction`, does not send a human a question or
+perform that action. Its review timer only asks the worker to reconsider. May's
+App guidance uses `stopped` for a missing prerequisite that prevents progress;
+this preserves an honest failure report and paced continuation, not closure.
+Topic-linked reports can reach the human today; nested typed failure feedback is
+still a [return-path gap](controller-poc-deeper-review.md#next-deletion-in-order).
+
+Code retains unchanged waits when an agent omits them. An accepted review must
+renew an overdue checkpoint identically whether the wait was supplied again or
+retained, without changing the awaited fact or postponing a future deadline.
+The [capability probes](controller-poc-deeper-review.md#capability-and-owner-help-probes)
+found and reproduced both the hidden help request and an immediate-repeat bug
+in retained wait scheduling.
 
 The acceptance boundary is the Task settlement transaction. A finished agent
 session without a committed Task result is retained evidence; after ownership
