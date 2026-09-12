@@ -1,7 +1,7 @@
 # Review Host scripts, preserve reusable tools and retire completed PoCs
 
-**Status:** Accepted for implementation, September 12, 2026. Isolated source
-candidate prepared; not merged or deployed. Removing `scripts/poc/` is a firm
+**Status:** Accepted for implementation, September 12, 2026. Reviewed source
+candidate published in Host #174; not merged or deployed. Removing `scripts/poc/` is a firm
 completion requirement, not an optional follow-up.
 **Original inventory:** `8026aff97585edd7f728fa4ce360fdde71bc740a` (#164): 48 files,
 21 in `poc/` and 27 directly under `scripts/`.
@@ -341,14 +341,18 @@ and verifies exact source index/routes/assets instead of a stale installed
 copy. It first reproduced the installed-index mismatch with the old HTTP
 adapter. The default web-only command is also exercised against its installed
 fixture. Both leave installed assets and build staging untouched. The 14
-focused build/command/static-route tests pass; full revised-head CI follows.
+focused build/command/static-route tests pass; full revised-head CI is recorded below.
 
 The fix is committed and pushed as `e9d3e2c5`. The review thread has its
 reproduction/fix reply and is resolved; Copilot was requested again. Both
 upgrade-verification tools also pass on this clean head, with the same four
-scripted-provider calls and no real-model calls. Updated hosted checks run in
-[34701835700](https://github.com/hao1939/may-agent/actions/runs/34701835700);
-the candidate remains draft while checks and review finish.
+scripted-provider calls and no real-model calls. Updated hosted checks pass in
+[34701835700](https://github.com/hao1939/may-agent/actions/runs/34701835700):
+Quality 2m45s and Container 1m29s. Full local CI on the final code passes
+**2,919 tests, three existing installation-only skips, zero failures** (191.45 s).
+Fresh Copilot review at `e9d3e2c5` reports zero new comments; all three inline
+threads are resolved. #174 is now **ready for review**, not draft. Merge and
+deployment remain separate decisions; no installation state was changed.
 
 The retirement review is [Host #174](https://github.com/hao1939/may-agent/pull/174),
 initial head `b83873c6e63ec4df3448cb2b3d408549e2491154`, stacked on #172. It includes
