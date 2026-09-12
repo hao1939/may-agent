@@ -2,7 +2,6 @@ import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
 import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 import type { AppTaskInputWait, AppTaskResource, AppTaskTriggerEvent } from "./app-task-state.js";
-import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 import { matchesAppTaskConditionEvidence } from "./app-task-condition-tracker.js";
 
 export function taskInputAdmissionKeys(
@@ -44,7 +43,6 @@ export function retainTaskInputWait(
 
 /** Only evidence from an input's own saved wait can continue it in another attempt. */
 export function continuedTaskInputKeys(
-  config: AppTaskContext,
   tree: TaskTree,
   taskId: string,
   events: readonly AppTaskTriggerEvent[],
@@ -52,23 +50,6 @@ export function continuedTaskInputKeys(
 ): string[] {
   const task = tree.resources?.[taskId];
   if (!task?.status.inputWaits) return [];
-  const children = new Set<string>();
-  for (const { event } of events) {
-    const input = canonicalAppEvent(event as AgentEvent);
-    if (input.type !== "project.task.child-transitioned" || input.source !== APP_TASK_RECOVERY_OWNER) continue;
-    const childId = input.data.childTaskId;
-    if (typeof childId !== "string") continue;
-    const child = tree.resources?.[childId];
-    if (child?.spec.parentId !== taskId) continue;
-    if (typeof input.data.resultAttemptId === "string") {
-      const attempt = config.resourceStore.readAttempt(input.data.resultAttemptId);
-      if (attempt?.taskId !== childId || !attempt.acceptedResult) continue;
-      children.add(JSON.stringify([childId, attempt.taskGeneration]));
-    } else {
-      // Summary-only failure/closure wakes ask the owner to judge current child state.
-      children.add(JSON.stringify([childId, child.metadata.generation]));
-    }
-  }
   const matchingConditionIds = (task.status.conditionIds ?? []).filter((id) =>
     events.some(({ event }) => matchesAppTaskConditionEvidence(tree.conditions?.[id], event)),
   );
@@ -80,8 +61,7 @@ export function continuedTaskInputKeys(
   );
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
     wait.taskGeneration === task.metadata.generation &&
-    ((wait.children.length === 0 && wait.conditions.length === 0 && events.length > 0) ||
-      wait.children.some(({ id, generation }) => children.has(JSON.stringify([id, generation]))) ||
+    ((wait.conditions.length === 0 && events.length > 0) ||
       wait.conditions.some(({ id, generation }) => conditions.get(id) === generation))
       ? [key]
       : [],

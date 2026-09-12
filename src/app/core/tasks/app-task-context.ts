@@ -10,7 +10,6 @@ import type { AppTaskCondition } from "./app-task-state.js";
 import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
-import { APP_TASK_RECOVERY_OWNER } from "./session-binding.js";
 import type { AppTaskContext } from "./app-task-store.js";
 import { continuedTaskInputKeys } from "./app-task-inputs.js";
 type TaskReconciliationEvents = TaskAttempt["events"];
@@ -57,31 +56,16 @@ export function readAppTaskReconciliationEvents(
         ? [{ observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) }] : [];
     });
   }
-  for (const item of projected.items) {
-    if (item.event.type !== "project.task.child-transitioned" || item.event.source !== APP_TASK_RECOVERY_OWNER) continue;
-    const data: Record<string, unknown> = { ...item.event.data };
-    if (typeof data.resultAttemptId !== "string") continue; // Historical summary-only notification.
-    const attempt = store.readAttempt(data.resultAttemptId);
-    const child = typeof data.childTaskId === "string" ? store.readTask(data.childTaskId) : null;
-    if (attempt?.taskId === data.childTaskId && child?.spec.parentId === claim.taskId && attempt?.acceptedResult) {
-      data.acceptedResult = structuredClone(attempt.acceptedResult);
-    } else {
-      // A notification is a hint, never a substitute for accepted scoped evidence.
-      delete data.acceptedResult;
-      data.resultUnavailable = "The referenced accepted child result is unavailable in this Task's scope.";
-    }
-    item.event = Object.freeze({ ...item.event, data: Object.freeze(data) });
-  }
   return projected;
 }
 
-/** Live feedback carries the same original ask and accepted child evidence as a later attempt. */
+/** Live feedback carries the same original ask and accepted dependency evidence as a later attempt. */
 export function readAppTaskLiveEvent(config: AppTaskContext, taskId: string, event: AgentEvent) {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const events = [{ event: event as Record<string, unknown>, observedAt: new Date().toISOString() }];
   const projected = readAppTaskReconciliationEvents(config.resourceStore, {
     taskId, events, eventsTruncated: false,
-    continuedInputKeys: continuedTaskInputKeys(config, tree, taskId, events),
+    continuedInputKeys: continuedTaskInputKeys(tree, taskId, events),
   });
   const incoming = projected.items[0]!.event;
   const data = { ...incoming.data };

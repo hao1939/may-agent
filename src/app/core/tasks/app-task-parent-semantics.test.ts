@@ -5,13 +5,11 @@ import { join } from "node:path";
 import {
   claimObservedAppTask,
   completeAppTask,
+  cancelAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
   markAppTaskAttention,
-  readAppTaskIntent,
   readAppTaskTrigger,
-  recordAppTaskTrigger,
-  releaseStaleAppTaskResult,
   appTaskContext,
 } from "./app-task-reconciler.ts";
 import { appTaskTestContext } from "./app-task-test-support.js";
@@ -90,139 +88,40 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-describe("App task parent semantics", () => {
-  it("durably wakes an executable parent when its child completes", () => {
+describe("Task hierarchy is context, not a return protocol", () => {
+  it.each(["answer", "failure", "closure"] as const)("does not wake a quiet structural parent on child %s", (kind) => {
     const config = fixture();
-    expect(listRunnableAppTaskIds(config)).toEqual(["child"]);
-    const result = completeAppTask(config, claimChild(config), {
-      summary: "child complete",
-      evidence: ["proof"],
-    });
-
-    expect(result).toMatchObject({ status: "applied", dependentTaskIds: ["parent"] });
-    expect(readAppTaskTrigger(config, "parent")).toMatchObject({
-      type: "project.task.child-transitioned",
-      taskId: "parent",
-      childTaskId: "child",
-      disposition: "converged",
-    });
-    expect(readAppTaskIntent(config, "parent")).not.toBeNull();
-    expect(listRunnableAppTaskIds(config)).toEqual(["parent"]);
-  });
-
-  it("releases the parent attempt when it explicitly waits for child evidence", () => {
-    const config = fixture();
-    recordAppTaskTrigger(config, "parent", {
-      type: "project.task.tick",
-      data: { taskId: "parent", reason: "review-live-child" },
-    });
-    const parentClaim = claimObservedAppTask(config, {
-      taskId: "parent",
-      appAgent: "app-owner",
-      handler: "agent",
-      reason: "test",
-    });
-    if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);
-
-    expect(
-      deferAppTask(config, parentClaim, {
-        disposition: "waiting",
-        summary: "review identified required child work",
-        evidence: ["task:child remains pending"],
-      }),
-    ).toMatchObject({ status: "applied" });
-    expect(readAppTaskIntent(config, "parent")).not.toBeNull();
-    const parentStatus = readTaskSnapshot(config).resources?.parent?.status;
-    expect(parentStatus).toMatchObject({ phase: "waiting" });
-    expect(parentStatus).not.toHaveProperty("currentAttemptId");
-    expect(listRunnableAppTaskIds(config)).toEqual(["child"]);
-
-    completeAppTask(config, claimChild(config), {
-      summary: "required child complete",
-      evidence: ["artifact:repair", "test:regression", "metric:remeasured"],
-    });
-    expect(readAppTaskTrigger(config, "parent")).toMatchObject({
-      type: "project.task.child-transitioned",
-      childTaskId: "child",
-      disposition: "converged",
-    });
-    expect(listRunnableAppTaskIds(config)).toEqual(["parent"]);
-  });
-
-  it("retries a parent when its child completes while the parent is deciding to wait", () => {
-    const config = fixture();
-    recordAppTaskTrigger(config, "parent", {
-      type: "project.task.tick",
-      data: { taskId: "parent", reason: "review-live-child" },
-    });
-    const parentClaim = claimObservedAppTask(config, {
-      taskId: "parent",
-      appAgent: "app-owner",
-      handler: "agent",
-      reason: "test",
-    });
-    if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);
-
-    completeAppTask(config, claimChild(config), {
-      summary: "child completed while parent was running",
-      evidence: ["proof"],
-    });
-
-    expect(() =>
-      deferAppTask(config, parentClaim, {
-        disposition: "waiting",
-        summary: "waiting on the child observed at attempt start",
-        evidence: ["child was running when reviewed"],
-      }),
-    ).toThrow("Handler action for parent is stale");
-
-    expect(readAppTaskTrigger(config, "parent")).toMatchObject({
-      type: "project.task.child-transitioned",
-      childTaskId: "child",
-      disposition: "converged",
-    });
-    expect(releaseStaleAppTaskResult(config, parentClaim, "Child changed while parent was reconciling")).toMatchObject({
-      status: "released",
-    });
-    expect(listRunnableAppTaskIds(config)).toEqual(["parent"]);
-  });
-
-  it("does not wake a parent merely because its child starts an external wait", () => {
-    const config = fixture();
-    const result = deferAppTask(config, claimChild(config), {
-      disposition: "waiting",
-      summary: "waiting for exact child evidence",
-      evidence: ["wait registered"],
-      conditions: [
-        {
-          id: "child-proof",
-          type: "sample.child.observed",
-          subject: "task:child",
-          expected: "done",
-          owner: "app:sample-observer",
-          reviewAfterMs: 60_000,
-        },
-      ],
-    });
-
-    expect(result).toMatchObject({ status: "applied", reconcileTaskIds: [] });
+    const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
+    if (parent.kind !== "claimed") throw new Error("Structural children must not gate a claim");
+    completeAppTask(config, parent, { summary: "No input needs handling" });
+    const child = claimChild(config);
+    if (kind === "answer") completeAppTask(config, child, { summary: "Child answer", evidence: ["proof"] });
+    if (kind === "failure")
+      markAppTaskAttention(config, child, { summary: "Provider failed", reason: "handler-blocked" });
+    if (kind === "closure") {
+      const resource = config.resourceStore.readTask("child")!;
+      cancelAppTask(config, {
+        appId: "sample",
+        taskId: "child",
+        expectedGeneration: resource.metadata.generation,
+        expectedResourceVersion: resource.metadata.resourceVersion,
+        reason: "Owner ended work",
+      });
+    }
     expect(readAppTaskTrigger(config, "parent")).toBeUndefined();
-    expect(readAppTaskIntent(config, "parent")).not.toBeNull();
+    expect(listRunnableAppTaskIds(config)).not.toContain("parent");
+    expect(readTaskSnapshot(config).resources?.child?.spec.parentId).toBe("parent");
+    config.resourceStore.close();
   });
 
-  it("durably wakes an executable parent when its child needs attention", () => {
+  it("rejects waiting without a Condition even when a child is pending", () => {
     const config = fixture();
-    const result = markAppTaskAttention(config, claimChild(config), {
-      summary: "child needs parent judgment",
-      reason: "handler-blocked",
-      evidence: ["child:blocked"],
-    });
-
-    expect(result).toEqual({ status: "applied", parentTaskId: "parent" });
-    expect(readAppTaskTrigger(config, "parent")).toMatchObject({
-      type: "project.task.child-transitioned",
-      childTaskId: "child",
-      disposition: "attention",
-    });
+    const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
+    if (parent.kind !== "claimed") throw new Error("expected parent claim");
+    expect(() => deferAppTask(config, parent, { disposition: "waiting", summary: "Child exists" })).toThrow(
+      "requires at least one exact Condition",
+    );
+    expect(config.resourceStore.readTask("parent")?.status.currentAttemptId).toBe(parent.attemptId);
+    config.resourceStore.close();
   });
 });

@@ -8,8 +8,7 @@ export type AppTaskTriggerEvent = {
 /** Return correlation for admitted input; eligibility stays with existing waits and Events. */
 export type AppTaskInputWait = {
   taskGeneration: number;
-  /** Both lists empty means continue with already pending Task input, without replaying an old event batch. */
-  children: Array<{ id: string; generation: number }>;
+  /** Empty means continue with already pending Task input, without replaying an old event batch. */
   conditions: Array<{ id: string; generation: number }>;
 };
 
@@ -113,7 +112,7 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
-  /** Earlier admitted inputs brought back by this attempt's exact child/Condition evidence. */
+  /** Earlier admitted inputs brought back by this attempt's exact Condition evidence. */
   continuedInputKeys?: string[];
   /** Accepted evidence from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {

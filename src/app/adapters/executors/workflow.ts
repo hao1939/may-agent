@@ -195,6 +195,7 @@ async function executeTaskCapability(
         outcome: taskDetail.outcome,
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},
+        waits: structuredClone(attempt.waits),
         children: {
           ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
           live: input.childContext.live.map(({ phase, ...child }) => ({
@@ -235,7 +236,7 @@ async function executeTaskCapability(
       },
     );
     // A deliberate blocker is not a transport retry, but its diagnostic
-    // context must remain visible to the same Task and its parent. Keep one
+    // context must remain visible to the same Task and its caller. Keep one
     // bounded evidence entry; the full context remains on the workflow run.
     if (result.type === "blocked" && result.context !== undefined) {
       const context = JSON.stringify(result.context);

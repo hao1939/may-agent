@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { appTaskTestContext } from "../tasks/app-task-test-support.js";
 import {
   appTaskContext,
-  observeAppTaskIntent,
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
@@ -23,6 +22,7 @@ import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { admitTaskRequest } from "./inbox.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { migrateOpenTaskState } from "./task-state-cutover.js";
 
 const roots: string[] = [];
@@ -152,57 +152,13 @@ test("quiet maintained outcomes keep their exact attempt, rest across reopen and
   expect(f.store.listRecoveryCandidates().items).toEqual([]);
   expect(f.store.nextDueAt()).toBeNull();
   const version = f.store.revision();
-  expect(f.migrate()).toEqual({ tasks: 0, outcomes: 0, continued: 0, workerStops: 0, inputs: 0 });
+  expect(f.migrate()).toMatchObject({ tasks: 0, outcomes: 0, continued: 0, workerStops: 0, inputs: 0 });
   expect(f.store.revision()).toBe(version);
   f.reopen();
   f.ask("second");
   completeAppTask(f.config, f.claim(), { summary: "Measured second sample", result: { value: 23 } });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:first")).toEqual(first);
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:second")?.result).toEqual({ value: 23 });
-});
-
-test("an old child wait carries its original input through unrelated input and another restart", () => {
-  const f = fixture();
-  f.ask("measurement");
-  observeAppTaskIntent(f.config, {
-    appAgent: "worker",
-    intent: {
-      id: "sampler",
-      parentId: "work",
-      mode: "achieve",
-      outcome: "Measure the sample",
-      acceptance: ["Read instrument"],
-      outputs: [],
-    },
-  });
-  deferAppTask(f.config, f.claim(), {
-    disposition: "waiting",
-    summary: "Await the instrument",
-    evidence: ["instrument:requested"],
-  });
-  f.legacy();
-  expect(f.migrate().outcomes).toBe(1);
-  expect(f.store.readTask("work")?.status.inputWaits?.["task:measurement"]?.children).toEqual([
-    { id: "sampler", generation: 1 },
-  ]);
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:measurement")).toBeNull();
-  f.reopen();
-  f.ask("explanation");
-  completeAppTask(f.config, f.claim(), {
-    summary: "Explained the method",
-    result: { explanation: "Read the instrument once" },
-  });
-  f.reopen();
-  completeAppTask(f.config, f.claim("sampler"), { summary: "Measured", result: { value: 17 } });
-  const returning = f.claim();
-  expect(readAppTaskReconciliationEvents(f.store, returning).continuedInputs?.[0]?.event.data.request).toEqual(
-    f.request("measurement"),
-  );
-  completeAppTask(f.config, returning, { summary: "Here is the measurement", result: { value: 17 } });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:measurement")?.result).toEqual({ value: 17 });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:explanation")?.result).toEqual({
-    explanation: "Read the instrument once",
-  });
 });
 
 test("old Condition waits retain their evidence and review deadline, then continue the matching input", () => {
@@ -448,51 +404,6 @@ test.each(["missing", "different-spec"])(
   },
 );
 
-test("a retained parent wait follows its child after migration reopens that child's worker self-stop", () => {
-  const f = fixture();
-  f.ask("measurement");
-  observeAppTaskIntent(f.config, {
-    appAgent: "worker",
-    intent: {
-      id: "sampler",
-      parentId: "work",
-      mode: "achieve",
-      outcome: "Measure",
-      acceptance: ["Read instrument"],
-      outputs: [],
-    },
-  });
-  deferAppTask(f.config, f.claim(), {
-    disposition: "waiting",
-    summary: "Await child measurement",
-    evidence: ["instrument:requested"],
-  });
-  const child = f.claim("sampler");
-  cancelAppTask(f.config, {
-    appId: "sample",
-    taskId: "sampler",
-    expectedGeneration: 1,
-    expectedResourceVersion: f.store.readTask("sampler")!.metadata.resourceVersion,
-    reason: "Instrument unavailable",
-  });
-  f.legacy((tree) => {
-    tree.cancellations!.sampler!.kind = undefined;
-    tree.cancellations!.sampler!.decidedBy = { kind: "app", agent: child.agent, attemptId: child.attemptId };
-    delete tree.taskTriggers!.work; // The old notification was missed before shutdown.
-  });
-  f.migrate();
-  expect(f.store.readTask("work")?.status.inputWaits?.["task:measurement"]?.children).toEqual([
-    { id: "sampler", generation: 1 },
-  ]);
-  f.reopen();
-  setSystemTime(new Date(f.store.readTask("sampler")!.status.executionRetryAt!));
-  completeAppTask(f.config, f.claim("sampler"), { summary: "Instrument restored", result: { value: 17 } });
-  const returned = f.claim();
-  expect(readAppTaskReconciliationEvents(f.store, returned).continuedInputs?.[0]?.event.data.request).toEqual(
-    f.request("measurement"),
-  );
-});
-
 test("worker-stop conversion is scoped to its App even when another App has the same Task ID", () => {
   const { f } = stoppedFixture();
   const other = AppTaskResourceStore.fromDb(f.store.db, "other");
@@ -506,7 +417,6 @@ test("worker-stop conversion is scoped to its App even when another App has the 
   expect(f.store.isCancelled("work")).toBe(false);
   expect(other.isCancelled("work")).toBe(true);
 });
-
 
 test("offline cutover renames caller waits and retains their identity across replay and restart", () => {
   const f = fixture();
@@ -549,4 +459,82 @@ test("offline cutover restores only the first accepted failure for its exact inp
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:unrelated", "report")).toBeNull();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:first")).toBeNull();
   expect(f.migrate().tasks).toBe(0);
+});
+
+test("offline structural-wait retirement replays the original ask once, preserves answers and closure, and rolls back missing input", () => {
+  const f = fixture();
+  f.ask("original");
+  const old = f.claim();
+  deferAppTask(f.config, old, {
+    disposition: "waiting",
+    summary: "Await old child",
+    conditions: [
+      {
+        id: "temporary",
+        type: "sample.ready",
+        subject: "sample:one",
+        expected: true,
+        owner: "app:sample",
+        reviewAfterMs: 60_000,
+      },
+    ],
+  });
+  f.ask("answered", "answered");
+  completeAppTask(f.config, f.claim("answered"), { summary: "Exact earlier answer", result: { value: 17 } });
+  const answer = readAppTaskAdmissionOutcome(f.config, "answered", "task:answered");
+  f.ask("closed", "closed");
+  const closed = f.store.readTask("closed")!;
+  cancelAppTask(f.config, {
+    appId: "sample",
+    taskId: "closed",
+    expectedGeneration: closed.metadata.generation,
+    expectedResourceVersion: closed.metadata.resourceVersion,
+    reason: "Owner ended responsibility",
+  });
+  const closure = f.store.readCancellation("closed");
+  // This is the persisted shape from the removed protocol; no current API creates it.
+  const resource = f.store.readTask("work")!;
+  resource.status.conditionIds = [];
+  resource.status.inputWaits!["task:original"] = {
+    taskGeneration: resource.metadata.generation,
+    conditions: [],
+    ...{ children: [{ id: "old-child", generation: 1 }] },
+  };
+  expect(
+    f.store.commit({
+      fences: [{ taskId: "work", resourceVersion: resource.metadata.resourceVersion }],
+      tasks: [{ resource, ready: false }],
+    }),
+  ).toBe(true);
+  const saved = f.store.readSnapshot().appTaskAdmissions!["task:original"]!;
+  f.store.commit({
+    fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],
+    admissions: [{ taskId: "task:original", value: { ...saved, inputEvent: undefined } }],
+  });
+  expect(() => migrateTaskCoordination(f.config, { oldRuntimeStopped: true })).toThrow("Original input missing");
+  expect(f.store.readTask("work")?.status.phase).toBe("waiting");
+  f.store.commit({
+    fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],
+    admissions: [{ taskId: "task:original", value: saved }],
+  });
+  expect(() => migrateTaskCoordination(f.config, { oldRuntimeStopped: false })).toThrow("stopped workers");
+  expect(migrateTaskCoordination(f.config, { oldRuntimeStopped: true })).toEqual({
+    tasks: 1,
+    replayedInputs: 1,
+    reviews: 1,
+  });
+  f.reopen();
+  expect(migrateTaskCoordination(f.config, { oldRuntimeStopped: true })).toEqual({
+    tasks: 0,
+    replayedInputs: 0,
+    reviews: 0,
+  });
+  expect(readAppTaskAdmissionOutcome(f.config, "answered", "task:answered")).toEqual(answer);
+  expect(f.store.readCancellation("closed")).toEqual(closure);
+  const review = f.claim();
+  expect(review.events.some(({ event }) => event.type === "app.task.coordination-retired")).toBe(true);
+  expect(JSON.stringify(review.events)).toContain("original");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")).toBeNull();
+  completeAppTask(f.config, review, { summary: "Reviewed retained work and answered", result: { value: 23 } });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ value: 23 });
 });

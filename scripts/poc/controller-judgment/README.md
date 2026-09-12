@@ -262,3 +262,18 @@ same 0.90 minimum. Reports include source revision/dirty state, attempted tools,
 provider usage and correlation checks. This is direct-agent execution under
 the controller, not the full installed managed Conversation runtime. Model
 compliance must be measured separately from deterministic storage tests.
+
+### Explicit coordination follow-up
+
+The structural-wait retirement candidate repeats the live nested `owner-repair`
+scenario with `gpt-5.6-sol` and a 0.78 measurement. It passed in 128.7 seconds
+with 13 Task dispatches and one failed source read. First-blocker feedback
+reached the human in 40.2 seconds; owner repair, the same three Tasks, exact
+answer, Request closure and recall after reopen passed. This is one isolated
+trial, not a latency or reliability guarantee.
+
+The portable runtime matrix also covers live delivery, a lost notification,
+restart and owner cancellation for A → B → C → B → A with intervening discussion.
+The old-source `task-state-cutover.ts` trial now retires an actual implicit child
+wait written by the old Host, restoring its original ask without inventing a
+child answer. Installation adoption remains a separate operational step.

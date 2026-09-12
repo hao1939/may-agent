@@ -114,31 +114,6 @@ describe("accepted Task outcome evidence", () => {
     });
   });
 
-  it("returns each accepted result through a durable parent wake, even when summaries repeat", () => {
-    const { config, intent, claim, reopen } = fixture();
-    observeAppTaskIntent(config, {
-      intent: { ...intent, id: "parent", outcome: "Review measurements" },
-      appAgent: "owner",
-    });
-    observeAppTaskIntent(config, { intent: { ...intent, parentId: "parent" }, appAgent: "owner" });
-    const first = claim();
-    completeAppTask(config, first, measured);
-    recordAppTaskTrigger(config, "work", { type: "sample.measure", eventId: 2, data: {} });
-    const second = claim();
-    completeAppTask(config, second, { ...measured, result: { sample: "second", value: 23 } });
-
-    const restored = reopen();
-    const events = restored.resourceStore.readTrigger("parent")?.events ?? [];
-    const references = events.map(({ event }) => event.resultAttemptId);
-    expect(references).toEqual([first.attemptId, second.attemptId]);
-    // Caller context reads the saved return link, never "latest result" or a model-copied ID.
-    expect(references.map((id) => restored.resourceStore.readAttempt(String(id))?.acceptedResult?.result)).toEqual([
-      measured.result,
-      { sample: "second", value: 23 },
-    ]);
-    expect(restored.resourceStore.readTask("work")).not.toBeNull();
-  });
-
   it("does not label output awaiting a correction as accepted completion", () => {
     const { config, claim } = fixture();
     const old = claim();

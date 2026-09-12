@@ -145,6 +145,11 @@ try {
     reason: "No longer needed",
   });
   const humanClosure = oldStore.readCancellation("cancelled");
+  const structural = oldClaim("structural", "maintain");
+  legacyRuntime.observeAppTaskIntent(old, { appAgent: "worker", intent: {
+    id: "structural-child", parentId: "structural", mode: "achieve", outcome: "Measure independently", acceptance: ["Return evidence"],
+  } });
+  legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
   const inflight = oldClaim("inflight");
   const supervisor = oldClaim("conversation/follow-up", "maintain");
   oldStore.close();
@@ -184,11 +189,12 @@ try {
     linkedInputs: 0,
   });
   assert.deepEqual(migrateOpenTaskState(current, { oldRuntimeStopped: true }), {
-    tasks: 6,
-    outcomes: 2,
+    tasks: 7,
+    outcomes: 3,
     continued: 4,
     workerStops: 1,
-    inputs: 6,
+    inputs: 7,
+    coordination: { tasks: 2, replayedInputs: 1, reviews: 1 },
   });
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "maintained", "maintained")?.result, { value: 23 });
   assert.equal(store.readTask("maintained")?.status.observedAttemptId, maintained.attemptId);
@@ -219,6 +225,7 @@ try {
     continued: 0,
     workerStops: 0,
     inputs: 0,
+    coordination: { tasks: 0, replayedInputs: 0, reviews: 0 },
   });
   assert.equal(
     trackAppTaskConditionEventForTasks(
@@ -247,6 +254,15 @@ try {
     assert.deepEqual(readAppTaskAdmissionOutcome(current, id, id)?.result, { value: 17 });
     assert.equal(store.isCancelled(id), false);
   }
+  assert.equal(readAppTaskAdmissionOutcome(current, "structural", "structural"), null);
+  const review = claimObservedAppTask(current, { taskId: "structural", appAgent: "worker", handler: "agent" });
+  assert.equal(review.kind, "claimed");
+  if (review.kind !== "claimed") throw new Error("Retired wait must return for review");
+  assert(review.events.some(({ event }) => event.type === "app.task.coordination-retired"));
+  assert(JSON.stringify(review.events).includes('"id":"structural"'));
+  assert.equal(store.readTask("structural-child")?.status.phase, "pending");
+  completeAppTask(current, review, { summary: "Owner reviewed the original ask", result: { reviewed: true } });
+  assert.deepEqual(readAppTaskAdmissionOutcome(current, "structural", "structural")?.result, { reviewed: true });
   console.log(
     JSON.stringify({
       status: "passed",
@@ -259,6 +275,7 @@ try {
       continuedTasks: 4,
       humanClosurePreserved: true,
       retiredSupervisor: true,
+      structuralWaitReviewed: true,
     }),
   );
 } finally {
