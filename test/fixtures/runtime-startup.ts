@@ -53,6 +53,7 @@ let publicationPause: {
 let dispatchedSource: taskWorkers.TaskWorkerDefinitionSource | undefined;
 const taskExecution = activationFailure || reportingFailure || noInterfaces;
 let reportingCalls = 0;
+let observerContext: Parameters<typeof inbox.startAppInboxRuntime>[0]["observerContext"];
 const agentNames = activationFailure ? ["may", "aux"] : ["may"];
 const order: string[] = [];
 let runtime: inbox.AppInboxRuntime | undefined;
@@ -207,6 +208,7 @@ mock.module("../../src/app/composition/app-inbox-runtime.js", () => ({
   ...actualInbox,
   startAppInboxRuntime: async (options: Parameters<typeof inbox.startAppInboxRuntime>[0]) => {
     registry = options.registry;
+    observerContext = options.observerContext;
     assert.equal(options.deferStart, true);
     assert.equal(options.schedulesEnabled, schedulesEnabled);
     assert.equal("hostCapacity" in options, false);
@@ -309,6 +311,9 @@ export async function execute(ctx) {
     ...(reportingFailure
       ? {
           reporting: {
+            readHostHealth: async () => {
+              throw new Error("fixture report unavailable");
+            },
             readMetric: async () => {
               throw new Error("fixture report unavailable");
             },
@@ -499,6 +504,10 @@ export async function execute(ctx) {
   }
   if (taskExecution) {
     const { bus, manager } = preparedOptions!;
+    await assert.rejects(
+      observerContext!("fixture", join(root, "projects/fixture.app")).read.hostHealth(),
+      reportingFailure ? /fixture report unavailable/ : /Host health reporting is not installed/,
+    );
     const acceptedState = (taskId: string) => readLoadedAppTaskInputResult({
       bus, appDir: join(root, "projects/fixture.app"), taskId, admissionKey: taskId,
     })?.state;

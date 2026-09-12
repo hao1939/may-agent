@@ -172,10 +172,46 @@ export type AppRead = {
 export type ObserverSnapshot =
   null | boolean | number | string | ObserverSnapshot[] | { [key: string]: ObserverSnapshot };
 
+/** Counts of retained executions, not unique Tasks or accepted App outcomes. */
+export type HostExecutionHealth = {
+  running: number;
+  /** Rows with endedAt in the snapshot window, including unrecognized statuses. */
+  ended: number;
+  done: number;
+  error: number;
+  blocked: number;
+  interrupted: number;
+  other: number;
+  /** Terminal rows started in the window but missing endedAt; excluded above. */
+  undated: number;
+  /** At most 20 error executions, newest first. No transcripts or private payloads. */
+  recentErrors: Array<{ executionId: string; endedAt: number }>;
+  errorsTruncated: boolean;
+};
+
+/** Observed Host facts, not a healthy/unhealthy verdict or a recovery command. */
+export type HostHealthSnapshot = {
+  generatedAt: number;
+  window: { start: number; end: number };
+  coverage: { retainedOnly: true; executionScope: "all" };
+  executions: { agents: HostExecutionHealth; workflows: HostExecutionHealth };
+  /** Selected Host-boundary failure events; counts are events, not incidents. */
+  runtimeFailures: {
+    total: number;
+    byType: Array<{ type: string; count: number }>;
+    recent: Array<{ eventId: number; type: string; timestamp: number }>;
+    truncated: boolean;
+  };
+};
+
 export type ObserverContext = {
   /** Defensive copy of the last published snapshot; absent after startup/reload. */
   previousObservation?: ObserverSnapshot;
-  read: AppRead;
+  read: AppRead & {
+    /** Optional Host reporting; rejects when absent. Default last hour, at most one day.
+     * Observers receive aggregates and bounded diagnostic IDs, never global SQL. */
+    hostHealth(options?: { lookbackMs?: number }): Promise<HostHealthSnapshot>;
+  };
   log: Logger;
   /** Paths scoped to this App declaration and its configured workspace. */
   workspace: {
