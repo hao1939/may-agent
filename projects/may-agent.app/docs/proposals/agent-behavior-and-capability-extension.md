@@ -6,8 +6,10 @@ discovery and dependable workflow execution through existing Host capabilities.
 The [agent-operated trial](agent-operated-improvement-poc-20260912.md) focuses on
 the remaining usability question: can an agent discover, author, activate and
 verify another agent's improvement without human-operated intermediate steps?
-Both trials succeeded, with 22 completed model executions and eight correct
-withheld checks; this is narrow synthetic evidence, not production reliability.
+The linked reports retain successes and unsuccessful trials. The
+[ordinary-Task follow-up](task-improvement-poc-20260912.md) also demonstrates
+wait/resume and owner withdrawal for an improver. Its target still runs as a
+fresh direct execution; this is not installed or general reliability evidence.
 Section 6 links the earlier evidence; section 7 separates this mechanism work
 from production integration and the optional Gym learning path.
 
@@ -436,6 +438,10 @@ Keep these facts distinct:
 ```text
 candidate saved -> active source -> target execution used it -> useful result
 ```
+
+Compare the final candidate revision with the active revision, not merely with
+an earlier successful reload. A later clean commit can still be inactive. Keep
+that mismatch visible rather than claiming the final guidance was verified.
 
 An external wait releases execution and preserves the same Task. Its observation
 resumes work; a timer or successful reload is not itself proof of adoption.

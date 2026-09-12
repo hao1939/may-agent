@@ -1,6 +1,9 @@
 # Agent improvement through one ordinary Task
 
 **Status:** Positive and withdrawal live trials completed, September 12, 2026. No production changes.
+**Publication:** [Host PR #165](https://github.com/hao1939/may-agent/pull/165),
+draft follow-up to #163. Merge the prerequisite first, retarget to `main` and
+rerun validation; neither PR authorizes deployment.
 **Parent:** [Agent extension proposal](agent-behavior-and-capability-extension.md).
 
 ## Answer
@@ -129,7 +132,7 @@ projection and owner controls remain production code. It checks:
 - one matching fact resumes the original input, with no replacement ask;
 - accepted success leaves the Task open until explicit owner closure;
 - owner withdrawal persists across reopen and rejects a late targeted wake;
-- fixture reads/writes stay restricted after actual execution preparation.
+- fixture reads/writes stay restricted after actual execution preparation;
 - a real redundant wake while waiting cannot satisfy the next attempt's barrier;
 - the original input links to the exact accepted second attempt, with one Task.
 
@@ -165,10 +168,17 @@ Task adoption; they are not evidence that this combined installed path ran.
 
 ## Reproduction and evidence
 
-The isolated Host branch is `poc/improvement-unified-task`, based on merged
-Host `f5d5a535` with the portable #163 experiment brought forward. It leaves
-the existing PR branch unchanged. Final fixture commit: `17938a4c`.
+The original isolated Host branch is `poc/improvement-unified-task`, based on
+merged Host `f5d5a535` with the portable #163 experiment brought forward. That
+trial left the existing PR branch unchanged. Its fixture commit is `17938a4c`.
 No source was deployed or published by this trial.
+
+For publication, branch `test/task-guidance-improvement` brings this fixture
+forward onto #163 plus current main. Its head is `1642d94d`; the direct PoC
+dependency is `f82aab35`. The five-file follow-up excludes #164's separate
+coordination redesign. The original experiment branch and model evidence remain
+unchanged for audit. The portable README now contains the recommendation,
+model-tested hashes and explicit evidence limits for GitHub reviewers.
 
 ```sh
 bun scripts/poc/task-improvement.ts
@@ -195,7 +205,41 @@ sets its tighter 300-second limit at actual dispatch. The successful live attemp
 had already finished within 48 seconds, but those runs do not prove that timeout
 change. These refinements are not another live trial.
 
-Verification: full local CI passed with **2,881 tests, three installation-only
-skips and zero failures**. After the final fixture hardening, the focused suite
-passed **11 tests** and the explicit PoC TypeScript check passed. These checks
-do not claim deployment or model coverage in CI.
+Publication review found another evidence gap in the shared direct experiment:
+a clean new commit after a successful activation could pass while the retained
+diff described unactivated guidance. The refined check captures final Git HEAD,
+requires it to equal the active source and matches recovery against that exact
+commit. Its no-model regression makes a real later commit, rejects the mismatch,
+then accepts it only after real daemon activation. Historical live evidence is
+not retroactively credited with this stronger assertion.
+
+A later review tightened two claims without changing production behavior.
+Pending reload evidence prevents grading; every withheld execution must use
+the final commit, followed by another HEAD/active-source inspection. The
+fixture does not try to coordinate ambiguous operations. Also, "read-only
+target" was too broad: standard finish can append reported lessons as private
+fixture evidence. The target cannot edit guidance or policy. The preflight
+verifies the lesson append, denied target reads and absence from a fresh prompt;
+evidence retention is not active guidance.
+
+The fixture counter is now named `forwardedReloadCalls`. The old raw report's
+`activations` field counted calls, including the synthetic not-submitted
+failure—not successful activations. It remains unchanged as historical evidence;
+the separate source and execution records establish actual adoption.
+
+The original fixture's full local CI passed **2,881 tests**, with three
+installation-only skips. Its focused suite passed **11 tests** after hardening.
+Publication `180548ff` had a Bun worker segmentation fault in the first full
+run; the log is retained. The named file passed separately, then one unchanged
+full-suite confirmation passed 2,881 tests. No crash fix is claimed.
+
+At publication head `1642d94d`, GitHub Quality and Container pass, including the
+image smoke test. Explicit PoC TypeScript, lint and the focused PoC checks pass.
+The full local run passed **2,880 tests** but failed the existing Task-runtime
+live-result case: two caller inputs were observed instead of three. Its three
+variants pass separately. Prerequisite `f82aab35` also has a GitHub input-mapping
+recovery timeout; that case passes separately. These files are unchanged by the
+PoC. Their broader-run failures remain unexplained, not silently retried away
+or fixed by changing unrelated runtime code. Both PRs remain draft.
+
+These checks do not claim deployment or model coverage in CI.
