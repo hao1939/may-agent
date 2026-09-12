@@ -117,7 +117,7 @@ function discoverAppTaskResourceStore(
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
     throw new Error(
-      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect that evidence outside the Host or restore the canonical resource database`,
+      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect that facts outside the Host or restore the canonical resource database`,
     );
   }
 
@@ -139,7 +139,7 @@ function discoverAppTaskResourceStore(
   } as TaskTree;
   // A Conversation-only App needs no authored Task tree. Keep the structural
   // root conventional; it is neither work nor another execution identity.
-  if (app.requests && Object.keys(tree.groups ?? {}).length === 0) {
+  if (app.conversation && Object.keys(tree.groups ?? {}).length === 0) {
     tree.root_task_id = "root";
     tree.groups = { root: { id: "root", parent_id: null } };
   }
@@ -163,7 +163,7 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
   const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
   const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
   for (const { appDir, definition: app } of entries) {
-    if (!app.tasks && !app.requests) continue;
+    if (!app.tasks && !app.conversation) continue;
     const id = app.id;
     if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);

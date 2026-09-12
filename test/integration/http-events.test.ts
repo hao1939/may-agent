@@ -67,7 +67,7 @@ describe("HTTP event reads", () => {
     return response.json();
   }
 
-  it("opens failed workflow evidence through HTTP without a daemon or metric collector", async () => {
+  it("opens failed workflow facts through HTTP without a daemon or metric collector", async () => {
     const workflows = join(root, "workflows");
     mkdirSync(workflows);
     writeFileSync(join(workflows, "report.ts"), `
@@ -81,11 +81,11 @@ describe("HTTP event reads", () => {
     const result = await runner.run("report", "fixture");
     if (result.type !== "error" || !result.workflowRunId) throw new Error("Expected failed workflow identity");
     const trace = await read(`/api/loop-trace?workflowRunId=${result.workflowRunId}`);
-    expect(trace.workflowEvidence.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
-    expect(trace.workflowEvidence.diagnostics).toMatchObject({ state: "available", truncated: false,
+    expect(trace.workflowFacts.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
+    expect(trace.workflowFacts.diagnostics).toMatchObject({ state: "available", truncated: false,
       entries: [{ level: "info", message: "prepared partial report" }] });
-    expect(trace.workflowEvidence.stepsTruncated).toBe(false);
-    expect((await read("/api/loop-trace?workflowRunId=wr_missing")).workflowEvidence).toBeNull();
+    expect(trace.workflowFacts.stepsTruncated).toBe(false);
+    expect((await read("/api/loop-trace?workflowRunId=wr_missing")).workflowFacts).toBeNull();
   });
 
   function event(
@@ -100,7 +100,7 @@ describe("HTTP event reads", () => {
         .prepare(
           `INSERT INTO events
       (event_type, source, owner, data, timestamp, delivery_status, ttl_ms)
-      VALUES (?, 'test', ?, '{"evidence":"kept"}', ?, ?, ?)`,
+      VALUES (?, 'test', ?, '{"facts":"kept"}', ?, ?, ?)`,
         )
         .run(type, owner, timestamp, status, ttl).lastInsertRowid,
     );
@@ -115,7 +115,7 @@ describe("HTTP event reads", () => {
     const rows = await read("/api/events?owner=agent%3Amay&type=sample");
     expect(rows.map((row: { id: number }) => row.id)).toEqual([newest, second, first]);
     expect(rows).toEqual(createQueryService({ getDb: () => db }).events({ owner: "agent:may", type: "sample" }).rows);
-    expect(rows[0]).toMatchObject({ event_type: "sample", owner: "agent:may", data: '{"evidence":"kept"}' });
+    expect(rows[0]).toMatchObject({ event_type: "sample", owner: "agent:may", data: '{"facts":"kept"}' });
     expect(await read("/api/events?owner=missing")).toEqual([]);
     expect(await read("/api/events?owner=&type=")).toHaveLength(5);
   });
@@ -137,7 +137,7 @@ describe("HTTP event reads", () => {
     }
   });
 
-  it("retains the four health groups, lookback, TTL rules, pair evidence, and ordering", async () => {
+  it("retains the four health groups, lookback, TTL rules, pair facts, and ordering", async () => {
     const now = Date.now();
     const minute = 60_000;
     const unhandled = event("unhandled", now - minute);
@@ -186,7 +186,7 @@ describe("HTTP event reads", () => {
     expect(health.orphanPairs[0]).toMatchObject({
       openEventId: unhandled,
       openEventType: "unhandled",
-      openEventData: '{"evidence":"kept"}',
+      openEventData: '{"facts":"kept"}',
     });
   });
 

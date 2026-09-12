@@ -176,7 +176,7 @@ test.each(["waiting", "running"] as const)(
           acceptedResult: {
             state: "converged",
             summary: "Exact fact observed",
-            evidence: ["project.approval.submitted"],
+            facts: ["project.approval.submitted"],
           },
         });
         expect(retained.status.currentAttemptId).toBeUndefined();

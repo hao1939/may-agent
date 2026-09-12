@@ -31,7 +31,7 @@ const app = defineApp({
   id: "chat",
   version: 1,
   agent: "chat",
-  requests: { mode: "agent", inputKinds: ["message"] },
+  conversation: { mode: "agent", inputKinds: ["message"] },
   inputSchema: Type.Object({ kind: Type.String(), data: Type.Object({ text: Type.String() }) }),
 });
 const decision: ConversationTurnResult = {
@@ -191,7 +191,7 @@ test("offline cutover retains history, fences old claims, and redoes only unfini
     claim,
     app,
     signal: new AbortController().signal,
-    resolveRequest: async ({ request }) => {
+    resolveConversationInput: async ({ request }) => {
       expect(request.inputs?.map((entry) => entry.id)).toEqual([
         "primary:pending",
         "primary:executing",
@@ -257,14 +257,14 @@ test("cutover leaves ordinary Task input in the same Conversation with its origi
   expect(getAppInboxItem(f.db, ordinary.id)).toEqual(ordinary);
 });
 
-test("failed evidence import rolls the whole cutover back without invalidating the old claim", () => {
+test("failed facts import rolls the whole cutover back without invalidating the old claim", () => {
   const f = fixture();
   const claim = f.seed("executing")!;
   const before = getAppInboxItem(f.db, claim.item.id);
   f.db.exec(
-    `CREATE TRIGGER reject_import BEFORE INSERT ON app_task_attempts BEGIN SELECT RAISE(ABORT, 'cannot import evidence'); END`,
+    `CREATE TRIGGER reject_import BEFORE INSERT ON app_task_attempts BEGIN SELECT RAISE(ABORT, 'cannot import facts'); END`,
   );
-  expect(() => f.migrate()).toThrow("cannot import evidence");
+  expect(() => f.migrate()).toThrow("cannot import facts");
   expect(getAppInboxItem(f.db, claim.item.id)).toEqual(before);
   expect(f.store.readTask(conversationTaskId(app.id, "primary"))).toBeNull();
   expect(() => assertAppInboxClaim(f.db, claim)).not.toThrow();

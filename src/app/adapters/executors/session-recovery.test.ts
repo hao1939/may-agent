@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 it.each(["success", "failure", "blocked", "partial"])(
-  "retains structured session evidence with finish status %s exactly once",
+  "retains structured session facts with finish status %s exactly once",
   (finishStatus) => {
     const root = mkdtempSync(join(tmpdir(), "may-recovered-judgment-"));
     roots.push(root);
@@ -100,7 +100,7 @@ it.each(["interrupted", "done", "error"] as const)(
     writeSessionMeta(root, sessionId, {
       agent: "arc",
       agentRelativeDir: relativeDir,
-      task: "Produce checked evidence",
+      task: "Produce checked facts",
       status: "running",
       startedAt: 1,
       kind: "call",
@@ -109,7 +109,7 @@ it.each(["interrupted", "done", "error"] as const)(
       const finish = {
         status: status === "done" ? "success" : "failure",
         summary: "Retained decision",
-        context_updates: [{ action: "add", content: "Retained owner evidence" }],
+        context_updates: [{ action: "add", content: "Retained owner facts" }],
       };
       appendSessionMessage(root, sessionId, {
         role: "assistant",
@@ -143,7 +143,7 @@ it.each(["interrupted", "done", "error"] as const)(
     expect(readSessionMeta(root, sessionId)).toMatchObject({ status, agentRelativeDir: relativeDir });
     expect(readFileSync(join(localDir, "last-session.md"), "utf8")).toContain(sessionId);
     if (status === "interrupted") expect(existsSync(join(localDir, "context.md"))).toBe(false);
-    else expect(readFileSync(join(localDir, "context.md"), "utf8")).toContain("Retained owner evidence");
+    else expect(readFileSync(join(localDir, "context.md"), "utf8")).toContain("Retained owner facts");
     for (const file of ["last-session.md", "context.md"])
       expect(readFileSync(join(globalDir, file), "utf8")).toBe("Global history\n");
     recovery.interrupt(sessionId, "Repeated recovery");

@@ -138,7 +138,7 @@ describe("served workflow and metric health pages", () => {
     }
   });
 
-  test("HTTP reads real retained outcomes, current samples, bounded history and error evidence without a daemon", async () => {
+  test("HTTP reads real retained outcomes, current samples, bounded history and error facts without a daemon", async () => {
     async function read(path: string, status = 200) {
       const res = await fetch(base + path, { signal: AbortSignal.timeout(5000) });
       expect(res.status).toBe(status);
@@ -165,10 +165,10 @@ describe("served workflow and metric health pages", () => {
     const history = await read("/api/metrics/workflow.error-count-24h/history?days=14");
     expect(history.snapshots).toHaveLength(4);
     expect(history.failures).toHaveLength(1);
-    const evidence = (await read("/api/loop-trace?workflowRunId=wr_7")).workflowEvidence;
-    expect(evidence.childRunIds).toEqual(["wr_10"]);
-    expect(evidence.steps[0]).toMatchObject({ sessionId: "step-upload", status: "error" });
-    expect(evidence.diagnostics.entries[0].message).toContain("Original upload failure");
+    const facts = (await read("/api/loop-trace?workflowRunId=wr_7")).workflowFacts;
+    expect(facts.childRunIds).toEqual(["wr_10"]);
+    expect(facts.steps[0]).toMatchObject({ sessionId: "step-upload", status: "error" });
+    expect(facts.diagnostics.entries[0].message).toContain("Original upload failure");
     expect((await read("/api/loop-trace?workflowRunId=wr_6")).workflowEvidence.diagnostics.state).toBe("unavailable");
     await read("/api/workflow-health?days=100000", 400);
     await read("/api/metrics/example/history?days=NaN", 400);
@@ -396,7 +396,7 @@ describe("served workflow and metric health pages", () => {
   );
 
   test.skipIf(skipBrowser)(
-    "route changes clear finished trace evidence and fence delayed success and error responses",
+    "route changes clear finished trace facts and fence delayed success and error responses",
     async () => {
       const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
       try {
@@ -409,11 +409,11 @@ describe("served workflow and metric health pages", () => {
           else void request.continue();
         });
         await page.goto(base + "/events?workflowRunId=wr_7#loop-trace", { waitUntil: "domcontentloaded" });
-        await page.waitForSelector("[data-workflow-evidence]");
+        await page.waitForSelector("[data-workflow-facts]");
         await page.evaluate("routeTo('/events')");
         expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toBe("");
         for (const [route, fail] of [["/events", false], ["/metrics", true], ["/events?workflowRunId=wr_6", false]] as const) {
-          const intercepted = new Promise<HTTPRequest>((resolveRequest) => { capture = resolveRequest; });
+          const intercepted = new Promise<HTTPRequest>((resolveConversationInput) => { capture = resolveConversationInput; });
           // Keep the real loader promise so assertions wait for its rendering/catch, not a sleep.
           const pending = page.evaluate("loadLoopTrace({ workflowRunId: 'wr_7' })");
           const held = await intercepted;
@@ -421,7 +421,7 @@ describe("served workflow and metric health pages", () => {
           await page.evaluate(`routeTo(${JSON.stringify(route)})`);
           if (route === "/metrics") await page.evaluate("routeTo('/events')");
           const selectedRun = route.includes("wr_6");
-          if (selectedRun) await page.waitForSelector("[data-workflow-evidence]");
+          if (selectedRun) await page.waitForSelector("[data-workflow-facts]");
           if (fail) await held.respond({ status: 500, contentType: "application/json", body: '{"error":"late trace failure"}' });
           else await held.continue();
           await pending;
@@ -432,14 +432,14 @@ describe("served workflow and metric health pages", () => {
           else expect(text).toBe("");
         }
         await page.evaluate("openLoopTrace({ workflowRunId: 'wr_7' })");
-        await page.waitForSelector("[data-workflow-evidence]");
+        await page.waitForSelector("[data-workflow-facts]");
         expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toContain("wr_7");
         const event = getDb(root).prepare("SELECT id FROM events WHERE event_type = 'metric.measurement.failed' LIMIT 1").get() as { id: number };
         await page.evaluate(`routeTo('/events/${event.id}#loop-trace')`);
         await page.waitForFunction((id) => document.querySelector("#loop-trace-content")?.textContent?.includes(`event:${id}`), {}, event.id);
         // A workflow selection takes precedence over an Event-page trace anchor.
         await page.evaluate(`routeTo('/events/${event.id}?workflowRunId=wr_7#loop-trace')`);
-        await page.waitForSelector("[data-workflow-evidence]");
+        await page.waitForSelector("[data-workflow-facts]");
         expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toContain("workflow:wr_7");
       } finally { await browser.close(); }
     }, 30000,
@@ -538,16 +538,16 @@ describe("served workflow and metric health pages", () => {
         expect(await page.$$eval("[data-metric-search]:not([hidden])", (rows) => rows.length)).toBe(1);
         await page.click('#metrics-workflows a[href*="workflowRunId=wr_7"]');
         expect(new URL(page.url()).hash).toBe("#loop-trace");
-        await page.waitForSelector("[data-workflow-evidence]");
+        await page.waitForSelector("[data-workflow-facts]");
         await page.waitForFunction(() => {
           const target = document.getElementById("loop-trace")?.getBoundingClientRect();
           return target && target.top >= 0 && target.top < window.innerHeight;
         });
-        const text = await page.$eval("[data-workflow-evidence]", (el) => el.textContent);
+        const text = await page.$eval("[data-workflow-facts]", (el) => el.textContent);
         expect(text).toContain("Original upload failure");
         expect(text).toContain("wr_10");
         expect(text).toContain(markup);
-        expect(await page.$("[data-workflow-evidence] img")).toBeNull();
+        expect(await page.$("[data-workflow-facts] img")).toBeNull();
         await page.goto(base + "/metrics/workflow.error-count-24h", { waitUntil: "domcontentloaded" });
         await page.waitForSelector("#metrics-recent svg");
         expect(await page.$eval("#metrics-recent", (el) => el.textContent)).toContain("stale");

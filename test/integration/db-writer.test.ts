@@ -129,7 +129,7 @@ describe("DbWriter", () => {
     });
   });
 
-  it("hydrates resumeCondition on persisted escalation.created rows from finish evidence", () => {
+  it("hydrates resumeCondition on persisted escalation.created rows from finish facts", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);
 
@@ -143,7 +143,7 @@ describe("DbWriter", () => {
         sourceSessionId: "s_finish_resume",
         reason: "Task returned blocked with exact next steps.",
         requestedAction: "Planner/app-ops should choose the recorded repair path.",
-        evidence: {
+        facts: {
           finishParams: {
             status: "blocked",
             next_steps:

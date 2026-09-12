@@ -22,7 +22,7 @@ function writeAtomic(filePath: string, content: string): void {
     writeFileSync(tmpPath, content, "utf8");
     renameSync(tmpPath, filePath);
   } finally {
-    // A failed write/rename is not historical evidence. Do not let an
+    // A failed write/rename is not historical facts. Do not let an
     // incomplete atomic-write staging file consume the last available space.
     rmSync(tmpPath, { force: true });
   }

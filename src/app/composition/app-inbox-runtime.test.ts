@@ -181,7 +181,7 @@ describe("App inbox runtime", () => {
     task.complete("probe/request-1", {
       summary: "Evaluation passed",
       response: "The provider is healthy.",
-      evidence: ["probe:ok"],
+      facts: ["probe:ok"],
     });
     await waitUntil(() => runtime?.host.get("request-1")?.status === "done");
 
@@ -189,7 +189,7 @@ describe("App inbox runtime", () => {
     expect(runtime.host.get("request-1")?.result).toEqual({
       summary: "Evaluation passed",
       response: "The provider is healthy.",
-      evidence: ["probe:ok"],
+      facts: ["probe:ok"],
     });
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
@@ -247,7 +247,7 @@ describe("App inbox runtime", () => {
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "message" }, data: { type: "object" }
         } },
-        requests: { mode: "agent", conversationId: "may:primary" }
+        conversation: { mode: "agent", conversationId: "may:primary" }
       };\n`,
     );
     createConversationTopic(db, {
@@ -290,7 +290,7 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      resolveRequest: async () => ({ summary: "unused", response: "unused", topic: { kind: "none" } }),
+      resolveConversationInput: async () => ({ summary: "unused", response: "unused", topic: { kind: "none" } }),
       scanIntervalMs: 10_000,
     });
 

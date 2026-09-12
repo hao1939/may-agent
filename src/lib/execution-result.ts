@@ -17,7 +17,7 @@ export interface ExecutionResult {
   projectId?: string;
   startedAt?: number;
   endedAt?: number;
-  evidence?: Record<string, unknown>;
+  facts?: Record<string, unknown>;
 }
 
 export interface ResumeDiagnostic {
@@ -108,7 +108,7 @@ export function taskResultToExecutionResult(result: TaskResult, opts: {
     owner: opts.agent,
     parentId: opts.parentId,
     projectId: opts.projectId,
-    evidence: {
+    facts: {
       agent: opts.agent,
       task: opts.task,
       duration: result.duration,
@@ -127,7 +127,7 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
       status: "error",
       summary: compact(result.error, "workflow error"),
       traceId: result.workflowRunId ?? result.workflow ?? "workflow-error",
-      evidence: { workflow: result.workflow, reason: result.reason, category: result.category },
+      facts: { workflow: result.workflow, reason: result.reason, category: result.category },
     };
   }
 
@@ -138,7 +138,7 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
       status: "done",
       summary: compact(result.summary, "workflow done"),
       traceId: result.workflowRunId,
-      evidence: { workflow: result.workflow, steps: result.steps },
+      facts: { workflow: result.workflow, steps: result.steps },
     };
   }
 
@@ -149,7 +149,7 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
       status: "blocked",
       summary: compact(result.reason, "workflow blocked"),
       traceId: result.workflowRunId,
-      evidence: {
+      facts: {
         workflow: result.workflow,
         context: result.context,
         steps: result.steps,
@@ -164,7 +164,7 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
     status: "interrupted",
     summary: compact(result.steeringMessage, "workflow interrupted"),
     traceId: result.workflowRunId,
-    evidence: { workflow: result.workflow, completedSteps: result.completedSteps.length },
+    facts: { workflow: result.workflow, completedSteps: result.completedSteps.length },
   };
 }
 
@@ -179,7 +179,7 @@ export function resumeDiagnosticToExecutionResult(diagnostic: ResumeDiagnostic):
     owner: optionalString(diagnostic.owner ?? diagnostic.agent),
     parentId: diagnostic.parentId,
     projectId: optionalString(diagnostic.projectId),
-    evidence: {
+    facts: {
       owner: diagnostic.owner,
       agent: diagnostic.agent,
       workflow: diagnostic.workflow,
@@ -203,7 +203,7 @@ export function sessionRowToExecutionResult(row: SessionRow): ExecutionResult {
     projectId: optionalString(row.projectId),
     startedAt: optionalNumber(row.startedAt),
     endedAt: optionalNumber(row.endedAt),
-    evidence: {
+    facts: {
       agent: row.agent,
       task: row.task,
       kind: row.kind,
@@ -226,7 +226,7 @@ export function workflowRowToExecutionResult(row: WorkflowRow): ExecutionResult 
     projectId: optionalString(row.projectId),
     startedAt: optionalNumber(row.startedAt),
     endedAt: optionalNumber(row.endedAt),
-    evidence: {
+    facts: {
       workflow: row.workflow,
       task: row.task,
       depth: row.depth,

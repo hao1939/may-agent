@@ -130,7 +130,7 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
 
 /**
  * One bounded cross-channel conversation projection over existing durable
- * inbox results and event-journal evidence. Transient message events are
+ * inbox results and event-journal facts. Transient message events are
  * deliberately excluded from App context and reconnect replay.
  */
 export function listAppConversationMessages(

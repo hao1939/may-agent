@@ -81,7 +81,7 @@ describe("finish-guard", () => {
   });
 
   // Summary prose is not a control input. Only typed deliverables and tool
-  // evidence participate in deterministic finish checks.
+  // facts participate in deterministic finish checks.
 
   it("does not infer a deliverable from action words in the summary", async () => {
     const ctx = makeCtx({ status: "success", summary: "Fixed the authentication bug in login handler" }, [
@@ -105,7 +105,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows 'Fixed' summary when write evidence exists", async () => {
+  it("allows 'Fixed' summary when write facts exists", async () => {
     const ctx = makeCtx({ status: "success", summary: "Fixed the authentication bug" }, [
       assistantWithToolCall("edit", { path: "src/auth.ts", oldText: "a", newText: "b" }),
       assistantWithToolCall("read", { path: "src/auth.ts" }),
@@ -114,7 +114,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("allows 'Updated' summary when bash write evidence exists", async () => {
+  it("allows 'Updated' summary when bash write facts exists", async () => {
     const ctx = makeCtx({ status: "success", summary: "Updated the config file" }, [
       assistantWithToolCall("bash", { command: "echo 'new config' > config.json" }),
       assistantWithToolCall("bash", { command: "cat config.json" }),
@@ -230,7 +230,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("does not treat run_cli_agent acceptance alone as completed write evidence", async () => {
+  it("does not treat run_cli_agent acceptance alone as completed write facts", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -281,7 +281,7 @@ describe("finish-guard", () => {
     expect(result!.reason).toContain("no write, edit");
   });
 
-  it("signals finish(success) with deliverables but no write evidence", async () => {
+  it("signals finish(success) with deliverables but no write facts", async () => {
     const ctx = makeCtx(
       {
         status: "success",

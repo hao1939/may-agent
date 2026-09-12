@@ -87,7 +87,7 @@ export type TaskAction =
 
 export type TaskReconcileResult = {
   summary: string;
-  evidence: string[];
+  facts: string[];
 } & (
   | {
       state: "converged";
@@ -109,14 +109,14 @@ export type TaskReconcileResult = {
     } & ({ report?: never } | {
       /** Return a new caller-relevant update without answering the input. */
       report: true;
-      evidence: [string, ...string[]];
+      facts: [string, ...string[]];
     }))
   | {
       state: "incomplete";
       /** Select a new caller-relevant report while the same assignment retries. */
       report?: true;
       /** At least one observation supporting this unsuccessful attempt. */
-      evidence: [string, ...string[]];
+      facts: [string, ...string[]];
       response?: string;
       result?: Record<string, unknown>;
       actions?: never;
@@ -136,13 +136,13 @@ export type TaskReconcileResult = {
 export type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";
   verifier?: string;
-  evidence: string[];
+  facts: string[];
 };
 
 export type TaskVerificationResult = {
   accepted: boolean;
   summary: string;
-  evidence: string[];
+  facts: string[];
 };
 
 export type TaskVerificationContext = {

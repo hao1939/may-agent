@@ -84,7 +84,7 @@ const resultFields = {
   summary: nonEmptyStringSchema,
   response: Type.Optional(nonEmptyStringSchema),
   result: Type.Optional(objectSchema),
-  evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
+  facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   actions: Type.Optional(Type.Array(taskActionSchema, { maxItems: 16 })),
   conditions: Type.Optional(Type.Array(conditionSchema, { maxItems: 16 })),
   dependencies: Type.Optional(
@@ -116,7 +116,7 @@ export const taskAgentResultSchema = Type.Union([
   Type.Object(
     {
       state: Type.Literal("waiting"), ...resultFields, report: Type.Literal(true),
-      evidence: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+      facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
     },
     { additionalProperties: false },
   ),
@@ -127,7 +127,7 @@ export const taskAgentResultSchema = Type.Union([
       summary: nonEmptyStringSchema,
       response: Type.Optional(nonEmptyStringSchema),
       result: Type.Optional(objectSchema),
-      evidence: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+      facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
     },
     { additionalProperties: false },
   ),
@@ -143,7 +143,7 @@ export const taskReconcileResultSchema = Type.Union([
     {
       state: Type.Literal("needs-agent"),
       summary: nonEmptyStringSchema,
-      evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
+      facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
     },
     { additionalProperties: false },
   ),
@@ -153,7 +153,7 @@ export const taskVerificationResultSchema = Type.Object(
   {
     accepted: Type.Boolean(),
     summary: nonEmptyStringSchema,
-    evidence: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
+    facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
   },
   { additionalProperties: false },
 );
@@ -377,9 +377,9 @@ export function admitTaskReconcileResult(
 ): TaskReconcileAdmission {
   if (!isRecord(output)) return { ok: false, error: "expected an object" };
   if (!nonEmptyString(output.summary)) return { ok: false, error: "summary must be a non-empty string" };
-  const evidence = normalizedStringArray(output.evidence, true);
-  if (!evidence) return { ok: false, error: "evidence must be a string array" };
-  if (evidence.length > 32) return { ok: false, error: "evidence exceeds the 32-entry limit" };
+  const facts = normalizedStringArray(output.facts, true);
+  if (!facts) return { ok: false, error: "facts must be a string array" };
+  if (facts.length > 32) return { ok: false, error: "facts exceeds the 32-entry limit" };
 
   if (output.state === "needs-agent" || output.state === "needs-owner") {
     if (!options.allowNeedsAgent) return { ok: false, error: "a resolved agent cannot return needs-agent" };
@@ -402,18 +402,18 @@ export function admitTaskReconcileResult(
     }
     return {
       ok: true,
-      result: { state: "needs-agent", summary: output.summary.trim(), evidence },
+      result: { state: "needs-agent", summary: output.summary.trim(), facts },
     };
   }
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
     return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
   }
   if (output.report !== undefined &&
-    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || evidence.length === 0)) {
-    return { ok: false, error: "report requires waiting or incomplete, true, and non-empty evidence" };
+    ((output.state !== "waiting" && output.state !== "incomplete") || output.report !== true || facts.length === 0)) {
+    return { ok: false, error: "report requires waiting or incomplete, true, and non-empty facts" };
   }
   if (output.state === "incomplete") {
-    if (evidence.length === 0) return { ok: false, error: "incomplete requires evidence for the decision" };
+    if (facts.length === 0) return { ok: false, error: "incomplete requires facts for the decision" };
     if (output.actions !== undefined || output.conditions !== undefined || output.dependencies !== undefined) {
       return { ok: false, error: "incomplete cannot include actions, Conditions, or dependencies" };
     }
@@ -501,7 +501,7 @@ export function admitTaskReconcileResult(
   const report = {
     summary: output.summary.trim(),
     ...(result ? { result: structuredClone(result) } : {}),
-    evidence,
+    facts,
   };
   if (output.state === "waiting") {
     const waiting = {
@@ -510,13 +510,13 @@ export function admitTaskReconcileResult(
       ...(dependencies.length ? { dependencies } : {}),
     };
     return { ok: true, result: admittedOutput.report === true
-      ? { ...waiting, report: true, evidence: evidence as [string, ...string[]] }
+      ? { ...waiting, report: true, facts: facts as [string, ...string[]] }
       : waiting };
   }
   const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
   if (output.state === "incomplete") {
-    // The incomplete branch above has already checked that evidence is non-empty.
-    return { ok: true, result: { ...answer, state: "incomplete", evidence: evidence as [string, ...string[]],
+    // The incomplete branch above has already checked that facts are non-empty.
+    return { ok: true, result: { ...answer, state: "incomplete", facts: facts as [string, ...string[]],
       ...(output.report === true ? { report: true } : {}),
     } };
   }
@@ -532,9 +532,9 @@ export function admitTaskVerificationResult(
   }
   const summary = normalizedString(output.summary);
   if (!summary) return { ok: false, error: "verifier summary must be a non-empty string" };
-  const evidence = normalizedStringArray(output.evidence, true);
-  if (!evidence) return { ok: false, error: "verifier evidence must be a string array" };
-  if (evidence.length > 32) return { ok: false, error: "verifier evidence exceeds the 32-entry limit" };
+  const facts = normalizedStringArray(output.facts, true);
+  if (!facts) return { ok: false, error: "verifier facts must be a string array" };
+  if (facts.length > 32) return { ok: false, error: "verifier facts exceeds the 32-entry limit" };
   if (!Check(taskVerificationResultSchema, output)) {
     const first = [...Errors(taskVerificationResultSchema, output)][0];
     return {
@@ -542,5 +542,5 @@ export function admitTaskVerificationResult(
       error: `verifier result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
     };
   }
-  return { ok: true, result: { accepted: output.accepted, summary, evidence } };
+  return { ok: true, result: { accepted: output.accepted, summary, facts } };
 }

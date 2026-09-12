@@ -51,7 +51,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
     id: "chat",
     version: 1,
     agent: "chat",
-    requests: { mode: "agent", inputKinds: ["message"] },
+    conversation: { mode: "agent", inputKinds: ["message"] },
     tasks: { maxConcurrent: 2 },
     inputSchema: Type.Object({ kind: Type.String(), data: Type.Object({}, { additionalProperties: true }) }),
   });
@@ -83,7 +83,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
       execute: (turn) =>
         prepareConversationTaskTurn({
           ...turn,
-          resolveRequest: async ({ request }) => {
+          resolveConversationInput: async ({ request }) => {
             const outcomes = request.inputs?.filter((item) => item.input.kind === "task-outcome") ?? [];
             if (!outcomes.length)
               return {
@@ -161,7 +161,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
       handler: "executor:measure",
     });
     if (worker.kind !== "claimed") throw new Error("Worker was not claimed");
-    completeAppTask(config(), worker, { summary: "Measured", evidence: ["instrument:17"], result: { value: 17 } });
+    completeAppTask(config(), worker, { summary: "Measured", facts: ["instrument:17"], result: { value: 17 } });
     linkConversationTopicTask(db, "measurement", app.id, workerIntent.id);
     const supervisorIntent: TaskIntent = {
       id: "conversation/follow-up",

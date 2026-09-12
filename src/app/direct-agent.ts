@@ -53,9 +53,9 @@ export type DirectAgentRunOptions = {
   outputSchema?: TSchema;
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
-  /** Fixed only when deterministic preparation/evaluation evidence is required. */
+  /** Fixed only when deterministic preparation/evaluation facts are required. */
   promptTimestamp?: string;
-  /** Fixed only when deterministic preparation/evaluation evidence is required. */
+  /** Fixed only when deterministic preparation/evaluation facts are required. */
   sessionId?: string;
   onNotice?: (message: string) => void;
 };

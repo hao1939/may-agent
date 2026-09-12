@@ -11,7 +11,7 @@ import {
   cancelAppTask,
   readAppTaskAdmissionOutcome,
 } from "../../../src/app/core/tasks/app-task-reconciler.js";
-import { admitTaskRequest } from "../../../src/app/core/state/inbox.js";
+import { admitTaskInput } from "../../../src/app/core/state/inbox.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { EventBus } from "../../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
@@ -48,13 +48,13 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
   const persistDir = join(root, ".state");
   mkdirSync(join(root, "agents"), { recursive: true });
   mkdirSync(join(root, "shared", "skills"), { recursive: true });
-  writeFileSync(join(root, "shared", "common-sense.md"), "Use fixture evidence only.\n");
+  writeFileSync(join(root, "shared", "common-sense.md"), "Use fixture facts only.\n");
   mkdirSync(appDir, { recursive: true });
   writeFileSync(
     join(appDir, "app.ts"),
     `export default {
     id: "sample", version: 1, agent: "owner", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, ${conversation ? 'requests: { mode: "agent" }' : "tasks: { maxConcurrent: 1 }"}
+    workspace: { kind: "local", localPath: "." }, ${conversation ? 'conversation: { mode: "agent" }' : "tasks: { maxConcurrent: 1 }"}
   };`,
   );
   for (const name of ["owner", "specialist"]) {
@@ -73,7 +73,7 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
     writeFileSync(
       join(dir, "AGENTS.md"),
       conversation
-        ? "Answer the admitted Conversation input using fixture evidence.\n"
+        ? "Answer the admitted Conversation input using fixture facts.\n"
         : "Run only the declared fixture workflow.\n",
     );
     writeFileSync(
@@ -83,7 +83,7 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
       export const description = "Deterministic process-boundary probe";
       export async function execute(ctx) {
         if (!ctx.input.wait) return ctx.done("done", {
-          state: "converged", summary: "completed by " + ctx.reconciliation.agent, evidence: []
+          state: "converged", summary: "completed by " + ctx.reconciliation.agent, facts: []
         });
         const feedback = new Promise(resolve => ctx.events.onEvent(event => {
           if (event.type === "worker.feedback") resolve();
@@ -113,7 +113,7 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
               spec: {
                 parentId: "root",
                 outcome: "Probe the worker boundary",
-                acceptance: ["Fixture evidence"],
+                acceptance: ["Fixture facts"],
                 ...(workflow ? { workflow: "probe" } : {}),
                 input: { wait },
               },
@@ -286,7 +286,7 @@ export async function execute() { throw new Error("Recovery must not execute wor
       `export const name = "probe";
 export const description = "Currently repaired handler";
 export async function execute(ctx) {
-  return ctx.done("verified", { state: "converged", summary: "current handler ran", evidence: [] });
+  return ctx.done("verified", { state: "converged", summary: "current handler ran", facts: [] });
 }`,
     );
     releases.activate(releases.stage());
@@ -311,7 +311,7 @@ export async function execute(ctx) {
       `export const name = "probe";
 export const description = "Repaired worker binding";
 export async function execute(ctx) {
-  return ctx.done("verified", { state: "converged", summary: "repaired workflow ran", evidence: [] });
+  return ctx.done("verified", { state: "converged", summary: "repaired workflow ran", facts: [] });
 }`,
     );
     const releases = new DefinitionSourceReleaseStore(f.root, f.persistDir);
@@ -351,11 +351,11 @@ export async function execute(ctx) {
   async redoAfterParentLoss() {
     const f = fixture("owner");
     const config = appTaskContext({ appDir: f.appDir, projectDir: f.appDir, agent: "owner", resourceStore: f.store });
-    admitTaskRequest(config, {
+    admitTaskInput(config, {
       appId: "sample",
       attachment: { kind: "existing", taskId: "work/one" },
       idempotencyKey: "measurement:original",
-      request: { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "measurement", data: {} } },
+      inputContext: { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "measurement", data: {} } },
     });
     writeFileSync(
       join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
@@ -369,9 +369,9 @@ export async function execute(ctx) {
   if (existsSync(path)) {
     const saved = JSON.parse(readFileSync(path, "utf8"));
     const previous = ctx.reconciliation.previousAttempt;
-    if (!previous || previous.state !== "interrupted") throw new Error("Missing interrupted-attempt evidence");
+    if (!previous || previous.state !== "interrupted") throw new Error("Missing interrupted-attempt facts");
     return ctx.done("verified", { state: "converged", summary: "Read the existing measurement",
-      result: { value: saved.value, writes: saved.writes, previousAttemptId: previous.attemptId }, evidence: [path] });
+      result: { value: saved.value, writes: saved.writes, previousAttemptId: previous.attemptId }, facts: [path] });
   }
   writeFileSync(path, JSON.stringify({ value: 17, writes: 1 }));
   await ctx.events.emit({ localKey: "effect-saved", type: "worker.effect.saved",
@@ -426,7 +426,7 @@ export async function execute(ctx) {
         return ctx.done("done", {
           state: "converged",
           summary: "original workflow: " + readFileSync(new URL("../../../../../shared/common-sense.md", import.meta.url), "utf8").trim(),
-          evidence: []
+          facts: []
         });
       }
     `,
@@ -441,13 +441,13 @@ export async function execute(ctx) {
       export const name = "probe";
       export const description = "Replacement source";
       export async function execute(ctx) {
-        return ctx.done("new", { state: "converged", summary: "new source", evidence: [] });
+        return ctx.done("new", { state: "converged", summary: "new source", facts: [] });
       }
     `,
     );
     releases.activate(releases.stage());
     await run(f);
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "original workflow: Use fixture evidence only.");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "original workflow: Use fixture facts only.");
   },
 
   async rejectedDisable() {

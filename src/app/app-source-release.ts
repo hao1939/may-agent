@@ -37,7 +37,7 @@ const NON_SOURCE_DIRECTORIES = new Set([
   ".state",
   "archive",
   "artifacts",
-  "evidence",
+  "facts",
   "generated",
   "node_modules",
   "outputs",

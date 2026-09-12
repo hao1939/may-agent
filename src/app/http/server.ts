@@ -34,7 +34,7 @@ import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event
 import { loadProjectReadModel } from "../core/tasks/app-task-runtime-state.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
-import { readWorkflowEvidence } from "../../lib/workflow-evidence.js";
+import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
@@ -1250,7 +1250,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           impact: finding.impact || "",
           ownerReason: finding.ownerReason || "",
           suggestedActions: Array.isArray(finding.suggestedActions) ? finding.suggestedActions : [],
-          evidence: Array.isArray(finding.evidence) ? finding.evidence : [],
+          facts: Array.isArray(finding.facts) ? finding.facts : [],
           notified,
           createdAt,
           evalTrailPath: evalData.source,
@@ -1364,7 +1364,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       hasFocusLine ? `Raw focus record: ${focusRaw}` : ``,
       ``,
       `Append JSONL rows to session.eval.jsonl. Do not rewrite existing rows.`,
-      `Think deeply. Do not merely summarize the transcript. Judge whether each actor did well: user request quality, assistant reasoning/action quality, tool-call necessity, evidence quality, recovery, verification, and finish honesty.`,
+      `Think deeply. Do not merely summarize the transcript. Judge whether each actor did well: user request quality, assistant reasoning/action quality, tool-call necessity, facts quality, recovery, verification, and finish honesty.`,
       `Use free-form JSON fields when useful. The only required mapping fields are: type, sessionId, source, author, createdAt, and line/rawSource/rawRole for line-level rows.`,
       `For user lines, critique whether the request clearly expressed purpose, provided necessary context, stayed clean/integral, could be simpler, or contained misleading/stale information.`,
       `For assistant/tool lines, explain what was good or bad, why it mattered, and how the agent should do better next time.`,
@@ -3075,7 +3075,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     return json({
       ...buildLoopTrace(_db(), target),
-      ...("workflowRunId" in target ? { workflowEvidence: readWorkflowEvidence(STATE_DIR, target.workflowRunId) } : {}),
+      ...("workflowRunId" in target ? { workflowFacts: readWorkflowFacts(STATE_DIR, target.workflowRunId) } : {}),
     });
   }
 

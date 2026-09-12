@@ -8,7 +8,7 @@ import {
   failAppTaskAttempt,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { getAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
-import { admitTaskRequest } from "../../src/app/core/state/inbox.js";
+import { admitTaskInput } from "../../src/app/core/state/inbox.js";
 
 export const testAttachment = (taskId = "work/one"): AppTaskAttachment => ({
   kind: "desired",
@@ -33,7 +33,7 @@ export function openState(path: string, appId = "example") {
 export function finishTask(config: ReturnType<typeof openState>, taskId = "work/one") {
   const claim = claimObservedAppTask(config, { taskId, appAgent: "example-owner", handler: "agent:example-owner" });
   if (claim.kind !== "claimed") throw new Error(`Expected Task claim, got ${claim.kind}`);
-  const result = completeAppTask(config, claim, { summary: "Verified", evidence: ["fixture:checked"] });
+  const result = completeAppTask(config, claim, { summary: "Verified", facts: ["fixture:checked"] });
   if (result.status !== "applied") throw new Error(`Unexpected result: ${result.status}`);
 }
 
@@ -65,11 +65,11 @@ if (import.meta.main) {
       if (action === "crash-admission-existing" || action === "crash-admission-desired") {
         const kind = action === "crash-admission-existing" ? "existing" : "desired";
         // Released Hosts committed admission before the request wait/Topic link.
-        admitTaskRequest(config, {
+        admitTaskInput(config, {
           appId: "example",
           attachment: kind === "existing" ? { kind, taskId } : testAttachment(taskId),
           idempotencyKey: `task:${item.id}:${kind}:${taskId}`,
-          request: { id: item.id, source: item.source, input: item.input },
+          inputContext: { id: item.id, source: item.source, input: item.input },
         });
         process.kill(process.pid, "SIGKILL");
       }
@@ -80,11 +80,11 @@ if (import.meta.main) {
           return run(sql, params);
         };
       }
-      admitTaskRequest(config, {
+      admitTaskInput(config, {
         appId: "example",
         attachment: testAttachment(taskId),
         idempotencyKey: "task:request-one",
-        request: { id: item.id, source: item.source, input: item.input },
+        inputContext: { id: item.id, source: item.source, input: item.input },
         inboxInputId: item.id,
       });
       if (action === "crash-after") process.kill(process.pid, "SIGKILL");

@@ -93,7 +93,7 @@ describe("Task hierarchy is context, not a return protocol", () => {
     if (parent.kind !== "claimed") throw new Error("Structural children must not gate a claim");
     completeAppTask(config, parent, { summary: "No input needs handling" });
     const child = claimChild(config);
-    if (kind === "answer") completeAppTask(config, child, { summary: "Child answer", evidence: ["proof"] });
+    if (kind === "answer") completeAppTask(config, child, { summary: "Child answer", facts: ["proof"] });
     if (kind === "failure")
       markAppTaskAttention(config, child, { summary: "Provider failed", reason: "handler-blocked" });
     if (kind === "closure") {

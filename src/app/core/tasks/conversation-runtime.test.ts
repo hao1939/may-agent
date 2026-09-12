@@ -42,7 +42,7 @@ const app = defineApp({
   id: "chat",
   version: 1,
   agent: "chat-agent",
-  requests: { mode: "agent" },
+  conversation: { mode: "agent" },
   inputSchema: Type.Object({ kind: Type.String(), data: Type.Object({}, { additionalProperties: true }) }),
 });
 const answer: ConversationTurnResult = {
@@ -418,7 +418,7 @@ test("an unrelated executor named conversation retains the ordinary Task contrac
     },
     (_root, appDir) => ({
       appRegistrySnapshot: { id: "ordinary", generation: 1, entries: [{ appDir, definition }] },
-      executors: { conversation: async () => ({ state: "converged", summary: "Ordinary executor", evidence: [] }) },
+      executors: { conversation: async () => ({ state: "converged", summary: "Ordinary executor", facts: [] }) },
     }),
   );
   observeAppTaskIntent(f.context(), {
@@ -509,7 +509,7 @@ test.each(["available", "removed"] as const)(
               backgroundRuns++;
               expect(getAppInboxItem(f.db, "ask")?.result?.response).toBe(delegated.response);
               expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
-              return { state: "converged", summary: "Sample is 17", evidence: ["measurement:17"] };
+              return { state: "converged", summary: "Sample is 17", facts: ["measurement:17"] };
             },
           },
         }),
@@ -647,7 +647,7 @@ test("ordinary inbox work and Conversation input share a Conversation without bl
   const goals: string[] = [];
   const mixed = defineApp({
     ...app,
-    requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
     tasks: { maxConcurrent: 2 },
     task: ({ id }) => ({
       kind: "desired",
@@ -678,7 +678,7 @@ test("ordinary inbox work and Conversation input share a Conversation without bl
       executors: {
         measure: async (attempt) => {
           goals.push(attempt.task.id);
-          return { state: "converged", summary: "Measured", evidence: [], result: { value: 17 } };
+          return { state: "converged", summary: "Measured", facts: [], result: { value: 17 } };
         },
       },
     }),
@@ -770,7 +770,7 @@ test("a human Conversation decision cancels the exact running Task after its rep
         measure: async (attempt) => {
           started.resolve(attempt);
           await release.promise;
-          return { state: "converged", summary: "Late measurement", evidence: [] };
+          return { state: "converged", summary: "Late measurement", facts: [] };
         },
       },
     }),
@@ -952,7 +952,7 @@ test.each(["live", "restart", "admission-write-failure"])(
           measure: async () => {
             started.resolve();
             await release.promise;
-            return { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] };
+            return { state: "converged", summary: "Sample is 17", result: { value: 17 }, facts: ["measurement:17"] };
           },
         },
       }),
@@ -1078,12 +1078,12 @@ test("a waiting report reaches Conversation, survives reopen and finishes the sa
         measure: async (attempt) => {
           attempts.push(attempt);
           return ready
-            ? { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] }
+            ? { state: "converged", summary: "Sample is 17", result: { value: 17 }, facts: ["measurement:17"] }
             : {
                 state: "waiting",
                 report: true,
                 summary: "Please restore source access",
-                evidence: ["source:denied"],
+                facts: ["source:denied"],
                 conditions: [
                   {
                     id: "source-ready",
@@ -1184,11 +1184,11 @@ test.each(["incomplete", "execution-error"])(
               return {
                 state: "incomplete",
                 summary: `Could not obtain measurement: source offline (${runs})`,
-                evidence: ["measurement source: unavailable"],
+                facts: ["measurement source: unavailable"],
               };
             }
             await repair.promise;
-            return { state: "converged", summary: "Sample is 17", result: { value: 17 }, evidence: ["measurement:17"] };
+            return { state: "converged", summary: "Sample is 17", result: { value: 17 }, facts: ["measurement:17"] };
           },
         },
       }),
@@ -1240,7 +1240,7 @@ test.each(["incomplete", "execution-error"])(
               acceptedResult: {
                 state: "incomplete",
                 summary: "Could not obtain measurement: source offline (1)",
-                evidence: ["measurement source: unavailable"],
+                facts: ["measurement source: unavailable"],
               },
             },
       );
@@ -1319,7 +1319,7 @@ test.each(["live", "restart", "stop"])("owner closure returns without manufactur
             state: "converged",
             summary: "Late measurement",
             result: { value: 17 },
-            evidence: ["measurement:17"],
+            facts: ["measurement:17"],
           };
         },
       },
@@ -1807,7 +1807,7 @@ test("human Conversation input keeps capacity beside same-App background work; s
           backgroundRuns++;
           backgroundStarted.resolve();
           await releaseBackground.promise;
-          return { state: "converged", summary: "Background finished", evidence: [] };
+          return { state: "converged", summary: "Background finished", facts: [] };
         },
       },
     }),
@@ -1884,7 +1884,7 @@ test("a paused App answers human input through its Task across restart while bac
         executors: {
           count: async () => {
             backgroundRuns++;
-            return { state: "converged", summary: "Resumed work", evidence: [] };
+            return { state: "converged", summary: "Resumed work", facts: [] };
           },
         },
       };
@@ -1964,7 +1964,7 @@ test("the Conversation delegates and steers same-App work through the Task runti
   let linkedTopic = "";
   const ownApp = defineApp({
     ...app,
-    requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
     inputSchema: Type.Union([
       Type.Object({ kind: Type.Literal("message"), data: Type.Object({}, { additionalProperties: true }) }),
       Type.Object({ kind: Type.Literal("goal"), data: Type.Object({ outcome: Type.String() }) }),
@@ -1977,7 +1977,7 @@ test("the Conversation delegates and steers same-App work through the Task runti
         parentId: "root",
         executor: "inspect",
         outcome: "Review the design",
-        acceptance: ["Return evidence-backed findings"],
+        acceptance: ["Return facts-backed findings"],
       },
     }),
   });
@@ -2007,7 +2007,7 @@ test("the Conversation delegates and steers same-App work through the Task runti
             appId: app.id,
             ...(next ? { task: { appId: app.id, taskId: "goal/review" } } : {}),
             outcome: next ? "Include recovery in the review" : "Review the design",
-            acceptance: ["Return evidence-backed findings"],
+            acceptance: ["Return facts-backed findings"],
             input: { kind: "goal", data: { outcome: next ? "Include recovery" : "Review the design" } },
           },
         },
@@ -2021,7 +2021,7 @@ test("the Conversation delegates and steers same-App work through the Task runti
           backgroundRuns++;
           return {
             state: "waiting",
-            summary: "Waiting for the evidence source",
+            summary: "Waiting for the facts source",
             conditions: [
               {
                 id: "source",
@@ -2103,7 +2103,7 @@ test("a subscribed App input executes in the default Conversation without a supe
             appDir,
             definition: defineApp({
               ...app,
-              requests: { mode: "agent", conversationId: "primary" },
+              conversation: { mode: "agent", conversationId: "primary" },
               subscriptions: [
                 {
                   id: "provider",
@@ -2150,14 +2150,14 @@ test("a subscribed App input executes in the default Conversation without a supe
 // inbox callback. These checks use real Task claims, preparation and settlement.
 const contextTaskApp = defineApp({
   ...app,
-  requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+  conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
   tasks: {},
   task: ({ id }) => ({
     kind: "desired",
     intent: {
       id: `work/${id}`,
       parentId: "root",
-      outcome: "Review the current evidence",
+      outcome: "Review the current facts",
       acceptance: ["Return supported findings"],
     },
   }),
@@ -2169,7 +2169,7 @@ const manualContextTasks = (_root: string, appDir: string): Partial<AppTaskRunti
 const olderReview = {
   id: "work/older",
   parentId: "root",
-  outcome: "Review earlier evidence",
+  outcome: "Review earlier facts",
   acceptance: ["Return supported findings"],
 };
 
@@ -2246,13 +2246,13 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
       status: "done",
       structuredResult: {
         summary: "Continued the earlier review",
-        response: "I will include the new evidence in that review.",
+        response: "I will include the new facts in that review.",
         topic: { kind: "existing", id: "00000000" },
         followUp: {
           appId: app.id,
           task: { appId: app.id, taskId: olderReview.id },
-          outcome: "Include the new evidence",
-          acceptance: ["Review the new evidence"],
+          outcome: "Include the new facts",
+          acceptance: ["Review the new facts"],
           input: { kind: "goal", data: { message: "Include the latest sample" } },
         },
       },
@@ -2316,7 +2316,7 @@ test.each(["handoff", "control"] as const)(
                   appId: app.id,
                   task: { appId: app.id, taskId: olderReview.id },
                   outcome: "Continue the review",
-                  acceptance: ["Review the evidence"],
+                  acceptance: ["Review the facts"],
                   input: { kind: "goal", data: {} },
                 },
               }),
@@ -2366,7 +2366,7 @@ test("closed Task reuse retains the caller input for a corrected attempt after r
         followUp: {
           appId: app.id,
           ...(calls === 1 ? { task: { appId: app.id, taskId: olderReview.id } } : {}),
-          outcome: "Review the current evidence",
+          outcome: "Review the current facts",
           acceptance: ["Return supported findings"],
           input: { kind: "goal", data: {} },
         },
@@ -2399,7 +2399,7 @@ test("closed Task reuse retains the caller input for a corrected attempt after r
     conversationId: "primary",
     topicId: "old-review",
     source: { kind: "human", id: "new-review" },
-    input: { kind: "message", data: { message: "Review the current evidence" } },
+    input: { kind: "message", data: { message: "Review the current facts" } },
   });
   await f.run(admitted.taskId);
   expect(calls, f.store.readTask(admitted.taskId)?.status.summary).toBe(1);

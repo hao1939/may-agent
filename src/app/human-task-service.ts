@@ -52,7 +52,7 @@ export type HumanTaskView = {
   summary?: string;
   response?: string;
   result?: Record<string, unknown>;
-  evidence?: string[];
+  facts?: string[];
   updatedAt: number;
   terminal: boolean;
   cancellable: boolean;
@@ -249,7 +249,7 @@ function boundedUtf8Text(value: string, maxBytes: number): string {
 }
 
 function listCard(view: HumanTaskView): HumanTaskView {
-  const { acceptance: _acceptance, response: _response, result: _result, evidence: _evidence, ...card } = view;
+  const { acceptance: _acceptance, response: _response, result: _result, facts: _facts, ...card } = view;
   return {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
@@ -460,7 +460,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       summary: cancellation.summary,
       ...(cancellation.response ? { response: cancellation.response } : {}),
       ...(cancellation.result ? { result: structuredClone(cancellation.result) } : {}),
-      ...(cancellation.evidence ? { evidence: [...cancellation.evidence] } : {}),
+      ...(cancellation.facts ? { facts: [...cancellation.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(cancellation.cancelledAt),
       terminal: true,
       cancellable: false,
@@ -483,7 +483,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       summary: receipt.summary,
       ...(receipt.response ? { response: receipt.response } : {}),
       ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
-      ...(receipt.evidence ? { evidence: [...receipt.evidence] } : {}),
+      ...(receipt.facts ? { facts: [...receipt.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
       terminal: true,
       cancellable: false,
@@ -512,7 +512,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     ...(observationIsCurrent && resource.status.summary ? { summary: resource.status.summary } : {}),
     ...(observationIsCurrent && resource.status.response ? { response: resource.status.response } : {}),
     ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
-    ...(observationIsCurrent && resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
+    ...(observationIsCurrent && resource.status.facts ? { facts: [...resource.status.facts] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
     terminal: false,
     cancellable: true,
@@ -770,7 +770,7 @@ function taskHistory(
       historyTruncated: rows.length > TASK_HISTORY_LIMIT,
     };
   } catch (error) {
-    // History is evidence, not authority for the current Task's state.
+    // History is facts, not authority for the current Task's state.
     return { historyError: error instanceof Error ? error.message : String(error) };
   }
 }

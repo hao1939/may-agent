@@ -15,7 +15,7 @@ import type {
 } from "./execution.js";
 import { appTaskSessionBinding } from "./session-binding.js";
 import { getDb } from "../../../lib/db/connection.js";
-import { admitTaskRequest } from "../state/inbox.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import {
   admitConversationTaskInput,
@@ -87,7 +87,7 @@ import {
 import {
   assertAppTaskEffectFresh,
   assertAppTaskClaimCurrent,
-  hasPendingAppTaskEvidence,
+  hasPendingAppTaskFacts,
   associateAppTaskSession,
   claimObservedAppTask,
   cancelAppTask,
@@ -349,7 +349,7 @@ async function runTaskCapability(
           handlerResult: {
             state: "error",
             summary: "Task workflow runner is not installed",
-            evidence: [],
+            facts: [],
             actions: [],
           },
           runId: null,
@@ -892,7 +892,7 @@ async function runTaskAgent(
           handlerResult: {
             state: "error",
             summary: `Task agent ${input.claim.agent} is not available`,
-            evidence: [],
+            facts: [],
             actions: [],
           },
           runId: null,
@@ -959,7 +959,7 @@ async function runRegisteredTaskExecutor(input: {
           handlerResult: {
             state: "error",
             summary: `${input.name} executor failed: ${error instanceof Error ? error.message : String(error)}`,
-            evidence: [],
+            facts: [],
             actions: [],
           },
           runId,
@@ -1008,7 +1008,7 @@ function recoverStaleTaskResult(
   const recovery = releaseStaleAppTaskResult(
     config,
     claim,
-    `Stale reconciliation result for ${claim.taskId} was rejected; retrying from current task evidence`,
+    `Stale reconciliation result for ${claim.taskId} was rejected; retrying from current task facts`,
   );
   return {
     staleRecovery: recovery.status,
@@ -1029,7 +1029,7 @@ function recoverStaleTaskActionResult(
     claim,
     `Stale handler action for ${
       isAppTaskActionStaleError(error) ? error.taskId : claim.taskId
-    } was rejected; retrying ${claim.taskId} from current task evidence`,
+    } was rejected; retrying ${claim.taskId} from current task facts`,
   );
   return {
     staleRecovery: recovery.status,
@@ -1044,7 +1044,7 @@ async function establishTaskAcceptance(input: {
   capability: TaskCapabilityRun;
   executionPaths: AppTaskExecutionPaths;
 }): Promise<
-  { ok: true; acceptanceBasis: AppTaskAcceptanceBasis } | { ok: false; summary: string; evidence: string[] }
+  { ok: true; acceptanceBasis: AppTaskAcceptanceBasis } | { ok: false; summary: string; facts: string[] }
 > {
   const { descriptor, intent, claim, capability } = input;
   const workflow = claim.handler.startsWith("workflow:");
@@ -1054,7 +1054,7 @@ async function establishTaskAcceptance(input: {
         ok: true,
         acceptanceBasis: {
           method: "agent-judgment",
-          evidence: [...capability.handlerResult.evidence],
+          facts: [...capability.handlerResult.facts],
         },
       };
     }
@@ -1062,8 +1062,8 @@ async function establishTaskAcceptance(input: {
       ok: true,
       acceptanceBasis: {
         method: "workflow-contract",
-        evidence: [
-          ...capability.handlerResult.evidence,
+        facts: [
+          ...capability.handlerResult.facts,
           ...(capability.runId ? [`workflow-run:${capability.runId}`] : []),
         ],
       },
@@ -1095,14 +1095,14 @@ async function establishTaskAcceptance(input: {
       return {
         ok: false,
         summary: `Verifier ${capability.verifier.name} returned an invalid result: ${admitted.error}`,
-        evidence: capability.runId ? [`workflow-run:${capability.runId}`] : [],
+        facts: capability.runId ? [`workflow-run:${capability.runId}`] : [],
       };
     }
     if (!admitted.result.accepted) {
       return {
         ok: false,
         summary: admitted.result.summary,
-        evidence: admitted.result.evidence,
+        facts: admitted.result.facts,
       };
     }
     return {
@@ -1110,14 +1110,14 @@ async function establishTaskAcceptance(input: {
       acceptanceBasis: {
         method: "deterministic",
         verifier: capability.verifier.name,
-        evidence: admitted.result.evidence,
+        facts: admitted.result.facts,
       },
     };
   } catch (error) {
     return {
       ok: false,
       summary: `Verifier ${capability.verifier.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-      evidence: capability.runId ? [`workflow-run:${capability.runId}`] : [],
+      facts: capability.runId ? [`workflow-run:${capability.runId}`] : [],
     };
   }
 }
@@ -1208,7 +1208,7 @@ async function reconcileTask(input: {
             ? session.status
             : null;
         if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
-          // A session artifact is evidence, not an accepted Task result. Drain
+          // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
           interruptSupersededAgentSession(opts, sessionId, "Retrying an uncommitted Task attempt", input.taskId);
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
@@ -1223,7 +1223,7 @@ async function reconcileTask(input: {
               route: "task-controller",
               reason: "terminal-agent-session-expired-lease",
               attemptId: expired.attemptId,
-              evidenceSessionId: sessionId,
+              factsSessionId: sessionId,
               terminalStatus,
             });
             return [input.taskId];
@@ -1362,7 +1362,7 @@ async function reconcileTask(input: {
           handlerResult: {
             state: "error",
             summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-            evidence: [],
+            facts: [],
             actions: [],
           },
           runId: null,
@@ -1380,7 +1380,7 @@ async function reconcileTask(input: {
         childContext,
         event,
         execute: async (attempt) => {
-          if (!descriptor.app.requests || !opts.conversations)
+          if (!descriptor.app.conversation || !opts.conversations)
             throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
           const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
           if (!registry) throw new Error("Conversation execution requires an installed App registry");
@@ -1412,7 +1412,7 @@ async function reconcileTask(input: {
                 summary: proposal.decision.summary,
                 response: proposal.decision.response,
                 result: { conversation: proposal.decision },
-                evidence: proposal.decision.evidence ?? [],
+                facts: proposal.decision.facts ?? [],
                 actions: [],
               },
               runId: primary.attemptId,
@@ -1441,8 +1441,8 @@ async function reconcileTask(input: {
         ...(primary.handoff
           ? {
               fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-                primary.handoff.evidence.length
-                  ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                primary.handoff.facts.length
+                  ? `\nHandoff facts:\n${primary.handoff.facts.map((entry) => `- ${entry}`).join("\n")}`
                   : ""
               }`,
             }
@@ -1469,7 +1469,7 @@ async function reconcileTask(input: {
           handlerResult: {
             state: "error",
             summary: `Task executor ${executorKey} is not registered`,
-            evidence: [],
+            facts: [],
             actions: [],
           },
           runId: null,
@@ -1491,7 +1491,7 @@ async function reconcileTask(input: {
           handlerResult: {
             state: "error",
             summary: handoffWorkflow?.error ?? "Task workflow runner is not installed",
-            evidence: [],
+            facts: [],
             actions: [],
           },
           runId: null,
@@ -1509,8 +1509,8 @@ async function reconcileTask(input: {
           ...(primary.handoff
             ? {
                 fallbackReason: `${primary.handoff.reason}: ${primary.handoff.summary}${
-                  primary.handoff.evidence.length
-                    ? `\nHandoff evidence:\n${primary.handoff.evidence.map((entry) => `- ${entry}`).join("\n")}`
+                  primary.handoff.facts.length
+                    ? `\nHandoff facts:\n${primary.handoff.facts.map((entry) => `- ${entry}`).join("\n")}`
                     : ""
                 }`,
               }
@@ -1534,7 +1534,7 @@ async function reconcileTask(input: {
         disposition: "stale",
         input: intent.input ?? {},
         summary: error instanceof Error ? error.message : String(error),
-        evidence: primaryHandlerResult.evidence,
+        facts: primaryHandlerResult.facts,
         staleRecovery: stale.staleRecovery,
         workflowRunId: primaryResult.runId,
       });
@@ -1576,8 +1576,8 @@ async function reconcileTask(input: {
       // An incomplete report does not accept or discard workspace output. Retain it using
       // the existing failed-attempt policy, including any cleanup limitation.
       const finalized = await finalizeWorkspace("failed");
-      const evidence = [
-        ...primaryHandlerResult.evidence,
+      const facts = [
+        ...primaryHandlerResult.facts,
         ...(taskWorkspace ? [taskWorkspace.metadata.path] : []),
         ...(!finalized.ok && finalized.reason ? [finalized.reason] : []),
       ];
@@ -1585,7 +1585,7 @@ async function reconcileTask(input: {
         const applied = persistResult(() =>
           reportAppTaskFailure(config, primary, {
             ...primaryHandlerResult,
-            evidence,
+            facts,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           }),
         );
@@ -1596,7 +1596,7 @@ async function reconcileTask(input: {
           handler: primary.handler,
           disposition: applied.status === "applied" ? "incomplete" : "stale",
           summary: applied.summary ?? primaryHandlerResult.summary,
-          evidence,
+          facts,
         });
         return staleResult?.reconcileTaskIds ?? [];
       } catch (error) {
@@ -1619,8 +1619,8 @@ async function reconcileTask(input: {
       if (!accepted.ok) {
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = accepted.summary;
-        primaryHandlerResult.evidence = accepted.evidence;
-        // Rejected acceptance needs new evidence or an owner decision, not a
+        primaryHandlerResult.facts = accepted.facts;
+        // Rejected acceptance needs new facts or an owner decision, not a
         // transport retry of the same workflow and its external effects.
         primaryResult.handlerBlocked = true;
         emitTaskReconciliationEvent(opts, descriptor, event, "project.task.verification.failed", intent.id, {
@@ -1628,7 +1628,7 @@ async function reconcileTask(input: {
           attemptId: primary.attemptId,
           handler: primary.handler,
           summary: accepted.summary,
-          evidence: accepted.evidence,
+          facts: accepted.facts,
           workflowRunId: primaryResult.runId,
         });
       } else {
@@ -1637,7 +1637,7 @@ async function reconcileTask(input: {
         // Keep reusable work when a newer observation still needs judgment.
         // Completion below records progress instead of granting acceptance.
         const finalized = await finalizeWorkspace(
-          hasPendingAppTaskEvidence(config, primary, primaryResult.acceptedLiveEventIds) ? "waiting" : "accepted",
+          hasPendingAppTaskFacts(config, primary, primaryResult.acceptedLiveEventIds) ? "waiting" : "accepted",
         );
         if (!finalized.ok) {
           // A retained dirty/unintegrated workspace needs inspection, not an
@@ -1645,8 +1645,8 @@ async function reconcileTask(input: {
           primaryResult.handlerBlocked = true;
           primaryHandlerResult.state = "error";
           primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-          primaryHandlerResult.evidence = [
-            ...primaryHandlerResult.evidence,
+          primaryHandlerResult.facts = [
+            ...primaryHandlerResult.facts,
             taskWorkspace?.metadata.path ?? executionPaths.workspaceDir,
           ];
         }
@@ -1664,7 +1664,7 @@ async function reconcileTask(input: {
                   summary: primaryHandlerResult.summary,
                   response: primaryHandlerResult.response,
                   result: primaryHandlerResult.result,
-                  evidence: primaryHandlerResult.evidence,
+                  facts: primaryHandlerResult.facts,
                   actions: primaryHandlerResult.actions,
                   acceptanceBasis,
                   acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
@@ -1692,7 +1692,7 @@ async function reconcileTask(input: {
             summary: primaryHandlerResult.summary,
             ...(primaryHandlerResult.response ? { response: primaryHandlerResult.response } : {}),
             ...(primaryHandlerResult.result ? { result: primaryHandlerResult.result } : {}),
-            evidence: primaryHandlerResult.evidence,
+            facts: primaryHandlerResult.facts,
             acceptanceBasis,
             actionsApplied: apply.actionsApplied,
             ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
@@ -1730,7 +1730,7 @@ async function reconcileTask(input: {
               ...(intent.executor ? { executor: intent.executor } : {}),
               input: intent.input ?? {},
               summary,
-              evidence: primaryHandlerResult.evidence,
+              facts: primaryHandlerResult.facts,
               staleRecovery: stale.staleRecovery,
               workflowRunId: primaryResult.runId,
             });
@@ -1750,8 +1750,8 @@ async function reconcileTask(input: {
         primaryResult.handlerBlocked = true;
         primaryHandlerResult.state = "error";
         primaryHandlerResult.summary = finalized.reason ?? "Task workspace finalization failed";
-        primaryHandlerResult.evidence = [
-          ...primaryHandlerResult.evidence,
+        primaryHandlerResult.facts = [
+          ...primaryHandlerResult.facts,
           taskWorkspace?.metadata.path ?? executionPaths.workspaceDir,
         ];
       }
@@ -1794,7 +1794,7 @@ async function reconcileTask(input: {
             summary: primaryHandlerResult.summary,
             response: primaryHandlerResult.response,
             result: primaryHandlerResult.result,
-            evidence: primaryHandlerResult.evidence,
+            facts: primaryHandlerResult.facts,
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
@@ -1814,7 +1814,7 @@ async function reconcileTask(input: {
           summary: primaryHandlerResult.summary,
           ...(primaryHandlerResult.response ? { response: primaryHandlerResult.response } : {}),
           ...(primaryHandlerResult.result ? { result: primaryHandlerResult.result } : {}),
-          evidence: primaryHandlerResult.evidence,
+          facts: primaryHandlerResult.facts,
           actionsApplied: apply.actionsApplied,
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
@@ -1838,7 +1838,7 @@ async function reconcileTask(input: {
             disposition: "stale",
             input: intent.input ?? {},
             summary,
-            evidence: primaryHandlerResult.evidence,
+            facts: primaryHandlerResult.facts,
             staleRecovery: stale.staleRecovery,
             workflowRunId: primaryResult.runId,
           });
@@ -1881,7 +1881,7 @@ async function reconcileTask(input: {
           // A failed workspace/action admission must not report its proposed
           // Task mutations as accepted through the diagnostic path either.
           result: primaryHandlerResult.actions.length ? undefined : primaryHandlerResult.result,
-          evidence: primaryHandlerResult.evidence,
+          facts: primaryHandlerResult.facts,
           reason: primaryHandlerResult.resultRejected
             ? "HandlerResultInvalid"
             : primaryResult.unavailable
@@ -2213,7 +2213,7 @@ export function admitLoadedConversationInput(input: {
   item: CreateAppInboxItem & { conversationId: string };
 }) {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.item.appId);
-  const requests = descriptor?.app.requests;
+  const requests = descriptor?.app.conversation;
   if (!descriptor || !requests || (requests.inputKinds && !requests.inputKinds.includes(input.item.input.kind)))
     throw new Error(`App ${input.item.appId} has no loaded Conversation capability for this input`);
   if (!Check(descriptor.app.inputSchema, input.item.input)) throw new Error("Invalid Conversation input");
@@ -2229,7 +2229,7 @@ export function admitLoadedConversationInput(input: {
 
 export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTurnTarget }) {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.target.appId);
-  if (!descriptor?.app.requests) throw new Error("Conversation runtime is unavailable");
+  if (!descriptor?.app.conversation) throw new Error("Conversation runtime is unavailable");
   const result = stopConversationTaskTurn(appTaskConfig(descriptor), input.target);
   input.bus.emit({
     type: "app.task.attempt.stopped",
@@ -2258,7 +2258,7 @@ export function admitLoadedConversationChange(input: ConversationTaskChangeRef &
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   const taskId = conversationTaskId(input.appId, input.conversationId);
   if (!descriptor || !descriptor.resourceStore.readTask(taskId)) return null;
-  if (!descriptor.app.requests) return { taskId, created: false };
+  if (!descriptor.app.conversation) return { taskId, created: false };
   const source = AppTaskResourceStore.activeFromDb(descriptor.resourceStore.db, input.taskAppId);
   if (
     descriptor.resourceStore.isCancelled(taskId) ||
@@ -2276,7 +2276,7 @@ export function admitLoadedConversationChange(input: ConversationTaskChangeRef &
     appTaskConfig(descriptor),
     { resourceStore: source },
     input,
-    descriptor.app.requests.inputKinds,
+    descriptor.app.conversation.inputKinds,
   );
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return { taskId: admitted.taskId, created: admitted.created };
@@ -2460,7 +2460,7 @@ function installConventionTaskControllers(
       capacity: opts.hostCapacity,
       readScheduling: () => ({
         backgroundPaused: binding.descriptor.resourceStore.projectLifecycle() !== "active",
-        foregroundTaskIds: binding.descriptor.app.requests
+        foregroundTaskIds: binding.descriptor.app.conversation
           ? binding.descriptor.resourceStore.pendingHumanConversationTaskIds()
           : new Set(),
       }),
@@ -2719,7 +2719,7 @@ export function attachLoadedAppTask(input: {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
-  request: Readonly<AppInputContext>;
+  inputContext: Readonly<AppInputContext>;
   /** Persist the exact input return link with admission. */
   inboxInputId?: string;
   now?: number;
@@ -2745,9 +2745,9 @@ export function attachLoadedAppTask(input: {
   if (!loaderOptions) throw new Error(`App ${descriptor.id} task runtime is not attached`);
 
   const config = appTaskConfig(descriptor);
-  const humanRequested = input.request.source.kind === "human" || input.request.humanRequested === true;
+  const humanRequested = input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true;
 
-  const observation = admitTaskRequest(config, input);
+  const observation = admitTaskInput(config, input);
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
@@ -3107,8 +3107,8 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
                   project: descriptor.id,
                   taskId: released.taskId,
                   reason: "late-terminal-session-after-workflow-restart",
-                  evidenceSessionId: successfulAgent.sessionId,
-                  evidenceWorkflowRunId: successfulAgent.workflowRunId,
+                  factsSessionId: successfulAgent.sessionId,
+                  factsWorkflowRunId: successfulAgent.workflowRunId,
                 },
               } as unknown as AgentEvent);
             }

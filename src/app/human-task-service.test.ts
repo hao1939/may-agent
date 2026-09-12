@@ -337,7 +337,7 @@ function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt:
       handler: "agent",
       summary: `${taskId} finished`,
       response: `${taskId} result`,
-      evidence: ["proof"],
+      facts: ["proof"],
       acceptanceBasis: { kind: "owner" },
       failureFingerprints: [],
       completedAt: new Date(completedAt).toISOString(),
@@ -666,14 +666,14 @@ describe("Human Task service", () => {
       phase: "pending",
       updatedAt: 10,
       ready: true,
-      acceptance: ["List the identity evidence.", "Cancel only proven duplicates."],
+      acceptance: ["List the identity facts.", "Cancel only proven duplicates."],
     });
     const service = new HumanTaskService(db, registry("gym"));
 
     expect(service.getTask({ appId: "gym", taskId: "deduplicate" })).toMatchObject({
       status: "pending",
       statusDetail: "Accepted and ready to start; no attempt is running.",
-      acceptance: ["List the identity evidence.", "Cancel only proven duplicates."],
+      acceptance: ["List the identity facts.", "Cancel only proven duplicates."],
     });
     const card = service.listTasks().items[0]!;
     expect(card.statusDetail).toBe("Accepted and ready to start; no attempt is running.");
@@ -898,7 +898,7 @@ describe("Human Task service", () => {
     receipt.summary = "摘".repeat(1_000);
     receipt.response = "full response";
     receipt.result = { content: "x".repeat(3_000) };
-    receipt.evidence = ["full evidence"];
+    receipt.facts = ["full facts"];
     db.prepare("UPDATE app_task_receipts SET receipt_json = ? WHERE app_id = 'alpha' AND receipt_id = 'large'").run(
       JSON.stringify(receipt),
     );
@@ -910,7 +910,7 @@ describe("Human Task service", () => {
     expect(card.outcome.endsWith("…")).toBe(true);
     expect(card.response).toBeUndefined();
     expect(card.result).toBeUndefined();
-    expect(card.evidence).toBeUndefined();
+    expect(card.facts).toBeUndefined();
     expect(Buffer.byteLength(JSON.stringify(card), "utf8")).toBeLessThan(2_048);
 
     const detail = service.getTask({ ref: card.ref });
@@ -918,7 +918,7 @@ describe("Human Task service", () => {
     expect(detail?.summary).toBe(receipt.summary);
     expect(detail?.response).toBe("full response");
     expect(detail?.result).toEqual(receipt.result);
-    expect(detail?.evidence).toEqual(["full evidence"]);
+    expect(detail?.facts).toEqual(["full facts"]);
   });
 
   test.each([2, 4])("does not project live generation %s as active after its completion receipt exists", (generation) => {
@@ -961,7 +961,7 @@ describe("Human Task service", () => {
     resource.status.summary = "The previous proposal is complete.";
     resource.status.response = "Adopt the previous proposal.";
     resource.status.result = { previous: true };
-    resource.status.evidence = ["previous proof"];
+    resource.status.facts = ["previous proof"];
     db.prepare(
       `INSERT INTO app_task_attempts(
          app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
@@ -995,7 +995,7 @@ describe("Human Task service", () => {
     expect(service.getTask({ appId: "alpha", taskId: "maintained" })).not.toMatchObject({
       summary: expect.anything(),
       response: expect.anything(),
-      evidence: expect.anything(),
+      facts: expect.anything(),
     });
     expect(service.getTask({ appId: "alpha", taskId: "maintained" })?.result).toBeUndefined();
   });

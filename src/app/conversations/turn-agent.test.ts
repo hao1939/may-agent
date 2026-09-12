@@ -39,7 +39,7 @@ const may = defineApp({
   version: 1,
   agent: "may",
   inputSchema: Type.Union([input("message"), input("goal")]),
-  requests: { mode: "agent", inputKinds: ["message"] },
+  conversation: { mode: "agent", inputKinds: ["message"] },
   task: (request) => ({ kind: "existing", taskId: request.id }),
   tasks: {},
 });
@@ -133,7 +133,7 @@ describe("conversational attempt contract", () => {
       snapshot: () => ({ entries: [app, owner].map((definition) => ({ appDir: definition.id, definition })) }),
     } as unknown as AppRegistry;
     const resolve = createConversationAgentResolver({ manager, registry, db });
-    expect(await resolve({ app, request: current, execution })).toEqual(answer);
+    expect(await resolve({ app, inputContext: current, execution })).toEqual(answer);
     return { ...captured!, db, resolve, calls };
   }
 
@@ -191,7 +191,7 @@ describe("conversational attempt contract", () => {
     ).toBe(false);
   });
 
-  it("offers one handoff schema, including through the deprecated SDK name", async () => {
+  it("offers one handoff schema, using the public Conversation contract", async () => {
     const { prompt, options } = await attempt();
     const schema = options.outputSchema!;
     expect(Check(schema, answer)).toBe(true);
@@ -230,7 +230,7 @@ describe("conversational attempt contract", () => {
 
   it.each([
     ["explicit inputs", may],
-    ["all inputs", { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined }],
+    ["all inputs", { ...may, conversation: { mode: "agent" as const }, task: undefined, tasks: undefined }],
   ] as const)("rejects child-wait effects without admitting child work (%s)", async (_kind, frontend) => {
     const root = mkdtempSync(join(tmpdir(), "may-invalid-turn-"));
     roots.push(root);
@@ -350,7 +350,7 @@ describe("conversational attempt contract", () => {
             { name: "bash", arguments: { command: 'test "$(cat note.txt)" = "A small typo: the." && test -s result.txt', timeout: 5 } },
             { name: "finish", arguments: {
               status: "success", summary: decision.summary,
-              verification_evidence: ["The repaired file passed the exact content check"],
+              verification_facts: ["The repaired file passed the exact content check"],
               result: decision,
             } },
           ];
@@ -466,7 +466,7 @@ describe("conversational attempt contract", () => {
   });
 
   it("uses the same turn contract for an App without its own Task capability", async () => {
-    const frontend = { ...may, requests: { mode: "agent" as const }, task: undefined, tasks: undefined };
+    const frontend = { ...may, conversation: { mode: "agent" as const }, task: undefined, tasks: undefined };
     const { prompt, options } = await attempt(request, frontend);
     expect(options.outputSchema).toBe(appRequestAgentResultSchema);
     expect(options.toolPolicy).toBe("app-agent-full");

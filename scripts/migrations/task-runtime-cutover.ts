@@ -127,7 +127,7 @@ const server = createServer(async (request, response) => {
               arguments: JSON.stringify({
                 status: "success",
                 summary: answer.summary,
-                verification_evidence: ["Synthetic cutover input"],
+                verification_facts: ["Synthetic cutover input"],
                 result: answer,
               }),
             },
@@ -217,11 +217,11 @@ try {
   );
   const definition = `export default {
     id: "may", version: 1, agent: "may", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, requests: { mode: "agent", inputKinds: ["message"] },
+    workspace: { kind: "local", localPath: "." }, conversation: { mode: "agent", inputKinds: ["message"] },
     tasks: { maxConcurrent: 2 },
     task(input) { const supervisor = input.input.kind === "supervise"; return { kind: "desired", intent: {
       id: supervisor ? "conversation/follow-up" : "measurement", parentId: "root", mode: supervisor ? "maintain" : "achieve",
-      outcome: supervisor ? "Return linked results" : "Measure the sample", acceptance: ["Fixture evidence retained"],
+      outcome: supervisor ? "Return linked results" : "Measure the sample", acceptance: ["Fixture facts retained"],
       workflow: "cutover-probe", input: { supervisor }
     } }; }
   };`;
@@ -238,7 +238,7 @@ try {
         JSON.stringify({ pid: process.pid, held: process.env.MAY_POC_CUTOVER_HOLD === "1" }));
       if (process.env.MAY_POC_CUTOVER_HOLD === "1") await new Promise(() => {});
       if (ctx.input.supervisor) throw new Error("Retired supervisor executed");
-      return ctx.done("Measured", { state: "converged", summary: "Measurement is 17", result: { value: 17 }, evidence: ["fixture:17"] });
+      return ctx.done("Measured", { state: "converged", summary: "Measurement is 17", result: { value: 17 }, facts: ["fixture:17"] });
     }
   `,
   );

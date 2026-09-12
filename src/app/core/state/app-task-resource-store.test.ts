@@ -292,7 +292,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("keeps cancelled children out of the live context limit and reads their terminal evidence separately", () => {
+  it("keeps cancelled children out of the live context limit and reads their terminal facts separately", () => {
     const store = open();
     try {
       const tree = fixture();
@@ -460,7 +460,7 @@ describe("AppTaskResourceStore", () => {
       if (claim.kind !== "claimed") throw new Error(`expected optional Task claim, got ${JSON.stringify(claim)}`);
       reportAppTaskFailure(config, claim, {
         summary: "Optional work is not feasible",
-        evidence: ["analysis:feasibility"],
+        facts: ["analysis:feasibility"],
         result: { partial: "Findings" },
       });
       expect(source.readCancellation("optional")).toBeNull();
@@ -601,7 +601,7 @@ describe("AppTaskResourceStore", () => {
         const accepted = structuredClone(current);
         accepted.metadata.id = "accepted-previous";
         accepted.state = "completed";
-        accepted.summary = "Previous accepted evidence";
+        accepted.summary = "Previous accepted facts";
         delete accepted.lease;
         delete accepted.sessionId;
         tree.attempts![accepted.metadata.id] = accepted;
@@ -937,7 +937,7 @@ describe("AppTaskResourceStore", () => {
     deferAppTask(config, claim, {
       disposition: "waiting",
       summary: "Wait for review",
-      evidence: [],
+      facts: [],
       conditions: [
         {
           id: "review",
@@ -998,7 +998,7 @@ describe("AppTaskResourceStore", () => {
     expect(store.readTask("normal")?.status.currentAttemptId).toBe(claim.attemptId);
     expect(store.readAttempt(claim.attemptId)?.state).toBe("running");
     expect(store.readTrigger("normal")).toBeNull();
-    expect(completeAppTask(config, claim, { summary: "resource task complete", evidence: ["test"] }).status).toBe(
+    expect(completeAppTask(config, claim, { summary: "resource task complete", facts: ["test"] }).status).toBe(
       "applied",
     );
     expect(store.readTask("normal")?.status.phase).toBe("converged");
@@ -1105,7 +1105,7 @@ describe("AppTaskResourceStore", () => {
     });
     expect(claim.kind).toBe("claimed");
     if (claim.kind !== "claimed") throw new Error("expected dependency claim");
-    expect(completeAppTask(config, claim, { summary: "dependency complete", evidence: ["test"] })).toMatchObject({
+    expect(completeAppTask(config, claim, { summary: "dependency complete", facts: ["test"] })).toMatchObject({
       status: "applied",
       dependentTaskIds: [dependent.metadata.id],
     });

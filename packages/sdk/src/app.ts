@@ -10,7 +10,7 @@ export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
 export type {
   AppRead,
   ExecutionResult,
-  CliCallEvidence,
+  CliCallFacts,
   ExecutionView,
   Logger,
   MetricDefinition,
@@ -54,12 +54,12 @@ export type AppResult = {
   summary: string;
   response?: string;
   result?: Record<string, unknown>;
-  evidence?: string[];
+  facts?: string[];
 };
 
 /**
  * Read-only current observation of the exact dependency linked by the host.
- * It gives a reawakened owner enough evidence to review the dependency without
+ * It gives a reawakened owner enough facts to review the dependency without
  * exposing inbox leases, task storage, or runtime query capabilities.
  */
 export type AppDependencyObservation = {
@@ -69,11 +69,11 @@ export type AppDependencyObservation = {
   summary?: string;
   response?: string;
   result?: Record<string, unknown>;
-  evidence?: string[];
-} & Partial<Omit<TaskDetail, "id" | "status" | "summary" | "response" | "result" | "evidence">>;
+  facts?: string[];
+} & Partial<Omit<TaskDetail, "id" | "status" | "summary" | "response" | "result" | "facts">>;
 
 /** Current canonical state for one exact Task shown in recent human context. */
-export type AppRequestTaskObservation = {
+export type TaskObservation = {
   appId: string;
   ref?: string;
   task: AppDependencyObservation;
@@ -214,7 +214,7 @@ export type AppInputContext<TData = unknown> = {
   input: AppInput<TData>;
   /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
   inputs?: ReadonlyArray<AppTaskInput>;
-  /** Evidence from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
+  /** Facts from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
   previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;
   /** Exact bounded observation for the human's focused Task, when supplied. */
@@ -223,13 +223,10 @@ export type AppInputContext<TData = unknown> = {
     task: AppDependencyObservation;
   };
   /** Current canonical snapshots for exact Tasks represented by recent command/tool views. */
-  referencedTasks?: AppRequestTaskObservation[];
-  /** Bounded exact conversation evidence; it never owns or schedules work. */
+  referencedTasks?: TaskObservation[];
+  /** Bounded exact conversation facts; it never owns or schedules work. */
   conversation?: AppConversationResource;
 };
-
-/** @deprecated Use AppInputContext. Retained for existing SDK consumers. */
-export type AppRequest<TData = unknown> = AppInputContext<TData>;
 
 /** Pure, durable identity supplied when an admitted App input is resolved to work. */
 export type AppTaskInput<TData = unknown> = {
@@ -241,11 +238,11 @@ export type AppTaskInput<TData = unknown> = {
 
 export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "desired"; intent: TaskIntent };
 
-export type AppRequestTopicDecision =
+export type ConversationTopicDecision =
   { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };
 
 /** A narrow human-authorized operation on an exact Task already present in request context. */
-export type AppRequestTaskControl = {
+export type ConversationTaskControl = {
   kind: "cancel";
   appId: string;
   taskId: string;
@@ -253,7 +250,7 @@ export type AppRequestTaskControl = {
 };
 
 /** Durable intent handed from a bounded conversational turn to App-owned work. */
-export type AppRequestFollowUp = {
+export type ConversationDelegation = {
   /** Exact accepted ask served by this handoff, when tracking an ask. */
   requestId?: string;
   outcome: string;
@@ -275,16 +272,13 @@ export type ConversationTurnResult = {
    * it may also accompany exact durable work that continues to a later result.
    */
   response?: string;
-  evidence?: string[];
-  topic: AppRequestTopicDecision;
-  /** Admit one responsible Task directly and link it to the chosen Topic; the request then completes. */
-  followUp?: AppRequestFollowUp;
-  taskControls?: AppRequestTaskControl[];
+  facts?: string[];
+  topic: ConversationTopicDecision;
+  /** Admit one responsible Task directly and link it to the chosen Topic; handling of this input then completes. The accepted ask may remain open. */
+  followUp?: ConversationDelegation;
+  taskControls?: ConversationTaskControl[];
   requestUpdates?: AppConversationRequestUpdate[];
 };
-
-/** @deprecated Use ConversationTurnResult. Child-result waits are no longer supported. */
-export type AppRequestDecision = ConversationTurnResult;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 
@@ -294,7 +288,7 @@ export const conversationTurnResultSchema = Type.Object(
     summary: nonEmptyStringSchema,
     requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
     response: Type.Optional(nonEmptyStringSchema),
-    evidence: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
+    facts: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
     topic: Type.Union([
       Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
       Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
@@ -411,7 +405,7 @@ export type AppTaskPolicy = {
 };
 
 /** Conversation input executes through one stable Task per Conversation. */
-export type AppRequestPolicy = {
+export type AppConversationPolicy = {
   mode: "agent";
   /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */
   inputKinds?: string[];
@@ -427,7 +421,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
   inputSchema: TInputSchema;
   /** Pure mapping from admitted input to the one existing or desired Task that owns it. */
   task?: (input: Readonly<AppTaskInput>) => AppTaskAttachment;
-  requests?: AppRequestPolicy;
+  conversation?: AppConversationPolicy;
   subscriptions?: AppEventSubscription[];
   /**
    * Reviewed facts that intentionally create no inbox item or task. The host

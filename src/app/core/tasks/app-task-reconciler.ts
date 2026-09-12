@@ -70,7 +70,7 @@ export type AppTaskClaim = {
   handoff?: {
     reason: "needs-agent" | "recovered-session";
     summary: string;
-    evidence: string[];
+    facts: string[];
   };
 };
 
@@ -294,7 +294,7 @@ function hasUnacceptedLiveEvents(
   if (!pending) return false;
   const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
   return taskTriggerEvents(pending).some(({ event }) => {
-    // A clock wake carries no new evidence or intent. Normal settlement still
+    // A clock wake carries no new facts or intent. Normal settlement still
     // handles the wake; passing time alone does not invalidate useful work.
     if (event.type === "project.task.tick") return false;
     const eventId = Number(event.eventId);
@@ -321,7 +321,7 @@ export function assertAppTaskClaimCurrent(config: AppTaskContext, claim: AppTask
   }
 }
 
-export function hasPendingAppTaskEvidence(
+export function hasPendingAppTaskFacts(
   config: AppTaskContext,
   claim: AppTaskClaim,
   acceptedLiveEventIds?: readonly number[],
@@ -329,19 +329,19 @@ export function hasPendingAppTaskEvidence(
   return hasUnacceptedLiveEvents(config.resourceStore.readTrigger(claim.taskId) ?? undefined, acceptedLiveEventIds);
 }
 
-/** Reject an externally visible effect when newer Task evidence is still unaccepted. */
+/** Reject an externally visible effect when newer Task facts are still unaccepted. */
 export function assertAppTaskEffectFresh(
   config: AppTaskContext,
   claim: AppTaskClaim,
   acceptedLiveEventIds?: readonly number[],
 ): void {
   assertAppTaskClaimCurrent(config, claim);
-  if (hasPendingAppTaskEvidence(config, claim, acceptedLiveEventIds)) {
+  if (hasPendingAppTaskFacts(config, claim, acceptedLiveEventIds)) {
     throw new AppTaskActionStaleError({
       taskId: claim.taskId,
       expectedGeneration: claim.generation,
       currentGeneration: claim.generation,
-      reason: "newer Task evidence is pending",
+      reason: "newer Task facts are pending",
     });
   }
 }
@@ -467,7 +467,7 @@ export function appTaskSpecHash(intent: AppTaskIntent, effectiveAgent?: string):
   return taskSpecHash(intent, effectiveAgent);
 }
 
-/** Compare retained evidence without rewriting its identity or accepting legacy authoring. */
+/** Compare retained facts without rewriting its identity or accepting legacy authoring. */
 export function matchesAppTaskSpecHash(intent: AppTaskIntent, effectiveAgent: string, hash: string): boolean {
   return [undefined, "achieve", "maintain"].some((legacyMode) => taskSpecHash(intent, effectiveAgent, legacyMode) === hash);
 }
@@ -543,7 +543,7 @@ function latestTaskAttempt(tree: TaskTree, taskId: string, generation?: number):
     .sort((left, right) => right.startedAt.localeCompare(left.startedAt))[0];
 }
 
-function previousAttemptEvidence(attempt: AppTaskAttempt): NonNullable<TaskAttempt["previousAttempt"]> {
+function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt["previousAttempt"]> {
   const result = attempt.acceptedResult;
   return {
     attemptId: attempt.metadata.id,
@@ -560,7 +560,7 @@ function previousAttemptEvidence(attempt: AppTaskAttempt): NonNullable<TaskAttem
             summary: result.summary,
             ...(result.response ? { response: result.response } : {}),
             ...(result.result ? { result: structuredClone(result.result) } : {}),
-            evidence: [...result.evidence],
+            facts: [...result.facts],
           },
         }
       : {}),
@@ -608,7 +608,7 @@ function finishAttempt(
   resource.status.currentAttemptId = undefined;
 }
 
-/** Capture accepted evidence inside the same mutation as attempt settlement. */
+/** Capture accepted facts inside the same mutation as attempt settlement. */
 function acceptedAttemptResult(
   tree: TaskTree,
   taskId: string,
@@ -617,7 +617,7 @@ function acceptedAttemptResult(
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
     acceptedLiveEventIds?: number[];
   },
   acceptanceBasis: AppTaskAcceptanceBasis,
@@ -637,7 +637,7 @@ function acceptedAttemptResult(
     summary: input.summary,
     ...(input.response !== undefined ? { response: input.response } : {}),
     ...(input.result ? { result: input.result } : {}),
-    evidence: input.evidence ?? [],
+    facts: input.facts ?? [],
     acceptanceBasis,
     ...(acceptedLiveEventIds.length ? { acceptedLiveEventIds } : {}),
   });
@@ -723,7 +723,7 @@ export function appTaskAttemptReport(attempt: AppTaskAttempt) {
     return {
       state: "error" as const,
       summary: `Execution failed before an accepted result: ${(attempt.summary ?? attempt.failureReason ?? "Unknown execution failure").slice(0, 1024)}`,
-      evidence: [`task-attempt:${attempt.metadata.id}`],
+      facts: [`task-attempt:${attempt.metadata.id}`],
     };
   return null;
 }
@@ -1023,7 +1023,7 @@ export function releaseInterruptedAppTaskAttempt(
     return { released: false, sessionIds: [] };
   const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
   const now = new Date().toISOString();
-  const recoveredSummary = `${summary}; retrying from current task evidence`;
+  const recoveredSummary = `${summary}; retrying from current task facts`;
   const sessionIds = attempt.sessionId ? [attempt.sessionId] : [];
   restoreAttemptEvents(tree, taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
@@ -1079,7 +1079,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
 
   const mutationScope = beginResourceMutationScopeForTasks(tree, [recovery.taskId]);
   const now = new Date(nowMs).toISOString();
-  const recoveredSummary = `${summary}; terminal agent session ${recovery.sessionId} (${recovery.terminalStatus}) cannot return this expired attempt; retrying from current task evidence`;
+  const recoveredSummary = `${summary}; terminal agent session ${recovery.sessionId} (${recovery.terminalStatus}) cannot return this expired attempt; retrying from current task facts`;
   restoreAttemptEvents(tree, recovery.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
   attempt.metadata.resourceVersion += 1;
@@ -1113,7 +1113,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
 
   const mutationScope = beginResourceMutationScopeForTasks(tree, [binding.taskId]);
   const now = new Date().toISOString();
-  const recoveredSummary = `${summary}; retrying the same task from current evidence`;
+  const recoveredSummary = `${summary}; retrying the same task from current facts`;
   restoreAttemptEvents(tree, binding.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
   attempt.metadata.resourceVersion += 1;
@@ -1149,7 +1149,7 @@ export function repairPreviousRuntimeRecoveryAttention(
     const baseSummary =
       resource.status.summary?.trim() ||
       `Interrupted reconciliation ${resource.metadata.id} cannot resume because its previous runtime did not persist the trigger packet`;
-    const summary = `${baseSummary}; retrying from current task evidence`;
+    const summary = `${baseSummary}; retrying from current task facts`;
     attempt.metadata.resourceVersion += 1;
     attempt.failureReason = "previous-runtime-attempt-requeued";
     touchResource(resource, {
@@ -1174,7 +1174,7 @@ export function repairPreviousRuntimeRecoveryAttention(
 /**
  * Release waits created by older runtimes before the destination App had
  * durably admitted the request. Such a request can never complete, so the
- * same Task must be judged again from its current evidence.
+ * same Task must be judged again from its current facts.
  */
 export function repairUnadmittedAppDependencyWaits(
   config: AppTaskContext,
@@ -1204,7 +1204,7 @@ export function repairUnadmittedAppDependencyWaits(
     if (!missingRequestId) continue;
 
     trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
-    const summary = `App dependency request ${missingRequestId} was not admitted; retrying the same Task from current evidence`;
+    const summary = `App dependency request ${missingRequestId} was not admitted; retrying the same Task from current facts`;
     unlinkTaskConditions(tree, resource.metadata.id);
     touchResource(resource, {
       phase: "pending",
@@ -1241,8 +1241,8 @@ export function repairRunningAppTasksWithoutAttempt(
 
     trackResourceMutationTask(mutationScope, tree, resource.metadata.id);
     const summary = attemptId
-      ? `Running reconciliation ${resource.metadata.id} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
-      : `Running reconciliation ${resource.metadata.id} had no current attempt; retrying from current task evidence`;
+      ? `Running reconciliation ${resource.metadata.id} referenced missing or non-running attempt ${attemptId}; retrying from current task facts`
+      : `Running reconciliation ${resource.metadata.id} had no current attempt; retrying from current task facts`;
     if (attempt) {
       attempt.metadata.resourceVersion += 1;
       attempt.failureReason = "running-without-current-attempt-requeued";
@@ -1561,7 +1561,7 @@ export type AppTaskChildContext = {
     hasLiveChildren: boolean;
     updatedAt?: string;
     summary?: string;
-    evidence: string[];
+    facts: string[];
   }>;
   completed: Array<{
     taskId: string;
@@ -1576,7 +1576,7 @@ export type AppTaskChildContext = {
     conditions: AppTaskConditionSpec[];
     hasLiveChildren: false;
     summary: string;
-    evidence: string[];
+    facts: string[];
     completedAt: string;
   }>;
 };
@@ -1613,7 +1613,7 @@ export type AppTaskSnapshotContext = {
 const MAX_LIVE_CHILD_CONTEXT = 16;
 const MAX_COMPLETED_CHILD_CONTEXT = 8;
 const MAX_APP_TASK_LIVE_SNAPSHOT = 64;
-const MAX_CHILD_EVIDENCE = 4;
+const MAX_CHILD_FACTS = 4;
 const MAX_CHILD_CONTEXT_TEXT = 512;
 const MAX_SNAPSHOT_CONTEXT_TEXT = 256;
 const MAX_SNAPSHOT_RELATED_TASK_IDS = 8;
@@ -1626,8 +1626,8 @@ function boundedChildContextText(value: string): string {
   return value.length <= MAX_CHILD_CONTEXT_TEXT ? value : `${value.slice(0, MAX_CHILD_CONTEXT_TEXT - 3)}...`;
 }
 
-function boundedChildEvidence(evidence: string[]): string[] {
-  return evidence.slice(0, MAX_CHILD_EVIDENCE).map(boundedChildContextText);
+function boundedChildFacts(facts: string[]): string[] {
+  return facts.slice(0, MAX_CHILD_FACTS).map(boundedChildContextText);
 }
 
 function liveTaskContext(
@@ -1673,7 +1673,7 @@ function liveTaskContext(
     hasLiveChildren: liveChildTaskIds(tree, resource.metadata.id).length > 0,
     updatedAt: resource.status.updatedAt,
     ...(resource.status.summary ? { summary: boundedChildContextText(resource.status.summary) } : {}),
-    evidence: boundedChildEvidence([...(resource.status.evidence ?? [])]),
+    facts: boundedChildFacts([...(resource.status.facts ?? [])]),
   };
 }
 
@@ -1751,7 +1751,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
       conditions: [],
       hasLiveChildren: false as const,
       summary: boundedChildContextText(receipt.summary),
-      evidence: boundedChildEvidence([...receipt.evidence]),
+      facts: boundedChildFacts([...receipt.facts]),
       completedAt: receipt.completedAt,
     }));
   const cancelled = config.resourceStore.readCancelledChildren(taskId, MAX_COMPLETED_CHILD_CONTEXT).map((child) => ({
@@ -1761,7 +1761,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
     generation: child.generation,
     outcome: boundedChildContextText(child.outcome),
     summary: boundedChildContextText(child.summary),
-    evidence: boundedChildEvidence(child.evidence ?? []),
+    facts: boundedChildFacts(child.facts ?? []),
     cancelledAt: child.cancelledAt,
   }));
   return { live, completed, ...(cancelled.length ? { cancelled } : {}) };
@@ -2059,9 +2059,9 @@ export type AppTaskRetryReceipt = {
 
 /**
  * Requeue one exact failed Task generation after an operator has reviewed its
- * retained input. The failed attempt remains immutable operational evidence;
+ * retained input. The failed attempt remains immutable operational facts;
  * its input batch is copied back to the pending trigger without replacing any
- * newer evidence.
+ * newer facts.
  */
 export function retryFailedAppTask(
   config: AppTaskContext,
@@ -2223,7 +2223,7 @@ function closeTask(
       throw new Error(`Task control key ${input.controlKey} was already used for a different operation`);
     }
     const cancellation = config.resourceStore.readCancellation(input.taskId);
-    if (!cancellation) throw new Error(`Task cancellation receipt ${input.controlKey} has no terminal evidence`);
+    if (!cancellation) throw new Error(`Task cancellation receipt ${input.controlKey} has no terminal facts`);
     return { cancellation, applied: false };
   }
 
@@ -2287,7 +2287,7 @@ export function reportAppTaskFailure(
     report?: true;
     response?: string;
     result?: Record<string, unknown>;
-    evidence: string[];
+    facts: string[];
     acceptedLiveEventIds?: number[];
   },
 ): { status: "applied" | "stale"; summary?: string } {
@@ -2299,19 +2299,19 @@ export function reportAppTaskFailure(
       taskId: claim.taskId,
       expectedGeneration: claim.generation,
       currentGeneration: match.resource.metadata.generation,
-      reason: "newer Task evidence is pending",
+      reason: "newer Task facts are pending",
     });
   }
   requireNonEmptyString(input.summary, "Incomplete report summary");
-  requireStringList(input.evidence, "Incomplete report evidence");
+  requireStringList(input.facts, "Incomplete report facts");
   const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
-  attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "incomplete", input, defaultTaskAcceptance(claim, input.evidence));
+  attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "incomplete", input, defaultTaskAcceptance(claim, input.facts));
   const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", input.report === true);
   const failures = (resource.status.executionFailures ?? 0) + 1;
-  // Accepted evidence is not a final answer to the original assignment.
+  // Accepted facts are not a final answer to the original assignment.
   // Preserve input, including accepted live feedback and earlier linked waits.
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "completed", summary, now);
@@ -2325,7 +2325,7 @@ export function reportAppTaskFailure(
     summary,
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
-    evidence: [...input.evidence],
+    facts: [...input.facts],
   });
   commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
   return { status: "applied", summary };
@@ -2345,7 +2345,7 @@ function commitTaskCancellation(
     decidedBy: NonNullable<AppTaskCancellation["decidedBy"]>;
     response?: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
     controlKey?: string;
     kind?: "closed" | "cancelled";
     afterResult?: string;
@@ -2374,7 +2374,7 @@ function commitTaskCancellation(
       response: input.response ?? summary,
       result: input.result ? structuredClone(input.result) : undefined,
     }),
-    evidence: [...(input.evidence ?? resource.status.evidence ?? [])],
+    facts: [...(input.facts ?? resource.status.facts ?? [])],
     conditionIds: [],
   });
   resource.status.updatedAt = cancelledAt;
@@ -2392,7 +2392,7 @@ function commitTaskCancellation(
     decidedBy: input.decidedBy,
     response: resource.status.response,
     result: resource.status.result,
-    evidence: resource.status.evidence,
+    facts: resource.status.facts,
   };
   commitTaskMutation(config, tree, {
     resourceMutation: {
@@ -2524,7 +2524,7 @@ export function claimObservedAppTask(
         : input.handler;
   const agentHandoff = needsAgentHandoff(tree, resource) && isManagedAgentHandler(handler, agent);
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  const priorEvidence = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
+  const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
   const handoffAttempt = agentHandoff ? latestAttempt : undefined;
   const recoveredSessionHandoff = !agentHandoff ? input.recoverSessionHandoff?.(latestAttempt) : undefined;
   const previousAttempt = currentResourceAttempt(tree, resource);
@@ -2532,8 +2532,8 @@ export function claimObservedAppTask(
     const now = new Date().toISOString();
     const attemptId = resource.status.currentAttemptId;
     const summary = attemptId
-      ? `Running reconciliation ${input.taskId} referenced missing or non-running attempt ${attemptId}; retrying from current task evidence`
-      : `Running reconciliation ${input.taskId} had no current attempt; retrying from current task evidence`;
+      ? `Running reconciliation ${input.taskId} referenced missing or non-running attempt ${attemptId}; retrying from current task facts`
+      : `Running reconciliation ${input.taskId} had no current attempt; retrying from current task facts`;
     const staleAttempt = attemptId ? tree.attempts?.[attemptId] : undefined;
     if (staleAttempt) {
       staleAttempt.metadata.resourceVersion += 1;
@@ -2582,7 +2582,7 @@ export function claimObservedAppTask(
   const hasTrigger = Boolean(pendingTrigger?.event ?? (previousAttempt ? attemptTrigger(previousAttempt) : undefined));
   if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
     const now = new Date().toISOString();
-    const summary = "Previous runtime attempt had no persisted trigger; retrying from current task evidence";
+    const summary = "Previous runtime attempt had no persisted trigger; retrying from current task facts";
     if (previousAttempt.sessionId) supersededSessionIds.add(previousAttempt.sessionId);
     finishAttempt(tree, resource, "interrupted", summary, now);
     previousAttempt.metadata.resourceVersion += 1;
@@ -2662,7 +2662,7 @@ export function claimObservedAppTask(
       .filter(([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true").map(([id]) => id),
   ]);
   // Claiming is not acceptance. Retain satisfied waits until settlement so
-  // interrupted execution can still find their original inputs and evidence.
+  // interrupted execution can still find their original inputs and facts.
 
   const generation = resource.metadata.generation;
   const attemptId = `r_${generation}_${randomUUID()}`;
@@ -2766,7 +2766,7 @@ export function claimObservedAppTask(
     events: structuredClone(claimedEvents),
     eventsTruncated: remainingEvents.length > 0,
     ...(continuedInputKeys.length ? { continuedInputKeys: [...continuedInputKeys] } : {}),
-    ...(priorEvidence ? { previousAttempt: previousAttemptEvidence(priorEvidence) } : {}),
+    ...(priorFacts ? { previousAttempt: previousAttemptFacts(priorFacts) } : {}),
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
     ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
@@ -2781,7 +2781,7 @@ export function claimObservedAppTask(
                     handoffAttempt.summary ??
                     handoffAttempt.failureReason ??
                     "Workflow requested an agent handoff",
-                  evidence: [...(resource.status.evidence ?? [])],
+                  facts: [...(resource.status.facts ?? [])],
                 }
               : recoveredSessionHandoff,
         }
@@ -2820,7 +2820,7 @@ export function failAppTaskAttempt(
   config: AppTaskContext,
   claim: AppTaskClaim,
   failure: string,
-  details: { reason?: string; result?: Record<string, unknown>; evidence?: string[] } = {},
+  details: { reason?: string; result?: Record<string, unknown>; facts?: string[] } = {},
 ): { status: "retrying" | "handoff" | "superseded"; summary: string; retryAt?: number | null } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
@@ -2850,7 +2850,7 @@ export function failAppTaskAttempt(
     observedGeneration: claim.generation,
     currentAttemptId: undefined,
     summary,
-    ...(details.evidence ? { evidence: [...details.evidence] } : {}),
+    ...(details.facts ? { facts: [...details.facts] } : {}),
     ...(details.result ? { result: structuredClone(details.result) } : {}),
   });
   commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
@@ -2864,7 +2864,7 @@ export function failAppTaskAttempt(
 export function releaseStaleAppTaskResult(
   config: AppTaskContext,
   claim: AppTaskClaim,
-  summary = "Stale reconciliation result was rejected; retrying from current task evidence",
+  summary = "Stale reconciliation result was rejected; retrying from current task facts",
 ): { status: "released" | "superseded" | "missing"; taskId: string } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const resource = tree.resources?.[claim.taskId];
@@ -3269,16 +3269,16 @@ function validateConditions(
   }
 }
 
-function validateActionEvidence(taskId: string, evidence: string[] | undefined, actionCount: number): void {
-  if (actionCount > 0 && !evidence?.some((entry) => typeof entry === "string" && entry.trim())) {
-    throw new Error(`Handler actions for ${taskId} require non-empty evidence`);
+function validateActionFacts(taskId: string, facts: string[] | undefined, actionCount: number): void {
+  if (actionCount > 0 && !facts?.some((entry) => typeof entry === "string" && entry.trim())) {
+    throw new Error(`Handler actions for ${taskId} require non-empty facts`);
   }
 }
 
-function defaultTaskAcceptance(claim: AppTaskClaim, evidence: string[]): AppTaskAcceptanceBasis {
+function defaultTaskAcceptance(claim: AppTaskClaim, facts: string[]): AppTaskAcceptanceBasis {
   return {
     method: claim.handler.startsWith("workflow:") ? "workflow-contract" : "agent-judgment",
-    evidence: [...evidence],
+    facts: [...facts],
   };
 }
 
@@ -3367,7 +3367,7 @@ function applyTaskActions(
                 observedGeneration: Math.min(resource.status.observedGeneration, generation - 1),
                 phase: "pending",
                 ...(resource.status.lane ? { lane: resource.status.lane } : {}),
-                evidence: resource.status.evidence,
+                facts: resource.status.facts,
                 updatedAt: now,
               }
             : { ...resource.status, updatedAt: now },
@@ -3513,7 +3513,7 @@ function recordPendingAppTaskResult(
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
     acceptedLiveEventIds?: number[];
     reason?: string;
   },
@@ -3521,7 +3521,7 @@ function recordPendingAppTaskResult(
   const resource = tree.resources![claim.taskId]!;
   const attempt = tree.attempts![claim.attemptId]!;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
-  // Keep unresolved asks as context for the newer evidence. Replaying the
+  // Keep unresolved asks as context for the newer facts. Replaying the
   // consumed event prefix would starve later input in a bounded batch.
   retainTaskInputWait(config, resource, consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds), {
     taskGeneration: claim.generation, conditions: [],
@@ -3537,7 +3537,7 @@ function recordPendingAppTaskResult(
     summary: input.summary,
     ...(input.response !== undefined ? { response: input.response } : {}),
     ...(input.result ? { result: structuredClone(input.result) } : {}),
-    evidence: [...(input.evidence ?? [])],
+    facts: [...(input.facts ?? [])],
   });
   commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
 }
@@ -3549,7 +3549,7 @@ export function completeAppTask(
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
     actions?: AppTaskAction[];
     acceptanceBasis?: AppTaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
@@ -3586,7 +3586,7 @@ export function completeAppTask(
         expectedGeneration: claim.generation,
         currentGeneration: resource.metadata.generation,
         currentPhase: resource.status.phase,
-        reason: "newer Task evidence is pending",
+        reason: "newer Task facts are pending",
       });
     }
     recordPendingAppTaskResult(config, tree, claim, input);
@@ -3595,8 +3595,8 @@ export function completeAppTask(
       supersededSessionIds: [], taskContinues: true,
     };
   }
-  validateActionEvidence(claim.taskId, input.evidence, input.actions?.length ?? 0);
-  const acceptanceBasis = input.acceptanceBasis ?? defaultTaskAcceptance(claim, input.evidence ?? []);
+  validateActionFacts(claim.taskId, input.facts, input.actions?.length ?? 0);
+  const acceptanceBasis = input.acceptanceBasis ?? defaultTaskAcceptance(claim, input.facts ?? []);
   const mutationScope = beginResourceMutationScope(tree, claim, actions);
   const { actionsApplied, supersededSessionIds } = applyTaskActions(
     tree,
@@ -3635,7 +3635,7 @@ export function completeAppTask(
     summary: input.summary,
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
-    evidence: [...(input.evidence ?? [])],
+    facts: [...(input.facts ?? [])],
   });
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   input.prepareSupersededSessions?.(supersededSessionIds);
@@ -3658,7 +3658,7 @@ export function deferAppTask(
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
     actions?: AppTaskAction[];
     conditions?: AppTaskConditionSpec[];
     acceptedLiveEventIds?: number[];
@@ -3689,7 +3689,7 @@ export function deferAppTask(
       expectedGeneration: claim.generation,
       currentGeneration: resource.metadata.generation,
       currentPhase: resource.status.phase,
-      reason: "newer Task evidence is pending",
+      reason: "newer Task facts are pending",
     });
   }
   const acceptedResult = acceptedAttemptResult(
@@ -3697,7 +3697,7 @@ export function deferAppTask(
     claim.taskId,
     "waiting",
     input,
-    defaultTaskAcceptance(claim, input.evidence ?? []),
+    defaultTaskAcceptance(claim, input.facts ?? []),
   );
   const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
   const admissions = input.report ? inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", true) : [];
@@ -3712,7 +3712,7 @@ export function deferAppTask(
   });
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
-  validateActionEvidence(claim.taskId, input.evidence, actions.length);
+  validateActionFacts(claim.taskId, input.facts, actions.length);
   const mutationScope = beginResourceMutationScope(tree, claim, actions);
   const { actionsApplied, supersededSessionIds } = applyTaskActions(tree, claim, actions, config);
   validateConditions(conditions, {
@@ -3744,7 +3744,7 @@ export function deferAppTask(
     summary: input.summary,
     response: input.response,
     result: input.result ? structuredClone(input.result) : undefined,
-    evidence: [...(input.evidence ?? [])],
+    facts: [...(input.facts ?? [])],
     ...(!conditions.length ? { conditionIds: [] } : {}),
   });
 
@@ -3770,10 +3770,10 @@ export function markAppTaskAttention(
     summary: string;
     reason: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
   },
 ): { status: "applied" | "stale"; summary: string; retryAt?: number | null } {
-  const failure = failAppTaskAttempt(config, claim, input.summary, { ...input, evidence: input.evidence ?? [] });
+  const failure = failAppTaskAttempt(config, claim, input.summary, { ...input, facts: input.facts ?? [] });
   return {
     status: failure.status === "superseded" ? "stale" : "applied",
     summary: failure.summary,

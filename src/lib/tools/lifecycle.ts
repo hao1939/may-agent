@@ -124,7 +124,7 @@ const finishSchema: TSchema = Type.Object({
       }),
       {
         description:
-          "Evidence from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results.",
+          "Facts from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results.",
       },
     ),
   ),
@@ -170,7 +170,7 @@ interface FinishParams {
  * 2. Attempts a best-effort local append of reported lessons
  * 3. Returns a formatted summary as the tool output
  *
- * The caller extracts accepted finish arguments from session evidence and owns
+ * The caller extracts accepted finish arguments from session facts and owns
  * the resulting work state. Report fields are not additional state-changing tools.
  */
 export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema> {
@@ -243,7 +243,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         };
       }
 
-      // ── Require verification evidence for success ─────────────
+      // ── Require verification facts for success ─────────────
       if (status === "success" && (!params.verification_evidence || params.verification_evidence.length === 0)) {
         return {
           content: [
@@ -323,7 +323,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 
       if (params.verification_evidence && params.verification_evidence.length > 0) {
         parts.push("");
-        parts.push("**Verification evidence:**");
+        parts.push("**Verification facts:**");
         for (const ev of params.verification_evidence) {
           parts.push(`- ${ev}`);
         }

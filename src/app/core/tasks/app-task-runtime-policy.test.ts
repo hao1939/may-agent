@@ -91,7 +91,7 @@ describe("App Task agent prompt context", () => {
       {
         state: "waiting",
         summary: "Waiting for an invented human event",
-        evidence: [],
+        facts: [],
         conditions: [
           {
             id: "approval",

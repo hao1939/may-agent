@@ -18,7 +18,7 @@ function attemptEvents(attempt: AppTaskAttempt): AppTaskTriggerEvent[] {
 }
 
 /** Offline continuation of retained Task state. Run receipt import first.
- * No saved decision is executed again; only original input/evidence is restored.
+ * No saved decision is executed again; only original input/facts are restored.
  * Missing or conflicting acceptance identity aborts the transaction rather than
  * binding an old caller to an unrelated latest answer.
  */
@@ -86,7 +86,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
           summary: resource.status.summary,
           response: resource.status.response,
           result: resource.status.result,
-          evidence: resource.status.evidence ?? [],
+          facts: resource.status.facts ?? [],
         };
         outcomes++;
       }
@@ -97,14 +97,14 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
             ? attempts.find((entry) => entry.metadata.id === actor.attemptId && entry.owner === actor.agent)
             : undefined;
         if (!attempt || selfStop.generation !== resource.metadata.generation || attempt.acceptedResult)
-          throw new Error(`Worker stop evidence conflicts with Task ${taskId}`);
+          throw new Error(`Worker stop facts conflicts with Task ${taskId}`);
         attempt.retiredCancellation = structuredClone(selfStop);
         attempt.acceptedResult = {
           state: "incomplete",
           summary: selfStop.reason,
           response: selfStop.response,
           result: selfStop.result,
-          evidence: selfStop.evidence ?? [],
+          facts: selfStop.facts ?? [],
         };
         resource.status.observedAttemptId = attempt.metadata.id;
         // This deletion exists only inside offline cutover. The normal state

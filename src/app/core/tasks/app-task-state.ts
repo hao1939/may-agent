@@ -28,7 +28,7 @@ export type AppTaskCondition = {
     createdAt?: string;
     observed?: unknown;
     observedAt?: string;
-    evidence?: string[];
+    facts?: string[];
   };
 };
 
@@ -67,7 +67,7 @@ export type AppTaskResource = {
     summary?: string;
     response?: string;
     result?: Record<string, unknown>;
-    evidence?: string[];
+    facts?: string[];
     conditionIds?: string[];
     inputWaits?: Record<string, AppTaskInputWait>;
     updatedAt: string;
@@ -112,16 +112,16 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
-  /** Earlier admitted inputs brought back by this attempt's exact Condition evidence. */
+  /** Earlier admitted inputs brought back by this attempt's exact Condition facts. */
   continuedInputKeys?: string[];
-  /** Accepted evidence from this exact attempt; later cycles do not replace it. */
+  /** Accepted facts from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
     state: "converged" | "waiting" | "incomplete";
     report?: true;
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
-    evidence: string[];
+    facts: string[];
     /** Historical maintained outcomes did not retain the acceptance method. */
     acceptanceBasis?: TaskAcceptanceBasis;
     /** Additional durable input actually incorporated after the initial batch. */
@@ -136,11 +136,11 @@ export type AppTaskAttempt = {
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
-  /** Offline import preserves an old worker self-stop as evidence, not closure. */
+  /** Offline import preserves an old worker self-stop as facts, not closure. */
   retiredCancellation?: AppTaskCancellation;
 };
 
-/** Immutable closure evidence; historical records represent cancellation. */
+/** Immutable closure facts; historical records represent cancellation. */
 export type AppTaskCancellation = {
   kind?: "closed" | "cancelled";
   /** Optional exact outcome consumed by the App's close-after-result convention. */
@@ -156,7 +156,7 @@ export type AppTaskCancellation = {
   decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" };
   response?: string;
   result?: Record<string, unknown>;
-  evidence?: string[];
+  facts?: string[];
 };
 
 export type AppTaskTrigger = {

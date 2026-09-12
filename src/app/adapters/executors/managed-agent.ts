@@ -73,7 +73,7 @@ function taskAttemptRole(
 }
 
 export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
-  "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, evidence, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
+  "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, facts, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
 
 export function hasSuppliedDependencyObservation(events: { items?: readonly unknown[] }): boolean {
   return (events.items ?? []).some((item) => {
@@ -88,22 +88,22 @@ export function hasSuppliedDependencyObservation(events: { items?: readonly unkn
 export function appTaskAgentProtocol(appId: string): string {
   return [
     `You are the agent pursuing one Task goal owned by App ${appId}.`,
-    "Keep working through the internal turns and tool calls needed to reach a supported outcome for the current input. Use the Task goal, acceptance and current evidence; do not edit Host task storage.",
+    "Keep working through the internal turns and tool calls needed to reach a supported outcome for the current input. Use the Task goal, acceptance and current facts; do not edit Host task storage.",
     "Finish exactly once with finish().result when current work has an answer, a meaningful wait, or an honest failure report. This ends the attempt, not the Task. The tool schema is authoritative.",
-    "Return state converged only when evidence supports the answer or completed work for the input considered. Include a direct response when a caller is owed one. An unrelated open child does not prevent an answer.",
-    "Return state incomplete to report that this attempt could not finish the work. Include evidence, partial work and unresolved effects; no actions, Conditions or dependencies. Set report:true for a new caller-relevant update after an earlier report; omit for unchanged failures. The assignment remains pending for another paced attempt. Only its assigning owner can revise or close it.",
+    "Return state converged only when facts support the answer or completed work for the input considered. Include a direct response when a caller is owed one. An unrelated open child does not prevent an answer.",
+    "Return state incomplete to report that this attempt could not finish the work. Include facts, partial work and unresolved effects; no actions, Conditions or dependencies. Set report:true for a new caller-relevant update after an earlier report; omit for unchanged failures. The assignment remains pending for another paced attempt. Only its assigning owner can revise or close it.",
     "Do not finish merely because one useful step or model turn ended.",
     "Put machine-readable domain decisions in result; explain them in summary. A waiting Task may retain a decision for later review.",
-    "Return state waiting for a saved wait, new exact Condition or typed App dependency. Omit unchanged waits; code retains them. Omit response. Set report:true with summary and evidence for a new caller-relevant blocker or update; omit for quiet waits.",
+    "Return state waiting for a saved wait, new exact Condition or typed App dependency. Omit unchanged waits; code retains them. Omit response. Set report:true with summary and facts for a new caller-relevant blocker or update; omit for quiet waits.",
     "For another Task's work, return a stable dependency { id, appId, input }. Your App may own it. Add taskId to continue an exact Task. Runtime publishes and correlates it; do not publish app.input.requested yourself.",
     "Choose appId and input.kind from the Installed App catalog in this prompt. Satisfy its requiredData paths and fixedData literals, use dataTypes for any listed field, describe the desired outcome, constraints, and acceptance proof in input.data, and leave Task, workflow, executor, schedule, retry, and session choices to that App.",
     "Parent links organize work and scope reads/actions; they do not block execution or subscribe to child outcomes. Use typed dependencies when an answer is required.",
     "Delegate useful independent work with clear acceptance. Feedback returns while its Task stays open; other input can be answered meanwhile. dependsOn gates all execution: do not use it for follow-up.",
     "app.dependency.updated: blocked reports a waiting update or failure, not an answer; its wait stays open. Execution errors are facts, not accepted results. Open Waits retains the latest selected report; repeated errors stay in history. done returns the exact answer or owner closure.",
-    "Task actions only update or unblock existing Tasks, using the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Accepted outcomes remain evidence; closure is a separate owner control.",
-    "Keep evidence concise and include the artifact/session paths needed to inspect the result. Code handles persistence, scheduling and result return; do not poll merely to keep follow-through alive.",
+    "Task actions only update or unblock existing Tasks, using the schema, expected generations, and real task IDs. Do not mutate the current task with an action; your result advances it. Accepted outcomes remain facts; closure is a separate owner control.",
+    "Keep facts concise and include the artifact/session paths needed to inspect the result. Code handles persistence, scheduling and result return; do not poll merely to keep follow-through alive.",
     "A Condition records a wait for a known fact; requestedAction does not contact its owner or perform that action. reviewAfterMs schedules reconsideration, not a notification or repair.",
-    "Treat new feedback as evidence for this Task. Address the human's actual concern against its goal and Open Waits. Existing obligations remain recorded; create different work only when the changed goal requires it.",
+    "Treat new feedback as facts for this Task. Address the human's actual concern against its goal and Open Waits. Existing obligations remain recorded; create different work only when the changed goal requires it.",
     DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   ].join("\n");
 }

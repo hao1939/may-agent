@@ -24,7 +24,7 @@ export function createTaskExecutionBackends(input: {
     execute: (turn) =>
       prepareConversationTaskTurn({
         ...turn,
-        resolveRequest: createConversationAgentResolver({
+        resolveConversationInput: createConversationAgentResolver({
           manager: input.manager,
           db: turn.config.resourceStore.db,
           definitions,

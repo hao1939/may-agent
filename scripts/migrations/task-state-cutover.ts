@@ -54,7 +54,7 @@ try {
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "worker" } } },
   });
   oldStore = old.resourceStore;
-  legacyInput.admitTaskRequest(old, {
+  legacyInput.admitTaskInput(old, {
     appId: "sample",
     idempotencyKey: "original-measurement",
     attachment: {
@@ -67,7 +67,7 @@ try {
         acceptance: ["Instrument evidence is retained"],
       },
     },
-    request: {
+    inputContext: {
       id: "original-measurement",
       appId: "sample",
       source: { kind: "human", id: "fixture" },
@@ -96,14 +96,14 @@ try {
   assert.equal(oldStore.readTask("measurement"), null);
   const priorAttempt = oldStore.readAttempt(claim.attemptId);
   const oldClaim = (id: string, mode: "achieve" | "maintain" = "achieve") => {
-    legacyInput.admitTaskRequest(old, {
+    legacyInput.admitTaskInput(old, {
       appId: "sample",
       idempotencyKey: id,
       attachment: {
         kind: "intent",
         intent: { id, parentId: "root", mode, outcome: "Measure the sample", acceptance: ["Retain measured evidence"] },
       },
-      request: { id, appId: "sample", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { id } } },
+      inputContext: { id, appId: "sample", source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { id } } },
     });
     const attempt = legacyRuntime.claimObservedAppTask(old, { taskId: id, appAgent: "worker", handler: "agent" });
     if (attempt.kind !== "claimed") throw new Error(`Old ${id} claim failed: ${JSON.stringify(attempt)}`);
@@ -154,11 +154,11 @@ try {
   legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
   const backlog = Array.from({ length: 34 }, (_, index) => `structural-newer-${index}`);
   for (const id of [...backlog, "structural-human"]) {
-    legacyInput.admitTaskRequest(old, {
+    legacyInput.admitTaskInput(old, {
       appId: "sample",
       idempotencyKey: id,
       attachment: { kind: "existing", taskId: "structural" },
-      request: {
+      inputContext: {
         id, appId: "sample",
         source: { kind: id === "structural-human" ? "human" : "app", id: "fixture" },
         input: { kind: "measure", data: { id } },

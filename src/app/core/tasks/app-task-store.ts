@@ -56,7 +56,7 @@ export type AppTaskProjectionItem = {
   input?: Record<string, unknown>;
   trigger?: Record<string, unknown>;
   summary?: string;
-  evidence?: string[];
+  facts?: string[];
   condition_ids?: string[];
   status_updated_at?: string;
   attempt_count?: number;
@@ -119,12 +119,12 @@ export type TaskCompletionReceipt = {
   summary: string;
   response?: string;
   result?: Record<string, unknown>;
-  evidence: string[];
+  facts: string[];
   acceptanceBasis: AppTaskAcceptanceBasis;
   failureFingerprints: string[];
   completedAt: string;
   workspace?: AppTaskWorkspace;
-  /** Digest of acceptance/evidence/workspace detail removed from old bounded history. */
+  /** Digest of acceptance/facts/workspace detail removed from old bounded history. */
   compactedDetailSha256?: string;
   /** Digest of unbounded outcome/summary/response/input detail removed from old bounded history. */
   compactedPayloadSha256?: string;
@@ -135,7 +135,7 @@ export type AppTaskAdmission = {
   taskGeneration: number;
   specHash: string;
   admittedAt: string;
-  /** Original ask supplied again when its saved wait returns evidence. */
+  /** Original ask supplied again when its saved wait returns facts. */
   inputEvent?: Record<string, unknown>;
   /** Exact accepted answer for this input; later Task outcomes do not replace it. */
   resultAttemptId?: string;
@@ -451,10 +451,10 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       ...(spec.input ? { input: structuredClone(spec.input) } : {}),
       ...(tree.taskTriggers?.[taskId]?.event ? { trigger: structuredClone(tree.taskTriggers[taskId].event) } : {}),
       ...(status.summary ? { summary: status.summary } : {}),
-      ...(status.evidence ? { evidence: [...status.evidence] } : {}),
+      ...(status.facts ? { facts: [...status.facts] } : {}),
       condition_ids: [...(status.conditionIds ?? [])],
       status_updated_at: status.updatedAt,
-      // A receipt import is accepted historical evidence, not another execution.
+      // A receipt import is accepted historical facts, not another execution.
       attempt_count:
         attemptsByTask.get(taskId)?.filter((attempt) => attempt.runtimeId !== "retired:task-receipt").length ?? 0,
       ...(activeAttempt

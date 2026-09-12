@@ -221,11 +221,11 @@ describe("App source releases", () => {
     expect(store.current()?.id).toBe(active.id);
   });
 
-  it("ignores runtime evidence but rejects an untracked executable source file", async () => {
+  it("ignores runtime facts but rejects an untracked executable source file", async () => {
     const { root, stateDir } = await fixture();
-    const evidenceDir = join(root, "projects", "sample.app", "evidence");
-    mkdirSync(evidenceDir, { recursive: true });
-    writeFileSync(join(evidenceDir, "receipt.json"), "{}\n");
+    const factsDir = join(root, "projects", "sample.app", "facts");
+    mkdirSync(factsDir, { recursive: true });
+    writeFileSync(join(factsDir, "receipt.json"), "{}\n");
     const store = new DefinitionSourceReleaseStore(root, stateDir);
     expect(store.ensureCurrent().sourceCommit).toMatch(/^[0-9a-f]{40}$/);
 

@@ -89,7 +89,7 @@ describe("HostMaintenance event dispatch", () => {
     }
   });
 
-  it("correlates the started and completed maintenance evidence", async () => {
+  it("correlates the started and completed maintenance facts", async () => {
     const root = tempRoot();
     const bus = new EventBus();
     const observed: any[] = [];

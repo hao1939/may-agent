@@ -180,7 +180,7 @@ function evalRowsForLines(byLine, lines) {
 
 function renderEvalExtra(row) {
   const skip = new Set(['type', 'schemaVersion', 'sessionId', 'line', 'source', 'author', 'createdAt', 'rawSource', 'rawRole', 'rawPreview', 'rawContext', 'score', 'issues', 'comment']);
-  const priority = ['judgment', 'why', 'evidence', 'better', 'improvement', 'lesson', 'concern', 'checks'];
+  const priority = ['judgment', 'why', 'facts', 'better', 'improvement', 'lesson', 'concern', 'checks'];
   const parts = [];
   const add = (key) => {
     if (!(key in row) || row[key] == null || row[key] === '') return;

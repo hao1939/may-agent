@@ -51,7 +51,7 @@ const app = defineApp({
   id: "sample",
   version: 1,
   agent: "sample",
-  requests: { mode: "agent" },
+  conversation: { mode: "agent" },
   inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
 });
 const decision: ConversationTurnResult = {
@@ -145,7 +145,7 @@ test("one Task executes real Conversation input and retains replies and Requests
           claim,
           app,
           signal: new AbortController().signal,
-          resolveRequest: async ({ request, execution }) => {
+          resolveConversationInput: async ({ request, execution }) => {
             expect(request.conversation?.id).toBe("chat");
             expect(execution?.taskBinding).toEqual({
               appId: app.id,
@@ -274,7 +274,7 @@ test("a fresh attempt considers retained and newer input together and publishes 
   const obsolete = f.claim(first.taskId);
   const correction = f.admit("correction", 2);
   const system = admitConversationTaskInput(f.context(), {
-    ...f.input("review", 3, "A linked Task returned evidence"),
+    ...f.input("review", 3, "A linked Task returned facts"),
     source: { kind: "system", id: "review" },
   });
   completeConversationTaskTurn(f.context(), obsolete, decision);
@@ -284,7 +284,7 @@ test("a fresh attempt considers retained and newer input together and publishes 
     claim,
     app,
     signal: new AbortController().signal,
-    resolveRequest: async ({ request }) => {
+    resolveConversationInput: async ({ request }) => {
       expect(request.id).toBe(correction.item.id);
       expect(request.inputs?.map(({ id }) => id)).toEqual([system.item.id, first.item.id, correction.item.id]);
       return decision;
@@ -310,7 +310,7 @@ test("Stop responds to the latest considered human input after a mixed-input ret
   const obsolete = f.claim(first.taskId);
   const correction = f.admit("correction", 2);
   admitConversationTaskInput(f.context(), {
-    ...f.input("review", 3, "A linked Task returned evidence"),
+    ...f.input("review", 3, "A linked Task returned facts"),
     source: { kind: "system", id: "review" },
   });
   completeConversationTaskTurn(f.context(), obsolete, decision);
@@ -339,9 +339,9 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
     followUp: {
       requestId: "comparison",
       appId: app.id,
-      outcome: "Get evidence",
+      outcome: "Get facts",
       acceptance: ["Measure"],
-      input: { kind: "message", data: { text: "Get evidence" } },
+      input: { kind: "message", data: { text: "Get facts" } },
     },
   };
   const followUp = {
@@ -351,7 +351,7 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
       intent: {
         id: "measurement",
         parentId: "root",
-        outcome: "Get evidence",
+        outcome: "Get facts",
         acceptance: ["Measure"],
       },
     },
@@ -372,7 +372,7 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
   });
 });
 
-test("a system turn can stay quiet without hiding the accepted Task evidence", async () => {
+test("a system turn can stay quiet without hiding the accepted Task facts", async () => {
   const f = fixture();
   const first = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(first.taskId), decision);
@@ -388,7 +388,7 @@ test("a system turn can stay quiet without hiding the accepted Task evidence", a
     claim,
     app,
     signal: new AbortController().signal,
-    resolveRequest: async ({ request }) => {
+    resolveConversationInput: async ({ request }) => {
       expect(request.source.kind).toBe("system");
       expect(request.humanRequested).toBeUndefined();
       return { summary: "No material change", topic: { kind: "none" } };
@@ -414,7 +414,7 @@ function cancellationFixture(source: "human" | "system" = "human") {
     "control-fixture",
   );
   const config = appTaskContext({ ...f.context(), resourceStore: store });
-  const intent = { id: "job", parentId: "root", outcome: "Measure the sample", acceptance: ["Return evidence"] };
+  const intent = { id: "job", parentId: "root", outcome: "Measure the sample", acceptance: ["Return facts"] };
   observeAppTaskIntent(config, { appAgent: worker.id, intent: { ...intent } });
   createConversationTopic(f.db, {
     id: "work",
@@ -452,7 +452,7 @@ function cancellationFixture(source: "human" | "system" = "human") {
         app,
         signal: new AbortController().signal,
         getTaskApp: () => ({ app: worker, config }),
-        resolveRequest: async () => decision,
+        resolveConversationInput: async () => decision,
       }),
   };
 }
@@ -476,7 +476,7 @@ test("human cancellation, reply and accepted Turn commit together across Apps an
   expect(c.f.store.isCancelled(c.claim.taskId)).toBe(false);
   expect(getAppInboxItem(c.f.db, "first")?.result?.response).toBe(c.answer.response);
   if (targetClaim.kind !== "claimed") throw new Error("Expected running target");
-  expect(completeAppTask(c.config, targetClaim, { summary: "Late answer", evidence: [] }).status).toBe("stale");
+  expect(completeAppTask(c.config, targetClaim, { summary: "Late answer", facts: [] }).status).toBe("stale");
   c.f.reopen();
   expect(AppTaskResourceStore.fromDb(c.f.db, "worker").readCancellation("job")?.reason).toBe(
     "Human withdrew the assignment",
@@ -573,7 +573,7 @@ test("the common controller returns a delegated answer to the real Conversation 
             app,
             signal: new AbortController().signal,
             getTaskApp: () => ({ app: workerApp, config: f.context() }),
-            resolveRequest: async ({ request }) => {
+            resolveConversationInput: async ({ request }) => {
               judgments.push(request.id);
               if (request.id === "first")
                 return {
@@ -760,7 +760,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
         followUp: {
           appId: "worker",
           requestId: "comparison",
-          outcome: "Collect evidence",
+          outcome: "Collect facts",
           acceptance: ["Measure"],
           input: { kind: "measure", data: {} },
         },
@@ -773,7 +773,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
             intent: {
               id: "measurement",
               parentId: "root",
-              outcome: "Collect evidence",
+              outcome: "Collect facts",
               acceptance: ["Measure"],
             },
           },
@@ -819,7 +819,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
         disposition: "waiting",
         report: true,
         summary: "Please restore source access",
-        evidence: ["source:denied"],
+        facts: ["source:denied"],
         conditions: [
           {
             id: "source-ready",
@@ -856,7 +856,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
           ? { state: "converged", result: { value: 17 } }
           : scenario === "waiting-report"
             ? { state: "waiting", report: true, summary: "Please restore source access" }
-            : { state: "error", evidence: [`task-attempt:${claim.attemptId}`] },
+            : { state: "error", facts: [`task-attempt:${claim.attemptId}`] },
     });
     expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
     expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
@@ -881,7 +881,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
         disposition: "waiting",
         report: true,
         summary,
-        evidence: ["source:review"],
+        facts: ["source:review"],
         conditions: [
           {
             id: "source-ready",
@@ -918,7 +918,7 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
       handler: "executor:fixture",
     });
     if (finishing.kind !== "claimed") throw new Error(`Expected final attempt, got ${finishing.kind}`);
-    completeAppTask(worker, finishing, { summary: "Measured", result: { value: 17 }, evidence: ["source:17"] });
+    completeAppTask(worker, finishing, { summary: "Measured", result: { value: 17 }, facts: ["source:17"] });
     expect(readAppTaskAdmissionOutcome(worker, "measurement", inputKey)).toMatchObject({
       attemptId: finishing.attemptId,
       result: { value: 17 },
@@ -961,7 +961,7 @@ test("old inbox cannot execute Task-owned Conversation input or later unconverte
   const host = new AppInboxHost({
     db: f.db,
     apps: [app],
-    resolveRequest: async () => {
+    resolveConversationInput: async () => {
       executions++;
       return decision;
     },
@@ -1076,7 +1076,7 @@ test("bounded change discovery advances across Conversations, retains Stop and f
         acceptance: ["Observed value"],
       },
     });
-    completeAppTask(f.context(), f.claim(taskId), { summary: `Value ${index}`, evidence: [`measurement:${index}`] });
+    completeAppTask(f.context(), f.claim(taskId), { summary: `Value ${index}`, facts: [`measurement:${index}`] });
     if (index < 2) linkConversationTopicTask(f.db, topic.id, app.id, taskId);
   }
   linkConversationTopicTask(f.db, otherTopic.id, app.id, "sample-0");

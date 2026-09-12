@@ -181,7 +181,7 @@ describe("createFinishTool", () => {
     expect(text).toContain("verification_evidence");
   });
 
-  it("includes verification evidence in output", async () => {
+  it("includes verification facts in output", async () => {
     const tool = createTool();
     const text = await callFinish(tool, {
       status: "success",
@@ -190,7 +190,7 @@ describe("createFinishTool", () => {
       verification_evidence: ["Step 5: read(src/lib/feature.ts) confirmed changes", "Step 8: bash test exit code 0"],
     });
 
-    expect(text).toContain("Verification evidence");
+    expect(text).toContain("Verification facts");
     expect(text).toContain("Step 5: read(src/lib/feature.ts) confirmed changes");
     expect(text).toContain("Step 8: bash test exit code 0");
   });

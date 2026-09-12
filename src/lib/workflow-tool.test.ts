@@ -280,7 +280,7 @@ export async function execute(ctx) {
       export const description = "Noncooperative fixture";
       export async function execute(ctx) {
         try { await ctx.read.execution(ctx.signal); } catch {}
-        ctx.log.info("late evidence");
+        ctx.log.info("late facts");
         return ctx.done("late result", {wrong: true});
       }
     `,
@@ -352,7 +352,7 @@ export const name = "report";
 export const description = "Direct Task report";
 export async function execute(ctx) {
   const fact = await ctx.events.read("sample.observed", "sample");
-  return { state: "incomplete", summary: "Source unavailable", evidence: ["event:" + fact.eventId] };
+  return { state: "incomplete", summary: "Source unavailable", facts: ["event:" + fact.eventId] };
 }`,
     );
     const reads: string[][] = [];
@@ -373,7 +373,7 @@ export async function execute(ctx) {
     });
     expect(await runner.run("report", "review")).toMatchObject({
       type: "done",
-      output: { state: "incomplete", evidence: ["event:41"] },
+      output: { state: "incomplete", facts: ["event:41"] },
     });
     expect(reads).toEqual([["sample.observed", "sample"]]);
     const unowned = createWorkflowRunner({ manager: {} as any, workflowDir: root });
@@ -386,7 +386,7 @@ export async function execute(ctx) {
       `
 export const name = "plain";
 export const description = "Unowned direct result";
-export async function execute() { return { state: "converged", summary: "Answer", evidence: [] }; }
+export async function execute() { return { state: "converged", summary: "Answer", facts: [] }; }
 `,
     );
     expect(await unowned.run("plain", "review")).toMatchObject({
@@ -671,7 +671,7 @@ export async function execute(ctx) {
         summary: "bounded move complete",
         output: { ok: true },
         cliCalls: [cliCall],
-        evidence: { status: "success", summary: "bounded move complete", result: { ok: true } },
+        facts: { status: "success", summary: "bounded move complete", result: { ok: true } },
       },
     });
     expect(agentSessionSource).toBe("heartbeat");

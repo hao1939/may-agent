@@ -21,7 +21,7 @@ export type TaskView = {
   summary?: string;
   response?: string;
   result?: Record<string, unknown>;
-  evidence?: string[];
+  facts?: string[];
 };
 
 /** Exact desired Task detail returned only by an explicitly scoped get. */
@@ -185,7 +185,7 @@ export type ObserverContext = {
 };
 
 /** Host-recorded terminal CLI call, not an agent's completion claim or a durable Task. */
-export type CliCallEvidence = {
+export type CliCallFacts = {
   sessionId: string;
   toolCallId: string;
   taskId: string;
@@ -204,10 +204,10 @@ export type ExecutionResult<T = unknown> = {
   status: "done" | "blocked" | "error" | "interrupted";
   summary: string;
   output?: T;
-  evidence?: unknown;
+  facts?: unknown;
   /** Up to 64 CLI results from this session's retained transcript tail. Positive
-   * evidence only: absence does not prove a call never ran. Old Hosts omit it. */
-  cliCalls?: CliCallEvidence[];
+   * facts only: absence does not prove a call never ran. Old Hosts omit it. */
+  cliCalls?: CliCallFacts[];
 };
 
 /** The input is App/workflow-owned; the runtime only carries it across the boundary. */
@@ -219,7 +219,7 @@ export type TaskReconciliationChild = {
   generation: number;
   outcome: string;
   summary?: string;
-  evidence: string[];
+  facts: string[];
   agent?: string;
   /** @deprecated Use `agent`. */
   owner?: string;
@@ -253,7 +253,7 @@ export type TaskReconciliationChild = {
 
 /**
  * Small App-wide planning projection. Exact Task input, acceptance, result
- * evidence, and attempt detail stay behind read.tasks.get(taskId).
+ * facts, and attempt detail stay behind read.tasks.get(taskId).
  */
 export type TaskReconciliationSnapshotTask = {
   taskId: string;
@@ -285,7 +285,7 @@ export type TaskReconciliationEvent = {
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
   items: TaskReconciliationEvent[];
-  /** Earlier asks whose awaited evidence is being considered now; not new input or new authority. */
+  /** Earlier asks whose awaited facts are being considered now; not new input or new authority. */
   continuedInputs?: TaskReconciliationEvent[];
   /** Highest durable event identity in items, when every item has one. */
   throughEventId?: number;
@@ -314,7 +314,7 @@ export type TaskAttempt = {
     instructions: string;
   };
   task: TaskDetail;
-  /** Latest earlier attempt of this Task. Evidence to inspect, not authority to repeat its effects. */
+  /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
   previousAttempt?: {
     attemptId: string;
     generation: number;
@@ -329,7 +329,7 @@ export type TaskAttempt = {
       summary: string;
       response?: string;
       result?: Record<string, unknown>;
-      evidence: string[];
+      facts: string[];
     };
   };
   /** Attempt-scoped working directory selected by Runtime. */
@@ -349,7 +349,7 @@ export type TaskAttempt = {
       generation: number;
       outcome: string;
       summary: string;
-      evidence: string[];
+      facts: string[];
       cancelledAt: string;
     }>;
   };
@@ -441,7 +441,7 @@ export type WorkflowContext<TInput = unknown> = {
     emit(event: AppEvent): Promise<void>;
     /**
      * Verified original publication in this Task generation, including large bodies.
-     * Null means no publication; missing/corrupt evidence throws. Task-owned workflows only.
+     * Null means no publication; missing/corrupt facts throws. Task-owned workflows only.
      */
     read(type: string, localKey: string): Promise<{ eventId: number; data: Record<string, unknown> } | null>;
     /** Live convenience for events addressed to the current Task; durable replay remains authoritative. */
@@ -460,5 +460,5 @@ export type WorkflowContext<TInput = unknown> = {
   };
   log: Logger;
   done<T>(summary: string, output?: T): ExecutionResult<T>;
-  blocked(reason: string, evidence?: unknown): ExecutionResult;
+  blocked(reason: string, facts?: unknown): ExecutionResult;
 };

@@ -10,7 +10,7 @@ import { appTaskContext } from "../tasks/app-task-reconciler.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { assertAppInboxClaim, claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { admitTaskRequest } from "./inbox.js";
+import { admitTaskInput } from "./inbox.js";
 import {
   createConversationTopic,
   readAppConversationResource,
@@ -38,7 +38,7 @@ function input(db: SqliteDb, id: string, conversationId?: string, parentId?: str
     parentId,
     ...(conversationId ? { conversationSequence: 1 } : {}),
     source: { kind: parentId ? "app" : "human", id: parentId ?? id },
-    input: { kind: "message", data: { text: "Review the evidence" } },
+    input: { kind: "message", data: { text: "Review the facts" } },
     now: 1,
   }).item;
 }
@@ -68,7 +68,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
     topicId: "topic",
     updateKey: "accepted",
     now: 1,
-    updates: [{ id: "ask", scope: "Review the evidence", disposition: "open", expectedRevision: 0 }],
+    updates: [{ id: "ask", scope: "Review the facts", disposition: "open", expectedRevision: 0 }],
   });
   const askBefore = readConversationRequest(db, "frontend", "chat", "ask");
   const store = AppTaskResourceStore.fromDb(db, "example");
@@ -86,11 +86,11 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
   let config = appTaskContext({ appDir: root, projectDir: root, agent: "example-owner", resourceStore: store });
   for (const id of ["running-child", "finished-child"]) {
     const child = input(db, id, undefined, parent.id);
-    admitTaskRequest(config, {
+    admitTaskInput(config, {
       appId: "example",
       attachment: testAttachment(id),
       idempotencyKey: `task:${id}`,
-      request: { id, source: child.source, input: child.input },
+      inputContext: { id, source: child.source, input: child.input },
       inboxInputId: child.id,
       topicId: "topic",
     });
@@ -147,7 +147,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
     version: 1,
     agent: "frontend",
     inputSchema: Type.Object({}),
-    requests: { mode: "agent" },
+    conversation: { mode: "agent" },
   });
   const worker = defineApp({
     id: "example",
@@ -168,7 +168,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
   const host = new AppInboxHost({
     db,
     apps: [frontend, worker],
-    resolveRequest: async () => {
+    resolveConversationInput: async () => {
       modelCalls++;
       throw new Error("Retired parent must not invoke the agent");
     },
@@ -176,7 +176,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
       ...dependency,
       status: "done",
       summary: "Verified",
-      evidence: ["fixture:checked"],
+      facts: ["fixture:checked"],
     }),
   });
   await host.recoverTaskResults();
@@ -199,7 +199,7 @@ test("upgrade retires exact, ready and saved child waits while leaving completed
     if (id === "task-input") waitAppInboxClaim(db, claim, { kind: "task", id: "ordinary-task" });
     if (id === "completed") {
       input(db, "historical-child", undefined, id);
-      completeAppInboxClaim(db, claim, { summary: "Already verified", evidence: ["fixture:proof"] });
+      completeAppInboxClaim(db, claim, { summary: "Already verified", facts: ["fixture:proof"] });
     }
     if (id === "reclaimed") input(db, "pending-child", undefined, id);
     if (id === "saved")
@@ -215,7 +215,7 @@ test("upgrade retires exact, ready and saved child waits while leaving completed
     expect(getAppInboxItem(db, id)).toMatchObject({ status: "done", handling: { phase: "failed" } });
     expect(getAppInboxItem(db, id)?.lease).toBeUndefined();
   }
-  // Saved decision remains audit evidence even though it can no longer execute.
+  // Saved decision remains audit facts even though it can no longer execute.
   const saved = db.prepare("SELECT handling FROM app_inbox_items WHERE id = 'saved'").get()!;
   expect(JSON.parse(String(saved.handling)).decision).toEqual({ summary: "Delegate", dependencies: [{ id: "child" }] });
   expect(unchanged.map((id) => getAppInboxItem(db, id))).toEqual(before);

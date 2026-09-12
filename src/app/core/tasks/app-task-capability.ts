@@ -133,7 +133,7 @@ export function createAppTaskCapability(options: {
         if (accepted) return {
           kind: "task", id: dependency.id, status: accepted.state === "converged" ? "done" : "attention",
           ...(task?.closed ? { closed: true } : {}),
-          summary: accepted.summary, response: accepted.response, result: accepted.result, evidence: accepted.evidence,
+          summary: accepted.summary, response: accepted.response, result: accepted.result, facts: accepted.facts,
         };
         // A later cycle or an unrelated retained wait cannot answer this input.
         const report = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey, kind: "report" });

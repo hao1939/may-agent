@@ -1,3 +1,4 @@
+import { storedResultFacts } from "./result-facts.js";
 import { createHash } from "node:crypto";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as transaction } from "../../../lib/db/transaction.js";
@@ -57,7 +58,7 @@ function parseJson<T>(value: unknown): T {
   return JSON.parse(value) as T;
 }
 
-/** Retained labels are evidence compatibility only, never another execution contract. */
+/** Retained labels are facts compatibility only, never another execution contract. */
 function parseTaskResource(value: unknown): AppTaskResource {
   const resource = parseJson<AppTaskResource>(value);
   const spec = resource.spec as AppTaskResource["spec"] & { mode?: unknown };
@@ -65,16 +66,32 @@ function parseTaskResource(value: unknown): AppTaskResource {
     if (spec.mode !== "achieve" && spec.mode !== "maintain") throw new Error("Invalid retained Task mode");
     delete spec.mode;
   }
+  storedResultFacts(resource.status);
   return resource;
 }
 
 function parseTaskAttempt(value: unknown): AppTaskAttempt {
   const attempt = parseJson<AppTaskAttempt>(value);
-  const result = attempt.acceptedResult as { state: string } | undefined;
+  const result = attempt.acceptedResult as (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & { state: string }) | undefined;
   if (result?.state === "stopped") result.state = "incomplete";
   if (result && !["converged", "waiting", "incomplete"].includes(result.state))
     throw new Error("Invalid retained Task result state");
+  if (result) {
+    storedResultFacts(result);
+    if (result.acceptanceBasis) storedResultFacts(result.acceptanceBasis);
+  }
+  if (attempt.retiredCancellation) storedResultFacts(attempt.retiredCancellation);
   return attempt;
+}
+
+function parseTaskReceipt(value: unknown): TaskCompletionReceipt {
+  const receipt = storedResultFacts(parseJson<TaskCompletionReceipt>(value));
+  storedResultFacts(receipt.acceptanceBasis);
+  return receipt;
+}
+
+function parseTaskCancellation(value: unknown): AppTaskCancellation {
+  return storedResultFacts(parseJson<AppTaskCancellation>(value));
 }
 
 function eventKey(event: Record<string, unknown>): string {
@@ -561,7 +578,7 @@ export class AppTaskResourceStore {
     const row = this.db
       .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?")
       .get(this.appId, taskId) as { receipt_json?: string } | null;
-    return row?.receipt_json ? parseJson<TaskCompletionReceipt>(row.receipt_json) : null;
+    return row?.receipt_json ? parseTaskReceipt(row.receipt_json) : null;
   }
 
   /** Activation precondition, not a migration or a per-claim repair loop. */
@@ -617,10 +634,10 @@ export class AppTaskResourceStore {
     const row = this.db
       .prepare("SELECT cancellation_json FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
       .get(this.appId, taskId) as { cancellation_json?: string } | null;
-    return row?.cancellation_json ? parseJson<AppTaskCancellation>(row.cancellation_json) : null;
+    return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : null;
   }
 
-  /** Bounded terminal child evidence, separate from live children and success receipts. */
+  /** Bounded terminal child facts, separate from live children and success receipts. */
   readCancelledChildren(parentId: string, limit: number): AppTaskCancellation[] {
     return (
       this.db.prepare(`
@@ -629,7 +646,7 @@ export class AppTaskResourceStore {
       WHERE r.app_id = ? AND r.relation_kind = 'parent' AND r.target_task_id = ?
       ORDER BY c.requested_at DESC, c.task_id LIMIT ?
     `).all(this.appId, parentId, limit) as Array<{ cancellation_json: string }>
-    ).map((row) => parseJson<AppTaskCancellation>(row.cancellation_json));
+    ).map((row) => parseTaskCancellation(row.cancellation_json));
   }
 
   readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
@@ -813,8 +830,8 @@ export class AppTaskResourceStore {
       taskTriggers,
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json", parseTaskAttempt),
       conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
-      receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json"),
-      cancellations: this.jsonMap<AppTaskCancellation>("app_task_cancellations", "task_id", "cancellation_json"),
+      receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json", parseTaskReceipt),
+      cancellations: this.jsonMap<AppTaskCancellation>("app_task_cancellations", "task_id", "cancellation_json", parseTaskCancellation),
       groups: Object.fromEntries(
         Object.entries(this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json")).map(([id, group]) => [
           id,
@@ -944,7 +961,7 @@ export class AppTaskResourceStore {
             this.db.prepare(`SELECT task_id, cancellation_json FROM app_task_cancellations
               WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})`)
               .all(this.appId, ...taskIds) as Array<{ task_id: string; cancellation_json: string }>
-          ).map((row) => [row.task_id, parseJson<AppTaskCancellation>(row.cancellation_json)]),
+          ).map((row) => [row.task_id, parseTaskCancellation(row.cancellation_json)]),
         )
       : {};
     // Canonical references must survive a bounded history read even when the
@@ -1024,7 +1041,7 @@ export class AppTaskResourceStore {
     const receipts = Object.fromEntries(
       receiptRows.flatMap((row) =>
         row.receipt_id && row.receipt_json
-          ? [[row.receipt_id, parseJson<TaskCompletionReceipt>(row.receipt_json)] as const]
+          ? [[row.receipt_id, parseTaskReceipt(row.receipt_json)] as const]
           : [],
       ),
     );

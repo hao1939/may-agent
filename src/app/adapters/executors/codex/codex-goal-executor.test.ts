@@ -75,7 +75,7 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
     resourceVersion: 4,
     role: {
       agent: "evaluator",
-      instructions: "Judge from exact evidence.",
+      instructions: "Judge from exact facts.",
     },
     task: {
       id: "runtime/codex-goal-trial/may-agent.app/example",
@@ -83,7 +83,7 @@ function attempt(overrides: Partial<TaskAttempt> = {}): TaskAttempt {
       generation: 1,
       status: "running",
       outcome: "Review the Task mental model",
-      acceptance: ["Cite exact current evidence"],
+      acceptance: ["Cite exact current facts"],
       agent: "evaluator",
       executor: "codex-goal",
       input: { targetProject: "may-agent.app", readOnly: true },
@@ -166,7 +166,7 @@ class FakeClient implements CodexGoalClient {
                   state: "converged",
                   summary: "The model matches the cited runtime boundary.",
                   response: "The review found no material mismatch.",
-                  evidence: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025"],
+                  facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025"],
                 }),
               },
             ],
@@ -252,7 +252,7 @@ describe("codex-goal Task executor", () => {
               conditions: [],
               hasLiveChildren: false,
               status: "done",
-              evidence: ["facts.json"],
+              facts: ["facts.json"],
               completedAt: "2026-08-24T00:00:00.000Z",
             },
           ],
@@ -281,7 +281,7 @@ describe("codex-goal Task executor", () => {
     expect(first).toMatchObject({
       state: "converged",
       response: "The review found no material mismatch.",
-      evidence: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", "codex-thread:thread-1"],
+      facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", "codex-thread:thread-1"],
     });
     expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
       version: 1,
@@ -338,7 +338,7 @@ describe("codex-goal Task executor", () => {
                 text: JSON.stringify({
                   state: "converged",
                   summary: "Stale answer",
-                  evidence: ["stale"],
+                  facts: ["stale"],
                 }),
               },
             ],
@@ -354,8 +354,8 @@ describe("codex-goal Task executor", () => {
                       phase: "final_answer",
                       text: JSON.stringify({
                         state: "converged",
-                        summary: "Current-turn evidence was admitted.",
-                        evidence: ["current-turn"],
+                        summary: "Current-turn facts were admitted.",
+                        facts: ["current-turn"],
                       }),
                     },
                   ],
@@ -373,7 +373,7 @@ describe("codex-goal Task executor", () => {
 
     await expect(executor(attempt())).resolves.toMatchObject({
       state: "converged",
-      evidence: ["current-turn", "codex-thread:thread-stale-answer"],
+      facts: ["current-turn", "codex-thread:thread-stale-answer"],
     });
     expect(client.calls.filter((call) => call === "goal:thread-stale-answer")).toHaveLength(2);
   });
@@ -412,7 +412,7 @@ describe("codex-goal Task executor", () => {
                     : JSON.stringify({
                         state: "converged",
                         summary: "Corrected output satisfies the Task contract.",
-                        evidence: ["same-thread-correction"],
+                        facts: ["same-thread-correction"],
                       }),
               },
             ],
@@ -429,7 +429,7 @@ describe("codex-goal Task executor", () => {
     });
     await expect(executor(attempt())).resolves.toMatchObject({
       state: "converged",
-      evidence: ["same-thread-correction", "codex-thread:thread-invalid"],
+      facts: ["same-thread-correction", "codex-thread:thread-invalid"],
     });
     expect(corrections).toHaveLength(1);
     expect(corrections[0]).toContain("not exact JSON");
@@ -463,7 +463,7 @@ describe("codex-goal Task executor", () => {
 
       await expect(executor(attempt({ attemptId: "r_2_retry" }))).resolves.toMatchObject({
         state: "converged",
-        evidence: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", `codex-thread:thread-${limitStatus}`],
+        facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025", `codex-thread:thread-${limitStatus}`],
       });
       expect(resumed.calls).toContain(`resume:thread-${limitStatus}`);
       expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
@@ -545,7 +545,7 @@ describe("codex-goal Task executor", () => {
         params: {
           threadId: "thread-progress",
           turnId: "turn-1",
-          item: { id: "message-1", type: "agentMessage", phase: "commentary", text: "Reviewing current evidence." },
+          item: { id: "message-1", type: "agentMessage", phase: "commentary", text: "Reviewing current facts." },
         },
       });
       client.emit({
@@ -620,7 +620,7 @@ describe("codex-goal Task executor", () => {
     );
 
     expect(result.state).toBe("converged");
-    expect(result.evidence).toContain("codex-progress-events:degraded failed=1 last=event store unavailable");
+    expect(result.facts).toContain("codex-progress-events:degraded failed=1 last=event store unavailable");
   });
 
   it("steers queued events into the authoritative next automatic turn", async () => {
@@ -667,7 +667,7 @@ describe("codex-goal Task executor", () => {
                 text: JSON.stringify({
                   state: "converged",
                   summary: "The live event was considered.",
-                  evidence: ["event:LIVE-STEER-TEST"],
+                  facts: ["event:LIVE-STEER-TEST"],
                 }),
               },
             ],

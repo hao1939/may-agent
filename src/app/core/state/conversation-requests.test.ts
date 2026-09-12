@@ -47,7 +47,7 @@ const app = defineApp({
   version: 1,
   agent: "sample",
   inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
-  requests: { mode: "agent" },
+  conversation: { mode: "agent" },
 });
 const owner = defineApp({
   id: "owner",
@@ -57,7 +57,7 @@ const owner = defineApp({
   tasks: {},
   task: () => ({
     kind: "desired",
-    intent: { id: "work", parentId: "project", outcome: "Find evidence", acceptance: ["Verified"] },
+    intent: { id: "work", parentId: "project", outcome: "Find facts", acceptance: ["Verified"] },
   }),
 });
 const answer: ConversationTurnResult = {
@@ -77,7 +77,7 @@ const handoff: ConversationTurnResult = {
   followUp: {
     requestId: ask.id,
     appId: owner.id,
-    outcome: "Find evidence",
+    outcome: "Find facts",
     acceptance: ["Verified"],
     input: { kind: "work", data: {} },
   },
@@ -125,7 +125,7 @@ function fixture() {
       config: context(),
       claim,
       app,
-      resolveRequest: typeof decision === "function" ? decision : async () => decision,
+      resolveConversationInput: typeof decision === "function" ? decision : async () => decision,
       getTaskApp: (appId) => ({ app: owner, config: context(appId) }),
       signal: new AbortController().signal,
     });
@@ -316,11 +316,11 @@ test.each([
   let claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
   if (claim.kind !== "claimed") throw new Error("fixture claim");
   const firstAttemptId = claim.attemptId;
-  if (taskOutcome === "done") completeAppTask(config, claim, { summary: "Evidence collected" });
+  if (taskOutcome === "done") completeAppTask(config, claim, { summary: "Facts collected" });
   else if (taskOutcome === "retrying") {
     for (let i = 0; i < 6; i++) {
       if (claim.kind !== "claimed") throw new Error("fixture retry claim");
-      expect(failAppTaskAttempt(config, claim, "Evidence source unavailable").status).toBe("retrying");
+      expect(failAppTaskAttempt(config, claim, "Facts source unavailable").status).toBe("retrying");
       if (i < 5) {
         setSystemTime(new Date(config.resourceStore.readTask("work")!.status.executionRetryAt! + 1));
         claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
@@ -334,12 +334,12 @@ test.each([
         taskId: "work",
         expectedGeneration: task.metadata.generation,
         expectedResourceVersion: task.metadata.resourceVersion,
-        reason: "Human cancelled evidence collection",
+        reason: "Human cancelled facts collection",
       }).applied,
     ).toBe(true);
   } else
     expect(
-      reportAppTaskFailure(config, claim, { summary: "Evidence source unavailable", evidence: ["fixture:source"] }).status,
+      reportAppTaskFailure(config, claim, { summary: "Facts source unavailable", facts: ["fixture:source"] }).status,
     ).toBe("applied");
   const settledTask = config.resourceStore.readTaskContext({ taskIds: ["work"] });
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(accepted);
@@ -358,18 +358,18 @@ test.each([
     expect(change.attemptId).toBe(firstAttemptId);
     expect(config.resourceStore.readAttempt(firstAttemptId)?.acceptedResult).toBeUndefined();
     expect(returned.item?.input.data).toMatchObject({
-      outcome: { state: "error", evidence: [`task-attempt:${firstAttemptId}`] },
+      outcome: { state: "error", facts: [`task-attempt:${firstAttemptId}`] },
     });
     expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(accepted);
   }
-  const extraRef = { appId: owner.id, taskId: "additional-evidence" };
+  const extraRef = { appId: owner.id, taskId: "additional-facts" };
   if (links === "add") linkConversationTopicTask(f.db, accepted.topicId!, extraRef.appId, extraRef.taskId);
   const addedRefs = links === "add" ? [extraRef] : [];
   const resultRefs = [...accepted.taskRefs, ...addedRefs];
   const closureText =
     taskOutcome === "done"
       ? "Both options compared with costs."
-      : "I cannot provide the comparison with the available evidence. Background work retains its own controls.";
+      : "I cannot provide the comparison with the available facts. Background work retains its own controls.";
   const update: AppConversationRequestUpdate = {
     ...ask,
     expectedRevision: accepted.revision,
