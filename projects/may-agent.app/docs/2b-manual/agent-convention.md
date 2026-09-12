@@ -51,13 +51,13 @@ Only two authored files are always loaded into the normal system prompt:
 | `shared/common-sense.md`  | Shared behavioral fundamentals and repo conventions             | Every agent session   |
 | `agents/<name>/AGENTS.md` | Agent identity, responsibility, constraints, escalation posture | That agent's sessions |
 
-Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
-`knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and `workspace/*` are
-not automatically loaded into the system prompt. Retained `agent.json`
-`context_files` are appended to a bounded agent call as explicit files to read;
-they are compatibility context, not another instruction tier. Keep them small
-and factual, and do not add new ones when a skill or exact Task reference is
-sufficient.
+Everything else is discoverable context. `context.md`, `DOMAIN.md`, `TOOLS.md`,
+`LESSONS.md`, `knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and
+`workspace/*` are not automatically loaded into the system prompt. Retained
+`agent.json` `context_files` become definition metadata, not automatic prompt
+content. Separately, an `agents` tool call can supply `context_files` as explicit
+paths for its recipient to read. Neither is another instruction tier. Keep
+references small and factual; prefer a skill or exact Task reference when sufficient.
 
 Canonical skills live in named directories with `SKILL.md`; loose Markdown
 files under `skills/` are legacy. Native metadata discovery, bounded catalogs,
@@ -88,6 +88,24 @@ event. See [workflows.md](../2a-design/workflows.md).
 If a lesson must affect every session, promote the distilled invariant into
 `AGENTS.md`. If it is situational, keep it in `knowledge/` and
 link it from `knowledge/INDEX.md`.
+
+### Reporting is not adoption
+
+`finish()` reports the current turn. Its `completed_items` and `new_items` do
+not complete or create Tasks/Requests; use the owning App's authorized controls.
+`context_updates` reports suggestions, not an activated preference. The default
+daemon does not attach the legacy context-writing subscriber, and even a written
+`context.md` is not automatically included in a normal prompt. `lessons` attempts
+a best-effort local memory-stream append, not automatic retrieval or learning.
+
+For lasting behavior, use an authorized source edit in the owning guidance,
+verify activation, then check a later relevant execution. A saved report or
+file alone does not prove May will use it. Follow the existing
+[learning review boundary](../2a-design/practice-learning-loop.md) and the
+[scoped teaching proposal](../proposals/agent-behavior-and-capability-extension.md);
+this does not grant permission to change live guidance. See
+[skill snapshots](../2a-design/skills.md#discovery-lifecycle) for when an updated
+definition takes effect.
 
 ## AGENTS.md Shape
 
@@ -127,7 +145,7 @@ needing a May-specific identity filename.
 
 ## System Prompt Assembly
 
-`resolveSystemPrompt()` in `projects/may-agent/src/lib/manager.ts` builds:
+`resolveSystemPrompt()` in `projects/may-agent/src/lib/agent-execution.ts` builds:
 
 1. `shared/common-sense.md`
 2. the registered agent's `AGENTS.md` (global or app-local)

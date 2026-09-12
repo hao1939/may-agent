@@ -487,6 +487,38 @@ the focused [runtime PR #159](https://github.com/hao1939/may-agent/pull/159) and
 [portable trial PR #160](https://github.com/hao1939/may-agent/pull/160). Keep the
 experimental collector local unless a real App procedure justifies it.
 
+### Source-contract correction before adoption
+
+Follow-up inspection at Host `49272b5a` traced `finish()` through result
+extraction, daemon subscribers and prompt preparation. The default daemon does
+not attach the legacy context updater. `context_updates` is report evidence,
+not an active preference; even a written `context.md` is not normally injected.
+`completed_items` and `new_items` likewise do not perform their advertised
+automatic Request mutations. Lesson storage is a best-effort local append with
+no automatic future-session retrieval.
+
+[Host PR #161](https://github.com/hao1939/may-agent/pull/161), candidate
+`a31a957d`, corrects those model-visible promises without adding a new mechanism
+or changing stored fields. Its focused regression checks cover successful and
+unavailable lesson storage, report-only guidance and normal prompt assembly.
+The existing session-lifecycle test already proves old-session explicit skill
+activation stays pinned while newly prepared sessions use the replacement.
+The persisted handoff also labels suggested follow-ups honestly; the optional
+legacy context writer remains supported without promising automatic retrieval.
+Together, 74 focused tests pass. Full local CI passes with 2,766 tests, three
+installation-only skips and no failures; exact-head hosted Quality and Container
+pass in [run 34677317802](https://github.com/hao1939/may-agent/actions/runs/34677317802).
+Both initial review comments are resolved. Copilot approved the exact head with
+zero new findings; the PR is ready for maintainer review, not merged or deployed.
+No model call or installed guidance change was made for this correction.
+
+The owning [skill contract](../2a-design/skills.md#discovery-lifecycle) now
+describes execution snapshots rather than promising live freshness. It also
+records the Console/Telegram selector-forwarding gap. The
+[agent convention](../2b-manual/agent-convention.md#reporting-is-not-adoption)
+distinguishes reporting, source edits, activation and later use. These are
+truthful-contract corrections, not production adoption or a new learning policy.
+
 ### First: prepare one authorized App adoption
 
 Remove contradictory ownership guidance and duplicate policy for the selected

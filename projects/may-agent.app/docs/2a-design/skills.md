@@ -3,8 +3,9 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented for scoped discovery, bounded catalogs,
 explicit/model activation, delegation, new-session reload snapshots, and trace
-evidence. In-place catalog refresh for existing persistent chats and
-effectiveness evaluation by content hash remain follow-up work.
+evidence. Existing execution sessions retain their selected definition; reload
+does not refresh them in place. Effectiveness evaluation by content hash remains
+follow-up work.
 
 ## Purpose
 
@@ -150,11 +151,18 @@ Missing roots are empty, not errors. Invalid packages appear in the reload
 result and use the existing `agent.config_invalid` operational path with an
 `errors` entry whose `field` is `"skills"`; they are not model-visible.
 
-New sessions use the latest valid catalog. Existing persistent chats keep the
-metadata snapshot embedded in their system prompt; starting a new session is
-currently required to refresh that model-visible catalog. Explicit activation
-on a later turn resolves against the latest registered agent definition. A
-reload must never mutate context during a running provider call.
+New executions prepared from the registry use the latest activated definition.
+An already prepared execution or persistent chat retains its selected definition:
+both the metadata in its system prompt and later explicit activation use that
+session's catalog. A reload must not mix new skill bodies into an old definition
+or mutate context during a provider call. An explicit caller-supplied definition
+also remains pinned rather than silently following the registry.
+
+Starting a fresh execution can adopt the activated definition without replacing
+the enclosing Conversation or Task. Do not confuse a human-facing conversation
+with one model execution session; persistent-session callers must prepare a new
+execution to adopt a new catalog. This is a snapshot boundary, not a promise of
+live prompt refresh.
 
 ## Progressive Disclosure
 
@@ -196,9 +204,9 @@ A successful read of a cataloged `SKILL.md` loads the skill for that turn.
 Relative references resolve against the skill directory and remain subject to
 normal path permissions.
 
-### Explicit human invocation
+### Human invocation and entry-path limits
 
-Human control surfaces may use:
+Direct-agent input recognizes a leading selector:
 
 ```text
 $verify-change review and verify the current patch
@@ -206,6 +214,9 @@ $verify-change review and verify the current patch
 
 May Console and Telegram publish one human `conversation.message.created` on
 `Conversation may:primary`; Host admission derives one fenced May App request.
+Their wrapped request does not currently forward the selector as explicit
+skill activation. The model may interpret the request and read the skill, but
+the prefix alone is not proof that it loaded. Use the actual skill-read evidence.
 Explicit direct-agent input may instead start or steer a named execution
 session. The selected skill is bounded owner/execution context; it is never
 another request or ownership record.
