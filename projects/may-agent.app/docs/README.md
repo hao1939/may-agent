@@ -31,6 +31,11 @@ small shared state boundary.
 
 ## Current focus
 
+The [caller-feedback proposal](proposals/caller-feedback-and-waiting.md) explores
+returning problems to the exact caller without another escalation lifecycle.
+Its isolated mechanics PoC tests reporting while waiting and execution-failure
+feedback; source readiness, agent adoption and deployment remain separate.
+
 The [unified-Task improvement trial](proposals/task-improvement-poc-20260912.md)
 extends agent-operated guidance work through a durable wait and Task-runtime/storage
 reopen. One Task resumed across two managed attempts, activated its candidate and

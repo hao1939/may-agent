@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-12",
+  "baseline": "8026aff97585edd7f728fa4ce360fdde71bc740a",
+  "candidate": "0882cad717b3e2ff162a0133e9ea8bba7f53e606",
+  "branch": "poc/caller-feedback-wait-20260912",
+  "status": "isolated mechanics proof; not production ready",
+  "environment": {
+    "bun": "1.3.14",
+    "node": "v24.20.0",
+    "executors": "scripted",
+    "storage": "temporary file-backed SQLite",
+    "automaticControllers": false,
+    "modelCalls": 0,
+    "installedStateChanged": false
+  },
+  "experimentCommand": "bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'caller feedback PoC'",
+  "trials": [
+    {
+      "variant": "baseline production code, same experiment",
+      "passed": 2,
+      "failed": 4,
+      "controls": [
+        "quiet",
+        "stopped-then-wait"
+      ],
+      "failure": "Candidate cases have no saved caller report."
+    },
+    {
+      "variant": "first report only",
+      "passed": 6,
+      "failed": 0,
+      "limitation": "Includes a passing characterization that the actionable report after a runtime failure is hidden; not proof that both reports are delivered."
+    },
+    {
+      "variant": "explicit report with attempt-ID deduplication, including delayed old delivery",
+      "passed": 5,
+      "failed": 1,
+      "failure": "Delayed first report replaces the newer observation and wakes the caller again."
+    },
+    {
+      "variant": "explicit report with stored per-input revision",
+      "passed": 6,
+      "failed": 0,
+      "assertions": 134,
+      "scenarios": [
+        {
+          "poc": "caller-feedback",
+          "scenario": "quiet",
+          "workerCalls": 2,
+          "callerCalls": 2,
+          "reportRecovered": false,
+          "originalAnswer": {
+            "score": 0.92
+          },
+          "changedReportDelivered": false
+        },
+        {
+          "poc": "caller-feedback",
+          "scenario": "stopped-then-wait",
+          "workerCalls": 3,
+          "callerCalls": 3,
+          "reportRecovered": true,
+          "originalAnswer": {
+            "score": 0.92
+          },
+          "changedReportDelivered": false
+        },
+        {
+          "poc": "caller-feedback",
+          "scenario": "report-wait",
+          "workerCalls": 2,
+          "callerCalls": 3,
+          "reportRecovered": true,
+          "originalAnswer": {
+            "score": 0.92
+          },
+          "changedReportDelivered": false
+        },
+        {
+          "poc": "caller-feedback",
+          "scenario": "throw",
+          "workerCalls": 2,
+          "callerCalls": 3,
+          "reportRecovered": true,
+          "originalAnswer": {
+            "score": 0.92
+          },
+          "changedReportDelivered": false
+        },
+        {
+          "poc": "caller-feedback",
+          "scenario": "invalid",
+          "workerCalls": 2,
+          "callerCalls": 3,
+          "reportRecovered": true,
+          "originalAnswer": {
+            "score": 0.92
+          },
+          "changedReportDelivered": false
+        },
+        {
+          "poc": "caller-feedback",
+          "scenario": "throw-then-wait",
+          "workerCalls": 3,
+          "callerCalls": 4,
+          "reportRecovered": true,
+          "originalAnswer": {
+            "score": 0.92
+          },
+          "changedReportDelivered": true
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "existingStopThenWaitWorkerAttempts": 3,
+    "combinedReportWaitWorkerAttempts": 2,
+    "callerAttemptsForEither": 3,
+    "savedWorkerAttempts": 1,
+    "providerCostMeasured": false
+  },
+  "waitProbe": {
+    "probeCount": 10,
+    "controlledTimeSeconds": 100,
+    "checkpointSeconds": 300,
+    "extraWorkerAttempts": 0,
+    "wallClockSoak": false
+  },
+  "validations": {
+    "ci": {
+      "command": "bun run ci",
+      "exitCode": 0,
+      "passed": 2873,
+      "skipped": 3,
+      "failed": 0,
+      "files": 291,
+      "testDurationSeconds": 139.38,
+      "skipReason": "installation-only agent catalog checks"
+    },
+    "canonicalDesign": {
+      "command": "bun run check:may-design",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "firstCandidateFocusedRegression": {
+      "passed": 365,
+      "failed": 0
+    }
+  },
+  "limitations": [
+    "No model or human-interface adoption proof.",
+    "No arbitrary process-death, timer-latency or load test.",
+    "Condition ingress and dispatch are explicitly driven through production primitives.",
+    "Topic-linked Conversation discovery and managed-agent protocol are not aligned yet.",
+    "Explicit updated reports are limited to waiting results.",
+    "Latest selected feedback can supersede undelivered earlier reports; history preserves attempts.",
+    "All failure boundaries and concurrent publication/closure still need review.",
+    "No remote push, PR or deployment."
+  ]
+}
