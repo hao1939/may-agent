@@ -26,6 +26,7 @@ const STUCK_TERMINATE_THRESHOLD = 6;
 interface StuckState {
   consecutiveErrorTurns: number;
   warned: boolean;
+  callerOwned: boolean;
 }
 
 export function createStuckDetector(
@@ -38,7 +39,7 @@ export function createStuckDetector(
   return (event: AgentEvent) => {
     if (event.type === "session.start") {
       const info = eventData(event) as any;
-      state.set(info.sessionId, { consecutiveErrorTurns: 0, warned: false });
+      state.set(info.sessionId, { consecutiveErrorTurns: 0, warned: false, callerOwned: info.kind === "call" });
       return;
     }
 
@@ -73,7 +74,9 @@ export function createStuckDetector(
         `[stuck] ${event.agent} (${event.sessionId}) stuck at ${s.consecutiveErrorTurns} error turns — cancelling`,
       );
       emitCancel(event.sessionId, reason);
-      if (onCircuitBreak) {
+      // A bounded call returns its interruption through its existing caller.
+      // Opening an independent escalation would create a second recovery owner.
+      if (onCircuitBreak && !s.callerOwned) {
         try {
           onCircuitBreak(event.agent, event.sessionId, reason);
         } catch (err) {
