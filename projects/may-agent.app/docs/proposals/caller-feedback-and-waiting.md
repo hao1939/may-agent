@@ -601,3 +601,12 @@ child process, preserving its exact exported-App assertion. No production
 bundler behavior, retry or test-skip policy changed. The full-tree collection
 reproduction now passes all eight bundler checks. Earlier failed runs remain
 part of the evidence; final gates are recorded on #169.
+
+Final follow-up source is `6b1e49d0`. The full local gate completed with
+2,926 passed tests, three existing installation-only skips and zero failures;
+the corrected Conversation-state file separately passed all 24 checks.
+Host/SDK type, boundary/lint and companion design checks pass. All five inline
+review discussions have fix/evidence replies and are resolved. A fresh Copilot
+review was requested after the push. Exact-head hosted verification is
+[run 34700292522](https://github.com/hao1939/may-agent/actions/runs/34700292522);
+its current status belongs to the PR, not a deployment claim.
