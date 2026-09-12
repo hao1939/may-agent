@@ -193,6 +193,13 @@ reference. Keep detailed prompts and tool traces available on demand instead
 of repeatedly putting them into the caller's context. The first agent-operated
 trial succeeded but exposed that unnecessary payload cost in its fixture tools.
 This is an ordinary tool-result convention, not a new evidence service.
+Include a small indication of failed tool calls even when the final execution
+completed. The review-follow-up PoC produced correct capacity answers while
+repeatedly trying an inaccessible policy reference. The teacher's readable
+evidence is not automatically visible to the target. Describe that boundary,
+keep references usable in the target's execution, and cite the source actually
+available there. Counts are investigation signals, not automatic acceptance
+rules; details remain available for the agent to judge.
 
 ## 3. Workflows are first-class callable abilities
 
@@ -475,6 +482,10 @@ chooses the guidance change, invokes real source activation, handles an explicit
 pre-admission failure, tests the active target and reports its result. Later
 withheld cases check that claim. Fixture adapters expose existing execution and
 reload capabilities; they are not an installed general improvement service.
+Review tightened the recovery claim: require the exact failure result before
+a later assistant retry request and its matching activation. The first two
+trials lacked ordered evidence; a fresh follow-up establishes that sequence.
+This checks what feedback was available before action, not private reasoning.
 
 This tests **operability**, not whether agents can invent a better strategy from
 arbitrary failures. Small successful examples do not establish a fleet-wide

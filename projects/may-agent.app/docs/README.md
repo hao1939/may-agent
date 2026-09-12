@@ -33,10 +33,13 @@ small shared state boundary.
 
 The [agent-operated improvement PoC](proposals/agent-operated-improvement-poc-20260912.md)
 now tests the extension mechanisms without a human operating the intermediate
-steps. In two temporary trials, an improver discovered, authored, activated and
-tested May's guidance, recovered from an explicit pre-admission reload failure,
-and passed eight withheld checks. Compact answers with on-demand evidence kept
-the interface usable. This supports agent-directed use of existing capabilities,
+steps. Four temporary trials completed 42 model executions and 16 correct
+withheld answers. Review tightened recovery evidence: the two new trials prove
+failure delivery preceded the retry request. One also exposed an inaccessible
+guidance reference despite correct answers. Clarifying target access and exposing
+tool-error counts produced a later candidate with zero probe/holdout tool errors.
+The earlier defect remains recorded; this is not a general reliability claim.
+Compact answers with on-demand evidence kept the interface usable. This supports agent-directed use of existing capabilities,
 not a new learning controller or a requirement to complete a Gym campaign.
 Production authority and installed-path adoption remain separate.
 

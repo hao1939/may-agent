@@ -1,15 +1,19 @@
 # Can an agent operate the improvement mechanism itself?
 
-**Status:** Two bounded trials completed, September 12, 2026. No production changes.
+**Status:** Four bounded trials completed, September 12, 2026. No production changes.
 **Parent:** [Agent extension proposal](agent-behavior-and-capability-extension.md).
 
 ## Answer
 
 Yes, in this bounded trial. An agent received an improvement objective and
 standing authority over a temporary May. It discovered the evidence and source,
-authored a small guidance change, activated it, handled a clearly reported
-activation failure, and checked later behavior. No human chose the files or
-operated intermediate steps.
+authored a small guidance change, activated it and checked later behavior.
+A fresh review-follow-up trial also established that the failure result
+preceded the agent's retry request. No human chose the files or operated
+intermediate steps. That trial exposed an inaccessible guidance reference;
+correct numeric answers alone did not establish clean guidance quality. A
+follow-up with clearer capability scope and visible tool failures avoided that
+reference and passed its probes and holdouts without tool errors.
 
 This supports the simple design: **give agents usable capabilities and scoped
 authority, then let them judge and operate the work**. It does not justify a new
@@ -53,11 +57,16 @@ The improver added **10 lines to one `AGENTS.md`**, preserving the original
 identity. It read the change back, committed only that file, then requested
 reload. The first request was deliberately rejected **before submission**:
 the result said no event had been sent, the active revision was unchanged and
-a later attempt was possible. The agent retried, observed a successful actual
-reload and tested the active revision. Source was clean when it finished.
+a later attempt was possible. A subsequent recorded reload succeeded, and
+the agent tested the active revision. Source was clean when it finished.
 
-This is evidence of handling an explicit safe-to-retry result, not a real
-network outage, ambiguous completion, rollback or crash-recovery test. An
+Review qualification: the first two trials retained flattened calls and
+results, not their interleaved assistant-message boundaries. They show a
+rejection and later activation but cannot prove that the agent received the
+failure before choosing the retry. Their original `handledPreAdmissionFailure`
+flags overstate that evidence and are retained as historical harness output,
+not accepted proof of causal recovery. The follow-up below closes this gap.
+This is not a real network outage, ambiguous completion, rollback or crash-recovery test. An
 admitted operation with an unknown result must be inspected, not blindly retried.
 
 The agent tested production equality and overflow, staging equality, unknown
@@ -93,7 +102,7 @@ those details. This changes fixture evidence presentation, not May's runtime.
 A second bounded trial at Host
 `76f32080cf909f9af16034cb549172bb28a1d0a1` completed **11 more model executions**
 with the same objective, authority, limits and withheld cases. The agent authored
-a 12-line identity addition, handled the same explicit pre-admission rejection,
+a 12-line identity addition, encountered the same explicit pre-admission rejection,
 activated the change and chose five passing probes. All four withheld checks
 passed again. The source was clean and active, with no human intermediate steps.
 
@@ -111,6 +120,77 @@ withheld checks correct**. Both agent-authored changes remained confined to the
 temporary target. Read the [sanitized evidence extract](agent-operated-improvement-evidence-20260912.json)
 for exact requests, answers, source diffs, tool choices, revisions and usage.
 It also records hashes of the retained local full evidence and each harness.
+
+## Review follow-up: evidence before claims
+
+The old recovery assertion only tested whether the failure hook ran. Two
+reloads planned in one assistant message could satisfy it without reacting
+to feedback. The revised harness keeps an ordered reload trace and requires:
+
+```text
+failure tool result -> later assistant reload request -> matching successful activation
+```
+
+Call identity and the final active source must match. Deterministic regressions
+reject batched/pre-planned retries and unrelated, pending or failed results.
+This is a post-execution evidence check, not a retry controller or proof of
+the model's private reasoning. A separate real-socket test aborts inside the
+polling delay without timing guesses or shared-module mocks.
+
+A third trial at Host `820d16d1` completed **10 model executions**: baseline,
+improver, four agent-selected probes and four withheld checks. The ordered
+trace records the failure at message 26, the next assistant's reload at 27,
+and its successful activation at 28 (zero-based indices). All four withheld
+answers were correct, and the source was clean. This establishes recovery
+ordering on the review fix without assigning that evidence to the older runs.
+
+However, the agent's three-line guidance addition embedded the accepted policy
+and also named its original `evidence/accepted-policy.json`. The improver could
+read that file; the target's active-definition-only reader could not. Six
+capacity executions incurred **13 failed reads**, then answered correctly from
+the inline policy. Some cited the unreadable original without clarifying that
+their actual source was the active guidance. The probe results exposed the
+read limitation, but the improver left the reference. Retain this as a guidance-quality
+defect despite the passing outcome checks; do not call the whole result clean.
+
+The smallest follow-up is two interface clarifications: describe the target's
+existing readable scope in `try_agent`, and return `toolErrorCount` beside the
+answer and detailed evidence link. A completed execution can contain failed
+tool calls; surface those facts without making every tool error a failed task.
+The next bounded trial used the same objective, protected truth, authority and
+holdouts. Only the capability description and compact feedback change. The
+agent still chooses its own edit and whether evidence warrants repair.
+
+That fourth trial at Host `13ecb2f5` completed **10 model executions**. The
+agent added 12 lines to the existing identity without the inaccessible file
+reference, committed and activated the change, and selected four probes.
+All four probes and all four withheld checks were correct, with **zero tool
+errors in those eight target executions**. Unknown development policy stayed
+unknown; unrelated writing remained ordinary. The target cited the accepted
+policy available in its guidance instead of suggesting it had read the
+improver-only evidence file.
+
+The ordered trace records failure delivery at message 25, later retry at 26,
+and matching activation at 27. The source was clean and the agent verified the
+active revision. No human operated intermediate steps. The baseline still made
+19 failed discovery reads before honestly reporting missing policy; this is
+not a fix for all discovery inefficiency.
+
+The two review follow-ups add **20 completed model executions and 8/8 correct
+withheld checks**, with both ordered recovery checks passing. Across all four
+trials there are 42 executions and 16 correct withheld answers. Do not turn
+those outcome counts into a guidance-quality score: the third trial's defective
+reference remains part of the evidence. One run per variant does not isolate
+which clarification helped or establish a general speed/reliability gain.
+The [evidence extract](agent-operated-improvement-evidence-20260912.json) retains
+both follow-ups, exact revisions, source diffs, answer text and tool-error counts.
+Call IDs are hashed in the shared extract while preserving exact linkage.
+
+The practical convention is small: **an outcome and scoped authority, usable
+capability descriptions, compact truthful results, and optional detail**.
+Let the agent choose and judge the change. The checker reports what happened;
+it does not become another improvement controller. A stable reusable procedure
+can still be a workflow, but this experiment did not need one to choose repairs.
 
 ## Failures and verification
 
@@ -130,9 +210,13 @@ recovery; this report does not claim those internal mechanisms were disabled.
 
 The portable checks exercise scope enforcement, saved-versus-active source,
 the synthetic rejection, actual reload, compact evidence with detailed readback,
-cancelled Git, and subprocess teardown/interruption. Both owning test files
-pass: **5 tests, 0 failures**. The explicit PoC typecheck and changed-file lint
-also pass. These are focused checks, not a new full-suite or deployment claim.
+cancelled Git, and subprocess teardown/interruption. The review follow-up adds
+ordered-recovery regressions and abort-during-polling coverage: **9 focused
+tests, 0 failures**. The explicit PoC typecheck and changed-file lint also pass.
+Full local CI at both `820d16d1` and the refined harness `13ecb2f5` passed
+**2,787 tests, 3 installation-only skips, 0 failures**. The latter is the final
+model-tested source; subsequent report-only changes do not alter that harness.
+None of these checks is deployment proof.
 
 ## Design consequences and limits
 
@@ -150,6 +234,11 @@ also pass. These are focused checks, not a new full-suite or deployment claim.
 5. Keep the improvement process agent-directed. Use a workflow only where a
    stable procedure needs reliable execution; benchmark comparison is optional
    capability, not the definition of improvement.
+6. Review from the target's perspective. A reference useful to the teacher
+   may be unavailable to the learner. Check actual tool use and failures as
+   well as final answers; cite the source actually available to that execution.
+   Clear capability scope and compact failure evidence are smaller than a new
+   controller that tries to choose or enforce every repair.
 
 The baseline spent 25 reads looking for unavailable policy before acknowledging
 the gap. That is a discovery limitation in this sparse read-only fixture, not
@@ -175,11 +264,13 @@ The local Host branch is `poc/agent-operated-improvement-20260912`, based on the
 teaching harness and truthful-completion candidates (#160 and #161). It is
 isolated from the live installation. The fixture daemons are stopped after runs;
 experiment artifacts remain for audit.
-The final model-tested harness revision is `76f32080`. The original branch
+The original model-tested harness revision is `76f32080`. The original branch
 remains for audit. [Host PR #163](https://github.com/hao1939/may-agent/pull/163)
 publishes only this PoC on main after #159–#161 merged, using branch
-`test/agent-operated-improvement` at `46251b1c`. The harness file is byte-identical;
-publication-branch portable validation is separate from the earlier model runs.
+`test/agent-operated-improvement`. The publication harness now contains review
+fixes and new trials; it is no longer byte-identical to the original harness.
+Each trial records its exact Host revision and harness hash. Keep the earlier
+and follow-up evidence separate.
 This is not a merged or deployed production feature.
 
 ```sh
