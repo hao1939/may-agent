@@ -70,9 +70,9 @@ it("continues hourly after prolonged failure, preserving its deadline and input 
     expect(delay).toBeLessThanOrEqual(60 * 60_000);
     if (failures >= 15) expect(delay).toBe(60 * 60_000);
     if (failures === 15) {
+      recordAppTaskTrigger(f.config, "work", { type: "sample.source.changed", eventId: 99 });
       f.reopen();
       expect(f.config.resourceStore.nextDueAt()).toBe(due);
-      recordAppTaskTrigger(f.config, "work", { type: "sample.source.changed", eventId: 99 });
       setSystemTime(due - 1);
       expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }))
         .toMatchObject({ kind: "waiting", retryAt: due });
