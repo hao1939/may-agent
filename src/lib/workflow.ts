@@ -1,5 +1,5 @@
 import type { TaskResult } from "./types.js";
-import type { WorkflowContext, ExecutionResult } from "@may-agent/sdk";
+import type { WorkflowContext, ExecutionResult, TaskReconcileResult } from "@may-agent/sdk";
 export type { WorkflowContext } from "@may-agent/sdk";
 import type {
   Demand as SdkDemand,
@@ -81,7 +81,7 @@ export interface WorkflowModule {
   executionTimeoutMs?: number;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext) => Promise<ExecutionResult>;
+  execute: (ctx: WorkflowContext) => Promise<ExecutionResult | TaskReconcileResult>;
   /** Optional app-level deterministic verifier; interpreted by the embedding infrastructure. */
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
   /** Immutable provenance captured when the catalog snapshot was built. */

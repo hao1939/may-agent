@@ -425,6 +425,8 @@ function runtimeTaskAttempt(input: {
   }
   const events = createAppTaskEvents({
     bus: opts.bus,
+    db: descriptor.resourceStore.db,
+    persistDir: opts.persistDir,
     appId: descriptor.id,
     claim,
     ...(input.event ? { parentEvent: input.event as AgentEvent } : {}),
@@ -1863,6 +1865,7 @@ async function reconcileTask(input: {
         attemptId: primary.attemptId,
         handler: primary.handler,
         disposition: retry.status,
+        retryAt: retry.retryAt,
         input: intent.input ?? {},
         summary: retry.summary,
       });
@@ -1878,7 +1881,6 @@ async function reconcileTask(input: {
           // Task mutations as accepted through the diagnostic path either.
           result: primaryHandlerResult.actions.length ? undefined : primaryHandlerResult.result,
           evidence: primaryHandlerResult.evidence,
-          acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
           reason: primaryHandlerResult.resultRejected
             ? "HandlerResultInvalid"
             : primaryResult.unavailable
@@ -1897,16 +1899,18 @@ async function reconcileTask(input: {
       if (!stale) throw error;
       return stale.reconcileTaskIds;
     }
+    if (attention.status === "stale") return [];
     if (!agentHandoff) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
         attemptId: primary.attemptId,
         handler: primary.handler,
-        disposition: attention.taskContinues ? "progress" : "attention",
+        disposition: "retrying",
+        retryAt: attention.retryAt,
         input: intent.input ?? {},
-        summary: primaryHandlerResult.summary,
+        summary: attention.summary,
       });
-      return attention.taskContinues ? [intent.id] : [];
+      return [];
     }
     emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
       generation: primary.generation,
@@ -1973,6 +1977,7 @@ async function reconcileTask(input: {
             attemptId: failedClaim.attemptId,
             handler: failedClaim.handler,
             disposition: retry.status,
+            retryAt: retry.retryAt,
             summary: retry.summary,
           },
         );
@@ -2877,6 +2882,8 @@ export function publishLoadedAppTaskEvent(input: {
   }
   return createAppTaskEvents({
     bus: input.bus,
+    db: descriptor.resourceStore.db,
+    persistDir: appRouterOptionsByBus.get(input.bus)?.persistDir,
     appId,
     claim: {
       taskId: input.binding.taskId,

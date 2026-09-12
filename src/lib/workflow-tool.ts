@@ -113,11 +113,17 @@ function normalizeAuthoredWorkflowResult(
   value: unknown,
   completedSteps: CompletedStep[],
   runId: string,
+  taskOwned: boolean,
 ): WorkflowResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Workflow returned no terminal execution result");
   }
   const result = value as Record<string, unknown>;
+  // A Task workflow reports one Task outcome. Its controller still owns full
+  // result admission; completed execution does not itself establish acceptance.
+  if (taskOwned && typeof result.state === "string" && typeof result.summary === "string") {
+    return { type: "done", summary: result.summary, output: value };
+  }
   const isExecutionResult =
     (result.kind === "agent" || result.kind === "workflow") &&
     typeof result.id === "string" &&
@@ -1478,6 +1484,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         },
 
         events: {
+          read: async (type, localKey) => {
+            assertExecutionActive();
+            if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can read its published events");
+            return opts.taskEmitter.read(type, localKey);
+          },
           emit: async (event: { type: string; data: unknown; localKey?: string }) => {
             assertExecutionActive();
             if (opts.taskEmitter) {
@@ -1569,7 +1580,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const execution = (async () => {
         const authoredResult = await workflow.execute(ctx);
         assertExecutionActive();
-        const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId);
+        const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId, Boolean(opts.taskBinding));
 
         // ── Guard: workflow_done event ──────────────────────────────────
         if (guards.length > 0) {

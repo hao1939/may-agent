@@ -259,15 +259,18 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
   const f = fixture();
   const first = f.claim();
   admitHuman(f);
-  if (kind === "executor failure") failAppTaskAttempt(f.config, first, "Source unavailable");
-  else markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
+  const retry =
+    kind === "executor failure"
+      ? failAppTaskAttempt(f.config, first, "Source unavailable")
+      : markAppTaskAttention(f.config, first, { summary: "Invalid result", reason: "InvalidHandlerResult" });
+  expect(retry.retryAt).toBeNull();
   f.reopen();
   const next = f.claim();
   expect(next.events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
   expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
   admitHuman(f); // Replay while running is not a new human message either.
-  failAppTaskAttempt(f.config, next, "Still unavailable");
+  expect(failAppTaskAttempt(f.config, next, "Still unavailable").retryAt).toBe(Date.now() + 500);
   expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
   expect(() => f.claim()).toThrow("waiting");
 });
@@ -330,6 +333,38 @@ it.each(["execution error", "failure report"])("allows an explicit owner retry d
   expect(next.generation).toBe(first.generation);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBeUndefined();
 });
+
+it.each(["omitted", "explicit", "execution"])(
+  "keeps diagnostic evidence scoped when the next failure is %s",
+  (kind) => {
+    setSystemTime(Date.now());
+    const f = fixture();
+    const first = f.claim();
+    stopAppTask(f.config, first, { summary: "Source unavailable", evidence: ["source:offline"] });
+    const accepted = f.config.resourceStore.readAttempt(first.attemptId);
+    setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+    const next = f.claim();
+    if (kind === "execution") failAppTaskAttempt(f.config, next, "Executor disconnected");
+    else
+      markAppTaskAttention(f.config, next, {
+        summary: "Later result was rejected",
+        reason: "HandlerResultInvalid",
+        ...(kind === "explicit" ? { evidence: ["result:invalid"] } : {}),
+      });
+    f.reopen();
+    expect(f.config.resourceStore.readTask("work")?.status).toMatchObject({
+      phase: "pending",
+      executionFailures: 2,
+      evidence: kind === "execution" ? ["source:offline"] : kind === "explicit" ? ["result:invalid"] : [],
+    });
+    expect(f.config.resourceStore.readAttempt(first.attemptId)).toEqual(accepted);
+    expect(f.config.resourceStore.readAttempt(next.attemptId)?.acceptedResult).toBeUndefined();
+    expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+    expect(f.config.resourceStore.isCancelled("work")).toBe(false);
+    setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+    expect(f.claim().events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure"]);
+  },
+);
 
 it("accepts failure evidence without resolving the ask, then succeeds on the same assignment", () => {
   const f = fixture();

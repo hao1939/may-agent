@@ -2784,29 +2784,44 @@ export function failAppTaskAttempt(
   config: AppTaskContext,
   claim: AppTaskClaim,
   failure: string,
-): { status: "retrying" | "superseded"; summary: string } {
+  details: { reason?: string; result?: Record<string, unknown>; evidence?: string[] } = {},
+): { status: "retrying" | "handoff" | "superseded"; summary: string; retryAt?: number | null } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
-  // New input may have changed the resource version. Fence the freshly read
-  // version but still require this exact execution and generation.
+  // New input may have changed the version. Fence fresh state while still
+  // requiring this exact attempt and generation.
   if (!match) return { status: "superseded", summary: failure };
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
+  const handoff = isAgentHandoffReason(details.reason);
   const failures = (resource.status.executionFailures ?? 0) + 1;
-  const summary = `${failure}; retrying the same Task after backoff`;
+  const summary = failure;
   const now = new Date().toISOString();
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "failed", failure, now);
-  attempt.failureReason = "HandlerExecutionFailed";
+  attempt.failureReason = details.reason ?? "HandlerExecutionFailed";
   touchResource(resource, {
-    phase: "pending",
-    executionFailures: failures,
-    executionRetryAt: resource.status.freshHumanInput ? undefined : Date.parse(now) + taskExecutionRetryDelay(failures),
+    phase: handoff ? "attention" : "pending",
+    ...(handoff
+      ? {}
+      : {
+          executionFailures: failures,
+          executionRetryAt: resource.status.freshHumanInput
+            ? undefined
+            : Date.parse(now) + taskExecutionRetryDelay(failures),
+        }),
+    observedGeneration: claim.generation,
     currentAttemptId: undefined,
     summary,
+    ...(details.evidence ? { evidence: [...details.evidence] } : {}),
+    ...(details.result ? { result: structuredClone(details.result) } : {}),
   });
   commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
-  return { status: "retrying", summary };
+  return {
+    status: handoff ? "handoff" : "retrying",
+    summary,
+    ...(!handoff ? { retryAt: resource.status.executionRetryAt ?? null } : {}),
+  };
 }
 
 export function releaseStaleAppTaskResult(
@@ -3711,6 +3726,7 @@ export function deferAppTask(
   return { status: "applied", actionsApplied, reconcileTaskIds, supersededSessionIds };
 }
 
+/** Exceptional workflow handoff and failure diagnostics share the normal retry transition. */
 export function markAppTaskAttention(
   config: AppTaskContext,
   claim: AppTaskClaim,
@@ -3719,37 +3735,12 @@ export function markAppTaskAttention(
     reason: string;
     result?: Record<string, unknown>;
     evidence?: string[];
-    acceptedLiveEventIds?: number[];
   },
-): { status: "applied" | "stale"; taskContinues?: true } {
-  const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-  const match = matchingTaskAttempt(tree, claim);
-  if (!match) return { status: "stale" };
-  const { resource, attempt } = match;
-  const mutationScope = beginResourceMutationScope(tree, claim, []);
-  const now = new Date().toISOString();
-  const handoff = isAgentHandoffReason(input.reason);
-  restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
-  finishAttempt(tree, resource, "failed", input.summary, now);
-  attempt.metadata.resourceVersion += 1;
-  attempt.failureReason = input.reason;
-  const failures = (resource.status.executionFailures ?? 0) + 1;
-  touchResource(resource, {
-    phase: handoff ? "attention" : "pending",
-    ...(handoff
-      ? {}
-      : {
-          executionFailures: failures,
-          executionRetryAt: resource.status.freshHumanInput
-            ? undefined
-            : Date.parse(now) + taskExecutionRetryDelay(failures),
-        }),
-    observedGeneration: claim.generation,
-    currentAttemptId: undefined,
-    summary: input.summary,
-    evidence: [...(input.evidence ?? [])],
-    ...(input.result ? { result: structuredClone(input.result) } : {}),
-  });
-  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
-  return { status: "applied" };
+): { status: "applied" | "stale"; summary: string; retryAt?: number | null } {
+  const failure = failAppTaskAttempt(config, claim, input.summary, { ...input, evidence: input.evidence ?? [] });
+  return {
+    status: failure.status === "superseded" ? "stale" : "applied",
+    summary: failure.summary,
+    retryAt: failure.retryAt,
+  };
 }

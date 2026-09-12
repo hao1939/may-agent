@@ -41,7 +41,7 @@ authorized owner -> close Task -> fence running execution and future wakes
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskRequest()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |
 | Dispatch | `controller.ts` -> `reconcileTask()` (or the composition-supplied worker) -> `claimObservedAppTask()` | Capacity limits local execution; the SQLite claim decides who owns this Task attempt |
 | Execute | `reconcileTask()` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
-| Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; exceptions use `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
+| Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; execution failures and the diagnostic wrapper share `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. The legacy-named `stopAppTask()` records a worker failure report and retries; it does not close the Task |
 | Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains evidence for normal execution and validation |
 
@@ -119,3 +119,29 @@ Start tests at `controller.test.ts`, `app-task-reconciler.test.ts` and
 and session tests cover restart ownership. Store transaction and reopen tests
 live in [`core/state`](../state/README.md); real worker tests live in
 [`composition/workers`](../../composition/workers/).
+
+Task-owned workflows can return `TaskReconcileResult` directly, like registered
+executors. Standalone helpers retain execution results. The workflow adapter
+records bounded execution; normal Task admission still rejects invalid results.
+A completed workflow call alone never establishes an accepted Task outcome.
+
+`app-task-emitter.ts` exposes scoped publication and exact publication reads.
+A workflow can read its original fact from `core/state/task-emissions.ts` after
+losing result acceptance, then propose the same outcome from that evidence.
+The local effect key follows admitted work, not attempt or mode. It remains
+App-owned; a new input on the same open Task may need a distinct key. A read
+proves publication only, and same-key/different-payload writes still fail.
+
+Publication keys encode an unambiguous tuple. Existing receipts remain readable
+and reusable only when their indexed App/Task identity matches the caller.
+Reads use the shared integrity-checked event loader, including artifact bodies;
+a missing or corrupt known body fails visibly rather than permitting blind redo.
+The fact's stored emission scope is verified before data crosses the capability.
+
+Failure notifications use `retrying` for retained work. `retryAt` is the stored
+backoff deadline, or `null` when fresh human input permits an immediate attempt.
+Agent handoff remains distinct; no new retry state or scheduling policy is added.
+
+A new rejection or handoff diagnostic replaces the current evidence links;
+omitting them clears that list. An execution failure alone retains prior links.
+Neither transition changes the evidence in historical accepted attempts.

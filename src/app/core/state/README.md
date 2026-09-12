@@ -15,6 +15,7 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | `conversation-requests.ts` | Accepted asks and scoped revision checks |
 | `conversation-task-turns.ts` | Task-owned Turn admission, fenced decision acceptance and scoped Stop |
 | `conversation-cutover.ts`, `task-receipt-cutover.ts`, `task-state-cutover.ts` | Offline import of prior Conversation execution, completed work and retained open Task state |
+| `task-emissions.ts` | Exact published-fact reads scoped to App, Task, generation, type and local effect key, using the event journal index and shared verified body loader |
 | `task-reference-index.ts` | Lookup/display of exact Task references |
 
 The Task runtime decides transitions; these operations enforce their storage

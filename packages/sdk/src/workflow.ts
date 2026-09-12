@@ -439,6 +439,11 @@ export type WorkflowContext<TInput = unknown> = {
   };
   events: {
     emit(event: AppEvent): Promise<void>;
+    /**
+     * Verified original publication in this Task generation, including large bodies.
+     * Null means no publication; missing/corrupt evidence throws. Task-owned workflows only.
+     */
+    read(type: string, localKey: string): Promise<{ eventId: number; data: Record<string, unknown> } | null>;
     /** Live convenience for events addressed to the current Task; durable replay remains authoritative. */
     onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
   };

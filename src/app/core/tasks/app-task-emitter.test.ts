@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../../lib/requests.js";
@@ -7,7 +7,7 @@ import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createAppTaskEmitter, createAppTaskEvents } from "./app-task-emitter.js";
 import { renewAppTaskAttemptLease } from "./app-task-reconciler.js";
-import { EventBus } from "../events/bus.js";
+import { EVENT_ROW_ID, EVENT_TASK_EMISSION_FENCE, EventBus } from "../events/bus.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
 import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 
@@ -70,29 +70,156 @@ function fixture(
   };
 }
 
-function harness(sessionId: string | null = "session-1") {
+function harness(
+  sessionId: string | null = "session-1",
+  scopes = [{ taskId: "task-1", generation: 3, attemptId: "attempt-1" }],
+) {
   const root = mkdtempSync(join(tmpdir(), "may-task-emitter-"));
   roots.push(root);
   const db = getDb(root);
   const store = AppTaskResourceStore.fromDb(db, "sample");
-  store.bootstrapSnapshot(fixture(undefined, sessionId), "revision-1", ["task-1"]);
+  const tree = fixture(undefined, sessionId);
+  const resource = tree.resources!["task-1"]!;
+  const attempt = tree.attempts!["attempt-1"]!;
+  delete tree.resources!["task-1"];
+  delete tree.attempts!["attempt-1"];
+  for (const scope of scopes) {
+    tree.resources![scope.taskId] = {
+      ...structuredClone(resource),
+      metadata: { ...resource.metadata, id: scope.taskId, generation: scope.generation },
+      status: { ...resource.status, currentAttemptId: scope.attemptId },
+    };
+    tree.attempts![scope.attemptId] = {
+      ...structuredClone(attempt),
+      metadata: { ...attempt.metadata, id: scope.attemptId },
+      taskId: scope.taskId,
+      taskGeneration: scope.generation,
+    };
+  }
+  store.bootstrapSnapshot(
+    tree,
+    "revision-1",
+    scopes.map((scope) => scope.taskId),
+  );
   const bus = new EventBus();
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const emitter = createAppTaskEmitter({
     bus,
+    db,
     appId: "sample",
-    claim: { taskId: "task-1", generation: 3, attemptId: "attempt-1", owner: "may" },
+    claim: { ...scopes[0]!, agent: "may" },
   });
-  return { root, db, bus, emitter, store };
+  const events = (index = 0) =>
+    createAppTaskEvents({ bus, db, persistDir: root, appId: "sample", claim: { ...scopes[index]!, agent: "may" } });
+  const legacy = (localKey: string, data: Record<string, unknown>) => {
+    const scope = scopes[0]!;
+    const event = {
+      type: "sample.observed",
+      source: "app-task:sample",
+      owner: "agent:may",
+      data: {
+        ...data,
+        idempotencyKey: `task:sample:${scope.taskId}:${scope.generation}:emit:${localKey}`,
+        emission: { appId: "sample", taskId: scope.taskId, generation: scope.generation, localKey },
+      },
+    };
+    Object.defineProperty(event, EVENT_TASK_EMISSION_FENCE, {
+      value: {
+        appId: "sample",
+        taskId: scope.taskId,
+        taskGeneration: scope.generation,
+        attemptId: scope.attemptId,
+        localKey,
+      },
+    });
+    return Number(bus.emit(event)[EVENT_ROW_ID]);
+  };
+  return { root, db, bus, emitter, store, events, legacy };
 }
 
 describe("AppTaskEmitter", () => {
+  it.each([false, true])(
+    "keeps delimiter-bearing Task scopes distinct, including legacy publication (%s)",
+    (legacy) => {
+      const f = harness(null, [
+        { taskId: "a", generation: 1, attemptId: "attempt-1" },
+        { taskId: "a:1:emit:b", generation: 2, attemptId: "attempt-2" },
+      ]);
+      const fact = { type: "sample.observed", data: { value: "first" } };
+      const first = legacy ? f.legacy("b:2:emit:c", fact.data) : f.events(0).publish("b:2:emit:c", fact);
+      expect(f.events(1).read(fact.type, "c")).toBeNull();
+      const second = f.events(1).publish("c", { ...fact, data: { value: "second" } });
+      expect(second).not.toBe(first);
+      expect(f.events(0).read(fact.type, "b:2:emit:c")).toMatchObject({ eventId: first, data: fact.data });
+      expect(f.events(1).read(fact.type, "c")).toMatchObject({ eventId: second, data: { value: "second" } });
+      expect(f.events(0).publish("b:2:emit:c", fact)).toBe(first);
+      expect(() => f.events(0).publish("b:2:emit:c", { ...fact, data: { value: "changed" } })).toThrow(
+        "different event input",
+      );
+    },
+  );
+
+  it.each([false, true])("replays the full large fact after reopen, including legacy publication (%s)", (legacy) => {
+    const f = harness(null);
+    const data = { text: "Original café evidence. ".repeat(1000), nested: { verdict: "supported" } };
+    const id = legacy ? f.legacy("large", data) : f.events().publish("large", { type: "sample.observed", data });
+    expect(f.db.prepare("SELECT body_ref FROM events WHERE id = ?").get(id)?.body_ref).toBeString();
+    closeDb(f.root);
+    const reopened = createAppTaskEvents({
+      bus: new EventBus(),
+      db: getDb(f.root),
+      persistDir: f.root,
+      appId: "sample",
+      claim: { taskId: "task-1", generation: 3, attemptId: "replacement", agent: "may" },
+    });
+    expect(reopened.read("sample.observed", "large")).toMatchObject({ eventId: id, data });
+  });
+
+  it.each(["missing", "corrupt", "inline"])(
+    "does not treat an unverifiable published fact as absent (%s)",
+    (failure) => {
+      const f = harness(null);
+      const data = { text: failure === "inline" ? "small" : "evidence ".repeat(1000) };
+      const id = f.events().publish("damaged", { type: "sample.observed", data });
+      const row = f.db.prepare("SELECT body_ref FROM events WHERE id = ?").get(id)!;
+      if (failure === "missing") rmSync(join(f.root, String(row.body_ref)));
+      else if (failure === "corrupt") writeFileSync(join(f.root, String(row.body_ref)), '{"text":"changed"}');
+      else f.db.prepare("UPDATE events SET data = ? WHERE id = ?").run("{broken", id);
+      expect(() => f.events().read("sample.observed", "damaged")).toThrow("could not be verified");
+      expect(f.events().read("sample.observed", "absent")).toBeNull();
+    },
+  );
+
+  it("reads the original published fact after reopen only within its exact scope", () => {
+    const { root, emitter } = harness(null);
+    const eventId = emitter.emit("original", { type: "sample.observed", data: { value: 0.92, createdAt: 100 } });
+    closeDb(root);
+    const db = getDb(root);
+    const read = (appId = "sample", taskId = "task-1", generation = 3) =>
+      createAppTaskEvents({
+        bus: new EventBus(),
+        db,
+        appId,
+        claim: { taskId, generation, attemptId: "replacement-attempt", agent: "may" },
+      });
+    expect(read().read("sample.observed", "original")).toMatchObject({
+      eventId,
+      data: { value: 0.92, createdAt: 100 },
+    });
+    expect(read("other").read("sample.observed", "original")).toBeNull();
+    expect(read("sample", "other").read("sample.observed", "original")).toBeNull();
+    expect(read("sample", "task-1", 4).read("sample.observed", "original")).toBeNull();
+    expect(read().read("sample.other", "original")).toBeNull();
+    expect(read().read("sample.observed", "missing")).toBeNull();
+  });
+
   it("exposes one scoped publish and live inbound-event interface", async () => {
-    const { bus } = harness();
+    const { bus, db } = harness();
     const events = createAppTaskEvents({
       bus,
+      db,
       appId: "sample",
       claim: { taskId: "task-1", generation: 3, attemptId: "attempt-1", owner: "may" },
     });

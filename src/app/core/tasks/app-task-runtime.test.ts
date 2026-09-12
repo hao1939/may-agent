@@ -4582,12 +4582,12 @@ describe("canonical App task runtime", () => {
         export const description = "Use the common saved wait context";
         export async function execute(ctx) {
           const waits = ctx.reconciliation.waits.open;
-          return ctx.done("Reviewed input", waits.length
+          return waits.length
             ? { state: "converged", summary: "Answered another input", evidence: ["saved-wait"], result: { waits } }
             : { state: "waiting", summary: "Wait for the source", evidence: [], conditions: [{
                 id: "source", type: "source.available", subject: "source:sample", expected: true,
                 owner: "app:source", reviewAfterMs: 60000,
-              }] });
+              }] };
         }
       `,
     );
@@ -4629,6 +4629,200 @@ describe("canonical App task runtime", () => {
       waits: [{ conditionId: "source", type: "source.available", subject: "source:sample", state: "unknown" }],
     });
     expect(config.resourceStore.readTask("wait-context")?.status.conditionIds).toEqual(["source"]);
+  });
+
+  it.each(["result rejection", "execution failure"])(
+    "replays full published facts through the installed workflow after %s and reopen",
+    async (failure) => {
+      setSystemTime(Date.now());
+      const f = fixture();
+      let bus = eventBus();
+      const persistDir = join(f.root, "state");
+      const agentsRoot = join(f.root, "agents");
+      const dir = join(agentsRoot, "sample-owner", "workflows");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "read-fact.ts"),
+        `
+      export const name = "read-fact";
+      export const description = "Reuse complete publication evidence after failed acceptance";
+      export async function execute(ctx) {
+        const text = "evidence ".repeat(1000);
+        const fact = await ctx.events.read("sample.observed", "large");
+        if (!fact) {
+          await ctx.events.emit({ type: "sample.observed", localKey: "large", data: { text } });
+          if (${JSON.stringify(failure)} === "execution failure") throw new Error("Lost result after publication");
+          return { state: "invalid", summary: "Reject this result after publication", evidence: [] };
+        }
+        if (fact.data.text !== text) throw new Error("Published body was not read in full");
+        return { state: "converged", summary: "Verified original fact", evidence: ["event:" + fact.eventId],
+          result: { length: fact.data.text.length } };
+      }
+    `,
+      );
+      const install = async () => {
+        const writer = new DbWriter(persistDir);
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        await installAppTaskRuntimes({
+          ...options(f, bus),
+          agentsRoot,
+          sharedRoot: join(f.root, "shared"),
+          installControllers: false,
+          appRegistrySnapshot: {
+            id: "full-event-read",
+            generation: 1,
+            entries: [{ appDir: f.appDir, definition: definition() }],
+          },
+        });
+      };
+      await install();
+      let config = loadedTaskConfig(f);
+      const taskId = "read-fact";
+      const admissionKey = "ask:read-fact";
+      admitTaskRequest(config, {
+        appId: "sample",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: taskId,
+            parentId: "operations",
+            mode: "achieve",
+            outcome: "Read publication",
+            acceptance: ["Full evidence"],
+            workflow: "read-fact",
+          },
+        },
+        idempotencyKey: admissionKey,
+        request: { id: "read-fact", source: { kind: "app", id: "caller" }, input: { kind: "read" } },
+      });
+      const run = () =>
+        reconcileLoadedAppTaskOnce({
+          bus,
+          appId: "sample",
+          taskId,
+          dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+        });
+      const answer = () => readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey });
+      await run();
+      const published = getDb(persistDir)
+        .prepare("SELECT id, body_ref, body_sha256 FROM events WHERE event_type = 'sample.observed'")
+        .get()!;
+      expect(published.body_ref).toBeString();
+      expect(answer()).toBeNull();
+      const task = config.resourceStore.readTask(taskId)!;
+      expect(task.status).toMatchObject({ phase: "pending", executionFailures: 1 });
+      const attempts = Object.values(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {});
+      expect(attempts).toHaveLength(1);
+      const first = attempts[0]!;
+      expect(first).toMatchObject({
+        state: "failed",
+        failureReason: failure === "result rejection" ? "HandlerResultInvalid" : "HandlerExecutionFailed",
+      });
+      expect(first.acceptedResult).toBeUndefined();
+
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      config = loadedTaskConfig(f);
+      await run();
+      expect(Object.keys(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {})).toHaveLength(1);
+      expect(answer()).toBeNull();
+      setSystemTime(task.status.executionRetryAt!);
+      await run();
+      const accepted = acceptedTaskAttempt(config, taskId)!;
+      expect(accepted.metadata.id).not.toBe(first.metadata.id);
+      expect(accepted.taskGeneration).toBe(first.taskGeneration);
+      expect(accepted.acceptedResult).toMatchObject({
+        state: "converged",
+        result: { length: 9000 },
+        evidence: ["event:" + published.id],
+      });
+      expect(answer()).toMatchObject({ attemptId: accepted.metadata.id, result: { length: 9000 } });
+      expect(config.resourceStore.readAttempt(first.metadata.id)).toEqual(first);
+      expect(
+        getDb(persistDir)
+          .prepare("SELECT id, body_ref, body_sha256 FROM events WHERE event_type = 'sample.observed'")
+          .all(),
+      ).toEqual([published]);
+      expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+    },
+  );
+
+  it("admits a direct workflow failure report, retries, and rejects an invalid direct result", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const dir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "direct.ts"),
+      `
+      export const name = "direct";
+      export const description = "One Task outcome";
+      export async function execute(ctx) {
+        return { state: ctx.input.state, summary: "Source unavailable", evidence: ["HTTP:503"] };
+      }
+    `,
+    );
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      agentsRoot,
+      sharedRoot: join(f.root, "shared"),
+      installControllers: false,
+      appRegistrySnapshot: {
+        id: "direct-result",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "direct";
+    const run = () =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    const observe = (state: string) =>
+      observeAppTaskIntent(config, {
+        appAgent: "sample-owner",
+        intent: {
+          id: taskId,
+          parentId: "operations",
+          mode: "achieve",
+          outcome: "Obtain the sample",
+          acceptance: ["Return evidence"],
+          workflow: "direct",
+          input: { state },
+        },
+      });
+    observe("stopped");
+    await run();
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({
+      state: "stopped",
+      evidence: ["HTTP:503"],
+    });
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "pending", executionFailures: 1 });
+    expect(config.resourceStore.readCancellation(taskId)).toBeNull();
+    const retryAt = config.resourceStore.readTask(taskId)!.status.executionRetryAt!;
+    expect(retryAt).toBeGreaterThan(Date.now());
+    setSystemTime(retryAt + 1);
+    await run();
+    expect(config.resourceStore.readTask(taskId)?.status.executionFailures).toBe(2);
+    observe("invalid");
+    await run();
+    const invalid = config.resourceStore.readTask(taskId)!;
+    expect(invalid.status.phase).toBe("pending");
+    expect(invalid.status.summary).toContain("Handler result was rejected");
+    const attempts = Object.values(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {}).filter(
+      (attempt) => attempt.taskGeneration === invalid.metadata.generation,
+    );
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toBeUndefined();
+    expect(attempts[0]?.failureReason).toBe("HandlerResultInvalid");
   });
 
   it("retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input", async () => {
@@ -5305,6 +5499,10 @@ describe("canonical App task runtime", () => {
   it("persists retry backoff across independent wakes and a fresh process", async () => {
     const f = fixture();
     const bus = eventBus();
+    const reports: Record<string, unknown>[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "project.task.reconciled") reports.push(event.data as Record<string, unknown>);
+    });
     let calls = 0;
     await installCoreTaskRuntimes({
       ...options(f, bus),
@@ -5353,6 +5551,7 @@ describe("canonical App task runtime", () => {
     expect(calls).toBe(5);
     const cooling = config.resourceStore.readTask(taskId)!;
     expect(cooling.status.phase).toBe("pending");
+    expect(reports.at(-1)).toMatchObject({ disposition: "retrying", retryAt: cooling.status.executionRetryAt });
     expect(cooling.status.executionRetryAt).toBeGreaterThan(Date.now());
     expect(readTaskSnapshot(config).taskTriggers?.[taskId]?.events).toEqual([
       expect.objectContaining({ event: expect.objectContaining({ eventId: 100 }) }),
