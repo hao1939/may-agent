@@ -58,7 +58,7 @@ describe("createFinishTool", () => {
       status: "success",
       summary: "Implemented the widget feature.",
       deliverables: [{ path: "src/lib/feature.ts", description: "Widget implementation" }],
-      verification_evidence: ["Step 3: read(src/lib/feature.ts) confirmed export exists"],
+      verification_facts: ["Step 3: read(src/lib/feature.ts) confirmed export exists"],
     });
 
     expect(text).toContain("✅");
@@ -162,14 +162,14 @@ describe("createFinishTool", () => {
     const text = await callFinish(tool, {
       status: "success",
       summary: "Reviewed and found no issues.",
-      verification_evidence: ["Step 2: read(README.md) confirmed no issues"],
+      verification_facts: ["Step 2: read(README.md) confirmed no issues"],
     });
 
     expect(text).toContain("✅");
     expect(text).toContain("SUCCESS");
   });
 
-  it("rejects success without verification_evidence", async () => {
+  it("rejects success without verification_facts", async () => {
     const tool = createTool();
     const text = await callFinish(tool, {
       status: "success",
@@ -178,7 +178,7 @@ describe("createFinishTool", () => {
     });
 
     expect(text).toContain("error");
-    expect(text).toContain("verification_evidence");
+    expect(text).toContain("verification_facts");
   });
 
   it("includes verification facts in output", async () => {
@@ -187,7 +187,7 @@ describe("createFinishTool", () => {
       status: "success",
       summary: "Done.",
       deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
-      verification_evidence: ["Step 5: read(src/lib/feature.ts) confirmed changes", "Step 8: bash test exit code 0"],
+      verification_facts: ["Step 5: read(src/lib/feature.ts) confirmed changes", "Step 8: bash test exit code 0"],
     });
 
     expect(text).toContain("Verification facts");
@@ -195,7 +195,7 @@ describe("createFinishTool", () => {
     expect(text).toContain("Step 8: bash test exit code 0");
   });
 
-  it("allows non-success status without verification_evidence", async () => {
+  it("allows non-success status without verification_facts", async () => {
     const tool = createTool();
     const text = await callFinish(tool, {
       status: "partial",

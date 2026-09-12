@@ -191,7 +191,7 @@ test("offline cutover retains history, fences old claims, and redoes only unfini
     claim,
     app,
     signal: new AbortController().signal,
-    resolveConversationInput: async ({ request }) => {
+    resolveConversationInput: async ({ inputContext: request }) => {
       expect(request.inputs?.map((entry) => entry.id)).toEqual([
         "primary:pending",
         "primary:executing",

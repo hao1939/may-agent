@@ -71,7 +71,7 @@ describe("prepared completion contract", () => {
   const review = {
     status: "success",
     summary: "Reviewed the supplied result",
-    verification_evidence: ["Compared the supplied result with the requested contract"],
+    verification_facts: ["Compared the supplied result with the requested contract"],
     result: { verdict: "pass" },
   };
 
@@ -141,7 +141,7 @@ describe("prepared completion contract", () => {
   it("does not terminate successful attempts that lack facts or claim nonexistent files", async () => {
     const { finish, context } = prepare();
     for (const [args, error] of [
-      [{ ...review, verification_evidence: [] }, "verification_evidence"],
+      [{ ...review, verification_facts: [] }, "verification_facts"],
       [{ ...review, deliverables: [{ path: "missing.txt", description: "missing proof" }] }, "Deliverables not found"],
     ] as const) {
       const ctx = context(args);

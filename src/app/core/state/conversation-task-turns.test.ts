@@ -145,7 +145,7 @@ test("one Task executes real Conversation input and retains replies and Requests
           claim,
           app,
           signal: new AbortController().signal,
-          resolveConversationInput: async ({ request, execution }) => {
+          resolveConversationInput: async ({ inputContext: request, execution }) => {
             expect(request.conversation?.id).toBe("chat");
             expect(execution?.taskBinding).toEqual({
               appId: app.id,
@@ -284,7 +284,7 @@ test("a fresh attempt considers retained and newer input together and publishes 
     claim,
     app,
     signal: new AbortController().signal,
-    resolveConversationInput: async ({ request }) => {
+    resolveConversationInput: async ({ inputContext: request }) => {
       expect(request.id).toBe(correction.item.id);
       expect(request.inputs?.map(({ id }) => id)).toEqual([system.item.id, first.item.id, correction.item.id]);
       return decision;
@@ -388,7 +388,7 @@ test("a system turn can stay quiet without hiding the accepted Task facts", asyn
     claim,
     app,
     signal: new AbortController().signal,
-    resolveConversationInput: async ({ request }) => {
+    resolveConversationInput: async ({ inputContext: request }) => {
       expect(request.source.kind).toBe("system");
       expect(request.humanRequested).toBeUndefined();
       return { summary: "No material change", topic: { kind: "none" } };
@@ -573,7 +573,7 @@ test("the common controller returns a delegated answer to the real Conversation 
             app,
             signal: new AbortController().signal,
             getTaskApp: () => ({ app: workerApp, config: f.context() }),
-            resolveConversationInput: async ({ request }) => {
+            resolveConversationInput: async ({ inputContext: request }) => {
               judgments.push(request.id);
               if (request.id === "first")
                 return {

@@ -440,7 +440,7 @@ test("open asks fit bounded context; an omitted ask can still be read and handed
   expect(Buffer.byteLength(JSON.stringify(bounded))).toBeLessThanOrEqual(APP_REQUEST_CONVERSATION_MAX_BYTES);
   expect(bounded.requests!.length).toBeGreaterThan(0);
   expect(bounded.requests!.every((item) => item.scope.length === 2000)).toBe(true);
-  await f.turn(async ({ request }) => {
+  await f.turn(async ({ inputContext: request }) => {
     expect(request.conversation?.requests?.some((item) => item.id === "ask-0")).toBe(false);
     expect(readConversationRequest(f.db, app.id, "chat", "ask-0")).toMatchObject({
       status: "open",

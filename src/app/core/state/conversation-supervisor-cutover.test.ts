@@ -83,7 +83,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
       execute: (turn) =>
         prepareConversationTaskTurn({
           ...turn,
-          resolveConversationInput: async ({ request }) => {
+          resolveConversationInput: async ({ inputContext: request }) => {
             const outcomes = request.inputs?.filter((item) => item.input.kind === "task-outcome") ?? [];
             if (!outcomes.length)
               return {

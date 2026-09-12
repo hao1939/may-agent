@@ -228,7 +228,7 @@ describe("Telegram durable input and natural follow-up", () => {
         conversations: {
           execute: (turn) => prepareConversationTaskTurn({
             ...turn,
-            resolveConversationInput: async ({ request }) => {
+            resolveConversationInput: async ({ inputContext: request }) => {
               seen.push(request);
               return { summary: "Checked", response: "Checked", topic: { kind: "none" } };
             },
