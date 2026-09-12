@@ -188,7 +188,7 @@ function projectTaskDetailHtml(task) {
     <div class="task-detail-grid">
       ${field("Generation", `${d?.observedGeneration ?? "—"} observed / ${task.generation} desired`)}
       ${field("Resource version", task.resourceVersion)}${field("Updated", projectTaskFormatTime(task.updatedAt))}
-      ${d ? `${field("Parent", d.parentId)}${field("Owner override", d.owner || "not specified")}${field("Mode", d.mode)}${field("Priority", d.priority || "P2")}${field("Category", d.category || "work")}${field("Mechanism", d.workflow ? `workflow ${d.workflow}` : d.executor || "agent")}${field("Ready to claim", d.ready ? "yes" : "no")}${field("Retained attempts", d.attemptCount)}` : ""}
+      ${d ? `${field("Parent", d.parentId)}${field("Owner override", d.owner || "not specified")}${field("Priority", d.priority || "P2")}${field("Category", d.category || "work")}${field("Mechanism", d.workflow ? `workflow ${d.workflow}` : d.executor || "agent")}${field("Ready to claim", d.ready ? "yes" : "no")}${field("Retained attempts", d.attemptCount)}` : ""}
     </div>
     ${projectTaskList("Outputs", d?.outputs)}${projectTaskEvidenceList(task.evidence)}
     ${task.execution ? `<h4>Current attempt</h4><p>${esc(task.execution.attemptId)}${d?.attempt ? ` · ${esc(d.attempt.handler)} · ${esc(d.attempt.state)} · ${esc(d.attempt.reason)} · ${esc(projectTaskFormatTime(d.attempt.startedAt))}` : ""}</p>${projectTaskEvidenceList(task.execution.sessionId ? [`session:${task.execution.sessionId}`] : [])}` : ""}

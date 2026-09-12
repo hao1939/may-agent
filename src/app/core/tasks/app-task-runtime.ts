@@ -1573,7 +1573,7 @@ async function reconcileTask(input: {
     if (primaryHandlerResult.state === "incomplete") {
       const stale = await fenceWorkspaceFinalization();
       if (stale) return stale.reconcileTaskIds;
-      // Stopping does not accept or discard workspace output. Retain it using
+      // An incomplete report does not accept or discard workspace output. Retain it using
       // the existing failed-attempt policy, including any cleanup limitation.
       const finalized = await finalizeWorkspace("failed");
       const evidence = [
@@ -1604,7 +1604,7 @@ async function reconcileTask(input: {
         if (staleResult) return staleResult.reconcileTaskIds;
         primaryResult.handlerBlocked = true;
         primaryHandlerResult.state = "error";
-        primaryHandlerResult.summary = `Stop decision was rejected: ${error instanceof Error ? error.message : String(error)}`;
+        primaryHandlerResult.summary = `Incomplete report was rejected: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
     if (primaryHandlerResult.state === "converged") {

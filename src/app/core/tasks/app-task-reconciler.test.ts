@@ -311,7 +311,7 @@ describe("worker failure evidence and owner closure", () => {
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(intent.id);
   });
 
-  it.each(["evidence", "new-input", "revision"])("rejects an invalid or stale failure report: %s", (reason) => {
+  it.each(["summary", "evidence", "new-input", "revision"])("rejects an invalid or stale failure report: %s", (reason) => {
     const { config, intent, claim } = setup();
     if (reason === "new-input") recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 11 });
     if (reason === "revision")
@@ -319,8 +319,12 @@ describe("worker failure evidence and owner closure", () => {
     if (reason === "revision") expect(reportAppTaskFailure(config, claim, decision).status).toBe("stale");
     else
       expect(() =>
-        reportAppTaskFailure(config, claim, { ...decision, ...(reason === "evidence" ? { evidence: [] } : {}) }),
-      ).toThrow();
+        reportAppTaskFailure(config, claim, {
+          ...decision,
+          ...(reason === "summary" ? { summary: " " } : {}),
+          ...(reason === "evidence" ? { evidence: [] } : {}),
+        }),
+      ).toThrow(reason === "new-input" ? "newer Task evidence is pending" : `Incomplete report ${reason}`);
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
     expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
     if (reason === "new-input") expect(readTaskSnapshot(config).taskTriggers?.[intent.id]?.events).toHaveLength(1);

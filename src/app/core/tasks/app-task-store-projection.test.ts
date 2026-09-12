@@ -60,7 +60,7 @@ describe("canonical project task projection", () => {
         woken: resource("woken", "waiting", { conditionIds: ["pipeline-run:42-completed"] }),
         parent: resource("parent", "waiting"),
         child: resource("child", "pending", { parentId: "parent" }),
-        standing: resource("standing", "converged", { mode: "maintain" }),
+        standing: resource("standing", "converged"),
       },
       {
         conditions: {

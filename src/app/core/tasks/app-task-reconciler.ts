@@ -2302,8 +2302,8 @@ export function reportAppTaskFailure(
       reason: "newer Task evidence is pending",
     });
   }
-  requireNonEmptyString(input.summary, "Stop decision summary");
-  requireStringList(input.evidence, "Stop decision evidence");
+  requireNonEmptyString(input.summary, "Incomplete report summary");
+  requireStringList(input.evidence, "Incomplete report evidence");
   const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);

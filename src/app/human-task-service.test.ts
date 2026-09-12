@@ -1107,9 +1107,9 @@ describe("Human Task service", () => {
     })]);
   });
 
-  test.each(["achieve", "maintain"] as const)("owner cancellation uses the same contract for %s work", (mode) => {
+  test("owner cancellation closes the Task and rejects a repeated control", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10, mode });
+    insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10 });
     const service = new HumanTaskService(db, registry("alpha"));
     const current = service.getTask({ appId: "alpha", taskId: "watch" });
     if (!current) throw new Error("expected open Task");

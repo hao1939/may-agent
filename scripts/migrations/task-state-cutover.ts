@@ -148,8 +148,9 @@ try {
   const humanClosure = oldStore.readCancellation("cancelled");
   const structural = oldClaim("structural", "maintain");
   legacyRuntime.observeAppTaskIntent(old, { appAgent: "worker", intent: {
-    id: "structural-child", parentId: "structural", outcome: "Measure independently", acceptance: ["Return evidence"],
+    id: "structural-child", parentId: "structural", mode: "achieve", outcome: "Measure independently", acceptance: ["Return evidence"],
   } });
+  assert.equal(Reflect.get(oldStore.readTask("structural-child")!.spec, "mode"), "achieve");
   legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
   const backlog = Array.from({ length: 34 }, (_, index) => `structural-newer-${index}`);
   for (const id of [...backlog, "structural-human"]) {
@@ -282,6 +283,7 @@ try {
   assert.deepEqual(taskInputAdmissionKeys(review.events), firstKeys);
   assert.deepEqual(review.events[0], structural.events[0]);
   assert.equal(store.readTask("structural-child")?.status.phase, "pending");
+  assert.equal(Reflect.has(store.readTask("structural-child")!.spec, "mode"), false);
   assert.equal(completeAppTask(current, review, { summary: "Reviewed original ask and first batch" }).taskContinues, true);
   assert.equal(readAppTaskAdmissionOutcome(current, "structural", "structural"), null);
   const remaining = claimObservedAppTask(current, { taskId: "structural", appAgent: "worker", handler: "agent" });
