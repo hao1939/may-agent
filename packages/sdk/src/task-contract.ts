@@ -103,7 +103,11 @@ const resultFields = {
 /** Model-output schema for a resolved agent. */
 export const taskAgentResultSchema = Type.Union([
   Type.Object(
-    { state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]), ...resultFields },
+    { state: Type.Literal("converged"), ...resultFields },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { state: Type.Literal("waiting"), report: Type.Optional(Type.Literal(true)), ...resultFields },
     { additionalProperties: false },
   ),
   Type.Object(
@@ -398,6 +402,9 @@ export function admitTaskReconcileResult(
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "stopped") {
     return { ok: false, error: "state must be converged, waiting, stopped, or needs-agent" };
   }
+  if (output.report !== undefined && (output.state !== "waiting" || output.report !== true || evidence.length === 0)) {
+    return { ok: false, error: "report requires waiting, true, and non-empty evidence" };
+  }
   if (output.state === "stopped") {
     if (evidence.length === 0) return { ok: false, error: "stopped requires evidence for the decision" };
     if (output.actions !== undefined || output.conditions !== undefined || output.dependencies !== undefined) {
@@ -492,6 +499,7 @@ export function admitTaskReconcileResult(
   if (output.state === "waiting") {
     return { ok: true, result: {
       ...report, state: "waiting", actions,
+      ...(output.report === true ? { report: true } : {}),
       ...(conditions.length ? { conditions } : {}),
       ...(dependencies.length ? { dependencies } : {}),
     } };

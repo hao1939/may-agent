@@ -652,13 +652,14 @@ function consideredInputKeys(
   ]);
 }
 
-/** Bind only admitted input actually considered by this accepted judgment. */
-function acceptedInputAdmissions(
+/** Bind only exact admitted input considered by this attempt; reports are not answers. */
+function inputOutcomeAdmissions(
   config: AppTaskContext,
   tree: TaskTree,
   claim: AppTaskClaim,
   acceptedLiveEventIds: number[] = [],
   kind: "answer" | "report" = "answer",
+  explicitReport = false,
 ) {
   const keys = consideredInputKeys(config, tree, claim, acceptedLiveEventIds);
   if (!keys.length) return [];
@@ -668,7 +669,10 @@ function acceptedInputAdmissions(
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration !== claim.generation ||
       admission.resultAttemptId) return [];
     if (kind === "report")
-      return admission.reportAttemptId ? [] : [{ taskId: key, value: { ...admission, reportAttemptId: claim.attemptId } }];
+      return admission.reportAttemptId && !explicitReport ? [] : [{ taskId: key, value: {
+        ...admission, reportAttemptId: claim.attemptId,
+        reportRevision: (admission.reportRevision ?? (admission.reportAttemptId ? 1 : 0)) + 1,
+      } }];
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
     return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
   });
@@ -677,21 +681,34 @@ function acceptedInputAdmissions(
   return writes;
 }
 
-/** Read one input's exact accepted answer or first report, independently of later Task cycles. */
+/** Read one input's exact answer or selected report, independently of unrelated Task cycles. */
 export function readAppTaskAdmissionOutcome(
   config: Pick<AppTaskContext, "resourceStore">,
   taskId: string,
   admissionKey: string,
   kind: "answer" | "report" = "answer",
-) {
+): (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & {
+  attemptId: string; generation: number; state: "converged" | "waiting" | "stopped" | "error";
+  reportRevision?: number;
+}) | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
   const attemptId = kind === "answer" ? admission?.resultAttemptId : admission?.reportAttemptId;
   if (admission?.taskId !== taskId || !attemptId) return null;
   const attempt = config.resourceStore.readAttempt(attemptId);
-  if (attempt?.taskId !== taskId || attempt.taskGeneration !== admission.taskGeneration ||
-    attempt.acceptedResult?.state !== (kind === "answer" ? "converged" : "stopped")) return null;
-  return { attemptId: attempt.metadata.id, generation: attempt.taskGeneration, ...attempt.acceptedResult };
+  if (attempt?.taskId !== taskId || attempt.taskGeneration !== admission.taskGeneration) return null;
+  const identity = { attemptId: attempt.metadata.id, generation: attempt.taskGeneration,
+    ...(kind === "report" ? { reportRevision: admission.reportRevision ?? 1 } : {}) };
+  const accepted = attempt.acceptedResult;
+  if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
+  if (accepted?.state === "stopped" || (accepted?.state === "waiting" && accepted.report))
+    return { ...identity, ...accepted };
+  if (!accepted && attempt.state === "failed") return {
+    ...identity, state: "error",
+    summary: `Execution failed before an accepted result: ${(attempt.summary ?? attempt.failureReason ?? "Unknown execution failure").slice(0, 1024)}`,
+    evidence: [`task-attempt:${attempt.metadata.id}`],
+  };
+  return null;
 }
 
 type AppTaskContextInput = {
@@ -2273,7 +2290,7 @@ export function stopAppTask(
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
-  const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report");
+  const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report");
   const failures = (resource.status.executionFailures ?? 0) + 1;
   // Accepted evidence is not a final answer to the original assignment.
   // Preserve input, including accepted live feedback and earlier linked waits.
@@ -2794,6 +2811,7 @@ export function failAppTaskAttempt(
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const handoff = isAgentHandoffReason(details.reason);
+  const admissions = handoff ? [] : inputOutcomeAdmissions(config, tree, claim, [], "report");
   const failures = (resource.status.executionFailures ?? 0) + 1;
   const summary = failure;
   const now = new Date().toISOString();
@@ -2816,7 +2834,7 @@ export function failAppTaskAttempt(
     ...(details.evidence ? { evidence: [...details.evidence] } : {}),
     ...(details.result ? { result: structuredClone(details.result) } : {}),
   });
-  commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(mutationScope, tree) });
+  commitTaskMutation(config, tree, { resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions } });
   return {
     status: handoff ? "handoff" : "retrying",
     summary,
@@ -3573,7 +3591,7 @@ export function completeAppTask(
   );
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", input, acceptanceBasis);
-  const admissions = acceptedInputAdmissions(config, tree, claim, input.acceptedLiveEventIds);
+  const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds);
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
@@ -3621,6 +3639,7 @@ export function deferAppTask(
   claim: AppTaskClaim,
   input: {
     disposition: "waiting";
+    report?: true;
     summary: string;
     response?: string;
     result?: Record<string, unknown>;
@@ -3666,6 +3685,8 @@ export function deferAppTask(
     defaultTaskAcceptance(claim, input.evidence ?? []),
   );
   const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
+  const admissions = input.report ? inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", true) : [];
+  if (input.report) acceptedResult.report = true;
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
@@ -3721,7 +3742,7 @@ export function deferAppTask(
   }
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   input.prepareSupersededSessions?.(supersededSessionIds);
-  commitTaskMutation(config, tree, { resourceMutation });
+  commitTaskMutation(config, tree, { resourceMutation: { ...resourceMutation, admissions } });
   const reconcileTaskIds = actions.map((action) => action.taskId);
   return { status: "applied", actionsApplied, reconcileTaskIds, supersededSessionIds };
 }

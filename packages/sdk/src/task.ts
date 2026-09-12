@@ -104,6 +104,8 @@ export type TaskReconcileResult = {
     }
   | {
       state: "waiting";
+      /** Return this wait's evidence to the exact caller without answering its input. */
+      report?: true;
       response?: never;
       result?: Record<string, unknown>;
       actions?: TaskAction[];

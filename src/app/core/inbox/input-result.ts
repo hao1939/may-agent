@@ -3,7 +3,7 @@ import type { AgentEvent } from "../events/bus.js";
 import type { AppInboxItem } from "../state/app-inbox-store.js";
 
 /** The same exact caller feedback for live notification and saved-state recovery. */
-export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult, status: "done" | "blocked" = "done"): AgentEvent | null {
+export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { attemptId?: string; reportRevision?: number }, status: "done" | "blocked" = "done"): AgentEvent | null {
   if (item.source.kind !== "app") return null;
   return {
     type: "app.dependency.updated",
@@ -13,6 +13,8 @@ export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult, sta
       kind: "app",
       id: item.id,
       status,
+      ...(status === "blocked" && result.attemptId ? { reportAttemptId: result.attemptId } : {}),
+      ...(status === "blocked" && result.reportRevision ? { reportRevision: result.reportRevision } : {}),
       summary: result.summary,
       ...(result.response ? { response: result.response } : {}),
       ...(result.result ? { result: result.result } : {}),

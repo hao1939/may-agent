@@ -117,6 +117,7 @@ export type AppTaskAttempt = {
   /** Accepted evidence from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
     state: "converged" | "waiting" | "stopped";
+    report?: true;
     summary: string;
     response?: string;
     result?: Record<string, unknown>;

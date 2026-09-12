@@ -1790,6 +1790,7 @@ async function reconcileTask(input: {
         const apply = persistResult(() =>
           deferAppTask(config, primary, {
             disposition: "waiting",
+            report: primaryHandlerResult.report,
             summary: primaryHandlerResult.summary,
             response: primaryHandlerResult.response,
             result: primaryHandlerResult.result,

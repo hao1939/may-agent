@@ -25,6 +25,7 @@ import { AppRegistry } from "../apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { createAppTaskCapability } from "./app-task-capability.js";
 import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
+import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitTaskAppDependencies,
@@ -184,6 +185,216 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+describe("caller feedback PoC", () => {
+  it.each(["quiet", "stopped-then-wait", "report-wait", "throw", "invalid", "throw-then-wait"] as const)(
+    "returns exact feedback and recovers the original answer (%s)",
+    async (scenario) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let host: AppInboxHost;
+      let requestId = "";
+      let ready = false;
+      let workerCalls = 0;
+      const callerInputs: Parameters<TaskExecutor>[0][] = [];
+      const reportSummary = "Please restore access; the worker is waiting for the access event.";
+      const app = defineApp({
+        ...definition(),
+        task: ({ input }) => ({ kind: "desired", intent: {
+          id: input.kind === "review" ? "work/caller" : "work/collector",
+          parentId: "operations", outcome: "Return the requested sample",
+          acceptance: ["Return the observed score"], mode: "achieve",
+          executor: input.kind === "review" ? "caller" : "collector",
+        } }),
+      });
+      const install = async () => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus), installControllers: false,
+          appRegistrySnapshot: { id: "caller-feedback-poc", generation: 1,
+            entries: [{ appDir: f.appDir, definition: app }] },
+          executors: {
+            caller: async (attempt) => {
+              callerInputs.push(attempt);
+              const answer = attempt.events.items.find(({ event }) =>
+                event.type === "app.dependency.updated" && event.data.status === "done");
+              if (answer) return {
+                state: "converged", summary: "Reviewed original sample", result: answer.event.data.result as Record<string, unknown>,
+                evidence: ["sample:one"],
+              };
+              return {
+                state: "waiting", summary: "Waiting for the original sample", evidence: [],
+                ...(callerInputs.length === 1 ? {
+                  dependencies: [{ id: "sample", appId: "sample", input: { kind: "collect", data: { sample: "one" } } }],
+                } : {}),
+              };
+            },
+            collector: async () => {
+              workerCalls++;
+              if (ready) return { state: "converged", summary: "Observed sample", result: { score: 0.92 }, evidence: ["sample:one"] };
+              if (scenario === "stopped-then-wait" && workerCalls === 1)
+                return { state: "stopped", summary: reportSummary, evidence: ["sample:access-denied"] };
+              if (scenario === "throw" || (scenario === "throw-then-wait" && workerCalls === 1))
+                throw new Error("Synthetic provider connection failed");
+              if (scenario === "invalid") return {
+                state: "converged", summary: "Untrusted result must not escape", evidence: [],
+                unexpectedField: true,
+                actions: [{ kind: "unblock-task", taskId: "work/caller", expectedGeneration: 1, reason: "Invalid proposal" }],
+              } as never;
+              return {
+                state: "waiting", summary: reportSummary, evidence: ["sample:access-denied"],
+                ...(scenario !== "quiet" && scenario !== "stopped-then-wait" ? { report: true as const } : {}),
+                conditions: [{ id: "sample-access", type: "sample.access.changed", subject: "resource:sample",
+                  expected: { field: "available", equals: true }, owner: "app:sample", reviewAfterMs: 300_000 }],
+              };
+            },
+          },
+        });
+        host = new AppInboxHost({
+          db: getDb(persistDir), apps: [app],
+          attachTask: (input) => admitTaskRequest(loadedTaskConfig(f), input),
+          readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+          // Deliberately lose live feedback before publication. Recovery must
+          // use saved input/attempt evidence, not an event captured by the test.
+          onRequestUpdated() { throw new Error("Synthetic lost notification"); },
+        });
+        bus.subscribe((event) => {
+          if (event.type !== "app.input.requested") return;
+          requestId = String(event.data.requestId);
+          host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
+            input: event.data.input as { kind: string; data: unknown }, idempotencyKey: String(event.data.idempotencyKey) });
+          return { accepted: true, by: "fixture", route: "direct" };
+        });
+      };
+      const run = (taskId: string) => reconcileLoadedAppTaskOnce({
+        bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      const reopen = async () => {
+        host.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      };
+      try {
+        await install();
+        host!.admit({ id: "original-ask", appId: "sample", source: { kind: "system", id: "fixture" },
+          input: { kind: "review", data: { sample: "one" } } });
+        await run("work/caller");
+        const callerBefore = loadedTaskConfig(f).resourceStore.readTask("work/caller")!;
+        await run("work/collector");
+        await host!.recoverTaskResults();
+        const item = host!.get(requestId)!;
+        const report = () => readLoadedAppTaskInputResult({ bus, appDir: f.appDir,
+          taskId: "work/collector", admissionKey: item.taskAdmissionKey!, kind: "report" });
+        const first = report();
+        expect(item.status).toBe("handling");
+        expect(readLoadedAppTaskInputResult({ bus, appDir: f.appDir,
+          taskId: "work/collector", admissionKey: item.taskAdmissionKey! })).toBeNull();
+        expect(loadedTaskConfig(f).resourceStore.readTask("work/caller")!.metadata).toEqual(callerBefore.metadata);
+        if (scenario === "quiet") expect(first).toBeNull();
+        else {
+          expect(first).not.toBeNull();
+          if (scenario === "report-wait" || scenario === "stopped-then-wait") {
+            expect(first!.summary).toBe(reportSummary);
+            expect(first!.state).toBe(scenario === "report-wait" ? "waiting" : "stopped");
+          } else {
+            expect(first!.summary).toContain("Execution failed");
+            expect(first!.evidence).toContain(`task-attempt:${first!.attemptId}`);
+            expect(loadedTaskConfig(f).resourceStore.readAttempt(first!.attemptId)?.acceptedResult).toBeUndefined();
+          }
+        }
+        await reopen();
+        expect(report()).toEqual(first);
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        let expectedCalls = scenario === "quiet" ? 1 : 2;
+        expect(callerInputs).toHaveLength(expectedCalls);
+        if (scenario !== "quiet") {
+          const feedback = callerInputs[1]!.events.items.find(({ event }) => event.type === "app.dependency.updated");
+          expect(feedback?.event.data).toMatchObject({ id: requestId, status: "blocked", summary: first!.summary });
+          expect(callerInputs[1]!.waits.open[0]?.state).toBe("false");
+        }
+        if (scenario === "throw-then-wait" || scenario === "stopped-then-wait") {
+          setSystemTime(loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+          await run("work/collector");
+          await host!.recoverTaskResults();
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("waiting");
+          if (scenario === "throw-then-wait") {
+            expect(report()?.summary).toBe(reportSummary);
+            expect(report()?.attemptId).not.toBe(first!.attemptId);
+            expect(loadedTaskConfig(f).resourceStore.readAttempt(first!.attemptId)?.acceptedResult).toBeUndefined();
+            const selected = report();
+            await reopen();
+            expect(report()).toEqual(selected);
+            await recoverInstalledAppTasks(bus);
+            await run("work/caller");
+            expectedCalls++;
+            const feedback = callerInputs.at(-1)!.events.items.find(({ event }) => event.type === "app.dependency.updated");
+            expect(feedback?.event.data).toMatchObject({ status: "blocked", summary: reportSummary, reportAttemptId: selected!.attemptId });
+            // A delayed old notification must not undo the newer observation
+            // or wake the caller again after it already handled both reports.
+            expect(trackAppTaskConditionEventForTasks(loadedTaskConfig(f),
+              appInputFeedbackEvent(item, first!, "blocked")!, ["work/caller"])).toEqual([]);
+          } else expect(report()).toEqual(first);
+        }
+        for (let review = 0; review < 5; review++) {
+          await host!.recoverTaskResults();
+          await recoverInstalledAppTasks(bus);
+          await run("work/caller");
+        }
+        expect(callerInputs).toHaveLength(expectedCalls);
+        const beforeQuiet = workerCalls;
+        if (scenario === "quiet" || scenario === "report-wait" || scenario === "throw-then-wait" || scenario === "stopped-then-wait") {
+          const start = Date.now();
+          for (let tick = 1; tick <= 10; tick++) {
+            setSystemTime(start + tick * 10_000);
+            await recoverInstalledAppTasks(bus);
+            await run("work/collector");
+          }
+          expect(workerCalls).toBe(beforeQuiet);
+          const store = loadedTaskConfig(f).resourceStore;
+          expect(store.readTaskConditions("work/collector").find((c) => c.metadata.id === "sample-access")?.status.state).not.toBe("true");
+          trackAppTaskConditionEventForTasks(loadedTaskConfig(f), {
+            type: "sample.access.changed", source: "fixture", data: { resource: "different", available: true },
+          }, ["work/collector"]);
+          await run("work/collector");
+          expect(workerCalls).toBe(beforeQuiet);
+          trackAppTaskConditionEventForTasks(loadedTaskConfig(f), {
+            type: "sample.access.changed", source: "fixture", data: { resource: "sample", available: true },
+          }, ["work/collector"]);
+        } else {
+          setSystemTime(loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+        }
+        ready = true;
+        await run("work/collector");
+        await host!.recoverTaskResults();
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        await host!.recoverTaskResults();
+        expect(callerInputs).toHaveLength(expectedCalls + 1);
+        expect(workerCalls).toBe(beforeQuiet + 1);
+        expect(host!.get("original-ask")?.result?.result).toEqual({ score: 0.92 });
+        expect(host!.get(requestId)?.status).toBe("done");
+        for (const id of ["work/caller", "work/collector"])
+          expect(loadedTaskConfig(f).resourceStore.isCancelled(id)).toBe(false);
+        const answer = host!.get("original-ask")!.result;
+        await reopen();
+        await host!.recoverTaskResults();
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(expectedCalls + 1);
+        expect(host!.get("original-ask")?.result).toEqual(answer);
+        console.info(JSON.stringify({ poc: "caller-feedback", scenario, workerCalls, callerCalls: callerInputs.length,
+          reportRecovered: scenario !== "quiet", originalAnswer: answer?.result,
+          changedReportDelivered: scenario === "throw-then-wait" }));
+      } finally {
+        host?.close();
+      }
+    },
+  );
+});
 
 it("recovers legacy attention as the same Tasks without inventing App review input", async () => {
   const f = fixture();
