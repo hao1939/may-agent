@@ -5,7 +5,8 @@ implemented for review. The broader cleanup is not complete. Deployment and live
 permission/state changes remain separate and are not authorized here.
 **Reviewed:** September 12–13, 2026. Initial Host baseline `649d801c`; the
 candidates include Task-contract PR #168 and fetched `main` `d7b9d962`
-after #177 and #178 merged. The discovery table below records the
+after #177 and #178 merged; health-source integration now includes `fd2afb83`
+after #179. The discovery table below records the
 initial findings; the application record distinguishes fixes from remaining gaps.
 This is source evidence, not a claim about the running installation.
 
@@ -253,7 +254,7 @@ authority. Do not restart or alter the current installation to review this draft
 
 ## Application record — September 13, 2026
 
-Six source slices implement independent parts of this proposal. #177 and #178
+Six source slices implement independent parts of this proposal. #177, #178 and #179
 have since been merged by others; this work has not merged or deployed them.
 The current Task-contract baseline is
 merged #168, not the stale local Host checkout. No production activation, model
@@ -264,7 +265,7 @@ call, permission change or state migration was performed.
 | [#176](https://github.com/hao1939/may-agent/pull/176) | Remove Markdown mutation, owner fallback and misleading comment receipts; retain declared App subscriptions. | Unsupported App intake fails visibly and the browser retains input. |
 | [#177](https://github.com/hao1939/may-agent/pull/177), merged `d7b9d962` | Run exact declared metric commands, optionally sharing an ID-keyed sample envelope; remove Coach-specific dashboard counts. | Old single-sample commands still work. Producer and definition changes must land together to retain batching; installed definitions are not rewritten. |
 | [#178](https://github.com/hao1939/may-agent/pull/178), merged `7ee4aac6` | Return bounded-call circuit-break failures to the caller, retain the exact cancellation reason, and remove misleading tool-error handoff/bypass instructions. | Standalone-job recovery and old restricted tool-policy presets remain compatible. |
-| [#179](https://github.com/hao1939/may-agent/pull/179) | Move deployment receipt interpretation out of generic agent execution; provide exact fact delivery and a read-only receipt lookup. | Adopt with maintenance-agent guidance. Preserve the current deployment-owner restriction, atomic activation, rollback and duplicate-effect protection. |
+| [#179](https://github.com/hao1939/may-agent/pull/179), merged `fd2afb83` | Move deployment receipt interpretation out of generic agent execution; provide exact fact delivery and a read-only receipt lookup. | Adopt with maintenance-agent guidance. Preserve the current deployment-owner restriction, atomic activation, rollback and duplicate-effect protection. |
 | [#180](https://github.com/hao1939/may-agent/pull/180) | Replace name-based file-write grants with exact reviewed configuration; separate installation protection root from App working directory. | Now targets main after #178. Review needed installation grants before deployment; absent grants deny protected edits. |
 | [#181](https://github.com/hao1939/may-agent/pull/181) | Add a narrow read-only Host health snapshot for ordinary App observers through optional reporting. | Host first, then companion App observer and old-job removal together. No private SQL, new timer, work assignment or healthy verdict. |
 
@@ -423,6 +424,16 @@ An integration case checks both reject-by-default reporting and explicit reader
 injection. Both findings are fixed; the published thread is replied to/resolved
 and Copilot re-review is requested.
 
+The follow-up review requested non-forgeable event provenance. This was evaluated
+as a boundary limitation, not a reason to add identity machinery to reporting.
+Source `2e47e0ac` documents that `runtimeFailures` counts recorded event types,
+not authenticated Host failures or incidents. An integration regression publishes
+a synthetic failure-type fact through an ordinary observer and confirms the
+reported count. Apps already can publish those facts or request owner review;
+the new read grants no additional action authority. App judgment must verify the
+cause before acting. Producer authentication and untrusted-code isolation remain
+separate work; a forgeable source label would not provide that guarantee.
+
 Verification so far:
 
 - Stable-main full Host CI: **2,946 passed, three installation-only skips, zero
@@ -443,6 +454,18 @@ Verification so far:
   The 11 observer-runtime tests also pass. Current-head Quality and Container
   passed. #181 is ready for review with both initial findings fixed; Copilot
   re-review is requested. Merge and final maintainer review remain separate.
+
+Main advanced during review: source `a1cd8027` merges `fd2afb83` (#179) without
+changing the health API or reader. Its full CI passed **2,960 tests, three
+installation-only skips, zero failures; 12,914 assertions across 298 files**;
+Quality and Container passed. Source `2e47e0ac` then adds the provenance contract
+clarification and regression. Its final full CI passed **2,961 tests, three
+installation-only skips, zero failures; 12,916 assertions across 298 files**.
+Current-head Quality and Container passed. #181 is ready for review, both initial
+bugs are fixed and the provenance suggestion is dispositioned; final Copilot
+re-review is requested, not yet claimed complete. The companion App's provenance
+guidance is committed at `3a90521523`. Final maintainer review, merge and paired
+installation adoption remain separate.
 
 Adoption requires the new Host first and then the App definition plus cron
 removal together, with no overlapping old job. No live restart, permission,
