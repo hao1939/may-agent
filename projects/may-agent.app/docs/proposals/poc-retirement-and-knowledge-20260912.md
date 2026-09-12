@@ -285,7 +285,7 @@ copy is created. `smoke-steering.ts` and its package command are also removed.
 The CI contract checks that the retired directory is absent.
 
 The retirement review is [Host #174](https://github.com/hao1939/may-agent/pull/174),
-head `b83873c6e63ec4df3448cb2b3d408549e2491154`, stacked on #172. It includes
+initial head `b83873c6e63ec4df3448cb2b3d408549e2491154`, stacked on #172. It includes
 the independently committed UI/viewer change `6c791b95` and the retirement
 commit `b83873c6`. Relative to #172 it removes **4,590 net lines**; across both
 PRs the Host diff removes **4,327 net lines**. Counts include tests/guides and
@@ -330,6 +330,39 @@ the original reply retained once, unfinished input continued, measurement 17
 preserved, old supervisor retired, and fresh input accepted on the same Task.
 Four local scripted-provider calls; zero real model calls. These are verification
 tools, not supported installed-data migration commands or rollback guarantees.
+
+### Review refinements
+
+The current safety head is `38fe696bbb5849ea5bdc725314bfa26427de33a5`.
+It rejects mismatched scenario/agent identities and missing/empty check names
+before invoking the Gym recorder, with four additional no-write regressions.
+Deployment revalidates its Task after the build and before requesting restart.
+That reduces the long build window; it does not hold a lease or replace normal
+Host admission fencing. Full local CI: **2,908 passed, three installation-only
+skips, zero failures**. GitHub Quality and Container pass. #172 is ready for review.
+
+The reviewed retirement code is `63e8ac222863eb65c54f90f2869655ba341627d7`.
+The root README now describes repository-local UI staging, and the three owning
+UI design pages distinguish build from deployment. A suggested double-escaping
+defect was not present: only result text passed through `truncateStr`, so the
+tool-name prefix needs its own escape. An added real-browser assertion verifies
+the exact literal tool name as well as absence of injected markup.
+
+The WAL review was resolved by clarifying the chosen guarantee: inspection does
+not alter database rows/schema, initialize missing state or run migrations.
+SQLite may create reader sidecars. Independently copying a live DB/WAL/SHM set
+can race its writer; a coordinated snapshot or a zero-filesystem-write guarantee
+is not introduced by this cleanup. The small explicit boundary remains documented.
+
+All current review threads have replies and are resolved; Copilot was requested
+again after each push. Both moved upgrade tools also pass at the clean current
+retirement head. Relative to current #172, #174 removes **4,585 net lines**;
+the combined Host change removes **4,303 net lines**. Full local CI on that code
+passes **2,899 tests**, with three existing installation-only skips and zero
+failures (160.92 seconds); Quality and Container pass too. The final docs-only
+follow-up `4c66e70f` clarifies that `--limit` bounds backfill, not the integrity
+scan; it changes no executable/test code. The draft preserves the integration
+order below; no merge or deployment was performed.
 
 ### Knowledge and integration boundaries
 

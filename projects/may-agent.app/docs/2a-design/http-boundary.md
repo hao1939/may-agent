@@ -39,9 +39,11 @@ The same `may-agent` binary owns the runtime. Web mode may run in a separate
 process group, but it uses the same control/read contracts and cannot claim App
 work independently.
 
-Edit the default UI only in `packages/webui/static`, then generate the served
-copy with `bun run ui:sync`. Domain UIs use stable HTTP/control contracts rather
-than private runtime storage.
+Edit the default UI only in `packages/webui/static`. Build into staging, then
+update the served copy through explicit deployment; see the
+[UI source/build boundary](webui.md#source-ownership) for the repository-local
+default candidate and older-version behavior. Domain UIs use stable HTTP/control
+contracts rather than private runtime storage.
 
 ## Read boundary
 

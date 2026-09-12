@@ -48,11 +48,20 @@ The only editable default UI source is:
 projects/may-agent/packages/webui/static/
 ```
 
-`bun run ui:sync` generates the sole served deployment copy at:
+The server reads the sole generated deployment copy at:
 
 ```text
 projects/platform/ui/
 ```
+
+Build/staging and deployment are separate operations. In the
+[script-retirement candidate](../proposals/poc-retirement-and-knowledge-20260912.md)
+(Host #174), `bun run ui:sync` and `bun run bundle` stage UI under the Host's
+ignored `bundle/platform-ui` by default. `MAY_AGENT_UI_OUTPUT_DIR` can select
+another staging directory; it is replaced, not merged. Explicit deployment
+activates the served copy. Earlier source versions still default to the sibling
+served target, so use the explicit staging override when building those versions.
+This candidate is not a claim that the installation has been updated.
 
 Project-specific `.app/ui/` directories are independent domain surfaces, not
 copies of the default platform UI. See

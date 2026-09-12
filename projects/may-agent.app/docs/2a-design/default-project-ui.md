@@ -196,8 +196,10 @@ The server reads the generated deployment target:
 /app/projects/platform/ui
 ```
 
-`bun run ui:sync` refreshes that target. Project-specific UI directories are
-independent extensions, not copies of the shared source.
+Explicit deployment refreshes that target. The
+[UI source/build boundary](webui.md#source-ownership) distinguishes checkout-local
+staging from activation, including the older `ui:sync` default. Project-specific
+UI directories are independent extensions, not copies of the shared source.
 
 ## Acceptance
 
