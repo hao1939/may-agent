@@ -16,6 +16,7 @@ import {
   recordAppTaskTrigger,
 } from "../tasks/app-task-reconciler.js";
 import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
+import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import type { TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
@@ -537,4 +538,86 @@ test("offline structural-wait retirement replays the original ask once, preserve
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")).toBeNull();
   completeAppTask(f.config, review, { summary: "Reviewed retained work and answered", result: { value: 23 } });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ value: 23 });
+});
+
+test("structural-wait replay keeps admission order across bounded claims and restart, with human input priority", () => {
+  const f = fixture();
+  const start = Date.parse("2026-09-12T00:00:00.000Z");
+  setSystemTime(start);
+  f.ask("original");
+  const old = f.claim();
+  deferAppTask(f.config, old, {
+    disposition: "waiting",
+    summary: "Await old child",
+    conditions: [
+      {
+        id: "temporary",
+        type: "sample.ready",
+        subject: "sample:one",
+        expected: true,
+        owner: "app:sample",
+        reviewAfterMs: 60_000,
+      },
+    ],
+  });
+  const resource = f.store.readTask("work")!;
+  resource.status.conditionIds = [];
+  resource.status.inputWaits = {
+    "task:original": {
+      taskGeneration: resource.metadata.generation,
+      conditions: [],
+      ...{ children: [{ id: "old-child", generation: 1 }] },
+    },
+  };
+  expect(
+    f.store.commit({
+      fences: [{ taskId: "work", resourceVersion: resource.metadata.resourceVersion }],
+      tasks: [{ resource, ready: false }],
+    }),
+  ).toBe(true);
+  const original = f.store.readSnapshot().appTaskAdmissions!["task:original"]!;
+  const newer = Array.from({ length: 34 }, (_, index) => `newer-${index}`);
+  for (const [index, id] of newer.entries()) {
+    setSystemTime(start + index + 1);
+    f.ask(id);
+  }
+  setSystemTime(start + 35);
+  admitTaskRequest(f.config, {
+    appId: "sample",
+    idempotencyKey: "task:human",
+    attachment: { kind: "existing", taskId: "work" },
+    request: { ...f.request("human"), source: { kind: "human", id: "fixture" } },
+  });
+  f.reopen();
+  expect(migrateTaskCoordination(f.config, { oldRuntimeStopped: true })).toEqual({
+    tasks: 1,
+    replayedInputs: 1,
+    reviews: 1,
+  });
+  f.reopen();
+  expect(migrateTaskCoordination(f.config, { oldRuntimeStopped: true })).toEqual({
+    tasks: 0,
+    replayedInputs: 0,
+    reviews: 0,
+  });
+  const first = f.claim();
+  const firstKeys = ["original", ...newer.slice(0, 30), "human"].map((id) => `task:${id}`);
+  expect(taskInputAdmissionKeys(first.events)).toEqual(firstKeys);
+  expect(first.events[0]).toEqual({ event: original.inputEvent, observedAt: original.admittedAt });
+  expect(
+    completeAppTask(f.config, first, { summary: "Reviewed first batch", result: { batch: 1 } }).taskContinues,
+  ).toBe(true);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")).toBeNull();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:newer-30")).toBeNull();
+  f.reopen();
+  const second = f.claim();
+  expect(taskInputAdmissionKeys(second.events)).toEqual(newer.slice(30).map((id) => `task:${id}`));
+  expect(new Set(second.continuedInputKeys)).toEqual(new Set(firstKeys));
+  expect(second.events.at(-1)?.event.type).toBe("app.task.coordination-retired");
+  completeAppTask(f.config, second, { summary: "Answered remaining batch", result: { batch: 2 } });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 2 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:newer-33")?.result).toEqual({ batch: 2 });
+  f.ask("later");
+  completeAppTask(f.config, f.claim(), { summary: "Separate later answer", result: { batch: 3 } });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "task:original")?.result).toEqual({ batch: 2 });
 });

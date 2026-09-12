@@ -16,6 +16,7 @@ import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource
 import { migrateTaskCompletionReceipts } from "../../src/app/core/state/task-receipt-cutover.js";
 import { migrateOpenTaskState } from "../../src/app/core/state/task-state-cutover.js";
 import { readAppTaskReconciliationEvents } from "../../src/app/core/tasks/app-task-context.js";
+import { taskInputAdmissionKeys } from "../../src/app/core/tasks/app-task-inputs.js";
 import { trackAppTaskConditionEventForTasks } from "../../src/app/core/tasks/app-task-condition-tracker.js";
 import { buildAppTaskTreeProjection } from "../../src/app/core/tasks/app-task-store.js";
 import {
@@ -150,6 +151,19 @@ try {
     id: "structural-child", parentId: "structural", mode: "achieve", outcome: "Measure independently", acceptance: ["Return evidence"],
   } });
   legacyRuntime.deferAppTask(old, structural, { disposition: "waiting", summary: "Await implicit child", evidence: ["child:assigned"] });
+  const backlog = Array.from({ length: 34 }, (_, index) => `structural-newer-${index}`);
+  for (const id of [...backlog, "structural-human"]) {
+    legacyInput.admitTaskRequest(old, {
+      appId: "sample",
+      idempotencyKey: id,
+      attachment: { kind: "existing", taskId: "structural" },
+      request: {
+        id, appId: "sample",
+        source: { kind: id === "structural-human" ? "human" : "app", id: "fixture" },
+        input: { kind: "measure", data: { id } },
+      },
+    });
+  }
   const inflight = oldClaim("inflight");
   const supervisor = oldClaim("conversation/follow-up", "maintain");
   oldStore.close();
@@ -193,7 +207,7 @@ try {
     outcomes: 3,
     continued: 4,
     workerStops: 1,
-    inputs: 7,
+    inputs: 42,
     coordination: { tasks: 2, replayedInputs: 1, reviews: 1 },
   });
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "maintained", "maintained")?.result, { value: 23 });
@@ -258,10 +272,18 @@ try {
   const review = claimObservedAppTask(current, { taskId: "structural", appAgent: "worker", handler: "agent" });
   assert.equal(review.kind, "claimed");
   if (review.kind !== "claimed") throw new Error("Retired wait must return for review");
-  assert(review.events.some(({ event }) => event.type === "app.task.coordination-retired"));
-  assert(JSON.stringify(review.events).includes('"id":"structural"'));
+  const firstKeys = ["structural", ...backlog.slice(0, 30), "structural-human"];
+  assert.deepEqual(taskInputAdmissionKeys(review.events), firstKeys);
+  assert.deepEqual(review.events[0], structural.events[0]);
   assert.equal(store.readTask("structural-child")?.status.phase, "pending");
-  completeAppTask(current, review, { summary: "Owner reviewed the original ask", result: { reviewed: true } });
+  assert.equal(completeAppTask(current, review, { summary: "Reviewed original ask and first batch" }).taskContinues, true);
+  assert.equal(readAppTaskAdmissionOutcome(current, "structural", "structural"), null);
+  const remaining = claimObservedAppTask(current, { taskId: "structural", appAgent: "worker", handler: "agent" });
+  if (remaining.kind !== "claimed") throw new Error("Retained backlog must continue");
+  assert.deepEqual(taskInputAdmissionKeys(remaining.events), backlog.slice(30));
+  assert.deepEqual(new Set(remaining.continuedInputKeys), new Set(firstKeys));
+  assert(remaining.events.some(({ event }) => event.type === "app.task.coordination-retired"));
+  completeAppTask(current, remaining, { summary: "Reviewed retained work and backlog", result: { reviewed: true } });
   assert.deepEqual(readAppTaskAdmissionOutcome(current, "structural", "structural")?.result, { reviewed: true });
   console.log(
     JSON.stringify({
@@ -276,6 +298,9 @@ try {
       humanClosurePreserved: true,
       retiredSupervisor: true,
       structuralWaitReviewed: true,
+      structuralBacklogOrdered: true,
+      humanInputIncluded: true,
+      structuralClaimBatchSizes: [review.events.length, remaining.events.length],
     }),
   );
 } finally {

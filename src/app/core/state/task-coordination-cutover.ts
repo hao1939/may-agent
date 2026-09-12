@@ -1,7 +1,7 @@
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { appendTaskTriggerEvent, preferredTriggerFromEvents } from "../tasks/app-task-reconciler.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
-import type { AppTaskInputWait } from "../tasks/app-task-state.js";
+import type { AppTaskInputWait, AppTaskTriggerEvent } from "../tasks/app-task-state.js";
 import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
 
 /** Offline retirement of implicit child waits. Reconsider the original ask;
@@ -24,6 +24,7 @@ export function migrateTaskCoordination(config: AppTaskContext, input: { oldRunt
       const originalVersion = resource.metadata.resourceVersion;
       const pending = tree.taskTriggers?.[taskId];
       let events = pending?.events ?? (pending ? [{ event: pending.event, observedAt: pending.observedAt }] : []);
+      const restored: AppTaskTriggerEvent[] = [];
       let changed = false;
       let reconsider = false;
       for (const [key, current] of Object.entries(resource.status.inputWaits ?? {})) {
@@ -42,13 +43,17 @@ export function migrateTaskCoordination(config: AppTaskContext, input: { oldRunt
           !admission.inputEvent
         )
           throw new Error(`Original input missing for structural wait: ${taskId}, ${key}`);
-        events = appendTaskTriggerEvent(events, admission.inputEvent, admission.admittedAt);
+        restored.push({ event: admission.inputEvent, observedAt: admission.admittedAt });
         replayedInputs++;
         reconsider = true;
       }
       // A seeded parent may have waited implicitly without any admitted input.
       if (resource.status.phase === "waiting" && !resource.status.conditionIds?.length) reconsider = true;
       if (reconsider) {
+        // Preserve admission order before claims select their bounded event batch.
+        const ordered = [...restored, ...events].sort((a, b) => a.observedAt.localeCompare(b.observedAt));
+        events = [];
+        for (const entry of ordered) events = appendTaskTriggerEvent(events, entry.event, entry.observedAt);
         events = appendTaskTriggerEvent(
           events,
           {

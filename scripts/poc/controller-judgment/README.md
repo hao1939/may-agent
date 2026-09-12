@@ -276,4 +276,7 @@ The portable runtime matrix also covers live delivery, a lost notification,
 restart and owner cancellation for A → B → C → B → A with intervening discussion.
 The old-source `task-state-cutover.ts` trial now retires an actual implicit child
 wait written by the old Host, restoring its original ask without inventing a
-child answer. Installation adoption remains a separate operational step.
+child answer. Its backlog case checks 34 newer inputs and one human input:
+the original ask stays first, human input reaches the first bounded batch,
+and the remaining evidence continues before an answer is accepted.
+Installation adoption remains a separate operational step.
