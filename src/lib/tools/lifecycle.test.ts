@@ -231,6 +231,7 @@ describe("createFinishTool", () => {
     expect(fields.completed_items.description).toContain("does not complete");
     expect(fields.new_items.description).toContain("does not create");
     expect(fields.context_updates.description).toContain("suggestions only");
+    expect(fields.context_updates.description).toContain("separately configured session-end consumer");
     expect(fields.context_updates.description).toContain("verified activation");
     expect(fields.lessons.description).toContain("best-effort");
   });

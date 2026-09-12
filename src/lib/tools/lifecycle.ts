@@ -141,7 +141,7 @@ const finishSchema: TSchema = Type.Object({
       }),
       {
         description:
-          "Reported context-change suggestions only. This does not update context.md, load facts into future sessions, or activate guidance. Lasting behavior changes need an authorized source edit and verified activation; do not claim them from this report alone.",
+          "Reported context-change suggestions only. finish() itself does not write context.md or activate guidance; a separately configured session-end consumer may persist these suggestions. Future-session loading is not automatic. Lasting behavior changes need an authorized source edit and verified activation.",
       },
     ),
   ),

@@ -7,10 +7,8 @@
  *   - What's still pending (next_steps, blockers)
  *   - Key decisions made
  *
- * At session start, the manager injects this file's contents so the agent
- * can pick up where it left off without 5-10 exploratory tool calls.
- *
- * Part of: cold-start-fix milestone 1 ("Structured handoff file per agent").
+ * Agents can read this report on demand. Normal prompt preparation does not
+ * inject it, and reported items do not create or complete Tasks/Requests.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -64,7 +62,7 @@ export function formatLastSession(data: LastSessionData): string {
 
   if (data.completedItems && data.completedItems.length > 0) {
     lines.push(``);
-    lines.push(`## Completed`);
+    lines.push(`## Reported Completed Work`);
     for (const item of data.completedItems) {
       lines.push(`- ${item}`);
     }
@@ -86,7 +84,7 @@ export function formatLastSession(data: LastSessionData): string {
 
   if (data.newItems && data.newItems.length > 0) {
     lines.push(``);
-    lines.push(`## New Tasks Created`);
+    lines.push(`## Suggested Follow-up Work`);
     for (const item of data.newItems) {
       lines.push(`- ${item}`);
     }

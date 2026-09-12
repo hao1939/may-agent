@@ -61,15 +61,16 @@ describe("formatLastSession", () => {
     const md = formatLastSession(makeData({
       completedItems: ["Fix auth bug", "Update docs"],
     }));
-    expect(md).toContain("## Completed");
+    expect(md).toContain("## Reported Completed Work");
     expect(md).toContain("- Fix auth bug");
   });
 
-  it("includes new tasks", () => {
+  it("reports follow-up suggestions without claiming Task creation", () => {
     const md = formatLastSession(makeData({
       newItems: ["Add retry logic"],
     }));
-    expect(md).toContain("## New Tasks Created");
+    expect(md).toContain("## Suggested Follow-up Work");
+    expect(md).not.toContain("New Tasks Created");
     expect(md).toContain("- Add retry logic");
   });
 
