@@ -50,6 +50,32 @@ it("the reusable observer fixture rejects absent health reporting and accepts an
   }
 });
 
+it("health counts report recorded failure-type facts without certifying their producer", async () => {
+  const f = await observerFeedbackFixture(app, {
+    id: "synthetic-source",
+    intervalMs: 100,
+    async run() {
+      return [{ type: "subscriber.failed", data: { error: "App-authored synthetic signal" } }];
+    },
+  });
+  try {
+    await f.scan();
+    const row = f.db.prepare("SELECT source, timestamp FROM events WHERE event_type = 'subscriber.failed'").get() as {
+      source: string;
+      timestamp: number;
+    };
+    expect(row.source).toBe("app:sample:observer:synthetic-source");
+    // The ordinary observer produced this, not a failed Host subscriber.
+    // The report faithfully counts the recorded type; it is not a provenance check.
+    expect(readHostHealth(f.db, {}, row.timestamp + 1).runtimeFailures).toEqual({
+      total: 1,
+      byType: [{ type: "subscriber.failed", count: 1 }],
+    });
+  } finally {
+    await f.close();
+  }
+});
+
 it("recovers persisted-but-unadmitted observer input on its original event and exact Task", async () => {
   const f = await observerFeedbackFixture(app, observer);
   try {

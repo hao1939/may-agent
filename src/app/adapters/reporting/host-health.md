@@ -28,6 +28,15 @@ capability or change existing reader permissions. The failure-event vocabulary i
 `HOST_HEALTH_FAILURE_EVENTS` list in `host-health.ts`, not every domain event
 ending in `.failed`. Passive facts without a consumer are not counted as failures.
 
+These are recorded event-type counts, not authenticated Host provenance.
+Installed App code can publish the same event types through the shared fact
+contract. This report does not verify who produced a row or certify that a
+reported failure really occurred. Use it as a signal to investigate, not as
+proof of a Host defect or authority to repair anything. Adding producer identity
+or isolating untrusted App code is a separate boundary, not a new responsibility
+of this read-only report. Apps can already request owner review directly; a
+health signal does not give them additional authority.
+
 An App owns thresholds, interpretation and any route to work. For example,
 an observer can return an App fact containing the snapshot; its subscription
 may ask its existing owner Task to investigate. Neither the report nor its

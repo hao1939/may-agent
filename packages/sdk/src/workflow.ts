@@ -192,7 +192,7 @@ export type HostHealthSnapshot = {
   window: { start: number; end: number };
   coverage: { retainedOnly: true; executionScope: "all" };
   executions: { agents: HostExecutionHealth; workflows: HostExecutionHealth };
-  /** Selected Host-boundary failure events; counts are events, not incidents. */
+  /** Recorded events of selected failure types, not incidents or authenticated Host provenance. */
   runtimeFailures: {
     total: number;
     byType: Array<{ type: string; count: number }>;
