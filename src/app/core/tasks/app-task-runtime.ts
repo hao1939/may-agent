@@ -401,15 +401,19 @@ export function admitLoadedConversationInput(input: {
   item: CreateAppInboxItem & { conversationId: string };
 }) {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.item.appId);
-  const requests = descriptor?.app.conversation;
-  if (!descriptor || !requests || (requests.inputKinds && !requests.inputKinds.includes(input.item.input.kind)))
+  const conversation = descriptor?.app.conversation;
+  if (
+    !descriptor ||
+    !conversation ||
+    (conversation.inputKinds && !conversation.inputKinds.includes(input.item.input.kind))
+  )
     throw new Error(`App ${input.item.appId} has no loaded Conversation capability for this input`);
   if (!Check(descriptor.app.inputSchema, input.item.input)) throw new Error("Invalid Conversation input");
   const config = appTaskConfig(descriptor);
   const admitted = admitConversationTaskInput(config, {
     ...input.item,
     intent: conversationTaskIntent(config),
-    conversationInputKinds: requests.inputKinds,
+    conversationInputKinds: conversation.inputKinds,
   });
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return admitted;

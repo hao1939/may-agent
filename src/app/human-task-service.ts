@@ -2,6 +2,7 @@ import type { AppRegistry } from "./core/apps/registry.js";
 import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./core/tasks/app-task-state.js";
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
+import { storedResultFacts } from "./core/state/result-facts.js";
 import {
   TaskReferenceError,
   displayTaskReferences,
@@ -447,6 +448,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (row.terminal === 2) {
     const cancellation = parseJson<AppTaskCancellation>(row.payload);
     if (!cancellation) return null;
+    storedResultFacts(cancellation);
     const status = cancellation.kind === "closed" ? "closed" : "cancelled";
     const view: HumanTaskView = {
       appId,
@@ -470,6 +472,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (terminal) {
     const receipt = parseJson<TaskCompletionReceipt>(row.payload);
     if (!receipt) return null;
+    storedResultFacts(receipt);
     const view: HumanTaskView = {
       appId,
       taskId,
@@ -492,6 +495,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   }
   const resource = parseJson<AppTaskResource>(row.payload);
   if (!resource) return null;
+  storedResultFacts(resource.status);
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
   const status = taskStatus(row.phase, false);
   const observationIsCurrent =
@@ -707,10 +711,12 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
         }
       : {}),
     conditions: conditionIds.slice(0, TASK_DETAIL_LINK_LIMIT).map((id) => {
-      const condition = db
+      const conditionRow = db
         .prepare("SELECT condition_json FROM app_task_conditions WHERE app_id = ? AND condition_id = ?")
         .get(row.app_id!, id) as { condition_json: string } | null;
-      return { id, condition: parseJson<AppTaskCondition>(condition?.condition_json) };
+      const condition = parseJson<AppTaskCondition>(conditionRow?.condition_json);
+      if (condition) storedResultFacts(condition.status);
+      return { id, condition };
     }),
     conditionsTruncated: conditionIds.length > TASK_DETAIL_LINK_LIMIT,
     dependencies: dependencyIds.slice(0, TASK_DETAIL_LINK_LIMIT).map((id) => {

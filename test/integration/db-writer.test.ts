@@ -129,46 +129,54 @@ describe("DbWriter", () => {
     });
   });
 
-  it("hydrates resumeCondition on persisted escalation.created rows from finish facts", () => {
-    const writer = new DbWriter(TEST_DIR);
-    const db = getDb(TEST_DIR);
+  it.each(["facts", "evidence", "both"].flatMap((field) => [true, false].map((nextSteps) => ({ field, nextSteps }))))(
+    "hydrates resumeCondition from saved finish fields: %j",
+    ({ field, nextSteps }) => {
+      const writer = new DbWriter(TEST_DIR);
+      const db = getDb(TEST_DIR);
 
-    writer.handler({
-      type: "escalation.created",
-      source: "runtime:session-finish",
-      owner: "agent:may",
-      data: {
-        escalationId: "esc_finish_resume",
-        sourceAgent: "app-ops",
-        sourceSessionId: "s_finish_resume",
-        reason: "Task returned blocked with exact next steps.",
-        requestedAction: "Planner/app-ops should choose the recorded repair path.",
-        facts: {
-          finishParams: {
-            status: "blocked",
-            next_steps:
-              "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor.",
-            blockers: [
-              {
-                reason: "Wrongly decomposed task.",
-                context: "The acceptance references a non-live holder and needs a replacement successor.",
-              },
-            ],
+      writer.handler({
+        type: "escalation.created",
+        source: "runtime:session-finish",
+        owner: "agent:may",
+        data: {
+          escalationId: "esc_finish_resume",
+          sourceAgent: "app-ops",
+          sourceSessionId: "s_finish_resume",
+          reason: "Task returned blocked with exact next steps.",
+          requestedAction: "Planner/app-ops should choose the recorded repair path.",
+          ...(field === "both" ? { evidence: { finishParams: { next_steps: "Superseded condition" } } } : {}),
+          [field === "evidence" ? "evidence" : "facts"]: {
+            finishParams: {
+              status: "blocked",
+              next_steps: nextSteps
+                ? "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor."
+                : undefined,
+              blockers: [
+                {
+                  reason: "Wrongly decomposed task.",
+                  context: "The acceptance references a non-live holder and needs a replacement successor.",
+                },
+              ],
+            },
           },
         },
-      },
-    } as any);
+      } as any);
 
-    const row = db.prepare("SELECT data FROM events WHERE event_type = 'escalation.created'").get() as { data: string };
-    const data = JSON.parse(row.data) as Record<string, unknown>;
-    expect(data.resumeCondition).toBe(
-      "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor.",
-    );
-    expect(data.resume).toEqual({
-      kind: "session",
-      sessionId: "s_finish_resume",
-      condition:
-        "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor.",
-    });
-  });
+      const row = db.prepare("SELECT data FROM events WHERE event_type = 'escalation.created'").get() as {
+        data: string;
+      };
+      const data = JSON.parse(row.data) as Record<string, unknown>;
+      const expected = nextSteps
+        ? "Resume when planner applies the recorded repair path or replaces this stale task with the accepted successor."
+        : "The acceptance references a non-live holder and needs a replacement successor.";
+      expect(data.resumeCondition).toBe(expected);
+      expect(data[field === "evidence" ? "evidence" : "facts"]).toHaveProperty("finishParams");
+      expect(data.resume).toEqual({
+        kind: "session",
+        sessionId: "s_finish_resume",
+        condition: expected,
+      });
+    },
+  );
 });

@@ -304,7 +304,7 @@ function textValue(value: unknown): string | null {
 
 function firstEscalationResumeCondition(payload: Record<string, unknown>): string | null {
   const resume = objectValue(payload.resume);
-  const facts = objectValue(payload.facts);
+  const facts = objectValue(payload.facts ?? payload.evidence);
   const finishParams = objectValue(facts?.finishParams);
   const blockers = arrayValue(finishParams?.blockers);
   const firstBlocker = objectValue(blockers?.[0]);

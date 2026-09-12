@@ -345,6 +345,65 @@ function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt:
   );
 }
 
+test.each(["resource", "receipt", "cancellation"])("preserves historical %s facts in human Task detail", (kind) => {
+  const db = database();
+  insertTask(db, { appId: "alpha", taskId: "work", phase: "waiting", updatedAt: 10 });
+  if (kind === "receipt") insertReceipt(db, "alpha", "work", 20);
+  if (kind === "cancellation") {
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    const current = store.readTask("work")!;
+    cancelAppTask(taskConfig(db, store, "alpha"), {
+      appId: "alpha",
+      taskId: "work",
+      reason: "Owner withdrew work",
+      expectedGeneration: current.metadata.generation,
+      expectedResourceVersion: current.metadata.resourceVersion,
+    });
+  }
+  const [table, column] =
+    kind === "resource"
+      ? ["app_tasks", "resource_json"]
+      : kind === "receipt"
+        ? ["app_task_receipts", "receipt_json"]
+        : ["app_task_cancellations", "cancellation_json"];
+  const row = db.prepare(`SELECT ${column} AS payload FROM ${table} WHERE app_id = 'alpha'`).get() as {
+    payload: string;
+  };
+  const payload = JSON.parse(row.payload);
+  const result = kind === "resource" ? payload.status : payload;
+  delete result.facts;
+  result.evidence = ["Saved Task observation"];
+  result.result = { evidence: "App-owned data" };
+  const saved = JSON.stringify(payload);
+  db.prepare(`UPDATE ${table} SET ${column} = ? WHERE app_id = 'alpha'`).run(saved);
+
+  const service = new HumanTaskService(db, registry("alpha"));
+  expect(service.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
+    facts: ["Saved Task observation"],
+    result: { evidence: "App-owned data" },
+  });
+  expect(service.listTasks({ includeDone: true }).items[0]?.facts).toBeUndefined();
+  expect(db.prepare(`SELECT ${column} AS payload FROM ${table} WHERE app_id = 'alpha'`).get()).toEqual({
+    payload: saved,
+  });
+});
+
+test("preserves historical Condition facts in human Task diagnostics", () => {
+  const db = database();
+  insertTask(db, { appId: "alpha", taskId: "work", phase: "waiting", updatedAt: 10 });
+  insertCondition(db, { appId: "alpha", taskId: "work", conditionId: "waiting" });
+  db.prepare(
+    "UPDATE app_tasks SET resource_json = json_set(resource_json, '$.status.conditionIds', json('[\"waiting\"]'))",
+  ).run();
+  db.prepare(
+    "UPDATE app_task_conditions SET condition_json = json_set(condition_json, '$.status.evidence', json('[\"Saved Condition observation\"]'))",
+  ).run();
+  const service = new HumanTaskService(db, registry("alpha"));
+  const condition = service.getTask({ appId: "alpha", taskId: "work" })?.diagnostics?.conditions[0]?.condition;
+  expect(condition?.status.facts).toEqual(["Saved Condition observation"]);
+  expect(condition?.status).not.toHaveProperty("evidence");
+});
+
 function insertProgress(
   db: SqliteDb,
   input: {

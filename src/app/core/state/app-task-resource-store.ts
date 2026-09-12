@@ -94,6 +94,12 @@ function parseTaskCancellation(value: unknown): AppTaskCancellation {
   return storedResultFacts(parseJson<AppTaskCancellation>(value));
 }
 
+function parseTaskCondition(value: unknown): AppTaskCondition {
+  const condition = parseJson<AppTaskCondition>(value);
+  storedResultFacts(condition.status);
+  return condition;
+}
+
 function eventKey(event: Record<string, unknown>): string {
   const eventId = Number(event.eventId);
   if (Number.isSafeInteger(eventId) && eventId > 0) return `event:${eventId}`;
@@ -619,7 +625,7 @@ export class AppTaskResourceStore {
          ORDER BY routes.condition_id`,
       )
       .all(this.appId, taskId) as Array<{ condition_json?: string }>;
-    return rows.flatMap((row) => (row.condition_json ? [parseJson<AppTaskCondition>(row.condition_json)] : []));
+    return rows.flatMap((row) => (row.condition_json ? [parseTaskCondition(row.condition_json)] : []));
   }
 
   isCancelled(taskId: string): boolean {
@@ -672,7 +678,7 @@ export class AppTaskResourceStore {
     for (const row of rows) {
       if (!row.condition_id || !row.condition_json || !row.task_id) continue;
       const route = routes.get(row.condition_id) ?? {
-        condition: parseJson<AppTaskCondition>(row.condition_json),
+        condition: parseTaskCondition(row.condition_json),
         taskIds: [],
       };
       route.taskIds.push(row.task_id);
@@ -718,7 +724,7 @@ export class AppTaskResourceStore {
       const key = `${row.app_id}\0${row.condition_id}`;
       const route = routes.get(key) ?? {
         appId: row.app_id,
-        condition: parseJson<AppTaskCondition>(row.condition_json),
+        condition: parseTaskCondition(row.condition_json),
         taskIds: [],
       };
       route.taskIds.push(row.task_id);
@@ -829,7 +835,12 @@ export class AppTaskResourceStore {
       resources,
       taskTriggers,
       attempts: this.jsonMap<AppTaskAttempt>("app_task_attempts", "attempt_id", "attempt_json", parseTaskAttempt),
-      conditions: this.jsonMap<AppTaskCondition>("app_task_conditions", "condition_id", "condition_json"),
+      conditions: this.jsonMap<AppTaskCondition>(
+        "app_task_conditions",
+        "condition_id",
+        "condition_json",
+        parseTaskCondition,
+      ),
       receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json", parseTaskReceipt),
       cancellations: this.jsonMap<AppTaskCancellation>("app_task_cancellations", "task_id", "cancellation_json", parseTaskCancellation),
       groups: Object.fromEntries(
@@ -1013,7 +1024,7 @@ export class AppTaskResourceStore {
               .all(this.appId, ...conditionIds) as Array<{ condition_id?: string; condition_json?: string }>
           ).flatMap((row) =>
             row.condition_id && row.condition_json
-              ? [[row.condition_id, parseJson<AppTaskCondition>(row.condition_json)] as const]
+              ? [[row.condition_id, parseTaskCondition(row.condition_json)] as const]
               : [],
           ),
         )
