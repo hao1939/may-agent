@@ -2,7 +2,7 @@ import type { TaskReconcileResult } from "../src/task.js";
 
 // Checked by SDK tsc and its declaration-export test; never executed.
 declare function accepts(result: TaskReconcileResult): void;
-const report = { summary: "Source unavailable", evidence: ["source:offline"] };
+const report = { summary: "Source unavailable", evidence: ["source:offline"] satisfies [string, ...string[]] };
 const stopped = { state: "stopped" as const, ...report };
 for (const state of ["converged", "waiting", "stopped", "needs-agent"] as const) {
   accepts({ state, ...report });
@@ -10,6 +10,12 @@ for (const state of ["converged", "waiting", "stopped", "needs-agent"] as const)
 accepts({ ...stopped, result: { partial: "Retained observation" } });
 accepts({ ...report, state: "waiting", dependencies: [] });
 accepts({ ...report, state: "converged", response: "Observed", actions: [] });
+
+// @ts-expect-error A failure report must contain evidence, just as admission requires.
+accepts({ ...stopped, evidence: [] });
+const emptyReport = { ...stopped, evidence: [] };
+// @ts-expect-error An unproven array cannot satisfy the non-empty evidence contract.
+accepts(emptyReport);
 
 // @ts-expect-error Failure reports cannot propose actions, even an empty list.
 accepts({ ...stopped, actions: [] });

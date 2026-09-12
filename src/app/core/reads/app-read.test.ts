@@ -288,9 +288,11 @@ describe("App read projections", () => {
     }).applied).toBe(true);
     const page = await read.tasks.list();
     expect(page.items).toEqual([expect.objectContaining({
-      id: "result", closed: true, result: { value: 17 }, evidence: ["measurement:17"],
+      id: "result", status: "done", closed: true, result: { value: 17 }, evidence: ["measurement:17"],
     })]);
     expect(await read.tasks.get("result")).toMatchObject(page.items[0]!);
+    expect(await read.tasks.list({ status: ["done"] })).toEqual(page);
+    expect(await read.tasks.list({ status: ["attention", "pending", "running"] })).toEqual({ items: [] });
     expect(readAppTaskChildContext(config, "review").cancelled).toEqual([
       expect.objectContaining({ taskId: "result", kind: "closed", evidence: ["measurement:17"] }),
     ]);

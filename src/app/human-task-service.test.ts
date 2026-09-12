@@ -1085,7 +1085,7 @@ describe("Human Task service", () => {
 
     expect(service.getTask({ appId: "alpha", taskId: "withdrawn" })).toMatchObject({
       status: "closed", terminal: true, cancellable: false,
-      statusDetail: "Closed by its owner; the retained result says what was achieved.",
+      statusDetail: "Closed by its owner; no further work will run.",
     });
     expect(service.getTask({ appId: "alpha", taskId: "previously-finished" })).toMatchObject({
       status: "closed", terminal: true, response: "previously-finished result",

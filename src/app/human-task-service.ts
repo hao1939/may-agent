@@ -277,7 +277,7 @@ function taskStatusDetail(
     case "done":
       return "Completed.";
     case "closed":
-      return "Closed by its owner; the retained result says what was achieved.";
+      return "Closed by its owner; no further work will run.";
     case "cancelled":
       return "Cancelled.";
   }

@@ -497,9 +497,11 @@ export function admitTaskReconcileResult(
     } };
   }
   const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
-  return { ok: true, result: output.state === "stopped"
-    ? { ...answer, state: "stopped" }
-    : { ...answer, state: "converged", actions } };
+  if (output.state === "stopped") {
+    // The stopped branch above has already checked that evidence is non-empty.
+    return { ok: true, result: { ...answer, state: "stopped", evidence: evidence as [string, ...string[]] } };
+  }
+  return { ok: true, result: { ...answer, state: "converged", actions } };
 }
 
 export function admitTaskVerificationResult(

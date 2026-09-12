@@ -176,7 +176,8 @@ function appendEvidence(result: TaskReconcileResult, ...additional: string[]): T
   if (unique.length === 0) return result;
   return {
     ...result,
-    evidence: [...result.evidence.slice(0, Math.max(0, 32 - unique.length)), ...unique],
+    // At least one unique entry is appended, preserving stopped's evidence contract.
+    evidence: [...result.evidence.slice(0, Math.max(0, 32 - unique.length)), ...unique] as [string, ...string[]],
   };
 }
 

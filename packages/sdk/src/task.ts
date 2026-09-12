@@ -112,6 +112,8 @@ export type TaskReconcileResult = {
     }
   | {
       state: "stopped";
+      /** At least one observation supporting this unsuccessful attempt. */
+      evidence: [string, ...string[]];
       response?: string;
       result?: Record<string, unknown>;
       actions?: never;

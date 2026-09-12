@@ -681,6 +681,9 @@ describe("common Task lifecycle source PoC", () => {
     });
     expect(closeAppTask(f.config, input).applied).toBe(false);
     f.reopen();
+    expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({
+      status: "done", closed: true,
+    });
     expect(f.config.resourceStore.readTask("conversation")?.status.result).toEqual({ answered: true });
     expect(f.config.resourceStore.readAttempt(current.attemptId)?.acceptedResult).toMatchObject({
       state: "converged",
@@ -737,6 +740,9 @@ describe("common Task lifecycle source PoC", () => {
     expect(closed.closure).not.toHaveProperty("acceptedResultAttemptId");
     expect(completeAppTask(f.config, current, { summary: "Late success", evidence: ["late"] }).status).toBe("stale");
     f.reopen();
+    expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({
+      status: "attention", closed: true,
+    });
     expect(f.config.resourceStore.readAttempt(current.attemptId)).not.toHaveProperty("acceptedResult");
     expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
   });

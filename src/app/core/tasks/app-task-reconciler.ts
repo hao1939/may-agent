@@ -2338,7 +2338,8 @@ function commitTaskCancellation(
   if (tree.taskTriggers) delete tree.taskTriggers[input.taskId];
   const conditionIds = [...(resource.status.conditionIds ?? [])];
   touchResource(resource, {
-    phase: "attention",
+    // Ending responsibility does not turn an accepted answer into a failure.
+    phase: input.kind === "closed" && resource.status.phase === "converged" ? "converged" : "attention",
     observedGeneration: resource.metadata.generation,
     currentAttemptId: undefined,
     ...(input.kind === "closed" ? {} : {
