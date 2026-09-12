@@ -119,6 +119,7 @@ for (const mode of ["direct", "task-resume", "task-withdraw"] as const)
       expect(result.checks.failure).toBeUndefined();
       expect(result.checks.preflight).toEqual({
         confinedWrites: true,
+        targetRejectsFileDeliverables: true,
         committedNotActive: true,
         rejectedBeforeAdmission: true,
         realReloadRecovered: true,

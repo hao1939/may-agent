@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Type } from "@may-agent/sdk";
+import type { TObject } from "typebox";
+import { Check } from "typebox/value";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "../../src/lib/types.js";
 import { buildSandbox } from "../../test/e2e/lib/sandbox.js";
@@ -242,7 +244,43 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       sessionId: id,
       requireFinish: true,
       outputSchema: answerSchema,
-      createFinish: () => createFinishTool({ agentName: "may", projectRoot: sb.root, persistDir: sb.stateDir }),
+      createFinish: () => {
+        const finish = createFinishTool({ agentName: "may", projectRoot: release.root, persistDir: sb.stateDir });
+        const parameters = finish.parameters as TObject;
+        const targetFinish: AgentTool = {
+          ...finish,
+          parameters: {
+            ...parameters,
+            properties: {
+              ...parameters.properties,
+              deliverables: {
+                ...parameters.properties.deliverables,
+                maxItems: 0,
+                description: "This answer-only target does not produce files; omit deliverables.",
+              },
+            },
+          },
+          execute: async (id, params, signal, onUpdate) => {
+            const { deliverables } = params as { deliverables?: unknown };
+            // Refuse before delegation: standard finish probes file existence,
+            // including for non-success statuses. This target needs no such access.
+            if (deliverables !== undefined && (!Array.isArray(deliverables) || deliverables.length > 0)) {
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: "finish() error: This answer-only target does not accept file deliverables.",
+                  },
+                ],
+                details: undefined,
+                isError: true,
+              };
+            }
+            return finish.execute(id, params, signal, onUpdate);
+          },
+        };
+        return targetFinish;
+      },
     });
     return { prepared, release };
   }
@@ -383,25 +421,59 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       const common = await targetRead.execute("relative-shared", { path: "shared/common-sense.md" });
       assert(common.content.some((part) => part.type === "text" && part.text.includes("Respect authorized scope")));
       await assert.rejects(targetRead.execute("mutable-shared", { path: join(sb.root, "shared/common-sense.md") }));
+      const targetFinish = targetPreflight.tools.find((tool) => tool.name === "finish")!;
+      const completion = {
+        status: "success",
+        summary: "Synthetic completion",
+        verification_evidence: ["Fixture capability inspection"],
+        result: {
+          totalSlots: null,
+          limit: null,
+          eligible: null,
+          source: null,
+          deploymentAuthorized: false,
+          reply: "Fixture",
+        },
+      };
+      assert(Check(targetFinish.parameters, completion));
+      assert(Check(targetFinish.parameters, { ...completion, deliverables: [] }));
+      let refusedDeliverable: unknown;
+      for (const status of ["success", "failure", "blocked", "partial"]) {
+        for (const path of [
+          "shared/common-sense.md", // Existing snapshot file: even valid files are not deliverables.
+          "missing-file.md",
+          join(sb.root, "shared/common-sense.md"), // Existing mutable source outside the snapshot.
+          join(sb.root, "evidence/accepted-policy.json"), // Existing private evidence.
+          join(sb.root, "evidence/missing.json"),
+          relative(store.current()!.root, join(sb.root, "evidence/accepted-policy.json")), // .. escape.
+          dirname(sb.root), // Existing path outside the fixture; never read or modified.
+        ]) {
+          const input = {
+            ...completion,
+            status,
+            blockers: [{ reason: "Fixture", context: "Exercise every completion status" }],
+            deliverables: [{ path, description: "Fixture existence probe" }],
+          };
+          assert(!Check(targetFinish.parameters, input), "The advertised schema must reject file deliverables");
+          // Bypass schema validation too: the execution boundary must refuse
+          // before standard finish can inspect any path.
+          const rejected = await targetFinish.execute("deliverable-preflight", input);
+          assert.equal("isError" in rejected && rejected.isError, true);
+          assert.notEqual((rejected as { terminate?: boolean }).terminate, true);
+          refusedDeliverable ??= rejected;
+          assert.deepEqual(rejected, refusedDeliverable, "Rejection must not reveal path existence or status");
+        }
+      }
+      const empty = await targetFinish.execute("empty-deliverables-preflight", { ...completion, deliverables: [] });
+      assert.equal((empty as { terminate?: boolean }).terminate, true);
       // Finish can append reported lessons as evidence. That evidence is not
       // writable guidance, readable target context, or automatic learning.
       const lessonMarker = "synthetic-target-lesson-not-active-guidance";
-      await targetPreflight.tools
-        .find((tool) => tool.name === "finish")!
-        .execute("finish-preflight", {
-          status: "success",
-          summary: "Synthetic completion",
-          verification_evidence: ["Fixture capability inspection"],
-          lessons: [{ category: "insight", content: lessonMarker }],
-          result: {
-            totalSlots: null,
-            limit: null,
-            eligible: null,
-            source: null,
-            deploymentAuthorized: false,
-            reply: "Fixture",
-          },
-        });
+      const completed = await targetFinish.execute("finish-preflight", {
+        ...completion,
+        lessons: [{ category: "insight", content: lessonMarker }],
+      });
+      assert.equal((completed as { terminate?: boolean }).terminate, true);
       const memoryPath = join(sb.stateDir, "memory-stream.jsonl");
       assert(readFileSync(memoryPath, "utf8").includes(lessonMarker));
       await assert.rejects(
@@ -454,6 +526,7 @@ export async function runTrial(live = false, operate?: ImprovementRunner) {
       assertFinalSource(await inspectSource(baseline!));
       checks.preflight = {
         confinedWrites: true,
+        targetRejectsFileDeliverables: true,
         committedNotActive: true,
         rejectedBeforeAdmission: true,
         realReloadRecovered: true,

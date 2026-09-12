@@ -56,8 +56,13 @@ numeric assertions; a passing finish call is not proof of a useful improvement.
 - Target preparation uses the active immutable definition. It does not test
   existing persistent sessions or durable Task adoption.
 - Target reads are limited to that snapshot, and it cannot edit guidance or
-  policy. Its standard `finish` tool can append reported lessons to private
-  fixture evidence. The no-model preflight checks that this append happens,
+  policy. Its answer-only `finish` rejects file deliverables before the standard
+  tool can check their existence, regardless of path or completion status.
+  The schema permits only omitted/empty deliverables; the execution guard also
+  rejects nonempty inputs. Preflight covers existing/missing files, mutable source,
+  private evidence, absolute paths and traversal with identical rejection results.
+  Ordinary answers still finish successfully. Standard `finish` can append
+  reported lessons to private fixture evidence. The no-model preflight checks that this append happens,
   the target cannot read it and a fresh target prompt does not load it. Calling
   the whole execution "read-only" was too broad; evidence is not active guidance.
 - Probe results return the answer, revision, status, tool-error count, timing and a detail path;
@@ -137,6 +142,11 @@ Publication review also added a no-model regression for a clean commit made
 after activation. It must fail the final-source check until that commit is
 activated. This assertion hardening was not a new model-backed trial; the
 earlier live harness hashes above remain the source of those observations.
+
+A later boundary review found that standard `finish` could reveal whether
+model-supplied file paths existed outside the target snapshot. The target now
+rejects file deliverables entirely; it only produces answers. This is fixture
+hardening with no-model coverage, not a new model trial or a production sandbox.
 
 The governing proposal and detailed sanitized evidence are in the separately
 maintained App tree: `docs/proposals/agent-behavior-and-capability-extension.md`
