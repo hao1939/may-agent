@@ -1,7 +1,7 @@
 /**
  * Real old-daemon -> offline conversion -> candidate-daemon trial.
  * Temporary state and a local scripted provider only; no installed App or model.
- * bun scripts/poc/task-runtime-cutover.ts --legacy-source OLD_HOST --out REPORT_DIR
+ * bun scripts/migrations/task-runtime-cutover.ts --legacy-source OLD_HOST --out REPORT_DIR
  */
 import assert from "node:assert/strict";
 import { spawn, execFile, type ChildProcess } from "node:child_process";
@@ -18,7 +18,7 @@ import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource
 import { migrateTaskCompletionReceipts } from "../../src/app/core/state/task-receipt-cutover.js";
 import { migrateOpenTaskState } from "../../src/app/core/state/task-state-cutover.js";
 import { migrateConversationInputs } from "../../src/app/core/state/conversation-cutover.js";
-import { getAppInboxItem, assertAppInboxClaim } from "../../src/app/core/state/app-inbox-store.js";
+import { getAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
 import { readConversationRequest } from "../../src/app/core/state/conversation-requests.js";
 import { readAppConversationResource } from "../../src/app/core/state/conversations.js";
 import { appTaskContext, closeAppTask } from "../../src/app/core/tasks/app-task-reconciler.js";
@@ -41,6 +41,11 @@ const revision = async (cwd: string) => ({
 });
 const sources = { old: await revision(source), candidate: await revision(candidate) };
 assert.equal(sources.old.dirty, false, "Old source must be a clean checkout");
+// The inbox execution API is retired in the candidate. Use the actual old
+// writer's fence to prove that its former lease cannot write after conversion.
+const { assertAppInboxClaim } = await import(
+  pathToFileURL(join(source, "src/app/core/state/app-inbox-store.ts")).href
+);
 const { buildSandbox } = (await import(
   pathToFileURL(join(source, "test/e2e/lib/sandbox.ts")).href
 )) as typeof import("../../test/e2e/lib/sandbox.js");

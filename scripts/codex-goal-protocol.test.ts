@@ -11,7 +11,7 @@ import {
 
 describe("Codex goal protocol drift", () => {
   it("keeps the container Codex version aligned with the protocol snapshot", () => {
-    const dockerfile = readFileSync(new URL("../../container/Dockerfile", import.meta.url), "utf8");
+    const dockerfile = readFileSync(new URL("../container/Dockerfile", import.meta.url), "utf8");
     const snapshot = JSON.parse(
       readFileSync(new URL("./codex-goal-protocol.snapshot.json", import.meta.url), "utf8"),
     ) as CodexGoalProtocolSnapshot;

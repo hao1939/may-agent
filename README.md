@@ -86,22 +86,30 @@ bun run test:components
 bun run test:integration
 bun run test:e2e
 bun run test:sdk
-bun run check:event-graph
 ```
 
-For an isolated local build, keep generated UI files in this checkout:
+For an isolated local build, generated UI files stay in this checkout by default:
 
 ```bash
-MAY_AGENT_UI_OUTPUT_DIR="$PWD/bundle/platform-ui" bun run bundle
+bun run bundle
 ```
 
-Without that override, `ui:sync` (also called by `bundle`) replaces the sibling
-`platform/ui` deployment copy. See the [script guide](scripts/README.md) before
-running operational helpers. Deploy with
+`ui:sync` (also called by `bundle`) stages to `bundle/platform-ui`.
+`MAY_AGENT_UI_OUTPUT_DIR` may select another staging directory; that directory
+is replaced. A build does not update the sibling served UI. Installed diagnostics
+such as `bun run check:event-graph -- --state-dir /path/to/state` require an
+existing database, not just this source checkout. See the
+[script guide](scripts/README.md) before running operational helpers. Deploy with
 `bun run deploy` from work owned by a live `may-agent` App task. The candidate
 must contain the current canonical May commit. Another App cannot deploy the
 May Host on behalf of its own task. `reload` only reloads agent and app
 definitions and does not deploy runtime code.
+
+For UI development, `bun run --cwd packages/webui dev` serves the editable static
+source directly; no build or installation copy is needed. Set `PROJECT_ROOT`
+and, if needed, `STATE_DIR` to your development installation. `WEB_PORT` defaults
+to 8080. The command sets the HTTP-only `MAY_AGENT_UI_DIR` override; ordinary
+deployed serving still reads `<PROJECTS_ROOT>/platform/ui` by default.
 
 ## Layout rules
 

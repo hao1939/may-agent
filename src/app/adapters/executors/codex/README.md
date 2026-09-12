@@ -20,4 +20,5 @@ usable. Drain active execution before removing a backend.
 
 Colocated tests cover process bounds, bindings, exact-turn results, progress and
 stale ownership. `codex-goal-fencing.test.ts` exercises the Host boundary. Protocol
-compatibility fixtures remain in `scripts/poc/`; they are not live model proof.
+compatibility verification uses `bun run check:codex-goal-protocol` and the
+`scripts/codex-goal-protocol*` fixtures; it is not live model proof.

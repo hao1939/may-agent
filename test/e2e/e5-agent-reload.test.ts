@@ -22,7 +22,7 @@
  *   - user-guide.md § Reload (the `/reload` command, control-channel reload)
  *   - agent-convention.md (agent.json + AGENTS.md as the source of truth)
  *
- * Gated behind E2E_LIVE=1; does not require LLM access.
+ * Runs in portable CI; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync } from "node:fs";

@@ -20,7 +20,7 @@ Explicit `any` annotations remain warnings visible through `bun run lint`;
 they are not a clean-type claim. Whole-tree formatting is not yet a merge gate:
 format the lines you change without reformatting unrelated code.
 
-`test` runs source, package, integration, daemon, browser, PoC, and build/deploy
+`test` runs source, package, integration, daemon, browser, and build/deploy
 script tests using two isolated Bun workers. The bounded worker count avoids
 oversubscribing small CI machines with daemon and compiler subprocesses.
 No automatic test retries hide a failure. Reproduce and explain flaky results.
@@ -46,6 +46,13 @@ installation no longer uses the optional May cron file. Ordinary CI must work
 from this repository alone.
 Model-backed experiments require separate credentials and explicit authority;
 neither those experiments nor a production restart belongs in PR CI.
+
+Keep active experiments on a linked branch or worktree, not in a permanent
+`scripts/poc/` collection. Before retiring one, preserve its question, findings
+(including failures), limitations, exact source revisions and reproduction
+instructions in the existing App design/evidence records. Promote only useful
+regressions or recurring commands with an identified consumer. Git retains
+discarded harnesses; copying them to another archive directory is not cleanup.
 
 ## Keeping tests useful and fast
 
@@ -155,7 +162,7 @@ The CLI versions and terminal checksums live in `container/Dockerfile`; the
 Bun version lives in `.bun-version`. Dependabot does not update those embedded
 tool pins. Review them explicitly, retain exact versions, and validate CLI
 flags/configuration and the image smoke test. For Codex, compare generated
-schemas with the old CLI before updating `scripts/poc/codex-goal-protocol.snapshot.json`;
+schemas with the old CLI before updating `scripts/codex-goal-protocol.snapshot.json`;
 the image smoke test checks that snapshot against the shipped CLI without a
 model call. Node/npm move together through
 the Node base image. Upgrading the standalone Pi CLI does not upgrade the Pi

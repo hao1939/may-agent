@@ -49,7 +49,7 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
   });
 
   function get(path: string, headers?: HeadersInit): Response {
-    return servePlatformUiRequest(new Request(`http://localhost${path}`, { headers }), join(tmpRoot, "projects"))
+    return servePlatformUiRequest(new Request(`http://localhost${path}`, { headers }), join(tmpRoot, "projects/platform/ui"))
       ?? new Response("Not found", { status: 404 });
   }
 

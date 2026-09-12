@@ -2,7 +2,7 @@
  * Write a temporary database with an old Host, close it, then import its real
  * completed and open Task state with this candidate. No installation state or model calls.
  *
- * bun scripts/poc/task-state-cutover.ts --legacy-source /path/to/old-host
+ * bun scripts/migrations/task-state-cutover.ts --legacy-source /path/to/old-host
  * Validated with old Host a8f6518855aa5f85a697468665269124dda30479.
  */
 import assert from "node:assert/strict";

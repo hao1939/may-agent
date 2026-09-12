@@ -543,6 +543,8 @@ function parseAndRender(text, filename) {
   for (const line of lines) {
     try {
       const msg = JSON.parse(line);
+      // User messages may use a plain string in current session transcripts.
+      if (typeof msg.content === 'string') msg.content = [{ type: 'text', text: msg.content }];
       allMessages.push(msg);
     } catch (e) { /* skip malformed lines */ }
   }
@@ -744,7 +746,7 @@ function createMessage(msg) {
     const textContent = extractText(msg.content);
     const badge = isError ? 'ERROR' : 'RESULT';
     const badgeClass = isError ? 'error' : 'tool';
-    const namePrefix = msg.toolName ? `${msg.toolName}: ` : '';
+    const namePrefix = msg.toolName ? `${esc(msg.toolName)}: ` : '';
     const summaryText = namePrefix + truncateStr(textContent, 120);
     el.appendChild(createMsgHeader(badge, badgeClass, summaryText, msg.timestamp));
     el.appendChild(createMsgBody(renderToolResult(msg)));
