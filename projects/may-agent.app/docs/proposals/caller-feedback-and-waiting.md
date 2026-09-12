@@ -14,6 +14,10 @@ The caller owns the requested outcome; the worker remains responsible for its
 assignment. Reporting a problem does not transfer that responsibility, fulfill
 the request, cancel the Task, or grant permission to change another Task.
 The caller can itself return a problem if the needed decision exceeds its authority.
+For Conversation feedback, the selected report belongs to its originating input
+and Topic. Linking another Topic to the same Task does not make it the caller
+of that input. Ordinary accepted Task outcomes and owner closure retain their
+existing linked-Topic observation behavior.
 
 ```text
 caller asks worker
@@ -574,3 +578,26 @@ The focused run passed 268 tests; Host/SDK type checks, boundary/lint checks and
 canonical design checks passed. Full rebased-source and hosted checks are
 recorded on the PR once complete. Neither source rebasing nor verification
 changes the installation.
+
+The next review reproduced a report-routing defect when two Topics linked the
+same worker: the selection matched an attempt but not its caller. Both live
+admission and recovery now join the selected admission's saved input ID to its
+originating Conversation/Topic. Tests cover another Topic in the same chat and
+another Conversation, then reopen storage and select a newer report. No new
+recipient registry or stored subscription is needed.
+The existing closure test had constructed a request without an originating
+input and expected a linked Topic to receive its error. It now uses real Task
+input admission, preserving the test of report-before-closure, closure
+precedence and transaction rollback under the exact-caller contract.
+
+Full checks at `65c5e9f2` also exposed a reproducible Bun 1.3.14 bundling failure:
+two local runs and hosted Quality each had 2,925 passes, three installation-only
+skips and one failed App import. Collecting the receipt test and bundler test
+together reproduced it even with other tests filtered out; individual bundler
+checks passed. A system-call trace showed reads against reused descriptors for
+a deleted fixture cache directory, reported as TypeBox file `EISDIR` errors.
+The public App bundling check now runs the actual import in a bounded clean
+child process, preserving its exact exported-App assertion. No production
+bundler behavior, retry or test-skip policy changed. The full-tree collection
+reproduction now passes all eight bundler checks. Earlier failed runs remain
+part of the evidence; final gates are recorded on #169.
