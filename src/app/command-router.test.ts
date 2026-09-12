@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
@@ -40,7 +40,6 @@ function fixture(
   const router = attachCommandRouter({
     bus,
     manager: manager as any,
-    projectRoot: root,
     reload,
     restart: () => undefined,
     shutdown: () => undefined,
@@ -55,6 +54,53 @@ function cleanup(root: string, router: { close(): void }): void {
 }
 
 describe("command router", () => {
+  it.each([
+    { path: "projects/legacy", declared: false },
+    { path: "agents/sample/workspace/projects/legacy", declared: false },
+    { path: "projects/legacy", declared: true },
+  ])("leaves project policy to declared routes ($path, declared=$declared)", async ({ path, declared }) => {
+    const f = fixture();
+    const projectDir = join(f.root, path);
+    const project = "---\nstatus: blocked\n---\n# Retained project\n";
+    const discussion = "# Retained discussion\n";
+    const observed: string[] = [];
+    const delivered = Promise.withResolvers<void>();
+    const unsubscribe = f.bus.subscribe((event) => { observed.push(event.type); });
+    const unsubscribeRoute = f.bus.subscribeDurableRoute((event) => {
+      if (declared && event.type === "project.comment.created") {
+        return { accepted: true, by: "app:sample", route: "direct", note: "declared App consumer" };
+      }
+    });
+    // A later passive listener observes completion of synchronous listener work,
+    // including the old Markdown mutation; no sleep guesses at delivery timing.
+    const unsubscribeObserved = f.bus.listen(() => { delivered.resolve(); }, {
+      label: "comment-observed", types: ["project.comment.created"],
+    });
+    try {
+      mkdirSync(projectDir, { recursive: true });
+      writeFileSync(join(projectDir, "project.md"), project);
+      writeFileSync(join(projectDir, "discussion.md"), discussion);
+      const event = f.bus.emit({ type: "project.comment.created", source: "test", owner: "app:sample",
+        data: { project: "sample", projectPath: path, comment: "Review the blocked work" } } as any);
+      await delivered.promise;
+
+      expect(readFileSync(join(projectDir, "project.md"), "utf8")).toBe(project);
+      expect(readFileSync(join(projectDir, "discussion.md"), "utf8")).toBe(discussion);
+      expect(observed).not.toContain("project.nudge");
+      expect(f.runs).toEqual([]);
+      const receipt = getDb(f.root).prepare("SELECT delivery_status, accepted_by, data FROM events WHERE id = ?")
+        .get(Number(event[EVENT_ROW_ID])) as { delivery_status: string; accepted_by: string; data: string };
+      expect(JSON.parse(receipt.data).comment).toBe("Review the blocked work");
+      if (declared) expect(receipt).toMatchObject({ delivery_status: "accepted", accepted_by: "app:sample" });
+      else expect(receipt.delivery_status).not.toBe("accepted");
+    } finally {
+      unsubscribeObserved();
+      unsubscribeRoute();
+      unsubscribe();
+      cleanup(f.root, f.router);
+    }
+  });
+
   it("accepts reload synchronously, shares in-flight redelivery and emits one correlated terminal result", async () => {
     const result = Promise.withResolvers<{ ok: boolean; summary: string }>();
     const started = Promise.withResolvers<void>();

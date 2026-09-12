@@ -1,20 +1,9 @@
-import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { describe, expect, it } from "bun:test";
 import { attachCommandRouter } from "../../src/app/command-router.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import type { SubagentManager } from "../../src/lib/index.js";
 
-const roots: string[] = [];
-
-afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
-});
-
 function harness(overrides: Partial<SubagentManager> = {}) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "router-integration-"));
-  roots.push(projectRoot);
   const bus = new EventBus();
   const emitted: AgentEvent[] = [];
   bus.subscribe((event) => emitted.push(event));
@@ -29,20 +18,11 @@ function harness(overrides: Partial<SubagentManager> = {}) {
   const router = attachCommandRouter({
     bus,
     manager,
-    projectRoot,
     reload: () => ({ ok: true, summary: "[reload] No changes" }),
     restart: () => {},
     shutdown: () => {},
   });
-  return { projectRoot, bus, emitted, router };
-}
-
-async function waitForFile(path: string, timeoutMs = 1_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (!existsSync(path)) {
-    if (Date.now() >= deadline) throw new Error(`Timed out waiting for ${path}`);
-    await Bun.sleep(5);
-  }
+  return { bus, emitted, router };
 }
 
 describe("command router integration", () => {
@@ -129,26 +109,4 @@ describe("command router integration", () => {
     h.router.close();
   });
 
-  it("applies legacy project comments at the filesystem adapter", async () => {
-    const h = harness();
-    const projectPath = "projects/demo";
-    const projectDir = join(h.projectRoot, projectPath);
-    mkdirSync(projectDir, { recursive: true });
-    writeFileSync(
-      join(projectDir, "project.md"),
-      ["---", "id: demo", "owner: tech-lead", "status: waiting", "---", "", "# Demo"].join("\n"),
-    );
-
-    h.bus.emit({
-      type: "project.comment.created",
-      source: "test",
-      owner: "agent:tech-lead",
-      data: { projectPath, comment: "please continue", author: "hao" },
-    });
-    const discussionPath = join(projectDir, "discussion.md");
-    await waitForFile(discussionPath);
-    expect(readFileSync(discussionPath, "utf8")).toContain("please continue");
-    expect(readFileSync(join(projectDir, "project.md"), "utf8")).toContain("status: active");
-    h.router.close();
-  });
 });

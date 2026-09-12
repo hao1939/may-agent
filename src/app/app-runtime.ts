@@ -453,7 +453,6 @@ export async function runAppRuntime(opts: {
   const commandRouter = attachCommandRouter({
     bus,
     manager,
-    projectRoot: opts.projectRoot,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,

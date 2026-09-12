@@ -1,5 +1,3 @@
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
@@ -9,7 +7,6 @@ import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
 export interface CommandRouterOptions {
   bus: EventBus;
   manager: SubagentManager;
-  projectRoot: string;
   reload: () => RuntimeReloadResult | Promise<RuntimeReloadResult>;
   restart: () => void;
   shutdown: () => void;
@@ -89,67 +86,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       .finally(() => {
         if (rowId !== null) inFlightReloads.delete(rowId);
       });
-  }
-
-  function normalizeProjectPath(value: unknown): string | null {
-    if (typeof value !== "string" || !value.trim()) return null;
-    let path = value
-      .trim()
-      .replace(/^\/app\//, "")
-      .replace(new RegExp(`^${options.projectRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/`), "")
-      .replace(/^\.?\//, "")
-      .replace(/\/project\.md$/, "")
-      .replace(/[),.;:]+$/, "")
-      .replace(/\/$/, "")
-      .replace(/^agents\/shared\/projects\//, "projects/")
-      .replace(/^shared\/projects\//, "projects/");
-    if (/^projects\/[^/\s]+$/.test(path)) return path;
-    if (!path.startsWith("agents/")) path = `agents/${path}`;
-    return /^agents\/[^/]+\/workspace\/projects\/[^/\s]+$/.test(path) ? path : null;
-  }
-
-  function projectOwner(projectPath: string, fallback = "tech-lead"): string {
-    try {
-      const parsed = JSON.parse(readFileSync(join(options.projectRoot, projectPath, "project.json"), "utf8")) as {
-        owner?: unknown;
-      };
-      if (nonEmptyString(parsed.owner)) return nonEmptyString(parsed.owner)!;
-    } catch {}
-    try {
-      const content = readFileSync(join(options.projectRoot, projectPath, "project.md"), "utf8");
-      const match = content.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
-      if (match?.[1]) return match[1].trim().replace(/^["']|["']$/g, "");
-    } catch {}
-    return fallback;
-  }
-
-  function appendProjectDiscussion(projectPath: unknown, comment: unknown, source?: string, author?: string): void {
-    const normalized = normalizeProjectPath(projectPath);
-    const text = nonEmptyString(comment);
-    if (!normalized || !text) return;
-    const appPath = normalized.endsWith(".app") ? normalized : `${normalized}.app`;
-    if (existsSync(join(options.projectRoot, appPath, "app.ts"))) return;
-    const projectFile = join(options.projectRoot, normalized, "project.md");
-    if (!existsSync(projectFile)) return;
-    const discussionFile = join(options.projectRoot, normalized, "discussion.md");
-    const entry = `\n### ${author?.trim() || "hao"} - ${new Date().toISOString().slice(0, 10)}\n${text}\n`;
-    if (existsSync(discussionFile)) appendFileSync(discussionFile, entry, "utf8");
-    else writeFileSync(discussionFile, `# Discussion\n\n---read @iter0---\n${entry}`, "utf8");
-    let content = readFileSync(projectFile, "utf8");
-    const frontmatter = content.match(/^---\n([\s\S]*?)\n---/);
-    if (frontmatter && /^status:\s*(blocked|waiting|paused|pending-review)\s*$/im.test(frontmatter[1])) {
-      content = content.replace(
-        frontmatter[0],
-        `---\n${frontmatter[1].replace(/^status:\s*.+$/im, "status: active")}\n---`,
-      );
-      writeFileSync(projectFile, content, "utf8");
-    }
-    bus.emit({
-      type: "project.nudge",
-      source: source ?? "command-router",
-      owner: normalizeEventOwner(projectOwner(normalized)),
-      data: { projectPath: normalized, comment: true, commentText: text },
-    } as any);
   }
 
   function handleSteer(sessionId: unknown, message: unknown, source?: string, event?: unknown): boolean {
@@ -318,24 +254,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     }
   });
 
-  const unsubscribeProjectComment = bus.listen(
-    (event) => {
-      const data = eventData(event);
-      appendProjectDiscussion(
-        data.projectPath,
-        data.comment,
-        eventSource(event),
-        nonEmptyString(data.author) ?? undefined,
-      );
-    },
-    { label: "project-comment-projection", types: ["project.comment.created"] },
-  );
-
   return {
     handleInput,
     close: () => {
       unsubscribeRequiredControls();
-      unsubscribeProjectComment();
     },
   };
 }

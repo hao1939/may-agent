@@ -2782,12 +2782,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const message = error instanceof Error ? error.message : String(error);
         const kind =
           error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
-        const compatibilityRequired =
-          kind === "definitive" &&
-          (message.includes("is not loaded") ||
-            message.includes("does not accept this input") ||
-            message.includes("App input admission is unavailable"));
-        if (!compatibilityRequired) {
+        // Some Apps deliberately accept project comments through a declared
+        // subscription instead of generic message input. A missing App or
+        // unavailable admission is not permission to fall back to a fact.
+        if (kind !== "definitive" || !message.includes("does not accept this input")) {
           return json({ ok: false, triggered: false, error: message }, 503);
         }
       }
@@ -2800,7 +2798,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             project: projectId,
             projectId,
             comment,
-            author: "hao",
+            author: "human",
             requestedOwner: owner,
           },
           { target: { appId: projectId }, idempotencyKey },

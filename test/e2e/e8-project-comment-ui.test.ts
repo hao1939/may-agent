@@ -8,10 +8,10 @@
  *      (`routeTo('/projects/' + 'platform')`) — not a full path.
  *   4. Clicking the row navigates to `/projects/platform` and resolves
  *      `_projectDetailPath` to `projects/platform`.
- *   5. Typing a comment + clicking the submit button POSTs to
- *      `/api/projects/comment`, the success banner appears.
- *   6. discussion.md is appended; project.md status flips from "waiting"
- *      to "active".
+ *   5. Historical Markdown stays readable; comments without a loaded App are
+ *      rejected visibly and the user's text is preserved.
+ *   6. An ordinary App's declared subscription accepts a comment through HTTP
+ *      and runs a Task. Repeating the same submission reuses its receipt.
  *   7. The shipped chat renderer handles Markdown/raw streaming, knowledge
  *      links and escaped fallback without another browser/daemon startup.
  *
@@ -30,6 +30,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
 const E2E_NO_UI = process.env.E2E_NO_UI === "1";
@@ -78,6 +80,8 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
   beforeAll(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
+      fixtureProjects: ["comment.app"],
+      fixtureWorkflows: { may: ["e2e-noop-workflow"] },
       cronJson: { may: [] },
       includePlatformUi: true,
       daemonArgs: ["--cron", "--socket", "--web"],
@@ -182,24 +186,42 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       });
       expect(resolvedPath).toBe("projects/platform");
 
-      // 5. Submit a comment
-      const statusBefore = statusOf(readFileSync(PROJECT_FILE, "utf-8"));
-      expect(statusBefore).toBe("waiting");
+      // 5. A legacy project is history, not an alternative work dispatcher.
+      const projectBefore = readFileSync(PROJECT_FILE, "utf-8");
+      const discussionBefore = readFileSync(DISC_FILE, "utf-8");
+      expect(statusOf(projectBefore)).toBe("waiting");
 
       const stamp = "e8-" + new Date().toISOString();
       const commentText = "ui e2e: " + stamp;
       await page.waitForSelector("#project-comment", { timeout: 5000 });
+      expect(await page.$eval("#project-comment", (el) => el.getAttribute("placeholder")))
+        .not.toContain("auto-resumes");
       await page.type("#project-comment", commentText);
-      const submitFound = await page.evaluate(() => {
-        const btns = Array.from(document.querySelectorAll("button"));
-        const b = btns.find((x) => /addProjectComment/.test(x.getAttribute("onclick") ?? ""));
-        if (b) {
-          (b as HTMLButtonElement).click();
-          return true;
-        }
-        return false;
-      });
-      expect(submitFound).toBe(true);
+      const rejectedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const rejected = await rejectedResponse;
+      expect(rejected.status()).toBe(503);
+      expect(await rejected.json()).toMatchObject({ ok: false, triggered: false });
+      await page.waitForFunction(() => /Failed:.*is not loaded/.test(
+        document.getElementById("project-comment-status")?.textContent ?? ""), { timeout: 5000 });
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(commentText);
+      expect(readFileSync(PROJECT_FILE, "utf-8")).toBe(projectBefore);
+      expect(readFileSync(DISC_FILE, "utf-8")).toBe(discussionBefore);
+
+      // 6. This App uses a declared comment subscription (like the maintenance
+      // App), not generic message input. Keep that supported App policy path.
+      await page.goto(`${base}/projects/comment.app`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => {
+        try { return _projectDetailPath === "projects/comment.app" && !!document.getElementById("project-comment"); }
+        catch { return false; }
+      }, { timeout: 8000 });
+      await page.type("#project-comment", commentText);
+      const acceptedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const accepted = await acceptedResponse;
+      expect(accepted.status()).toBe(202);
+      const receipt = await accepted.json();
+      expect(receipt).toMatchObject({ ok: true, projectId: "comment", eventType: "project.comment.created" });
 
       // Success banner shows
       await page.waitForFunction(
@@ -214,13 +236,28 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         { timeout: 10_000 },
       );
 
-      // 6. File state — discussion appended; status flipped to active.
-      const discAfter = readFileSync(DISC_FILE, "utf-8");
-      expect(discAfter).toContain(commentText);
-
-      // status flip is synchronous in the comment endpoint
-      const projAfter = readFileSync(PROJECT_FILE, "utf-8");
-      expect(statusOf(projAfter)).toBe("active");
+      const replay = await fetch(`${base}/api/projects/comment`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: accepted.request().postData(),
+      });
+      expect(replay.status).toBe(202);
+      expect((await replay.json()).eventId).toBe(receipt.eventId);
+      const db = openSandboxDb(sb.dbPath);
+      try {
+        const store = AppTaskResourceStore.activeFromDb(db, "comment")!;
+        await pollUntil(() => store.readTask("work/comment")?.status.phase === "converged", {
+          timeoutMs: 15_000, intervalMs: 100, description: "browser comment Task result",
+        });
+        expect(store.readTask("work/comment")).toMatchObject({
+          metadata: { generation: 1 }, spec: { outcome: commentText },
+        });
+        const comments = queryEvents(db, { types: ["project.comment.created"] });
+        expect(comments).toHaveLength(1);
+        expect(comments[0].id).toBe(receipt.eventId);
+        expect(JSON.parse(comments[0].data!)).toMatchObject({ comment: commentText, project: "comment" });
+        expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
+        expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
+      } finally { db.close(); }
 
       // Shipped chat.js, in the same real browser: no copied renderer or DOM.
       // The page is interactive before its async Markdown dependency arrives.
