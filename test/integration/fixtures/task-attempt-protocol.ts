@@ -156,14 +156,14 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       spawnWorker: () =>
         scriptedWorker(`
 
-          const until = Date.now() + 300;
-          while (Date.now() < until) {}
+          const until = performance.now() + 300;
+          while (performance.now() < until) {}
           process.send({kind:"result",dependentTaskIds:[]});
         `),
     });
 
-    const startedAt = Date.now();
-    const parentTurn = new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - startedAt), 20));
+    const startedAt = performance.now();
+    const parentTurn = new Promise<number>((resolve) => setTimeout(() => resolve(performance.now() - startedAt), 20));
     const attempt = execute(request);
 
     expect(await parentTurn).toBeLessThan(150);
@@ -180,8 +180,8 @@ const scenarios: Record<string, () => void | Promise<void>> = {
     bus.subscribe(() => {
       observed += 1;
       if (observed === 1) setTimeout(() => resolveAfterFirst(observed), 10);
-      const until = Date.now() + 4;
-      while (Date.now() < until) {}
+      const until = performance.now() + 4;
+      while (performance.now() < until) {}
     });
     const execute = createTaskAttemptProcessExecutor({
       bus,
@@ -195,8 +195,8 @@ const scenarios: Record<string, () => void | Promise<void>> = {
         `),
     });
 
-    const startedAt = Date.now();
-    const parentTurn = new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - startedAt), 20));
+    const startedAt = performance.now();
+    const parentTurn = new Promise<number>((resolve) => setTimeout(() => resolve(performance.now() - startedAt), 20));
     const attempt = execute(request);
 
     expect(await parentTurn).toBeLessThan(180);
@@ -215,15 +215,15 @@ const scenarios: Record<string, () => void | Promise<void>> = {
     bus.subscribe((event) => {
       observed.push(String(event.type));
       if (observed.length === 1) setTimeout(() => resolveAfterFirst(observed.length), 0);
-      const until = Date.now() + 4;
-      while (Date.now() < until) {}
+      const until = performance.now() + 4;
+      while (performance.now() < until) {}
     });
     const worker = (type: string) =>
       scriptedWorker(`
 
         const base = ${type === "info" ? 100 : 200};
-        const until = Date.now() + 50;
-        while (Date.now() < until) {}
+        const until = performance.now() + 50;
+        while (performance.now() < until) {}
         for (let index = 1; index <= 16; index += 1) {
           process.send({kind:"event",eventId:base+index,event:{type:"${type}",message:"working"}});
         }
