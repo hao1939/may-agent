@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["agent-operated-improvement.ts", "../../src/types/*.d.ts"],
+  "include": ["agent-operated-improvement.ts", "task-improvement.ts", "../../src/types/*.d.ts"],
   "exclude": []
 }
