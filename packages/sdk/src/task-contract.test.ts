@@ -473,6 +473,20 @@ describe("project task handler contract", () => {
     });
   });
 
+  it.each(["achieve", "maintain"])("rejects retired mode %s in Task update actions", (mode) => {
+    const output = {
+      state: "converged",
+      summary: "Revise the assignment",
+      evidence: [],
+      actions: [{ kind: "update-task", taskId: "work/child", expectedGeneration: 1, mode }],
+    };
+    expect(Check(taskAgentResultSchema, output)).toBeFalse();
+    expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
+      ok: false,
+      error: "actions[0].mode is retired; all Tasks use one lifecycle",
+    });
+  });
+
   it("rejects the removed expectedRevision action field", () => {
     expect(
       admitTaskReconcileResult(
