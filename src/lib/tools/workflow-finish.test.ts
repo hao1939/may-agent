@@ -23,7 +23,7 @@ describe("workflow finish contract", () => {
       const call = toolCall({
         status: "success",
         summary: "Review complete",
-        verification_evidence: ["test evidence"],
+        verification_facts: ["test facts"],
         result: { verdict: "pass" },
       });
       const params = validateToolArguments(tool, call);
@@ -46,7 +46,7 @@ describe("workflow finish contract", () => {
       expect(() =>
         validateToolArguments(
           tool,
-          toolCall({ status: "success", summary: "Review complete", verification_evidence: ["test evidence"] }),
+          toolCall({ status: "success", summary: "Review complete", verification_facts: ["test facts"] }),
         ),
       ).toThrow("result");
     } finally {

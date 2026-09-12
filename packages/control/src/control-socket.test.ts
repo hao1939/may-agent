@@ -501,7 +501,7 @@ describe("control socket protocol", () => {
       status: "waiting",
       generation: 2,
       outcome: "Review the docs",
-      summary: "Waiting for evidence",
+      summary: "Waiting for facts",
     };
     const core = createCore({
       listAppTasks: (appId, options) => {
@@ -1012,7 +1012,7 @@ describe("control socket protocol", () => {
       type: "project.task.executor.progress",
       data: {
         stage: "intermediate",
-        message: "Inspecting evidence",
+        message: "Inspecting facts",
         emission: { appId: "other", taskId: "review/docs" },
       },
     });

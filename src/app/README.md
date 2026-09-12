@@ -42,7 +42,7 @@ cross-component and process boundaries.
 | Input admission | `core/inbox/app-inbox-host.ts`, `core/state/app-inbox-store.ts`, `core/state/app-event-admission-store.ts`; frozen routes and durable input identities | `composition/app-inbox-runtime.ts`; inbox admission, routing and failure tests |
 | Conversation | `conversations/context.ts`, `conversations/turn-agent.ts` | `composition/conversation-task-turn.ts`; turn-agent and Task runtime tests; [guide](conversations/README.md) |
 | Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-task-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
-| Atomic Task attachment | `core/state/inbox.ts`: `admitTaskRequest()` | `core/tasks/app-task-capability.ts`; `core/state/inbox.test.ts` |
+| Atomic Task attachment | `core/state/inbox.ts`: `admitTaskInput()` | `core/tasks/app-task-capability.ts`; `core/state/inbox.test.ts` |
 | Atomic input completion | `core/state/inbox.ts`: `completeTaskInput()` projects an exact Task answer; Conversation Request closure belongs to fenced Turn settlement | `core/inbox/app-inbox-host.ts`; `core/state/conversation-requests.test.ts` and `core/inbox/app-inbox-host.test.ts` |
 | Task definition preparation | `core/tasks/runtime-definition.ts`: descriptors, seed authority and project read models | Publication/rollback stay in `core/tasks/app-task-runtime.ts`; [Task lifecycle reading path](core/tasks/README.md#trace-one-task) |
 | Task dispatch | `core/tasks/controller.ts`, `core/tasks/queue.ts`; `core/scheduling/host-capacity.ts`; `core/tasks/app-task-recovery.ts` | `core/tasks/app-task-runtime.ts`; controller/queue/recovery tests |

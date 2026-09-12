@@ -9,7 +9,7 @@ import { admitConversationTaskInput, conversationTaskId, conversationTaskIntent 
 /**
  * Offline upgrade only. The operator must stop the old Host and every worker
  * before calling this operation; SQLite lease expiry cannot prove quiescence.
- * Retained execution is evidence for safe redo, never a decision to replay.
+ * Retained execution is facts for safe redo, never a decision to replay.
  */
 export function migrateConversationInputs(
   config: AppTaskContext,
@@ -18,7 +18,7 @@ export function migrateConversationInputs(
   const { app, conversationId } = input;
   if (!input.oldRuntimeStopped)
     throw new Error("Conversation cutover requires the old Host and all workers to be stopped");
-  if (app.id !== config.resourceStore.appId || !app.requests || !conversationId.trim())
+  if (app.id !== config.resourceStore.appId || !app.conversation || !conversationId.trim())
     throw new Error("Conversation cutover requires its exact App and Conversation");
   const store = config.resourceStore;
   const db = store.db;
@@ -33,7 +33,7 @@ export function migrateConversationInputs(
       .all(app.id, conversationId);
     const items = rows
       .map((row) => getAppInboxItem(db, String(row.id))!)
-      .filter((item) => !app.requests!.inputKinds || app.requests!.inputKinds.includes(item.input.kind));
+      .filter((item) => !app.conversation!.inputKinds || app.conversation!.inputKinds.includes(item.input.kind));
     const generations = new Map(rows.map((row) => [String(row.id), Number(row.lease_generation)]));
     if (!items.length) return { taskId, migrated: 0, pending: 0 };
     if (store.readTask(taskId) || store.isCancelled(taskId))
@@ -68,7 +68,7 @@ export function migrateConversationInputs(
           handler: "retired:conversation-inbox",
           runtimeId: "retired:conversation-inbox",
           state: failed ? "failed" : redo ? "interrupted" : "completed",
-          reason: "Execution evidence imported during offline Conversation cutover",
+          reason: "Execution facts imported during offline Conversation cutover",
           failureReason: redo ? "LegacyConversationInterrupted" : undefined,
           summary,
           sessionId: item.sessionId,
@@ -105,7 +105,7 @@ export function migrateConversationInputs(
         ...item,
         conversationId,
         intent: conversationTaskIntent(config),
-        conversationInputKinds: app.requests!.inputKinds,
+        conversationInputKinds: app.conversation!.inputKinds,
       });
     }
     return { taskId, migrated: items.length, pending };

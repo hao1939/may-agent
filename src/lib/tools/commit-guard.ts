@@ -292,7 +292,7 @@ export function createCommitGuard(
             : "") +
           `If these changes are intentional, commit them with a descriptive message:\n` +
           `  cd ${repo.dir} && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
-          `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for evidence-first debugging"\n` +
+          `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for facts-first debugging"\n` +
           `Bad messages: "update files", "changes"\n\n` +
           `Finish may continue, but this signal should be reviewed.`,
       };

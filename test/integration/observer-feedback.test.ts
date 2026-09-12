@@ -14,7 +14,7 @@ const observer: AppObserver = {
             {
               type: "provider.observed",
               target: { appId: "sample", taskId: "work/42" },
-              data: { revision: "r1", evidence: ["https://example.org/pull/42"] },
+              data: { revision: "r1", facts: ["https://example.org/pull/42"] },
             },
           ],
       nextObservation: "r1",
@@ -55,7 +55,7 @@ it("recovers persisted-but-unadmitted observer input on its original event and e
     await f.runTask("work/42");
     expect(f.attempts.map((attempt) => attempt.task.id)).toEqual(["work/42"]);
     expect(f.attempts[0]!.events.items.map((item) => item.eventId)).toEqual([row.id]);
-    expect(f.attempts[0]!.events.items[0]!.event.data).toMatchObject({ evidence: ["https://example.org/pull/42"] });
+    expect(f.attempts[0]!.events.items[0]!.event.data).toMatchObject({ facts: ["https://example.org/pull/42"] });
   } finally {
     await f.close();
   }
@@ -90,14 +90,14 @@ it("retains a new observer revision for a busy Task instead of starting a second
     await f.scan();
     await f.runTask("work/42");
     expect(f.attempts).toHaveLength(1);
-    finish.resolve({ state: "converged", summary: "Reviewed first revision", evidence: ["fixture:r1"] });
+    finish.resolve({ state: "converged", summary: "Reviewed first revision", facts: ["fixture:r1"] });
     await active;
     await f.runTask("work/42");
     expect(f.attempts).toHaveLength(2);
     expect(f.attempts[1]!.events.items.map((item) => item.event.data.revision)).toEqual(["r2"]);
     expect(Object.keys(f.snapshot().resources ?? {})).toEqual(["work/42"]);
   } finally {
-    finish.resolve({ state: "converged", summary: "Fixture teardown", evidence: [] });
+    finish.resolve({ state: "converged", summary: "Fixture teardown", facts: [] });
     await f.close();
   }
 });

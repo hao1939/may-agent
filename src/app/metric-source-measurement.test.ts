@@ -336,12 +336,12 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("preserves evidence columns returned by a source query", async () => {
+  it("preserves facts columns returned by a source query", async () => {
     const db = getDb(persistDir);
     db.run(
       `INSERT INTO metrics
          (id, name, type, owner, threshold, priority, status, source_query, measure_interval, updated_at, alert_op)
-       VALUES ('query.evidence', 'Query evidence', 'gauge', 'evaluator', 0.2, 'P3', 'active',
+       VALUES ('query.evidence', 'Query facts', 'gauge', 'evaluator', 0.2, 'P3', 'active',
                ?, 300000, 0, '<')`,
       [
         `SELECT 0.75 AS value,

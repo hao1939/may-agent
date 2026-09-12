@@ -15,6 +15,6 @@ export async function execute(ctx: WorkflowContext<string>): Promise<ExecutionRe
   return ctx.done("e2e-noop-workflow completed", {
     state: "converged",
     summary: "Scheduled workflow verified",
-    evidence: ["e2e.workflow_ran"],
+    facts: ["e2e.workflow_ran"],
   });
 }

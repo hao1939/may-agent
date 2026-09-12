@@ -4,7 +4,7 @@ import { readWorkflowDiagnostics } from "./workflow-diagnostics.js";
 const MAX_LINKED_EXECUTIONS = 100;
 
 /** Inspect one exact execution without metrics, Event subscribers, or an agent. */
-export function readWorkflowEvidence(persistDir: string, runId: string) {
+export function readWorkflowFacts(persistDir: string, runId: string) {
   const run = getWorkflowRun(persistDir, runId);
   if (!run) return null;
   const steps = getWorkflowStepSessions(persistDir, runId, MAX_LINKED_EXECUTIONS + 1);

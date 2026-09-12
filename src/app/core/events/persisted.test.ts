@@ -8,7 +8,7 @@ import { closeDb, getDb } from "../../../lib/requests.js";
 import { EVENT_ROW_ID, EventBus } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
 
-test("persisted event replay uses verified full evidence, never a truncated or corrupt body", () => {
+test("persisted event replay uses verified full facts, never a truncated or corrupt body", () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-replay-"));
   try {
     const bus = new EventBus();

@@ -13,6 +13,7 @@ import {
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
+  reportAppTaskFailure,
 } from "./app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -23,7 +24,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(mode: "achieve" | "maintain" = "maintain") {
+function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-accepted-result-"));
   roots.push(root);
   const databasePath = join(root, "host.sqlite");
@@ -40,7 +41,6 @@ function fixture(mode: "achieve" | "maintain" = "maintain") {
     parentId: "root",
     outcome: "Return the requested measurement",
     acceptance: ["Measurement is verified"],
-    mode,
   };
   observeAppTaskIntent(config, {
     intent,
@@ -66,22 +66,22 @@ const measured = {
   summary: "Verified first measurement",
   response: "The measurement is 17.",
   result: { sample: "first", value: 17 },
-  evidence: ["fixture:measurement:first"],
-  acceptanceBasis: { method: "deterministic" as const, evidence: ["fixture:check:first"] },
+  facts: ["fixture:measurement:first"],
+  acceptanceBasis: { method: "deterministic" as const, facts: ["fixture:check:first"] },
 };
 
-describe("accepted Task outcome evidence", () => {
+describe("accepted Task outcome facts", () => {
   it("retains an exact accepted result after later cycles and SQLite reopen", () => {
     const { config, claim, reopen } = fixture();
     const first = claim();
     expect(completeAppTask(config, first, measured).status).toBe("applied");
-    // Exceed the bounded context window: exact evidence must not mean latest state.
+    // Exceed the bounded context window: exact facts must not mean latest state.
     for (let cycle = 2; cycle <= 19; cycle++) {
       recordAppTaskTrigger(config, "work", { type: "sample.measure", eventId: cycle, data: { sample: cycle } });
       completeAppTask(config, claim(), {
         summary: `Verified measurement ${cycle}`,
         result: { sample: cycle, value: cycle },
-        evidence: [`fixture:${cycle}`],
+        facts: [`fixture:${cycle}`],
       });
     }
     expect(config.resourceStore.readTask("work")?.status.result).toEqual({ sample: 19, value: 19 });
@@ -97,7 +97,7 @@ describe("accepted Task outcome evidence", () => {
     expect(restored.resourceStore.listRecoveryCandidates().items).toEqual([]);
   });
 
-  it("commits accepted evidence atomically with the Task result", () => {
+  it("commits accepted facts atomically with the Task result", () => {
     const { config, claim } = fixture();
     const current = claim();
     const before = config.resourceStore.readTask("work");
@@ -124,7 +124,7 @@ describe("accepted Task outcome evidence", () => {
     completeAppTask(config, corrected, {
       summary: "Corrected measurement",
       result: { value: 23 },
-      evidence: ["fixture:corrected"],
+      facts: ["fixture:corrected"],
     });
     expect(config.resourceStore.readAttempt(corrected.attemptId)).toMatchObject({
       acceptedResult: { state: "converged", result: { value: 23 } },
@@ -138,7 +138,7 @@ describe("accepted Task outcome evidence", () => {
       disposition: "waiting",
       summary: "The external sample is unavailable",
       result: { missing: "sample" },
-      evidence: ["fixture:sample:pending"],
+      facts: ["fixture:sample:pending"],
       conditions: [
         {
           id: "sample-ready",
@@ -152,7 +152,7 @@ describe("accepted Task outcome evidence", () => {
     });
     const restored = reopen();
     expect(restored.resourceStore.readAttempt(waiting.attemptId)).toMatchObject({
-      acceptedResult: { state: "waiting", result: { missing: "sample" }, evidence: ["fixture:sample:pending"] },
+      acceptedResult: { state: "waiting", result: { missing: "sample" }, facts: ["fixture:sample:pending"] },
     });
     expect(restored.resourceStore.readTask("work")?.status.phase).toBe("waiting");
     expect(restored.resourceStore.readReceipt("work")).toBeNull();
@@ -167,7 +167,6 @@ describe("accepted Task outcome evidence", () => {
         parentId: "work",
         outcome: "Measure the sample",
         acceptance: ["Measurement is verified"],
-        mode: "maintain",
       },
       appAgent: "owner",
     });
@@ -185,7 +184,7 @@ describe("accepted Task outcome evidence", () => {
     const { config, claim, intent } = fixture();
     const first = claim();
     completeAppTask(config, first, measured);
-    expect(completeAppTask(config, first, { summary: "Duplicate changed result", evidence: [] }).status).toBe("stale");
+    expect(completeAppTask(config, first, { summary: "Duplicate changed result", facts: [] }).status).toBe("stale");
     recordAppTaskTrigger(config, "work", { type: "sample.measure", eventId: 2, data: {} });
     const second = claim();
     observeAppTaskIntent(config, { intent: { ...intent, input: { revised: true } }, appAgent: "owner" });
@@ -209,8 +208,8 @@ describe("accepted Task outcome evidence", () => {
     expect(config.resourceStore.readTrigger("work")).toBeNull();
   });
 
-  it("retains finite work's accepted evidence while open and after explicit owner closure", () => {
-    const { config, claim, reopen } = fixture("achieve");
+  it("retains finite work's accepted facts while open and after explicit owner closure", () => {
+    const { config, claim, reopen } = fixture();
     const current = claim();
     completeAppTask(config, current, measured);
     const restored = reopen();
@@ -220,7 +219,7 @@ describe("accepted Task outcome evidence", () => {
       summary: measured.summary,
       response: measured.response,
       result: measured.result,
-      evidence: measured.evidence,
+      facts: measured.facts,
     });
     expect(restored.resourceStore.readReceipt("work")).toBeNull();
     expect(restored.resourceStore.isCancelled("work")).toBe(false);
@@ -247,7 +246,7 @@ describe("accepted Task outcome evidence", () => {
   });
 
   it("does not record cancelled execution as an accepted result", () => {
-    const { config, claim } = fixture("achieve");
+    const { config, claim } = fixture();
     const current = claim();
     const resource = config.resourceStore.readTask("work")!;
     cancelAppTask(config, {
@@ -260,4 +259,40 @@ describe("accepted Task outcome evidence", () => {
     expect(completeAppTask(config, current, measured).status).toBe("stale");
     expect(config.resourceStore.readAttempt(current.attemptId)).not.toHaveProperty("acceptedResult");
   });
+});
+
+it.each([
+  ["achieve", "9a59dba0d862f7b9914c126ba0caa52300e1e2bb59fd6c3564a72c06c0bc9da9"],
+  ["maintain", "259f1b087aac89483676d589afad0b98f78fb46b605dadefd1d58292d1cf4dd5"],
+])("reads retained %s work without restoring a public mode or losing its report", (mode, oldHash) => {
+  const f = fixture();
+  observeAppTaskIntent(f.config, { intent: f.intent, appAgent: "owner", admissionKey: "original" });
+  const claim = f.claim();
+  reportAppTaskFailure(f.config, claim, { summary: "Source unavailable", facts: ["source:offline"] });
+  const db = f.config.resourceStore.db;
+  // Hashes come from the prior Host; the compatibility test does not copy hashing code.
+  db.prepare("UPDATE app_tasks SET resource_json = json_set(resource_json, '$.spec.mode', ?) WHERE task_id = 'work'").run(mode);
+  db.prepare("UPDATE app_task_admissions SET admission_json = json_set(admission_json, '$.specHash', ?) WHERE task_id = 'original'").run(oldHash);
+  db.prepare("UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.acceptedResult.state', 'stopped') WHERE attempt_id = ?").run(claim.attemptId);
+  // Keep nested App payloads and original event bodies opaque during the rename.
+  db.prepare(`UPDATE app_tasks SET resource_json = json_remove(json_set(resource_json,
+    '$.status.evidence', json_extract(resource_json, '$.status.facts')), '$.status.facts') WHERE task_id = 'work'`).run();
+  db.prepare(`UPDATE app_task_attempts SET attempt_json = json_remove(json_set(attempt_json,
+    '$.acceptedResult.evidence', json_extract(attempt_json, '$.acceptedResult.facts'),
+    '$.acceptedResult.result', json('{"evidence":"App-owned field"}')), '$.acceptedResult.facts') WHERE attempt_id = ?`).run(claim.attemptId);
+  const config = f.reopen();
+  expect(config.resourceStore.readTask("work")?.status.facts).toEqual(["source:offline"]);
+  expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.result).toEqual({ evidence: "App-owned field" });
+  expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).not.toHaveProperty("evidence");
+  expect(config.resourceStore.readTask("work")?.spec).not.toHaveProperty("mode");
+  expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({
+    state: "incomplete", summary: "Source unavailable", facts: ["source:offline"],
+  });
+  expect(config.resourceStore.readSnapshot().attempts?.[claim.attemptId]?.acceptedResult?.state).toBe("incomplete");
+  expect(observeAppTaskIntent(config, { intent: f.intent, appAgent: "owner", admissionKey: "original" }))
+    .toMatchObject({ generation: 1, changed: false });
+  expect(() => observeAppTaskIntent(config, { intent: { ...f.intent, outcome: "Different work" }, appAgent: "owner", admissionKey: "original" }))
+    .toThrow("different desired work");
+  expect(() => observeAppTaskIntent(config, { intent: { ...f.intent, mode } as typeof f.intent, appAgent: "owner" }))
+    .toThrow("Task mode is retired");
 });

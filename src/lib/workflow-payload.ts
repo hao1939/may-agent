@@ -1,14 +1,14 @@
 import { redactTranscriptSecrets } from "./persistence.js";
 import { types } from "node:util";
 
-// Enough for a small structured evidence packet, not a transcript or file dump.
+// Enough for a small structured facts packet, not a transcript or file dump.
 // Larger outputs should carry artifact references instead of inline contents.
 export const MAX_WORKFLOW_PAYLOAD_BYTES = 64 * 1024;
 // Deep structures are not small inspection packets even when their leaves are tiny.
 const MAX_WORKFLOW_PAYLOAD_DEPTH = 32;
 type UnavailableReason = "too-large" | "not-json" | "sensitive-key";
 
-export type WorkflowPayload = { kind: "output" | "evidence" } & (
+export type WorkflowPayload = { kind: "output" | "facts" } & (
   { state: "available"; value: unknown; redacted: boolean } | { state: "unavailable"; reason: UnavailableReason }
 );
 
@@ -76,7 +76,7 @@ export function retainWorkflowPayload(kind: WorkflowPayload["kind"], value: unkn
         if (!Object.hasOwn(item, key)) continue;
         if (count++) append(",");
         if (inspectText(key) !== key) {
-          // Renaming could collapse distinct keys and misrepresent evidence.
+          // Renaming could collapse distinct keys and misrepresent facts.
           reason = "sensitive-key";
           throw new Error("Sensitive property name");
         }

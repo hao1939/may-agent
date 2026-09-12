@@ -254,7 +254,7 @@ describe("telegram reply e2e", () => {
     });
     const claim = claimAppInboxItem(db, "item-80", "test", 1_000, 2);
     if (!claim) throw new Error("expected May request claim");
-    completeAppInboxClaim(db, claim, { summary: "Reviewed.", response: "Reviewed.", evidence: ["test:accepted"] }, 3);
+    completeAppInboxClaim(db, claim, { summary: "Reviewed.", response: "Reviewed.", facts: ["test:accepted"] }, 3);
     bus.emit({
       type: "conversation.updated",
       source: "app-inbox",

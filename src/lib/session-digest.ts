@@ -1,5 +1,5 @@
 /**
- * Session digests — explicit evidence from lifecycle events and Host handlers.
+ * Session digests — explicit facts from lifecycle events and Host handlers.
  *
  * Captures what happened, why, and what's still open at each lifecycle event.
  * Digests are stored in the session_digests DB table (append-only per session).
@@ -203,7 +203,7 @@ export function classifyDigest(
 
 /**
  * Append a Host handler's supplied observation and optional recovery annotation.
- * Omitted evidence stays unknown. The async return is retained for handler callers.
+ * Omitted facts stays unknown. The async return is retained for handler callers.
  */
 export async function upsertDigest(
   persistDir: string,
