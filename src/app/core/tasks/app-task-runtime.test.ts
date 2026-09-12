@@ -2253,6 +2253,7 @@ describe("canonical App task runtime", () => {
       let requestId = "";
       let succeed = false;
       let failures = 0;
+      const diagnostics: AgentEvent[] = [];
       const inputs: Parameters<TaskExecutor>[0]["events"][] = [];
       const app = defineApp({
         ...definition(),
@@ -2263,6 +2264,10 @@ describe("canonical App task runtime", () => {
         } }),
       });
       const install = async () => {
+        bus.listen((event) => {
+          if (event.type === "project.task.reconcile.skipped" || event.type === "project.task.reconciled")
+            diagnostics.push(structuredClone(event));
+        });
         await installCoreTaskRuntimes({
           ...options(f, bus), installControllers: false,
           appRegistrySnapshot: { id: "feedback", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
@@ -2357,8 +2362,14 @@ describe("canonical App task runtime", () => {
       await host!.recoverTaskResults();
       await recoverInstalledAppTasks(bus);
       expect(condition()?.status.state).toBe("true");
+      // Keep the claim preconditions if the caller unexpectedly fails to resume.
+      const beforeFinal = {
+        now: Date.now(),
+        task: loadedTaskConfig(f).resourceStore.readTask("work/caller"),
+        trigger: loadedTaskConfig(f).resourceStore.readTrigger("work/caller"),
+      };
       await run("work/caller");
-      expect(inputs).toHaveLength(3);
+      expect(inputs, JSON.stringify({ route, beforeFinal, now: Date.now(), diagnostics })).toHaveLength(3);
       expect(inputs[2]!.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done")?.event.data)
         .toMatchObject({ id: requestId, status: "done", result: { score: 0.92 } });
       for (const input of inputs)
