@@ -1,12 +1,15 @@
+import type { AppDefinition } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import type { AppDefinition } from "@may-agent/sdk";
 import { getDb } from "../../../lib/db/connection.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { appTaskContext } from "./app-task-reconciler.js";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import type { TaskTree } from "./app-task-store.js";
+import { cacheTaskSnapshots, type AppTaskContext } from "./app-task-store.js";
+import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
 // Prepare Task definitions and their existing resource/read-model bindings.
 // Controller publication, rollback and execution remain in app-task-runtime.ts.
@@ -208,4 +211,25 @@ export function standaloneAppTaskAdmissionDescriptors(input: {
     descriptors.set(descriptor.id, descriptor);
   }
   return descriptors;
+}
+
+export function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnapshot["entries"] {
+  return opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
+}
+
+const appTaskConfigs = new WeakMap<AppTaskRuntimeDescriptor, AppTaskContext>();
+
+export function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskContext {
+  const existing = appTaskConfigs.get(descriptor);
+  if (existing) return existing;
+  const config = appTaskContext({
+    appDir: descriptor.appDir,
+    projectDir: descriptor.projectDir,
+    agent: descriptor.agent,
+    maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
+    resourceStore: descriptor.resourceStore,
+  });
+  cacheTaskSnapshots(config);
+  appTaskConfigs.set(descriptor, config);
+  return config;
 }

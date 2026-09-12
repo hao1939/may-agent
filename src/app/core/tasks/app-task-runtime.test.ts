@@ -28,7 +28,7 @@ import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
-  admitTaskAppDependencies,
+  
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
@@ -41,6 +41,7 @@ import {
   recoverInstalledAppTasks,
   retryLoadedFailedAppTask,
 } from "./app-task-runtime.js";
+import { admitTaskAppDependencies } from "./dependency-admission.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
