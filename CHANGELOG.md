@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0](https://github.com/hao1939/may-agent/compare/v1.1.0...v2.0.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **tasks:** unify conversation and delegated work execution ([#158](https://github.com/hao1939/may-agent/issues/158))
+
+### Bug Fixes
+
+* **agents:** distinguish finish reports from behavior adoption ([#161](https://github.com/hao1939/may-agent/issues/161)) ([4598a53](https://github.com/hao1939/may-agent/commit/4598a53b84818daa59d020b30c79406fdd64c6d5))
+* **workflows:** cancel cooperative I/O and retain returned evidence ([#159](https://github.com/hao1939/may-agent/issues/159)) ([fa9b683](https://github.com/hao1939/may-agent/commit/fa9b683b01716251d0ec52c3166a9d06493a699b))
+
+
+### Code Refactoring
+
+* **tasks:** unify conversation and delegated work execution ([#158](https://github.com/hao1939/may-agent/issues/158)) ([f5d5a53](https://github.com/hao1939/may-agent/commit/f5d5a5357b2330285b70099d2d8f76339d875b9b))
+
 ## [1.1.0](https://github.com/hao1939/may-agent/compare/v1.0.0...v1.1.0) (2026-09-11)
 
 
