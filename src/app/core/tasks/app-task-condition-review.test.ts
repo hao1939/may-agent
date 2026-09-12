@@ -94,6 +94,36 @@ afterEach(() => {
 });
 
 describe("App task Condition review checkpoint", () => {
+  it("keeps a legacy observed report quiet after reopen but admits a newer revision once", () => {
+    const config = fixture();
+    try {
+      const id = "app-request:sample";
+      deferAppTask(config, claim(config), {
+        disposition: "waiting", summary: "Await the sample",
+        conditions: [{ id, type: "app.dependency.updated", subject: "id:sample",
+          expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 60_000 }],
+      });
+      const feedback = (reportRevision?: number) => ({ type: "app.dependency.updated", data: {
+        id: "sample", kind: "app", status: "blocked", summary: "Access is missing",
+        ...(reportRevision === undefined ? {} : { reportRevision }),
+      } });
+      const wake = [{ conditionId: id, taskId: "human-request" }];
+      expect(trackAppTaskConditionEventForTasks(config, feedback(), ["human-request"])).toEqual(wake);
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Still awaiting the sample" });
+      expect(readTaskSnapshot(config).conditions?.[id]?.status.observed).toMatchObject({ state: "blocked" });
+      config.resourceStore.close();
+      config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+      expect(trackAppTaskConditionEventForTasks(config, feedback(1), ["human-request"])).toEqual([]);
+      expect(trackAppTaskConditionEventForTasks(config, feedback(2), ["human-request"])).toEqual(wake);
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Reviewed the new report" });
+      for (const revision of [1, 2])
+        expect(trackAppTaskConditionEventForTasks(config, feedback(revision), ["human-request"])).toEqual([]);
+      expect(readTaskSnapshot(config).conditions?.[id]?.status).toMatchObject({ state: "false", observed: { reportRevision: 2 } });
+    } finally {
+      config.resourceStore.close();
+    }
+  });
+
   it.each(["redeclared", "retained"])("preserves independent %s waits and future deadlines across input and restart", (route) => {
     const config = fixture();
     const conditions = [

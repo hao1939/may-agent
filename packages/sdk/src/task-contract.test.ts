@@ -28,6 +28,28 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("agrees with the finish schema on quiet waits and explicit evidence-backed reports", () => {
+    for (const state of ["waiting", "stopped", "converged", "needs-agent"] as const) {
+      for (const evidence of [[], ["source:access-denied"]]) {
+        for (const report of [undefined, true, false]) {
+          const output = { state, summary: "Access is missing", evidence,
+            ...(report === undefined ? {} : { report }) };
+          const valid = state !== "needs-agent" && report !== false &&
+            (report !== true || (state !== "converged" && evidence.length > 0)) &&
+            (state !== "stopped" || evidence.length > 0);
+          expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
+          const admitted = admitTaskReconcileResult(output, { allowNeedsAgent: false });
+          expect({ output, valid: admitted.ok }).toEqual({ output, valid });
+          if (admitted.ok) {
+            expect(admitted.result).toMatchObject(output);
+            expect(Check(taskAgentResultSchema, admitted.result)).toBe(true);
+            expect(admitTaskReconcileResult(admitted.result, { allowNeedsAgent: false })).toEqual(admitted);
+          }
+        }
+      }
+    }
+  });
+
   it("exposes the admitted Condition owner syntax to the agent before finish", () => {
     const owners = [
       ["human", true],

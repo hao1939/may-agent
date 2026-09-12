@@ -125,6 +125,19 @@ describe("prepared completion contract", () => {
     expect(result.terminate).toBe(true);
   });
 
+  it.each(["waiting", "stopped"])("rejects an empty %s report before finish and accepts its correction", async (state) => {
+    const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
+    const args = { ...review, status: "partial", result: {
+      state, report: true, summary: "Access is missing", evidence: [] as string[],
+    } };
+    expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+    args.result.evidence.push("source:access-denied");
+    const ctx = context(args);
+    const params = validateToolArguments(finish, ctx.toolCall);
+    expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
+    expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
+  });
+
   it("does not terminate successful attempts that lack evidence or claim nonexistent files", async () => {
     const { finish, context } = prepare();
     for (const [args, error] of [

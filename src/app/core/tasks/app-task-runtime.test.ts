@@ -187,7 +187,7 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
 }
 
 describe("caller feedback PoC", () => {
-  it.each(["quiet", "stopped-then-wait", "report-wait", "throw", "invalid", "throw-then-wait"] as const)(
+  it.each(["quiet", "stopped-then-wait", "report-wait", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
     "returns exact feedback and recovers the original answer (%s)",
     async (scenario) => {
       const f = fixture();
@@ -234,8 +234,12 @@ describe("caller feedback PoC", () => {
               if (ready) return { state: "converged", summary: "Observed sample", result: { score: 0.92 }, evidence: ["sample:one"] };
               if (scenario === "stopped-then-wait" && workerCalls === 1)
                 return { state: "stopped", summary: reportSummary, evidence: ["sample:access-denied"] };
-              if (scenario === "throw" || (scenario === "throw-then-wait" && workerCalls === 1))
+              if (scenario === "throw" || ((scenario === "throw-then-wait" || scenario === "throw-then-report-retry") && workerCalls === 1))
                 throw new Error("Synthetic provider connection failed");
+              if (scenario === "throw-then-report-retry") return {
+                state: "stopped", summary: "Access is missing; please arrange it while I retry",
+                evidence: ["sample:access-denied"], ...(workerCalls === 2 ? { report: true as const } : {}),
+              };
               if (scenario === "invalid") return {
                 state: "converged", summary: "Untrusted result must not escape", evidence: [],
                 unexpectedField: true,
@@ -316,14 +320,17 @@ describe("caller feedback PoC", () => {
           expect(feedback?.event.data).toMatchObject({ id: requestId, status: "blocked", summary: first!.summary });
           expect(callerInputs[1]!.waits.open[0]?.state).toBe("false");
         }
-        if (scenario === "throw-then-wait" || scenario === "stopped-then-wait") {
+        if (scenario === "throw-then-wait" || scenario === "stopped-then-wait" || scenario === "throw-then-report-retry") {
           setSystemTime(loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
           await run("work/collector");
           await host!.recoverTaskResults();
-          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("waiting");
-          if (scenario === "throw-then-wait") {
-            expect(report()?.summary).toBe(reportSummary);
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase)
+            .toBe(scenario === "throw-then-report-retry" ? "pending" : "waiting");
+          if (scenario !== "stopped-then-wait") {
+            expect(report()?.summary).toBe(scenario === "throw-then-report-retry"
+              ? "Access is missing; please arrange it while I retry" : reportSummary);
             expect(report()?.attemptId).not.toBe(first!.attemptId);
+            expect(report()?.reportRevision).toBe(2);
             expect(loadedTaskConfig(f).resourceStore.readAttempt(first!.attemptId)?.acceptedResult).toBeUndefined();
             const selected = report();
             await reopen();
@@ -332,11 +339,17 @@ describe("caller feedback PoC", () => {
             await run("work/caller");
             expectedCalls++;
             const feedback = callerInputs.at(-1)!.events.items.find(({ event }) => event.type === "app.dependency.updated");
-            expect(feedback?.event.data).toMatchObject({ status: "blocked", summary: reportSummary, reportAttemptId: selected!.attemptId });
+            expect(feedback?.event.data).toMatchObject({ status: "blocked", summary: selected!.summary, reportAttemptId: selected!.attemptId });
             // A delayed old notification must not undo the newer observation
             // or wake the caller again after it already handled both reports.
             expect(trackAppTaskConditionEventForTasks(loadedTaskConfig(f),
               appInputFeedbackEvent(item, first!, "blocked")!, ["work/caller"])).toEqual([]);
+            if (scenario === "throw-then-report-retry") {
+              setSystemTime(loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+              await run("work/collector");
+              expect(report()).toEqual(selected);
+              expect(loadedTaskConfig(f).resourceStore.readTask("work/collector")?.status.phase).toBe("pending");
+            }
           } else expect(report()).toEqual(first);
         }
         for (let review = 0; review < 5; review++) {
@@ -388,7 +401,7 @@ describe("caller feedback PoC", () => {
         expect(host!.get("original-ask")?.result).toEqual(answer);
         console.info(JSON.stringify({ poc: "caller-feedback", scenario, workerCalls, callerCalls: callerInputs.length,
           reportRecovered: scenario !== "quiet", originalAnswer: answer?.result,
-          changedReportDelivered: scenario === "throw-then-wait" }));
+          changedReportDelivered: scenario === "throw-then-wait" || scenario === "throw-then-report-retry" }));
       } finally {
         host?.close();
       }

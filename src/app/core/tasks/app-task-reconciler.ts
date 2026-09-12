@@ -2273,6 +2273,7 @@ export function stopAppTask(
   claim: AppTaskClaim,
   input: {
     summary: string;
+    report?: true;
     response?: string;
     result?: Record<string, unknown>;
     evidence: string[];
@@ -2297,7 +2298,7 @@ export function stopAppTask(
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "stopped", input, defaultTaskAcceptance(claim, input.evidence));
-  const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report");
+  const admissions = inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", input.report === true);
   const failures = (resource.status.executionFailures ?? 0) + 1;
   // Accepted evidence is not a final answer to the original assignment.
   // Preserve input, including accepted live feedback and earlier linked waits.

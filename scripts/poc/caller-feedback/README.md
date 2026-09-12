@@ -21,9 +21,9 @@ production Condition tracker explicitly, including database/runtime reopen.
 
 Candidate changes:
 
-- `waiting` may explicitly report its existing summary/evidence with `report: true`.
+- `waiting` or `stopped` may explicitly report its existing summary/evidence with `report: true`.
 - Failed execution can supply a factual caller report without an accepted agent result.
-- First failures remain quiet on retry; an explicit waiting report can select a newer update.
+- Automatic retries remain quiet after the first failure; an explicit report can select a newer update while waiting or retrying.
 - One report revision on the existing input/Condition prevents duplicate or stale delivery.
 - Answers, Conditions and Task closure retain separate meanings.
 - Conversation discovery and live admission select the same saved report, including
@@ -33,6 +33,10 @@ Candidate changes:
 
 Six scenarios compare quiet wait, existing stop-then-wait, combined report/wait,
 thrown failure, invalid output and failure followed by an actionable wait report.
+The review adds failure followed by an explicit retrying report, then an unchanged
+quiet retry and the original answer. Finish-tool and SDK regressions require
+non-empty evidence for explicit reports. A stored legacy observation remains
+quiet through reopen until a genuinely newer report arrives.
 All require the original answer after lost notification and storage reopen.
 They also check quiet recovery, mismatched wake facts, unaccepted proposed effects
 and delayed older feedback. Assertions sit outside executor callbacks so runtime
@@ -80,8 +84,7 @@ first report for each considered input. The Condition-owner schema also matches
 admission so malformed owners can be corrected before finish ends an attempt.
 
 Do not deploy this prototype as-is. Canonical Task design corrections and remaining
-promotion gates are recorded in the proposal. Explicit updates are
-limited to waiting results. Latest selected report can supersede undelivered
+promotion gates are recorded in the proposal. Latest selected report can supersede undelivered
 earlier feedback; this is not delivery of every intermediate update. Process
 death, all failure boundaries, concurrent publication/closure and natural agent
 adoption beyond these bounded fixtures require further evidence before promotion.

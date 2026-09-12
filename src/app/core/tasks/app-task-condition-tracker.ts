@@ -239,7 +239,8 @@ export function matchesAppTaskCondition(
     (matches(condition, event) || (isAppInputReport(condition, event) &&
       (!isRecord(condition.status.observed) || condition.status.observed.state !== "blocked" ||
         (Number.isSafeInteger(eventField(event, "reportRevision")) &&
-          Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 0)))));
+          // Reports observed before revisions existed already represent revision 1.
+          Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))));
 }
 
 /** Recognize the evidence that belongs to a wait, including an already observed fact. */

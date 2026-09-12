@@ -65,8 +65,9 @@ same transaction as retry state; its diagnostic wrapper shares that path.
 Internal workflow-to-agent handoff does not select a failure report.
 `app-task-condition-tracker.ts` wakes the caller once per selected report
 revision while keeping the wait unsatisfied. Automatic retries remain quiet.
-An agent may deliberately select new feedback with `waiting.report: true`;
-omitting the flag keeps an ordinary wait quiet. Delayed older reports cannot
+An agent may deliberately select new feedback with `report: true` on `waiting`
+or `stopped`, with non-empty evidence. Omitting the flag keeps an ordinary wait
+quiet and preserves the first failure report during retries. Delayed older reports cannot
 replace the latest selection. This does not guarantee every intermediate update.
 The later answer satisfies the wait, even if the caller is retrying its own work.
 Conversation uses the same saved selection; answer or closure suppresses newly
