@@ -131,7 +131,7 @@ export function checkCrossEditGuard(
     if (relSharedPath === "philosophy.md" || relSharedPath === "common-sense.md") {
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent "${agentName}" cannot modify shared/${relSharedPath}. Only May can edit shared system-level guidance.\n\nCannot resolve? Escalate to May via message({ to: "may", content: ... }).`,
+        message: `⚠️ WRITE BLOCKED: Agent "${agentName}" cannot modify shared/${relSharedPath}. Only May can edit shared system-level guidance.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
     return { blocked: false };
@@ -154,7 +154,7 @@ export function checkCrossEditGuard(
   if (targetDir === "shared" && protectedSharedFiles.has(relPath)) {
     return {
       blocked: true,
-      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPath}. Only May can edit shared system-level guidance.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPath}. Only May can edit shared system-level guidance.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
     };
   }
 
@@ -166,7 +166,7 @@ export function checkCrossEditGuard(
     if (EVALUATOR_PROTECTED_PATHS.has(evalRelPath)) {
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify ${displayPrefix}${sep}evaluator${sep}${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify ${displayPrefix}${sep}evaluator${sep}${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
   }
@@ -182,7 +182,7 @@ export function checkCrossEditGuard(
           `⚠️ WRITE BLOCKED (P70): Agent "${agentName}" cannot modify its own agent.json. ` +
           `agent.json defines immutable agent identity/configuration. ` +
           `Self-edits could persist a jailbreak across restarts. ` +
-          `Only May or tech-lead may modify agent.json files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+          `Only May or tech-lead may modify agent.json files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
   }
@@ -201,7 +201,7 @@ export function checkCrossEditGuard(
       }
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPrefix}${sep}${targetDir}${sep}${fileName}. Only the owning agent, May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPrefix}${sep}${targetDir}${sep}${fileName}. Only the owning agent, May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.`,
       };
     }
   }
