@@ -13,7 +13,7 @@ owner withdrawal and reconsider evidence when the human changes the question.
 The source should also become smaller. The first follow-up did not go far enough:
 it shared execution while retaining old admission, return and recovery contracts.
 The [source investigation below](#why-the-source-stayed-large) identifies those
-costs and tests two contract reductions. Model execution cost remains a separate
+costs and records the contract reductions below. Model execution cost remains a separate
 measurement from source size.
 
 Three small changes improve the candidate:
@@ -235,8 +235,78 @@ cleanup) remove **61 net production TypeScript lines** against `84cb6364`
 Full `bun run ci` at **`6319aa55`** passes: **2,852 passed, 3 installation-dependent
 skips, 0 failures** (2,855 tests across 290 files, 137 seconds). Types,
 architecture and lint pass. Canonical design checks and 43 changed-document
-links pass. Hosted checks on this revision are pending. Earlier live trials keep
+links pass. Hosted Quality and Container checks also passed at that revision. Earlier live trials keep
 their actual revisions; this check adds no live-model or deployment claim.
+
+## One Task notification; no automatic retry relay
+
+The next audit found a smaller deletion before combining return links. Every
+Task outcome already publishes `project.task.reconciled`, and owner closure
+publishes `app.task.cancelled`. The runtime also published a second Task-level
+`app.dependency.completed` or `app.dependency.updated` notification. Composition
+translated the latter into another App-dependency update, with special Condition
+matching to wake the caller even when no answer had been accepted. A recorded
+wait could therefore start a caller review, contrary to the shared-loop baseline.
+
+The candidate now uses the existing Task outcome and closure events to refresh
+both saved input answers and Topic-linked observations. Only an exact saved App
+answer emits `app.dependency.completed`. It removes the second Task notification,
+the retry/progress relay, its special Condition route and the legacy unscoped
+Task/session notification contract. Events without an exact App and Task no longer
+cause a broadcast result scan. Existing bounded result and Condition recovery
+repair missed notifications from saved state.
+
+The accepted cost is fewer automatic reviews: a typed caller does not run another
+attempt for every worker retry or saved wait. Failed-attempt evidence, retry times
+and status remain readable; its existing review deadline or an explicit App event
+route can request judgment. This does not remove human input, owner controls or
+Topic-linked failure reporting. In this candidate, a typed input's failure remains
+unfinished while the worker retries; an accepted answer or owner closure resolves
+its receipt. Automatically returning failure evidence through one shared caller
+link remains part of the larger proposed unification, not a claim of this cleanup.
+
+Two different needs remain visible: an input wants its **exact answer once**;
+a Conversation's Topic link can observe **several outcomes and eventual closure**.
+A common caller link must preserve that distinction or explicitly retire ongoing
+observation. Merely forcing both into a generic adapter would add cost without
+removing a contract. The current change shares their Task notification source
+while retaining their existing saved evidence and admission rules.
+
+The wait regression failed before the change because it emitted an extra
+dependency update. Focused checks now prove that repeated wait notifications and
+legacy progress hints leave the caller quiet; exact answers still return after a
+later worker result, and outcome/closure projection stays scoped to the App and
+Task. The existing saved-answer/lost-notification and restart regressions remain.
+Host commit `d220d4d7` removes **106 net production TypeScript lines** compared
+with `6319aa55` (16 added, 122 removed, excluding tests). Full local `bun run ci`
+passes: **2,853 passed, 3 installation-dependent skips, 0 failures** (2,856 tests
+across 290 files, 139 seconds). The source change adds no live-model or installation
+claim.
+
+## Dead helpers removed; active convergence remains
+
+A reference audit across Host source, portable tests, scripts and App consumers
+also found five unused Host exports. Removing them needs no replacement path:
+
+| Removed helper | Why it can go |
+| --- | --- |
+| `listUnlinkedAppDelegations()` | Its old `delegate:` inbox-link recovery has no caller after direct Task admission. |
+| `isTaskAttentionReadyForReview()` | No runtime uses this separate attention-review classifier; current input/result and retry rules own the behavior. |
+| `saveProjectRuntimeState()` | The JSON write path has no caller. The project read model and historical evidence reader remain. Its private directory/write helpers are removed too. |
+| `listConversationTopics()` | The unused wrapper discards pagination; current callers use the Topic page or exact read. |
+| `normalizeStringArray()` | An unused Task-store normalization helper. |
+
+These are dead entry points, not five running subsystems. No new fallback,
+compatibility switch or abstraction replaces them. The live return paths below
+still have consumers and require contract/consumer changes before deletion.
+
+Host commit `9d34e90b` removes another **55 net production TypeScript lines**
+(2 added, 57 removed). Together with `d220d4d7`, this is **161 net production
+TypeScript lines removed** from `6319aa55`. Final full `bun run ci` at
+**`9d34e90b`** passes: **2,853 passed, 3 installation-dependent skips, 0 failures**
+(2,856 tests across 290 files, 142 seconds). Types, architecture and lint pass;
+canonical design checks and 56 changed-document links pass. Hosted checks for
+this revision are pending. No new model trial or production operation ran.
 
 ## Next deletion, in order
 
@@ -244,7 +314,8 @@ The ordinary inbox worker and session-result acceptance path are now removed in
 the source candidate. The exact input-result projection remains a separate saved
 view, and delegation still has several result-return protocols.
 
-Then make human follow-up and nested delegation use that same saved return link.
+Next evaluate one saved caller link for human follow-up and nested delegation,
+including exact input answers versus ongoing Topic observation.
 Prove **A → B → C → B → A**, concurrent human input and owner withdrawal through
 that common link. Retain the saved-answer/lost-notification regression above. Convert or drain retained links during
 the already planned offline cutover. Do not keep another runtime switch or ask
@@ -261,7 +332,8 @@ Only then reconsider the remaining tree scheduling and mutable snapshot writes.
 Measure deleted state transitions and branches, not just moved lines. Each slice
 should name the old contract it retires, the code that disappears and the cost
 we accept. The return-link and raw child-spec changes remain proposed; the current source
-experiment removes session-result recovery and the ordinary inbox worker.
+experiment removes session-result recovery, the ordinary inbox worker and the
+automatic dependency-progress relay.
 
 ## What the live trials established
 

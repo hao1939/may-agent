@@ -80,6 +80,15 @@ A saved wait is progress that remains available to read; it does not itself
 start another caller attempt. This is the same rule for every Task. It avoids
 model work to supervise an already recorded wait or recheck routine admission.
 
+The source candidate now enforces the quiet-wait rule for typed App dependencies
+as well as Topic-linked follow-up. Task outcome and closure events refresh both;
+there is no separate automatic dependency-progress relay. Typed inputs still
+await an answer or owner closure while failed work retries, with failure evidence
+available to readers and scheduled review. Topic-linked observers also receive
+accepted failure reports. That remaining return-contract difference is recorded
+in the [cleanup review](controller-poc-deeper-review.md#one-task-notification-no-automatic-retry-relay);
+one lifecycle does not yet mean one saved caller-link implementation.
+
 An App, parent agent or human already managing work can be its closing owner.
 "External" means outside the assigned worker's authority over this assignment,
 not another service or process. The worker chooses **how to do the work**; the

@@ -490,6 +490,13 @@ should not repeatedly invoke judgment merely to rediscover the same state.
 Adapters declare which source fields matter, while the agent decides their
 meaning; no central table of provider-specific repair strategies is needed.
 
+The continuing-Task candidate in Host #158 applies this to typed delegation:
+`project.task.reconciled` and `app.task.cancelled` refresh saved answers and linked
+Conversation observations. Only the saved App answer emits
+`app.dependency.completed`. Routine waits and failed retries do not automatically
+relay another caller wake; explicit routes and existing review deadlines remain.
+See the [source cleanup and its limits](../proposals/controller-poc-deeper-review.md#one-task-notification-no-automatic-retry-relay).
+
 When execution resumes, supply a bounded view of the objective, changed facts,
 current work/waits and evidence references. The agent can read deeper using
 existing Task and execution readers. Keep response guidance with its App or
