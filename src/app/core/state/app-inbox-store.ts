@@ -1,3 +1,4 @@
+import { storedResultFacts } from "./result-facts.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type { AppConversationResource, AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
@@ -8,7 +9,7 @@ import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
 export type AppInboxStatus = "pending" | "handling" | "done";
 export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 
-/** Input execution evidence, not fulfillment of the accepted human ask. */
+/** Input execution facts, not fulfillment of the accepted human ask. */
 export type AppInboxHandling =
   | { phase: "executing" }
   | { phase: "decided"; decision: ConversationTurnResult; requestRevisions?: Record<string, number> }
@@ -163,7 +164,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
     waitingOn: waitingKind && waitingId ? { kind: waitingKind, id: waitingId } : undefined,
     taskAdmissionKey: optionalText(row.task_admission_key),
     executionTaskId: optionalText(row.execution_task_id),
-    result: result ? parseJson<AppResult>(result, "result") : undefined,
+    result: result ? storedResultFacts(parseJson<AppResult>(result, "result")) : undefined,
     handling: row.handling ? parseJson<AppInboxHandling>(row.handling, "handling") : undefined,
     availableAt: optionalNumber(row.available_at),
     reviewAt: optionalNumber(row.review_at),
@@ -387,7 +388,7 @@ export function listAppInboxItemsWaitingOnTask(db: SqliteDb, appId: string, task
     .map(rowToItem);
 }
 
-/** Bounded request evidence used to project Conversation messages. */
+/** Bounded request facts used to project Conversation messages. */
 export function listAppInboxConversationItems(
   db: SqliteDb,
   appId: string,

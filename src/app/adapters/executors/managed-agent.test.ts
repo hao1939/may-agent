@@ -21,7 +21,7 @@ test("generic agent execution carries operation facts without reading private de
       callAgent: async (_agent: string, text: string) => {
         prompt = text;
         return { status: "done", sessionId: "fixture", structuredResult: {
-          state: "converged", summary: "Observed operation", evidence: ["event:1"],
+          state: "converged", summary: "Observed operation", facts: ["event:1"],
         } };
       },
     } as unknown as SubagentManager });

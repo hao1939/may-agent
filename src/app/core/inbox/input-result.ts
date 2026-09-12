@@ -18,7 +18,7 @@ export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { 
       summary: result.summary,
       ...(result.response ? { response: result.response } : {}),
       ...(result.result ? { result: result.result } : {}),
-      ...(result.evidence ? { evidence: result.evidence } : {}),
+      ...(result.facts ? { facts: result.facts } : {}),
       ...(item.waitingOn?.kind === "task" ? { taskId: item.waitingOn.id, appId: item.appId } : {}),
     },
   };

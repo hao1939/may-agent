@@ -23,10 +23,10 @@ afterEach(() => {
 describe("App task output paths", () => {
   it("defaults unbound agent execution to the app while retaining explicit domain inspection", () => {
     const { appDir, projectDir, paths } = fixture();
-    writeFileSync(join(projectDir, "domain-proof.txt"), "read-only domain evidence\n");
+    writeFileSync(join(projectDir, "domain-proof.txt"), "read-only domain facts\n");
 
     expect(paths).toEqual({ appDir, projectDir, workspaceDir: appDir });
-    expect(readFileSync(join(paths.projectDir, "domain-proof.txt"), "utf8")).toBe("read-only domain evidence\n");
+    expect(readFileSync(join(paths.projectDir, "domain-proof.txt"), "utf8")).toBe("read-only domain facts\n");
   });
 
   it("replaces the agent cwd with a workflow-declared task worktree", () => {

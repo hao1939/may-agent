@@ -8,7 +8,7 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | Start here | Owns |
 | --- | --- |
 | `app-task-resource-store.ts` | Canonical Tasks, attempts, Conditions, results and fenced mutations |
-| `app-inbox-store.ts` | Admitted input, exact Task links and readable historical Turn evidence |
+| `app-inbox-store.ts` | Admitted input, exact Task links and readable historical Turn facts |
 | `app-event-admission-store.ts` | Recorded routing decisions and delivery progress |
 | `inbox.ts` | Atomic Task admission with input/Topic links; exact result projection |
 | `conversations.ts` | Conversation reads and Topic links |
@@ -24,7 +24,7 @@ durable state remains authoritative. There is no extra server or storage queue.
 
 Bounded Task context retains the exact current and observed attempt references
 before filling the remaining history slots. Timestamp order alone cannot select
-execution authority or accepted evidence: clocks can move backwards, and two
+execution authority or accepted facts: clocks can move backwards, and two
 attempts can share a timestamp. The history limit remains 16 attempts per Task.
 
 Cutover helpers require the old Host and every worker to be stopped, after the
@@ -34,7 +34,7 @@ their exact generation/specification to accepted outcomes on closed Tasks;
 newer Task generations and existing human closure remain unchanged. Open-state
 import then preserves maintained outcomes, restores original input/wait links,
 and paces unfinished work with the existing retry deadline. Historical worker
-self-stops become failure evidence on the same Task; human closure and Turn
+self-stops become failure facts on the same Task; human closure and Turn
 Stop remain effective. Missing original input or conflicting accepted-attempt
 identity aborts import rather than inventing an answer. Supervisor retirement
 uses ordinary owner closure; an operational upgrade runner remains separate.

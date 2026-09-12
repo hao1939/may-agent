@@ -72,7 +72,6 @@ describe("App inbox runtime", () => {
               parentId: "evaluation",
               outcome: "Evaluate " + input.input.data.value,
               acceptance: ["Evaluation completed"],
-              mode: "achieve"
             }
           };
         },
@@ -182,7 +181,7 @@ describe("App inbox runtime", () => {
     task.complete("probe/request-1", {
       summary: "Evaluation passed",
       response: "The provider is healthy.",
-      evidence: ["probe:ok"],
+      facts: ["probe:ok"],
     });
     await waitUntil(() => runtime?.host.get("request-1")?.status === "done");
 
@@ -190,7 +189,7 @@ describe("App inbox runtime", () => {
     expect(runtime.host.get("request-1")?.result).toEqual({
       summary: "Evaluation passed",
       response: "The provider is healthy.",
-      evidence: ["probe:ok"],
+      facts: ["probe:ok"],
     });
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
@@ -248,7 +247,7 @@ describe("App inbox runtime", () => {
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "message" }, data: { type: "object" }
         } },
-        requests: { mode: "agent", conversationId: "may:primary" }
+        conversation: { mode: "agent", conversationId: "may:primary" }
       };\n`,
     );
     createConversationTopic(db, {
@@ -291,7 +290,7 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      resolveRequest: async () => ({ summary: "unused", response: "unused", topic: { kind: "none" } }),
+      resolveConversationInput: async () => ({ summary: "unused", response: "unused", topic: { kind: "none" } }),
       scanIntervalMs: 10_000,
     });
 
@@ -333,7 +332,7 @@ describe("App inbox runtime", () => {
           } }
         } },
         task(input) { return { kind: "desired", intent: {
-          id: "conversation/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"], mode: "achieve"
+          id: "conversation/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"]
         } }; },
         tasks: {}
       };\n`,
@@ -708,7 +707,7 @@ describe("App inbox runtime", () => {
           }
         },
         task() { return { kind: "desired", intent: {
-          id: "probe/waiting-request", parentId: "other", outcome: "Other work", acceptance: ["Done"], mode: "achieve"
+          id: "probe/waiting-request", parentId: "other", outcome: "Other work", acceptance: ["Done"]
         } }; },
         tasks: {}
       };\n`,
@@ -803,7 +802,7 @@ describe("App inbox runtime", () => {
           inputSchema: { type: "object" },
           tasks: {
             subscriptions: [${JSON.stringify(`route.event.${index}`)}],
-            resolve(event) { return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"], mode: "achieve" }; }
+            resolve(event) { return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"] }; }
           }
         };\n`,
       );
@@ -859,7 +858,7 @@ describe("App inbox runtime", () => {
             subscriptions: [${JSON.stringify(eventType)}],
             resolve(event) {
               ${throws ? 'throw new Error("irrelevant resolver ran")' : ""};
-              return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"], mode: "achieve" };
+              return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"] };
             }
           }
         };\n`,
@@ -895,7 +894,7 @@ describe("App inbox runtime", () => {
           inputSchema: { type: "object" },
           tasks: {
             subscriptions: [${JSON.stringify(eventType)}],
-            resolve(event) { return { id: "routing/task", parentId: "routing", outcome: event.type, acceptance: ["done"], mode: "achieve" }; }
+            resolve(event) { return { id: "routing/task", parentId: "routing", outcome: event.type, acceptance: ["done"] }; }
           }
         };\n`,
       );
@@ -1344,7 +1343,7 @@ describe("App inbox runtime", () => {
           kind: { const: "probe" }, data: { type: "object", required: ["value"], properties: { value: { type: "string" } } }
         } },
         task(input) { return { kind: "desired", intent: {
-          id: "conversation/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"], mode: "achieve"
+          id: "conversation/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"]
         } }; },
         tasks: {}
       };\n`,

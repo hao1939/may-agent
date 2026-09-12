@@ -10,7 +10,7 @@ import { EventBus, EVENT_DELIVERY_RESULT, type AgentEvent } from "../core/events
 import { startAppInboxRuntime } from "./app-inbox-runtime.js";
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { appTaskContext, readAppTaskAdmissionOutcome } from "../core/tasks/app-task-reconciler.js";
-import { admitTaskRequest } from "../core/state/inbox.js";
+import { admitTaskInput } from "../core/state/inbox.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "../core/state/conversation-requests.js";
 import { finishTask } from "../../../test/fixtures/request-task-state.js";
 
@@ -38,7 +38,7 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
         if (broken && id === "first" && failure !== "link-write") throw new Error("mapping unavailable");
         return {
           kind: "desired",
-          intent: { id, parentId: "root", mode: "achieve", outcome: "Answer", acceptance: ["Verified"] },
+          intent: { id, parentId: "root", outcome: "Answer", acceptance: ["Verified"] },
         };
       },
     });
@@ -85,7 +85,7 @@ for (const failure of ["mapping", "link-write", "report-write"] as const) {
       registry,
       deferStart: true,
       now: () => now,
-      attachTask: (input) => admitTaskRequest(config, input),
+      attachTask: (input) => admitTaskInput(config, input),
       readDependency: async ({ dependency, admissionKey }) => {
         const outcome = admissionKey ? readAppTaskAdmissionOutcome(config, dependency.id, admissionKey) : null;
         return { ...dependency, status: outcome ? "done" : "pending", summary: outcome?.summary };

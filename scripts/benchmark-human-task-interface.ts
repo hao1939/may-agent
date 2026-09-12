@@ -17,7 +17,7 @@ for (let index = 0; index < activeCount; index += 1) {
   const phase = ["pending", "running", "waiting", "attention"][index % 4]!;
   const resource = {
     metadata: { id: taskId, generation: 1, resourceVersion: 1 },
-    spec: { parentId: "root", outcome: `Handle ${taskId}`, acceptance: ["done"], mode: "achieve" },
+    spec: { parentId: "root", outcome: `Handle ${taskId}`, acceptance: ["done"] },
     status: { observedGeneration: 0, phase, updatedAt: new Date(updatedAt).toISOString() },
   };
   db.prepare(
@@ -41,7 +41,7 @@ for (let index = 0; index < completedCount; index += 1) {
     owner: "may",
     handler: "owner",
     summary: "done",
-    evidence: [],
+    facts: [],
     acceptanceBasis: { kind: "owner" },
     failureFingerprints: [],
     completedAt: new Date(completedAt).toISOString(),

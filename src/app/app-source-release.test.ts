@@ -93,14 +93,18 @@ describe("App source releases", () => {
 
   it("snapshots small non-git fixture Apps without copying runtime state", async () => {
     const { root, stateDir } = await fixture(false);
-    const runtimeState = join(root, "projects", "sample.app", ".state", "runtime.json");
-    mkdirSync(join(runtimeState, ".."), { recursive: true });
-    writeFileSync(runtimeState, "{}\n");
+    for (const directory of [".state", "evidence", "facts"]) {
+      const runtimeState = join(root, "projects", "sample.app", directory, "runtime.json");
+      mkdirSync(join(runtimeState, ".."), { recursive: true });
+      writeFileSync(runtimeState, "{}\n");
+    }
     writeFileSync(join(root, "projects", "sample.app", ".disabled"), "");
 
     const release = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
     expect(readFileSync(join(release.projectsRoot, "sample.app", "app.js"), "utf8")).toContain("sample-v1");
-    expect(existsSync(join(release.projectsRoot, "sample.app", ".state"))).toBeFalse();
+    for (const directory of [".state", "evidence", "facts"]) {
+      expect(existsSync(join(release.projectsRoot, "sample.app", directory))).toBeFalse();
+    }
     expect(existsSync(join(release.projectsRoot, "sample.app", ".disabled"))).toBeFalse();
   });
 
@@ -221,13 +225,19 @@ describe("App source releases", () => {
     expect(store.current()?.id).toBe(active.id);
   });
 
-  it("ignores runtime evidence but rejects an untracked executable source file", async () => {
+  it("ignores runtime facts but rejects an untracked executable source file", async () => {
     const { root, stateDir } = await fixture();
-    const evidenceDir = join(root, "projects", "sample.app", "evidence");
-    mkdirSync(evidenceDir, { recursive: true });
-    writeFileSync(join(evidenceDir, "receipt.json"), "{}\n");
+    for (const directory of ["evidence", "facts"]) {
+      const factsDir = join(root, "projects", "sample.app", directory);
+      mkdirSync(factsDir, { recursive: true });
+      writeFileSync(join(factsDir, "receipt.json"), "{}\n");
+    }
     const store = new DefinitionSourceReleaseStore(root, stateDir);
-    expect(store.ensureCurrent().sourceCommit).toMatch(/^[0-9a-f]{40}$/);
+    const release = store.ensureCurrent();
+    expect(release.sourceCommit).toMatch(/^[0-9a-f]{40}$/);
+    for (const directory of ["evidence", "facts"]) {
+      expect(existsSync(join(release.projectsRoot, "sample.app", directory))).toBeFalse();
+    }
 
     writeFileSync(join(root, "projects", "sample.app", "new-handler.ts"), "export const handler = true;\n");
     expect(() => store.stage()).toThrow("untracked executable/config files");

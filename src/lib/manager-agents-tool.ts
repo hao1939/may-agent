@@ -205,7 +205,7 @@ function appendContextFiles(task: string, contextFiles?: string[], successCriter
     "## Delegation Memo",
     "This task follows the delegation-memo convention. The receiving agent MUST:",
     "1. Read all context_files before acting.",
-    "2. Verify each success criterion with evidence in finish().",
+    "2. Verify each success criterion with facts in finish().",
     "3. Stay within scope — finish as 'blocked' if out-of-scope work is needed.",
   );
 

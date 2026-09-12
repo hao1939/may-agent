@@ -11,7 +11,6 @@ export default {
       intent: {
         id: "work/main",
         parentId: "scheduled-workflow",
-        mode: "achieve",
         workflow: "e2e-noop-workflow",
         outcome: "Verify scheduled workflow execution",
         acceptance: ["The isolated workflow completes and its Task accepts the result"],

@@ -165,8 +165,8 @@ export function appDependencyCatalog(
       inputs: appInputContracts(definition.inputSchema).filter(
         (input) =>
           definition.id !== sourceAppId ||
-          !definition.requests ||
-          Boolean(definition.requests.inputKinds && !definition.requests.inputKinds.includes(input.kind)),
+          !definition.conversation ||
+          Boolean(definition.conversation.inputKinds && !definition.conversation.inputKinds.includes(input.kind)),
       ),
     }))
     .filter((entry) => entry.inputs.length > 0)

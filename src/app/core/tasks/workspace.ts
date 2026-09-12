@@ -11,7 +11,7 @@ export type FinalizedTaskWorkspace = {
   reason?: string;
 };
 
-/** Host-private worktree operations; core owns ordering and admission of their evidence. */
+/** Host-private worktree operations; core owns ordering and admission of their facts. */
 export type TaskWorkspaces = {
   prepare(input: {
     repoDir: string;

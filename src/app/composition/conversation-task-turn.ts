@@ -13,7 +13,7 @@ export async function prepareConversationTaskTurn(input: {
   config: AppTaskContext;
   claim: AppTaskClaim;
   app: Readonly<AppDefinition>;
-  resolveRequest: AppInputResolver;
+  resolveConversationInput: AppInputResolver;
   readDependency?: AppDependencyReader;
   getTaskApp?: (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
   signal: AbortSignal;
@@ -23,17 +23,17 @@ export async function prepareConversationTaskTurn(input: {
   signal.throwIfAborted();
   const items = readConversationTaskInputs(config, claim);
   const item = items.at(-1)!;
-  const request = await prepareConversationInput(
+  const inputContext = await prepareConversationInput(
     config.resourceStore.db,
     item,
     readInputContext(config.resourceStore.db, item),
     input.readDependency,
   );
-  request.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
-  if (claim.previousAttempt) request.previousAttempt = structuredClone(claim.previousAttempt);
-  const decision = await input.resolveRequest({
+  inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
+  if (claim.previousAttempt) inputContext.previousAttempt = structuredClone(claim.previousAttempt);
+  const decision = await input.resolveConversationInput({
     app,
-    request: freezeInputContext(request),
+    inputContext: freezeInputContext(inputContext),
     execution: {
       signal,
       taskBinding: { appId: app.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
@@ -48,10 +48,10 @@ export async function prepareConversationTaskTurn(input: {
       ? readConversationTopic(config.resourceStore.db, app.id, item.conversationId!, decision.topic.id)
       : null;
   const knownTask = (appId: string, taskId: string) =>
-    (request.focusedTask?.appId === appId && request.focusedTask.task.id === taskId) ||
-    request.referencedTasks?.some((entry) => entry.appId === appId && entry.task.id === taskId) ||
+    (inputContext.focusedTask?.appId === appId && inputContext.focusedTask.task.id === taskId) ||
+    inputContext.referencedTasks?.some((entry) => entry.appId === appId && entry.task.id === taskId) ||
     selectedTopic?.taskRefs.some((entry) => entry.appId === appId && entry.taskId === taskId) ||
-    request.conversation?.topics?.some((topic) =>
+    inputContext.conversation?.topics?.some((topic) =>
       topic.taskRefs.some((entry) => entry.appId === appId && entry.taskId === taskId),
     );
   const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
