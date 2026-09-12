@@ -1552,8 +1552,8 @@ describe("canonical App task runtime", () => {
       ).toBe("applied");
 
       const requestId = conditions[0]!.subject.slice("id:".length);
-      const attachmentDeadline = Date.now() + 5_000;
-      while (!attachedDependencyTaskId && Date.now() < attachmentDeadline) await Bun.sleep(5);
+      const attachmentDeadline = performance.now() + 5_000;
+      while (!attachedDependencyTaskId && performance.now() < attachmentDeadline) await Bun.sleep(5);
       if (!attachedDependencyTaskId) throw new Error("expected child App request to attach to a Task");
       expect(attachedDependencyTaskId).toBe("review/current");
       expect(readTaskSnapshot(evaluationConfig).taskTriggers?.["review/current"]?.event).toMatchObject({
@@ -1657,13 +1657,13 @@ describe("canonical App task runtime", () => {
           conditions: expanded,
         }).status,
       ).toBe("applied");
-      const secondAttachmentDeadline = Date.now() + 5_000;
-      while (attachedDependencyTaskCount < 2 && Date.now() < secondAttachmentDeadline) await Bun.sleep(5);
+      const secondAttachmentDeadline = performance.now() + 5_000;
+      while (attachedDependencyTaskCount < 2 && performance.now() < secondAttachmentDeadline) await Bun.sleep(5);
       expect(dependencyRequests).toHaveLength(2);
       expect(attachedDependencyTaskCount).toBe(2);
 
-      const firstDependencyReadyDeadline = Date.now() + 5_000;
-      while (!inbox.host.get(requestId)?.waitingOn && Date.now() < firstDependencyReadyDeadline) await Bun.sleep(5);
+      const firstDependencyReadyDeadline = performance.now() + 5_000;
+      while (!inbox.host.get(requestId)?.waitingOn && performance.now() < firstDependencyReadyDeadline) await Bun.sleep(5);
       expect(inbox.host.get(requestId)).toMatchObject({
         status: "handling",
         waitingOn: { kind: "task", id: attachedDependencyTaskId },
@@ -1743,8 +1743,8 @@ describe("canonical App task runtime", () => {
         await inbox.host.recoverTaskResults();
         inbox.scanNow();
       }
-      const deadline = Date.now() + 5_000;
-      while (!readTaskSnapshot(config).taskTriggers?.[initial.taskId] && Date.now() < deadline) {
+      const deadline = performance.now() + 5_000;
+      while (!readTaskSnapshot(config).taskTriggers?.[initial.taskId] && performance.now() < deadline) {
         await Bun.sleep(5);
       }
       expect(dependencyEvents).toHaveLength(1);
@@ -3240,8 +3240,8 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const deadline = Date.now() + 2_000;
-    while (ownerCalls === 0 && Date.now() < deadline) await Bun.sleep(5);
+    const deadline = performance.now() + 2_000;
+    while (ownerCalls === 0 && performance.now() < deadline) await Bun.sleep(5);
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
     expect(readTaskSnapshot(config).receipts?.historical?.evidence).toEqual([retainedEvidence]);
@@ -3810,9 +3810,9 @@ describe("canonical App task runtime", () => {
     const externalReaperExit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
       externalReaper.once("exit", (code, signal) => resolve({ code, signal }));
     });
-    const stalePgidDeadline = Date.now() + 2_000;
+    const stalePgidDeadline = performance.now() + 2_000;
     let stalePgid = 0;
-    while (stalePgid <= 0 && Date.now() < stalePgidDeadline) {
+    while (stalePgid <= 0 && performance.now() < stalePgidDeadline) {
       if (existsSync(stalePgidPath)) stalePgid = Number(readFileSync(stalePgidPath, "utf8").trim());
       if (stalePgid <= 0) await Bun.sleep(5);
     }
@@ -3883,8 +3883,8 @@ describe("canonical App task runtime", () => {
         },
       });
 
-      const replacementDeadline = Date.now() + 2_000;
-      while (replacementCalls === 0 && Date.now() < replacementDeadline) await Bun.sleep(5);
+      const replacementDeadline = performance.now() + 2_000;
+      while (replacementCalls === 0 && performance.now() < replacementDeadline) await Bun.sleep(5);
       expect(replacementCalls).toBe(1);
       expect(preReplacementState).toEqual({
         groupDead: true,
@@ -3894,8 +3894,8 @@ describe("canonical App task runtime", () => {
         resultPersisted: true,
       });
 
-      const resultDeadline = Date.now() + 2_000;
-      while (!readAcceptedRuntimeAttempt(config, intent.id)?.acceptedResult && Date.now() < resultDeadline)
+      const resultDeadline = performance.now() + 2_000;
+      while (!readAcceptedRuntimeAttempt(config, intent.id)?.acceptedResult && performance.now() < resultDeadline)
         await Bun.sleep(5);
       const terminalResult = JSON.stringify(readAcceptedRuntimeAttempt(config, intent.id)?.acceptedResult);
       expect(terminalResult).not.toBeUndefined();
@@ -4145,8 +4145,8 @@ describe("canonical App task runtime", () => {
     });
 
     const config = loadedTaskConfig(f);
-    const deadline = Date.now() + 2_000;
-    while (!readAcceptedRuntimeAttempt(config, "work/post-claim-superseded")?.acceptedResult && Date.now() < deadline) {
+    const deadline = performance.now() + 2_000;
+    while (!readAcceptedRuntimeAttempt(config, "work/post-claim-superseded")?.acceptedResult && performance.now() < deadline) {
       await Bun.sleep(5);
     }
 
@@ -4283,8 +4283,8 @@ describe("canonical App task runtime", () => {
     } as AgentEvent;
     bus.emit(feedback);
 
-    const deadline = Date.now() + 2_000;
-    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })?.status !== "done" && Date.now() < deadline) {
+    const deadline = performance.now() + 2_000;
+    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })?.status !== "done" && performance.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(calls).toBe(1);
@@ -4324,8 +4324,8 @@ describe("canonical App task runtime", () => {
     });
     const accepted = (taskId: string) => readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey: `attach:${taskId}` });
     const until = async (condition: () => boolean) => {
-      const deadline = Date.now() + 3_000;
-      while (!condition() && Date.now() < deadline) await Bun.sleep(5);
+      const deadline = performance.now() + 3_000;
+      while (!condition() && performance.now() < deadline) await Bun.sleep(5);
       expect(condition()).toBeTrue();
     };
 
@@ -4592,8 +4592,8 @@ describe("canonical App task runtime", () => {
     });
     await attach("work/after-reload");
 
-    const deadline = Date.now() + 1_000;
-    while (!started.includes("work/after-reload") && Date.now() < deadline) await Bun.sleep(5);
+    const deadline = performance.now() + 1_000;
+    while (!started.includes("work/after-reload") && performance.now() < deadline) await Bun.sleep(5);
     expect(started).toEqual(["work/before-reload", "work/after-reload"]);
     releaseOld();
   });
@@ -4670,10 +4670,10 @@ describe("canonical App task runtime", () => {
       }
 
       const config = loadedTaskConfig(f);
-      const deadline = Date.now() + 2_000;
+      const deadline = performance.now() + 2_000;
       while (
         !readAcceptedRuntimeAttempt(config, "work/replacement-executor")?.acceptedResult &&
-        Date.now() < deadline
+        performance.now() < deadline
       ) {
         await Bun.sleep(5);
       }
@@ -4729,8 +4729,8 @@ describe("canonical App task runtime", () => {
       },
     });
 
-    const deadline = Date.now() + 1_000;
-    while (calls.length === 0 && Date.now() < deadline) await Bun.sleep(5);
+    const deadline = performance.now() + 1_000;
+    while (calls.length === 0 && performance.now() < deadline) await Bun.sleep(5);
     expect(calls).toEqual([{ appId: "sample", taskId: "work/isolated", lane: "human" }]);
   });
 
@@ -5067,8 +5067,8 @@ describe("canonical App task runtime", () => {
       });
     await attach(false);
     const config = loadedTaskConfig(f);
-    const deadline = Date.now() + 1500;
-    while (!config.resourceStore.readTask(taskId)?.status.executionRetryAt && Date.now() < deadline) await Bun.sleep(5);
+    const deadline = performance.now() + 1500;
+    while (!config.resourceStore.readTask(taskId)?.status.executionRetryAt && performance.now() < deadline) await Bun.sleep(5);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
       id: taskId,
       status: "pending",
@@ -5100,11 +5100,11 @@ describe("canonical App task runtime", () => {
       expectedGeneration: blocked.generation,
       expectedResourceVersion: blocked.resourceVersion,
     });
-    const retryDeadline = Date.now() + 1500;
+    const retryDeadline = performance.now() + 1500;
     while (
       (Object.values(readTaskSnapshot(config).attempts ?? {}).length < 2 ||
         !config.resourceStore.readTask(taskId)?.status.executionRetryAt) &&
-      Date.now() < retryDeadline
+      performance.now() < retryDeadline
     )
       await Bun.sleep(5);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
@@ -5114,10 +5114,10 @@ describe("canonical App task runtime", () => {
     });
     expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(2);
     await attach(true);
-    const completionDeadline = Date.now() + 1500;
+    const completionDeadline = performance.now() + 1500;
     while (
       readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "done" &&
-      Date.now() < completionDeadline
+      performance.now() < completionDeadline
     )
       await Bun.sleep(5);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
@@ -5323,8 +5323,8 @@ describe("canonical App task runtime", () => {
       maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.activeFromDb(getDb(join(f.root, "state")), "sample")!,
     });
-    const deadline = Date.now() + 1_000;
-    while (!config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt && Date.now() < deadline) {
+    const deadline = performance.now() + 1_000;
+    while (!config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt && performance.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(config.resourceStore.readTask("work/invalid-result")?.status).toMatchObject({
@@ -5345,8 +5345,8 @@ describe("canonical App task runtime", () => {
       }),
     );
     expect(config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt).toBeGreaterThan(Date.now());
-    const correctedDeadline = Date.now() + 1500;
-    while (!readAcceptedRuntimeAttempt(config, "work/invalid-result")?.acceptedResult && Date.now() < correctedDeadline)
+    const correctedDeadline = performance.now() + 1500;
+    while (!readAcceptedRuntimeAttempt(config, "work/invalid-result")?.acceptedResult && performance.now() < correctedDeadline)
       await Bun.sleep(5);
     expect(readAcceptedRuntimeAttempt(config, "work/invalid-result")?.acceptedResult?.summary).toBe("Corrected result");
     expect(calls).toBe(2);
@@ -5400,8 +5400,8 @@ describe("canonical App task runtime", () => {
         },
       });
     await attach("broken");
-    const deadline = Date.now() + 6_000;
-    while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < 5 && Date.now() < deadline) {
+    const deadline = performance.now() + 6_000;
+    while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < 5 && performance.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(calls).toBe(5);
@@ -5411,8 +5411,8 @@ describe("canonical App task runtime", () => {
     });
     for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
     await attach("healthy");
-    const healthyDeadline = Date.now() + 1_000;
-    while (!readAcceptedRuntimeAttempt(config, "work/healthy")?.acceptedResult && Date.now() < healthyDeadline)
+    const healthyDeadline = performance.now() + 1_000;
+    while (!readAcceptedRuntimeAttempt(config, "work/healthy")?.acceptedResult && performance.now() < healthyDeadline)
       await Bun.sleep(5);
     expect(readAcceptedRuntimeAttempt(config, "work/healthy")?.acceptedResult?.summary).toBe(
       "Verified independent work",
@@ -5847,8 +5847,8 @@ describe("canonical App task runtime", () => {
     });
 
     const config = loadedTaskConfig(f);
-    const deadline = Date.now() + 3_000;
-    while (!readAcceptedRuntimeAttempt(config, "work/resume-codex-goal")?.acceptedResult && Date.now() < deadline) {
+    const deadline = performance.now() + 3_000;
+    while (!readAcceptedRuntimeAttempt(config, "work/resume-codex-goal")?.acceptedResult && performance.now() < deadline) {
       await Bun.sleep(5);
     }
 
@@ -5939,10 +5939,10 @@ describe("canonical App task runtime", () => {
     });
     const config = loadedTaskConfig(f);
     const waitForPass = async (count: number) => {
-      const deadline = Date.now() + 3_000;
+      const deadline = performance.now() + 3_000;
       while (
         (batches.length < count || readTaskSnapshot(config).resources?.[taskId]?.status.phase !== "waiting") &&
-        Date.now() < deadline
+        performance.now() < deadline
       )
         await Bun.sleep(5);
       expect(batches).toHaveLength(count);
@@ -6075,8 +6075,8 @@ describe("canonical App task runtime", () => {
     expect(admissions.every((admission) => admission?.accepted && admission.route === "direct")).toBeTrue();
 
     const config = loadedTaskConfig(f);
-    const deadline = Date.now() + 3_000;
-    while (!readAcceptedRuntimeAttempt(config, "work/event-storm")?.acceptedResult && Date.now() < deadline)
+    const deadline = performance.now() + 3_000;
+    while (!readAcceptedRuntimeAttempt(config, "work/event-storm")?.acceptedResult && performance.now() < deadline)
       await Bun.sleep(5);
 
     expect(calls).toBe(3);
