@@ -554,6 +554,12 @@ after reload, while the three fresh-dispatch checks used the expected source.
 The same Task and generation survived. Adoption means the actual execution
 used the change; a reload receipt alone does not prove that.
 
+The linked-Gym no-model follow-up uses the existing App dependency return path
+to bring exact source evidence back to the same improvement Task. It exposes
+and fixes a source-event replay-key defect while preserving completed-copy
+evidence. The production verifier still refuses source-only completion; owner
+acceptance of relevant behavior evidence remains the next integration boundary.
+
 The isolated teaching slice is complete; production adoption is not. Review
 the focused [runtime PR #159](https://github.com/hao1939/may-agent/pull/159) and
 [portable trial PR #160](https://github.com/hao1939/may-agent/pull/160). Keep the

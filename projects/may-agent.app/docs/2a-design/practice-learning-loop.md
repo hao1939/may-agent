@@ -124,7 +124,11 @@ as unverified owner attention. Four isolated model checks prove the reference
 can be read and updated without reload. Its ordinary-Task follow-up proves
 adoption in fresh dispatches and retains an unsuccessful immediate-wake trial:
 an already-dispatched worker may still use old source after reload succeeds.
-It is not deployed, and Gym's activation-to-result handoff remains unimplemented.
+The linked-Gym no-model trial returns exact source evidence through an existing
+App dependency to the same owning Task. It also fixes a missing source-event
+key and preserves completed-copy evidence across publication failure. This is
+not deployed; production owner acceptance of behavior evidence against Gym's
+pending checkpoint remains unimplemented.
 The following source findings describe the baseline that motivated that candidate.
 
 Source review and the [isolated method trial](../proposals/extension-methods-poc-20260912.md)

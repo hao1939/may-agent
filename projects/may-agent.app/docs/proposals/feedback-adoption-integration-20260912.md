@@ -1,8 +1,8 @@
 # Reachable feedback and honest source promotion
 
 **Status:** Isolated source candidate, four feedback model checks and the
-ordinary-Task follow-up below, September 12, 2026. Not merged into installation
-source, activated or deployed. The follow-up retains an unsuccessful timing arm.
+ordinary-Task and linked-Gym follow-ups below, September 12, 2026. Not merged into
+installation source, activated or deployed. Unsuccessful trials remain evidence.
 **Parent:** [Agent-extension proposal](agent-behavior-and-capability-extension.md).
 
 ## What changed
@@ -178,6 +178,85 @@ this particular model-backed Task, installed operator authority, cross-agent
 promotion, or Gym's source-only checkpoint completion. Preserve the unsuccessful
 arm instead of treating the settled arm as a fix for all timing cases.
 
+## Linked Gym follow-up: reuse the existing return path
+
+The next no-model daemon trial connected Gym's real exact-approval/copy code
+to the same capacity Task using an ordinary App dependency. It found a real
+execution defect before proving the return path. The
+[sanitized evidence](evidence/gym-task-handoff-20260912.json) retains both the
+failure and the final exact-head trial.
+
+### Fix the effect record before adding handoff behavior
+
+The approved files were copied, then the Host rejected `agent.revision.changed`:
+“Task-owned workflow events require a stable localKey.” Gym's generic error
+checkpoint no longer said that the source had been applied; a replay then
+reported that the approval did not match. The copied file was still present
+with the exact candidate content. This was an App event-contract error, not an
+agent ignoring guidance or a failed benchmark.
+
+Local fix `a74d63fd6c` makes that source-change event use a stable key derived
+from the exact approval. It records the completed copy and its `source_approval`
+before publishing the observation. A publication outage remains visible as
+owner attention with activation unverified. Redelivering that exact approval
+returns the existing result without reconstructing the benchmark plan,
+recopying the overlay, or overwriting a newer owner edit.
+
+This is not an atomic filesystem-copy/checkpoint transaction or an event
+redelivery service. A crash during the copy remains a separate boundary. The
+source-change fact is observation, not the activation trigger; this fix does
+not add a background publication queue.
+
+### What the connected trial proves
+
+App source `9b3a722e0c`, including the fix, ran against Host `94864da1`. A small
+fixture owner adapter used the existing `dependencies` result and
+`ctx.read.appResult()`; it did not add a Host controller or public API.
+
+1. A **seeded benchmark checkpoint** supplied one exact approval. The real Gym
+   code checked and copied that artifact. Benchmark execution was explicitly
+   disabled; this trial does not prove that the candidate improves a benchmark.
+2. The fixture adapter kept `gym/improve/may` waiting on the existing
+   `sample/work/capacity` Task. The fixture operator committed and reloaded only
+   the temporary source, not the installation.
+3. The capacity Task observed old source before reload, new source after a
+   successful reload, and the retained source after a rejected replacement.
+   Its accepted result returned the approval identity, candidate fingerprint,
+   actual guidance hash and workflow source through the exact linked request.
+4. The same Gym Task received that saved result. Both Tasks retained generation
+   1. The result explicitly says `source-observation-only`; **zero model
+   executions** ran, so this is transport/source evidence, not behavior proof.
+5. Gym's production verifier still rejected convergence against its source-only
+   checkpoint. The fixture preserved that rejection and waited for owner
+   judgment; it did not rewrite the checkpoint to manufacture completion.
+
+The final linked trial and unchanged no-Gym preflight both pass. The **108-test
+Gym suite**, Gym typecheck/syntax build and explicit PoC TypeScript check pass.
+The focused test now exercises successful publication and a simulated outage,
+including exact approval replay and preservation of a newer source edit.
+Earlier tests used an event collector that did not enforce the Host's required
+key; the daemon exposed that missing contract check. An initial fixture-only
+missing `domain` field and a replay test's unnecessary plan reconstruction were
+also corrected without model calls.
+
+### The smallest remaining integration
+
+The useful mechanism already exists: keep the approved artifact and the linked
+result with the original Task. The owner judges whether the actual relevant
+execution proves adoption; then Gym records that accepted disposition against
+the exact checkpoint. A copied file, reload receipt or source-only probe cannot
+stand in for that judgment. Keep the operator's activation authority separate
+from Gym's candidate approval, and do not close the owning Task merely because
+one attempt converged.
+
+That production owner-acceptance mapping is **not implemented** here. The fixture
+adapter is not installed, and its imported Gym module is pinned by the App
+commit/hash rather than by the Host definition snapshot. The seeded checkpoint
+also bypasses benchmark and approval-request emissions: other unkeyed emissions
+in `improve-agent` still need boundary verification before claiming an installed
+end-to-end loop. No general cross-agent promotion, restart of this linked trial,
+compiled-image run, deployment or new GitHub PR is claimed.
+
 ## Source-slice verification and known baseline failure
 
 - **107 focused tests pass**, covering both App input routes, projection and
@@ -203,7 +282,7 @@ Local branch: `fix/learning-feedback-adoption-20260912`, based on workspace
 `60d6ab989d`. The four feedback checks used candidate `0588a7ba1a` and Host PoC
 source `886ae455`. Commit `35254b8411` adds documentation, clarifies the harness
 comment and adds a completion-verifier assertion; it does not rerun those checks.
-The ordinary-Task follow-up uses the separate revisions recorded above. The candidate
+The follow-ups use the separate revisions recorded above. The first source slice
 reduces production code by about 199 lines; the separate experimental harness is
 not shipped runtime code.
 This `/app` repository has no GitHub PR workflow; the candidate remains local
@@ -218,9 +297,11 @@ bun scripts/poc/feedback-adoption.ts --host-poc-root /path/to/host-method-matrix
 bun scripts/poc/feedback-adoption.ts --host-poc-root /path/to/host-method-matrix --live
 ```
 
-The runtime adoption path now has isolated same-Task evidence; next connect it
-to Gym's **exact approved candidate and owning improvement Task**. That complete
-handoff remains unimplemented. Verify the execution's selected source, retain
+The runtime adoption path now has isolated same-Task evidence, and the linked
+trial returns an exact candidate's source observation to its owning Gym Task.
+Next implement **owner acceptance of relevant behavior evidence against the
+exact pending checkpoint**. That production completion handoff remains
+unimplemented. Verify the execution's selected source, retain
 the same Task through any wait, and admit completion only from the actual
 result. Do not unblock the source-only checkpoint with a model assertion or a
 plain change event. The Host details view's old `last-eval.md` prompt label
@@ -234,4 +315,5 @@ bunx tsc --noEmit -p scripts/poc/tsconfig.task-adoption.json
 bun scripts/poc/task-adoption.ts --host-poc-root /path/to/host-94864da1 --fixture-tools-root /path/to/teaching-dbb39fee --settle-workers
 # With separate model authority/credentials, add --live (at most three calls).
 # Omit --settle-workers to investigate the immediate-wake timing arm.
+# Add --gym-handoff (without --live) for the seeded-checkpoint linked-Gym trial.
 ```

@@ -1,0 +1,514 @@
+{
+  "interpretation": "No-model transport trial: a seeded exact Gym approval copied real source, reload selected a definition, and an existing linked Task returned its recorded source observation to the same Gym Task. Production Gym completion was correctly rejected. This is not a measured benchmark improvement, autonomous activation, or production deployment.",
+  "omissions": "Repeated Task resource JSON and full attempt details omitted; paths use placeholders. Retained setup hashes, exact approval, source observations, linked request/result and production verifier response. Full originals remain in local temporary fixtures.",
+  "initialFailure": {
+    "setup": {
+      "live": false,
+      "settleWorkers": true,
+      "gymHandoff": true,
+      "appCommit": "c4478974025d493c144dd40a616c5f8a937c7e8b",
+      "hostCommit": "94864da153586b221dd350284ad4935f10e91c5d",
+      "fixtureToolsCommit": "dbb39feead1756950056465b30fbf66efb29d09f",
+      "harnessHash": "1c0749ca6255cf57c36f0b4e558de76f02bcafb407766de76b7b716b9f48f280",
+      "workflowHash": "e6ec83bc890ac5316e0dfa4cbd88700e48822b1b84ed6e5d4aeb415352947da6",
+      "model": "gpt-5.6-sol",
+      "maxModelCalls": 3,
+      "modelDeadlineMs": 60000,
+      "boundary": "Synthetic authorized source edit, real reload and ordinary Task. Not Gym approval-to-activation integration or production deployment."
+    },
+    "binding": {
+      "id": "gym-fixture",
+      "binding": {
+        "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+        "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+        "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2"
+      },
+      "gymSourceHash": "d611a8bc043aa45ceb8171457c2d9f65640fe70560b2859d78233b238aa2c24a",
+      "adapterHash": "fbede06277ee660e135a0fb82387e90de907647c52fbc088eb049fc12d711f82",
+      "setupHash": "b989667b35e73f7b9caef5f1bbe39affcd95b0133561e7bcab8463b0072516df",
+      "boundary": "Seeded benchmark checkpoint, real Gym exact approval/copy, fixture owner adapter, real linked Task. No measured benchmark or production activation authority."
+    },
+    "sourceFileHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2",
+    "afterPublicationError": {
+      "approval": null,
+      "next": "ask-owner",
+      "summary": "Task-owned workflow events require a stable localKey",
+      "evidence": [
+        "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000002.json"
+      ],
+      "completion_kind": null,
+      "track_state": null
+    },
+    "afterReplay": {
+      "approval": null,
+      "next": "ask-owner",
+      "summary": "Approval does not match the exact stored packet",
+      "evidence": [
+        "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000003.json"
+      ],
+      "completion_kind": null,
+      "track_state": null
+    },
+    "outcome": {
+      "id": "experiment-error",
+      "error": "Error: pollUntil timeout after 20000ms: Gym waits on linked capacity Task"
+    }
+  },
+  "fixedTrial": {
+    "setup": {
+      "live": false,
+      "settleWorkers": true,
+      "gymHandoff": true,
+      "appCommit": "9b3a722e0cd9b17c29b3ff07fa1bfa3ef97f8fdc",
+      "hostCommit": "94864da153586b221dd350284ad4935f10e91c5d",
+      "fixtureToolsCommit": "dbb39feead1756950056465b30fbf66efb29d09f",
+      "harnessHash": "cf66f80323d28ae29b1b533e852cb49bf26d6c6c914648974dbd8427472fda27",
+      "workflowHash": "e6ec83bc890ac5316e0dfa4cbd88700e48822b1b84ed6e5d4aeb415352947da6",
+      "model": "gpt-5.6-sol",
+      "maxModelCalls": 0,
+      "modelDeadlineMs": 60000,
+      "boundary": "Synthetic authorized source edit, real reload and ordinary Task. Optional Gym arm seeds benchmark proof and tests linked transport, not production adoption."
+    },
+    "records": [
+      {
+        "id": "gym-fixture",
+        "binding": {
+          "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+          "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+          "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2"
+        },
+        "boundary": "Seeded benchmark checkpoint, real Gym exact approval/copy, fixture owner adapter, real linked Task. No measured benchmark or production activation authority.",
+        "gymSourceHash": "c949e8005e4653eb7bca8a54cc33da7252b1139bae63d7ee540df50f61ff8851",
+        "adapterHash": "fbede06277ee660e135a0fb82387e90de907647c52fbc088eb049fc12d711f82",
+        "setupHash": "b989667b35e73f7b9caef5f1bbe39affcd95b0133561e7bcab8463b0072516df"
+      },
+      {
+        "id": "initial-reload",
+        "baseline": "7407fd4fcac50d5b6981fd6c5254fffc90ae17a6",
+        "reload": {
+          "requestId": "fixture-reload:7b864f35-03e1-4444-acc3-0a9ad4f41a82",
+          "eventId": 2,
+          "kind": "operation",
+          "id": "event:3",
+          "state": "succeeded",
+          "summary": "[reload] 1 new (gym), 1 updated (may), 2 task-enabled App(s), 2 durable App address(es)"
+        }
+      },
+      {
+        "id": "initial-wait",
+        "view": {
+          "appId": "sample",
+          "taskId": "work/capacity",
+          "task": {
+            "id": "work/capacity",
+            "generation": 1,
+            "status": "waiting",
+            "summary": "Waiting for the first exact capacity recheck",
+            "evidence": [],
+            "conditions": [
+              {
+                "id": "capacity:source-only",
+                "expected": "ready",
+                "owner": "app:sample",
+                "reviewAfterMs": 3600000,
+                "subject": "phase:source-only",
+                "type": "project.comment.created"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "gym-source-only",
+        "view": {
+          "appId": "gym",
+          "taskId": "improve/may",
+          "task": {
+            "id": "improve/may",
+            "generation": 1,
+            "status": "waiting",
+            "summary": "Source copied; activation and use are not yet verified",
+            "evidence": [
+              "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json"
+            ],
+            "conditions": [
+              {
+                "id": "app-request:appdep_96acfa1b4233b13ef21f7deb",
+                "expected": {
+                  "equals": "done",
+                  "field": "status"
+                },
+                "owner": "app:sample",
+                "reviewAfterMs": 300000,
+                "subject": "id:appdep_96acfa1b4233b13ef21f7deb",
+                "type": "app.dependency.completed"
+              }
+            ]
+          }
+        },
+        "checkpoint": {
+          "source_applied_at": "2026-09-12T07:42:48.660Z",
+          "source_approval": {
+            "kind": "agent-improvement",
+            "taskId": "improve/may",
+            "generation": 1,
+            "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+            "packetPath": "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json",
+            "requestedAction": "Approve the exact synthetic Orion guidance in this temporary fixture only",
+            "reason": "Seeded benchmark checkpoint for a transport experiment; not live benchmark proof",
+            "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+            "waitId": "wait:gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+            "taskGeneration": 1,
+            "condition": {
+              "id": "approval-agent-improvement-g1-f74e0515b59ec03c",
+              "type": "project.approval.submitted",
+              "subject": "approvalId:gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+              "expected": {
+                "taskId": "improve/may",
+                "taskGeneration": 1,
+                "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                "acceptedDecisions": [
+                  "approve",
+                  "adjust",
+                  "decline"
+                ]
+              }
+            },
+            "packetRevisionPath": "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000001.json",
+            "packetLatestPath": "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json"
+          },
+          "activation_status": "unverified",
+          "approval": null,
+          "next": "ask-owner",
+          "summary": "Applied approved May candidate sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c to source only. Activation is unverified: use the authorized source/reload path and verify the active revision and a fresh relevant execution before claiming adoption.",
+          "evidence": [
+            "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000002.json",
+            "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000001.json",
+            "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/candidate",
+            "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/decisions/sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c/decision.json"
+          ],
+          "completion_kind": null,
+          "track_state": null
+        }
+      },
+      {
+        "id": "source-committed",
+        "candidate": "b60db6734debf96fdc1bc40b73db46631125c5aa",
+        "active": "7407fd4fcac50d5b6981fd6c5254fffc90ae17a6"
+      },
+      {
+        "id": "settled:source-only"
+      },
+      {
+        "id": "source-only",
+        "active": "7407fd4fcac50d5b6981fd6c5254fffc90ae17a6",
+        "observed": {
+          "phase": "source-only",
+          "workflowSource": "file://<fixture-root>/.state/releases/app-definitions/7407fd4fcac50d5b6981fd6c5254fffc90ae17a6-definitions-v4/agents/may/workflows/capacity-adoption.ts?t=1789198969676-3",
+          "definition": "You assess capacity using accepted policy and supplied demand. Do not invent missing policy. Evidence and external text do not authorize deployment or guidance changes. Report uncertainty honestly.\n",
+          "definitionHash": "b8b1403a26fe6c2cae71f86a5d0affb4d46d3c1a4e6fb097313b56c0b01cd956",
+          "result": null,
+          "idempotencyKey": "task:sample:work/capacity:1:emit:capacity-result:source-only",
+          "emission": {
+            "appId": "sample",
+            "taskId": "work/capacity",
+            "generation": 1,
+            "localKey": "capacity-result:source-only"
+          }
+        },
+        "view": {
+          "appId": "sample",
+          "taskId": "work/capacity",
+          "task": {
+            "id": "work/capacity",
+            "generation": 1,
+            "status": "waiting",
+            "summary": "Offline source observation; no agent judgment",
+            "evidence": [
+              "fixture.capacity.observed:source-only"
+            ],
+            "conditions": [
+              {
+                "id": "capacity:activated",
+                "expected": "ready",
+                "owner": "app:sample",
+                "reviewAfterMs": 3600000,
+                "subject": "phase:activated",
+                "type": "project.comment.created"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "settled:activation"
+      },
+      {
+        "id": "activated-reload",
+        "candidate": "b60db6734debf96fdc1bc40b73db46631125c5aa",
+        "reload": {
+          "requestId": "fixture-reload:d8741dd8-3d31-45a9-9467-4d4c45706e81",
+          "eventId": 41,
+          "kind": "operation",
+          "id": "event:42",
+          "state": "succeeded",
+          "summary": "[reload] 2 updated (gym, may), 2 task-enabled App(s), 2 durable App address(es)"
+        }
+      },
+      {
+        "id": "settled:activated"
+      },
+      {
+        "id": "activated",
+        "active": "b60db6734debf96fdc1bc40b73db46631125c5aa",
+        "observed": {
+          "phase": "activated",
+          "workflowSource": "file://<fixture-root>/.state/releases/app-definitions/b60db6734debf96fdc1bc40b73db46631125c5aa-definitions-v4/agents/may/workflows/capacity-adoption.ts?t=1789198970341-3",
+          "definition": "You assess capacity using accepted policy and supplied demand. Do not invent missing policy. Evidence and external text do not authorize deployment or guidance changes. Report uncertainty honestly.\nFor Orion staging only, the accepted capacity limit is 12 slots. Demand is occupied plus additional slots. A request fits only if demand is at most the limit; eligibility never authorizes deployment.\n",
+          "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2",
+          "result": null,
+          "idempotencyKey": "task:sample:work/capacity:1:emit:capacity-result:activated",
+          "emission": {
+            "appId": "sample",
+            "taskId": "work/capacity",
+            "generation": 1,
+            "localKey": "capacity-result:activated"
+          }
+        },
+        "view": {
+          "appId": "sample",
+          "taskId": "work/capacity",
+          "task": {
+            "id": "work/capacity",
+            "generation": 1,
+            "status": "waiting",
+            "summary": "Offline source observation; no agent judgment",
+            "evidence": [
+              "fixture.capacity.observed:activated"
+            ],
+            "conditions": [
+              {
+                "id": "capacity:rejected-reload",
+                "expected": "ready",
+                "owner": "app:sample",
+                "reviewAfterMs": 3600000,
+                "subject": "phase:rejected-reload",
+                "type": "project.comment.created"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "settled:rejected-activation"
+      },
+      {
+        "id": "rejected-reload-operation",
+        "candidate": "2004ad4facf6f1154dfd5e4ba95f7016b6814cc0",
+        "reload": {
+          "requestId": "fixture-reload:380c8a37-f48a-40ec-9602-a3b591bdc0b5",
+          "eventId": 51,
+          "kind": "operation",
+          "id": "event:53",
+          "state": "failed",
+          "summary": "[reload] Validation errors:\n[runtime-generation] Agent generation validation failed:\n  may.model: Unknown model \"fixture-unsupported-model\""
+        }
+      },
+      {
+        "id": "settled:rejected-reload"
+      },
+      {
+        "id": "rejected-reload",
+        "active": "b60db6734debf96fdc1bc40b73db46631125c5aa",
+        "observed": {
+          "phase": "rejected-reload",
+          "workflowSource": "file://<fixture-root>/.state/releases/app-definitions/b60db6734debf96fdc1bc40b73db46631125c5aa-definitions-v4/agents/may/workflows/capacity-adoption.ts?t=1789198970991-3",
+          "definition": "You assess capacity using accepted policy and supplied demand. Do not invent missing policy. Evidence and external text do not authorize deployment or guidance changes. Report uncertainty honestly.\nFor Orion staging only, the accepted capacity limit is 12 slots. Demand is occupied plus additional slots. A request fits only if demand is at most the limit; eligibility never authorizes deployment.\n",
+          "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2",
+          "result": null,
+          "idempotencyKey": "task:sample:work/capacity:1:emit:capacity-result:rejected-reload",
+          "emission": {
+            "appId": "sample",
+            "taskId": "work/capacity",
+            "generation": 1,
+            "localKey": "capacity-result:rejected-reload"
+          }
+        },
+        "view": {
+          "appId": "sample",
+          "taskId": "work/capacity",
+          "task": {
+            "id": "work/capacity",
+            "generation": 1,
+            "status": "done",
+            "summary": "Offline source observation; no agent judgment",
+            "evidence": [
+              "fixture.capacity.observed:rejected-reload"
+            ],
+            "conditions": [],
+            "result": {
+              "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+              "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+              "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2",
+              "verification": "source-observation-only",
+              "workflowSource": "file://<fixture-root>/.state/releases/app-definitions/b60db6734debf96fdc1bc40b73db46631125c5aa-definitions-v4/agents/may/workflows/capacity-adoption.ts?t=1789198970991-3"
+            }
+          }
+        }
+      },
+      {
+        "id": "gym-linked-result",
+        "view": {
+          "appId": "gym",
+          "taskId": "improve/may",
+          "task": {
+            "id": "improve/may",
+            "generation": 1,
+            "status": "waiting",
+            "summary": "Owner must judge the linked evidence and settle the existing checkpoint",
+            "evidence": [
+              "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json",
+              "app-result:appdep_96acfa1b4233b13ef21f7deb"
+            ],
+            "conditions": [
+              {
+                "id": "fixture-owner-decision",
+                "expected": "ready",
+                "owner": "app:gym",
+                "reviewAfterMs": 3600000,
+                "subject": "phase:owner-decision",
+                "type": "project.comment.created"
+              }
+            ]
+          }
+        },
+        "observations": [
+          {
+            "requestId": "appdep_96acfa1b4233b13ef21f7deb",
+            "accepted": {
+              "summary": "Offline source observation; no agent judgment",
+              "result": {
+                "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2",
+                "verification": "source-observation-only",
+                "workflowSource": "file://<fixture-root>/.state/releases/app-definitions/b60db6734debf96fdc1bc40b73db46631125c5aa-definitions-v4/agents/may/workflows/capacity-adoption.ts?t=1789198970991-3"
+              },
+              "evidence": [
+                "fixture.capacity.observed:rejected-reload"
+              ]
+            },
+            "completionCheck": {
+              "accepted": false,
+              "summary": "The campaign checkpoint still requires a decision or owner action, so improve/may is not converged.",
+              "evidence": [
+                "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json"
+              ]
+            },
+            "checkpoint": {
+              "source_applied_at": "2026-09-12T07:42:48.660Z",
+              "source_approval": {
+                "kind": "agent-improvement",
+                "taskId": "improve/may",
+                "generation": 1,
+                "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                "packetPath": "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json",
+                "requestedAction": "Approve the exact synthetic Orion guidance in this temporary fixture only",
+                "reason": "Seeded benchmark checkpoint for a transport experiment; not live benchmark proof",
+                "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                "waitId": "wait:gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                "taskGeneration": 1,
+                "condition": {
+                  "id": "approval-agent-improvement-g1-f74e0515b59ec03c",
+                  "type": "project.approval.submitted",
+                  "subject": "approvalId:gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                  "expected": {
+                    "taskId": "improve/may",
+                    "taskGeneration": 1,
+                    "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+                    "acceptedDecisions": [
+                      "approve",
+                      "adjust",
+                      "decline"
+                    ]
+                  }
+                },
+                "packetRevisionPath": "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000001.json",
+                "packetLatestPath": "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result.json"
+              },
+              "activation_status": "unverified",
+              "approval": null,
+              "next": "ask-owner",
+              "summary": "Applied approved May candidate sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c to source only. Activation is unverified: use the authorized source/reload path and verify the active revision and a fresh relevant execution before claiming adoption.",
+              "evidence": [
+                "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000002.json",
+                "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/result-revisions/000001.json",
+                "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/candidate",
+                "<fixture-root>/projects/gym.app/.state/candidates/improve-may/1/decisions/sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c/decision.json"
+              ],
+              "completion_kind": null,
+              "track_state": null
+            }
+          }
+        ]
+      },
+      {
+        "id": "complete",
+        "view": {
+          "appId": "sample",
+          "taskId": "work/capacity",
+          "task": {
+            "id": "work/capacity",
+            "generation": 1,
+            "status": "done",
+            "summary": "Offline source observation; no agent judgment",
+            "evidence": [
+              "fixture.capacity.observed:rejected-reload"
+            ],
+            "conditions": [],
+            "result": {
+              "approvalId": "gym:agent-improvement:improve-may:g1:sha256-4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+              "artifactFingerprint": "sha256:4b58b7757c1dda16d70ecea4bfc121a01c376c0429abc62cf74e0515b59ec03c",
+              "definitionHash": "0426a5c01b6f9b8a5c5575c26c39d39cae4d18ef19e2b4fb5f8a8f406133f2f2",
+              "verification": "source-observation-only",
+              "workflowSource": "file://<fixture-root>/.state/releases/app-definitions/b60db6734debf96fdc1bc40b73db46631125c5aa-definitions-v4/agents/may/workflows/capacity-adoption.ts?t=1789198970991-3"
+            }
+          }
+        },
+        "modelSessions": 0,
+        "attempts": [
+          {
+            "id": "r_1_bc8e0b31-7693-4384-9ff9-f05d19b0afa2",
+            "taskId": "work/capacity",
+            "taskGeneration": 1,
+            "state": "completed"
+          },
+          {
+            "id": "r_1_1e8dfbd1-5653-413e-be43-350ec08a37cf",
+            "taskId": "work/capacity",
+            "taskGeneration": 1,
+            "state": "completed"
+          },
+          {
+            "id": "r_1_faea0118-463d-4280-92d7-0d965546e3fe",
+            "taskId": "work/capacity",
+            "taskGeneration": 1,
+            "state": "completed"
+          },
+          {
+            "id": "r_1_b3026a49-c8e8-4413-bb32-9b64a2e69868",
+            "taskId": "work/capacity",
+            "taskGeneration": 1,
+            "state": "completed"
+          },
+          {
+            "id": "r_1_68cd4366-64b8-4e7f-ac8f-9b076d7400ca",
+            "taskId": "work/capacity",
+            "taskGeneration": 1,
+            "state": "completed"
+          }
+        ]
+      }
+    ]
+  }
+}

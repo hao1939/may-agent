@@ -49,8 +49,9 @@ The [first integration candidate](proposals/feedback-adoption-integration-202609
 restores reachable feedback and keeps unverified source adoption pending; four
 model checks confirm the feedback read/update/clear path. Its ordinary-Task
 follow-up verifies adoption in fresh dispatches while retaining an unsuccessful
-immediate-wake timing case. Deployment and Gym's activation-to-result handoff
-remain separate.
+immediate-wake timing case. A further no-model trial connects exact approved
+source to a linked Task result and fixes a source-event publication defect.
+Deployment and production owner acceptance of adoption remain separate.
 
 The [Telegram experience proposal](proposals/telegram-conversation-experience.md)
 tracks candidate fixes for five reproduced reliability defects alongside
