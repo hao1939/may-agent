@@ -108,7 +108,6 @@ import {
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   expiredAgentSessionAppTaskAttempt,
-  terminalAgentSessionAppTaskClaim,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
@@ -325,161 +324,6 @@ function taskCompletionDisposition(
 ): "converged" | "progress" | "revised" {
   if (!taskContinues) return "converged";
   return actions.some((action) => action.kind === "update-task" && action.taskId === taskId) ? "revised" : "progress";
-}
-
-type PersistedTerminalAgentResultConsumption = {
-  claim: AppTaskClaim;
-  state: ReturnType<typeof taskCompletionDisposition> | "waiting" | "stopped";
-  summary: string;
-  response?: string;
-  evidence: string[];
-  actionsApplied: string[];
-  conditionIds?: string[];
-  reconcileTaskIds: string[];
-};
-
-export function consumePersistedTerminalAgentResult(input: {
-  result: unknown;
-  config: AppTaskContext;
-  descriptor: AppTaskRuntimeDescriptor;
-  taskId: string;
-  sessionId: string;
-  onRejected?: (error: unknown) => void;
-  prepareSupersededSessions?: (sessionIds: string[]) => void;
-}): PersistedTerminalAgentResultConsumption | null {
-  const raw = input.result;
-  if (raw === undefined) return null;
-  const claim = terminalAgentSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
-  if (!claim) return null;
-  // A workflow's lost continuation includes its verifier and workspace handling.
-  // Retry through normal execution instead of accepting an agent-only shortcut.
-  if (claim.intent.workflow) return null;
-  const defaultParentId = input.config.resourceStore.rootTaskId();
-  if (!defaultParentId) return null;
-  let cleanupFailed = false;
-  const prepareSupersededSessions = (sessionIds: string[]) => {
-    try {
-      input.prepareSupersededSessions?.(sessionIds);
-    } catch (error) {
-      cleanupFailed = true;
-      throw error;
-    }
-  };
-  try {
-    const result = normalizeTaskHandlerResult(
-      raw,
-      {
-        type: "done",
-        summary: `Recovered terminal agent result from session ${input.sessionId}`,
-        runId: input.sessionId,
-      },
-      {
-        allowNeedsAgent: false,
-        defaultParentId,
-        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-        validateAction: input.descriptor.app.tasks?.validateAction,
-        validateCondition: input.descriptor.app.tasks?.validateCondition,
-      },
-    );
-    if (result.state === "stopped") {
-      const applied = stopAppTask(input.config, claim, result);
-      if (applied.status !== "applied") return null;
-      return {
-        claim,
-        state: "stopped",
-        summary: applied.summary!,
-        response: result.response,
-        evidence: result.evidence,
-        actionsApplied: [],
-        reconcileTaskIds: applied.parentTaskId ? [applied.parentTaskId] : [],
-      };
-    }
-    if (result.state === "converged") {
-      const applied = completeAppTask(input.config, claim, {
-        summary: result.summary,
-        response: result.response,
-        result: result.result,
-        evidence: result.evidence,
-        actions: result.actions,
-        acceptanceBasis: { method: "agent-judgment", evidence: result.evidence },
-        prepareSupersededSessions,
-      });
-      if (applied.status !== "applied") return null;
-      return {
-        claim,
-        state: taskCompletionDisposition(claim.taskId, result.actions, applied.taskContinues),
-        summary: result.summary,
-        ...(result.response ? { response: result.response } : {}),
-        evidence: result.evidence,
-        actionsApplied: applied.actionsApplied,
-        reconcileTaskIds: applied.dependentTaskIds,
-      };
-    }
-    if (result.state === "waiting") {
-      const applied = deferAppTask(input.config, claim, {
-        disposition: "waiting",
-        summary: result.summary,
-        response: result.response,
-        result: result.result,
-        evidence: result.evidence,
-        actions: result.actions,
-        conditions: result.conditions,
-        prepareSupersededSessions,
-      });
-      if (applied.status !== "applied") return null;
-      return {
-        claim,
-        state: "waiting",
-        summary: result.summary,
-        evidence: result.evidence,
-        actionsApplied: applied.actionsApplied,
-        conditionIds: result.conditions?.map((condition) => condition.id),
-        reconcileTaskIds: applied.reconcileTaskIds,
-      };
-    }
-  } catch (error) {
-    // A valid saved result is not rejected when cleanup is temporarily unsafe.
-    // Keep its claim and exact targets intact for the next recovery pass.
-    if (cleanupFailed) throw error;
-    input.onRejected?.(error);
-  }
-  return null;
-}
-
-/** Callers retain their live-session/lease checks and choose how to requeue. */
-function settlePersistedTerminalAgentResult(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  config: AppTaskContext;
-  taskId: string;
-  sessionId: string;
-  onRejected?: (error: unknown) => void;
-}): string[] | null {
-  const { opts, descriptor, taskId, sessionId } = input;
-  const consumed = consumePersistedTerminalAgentResult({
-    ...input,
-    result: opts.sessions?.result(sessionId),
-    prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, taskId, ids),
-  });
-  if (!consumed) return null;
-  // Publication follows the committed Task disposition, not the session status.
-  emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", taskId, {
-    route: "terminal-agent-result-recovery",
-    generation: consumed.claim.generation,
-    attemptId: consumed.claim.attemptId,
-    handler: consumed.claim.handler,
-    disposition: consumed.state,
-    summary: consumed.summary,
-    evidence: consumed.evidence,
-    actionsApplied: consumed.actionsApplied,
-    evidenceSessionId: sessionId,
-  });
-  const replayedTaskIds =
-    consumed.state === "waiting"
-      ? replayPersistedConditionEvents(opts, descriptor, input.config, { conditionIds: consumed.conditionIds })
-      : [];
-  emitAppTaskDependencyChange(opts, descriptor, taskId, consumed.state);
-  return [...new Set([...consumed.reconcileTaskIds, ...replayedTaskIds])];
 }
 
 async function runTaskCapability(
@@ -1352,25 +1196,6 @@ async function reconcileTask(input: {
     if (primary.kind !== "claimed") {
       if (primary.kind === "busy") {
         const active = primary.attemptId ? config.resourceStore.readAttempt(primary.attemptId) : null;
-        const terminalSession = active?.sessionId && opts.persistDir ? opts.sessions?.read(active.sessionId) : null;
-        if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
-          const settledTaskIds = settlePersistedTerminalAgentResult({
-            opts,
-            config,
-            descriptor,
-            taskId: input.taskId,
-            sessionId: active.sessionId,
-            onRejected: (error) => {
-              opts.bus.emit({
-                type: "info",
-                message: `[app-task:${descriptor.id}] Rejected terminal result for ${input.taskId}; the task will be retried: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
-              });
-            },
-          });
-          if (settledTaskIds) return settledTaskIds;
-        }
         const leaseCheckAt = Date.now();
         const sessionActivity =
           active?.sessionId && opts.persistDir
@@ -1387,6 +1212,9 @@ async function reconcileTask(input: {
             ? session.status
             : null;
         if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+          // A session artifact is evidence, not an accepted Task result. Drain
+          // the exact old execution before retrying through normal settlement.
+          interruptSupersededAgentSession(opts, sessionId, "Retrying an uncommitted Task attempt", input.taskId);
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
             config,
             { ...expired, sessionId, terminalStatus },
@@ -2113,7 +1941,7 @@ async function reconcileTask(input: {
     return [intent.id];
   } catch (error) {
     // Cleanup refusal is not a failed execution or rejected result. Preserve
-    // the original claim so recovery can settle its saved result without redo.
+    // the original claim until recovery can drain execution and retry safely.
     if (cleanupFailed) {
       timing.outcome = "failed";
       throw error;
@@ -3166,30 +2994,6 @@ function recoverInterruptedAppTasks(
     for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases, runningRecoveryTaskIds)) {
       if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
-      }
-      const persistedSession = recovery.sessionId && opts.persistDir ? opts.sessions?.read(recovery.sessionId) : null;
-      if (recovery.sessionId && persistedSession?.status === "done") {
-        let rejection: string | undefined;
-        const settledTaskIds = settlePersistedTerminalAgentResult({
-          opts,
-          config,
-          descriptor,
-          taskId: recovery.taskId,
-          sessionId: recovery.sessionId,
-          onRejected: (error) => {
-            rejection = error instanceof Error ? error.message : String(error);
-          },
-        });
-        if (settledTaskIds) {
-          for (const taskId of settledTaskIds) {
-            if (controller && !descriptor.reconciliationPaused) enqueueAppTask(controller, config, taskId);
-          }
-          continue;
-        }
-        if (rejection) {
-          releaseRecovery(recovery, `Rejected terminal result for ${recovery.taskId}: ${rejection}`);
-          continue;
-        }
       }
       releaseRecovery(recovery);
     }

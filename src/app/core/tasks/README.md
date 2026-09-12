@@ -18,7 +18,7 @@ Read in this order:
    through [`core/state`](../state/README.md).
 5. `app-task-recovery.ts` schedules recovery; `startup-recovery.ts` checks
    retained session eligibility. `adapters/executors/session-recovery.ts`
-   reads terminal agent evidence for the same result-admission path.
+   preserves session evidence and drains orphaned execution before safe redo.
 
 `app-task-state.ts` defines persisted Task facts. `app-task-store.ts` provides
 snapshot/mutation helpers, not another database authority. Context, Conditions,
@@ -43,7 +43,7 @@ authorized owner -> close Task -> fence running execution and future wakes
 | Execute | `reconcileTask()` -> selected handler via `execution.ts`; human context is prepared by `composition/conversation-task-turn.ts` | Every handler uses the same Task claim. It proposes a result without acquiring closure authority |
 | Settle | `establishTaskAcceptance()` -> `completeAppTask()`, `deferAppTask()` or `markAppTaskAttention()`; human-facing effects use `core/state/conversation-task-turns.ts`; exceptions use `failAppTaskAttempt()` | The reconciler fences acceptance. Replies, Request updates and authorized effects commit with the Task result; unfinished input survives failure |
 | Close or stop an attempt | `cancelLoadedAppTask()` -> `cancelAppTask()` closes the assignment; `stopLoadedConversationTurn()` stops the observed human Turn | Closure fences future work. Turn Stop preserves newer input. The legacy-named `stopAppTask()` records a worker failure report and retries; it does not close the Task |
-| Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Recover the same Task; retained terminal agent output uses existing result admission. Missing output permits safe redo, not a completion claim |
+| Restart | `recoverInstalledAppTasks()` -> `recoverInterruptedAppTasks()`; `app-task-recovery.ts` restores queue hints | Accepted Task results survive. Uncommitted execution retries the same input after ownership/cleanup checks; session output remains evidence for normal execution and validation |
 
 These entry points are in `app-task-runtime.ts` or `app-task-reconciler.ts`
 unless a path is given. Result rejection retains unfinished work and paces its

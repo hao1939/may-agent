@@ -103,8 +103,13 @@ parent/child identity and fence obsolete claims without deleting Task resources.
 execution; the reconciler regression proves archived success cannot satisfy a
 dependency on newer unfinished work. Conflicting same-generation receipt imports
 remain covered by `task-receipt-cutover.test.ts`.
-The Task runtime suite now exercises those same outcomes through installed
-executors, startup recovery and existing session evidence. Coverage includes
+The Task runtime suite exercises outcomes through installed executors. Recovery
+tests now require a replacement attempt for uncommitted session output; they
+preserve the original input, reject its unapplied proposal, keep fresh claims
+owned, require confirmed process cleanup and retain accepted results after reopen.
+The former terminal-result consumption helper and its settlement matrices are
+removed. Normal settlement owns outcome/action coverage; session-adapter tests
+retain the artifact as evidence without granting Task acceptance. Coverage includes
 parent-led prerequisite repair without an unblock action, continued failure
 reports across reopen, capability replacement without bypassing backoff, and
 retained result evidence after cleanup and event storms. Input-state checks

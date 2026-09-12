@@ -109,7 +109,6 @@ export type TaskSessionRecovery = {
   read(sessionId: string): { status: string; taskBinding?: unknown; workflowRunId?: string } | null;
   isLive(sessionId: string): boolean;
   lastActivityAt(sessionId: string): number | null;
-  result(sessionId: string): unknown;
   interrupt(sessionId: string, reason: string, taskId?: string): void;
   workflowInterrupted(workflowRunId: string | null): boolean;
 };

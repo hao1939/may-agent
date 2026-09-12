@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 it.each(["success", "failure", "blocked", "partial"])(
-  "recovers a committed structured judgment with finish status %s exactly once",
+  "retains structured session evidence with finish status %s exactly once",
   (finishStatus) => {
     const root = mkdtempSync(join(tmpdir(), "may-recovered-judgment-"));
     roots.push(root);
@@ -36,13 +36,26 @@ it.each(["success", "failure", "blocked", "partial"])(
     });
     appendSessionMessage(root, sessionId, {
       role: "assistant",
-      content: [{ type: "toolCall", id: "finish-call", name: "finish", arguments: {
-        status: finishStatus, summary: judgment.summary, result: judgment,
-      } }],
+      content: [
+        {
+          type: "toolCall",
+          id: "finish-call",
+          name: "finish",
+          arguments: {
+            status: finishStatus,
+            summary: judgment.summary,
+            result: judgment,
+          },
+        },
+      ],
     } as AgentMessage);
     appendSessionMessage(root, sessionId, {
-      role: "toolResult", toolCallId: "finish-call", toolName: "finish",
-      content: [{ type: "text", text: "Recorded" }], isError: false, timestamp: 2,
+      role: "toolResult",
+      toolCallId: "finish-call",
+      toolName: "finish",
+      content: [{ type: "text", text: "Recorded" }],
+      isError: false,
+      timestamp: 2,
     });
     const bus = new EventBus();
     const events: AgentEvent[] = [];
@@ -52,33 +65,22 @@ it.each(["success", "failure", "blocked", "partial"])(
 
     recovery.interrupt(sessionId, "Previous process exited");
     expect(readSessionMeta(root, sessionId)?.status).toBe("done");
-    expect(recovery.result(sessionId)).toEqual(judgment);
+    expect(
+      JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8")).finishParams.result,
+    ).toEqual(judgment);
     expect(events.filter((event) => event.type === "session.end")).toMatchObject([
       { data: { status: "done", finishParams: { status: finishStatus, result: judgment } } },
     ]);
 
     closeDb(root);
     const reopened = createTaskSessionRecovery({ ...options, manager: new SubagentManager({ persistDir: root }) });
-    expect(reopened.result(sessionId)).toEqual(judgment);
+    expect(
+      JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8")).finishParams.result,
+    ).toEqual(judgment);
     reopened.interrupt(sessionId, "Repeated recovery");
     expect(events.filter((event) => event.type === "session.end")).toHaveLength(1);
   },
 );
-
-it.each(["error", "interrupted"])("does not consume a structured result from a %s execution", (status) => {
-  const root = mkdtempSync(join(tmpdir(), "may-rejected-judgment-"));
-  roots.push(root);
-  const sessionId = "failed-session";
-  const sessionDir = join(root, "sessions", sessionId);
-  mkdirSync(sessionDir, { recursive: true });
-  writeFileSync(join(sessionDir, "result.json"), JSON.stringify({
-    status, finishParams: { status: "success", result: { state: "converged" } },
-  }));
-  const recovery = createTaskSessionRecovery({
-    persistDir: root, manager: new SubagentManager({ persistDir: root }), bus: new EventBus(),
-  });
-  expect(recovery.result(sessionId)).toBeUndefined();
-});
 
 it.each(["interrupted", "done", "error"] as const)(
   "writes recovered %s completion to the persisted owner after disabling its App",

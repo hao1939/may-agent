@@ -976,52 +976,6 @@ export function recoverableAppTaskAttempts(
   });
 }
 
-export function terminalAgentSessionAppTaskClaim(
-  config: AppTaskContext,
-  taskId: string,
-  sessionId: string,
-): AppTaskClaim | null {
-  const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const resource = tree.resources?.[taskId];
-  if (!resource || resource.status.phase !== "running") return null;
-  const attempt = currentResourceAttempt(tree, resource);
-  if (
-    !attempt ||
-    attempt.state !== "running" ||
-    !isManagedAgentHandler(attempt.handler) ||
-    attempt.sessionId !== sessionId ||
-    attempt.taskGeneration !== resource.metadata.generation ||
-    attempt.specHash !== appTaskSpecHash(resourceIntent(resource), attempt.owner)
-  ) {
-    return null;
-  }
-  const intent = resourceIntent(resource);
-  const trigger = attemptTrigger(attempt);
-  return {
-    kind: "claimed",
-    taskId,
-    generation: resource.metadata.generation,
-    resourceVersion: resource.metadata.resourceVersion,
-    specHash: attempt.specHash,
-    attemptId: attempt.metadata.id,
-    agent: attempt.owner,
-    handler: attempt.handler,
-    mode: intent.mode,
-    intent,
-    events: structuredClone(
-      attempt.events?.length
-        ? attempt.events
-        : attempt.trigger
-          ? [{ event: attempt.trigger, observedAt: attempt.startedAt }]
-          : [],
-    ),
-    eventsTruncated: Boolean(attempt.eventsTruncated),
-    ...(attempt.continuedInputKeys?.length ? { continuedInputKeys: [...attempt.continuedInputKeys] } : {}),
-    ...(trigger ? { trigger: structuredClone(trigger) } : {}),
-    declaredOutputPaths: [],
-  };
-}
-
 export function expiredAgentSessionAppTaskAttempt(
   config: AppTaskContext,
   taskId: string,
@@ -1103,10 +1057,9 @@ export function releaseInterruptedAppTaskAttempt(
 }
 
 /**
- * Reject a late terminal session result whose owning workflow execution stack was
- * lost during restart. Workflow post-processing (verification, actions, and
- * workspace finalization) did not run, so the only safe generic disposition is
- * to interrupt the exact attempt and requeue the same task generation.
+ * A terminal session does not prove Task settlement. After its caller lease
+ * expires, interrupt the exact attempt and retry the same generation through
+ * normal execution and result validation.
  */
 export function releaseTerminalSessionExpiredAppTaskAttempt(
   config: AppTaskContext,

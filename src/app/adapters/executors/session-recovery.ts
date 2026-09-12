@@ -1,6 +1,6 @@
 import type { AppTaskAttempt } from "../../core/tasks/app-task-state.js";
 import type { AppTaskClaim } from "../../core/tasks/app-task-reconciler.js";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../../../lib/index.js";
 import { getDb, readSessionLastActivityAt, updateSessionDb } from "../../../lib/requests.js";
@@ -34,7 +34,6 @@ export function createTaskSessionRecovery(opts: TaskSessionAdapterOptions): Task
     read: (id) => (opts.persistDir ? readSessionMeta(opts.persistDir, id) : null),
     isLive: (id) => hasLiveAppTaskSession(opts, id),
     lastActivityAt: (id) => (opts.persistDir ? readSessionLastActivityAt(opts.persistDir, id) : null),
-    result: (id) => readPersistedTerminalAgentResult(opts.persistDir, id),
     interrupt: (id, reason, taskId) => interruptSupersededAgentSession(opts, id, reason, taskId),
     handoff: (attempt) => buildRecoveredSessionHandoff(opts.persistDir, attempt),
     workflowInterrupted: (id) => workflowWasInterruptedByRestart(opts.persistDir, id),
@@ -71,22 +70,6 @@ function hasLiveAppTaskSession(opts: TaskSessionAdapterOptions, sessionId: strin
   const leasePid = readActiveSessionProcessId(opts.persistDir, cleanSessionId);
   if (leasePid && isProcessAlive(leasePid)) return true;
   return false;
-}
-
-function readPersistedTerminalAgentResult(persistDir: string | undefined, sessionId: string): unknown {
-  if (!persistDir) return undefined;
-  try {
-    const artifact = JSON.parse(readFileSync(join(persistDir, "sessions", sessionId, "result.json"), "utf8")) as {
-      status?: unknown;
-      finishParams?: { status?: unknown; result?: unknown };
-    };
-    if (artifact.status !== "done") return undefined;
-    // Execution completion can carry a supported non-success judgment. Task
-    // admission validates its meaning before applying the persisted result.
-    return artifact.finishParams?.result;
-  } catch {
-    return undefined;
-  }
 }
 
 function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string): string[] {

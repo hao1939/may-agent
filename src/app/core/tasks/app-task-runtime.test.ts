@@ -29,7 +29,6 @@ import {
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
-  consumePersistedTerminalAgentResult as consumeTerminalTaskResult,
   installAppTaskRuntimes as installCoreTaskRuntimes,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
@@ -68,12 +67,6 @@ function installAppTaskRuntimes(
   );
 }
 
-function consumePersistedTerminalAgentResult(
-  input: Omit<Parameters<typeof consumeTerminalTaskResult>[0], "result"> & { persistDir: string },
-) {
-  const sessions = createTaskSessionRecovery({ persistDir: input.persistDir, manager: {} as never, bus: eventBus() });
-  return consumeTerminalTaskResult({ ...input, result: sessions.result(input.sessionId) });
-}
 import {
   claimObservedAppTask,
   completeAppTask,
@@ -3826,7 +3819,6 @@ describe("canonical App task runtime", () => {
         handoff: () => undefined,
         isLive: () => false,
         lastActivityAt: () => null,
-        result: () => undefined,
         workflowInterrupted: () => false,
         read(sessionId) {
           calls.push(`${name}:read:${sessionId}`);
@@ -3911,7 +3903,6 @@ describe("canonical App task runtime", () => {
         handoff: () => undefined,
         isLive: () => false,
         lastActivityAt: () => null,
-        result: () => undefined,
         workflowInterrupted: () => false,
         interrupt: () => {},
         read: (sessionId) => {
@@ -4841,7 +4832,7 @@ describe("canonical App task runtime", () => {
     },
   );
 
-  it.each(["normal", "recovered"])(
+  it.each(["normal", "direct-agent"])(
     "retains a worker failure report and resumes the same input after reopen (%s)",
     async (route) => {
       setSystemTime(new Date());
@@ -4873,7 +4864,7 @@ describe("canonical App task runtime", () => {
         snapshot: () => agents,
         async execute(attempt) {
           calls++;
-          expect(attempt.attempt.previousAttempt?.acceptedResult).toMatchObject(decision);
+          if (repaired) expect(attempt.attempt.previousAttempt?.acceptedResult).toMatchObject(decision);
           return { handlerResult: { ...currentOutcome(), actions: [] }, runId: null };
         },
       };
@@ -4943,37 +4934,14 @@ describe("canonical App task runtime", () => {
         });
       const events: AgentEvent[] = [];
       bus.subscribe((event) => events.push(event));
-      if (route === "normal") {
-        expect(await run()).toEqual([]);
-        expect(events).toContainEqual(
-          expect.objectContaining({
-            type: "app.dependency.updated",
-            data: expect.objectContaining({ id: taskId }),
-          }),
-        );
-        expect(events).not.toContainEqual(expect.objectContaining({ type: "app.dependency.completed" }));
-      } else {
-        const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "auto" });
-        if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
-        recordAppTaskAttemptSession(config, claim, "session-report");
-        const input = {
-          result: decision,
-          config,
-          taskId,
-          sessionId: "session-report",
-          descriptor: {
-            id: "sample",
-            appDir: f.appDir,
-            projectDir: f.appDir,
-            agent: "sample-owner",
-            app,
-            reconciliationPaused: false,
-            resourceStore: config.resourceStore,
-          },
-        };
-        expect(consumeTerminalTaskResult(input)).toMatchObject({ state: "stopped", reconcileTaskIds: [] });
-        expect(consumeTerminalTaskResult(input)).toBeNull();
-      }
+      expect(await run()).toEqual([]);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "app.dependency.updated",
+          data: expect.objectContaining({ id: taskId }),
+        }),
+      );
+      expect(events).not.toContainEqual(expect.objectContaining({ type: "app.dependency.completed" }));
       const reported = readAcceptedRuntimeAttempt(config, taskId)!;
       expect(reported.acceptedResult).toMatchObject(decision);
       expect(config.resourceStore.isCancelled(taskId)).toBe(false);
@@ -4996,7 +4964,7 @@ describe("canonical App task runtime", () => {
         await recoverInstalledAppTasks(bus);
         expect(await run()).toEqual([]);
       }
-      expect(calls).toBe(route === "normal" ? 1 : 0);
+      expect(calls).toBe(1);
       expect(reopened.resourceStore.readAttempt(reported.metadata.id)).toEqual(reported);
       expect(Object.values(readTaskSnapshot(reopened).attempts ?? {})).toHaveLength(1);
       const tasks = new HumanTaskService(getDb(persistDir), {
@@ -5012,7 +4980,7 @@ describe("canonical App task runtime", () => {
       repaired = true;
       advanceRuntimeTaskRetry(reopened, taskId);
       await run();
-      expect(calls).toBe(route === "normal" ? 2 : 1);
+      expect(calls).toBe(2);
       expect(readLoadedAppTaskInputResult({ bus, appDir: f.appDir, taskId, admissionKey })).toMatchObject({
         state: "converged",
         summary: "Feature verified",
@@ -5629,93 +5597,6 @@ describe("canonical App task runtime", () => {
     expect(JSON.stringify(persisted).split(largePayload).length - 1).toBe(1);
   });
 
-  it("recovers one persisted terminal direct-agent result despite a fresh renewed lease", () => {
-    const f = fixture();
-    const persistDir = join(f.root, ".state");
-    const config = loadedTaskConfig(f, persistDir);
-    const intent = {
-      id: "work/terminal",
-      parentId: "operations",
-      outcome: "Recover terminal owner result",
-      acceptance: ["Result is applied once"],
-      mode: "achieve" as const,
-      agent: "sample-owner",
-    };
-    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
-    const claim = claimObservedAppTask(config, {
-      taskId: intent.id,
-      appAgent: "sample-owner",
-      handler: "auto",
-      reason: "test",
-      isAgentRunnable: () => true,
-    });
-    if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
-    recordAppTaskAttemptSession(config, claim, "session-terminal");
-    const attempt = readTaskSnapshot(config).attempts![claim.attemptId];
-    expect(attempt.handler).toBe("agent:sample-owner");
-    expect(Date.parse(attempt.lease!.expiresAt)).toBeGreaterThan(Date.now());
-
-    mkdirSync(join(persistDir, "sessions", "session-terminal"), { recursive: true });
-    writeFileSync(
-      join(persistDir, "sessions", "session-terminal", "result.json"),
-      JSON.stringify({
-        status: "done",
-        finishParams: {
-          status: "success",
-          result: {
-            state: "waiting",
-            summary: "one child remains",
-            evidence: ["session:session-terminal"],
-            actions: [
-              {
-                kind: "create-task",
-                id: "work/terminal-child",
-                parentId: intent.id,
-                outcome: "Complete recovered child",
-                acceptance: ["Child converges"],
-              },
-            ],
-          },
-        },
-      }),
-    );
-    const resourceStore = config.resourceStore;
-    const descriptor = {
-      id: "sample",
-      appDir: f.appDir,
-      projectDir: f.appDir,
-      agent: "sample-owner",
-      app: definition(),
-      reconciliationPaused: false,
-      resourceStore,
-    };
-    expect(
-      consumePersistedTerminalAgentResult({
-        persistDir,
-        config,
-        descriptor,
-        taskId: intent.id,
-        sessionId: "session-terminal",
-      }),
-    ).toMatchObject({ state: "waiting", actionsApplied: ["created work/terminal-child"] });
-    expect(
-      consumePersistedTerminalAgentResult({
-        persistDir,
-        config,
-        descriptor,
-        taskId: intent.id,
-        sessionId: "session-terminal",
-      }),
-    ).toBeNull();
-    expect(readTaskSnapshot(config)).toMatchObject({
-      resources: {
-        [intent.id]: { status: { phase: "waiting" } },
-        "work/terminal-child": { spec: { parentId: intent.id } },
-      },
-      attempts: { [claim.attemptId]: { state: "completed", sessionId: "session-terminal" } },
-    });
-  });
-
   describe("terminal completion recovery", () => {
     function setup(beforeResult?: (taskId: string) => void) {
       const f = fixture();
@@ -5819,129 +5700,214 @@ describe("canonical App task runtime", () => {
         writeTerminalSession(sessionId);
         return claim;
       };
-      return { base, config, payload, terminalResult, observe, run, saveTerminalSession, writeTerminalSession,
-        agentCalls: () => agentCalls };
+      return {
+        base,
+        config,
+        payload,
+        terminalResult,
+        observe,
+        run,
+        saveTerminalSession,
+        writeTerminalSession,
+        agentCalls: () => agentCalls,
+      };
     }
 
-    for (const route of ["normal", "startup", "busy"] as const) {
-      it.each(["progress", "self-revision", "waiting", "stopped"] as const)(
-        `handles %s through ${route} without closing the Task`,
-        async (disposition) => {
-          const addInput = (taskId: string) =>
-            recordAppTaskTrigger(f.config, taskId, {
-              type: "sample.feedback",
-              eventId: 101,
-              data: { instruction: "Check the new evidence" },
-            });
-          const f = setup(disposition === "progress" ? addInput : undefined);
-          await installCoreTaskRuntimes(f.base);
-          const taskId = "continued";
-          f.observe(taskId);
-          if (disposition === "self-revision") {
-            f.terminalResult.actions = [
-              {
-                kind: "update-task",
-                taskId,
-                expectedGeneration: 1,
-                acceptance: ["Decision includes the revised proof"],
-              },
-            ];
-          } else if (disposition === "stopped") {
-            f.terminalResult.state = "stopped";
-            f.terminalResult.summary = "The optional experiment is not feasible";
-            f.terminalResult.result = { feasible: false };
-            delete f.terminalResult.response;
-          } else if (disposition === "waiting") {
-            f.terminalResult.state = "waiting";
-            delete f.terminalResult.response;
-            f.terminalResult.conditions = [
-              {
-                id: "external-proof",
-                type: "sample.proof.ready",
-                subject: "id:proof-1",
-                expected: "ready",
-                owner: "app:sample",
-                reviewAfterMs: 60_000,
-              },
-            ];
-          }
-          const emitted: AgentEvent[] = [];
-          f.base.bus.subscribe((event) => emitted.push(event));
-          if (route === "normal") {
-            await f.run(taskId);
-          } else {
-            const claim = f.saveTerminalSession(taskId);
-            if (disposition === "progress") addInput(taskId);
-            if (route === "startup") {
-              mutateRuntimeAttemptFixture(f.config, taskId, claim.attemptId, (attempt) => {
-                attempt.runtimeId = "previous-runtime";
-                attempt.lease!.runtimeId = "previous-runtime";
-              });
-              await recoverInstalledAppTasks(f.base.bus);
-            } else {
-              expect(await f.run(taskId)).toEqual(disposition === "progress" ? [taskId] : []);
-              if (disposition === "self-revision") {
-                // Rejection is not proof that the current caller has released its lease.
-                expect(f.config.resourceStore.readTask(taskId)?.status.currentAttemptId).toBe(claim.attemptId);
-                expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toBeUndefined();
-                mutateRuntimeAttemptFixture(f.config, taskId, claim.attemptId, (attempt) => {
-                  attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
-                });
-                expect(await f.run(taskId)).toContain(taskId);
-              }
-            }
-          }
-          expect(f.config.resourceStore.readReceipt(taskId)).toBeNull();
-          expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
-          expect(f.config.resourceStore.readTask(taskId)?.status.phase).toBe(
-            disposition === "waiting" ? "waiting" : "pending",
-          );
-          if (disposition === "progress") {
-            expect(f.config.resourceStore.readTask(taskId)?.status.result).toEqual(f.payload);
-            expect(readTaskSnapshot(f.config).taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([
-              101,
-            ]);
-          } else if (disposition === "self-revision") {
-            expect(f.config.resourceStore.readTask(taskId)).toMatchObject({
-              metadata: { generation: 1 },
-              spec: { acceptance: ["Decision is checked and retained"] },
-            });
-            expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toBeUndefined();
-            expect(emitted.filter((event) => event.type === "app.dependency.completed")).toHaveLength(0);
-            expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
-            // The rejected worker action cannot alter the assignment, but execution can redo safely.
-            f.terminalResult.actions = [];
-            if (f.config.resourceStore.readTask(taskId)?.status.executionRetryAt)
-              advanceRuntimeTaskRetry(f.config, taskId);
-            await f.run(taskId);
-            expect(readAcceptedRuntimeAttempt(f.config, taskId)).toMatchObject({
-              taskGeneration: 1,
-              acceptedResult: { state: "converged", result: f.payload },
-            });
-            expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
-            return;
-          } else if (disposition === "stopped") {
-            expect(f.config.resourceStore.readCancellation(taskId)).toBeNull();
-            expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toMatchObject({
-              state: "stopped",
-              summary: "The optional experiment is not feasible",
-              result: { feasible: false },
-            });
-            expect(f.config.resourceStore.readTask(taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
-          } else {
-            expect(f.config.resourceStore.readTask(taskId)?.status.conditionIds).toEqual(["external-proof"]);
-          }
-          expect(
-            emitted.filter((event) => event.type === "project.task.reconciled").map((event) => event.data.disposition),
-          ).toEqual([disposition]);
-          expect(emitted.filter((event) => event.type === "app.dependency.completed")).toHaveLength(0);
-          expect(emitted.filter((event) => event.type === "app.dependency.updated").map((event) => event.data)).toEqual(
-            [{ kind: "task", id: taskId, appId: "sample" }],
-          );
-          expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
-        },
-      );
+    async function requeueSavedAttempt(
+      f: ReturnType<typeof setup>,
+      claim: { taskId: string; attemptId: string },
+      route: "startup" | "busy",
+    ) {
+      if (route === "startup") {
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        await recoverInstalledAppTasks(f.base.bus);
+      } else {
+        expect(await f.run(claim.taskId)).toEqual([]);
+        expect(f.config.resourceStore.readTask(claim.taskId)?.status.currentAttemptId).toBe(claim.attemptId);
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
+        });
+        expect(await f.run(claim.taskId)).toContain(claim.taskId);
+      }
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
+
+    it.each(["startup", "busy"] as const)(
+      "retries uncommitted session output through %s before accepting effects",
+      async (route) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        f.observe("other");
+        admitTaskRequest(f.config, {
+          appId: "sample",
+          attachment: { kind: "existing", taskId: "owner" },
+          idempotencyKey: "original-input",
+          request: {
+            id: "original-input",
+            source: { kind: "app", id: "sample" },
+            input: { kind: "work", data: { operationId: f.payload.operationId } },
+          },
+        });
+        f.terminalResult.actions = [
+          { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Uncommitted proposal"] },
+        ];
+        const claim = f.saveTerminalSession("owner");
+        await requeueSavedAttempt(f, claim, route);
+        expect(f.agentCalls()).toBe(0);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+        expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(1);
+        expect(readTaskSnapshot(f.config).taskTriggers?.owner?.events?.[0]?.event.idempotencyKey).toBe(
+          "original-input",
+        );
+        // The replacement judges current evidence; it need not repeat the old proposal.
+        f.terminalResult.actions = [];
+        await f.run("owner");
+        const accepted = readAcceptedRuntimeAttempt(f.config, "owner");
+        expect(accepted?.metadata.id).not.toBe(claim.attemptId);
+        expect(accepted?.taskGeneration).toBe(claim.generation);
+        expect(accepted?.acceptedResult?.result).toEqual(f.payload);
+        expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(1);
+        expect(f.config.resourceStore.isCancelled("owner")).toBe(false);
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        closeDb(f.base.persistDir);
+        await installCoreTaskRuntimes(f.base);
+        await recoverInstalledAppTasks(f.base.bus);
+        await f.run("owner");
+        expect(f.agentCalls()).toBe(1);
+      },
+    );
+
+    it.each(["startup", "busy"] as const)("requires confirmed session drain before %s redo", async (route) => {
+      const f = setup();
+      let drained = false;
+      const sessions = createTaskSessionRecovery({
+        persistDir: f.base.persistDir,
+        bus: f.base.bus,
+        manager: { hasActiveSession: () => false } as never,
+        drainPersistedBashProcessGroups: () => drained,
+      });
+      await installCoreTaskRuntimes({ ...f.base, sessions });
+      f.observe("owner");
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
+        if (route === "startup") {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        }
+      });
+      const recover = () => (route === "startup" ? recoverInstalledAppTasks(f.base.bus) : f.run("owner"));
+      await expect(recover()).rejects.toThrow("did not exit");
+      expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
+      expect(f.agentCalls()).toBe(0);
+      drained = true;
+      await recover();
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+      await f.run("owner");
+      expect(f.agentCalls()).toBe(1);
+    });
+
+    it.each(["progress", "self-revision", "waiting", "stopped"] as const)(
+      "handles %s without closing the Task",
+      async (disposition) => {
+        const addInput = (taskId: string) =>
+          recordAppTaskTrigger(f.config, taskId, {
+            type: "sample.feedback",
+            eventId: 101,
+            data: { instruction: "Check the new evidence" },
+          });
+        const f = setup(disposition === "progress" ? addInput : undefined);
+        await installCoreTaskRuntimes(f.base);
+        const taskId = "continued";
+        f.observe(taskId);
+        if (disposition === "self-revision") {
+          f.terminalResult.actions = [
+            {
+              kind: "update-task",
+              taskId,
+              expectedGeneration: 1,
+              acceptance: ["Decision includes the revised proof"],
+            },
+          ];
+        } else if (disposition === "stopped") {
+          f.terminalResult.state = "stopped";
+          f.terminalResult.summary = "The optional experiment is not feasible";
+          f.terminalResult.result = { feasible: false };
+          delete f.terminalResult.response;
+        } else if (disposition === "waiting") {
+          f.terminalResult.state = "waiting";
+          delete f.terminalResult.response;
+          f.terminalResult.conditions = [
+            {
+              id: "external-proof",
+              type: "sample.proof.ready",
+              subject: "id:proof-1",
+              expected: "ready",
+              owner: "app:sample",
+              reviewAfterMs: 60_000,
+            },
+          ];
+        }
+        const emitted: AgentEvent[] = [];
+        f.base.bus.subscribe((event) => emitted.push(event));
+        await f.run(taskId);
+        expect(f.config.resourceStore.readReceipt(taskId)).toBeNull();
+        expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
+        expect(f.config.resourceStore.readTask(taskId)?.status.phase).toBe(
+          disposition === "waiting" ? "waiting" : "pending",
+        );
+        if (disposition === "progress") {
+          expect(f.config.resourceStore.readTask(taskId)?.status.result).toEqual(f.payload);
+          expect(readTaskSnapshot(f.config).taskTriggers?.[taskId]?.events?.map((row) => row.event.eventId)).toEqual([
+            101,
+          ]);
+        } else if (disposition === "self-revision") {
+          expect(f.config.resourceStore.readTask(taskId)).toMatchObject({
+            metadata: { generation: 1 },
+            spec: { acceptance: ["Decision is checked and retained"] },
+          });
+          expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toBeUndefined();
+          expect(emitted.filter((event) => event.type === "app.dependency.completed")).toHaveLength(0);
+          expect(f.agentCalls()).toBe(1);
+          // The rejected worker action cannot alter the assignment, but execution can redo safely.
+          f.terminalResult.actions = [];
+          if (f.config.resourceStore.readTask(taskId)?.status.executionRetryAt)
+            advanceRuntimeTaskRetry(f.config, taskId);
+          await f.run(taskId);
+          expect(readAcceptedRuntimeAttempt(f.config, taskId)).toMatchObject({
+            taskGeneration: 1,
+            acceptedResult: { state: "converged", result: f.payload },
+          });
+          expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
+          return;
+        } else if (disposition === "stopped") {
+          expect(f.config.resourceStore.readCancellation(taskId)).toBeNull();
+          expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toMatchObject({
+            state: "stopped",
+            summary: "The optional experiment is not feasible",
+            result: { feasible: false },
+          });
+          expect(f.config.resourceStore.readTask(taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
+        } else {
+          expect(f.config.resourceStore.readTask(taskId)?.status.conditionIds).toEqual(["external-proof"]);
+        }
+        expect(
+          emitted.filter((event) => event.type === "project.task.reconciled").map((event) => event.data.disposition),
+        ).toEqual([disposition]);
+        expect(emitted.filter((event) => event.type === "app.dependency.completed")).toHaveLength(0);
+        expect(emitted.filter((event) => event.type === "app.dependency.updated").map((event) => event.data)).toEqual([
+          { kind: "task", id: taskId, appId: "sample" },
+        ]);
+        expect(f.agentCalls()).toBe(1);
+      },
+    );
 
     it.each(["startup", "busy"] as const)(
       "replays an early external fact for a wait recovered through %s",
@@ -5974,223 +5940,193 @@ describe("canonical App task runtime", () => {
           data: { project: "sample", id: "proof-1", status: "ready" },
         } as AgentEvent);
         expect(fact[EVENT_ROW_ID]).toBeGreaterThan(0);
-        if (route === "startup") {
-          mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
-            attempt.runtimeId = "previous-runtime";
-            attempt.lease!.runtimeId = "previous-runtime";
-          });
-          await recoverInstalledAppTasks(f.base.bus);
-        } else {
-          expect(await f.run(claim.taskId)).toContain(claim.taskId);
-        }
+        await requeueSavedAttempt(f, claim, route);
+        await f.run(claim.taskId);
         expect(readTaskSnapshot(f.config).conditions?.["proof-ready"]?.status.state).toBe("true");
         expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
-        expect(f.agentCalls()).toBe(0);
+        expect(f.agentCalls()).toBe(1);
         f.terminalResult.state = "converged";
         delete f.terminalResult.conditions;
         await f.run(claim.taskId);
         expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.acceptedResult?.result).toEqual(f.payload);
         expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
-        expect(f.agentCalls()).toBe(1);
+        expect(f.agentCalls()).toBe(2);
         await recoverInstalledAppTasks(f.base.bus);
         await f.run(claim.taskId);
+        expect(f.agentCalls()).toBe(2);
+      },
+    );
+
+    it.each([
+      ["converged", "drain"],
+      ["waiting", "drain"],
+      ["converged", "live owner"],
+    ] as const)("retries uncommitted %s after failed %s cleanup and restart", async (state, failure) => {
+      const f = setup();
+      let drained = false;
+      const interrupts: string[] = [];
+      const sessions = createTaskSessionRecovery({
+        persistDir: f.base.persistDir,
+        bus: f.base.bus,
+        manager: { hasActiveSession: () => false } as never,
+        drainPersistedBashProcessGroups: (_root, id) => {
+          interrupts.push(id);
+          return drained;
+        },
+      });
+      await installCoreTaskRuntimes({ ...f.base, sessions });
+      f.observe("owner");
+      f.observe("other");
+      f.terminalResult.state = state;
+      f.terminalResult.actions = [
+        { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Use the revised proof"] },
+      ];
+      if (state === "waiting") {
+        delete f.terminalResult.response;
+        f.terminalResult.conditions = [
+          {
+            id: "proof-ready",
+            type: "sample.proof.ready",
+            subject: "id:proof-1",
+            expected: "ready",
+            owner: "app:sample",
+            reviewAfterMs: 60_000,
+          },
+        ];
+      }
+      const claim = { taskId: "owner", attemptId: "" };
+      const execute = f.base.agents.execute;
+      f.base.agents.execute = async (input) => {
+        claim.attemptId ||= input.attempt.attemptId;
+        input.sessionStarted("session-owner");
+        const result = await execute(input);
+        f.writeTerminalSession("session-owner");
+        return result;
+      };
+      const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
+      if (other.kind !== "claimed") throw new Error("expected other attempt");
+      expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
+      // A terminal marker is not proof that shell descendants exited.
+      writeSessionMeta(f.base.persistDir, "other-session", {
+        agent: "sample-owner",
+        task: "Old proof",
+        startedAt: Date.now(),
+        ...(failure === "live owner"
+          ? { status: "running" as const, detached: true, pid: process.pid }
+          : { status: "done" as const }),
+      });
+      const emitted: AgentEvent[] = [];
+      f.base.bus.subscribe((event) => emitted.push(event));
+      await expect(f.run(claim.taskId)).rejects.toThrow(
+        failure === "live owner" ? "external owner is still live" : "did not exit",
+      );
+      expect(f.config.resourceStore.readReceipt("owner")).toBeNull();
+      expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
+      expect(f.config.resourceStore.readTask("owner")?.status.executionFailures ?? 0).toBe(0);
+      expect(f.config.resourceStore.readTask("other")).toMatchObject({
+        metadata: { generation: 1 },
+        status: { phase: "running", currentAttemptId: other.attemptId },
+      });
+      expect(emitted.filter((event) => event.type.startsWith("app.dependency."))).toHaveLength(0);
+
+      // Restart retries the uncommitted attempt; normal settlement applies its effects.
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+      });
+      await closeInstalledAppTaskRuntimes(f.base.bus);
+      closeDb(f.base.persistDir);
+      await installCoreTaskRuntimes({ ...f.base, sessions });
+      drained = true;
+      if (failure === "live owner") {
+        writeSessionMeta(f.base.persistDir, "other-session", {
+          agent: "sample-owner",
+          task: "Old proof",
+          status: "done",
+          startedAt: Date.now(),
+        });
+      }
+      await recoverInstalledAppTasks(f.base.bus);
+      await f.run("owner");
+      const store = AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!;
+      expect(interrupts).toEqual(
+        failure === "live owner"
+          ? ["session-owner", "other-session"]
+          : ["other-session", "session-owner", "other-session"],
+      );
+      expect(store.readAttempt(other.attemptId)?.state).toBe("interrupted");
+      expect(store.readTask("other")?.metadata.generation).toBe(2);
+      expect(store.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+      expect(store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+      expect(store.readAttempt(store.readTask("owner")!.status.observedAttemptId!)?.acceptedResult).toMatchObject({
+        state,
+        result: f.payload,
+      });
+      expect(store.isCancelled("owner")).toBe(false);
+      expect(emitted.filter((event) => event.type.startsWith("app.dependency.")).map((event) => event.type)).toEqual([
+        state === "converged" ? "app.dependency.completed" : "app.dependency.updated",
+      ]);
+      await recoverInstalledAppTasks(f.base.bus);
+      expect(interrupts).toHaveLength(failure === "live owner" ? 2 : 3);
+      expect(f.agentCalls()).toBe(2);
+    });
+
+    it.each(["converged", "waiting"] as const)(
+      "settles %s actions and interrupts the superseded session",
+      async (state) => {
+        const f = setup();
+        const interrupted: string[] = [];
+        await installCoreTaskRuntimes({
+          ...f.base,
+          sessions: {
+            ...f.base.sessions,
+            isLive: (id) => id === "other-session",
+            interrupt: (id) => {
+              expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(1);
+              interrupted.push(id);
+            },
+          },
+        });
+        f.observe("owner");
+        f.observe("other");
+        f.terminalResult.state = state;
+        f.terminalResult.actions = [
+          { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Use the revised proof"] },
+        ];
+        if (state === "waiting") {
+          delete f.terminalResult.response;
+          f.terminalResult.conditions = [
+            {
+              id: "proof-ready",
+              type: "sample.proof.ready",
+              subject: "id:proof-1",
+              expected: "ready",
+              owner: "app:sample",
+              reviewAfterMs: 60_000,
+            },
+          ];
+        }
+        const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
+        if (other.kind !== "claimed") throw new Error("expected other attempt");
+        expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
+        expect(await f.run("owner")).toContain("other");
+        expect(interrupted).toEqual(["other-session"]);
+        expect(f.config.resourceStore.readAttempt(other.attemptId)?.state).toBe("interrupted");
+        expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(2);
         expect(f.agentCalls()).toBe(1);
       },
     );
 
-    for (const route of ["normal", "startup", "busy"] as const) {
-      it.each([
-        ["converged", "drain"],
-        ["waiting", "drain"],
-        ["converged", "live owner"],
-      ] as const)(
-        `retains a saved %s result across failed %s cleanup and restart through ${route}`,
-        async (state, failure) => {
-          const f = setup();
-          let drained = false;
-          const interrupts: string[] = [];
-          const sessions = createTaskSessionRecovery({
-            persistDir: f.base.persistDir,
-            bus: f.base.bus,
-            manager: { hasActiveSession: () => false } as never,
-            drainPersistedBashProcessGroups: (_root, id) => {
-              interrupts.push(id);
-              return drained;
-            },
-          });
-          await installCoreTaskRuntimes({ ...f.base, sessions });
-          f.observe("owner");
-          f.observe("other");
-          f.terminalResult.state = state;
-          f.terminalResult.actions = [
-            { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Use the revised proof"] },
-          ];
-          if (state === "waiting") {
-            delete f.terminalResult.response;
-            f.terminalResult.conditions = [
-              {
-                id: "proof-ready",
-                type: "sample.proof.ready",
-                subject: "id:proof-1",
-                expected: "ready",
-                owner: "app:sample",
-                reviewAfterMs: 60_000,
-              },
-            ];
-          }
-          const claim = route === "normal" ? { taskId: "owner", attemptId: "" } : f.saveTerminalSession("owner");
-          if (route === "normal") {
-            const execute = f.base.agents.execute;
-            f.base.agents.execute = async (input) => {
-              claim.attemptId = input.attempt.attemptId;
-              input.sessionStarted("session-owner");
-              const result = await execute(input);
-              f.writeTerminalSession("session-owner");
-              return result;
-            };
-          }
-          const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
-          if (other.kind !== "claimed") throw new Error("expected other attempt");
-          expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
-          // A terminal marker is not proof that shell descendants exited.
-          writeSessionMeta(f.base.persistDir, "other-session", {
-            agent: "sample-owner",
-            task: "Old proof",
-            startedAt: Date.now(),
-            ...(failure === "live owner"
-              ? { status: "running" as const, detached: true, pid: process.pid }
-              : { status: "done" as const }),
-          });
-          if (route === "startup") {
-            mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
-              attempt.runtimeId = "previous-runtime";
-              attempt.lease!.runtimeId = "previous-runtime";
-            });
-          }
-          const emitted: AgentEvent[] = [];
-          f.base.bus.subscribe((event) => emitted.push(event));
-          const recover = () => (route === "startup" ? recoverInstalledAppTasks(f.base.bus) : f.run(claim.taskId));
-          await expect(recover()).rejects.toThrow(
-            failure === "live owner" ? "external owner is still live" : "did not exit",
-          );
-          expect(f.config.resourceStore.readReceipt("owner")).toBeNull();
-          expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
-          expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
-          expect(f.config.resourceStore.readTask("owner")?.status.executionFailures ?? 0).toBe(0);
-          expect(f.config.resourceStore.readTask("other")).toMatchObject({
-            metadata: { generation: 1 },
-            status: { phase: "running", currentAttemptId: other.attemptId },
-          });
-          expect(emitted.filter((event) => event.type.startsWith("app.dependency."))).toHaveLength(0);
-
-          // Drop runtime/connection state: recovery must rediscover the same saved result.
-          mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
-            attempt.runtimeId = "previous-runtime";
-            attempt.lease!.runtimeId = "previous-runtime";
-          });
-          await closeInstalledAppTaskRuntimes(f.base.bus);
-          closeDb(f.base.persistDir);
-          await installCoreTaskRuntimes({ ...f.base, sessions });
-          drained = true;
-          if (failure === "live owner") {
-            writeSessionMeta(f.base.persistDir, "other-session", {
-              agent: "sample-owner",
-              task: "Old proof",
-              status: "done",
-              startedAt: Date.now(),
-            });
-          }
-          await recoverInstalledAppTasks(f.base.bus);
-          const store = AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!;
-          expect(interrupts).toEqual(failure === "live owner" ? ["other-session"] : ["other-session", "other-session"]);
-          expect(store.readAttempt(other.attemptId)?.state).toBe("interrupted");
-          expect(store.readTask("other")?.metadata.generation).toBe(2);
-          expect(store.readAttempt(claim.attemptId)?.state).toBe("completed");
-          expect(store.readAttempt(claim.attemptId)?.acceptedResult).toMatchObject({ state, result: f.payload });
-          expect(store.isCancelled("owner")).toBe(false);
-          expect(
-            emitted.filter((event) => event.type.startsWith("app.dependency.")).map((event) => event.type),
-          ).toEqual([state === "converged" ? "app.dependency.completed" : "app.dependency.updated"]);
-          await recoverInstalledAppTasks(f.base.bus);
-          expect(interrupts).toHaveLength(failure === "live owner" ? 1 : 2);
-          expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
-        },
-      );
-    }
-
-    for (const route of ["normal", "startup", "busy"] as const) {
-      it.each(["converged", "waiting"] as const)(
-        `settles %s actions through ${route} and interrupts the superseded session`,
-        async (state) => {
-          const f = setup();
-          const interrupted: string[] = [];
-          await installCoreTaskRuntimes({
-            ...f.base,
-            sessions: {
-              ...f.base.sessions,
-              isLive: (id) => id === "other-session",
-              interrupt: (id) => {
-                expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(1);
-                interrupted.push(id);
-              },
-            },
-          });
-          f.observe("owner");
-          f.observe("other");
-          f.terminalResult.state = state;
-          f.terminalResult.actions = [
-            { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Use the revised proof"] },
-          ];
-          if (state === "waiting") {
-            delete f.terminalResult.response;
-            f.terminalResult.conditions = [
-              {
-                id: "proof-ready",
-                type: "sample.proof.ready",
-                subject: "id:proof-1",
-                expected: "ready",
-                owner: "app:sample",
-                reviewAfterMs: 60_000,
-              },
-            ];
-          }
-          const claim = route === "normal" ? null : f.saveTerminalSession("owner");
-          const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
-          if (other.kind !== "claimed") throw new Error("expected other attempt");
-          expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
-          if (route === "startup") {
-            mutateRuntimeAttemptFixture(f.config, claim!.taskId, claim!.attemptId, (attempt) => {
-              attempt.runtimeId = "previous-runtime";
-              attempt.lease!.runtimeId = "previous-runtime";
-            });
-            await recoverInstalledAppTasks(f.base.bus);
-          } else {
-            expect(await f.run("owner")).toContain("other");
-          }
-          expect(interrupted).toEqual(["other-session"]);
-          expect(f.config.resourceStore.readAttempt(other.attemptId)?.state).toBe("interrupted");
-          expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(2);
-          expect(f.agentCalls()).toBe(route === "normal" ? 1 : 0);
-        },
-      );
-    }
-
-    it.each(["startup", "busy"] as const)("preserves the complete direct-agent result through %s", async (route) => {
+    it.each(["startup", "busy"] as const)("accepts a replacement direct-agent result through %s", async (route) => {
       const f = setup();
       await installCoreTaskRuntimes(f.base);
       f.observe("normal");
       await f.run("normal");
       f.observe("recovered");
       const claim = f.saveTerminalSession("recovered");
-      if (route === "startup") {
-        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
-          attempt.runtimeId = "previous-runtime";
-          attempt.lease!.runtimeId = "previous-runtime";
-        });
-        await recoverInstalledAppTasks(f.base.bus);
-      } else {
-        await f.run(claim.taskId);
-      }
+      await requeueSavedAttempt(f, claim, route);
+      await f.run(claim.taskId);
       for (const taskId of ["normal", "recovered"]) {
         expect(readAcceptedRuntimeAttempt(f.config, taskId)?.acceptedResult).toMatchObject({
           result: f.payload,
@@ -6202,7 +6138,7 @@ describe("canonical App task runtime", () => {
       // Reading a settled Task must not execute or consume its session again.
       await recoverInstalledAppTasks(f.base.bus);
       await f.run(claim.taskId);
-      expect(f.agentCalls()).toBe(1);
+      expect(f.agentCalls()).toBe(2);
       expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)?.taskGeneration).toBe(claim.generation);
     });
 
@@ -6320,79 +6256,4 @@ describe("canonical App task runtime", () => {
     }
   });
 
-  it("rejects an invalid persisted terminal result without crashing recovery", () => {
-    const f = fixture();
-    const persistDir = join(f.root, ".state");
-    const config = loadedTaskConfig(f, persistDir);
-    const intent = {
-      id: "work/invalid-terminal",
-      parentId: "operations",
-      outcome: "Recover safely",
-      acceptance: ["Invalid terminal output is retried"],
-      mode: "achieve" as const,
-      agent: "sample-owner",
-    };
-    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
-    const claim = claimObservedAppTask(config, {
-      taskId: intent.id,
-      appAgent: "sample-owner",
-      handler: "auto",
-      reason: "test",
-      isAgentRunnable: () => true,
-    });
-    if (claim.kind !== "claimed") throw new Error("expected direct-agent claim");
-    recordAppTaskAttemptSession(config, claim, "session-invalid-terminal");
-
-    mkdirSync(join(persistDir, "sessions", "session-invalid-terminal"), { recursive: true });
-    const duplicateAction = {
-      kind: "create-task",
-      id: "work/duplicate-child",
-      parentId: intent.id,
-      outcome: "Complete child",
-      acceptance: ["Child converges"],
-    };
-    writeFileSync(
-      join(persistDir, "sessions", "session-invalid-terminal", "result.json"),
-      JSON.stringify({
-        status: "done",
-        finishParams: {
-          status: "success",
-          result: {
-            state: "waiting",
-            summary: "invalid duplicate actions",
-            evidence: ["session:session-invalid-terminal"],
-            actions: [duplicateAction, duplicateAction],
-          },
-        },
-      }),
-    );
-
-    const resourceStore = config.resourceStore;
-    let rejection = "";
-    expect(
-      consumePersistedTerminalAgentResult({
-        persistDir,
-        config,
-        descriptor: {
-          id: "sample",
-          appDir: f.appDir,
-          projectDir: f.appDir,
-          agent: "sample-owner",
-          app: definition(),
-          reconciliationPaused: false,
-          resourceStore,
-        },
-        taskId: intent.id,
-        sessionId: "session-invalid-terminal",
-        onRejected: (error) => {
-          rejection = error instanceof Error ? error.message : String(error);
-        },
-      }),
-    ).toBeNull();
-    expect(rejection).toContain("multiple actions for work/duplicate-child");
-    expect(readTaskSnapshot(config)).toMatchObject({
-      resources: { [intent.id]: { status: { phase: "running" } } },
-      attempts: { [claim.attemptId]: { state: "running", sessionId: "session-invalid-terminal" } },
-    });
-  });
 });
