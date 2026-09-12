@@ -27,6 +27,12 @@ const typedConditionSubjectSchema = Type.String({
   pattern: TYPED_CONDITION_SUBJECT_PATTERN,
   description: "Typed resource identity in kind:value form, for example credential:xhs or pipeline-run:42",
 });
+const CONDITION_OWNER_PATTERN = "^\\s*(?:human|[a-z][a-z0-9-]*:[^\\s:]+)\\s*$";
+const conditionOwnerPattern = new RegExp(CONDITION_OWNER_PATTERN);
+const conditionOwnerSchema = Type.String({
+  pattern: CONDITION_OWNER_PATTERN,
+  description: "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
+});
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
   additionalProperties: true,
@@ -71,7 +77,7 @@ export const conditionSchema = Type.Object(
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
     requestedAction: Type.Optional(nonEmptyStringSchema),
-    owner: nonEmptyStringSchema,
+    owner: conditionOwnerSchema,
     reviewAfterMs: Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS }),
   },
   { additionalProperties: false },
@@ -103,12 +109,24 @@ const resultFields = {
 /** Model-output schema for a resolved agent. */
 export const taskAgentResultSchema = Type.Union([
   Type.Object(
-    { state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]), ...resultFields },
+    { state: Type.Literal("converged"), ...resultFields },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { state: Type.Literal("waiting"), ...resultFields },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      state: Type.Literal("waiting"), ...resultFields, report: Type.Literal(true),
+      evidence: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
+    },
     { additionalProperties: false },
   ),
   Type.Object(
     {
       state: Type.Literal("stopped"),
+      report: Type.Optional(Type.Literal(true)),
       summary: nonEmptyStringSchema,
       response: Type.Optional(nonEmptyStringSchema),
       result: Type.Optional(objectSchema),
@@ -339,7 +357,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   }
   const owner = normalizedString(value.owner);
   if (!owner) return `conditions[${index}].owner must be a canonical non-empty identity`;
-  if (owner !== "human" && !/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
+  if (!conditionOwnerPattern.test(owner)) {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
@@ -397,6 +415,10 @@ export function admitTaskReconcileResult(
   }
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "stopped") {
     return { ok: false, error: "state must be converged, waiting, stopped, or needs-agent" };
+  }
+  if (output.report !== undefined &&
+    ((output.state !== "waiting" && output.state !== "stopped") || output.report !== true || evidence.length === 0)) {
+    return { ok: false, error: "report requires waiting or stopped, true, and non-empty evidence" };
   }
   if (output.state === "stopped") {
     if (evidence.length === 0) return { ok: false, error: "stopped requires evidence for the decision" };
@@ -490,16 +512,21 @@ export function admitTaskReconcileResult(
     evidence,
   };
   if (output.state === "waiting") {
-    return { ok: true, result: {
-      ...report, state: "waiting", actions,
+    const waiting = {
+      ...report, state: "waiting" as const, actions,
       ...(conditions.length ? { conditions } : {}),
       ...(dependencies.length ? { dependencies } : {}),
-    } };
+    };
+    return { ok: true, result: admittedOutput.report === true
+      ? { ...waiting, report: true, evidence: evidence as [string, ...string[]] }
+      : waiting };
   }
   const answer = { ...report, ...(response.value ? { response: response.value } : {}) };
   if (output.state === "stopped") {
     // The stopped branch above has already checked that evidence is non-empty.
-    return { ok: true, result: { ...answer, state: "stopped", evidence: evidence as [string, ...string[]] } };
+    return { ok: true, result: { ...answer, state: "stopped", evidence: evidence as [string, ...string[]],
+      ...(output.report === true ? { report: true } : {}),
+    } };
   }
   return { ok: true, result: { ...answer, state: "converged", actions } };
 }

@@ -28,6 +28,7 @@ export type NormalizedTaskHandlerResult = {
   resultRejected?: true;
   summary: string;
   response?: string;
+  report?: true;
   result?: Record<string, unknown>;
   evidence: string[];
   actions: AppTaskAction[];

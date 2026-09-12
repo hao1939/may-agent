@@ -102,7 +102,7 @@ export type TaskReconcileResult = {
       conditions?: never;
       dependencies?: never;
     }
-  | {
+  | ({
       state: "waiting";
       response?: never;
       result?: Record<string, unknown>;
@@ -110,9 +110,15 @@ export type TaskReconcileResult = {
       conditions?: Condition[];
       /** Typed App inputs whose answers are needed; code retains unchanged waits. */
       dependencies?: TaskAppDependency[];
-    }
+    } & ({ report?: never } | {
+      /** Return a new caller-relevant update without answering the input. */
+      report: true;
+      evidence: [string, ...string[]];
+    }))
   | {
       state: "stopped";
+      /** Select a new caller-relevant report while the same assignment retries. */
+      report?: true;
       /** At least one observation supporting this unsuccessful attempt. */
       evidence: [string, ...string[]];
       response?: string;

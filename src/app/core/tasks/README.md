@@ -50,20 +50,29 @@ unless a path is given. Result rejection retains unfinished work and paces its
 next attempt. Queues and events help discover work, while stored Tasks, attempts
 and Conditions retain it. A timer rediscovers eligible work; it does not create
 a separate maintenance lifecycle. `recoverTaskConditions()` reads exact input
-answers and first failure reports, then replays them and retained external Events
+answers and selected reports, then replays them and retained external Events
 through the same Condition transition. Feedback survives a missed notification;
 no extra delivery queue is needed.
 
 `project.task.reconciled` and `app.task.cancelled` also notify result readers.
 Composition refreshes exact input feedback and linked Conversation observations
 from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`
-for both live delivery and recovery: `blocked` returns the input's first accepted
-failure report; `done` returns its answer or owner closure.
-`app-task-condition-tracker.ts` wakes the caller once for that report while
-keeping the wait unsatisfied. Repeated worker failures do not add caller input.
+for both live delivery and recovery: `blocked` returns the input's selected
+report; `done` returns its answer or owner closure. A report may be accepted
+`stopped`/`waiting` evidence or a factual failed-attempt reference, never an
+invented answer. `failAppTaskAttempt()` saves the first failure report in the
+same transaction as retry state; its diagnostic wrapper shares that path.
+Internal workflow-to-agent handoff does not select a failure report.
+`app-task-condition-tracker.ts` wakes the caller once per selected report
+revision while keeping the wait unsatisfied. Automatic retries remain quiet.
+An agent may deliberately select new feedback with `report: true` on `waiting`
+or `stopped`, with non-empty evidence. Omitting the flag keeps an ordinary wait
+quiet and preserves the first failure report during retries. Delayed older reports cannot
+replace the latest selection. This does not guarantee every intermediate update.
 The later answer satisfies the wait, even if the caller is retrying its own work.
-Ordinary waits and later reports remain readable for review or fresh input;
-this is not a general progress stream. Apps can still declare relevant event routes.
+Conversation uses the same saved selection; answer or closure suppresses newly
+admitting obsolete reports without erasing inputs already admitted as history.
+This is not a general progress stream. Apps can still declare relevant event routes.
 
 ## Read the retained names correctly
 

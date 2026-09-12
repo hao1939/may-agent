@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 import { importRuntimeModule, invalidateRuntimeModuleCache } from "./runtime-import.js";
 
@@ -117,12 +119,14 @@ describe("importRuntimeModule", () => {
       `,
     );
 
-    const mod = await importRuntimeModule<{ default: { id: string } }>(modulePath, {
-      forceBundle: true,
-      cacheDir: join(root, ".cache"),
-    });
-
-    expect(mod.default.id).toBe("standalone-canary");
+    // Bun 1.3.14 can reuse a loaded SDK file descriptor for a deleted fixture
+    // directory when bundling again in the mixed test process (EISDIR).
+    // Exercise the real bundler in a clean process, not a retry or mocked build.
+    const { stdout } = await promisify(execFile)(process.execPath, [
+      new URL("../../test/fixtures/runtime-import-app.ts", import.meta.url).pathname,
+      modulePath, join(root, ".cache"),
+    ], { timeout: 10_000 });
+    expect(stdout.trim()).toBe("standalone-canary");
   });
 
   it("rejects the retired SDK entry point for external App declarations", async () => {

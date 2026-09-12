@@ -5,6 +5,8 @@ import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import { Type, validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
+import { taskAgentResultSchema } from "@may-agent/sdk";
+import type { TSchema } from "typebox";
 import { prepareAgentExecution } from "./agent-execution.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 
@@ -19,7 +21,7 @@ describe("prepared completion contract", () => {
     rmSync(projectRoot, { recursive: true });
   });
 
-  function prepare(name = "optimizer") {
+  function prepare(name = "optimizer", outputSchema: TSchema = Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) })) {
     const onGuard = mock();
     const prepared = prepareAgentExecution({
       definition: {
@@ -34,7 +36,7 @@ describe("prepared completion contract", () => {
       sessionId: `review-${name}`,
       task: "Review the supplied result",
       toolPolicy: "readonly",
-      outputSchema: Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) }),
+      outputSchema,
       onGuard,
     });
     const finish = prepared.tools.find((tool) => tool.name === "finish")!;
@@ -99,6 +101,41 @@ describe("prepared completion contract", () => {
     for (const args of [missing, { ...review, result: { verdict: 123 } }]) {
       expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
     }
+  });
+
+  it("rejects a prose Condition owner before finish and accepts its correction in the same execution", async () => {
+    const { finish, context } = prepare("worker", taskAgentResultSchema);
+    const args = {
+      ...review,
+      status: "partial",
+      result: {
+        state: "waiting",
+        summary: "The requester must restore access",
+        evidence: ["source:sample"],
+        conditions: [{
+          id: "access", type: "source.access", subject: "source:sample",
+          expected: true, owner: "human requester", reviewAfterMs: 60_000,
+        }],
+      },
+    };
+    expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+    args.result.conditions[0].owner = "human:requester";
+    const ctx = context(args);
+    const result = await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall));
+    expect(result.terminate).toBe(true);
+  });
+
+  it.each(["waiting", "stopped"])("rejects an empty %s report before finish and accepts its correction", async (state) => {
+    const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
+    const args = { ...review, status: "partial", result: {
+      state, report: true, summary: "Access is missing", evidence: [] as string[],
+    } };
+    expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+    args.result.evidence.push("source:access-denied");
+    const ctx = context(args);
+    const params = validateToolArguments(finish, ctx.toolCall);
+    expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
+    expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
   });
 
   it("does not terminate successful attempts that lack evidence or claim nonexistent files", async () => {

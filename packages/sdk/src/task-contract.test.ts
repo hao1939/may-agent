@@ -28,6 +28,64 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("agrees with the finish schema on quiet waits and explicit evidence-backed reports", () => {
+    for (const state of ["waiting", "stopped", "converged", "needs-agent"] as const) {
+      for (const evidence of [[], ["source:access-denied"]]) {
+        for (const report of [undefined, true, false]) {
+          const output = { state, summary: "Access is missing", evidence,
+            ...(report === undefined ? {} : { report }) };
+          const valid = state !== "needs-agent" && report !== false &&
+            (report !== true || (state !== "converged" && evidence.length > 0)) &&
+            (state !== "stopped" || evidence.length > 0);
+          expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
+          const admitted = admitTaskReconcileResult(output, { allowNeedsAgent: false });
+          expect({ output, valid: admitted.ok }).toEqual({ output, valid });
+          if (admitted.ok) {
+            expect(admitted.result).toMatchObject(output);
+            expect(Check(taskAgentResultSchema, admitted.result)).toBe(true);
+            expect(admitTaskReconcileResult(admitted.result, { allowNeedsAgent: false })).toEqual(admitted);
+          }
+        }
+      }
+    }
+  });
+
+  it("exposes the admitted Condition owner syntax to the agent before finish", () => {
+    const owners = [
+      ["human", true],
+      ["human:requester", true],
+      ["app:measurement", true],
+      ["source-owner:sample/Read.v2", true],
+      ["  human  ", true],
+      ["\tapp:measurement\n", true],
+      ["", false],
+      ["   ", false],
+      ["human requester", false],
+      ["Human:requester", false],
+      ["app:", false],
+      ["app:two words", false],
+      ["app:sample:owner", false],
+    ] as const;
+    for (const [owner, valid] of owners) {
+      const output = {
+        state: "waiting",
+        summary: "Waiting for source access",
+        evidence: ["source:sample"],
+        conditions: [{
+          id: "source-access", type: "source.access", subject: "source:sample",
+          expected: true, owner, reviewAfterMs: 60_000,
+        }],
+      };
+      expect({ owner, valid: Check(taskAgentResultSchema, output) }).toEqual({ owner, valid });
+      const admitted = admitTaskReconcileResult(output, workflowOptions);
+      expect({ owner, valid: admitted.ok }).toEqual({ owner, valid });
+      if (admitted.ok) {
+        expect(admitted.result.conditions?.[0]?.owner).toBe(owner.trim());
+        expect(Check(taskAgentResultSchema, admitted.result)).toBe(true);
+      }
+    }
+  });
+
   it("rejects legacy close actions instead of manufacturing a successful outcome", () => {
     const result = {
       state: "converged",

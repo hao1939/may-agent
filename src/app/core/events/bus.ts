@@ -307,6 +307,9 @@ export type SystemEvent =
       data: {
         kind: "app";
         id: string;
+        /** Identity for repeated delivery of this selected report, not another work lifecycle. */
+        reportAttemptId?: string;
+        reportRevision?: number;
         /** Destination App and Task, when the answer came from Task execution. */
         appId?: string;
         taskId?: string;

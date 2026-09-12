@@ -237,7 +237,10 @@ export function matchesAppTaskCondition(
 ): condition is AppTaskCondition {
   return isCondition(condition) && condition.status.state !== "true" &&
     (matches(condition, event) || (isAppInputReport(condition, event) &&
-      (!isRecord(condition.status.observed) || condition.status.observed.state !== "blocked")));
+      (!isRecord(condition.status.observed) || condition.status.observed.state !== "blocked" ||
+        (Number.isSafeInteger(eventField(event, "reportRevision")) &&
+          // Reports observed before revisions existed already represent revision 1.
+          Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))));
 }
 
 /** Recognize the evidence that belongs to a wait, including an already observed fact. */
@@ -249,6 +252,8 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
   return {
     ...(event.type === "app.dependency.updated" && eventField(event, "status") === "blocked"
       ? { summary: eventField(event, "summary"), response: eventField(event, "response"),
+          reportAttemptId: eventField(event, "reportAttemptId"),
+          reportRevision: eventField(event, "reportRevision"),
           result: eventField(event, "result"), evidence: eventField(event, "evidence") }
       : {}),
     eventType: event.type,
