@@ -1,9 +1,10 @@
 # Agent improvement through one ordinary Task
 
 **Status:** Positive and withdrawal live trials completed, September 12, 2026. No production changes.
-**Publication:** [Host PR #165](https://github.com/hao1939/may-agent/pull/165),
-draft follow-up to #163. Merge the prerequisite first, retarget to `main` and
-rerun validation; neither PR authorizes deployment.
+**Publication:** [Host PR #163](https://github.com/hao1939/may-agent/pull/163)
+is the single draft PR against `main`. #165 was merged into that PR's branch
+as `38c08c7d`, not into main. Neither source integration nor validation authorizes
+deployment.
 **Parent:** [Agent extension proposal](agent-behavior-and-capability-extension.md).
 
 ## Answer
@@ -124,9 +125,10 @@ can undo an effect, or prove cancellation races during an in-flight reload.
 
 ## Mechanical checks
 
-The no-model preflight replaces only judgment with scripted results. Actual
-admission, storage, controller, Condition observation, reopen, input result
-projection and owner controls remain production code. It checks:
+The refined no-model preflight replaces provider judgment with scripted tool
+calls, not a fabricated Task result. Actual managed execution, guidance tools,
+finish validation, admission, storage, controller, Condition observation, reopen,
+input result projection and owner controls remain production code. It checks:
 
 - a wait/checkpoint remains on the same Task and generation after reopening;
 - one matching fact resumes the original input, with no replacement ask;
@@ -135,10 +137,82 @@ projection and owner controls remain production code. It checks:
 - fixture reads/writes stay restricted after actual execution preparation;
 - a real redundant wake while waiting cannot satisfy the next attempt's barrier;
 - the original input links to the exact accepted second attempt, with one Task.
+- the closed activation window refuses the prepared source tool's reload;
+- the saved Condition is exact, not a wildcard or altered readiness predicate;
+- false readiness and wrong-subject facts cannot resume the waiting Task;
+- committed and active revisions are unchanged by reopen or withdrawal;
+- the original input returns the accepted payload, not only a done status.
 
-The scripted result is not agent judgment or target-adoption evidence. The
-existing no-model source preflight separately uses a real temporary daemon,
-Git commit and reload. Model trials are opt-in and excluded from CI.
+The scripted decisions are not agent judgment or useful-target-behavior evidence.
+The managed no-model Task commits a real candidate and the resumed attempt
+activates it through the temporary daemon. Model trials remain opt-in and
+excluded from CI. Actual managed system prompts and tools are retained with
+their executions; an unused direct-execution prompt is not Task evidence.
+
+## Review follow-up: validate facts without constraining explanations
+
+The five review findings carried from #165 into #163 made sense: the first
+publication lacked exact payload/retention assertions, recorded an unused direct
+prompt for managed work, bypassed the managed tool loop in no-model checks, and
+allowed a weaker readiness predicate. The refined fixture addresses those gaps
+without changing the Host.
+
+Two new live trials at `256006c2` exposed an overcorrection in the fixture.
+Both agents returned the correct readiness fields and added the schema's
+optional `requestedAction` explanation. Literal whole-object equality rejected
+that valid description; the fixture then dereferenced a nonexistent accepted
+attempt. Each trial completed two model executions, with no activation. The
+raw reports remain retained. This was a fixture rejection, not agent failure to
+understand the readiness fact.
+
+At `2c9e9d6c`, validation fixes the fact fields and predicate while allowing
+the optional explanation. A described next step neither performs an action nor
+changes readiness. The no-model managed run includes that description and
+checks rejection of actual predicate/identity changes. Rejected first attempts
+are inspected by their actual attempt ID, not an assumed accepted-result link.
+
+Fresh resume and withdrawal trials at that revision passed. The resume trial
+completed twelve model executions and four correct withheld checks; cancellation
+completed two executions and retained the exact inactive candidate across reopen.
+The original input returned the second attempt's exact payload. Actual managed
+preparations were retained, and the unused direct prompt was omitted.
+
+The resume trial also supplied useful imperfect evidence. Two chosen probes ran
+before activation; three ran afterward. A sixth probe was refused by the existing
+five-probe allowance. The agent honestly reported that it had not tested the
+unrelated request; the independent holdout later did. One production-boundary
+target also made an unsuccessful read of `shared/common-sense.md`: its relative
+read base was the mutable fixture root while its allowed files were in the
+immutable snapshot. The answer was correct, but the read failure was real.
+
+The final source-root refinement aligns the target prompt and relative reads
+with the same immutable snapshot. A regression verifies a normal relative shared
+read succeeds while an absolute read of the mutable source is still denied.
+This is a fixture correction, not wider permissions. Budget refusal remains
+visible evidence rather than prompting a new retry or budget-management service.
+
+The final live resume trial at `7f2abb05` completed **eleven model executions**:
+baseline, two improver attempts, four agent-chosen probes and four withheld
+checks. All four holdouts passed at the exact final active revision. Both
+improver attempts and all eight post-change targets had **zero tool errors**.
+The baseline still made 23 unsuccessful discovery reads; this does not prove
+general lookup efficiency. The agent made one small self-contained guidance
+addition, preserved uncertainty, and returned the exact result to the original
+input. Failure delivery/retry/activation were ordered at messages 33/34/35.
+
+The [review evidence](evidence/task-improvement-review-20260912.json) preserves
+both rejected fixtures, both successful intermediate arms, the final resume
+trial, exact harness hashes, actual answers, error counts and raw-report hashes.
+Withdrawal was model-tested at `2c9e9d6c`; its Task harness is identical in the
+final trial, but its target used the earlier read root. No-model checks exercise
+both arms on the final source. A full local gate at `2c9e9d6c` passed **2,881
+tests with three installation-only skips**. Final-source focused checks, PoC
+TypeScript and lint pass; the PR owns current publication checks.
+
+The design lesson is small: code validates effect-bearing facts and provides
+usable scoped capabilities; agents can explain, choose and report uncertainty.
+Do not reject harmless explanation to manufacture an exactness guarantee, or
+turn every imperfect probe into a new production rule.
 
 ## Recommendation
 
@@ -240,6 +314,8 @@ live-result case: two caller inputs were observed instead of three. Its three
 variants pass separately. Prerequisite `f82aab35` also has a GitHub input-mapping
 recovery timeout; that case passes separately. These files are unchanged by the
 PoC. Their broader-run failures remain unexplained, not silently retried away
-or fixed by changing unrelated runtime code. Both PRs remain draft.
+or fixed by changing unrelated runtime code. After consolidation, #163's
+Quality and Container passed at `38c08c7d`; the failed observations remain
+recorded and are not explained by that success. Only #163 remains open/draft.
 
 These checks do not claim deployment or model coverage in CI.

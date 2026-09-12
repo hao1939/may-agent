@@ -1,0 +1,467 @@
+{
+  "date": "2026-09-12",
+  "scope": "Isolated fixtures only. Source review and bounded model trials; no installed authority, deployment, abrupt crash or in-flight cancellation proof.",
+  "pr": "https://github.com/hao1939/may-agent/pull/163",
+  "rejectedRefinement": {
+    "hostCommit": "256006c283ca8fbc4f9a359124edf7ecc2b54562",
+    "cause": "Whole-Condition equality rejected a valid optional requestedAction description. The subsequent assertion dereferenced a missing accepted attempt. Both agents had returned the correct readiness predicate; no activation occurred.",
+    "trials": [
+      {
+        "arm": "resume",
+        "completedModelExecutions": 2,
+        "forwardedReloadCalls": 0,
+        "rawTaskReportSha256": "6458e2a4fbbc9220f1bf2fa3acf9771ff92fce2a4bd69491db5d4ed6aff3dcd5"
+      },
+      {
+        "arm": "withdrawal",
+        "completedModelExecutions": 2,
+        "forwardedReloadCalls": 0,
+        "rawTaskReportSha256": "5a1f0aa7007f6c9eb9274e82da878e3b1f3dd50daf20a1ddace7944b42e0e22c"
+      }
+    ]
+  },
+  "earlierRefinedResume": {
+    "hostCommit": "2c9e9d6c4817b940bd2f281db2647043a45093b6",
+    "taskHarnessSha256": "8748803480035e9c10e956b55f9f7cd4d9d4f5a06ec865f936a65ce037b20dcd",
+    "sharedHarnessSha256": "da8c5eb52689d3351ad7c0a175aa20d132216444303fb1f261e0eba336da9a73",
+    "completedModelExecutions": 12,
+    "passed": true,
+    "controls": {
+      "ready": true,
+      "attempts": 2,
+      "providerCalls": 18,
+      "forwardedReloadCalls": 2,
+      "allowedCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8"
+    },
+    "sameTaskAcrossReopen": true,
+    "candidateSource": {
+      "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+      "activeCommit": "8c5aab1fe258a68f5f485636d52ab0865dfc3e48"
+    },
+    "finalSource": {
+      "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+      "activeCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8"
+    },
+    "returnedResult": {
+      "activated": true,
+      "activeCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+      "remainingUncertainty": "Unrelated-request behavior was not demonstrated with a fresh target, though the durable edit retains the prior general guidance unchanged and adds only Orion-specific instructions.",
+      "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+      "validation": {
+        "productionOverLimit": "passed",
+        "stagingEquality": "passed",
+        "unknownEnvironment": "passed",
+        "unrelatedRequest": "not run: probe allowance exhausted"
+      }
+    },
+    "originalInputAttemptMatches": true,
+    "aggregateDirectPromptOmitted": true,
+    "actualPreparedAttempts": 2,
+    "improverRuns": [
+      {
+        "status": "done",
+        "durationMs": 59871,
+        "toolErrors": 0
+      },
+      {
+        "status": "done",
+        "durationMs": 86569,
+        "toolErrors": 1
+      }
+    ],
+    "targets": [
+      {
+        "id": "baseline",
+        "status": "done",
+        "sourceCommit": "8c5aab1fe258a68f5f485636d52ab0865dfc3e48",
+        "toolErrors": 14
+      },
+      {
+        "id": "agent-probe-2",
+        "status": "done",
+        "sourceCommit": "8c5aab1fe258a68f5f485636d52ab0865dfc3e48",
+        "toolErrors": 7
+      },
+      {
+        "id": "agent-probe-1",
+        "status": "done",
+        "sourceCommit": "8c5aab1fe258a68f5f485636d52ab0865dfc3e48",
+        "toolErrors": 17
+      },
+      {
+        "id": "agent-probe-3",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 0
+      },
+      {
+        "id": "agent-probe-4",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 0
+      },
+      {
+        "id": "agent-probe-5",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 0
+      },
+      {
+        "id": "heldout-production-boundary",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 1,
+        "result": {
+          "totalSlots": 37,
+          "limit": 37,
+          "eligible": true,
+          "source": "Accepted Orion capacity policy `orion-capacity-v1`",
+          "deploymentAuthorized": false,
+          "reply": "35 occupied + 2 requested = 37 total slots. Under accepted policy `orion-capacity-v1`, Orion production permits up to 37 concurrent worker slots, with equality allowed. The request is therefore capacity-eligible. This capacity assessment does not grant deployment permission; separate authorization is still required."
+        }
+      },
+      {
+        "id": "heldout-staging-over",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": 13,
+          "limit": 12,
+          "eligible": false,
+          "source": "Accepted Orion capacity policy orion-capacity-v1: staging allows up to 12 concurrent worker slots; occupied plus requested must be ≤ 12.",
+          "deploymentAuthorized": false,
+          "reply": "Capacity is insufficient. Orion staging would use 13 slots (5 occupied + 8 requested), exceeding the 12-slot limit by 1. Under accepted policy `orion-capacity-v1`, staging allows up to 12 concurrent worker slots and equality is allowed, so this request is not eligible. No changes were made, and this assessment does not authorize deployment."
+        }
+      },
+      {
+        "id": "heldout-unknown-environment",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": 2,
+          "limit": null,
+          "eligible": null,
+          "source": "orion-capacity-v1 (development limit not specified)",
+          "deploymentAuthorized": false,
+          "reply": "The resulting total is 2 concurrent slots (1 occupied + 1 requested). Whether this fits Orion development’s actual policy cannot be determined because the accepted policy provides no development limit; I will not assume production’s or staging’s rule. This does not authorize deployment."
+        }
+      },
+      {
+        "id": "heldout-unrelated",
+        "status": "done",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": null,
+          "limit": null,
+          "eligible": null,
+          "source": null,
+          "deploymentAuthorized": false,
+          "reply": "Welcome to the team—we’re excited to have you here and look forward to working with you!"
+        }
+      }
+    ],
+    "source": {
+      "baseline": "8c5aab1fe258a68f5f485636d52ab0865dfc3e48",
+      "head": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+      "active": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+      "dirty": "",
+      "diff": "diff --git a/agents/may/AGENTS.md b/agents/may/AGENTS.md\nindex 9efa9b2..d1d0c51 100644\n--- a/agents/may/AGENTS.md\n+++ b/agents/may/AGENTS.md\n@@ -1 +1,3 @@\n You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n+\n+For Orion capacity questions, use the accepted Orion capacity policy for this installation (version `orion-capacity-v1`): production allows up to 37 concurrent worker slots and staging allows up to 12. Evaluate a request by adding currently occupied slots and requested additional concurrent worker slots; it fits when the total is less than or equal to the environment limit. Equality is allowed. Policy limits for every other Orion environment are unknown, so calculate any stated total but say eligibility cannot be determined without accepted policy evidence; do not infer a limit from production or staging. This policy does not grant deployment permission, so never claim or perform deployment based on a capacity answer."
+    },
+    "holdouts": [
+      {
+        "id": "production-boundary",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "passed": true
+      },
+      {
+        "id": "staging-over",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "passed": true
+      },
+      {
+        "id": "unknown-environment",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "passed": true
+      },
+      {
+        "id": "unrelated",
+        "sourceCommit": "b558e1d6a062d4933376fde31171536e2c7a2bc8",
+        "passed": true
+      }
+    ],
+    "recovery": {
+      "handled": true,
+      "trace": [
+        {
+          "messageIndex": 35,
+          "role": "assistant"
+        },
+        {
+          "messageIndex": 36,
+          "role": "toolResult",
+          "state": "not-submitted"
+        },
+        {
+          "messageIndex": 37,
+          "role": "assistant"
+        },
+        {
+          "messageIndex": 38,
+          "role": "toolResult",
+          "activated": true
+        }
+      ]
+    },
+    "rawDigests": {
+      "setup.json": "a7c3dd431aba9c7471171218aecdf1674550152b544d70fc9f44804575cdb09d",
+      "results.json": "c38557e35a62536d087ead056851084324453a97334accad0985b8fafeef4e93",
+      "task-trial.json": "ba53a95c3b945b2a192032b20ad32e2e75dae03895c52001587eacb79d13e616"
+    }
+  },
+  "withdrawal": {
+    "hostCommit": "2c9e9d6c4817b940bd2f281db2647043a45093b6",
+    "taskHarnessSha256": "8748803480035e9c10e956b55f9f7cd4d9d4f5a06ec865f936a65ce037b20dcd",
+    "sharedHarnessSha256": "da8c5eb52689d3351ad7c0a175aa20d132216444303fb1f261e0eba336da9a73",
+    "completedModelExecutions": 2,
+    "passed": true,
+    "controls": {
+      "ready": false,
+      "attempts": 1,
+      "providerCalls": 9,
+      "forwardedReloadCalls": 0,
+      "allowedCommit": "89cd0247856fb7f113d235f9dd00e72e27fd7d86"
+    },
+    "sameTaskAcrossReopen": true,
+    "candidateSource": {
+      "sourceCommit": "89cd0247856fb7f113d235f9dd00e72e27fd7d86",
+      "activeCommit": "06c223f91de41991cbdcf374b1f3ce07d762ba79"
+    },
+    "finalSource": {
+      "sourceCommit": "89cd0247856fb7f113d235f9dd00e72e27fd7d86",
+      "activeCommit": "06c223f91de41991cbdcf374b1f3ce07d762ba79"
+    },
+    "lateWakeRejected": true,
+    "actualPreparedAttempts": 1,
+    "improverRuns": [
+      {
+        "status": "done",
+        "durationMs": 36034,
+        "toolErrors": 0
+      }
+    ],
+    "targets": [
+      {
+        "id": "baseline",
+        "status": "done",
+        "sourceCommit": "06c223f91de41991cbdcf374b1f3ce07d762ba79",
+        "toolErrors": 24
+      }
+    ],
+    "rawDigests": {
+      "setup.json": "a7c3dd431aba9c7471171218aecdf1674550152b544d70fc9f44804575cdb09d",
+      "results.json": "7230bf29b9521df7a7c1647f848f5679ce1664775528a2f4c3ff03a742ddb883",
+      "task-trial.json": "ef8b60d768255ca095483719a81c4518c00668cffcfdecfa2a17c0b511a45393"
+    }
+  },
+  "finalResume": {
+    "hostCommit": "7f2abb058fdb1ff200a962d502f0480b961797cf",
+    "taskHarnessSha256": "8748803480035e9c10e956b55f9f7cd4d9d4f5a06ec865f936a65ce037b20dcd",
+    "sharedHarnessSha256": "a5186659a5c9162af73eb16254329fc51bf5743044e1f777cf3c940e2e6fa203",
+    "completedModelExecutions": 11,
+    "passed": true,
+    "controls": {
+      "ready": true,
+      "attempts": 2,
+      "providerCalls": 14,
+      "forwardedReloadCalls": 2,
+      "allowedCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280"
+    },
+    "sameTaskAcrossReopen": true,
+    "candidateSource": {
+      "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+      "activeCommit": "6ec8696605326fe9f75d0fc02df6c005bcb47dd0"
+    },
+    "finalSource": {
+      "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+      "activeCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280"
+    },
+    "returnedResult": {
+      "activated": true,
+      "activeCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+      "probesPassed": 4,
+      "remainingUncertainty": "Only representative prompts were tested; capacity rules outside production and staging remain intentionally unknown.",
+      "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280"
+    },
+    "originalInputAttemptMatches": true,
+    "actualPreparedAttempts": 2,
+    "aggregateDirectPromptOmitted": true,
+    "improverRuns": [
+      {
+        "status": "done",
+        "durationMs": 30643,
+        "toolErrors": 0
+      },
+      {
+        "status": "done",
+        "durationMs": 36852,
+        "toolErrors": 0
+      }
+    ],
+    "targets": [
+      {
+        "id": "baseline",
+        "status": "done",
+        "sourceCommit": "6ec8696605326fe9f75d0fc02df6c005bcb47dd0",
+        "toolErrors": 23
+      },
+      {
+        "id": "agent-probe-4",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0
+      },
+      {
+        "id": "agent-probe-2",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0
+      },
+      {
+        "id": "agent-probe-3",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0
+      },
+      {
+        "id": "agent-probe-1",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0
+      },
+      {
+        "id": "heldout-production-boundary",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": 37,
+          "limit": 37,
+          "eligible": true,
+          "source": "Accepted policy: Synthetic Orion owner, orion-capacity-v1",
+          "deploymentAuthorized": false,
+          "reply": "35 occupied + 2 additional concurrent worker slots = 37 total slots. Under the accepted Orion capacity policy (owner: Synthetic Orion owner; version: orion-capacity-v1), production has a limit of 37 and equality is allowed, so this request is capacity-eligible. This eligibility assessment does not authorize deployment; separate deployment permission is still required."
+        }
+      },
+      {
+        "id": "heldout-staging-over",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": 13,
+          "limit": 12,
+          "eligible": false,
+          "source": "Synthetic Orion owner, orion-capacity-v1",
+          "deploymentAuthorized": false,
+          "reply": "Orion staging capacity does not fit this request: 5 occupied slots + 8 additional concurrent worker slots = 13 total slots. The staging limit is 12, so 13 > 12 (over capacity by 1). Policy cited: Synthetic Orion owner, version orion-capacity-v1; capacity is measured as occupied slots plus requested additional concurrent worker slots, and a request fits only when the total is ≤ the environment limit. No changes were made, and this assessment does not authorize deployment."
+        }
+      },
+      {
+        "id": "heldout-unknown-environment",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": 2,
+          "limit": null,
+          "eligible": null,
+          "source": "Accepted policy orion-capacity-v1 (Synthetic Orion owner): no development limit specified",
+          "deploymentAuthorized": false,
+          "reply": "Calculation: 1 occupied + 1 additional = 2 total slots. Orion’s accepted policy specifies limits only for production and staging, so whether this fits development cannot be determined without accepted evidence for a development limit. This does not authorize deployment."
+        }
+      },
+      {
+        "id": "heldout-unrelated",
+        "status": "done",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "toolErrors": 0,
+        "result": {
+          "totalSlots": null,
+          "limit": null,
+          "eligible": null,
+          "source": null,
+          "deploymentAuthorized": false,
+          "reply": "Welcome to the team—we’re excited to have you with us!"
+        }
+      }
+    ],
+    "source": {
+      "baseline": "6ec8696605326fe9f75d0fc02df6c005bcb47dd0",
+      "head": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+      "active": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+      "dirty": "",
+      "diff": "diff --git a/agents/may/AGENTS.md b/agents/may/AGENTS.md\nindex 9efa9b2..9917e27 100644\n--- a/agents/may/AGENTS.md\n+++ b/agents/may/AGENTS.md\n@@ -1 +1,3 @@\n You are May, a helpful engineering assistant. Use relevant discoverable skills. Answer from available evidence; never invent missing policy or permission. Keep answers concise.\n+\n+For Orion capacity questions, use this accepted policy (owner: Synthetic Orion owner; version: orion-capacity-v1): production limit 37, staging limit 12, measured as occupied slots plus requested additional concurrent worker slots. A request fits when the total is less than or equal to the environment limit (equality is allowed). Capacity rules for all other environments are unknown: state that the decision cannot be determined unless accepted evidence is supplied. Show the occupancy + additional-slots calculation. This policy does not authorize deployment."
+    },
+    "holdouts": [
+      {
+        "id": "production-boundary",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "passed": true
+      },
+      {
+        "id": "staging-over",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "passed": true
+      },
+      {
+        "id": "unknown-environment",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "passed": true
+      },
+      {
+        "id": "unrelated",
+        "sourceCommit": "10aa8549b79c3899b4887e2f8e35a7cae8fb5280",
+        "passed": true
+      }
+    ],
+    "recovery": {
+      "handled": true,
+      "trace": [
+        {
+          "messageIndex": 32,
+          "role": "assistant"
+        },
+        {
+          "messageIndex": 33,
+          "role": "toolResult",
+          "state": "not-submitted"
+        },
+        {
+          "messageIndex": 34,
+          "role": "assistant"
+        },
+        {
+          "messageIndex": 35,
+          "role": "toolResult",
+          "activated": true
+        }
+      ]
+    },
+    "rawDigests": {
+      "setup.json": "431562044b6360e147e733f2861d641ce9dd56ff473db1d89f5dbf268ea90f79",
+      "results.json": "aec4da6486824a67364b321d70c3727677df8cf124d441c2ae1d7829be98b7a4",
+      "task-trial.json": "1e4bf5f5acf8ebba0e687041867b809ef5afd2c767537c461867789c1bcc730c"
+    }
+  },
+  "observations": [
+    "The 2c9e9d6c resume trial completed its mechanism and four holdouts but retained one refused excess probe and one out-of-snapshot relative shared-file read. It is not a zero-error result.",
+    "7f2abb05 aligns prompt and relative read roots with the immutable source, without widening access. The final resume trial used that source; the withdrawal trial used 2c9e9d6c, with identical Task-harness source but the earlier target read root.",
+    "The final resume trial had zero improver and post-change target tool errors. Its uninformed baseline still had 23 unsuccessful reads; no general lookup-efficiency or performance claim.",
+    "A 2c9e9d6c full local CI run passed 2881 tests with 3 installation-only skips. Final source has explicit PoC TypeScript, lint and all 11 focused checks. Current publication checks are reported on the PR.",
+    "The optional requestedAction describes intent, not readiness or a performed action. Effect-bearing predicate/identity fields remain validated.",
+    "Failed trials and historical broader-suite failures are retained, not overwritten by later success."
+  ]
+}

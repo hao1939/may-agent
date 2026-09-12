@@ -458,6 +458,14 @@ workspace. A differently scoped source capability must keep its own adapter
 identity and restrictions. Registration alone does not prove the executed
 capability has the intended scope.
 
+The same follow-up now uses the real managed tool/finish path in no-model
+checks and retains actual prompt, returned-payload and source-revision evidence.
+Live review caught an overstrict fixture validator: readiness facts must match,
+but the schema's optional explanation may differ. A described action is not an
+executed action. It also caught a relative-read base outside the allowed snapshot;
+align the normal read context with the allowed source rather than widening access.
+These are small capability/fixture corrections, not reasons for another lifecycle.
+
 ### Native workers
 
 Native CLI workers have their own discovery and permission behavior. Pass the
