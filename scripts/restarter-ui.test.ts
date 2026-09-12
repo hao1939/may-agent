@@ -13,7 +13,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { createServer } from "node:net";
+import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
+import { readDeployReceiptForTask } from "./deploy-receipt.js";
 
 const roots: string[] = [];
 const sourceCommit = "a".repeat(40);
@@ -29,13 +31,14 @@ function executable(path: string, body = "#!/bin/sh\nexit 0\n"): void {
 
 async function fixture(
   healthy: boolean,
-  options: { failUiSwitch?: boolean; previousSdk?: boolean; socketHealthy?: boolean } = {},
+  options: { failUiSwitch?: boolean; previousSdk?: boolean; socketHealthy?: boolean; failWake?: boolean } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-agent-restarter-ui-"));
   roots.push(root);
   const binDir = join(root, "bin");
   const bundleRoot = join(root, "bundle");
-  const receiptDir = join(root, "receipts");
+  const receiptDir = join(root, ".state", "deploy-receipts");
+  const wakePath = join(root, "task-wake.json");
   const uiParent = join(root, "platform");
   const uiTarget = join(uiParent, "ui");
   const sdkRelease = `sdk-${sourceCommit}`;
@@ -65,9 +68,10 @@ async function fixture(
   const consoleTarget = join(root, "may-console");
   const bundle = join(bundleRoot, "may-agent");
   const consoleBundle = join(bundleRoot, "may-console");
-  executable(target, "#!/bin/sh\nexit 0\n");
+  const hostScript = '#!/bin/sh\nif [ "${1:-}" = --emit ]; then\n  [ "${MAY_TEST_FAIL_WAKE:-}" != 1 ] || exit 1\n  printf "%s\\n" "$3" > "$MAY_TEST_WAKE_PATH"\nfi\nexit 0\n';
+  executable(target, hostScript);
   executable(consoleTarget);
-  executable(bundle, "#!/bin/sh\nexit 0\n# new-runtime\n");
+  executable(bundle, `${hostScript}# new-runtime\n`);
   executable(consoleBundle, "#!/bin/sh\nexit 0\n# new-console\n");
 
   const sdkLink = join(bundleRoot, "sdk-current");
@@ -83,7 +87,7 @@ async function fixture(
       correlation: "deploy-test",
       project: "may-agent",
       taskId: "app-request/test",
-      artifactSha: "pending",
+      artifactSha: createHash("sha256").update(readFileSync(bundle)).digest("hex"),
       sourceCommit,
       phase: "requested",
       requestedAt: new Date().toISOString(),
@@ -140,6 +144,8 @@ async function fixture(
         MAY_AGENT_HEALTH_DELAY: "0",
         MAY_AGENT_HEALTH_SOCKET: healthSocket,
         MAY_TEST_UI_TARGET: uiTarget,
+        MAY_TEST_WAKE_PATH: wakePath,
+        MAY_TEST_FAIL_WAKE: options.failWake ? "1" : "0",
       },
       stdout: "pipe",
       stderr: "pipe",
@@ -159,6 +165,8 @@ async function fixture(
     root,
     result,
     receipt,
+    receiptDir,
+    wakePath,
     uiTarget,
     uiRelease,
     bundleRoot,
@@ -179,7 +187,24 @@ describe("supervisor UI release", () => {
     expect(readlinkSync(f.uiTarget)).toBe(join(f.bundleRoot, f.uiRelease));
     expect(readFileSync(join(f.uiTarget, "index.html"), "utf8")).toBe("new-ui\n");
     expect(readlinkSync(f.sdkLink)).toBe(`sdk-${sourceCommit}`);
-    expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({ phase: "succeeded", health: "healthy" });
+    const receipt = JSON.parse(readFileSync(f.receipt, "utf8"));
+    expect(receipt).toMatchObject({ phase: "succeeded", health: "healthy", loadedArtifactSha: receipt.artifactSha });
+    expect(JSON.parse(readFileSync(f.wakePath, "utf8"))).toEqual({
+      project: "may-agent", taskId: "app-request/test", task_id: "app-request/test",
+      reason: "restart-aware-deploy-receipt", deploymentCorrelation: "deploy-test", deploymentPhase: "succeeded",
+      deploymentReceipt: receipt,
+    });
+  });
+
+  it("keeps exact settled evidence readable when the best-effort Task wake is lost", async () => {
+    const f = await fixture(true, { failWake: true });
+    expect(f.result.exitCode).toBe(0);
+    expect(existsSync(f.wakePath)).toBe(false);
+    expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "app-request/test"))
+      .toEqual(JSON.parse(readFileSync(f.receipt, "utf8")));
+    expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "app-request/test"))
+      .toMatchObject({ phase: "succeeded", health: "healthy", duplicateDeploy: false });
+    expect(existsSync(f.deployMarker)).toBe(false);
   });
 
   it("restores the prior UI and SDK when readiness fails", async () => {

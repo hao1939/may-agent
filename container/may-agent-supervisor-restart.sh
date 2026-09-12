@@ -84,7 +84,7 @@ wait_for_health() {
 
 emit_wake() {
   phase="$1"
-  payload="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); console.log(JSON.stringify({project:r.project,taskId:r.taskId,task_id:r.taskId,reason:"restart-aware-deploy-receipt",deploymentCorrelation:r.correlation,deploymentPhase:process.argv[2]}))' "$receipt" "$phase")"
+  payload="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); console.log(JSON.stringify({project:r.project,taskId:r.taskId,task_id:r.taskId,reason:"restart-aware-deploy-receipt",deploymentCorrelation:r.correlation,deploymentPhase:process.argv[2],deploymentReceipt:r}))' "$receipt" "$phase")"
   "$target" --emit project.task.tick "$payload"
 }
 

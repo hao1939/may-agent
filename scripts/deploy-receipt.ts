@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   renameSync,
   rmSync,
   statSync,
@@ -13,6 +14,46 @@ import { basename, dirname, join } from "node:path";
 import { Database } from "bun:sqlite";
 
 export type DeployReceiptPhase = "requested" | "succeeded" | "failed" | "rolled_back";
+
+/** Operation evidence, not an instruction or a second Task lifecycle. */
+export type DeployReceipt = {
+  version: 1;
+  correlation: string;
+  project: string;
+  taskId: string;
+  artifactSha: string;
+  sourceCommit?: string;
+  phase: DeployReceiptPhase;
+  requestedAt: string;
+  verification: string;
+  completedAt?: string;
+  loadedArtifactSha?: string;
+  health?: "healthy" | "unhealthy";
+  duplicateDeploy?: boolean;
+  failure?: string;
+};
+
+/** Read-only fallback when a restart wake was lost; correlate both App and Task. */
+export function readDeployReceiptForTask(receiptDir: string, project: string, taskId: string): DeployReceipt | null {
+  if (!existsSync(receiptDir)) return null;
+  const receipts: DeployReceipt[] = [];
+  for (const name of readdirSync(receiptDir).filter(entry => entry.endsWith(".json")).sort()) {
+    const receipt = JSON.parse(readFileSync(join(receiptDir, name), "utf8")) as Partial<DeployReceipt> | null;
+    // A damaged receipt must not look like evidence that no deployment exists.
+    if (!receipt || receipt.version !== 1 || typeof receipt.project !== "string" || typeof receipt.taskId !== "string") {
+      throw new Error(`Invalid deployment receipt: ${name}`);
+    }
+    if (receipt.project !== project || receipt.taskId !== taskId) continue;
+    if (
+      typeof receipt.correlation !== "string" || !receipt.correlation ||
+      typeof receipt.artifactSha !== "string" || !receipt.artifactSha ||
+      typeof receipt.requestedAt !== "string" || !Number.isFinite(Date.parse(receipt.requestedAt)) ||
+      !["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "")
+    ) throw new Error(`Invalid deployment receipt for ${project}/${taskId}: ${name}`);
+    receipts.push(receipt as DeployReceipt);
+  }
+  return receipts.sort((a, b) => Date.parse(b.requestedAt) - Date.parse(a.requestedAt))[0] ?? null;
+}
 
 export function validateDeployTaskTarget(path: string, project: string, taskId: string): void {
   if (project !== "may-agent") {
@@ -104,7 +145,7 @@ export function requestReceipt(
       phase: "requested",
       requestedAt: new Date().toISOString(),
       verification:
-        "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+        "After the restarter settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then report the result to the owning Task without redeploying.",
     });
     return true;
   } finally {
@@ -135,8 +176,11 @@ export function settleReceipt(
 if (import.meta.main) {
   const [command, pathArg, ...args] = process.argv.slice(2);
   const path = pathArg;
-  if (!path) throw new Error("Usage: deploy-receipt.ts <request|settle> <path> ...");
-  if (command === "validate-target") {
+  if (!path) throw new Error("Usage: deploy-receipt.ts <read-task|validate-target|request|settle> <path> ...");
+  if (command === "read-task") {
+    const [projectArg, taskArg] = args;
+    console.log(JSON.stringify(readDeployReceiptForTask(path, validId(projectArg, "project"), validId(taskArg, "task id"))));
+  } else if (command === "validate-target") {
     const [projectArg, taskArg] = args;
     validateDeployTaskTarget(path, validId(projectArg, "project"), validId(taskArg, "task id"));
   } else if (command === "request") {

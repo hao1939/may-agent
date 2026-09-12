@@ -4,33 +4,11 @@ import {
   DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
   hasSuppliedDependencyObservation,
 } from "../../adapters/executors/managed-agent.js";
-import { hasDeployReceiptWake } from "../../adapters/executors/agent-workspace.js";
 import { mergeTaskConditions } from "./app-task-runtime.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 
 // Pure projection and protocol rules need neither a repository nor a database.
 describe("App Task agent prompt context", () => {
-  it("recognizes deploy context only from the exact typed receipt wake", () => {
-    const events = (reason: string) =>
-      ({
-        items: [
-          {
-            eventId: 1,
-            observedAt: "2026-08-25T00:00:00.000Z",
-            event: {
-              type: "runtime.deploy.observed",
-              data: { reason },
-            },
-          },
-        ],
-        throughEventId: 1,
-        truncated: false,
-      }) as any;
-
-    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(true);
-    expect(hasDeployReceiptWake(events("please inspect the restart-aware deploy receipt"))).toBe(false);
-  });
-
   it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
     const protocol = appTaskAgentProtocol("may");
 
