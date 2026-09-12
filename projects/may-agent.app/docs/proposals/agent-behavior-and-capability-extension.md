@@ -542,6 +542,14 @@ no provider calls. These checks do not establish improved model behavior.
 
 ## 7. Small next implementation slice
 
+The [feedback/adoption integration candidate](feedback-adoption-integration-20260912.md)
+now fixes the feedback location and false source-promotion completion locally.
+Four additional model checks used the real projection: later reads saw saved,
+updated and cleared feedback without definition reload. Gym keeps source-only
+promotion at existing owner attention; exact activation and subsequent Task
+adoption still need integration. The candidate is not deployed, and the report
+retains three pre-existing Evaluation heartbeat-test failures.
+
 The isolated teaching slice is complete; production adoption is not. Review
 the focused [runtime PR #159](https://github.com/hao1939/may-agent/pull/159) and
 [portable trial PR #160](https://github.com/hao1939/may-agent/pull/160). Keep the

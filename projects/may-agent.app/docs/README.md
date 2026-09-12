@@ -45,6 +45,10 @@ The [extension-method matrix](proposals/extension-methods-poc-20260912.md)
 compares suitable cases, activation, lifetime and agent use, including crowded
 discovery and isolated cross-agent teaching. It identifies feedback delivery
 and post-promotion activation as the next integration gaps.
+The [first integration candidate](proposals/feedback-adoption-integration-20260912.md)
+restores reachable feedback and keeps unverified source adoption pending; four
+model checks confirm the feedback read/update/clear path. Deployment and the
+activation-to-Task completion handoff remain separate.
 
 The [Telegram experience proposal](proposals/telegram-conversation-experience.md)
 tracks candidate fixes for five reproduced reliability defects alongside
