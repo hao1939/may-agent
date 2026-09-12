@@ -234,7 +234,7 @@ async function showProjectDetail(path, initialTab) {
 
   // ── Comment input ──
   html += `<div style="margin:0 0 12px;display:flex;gap:8px;align-items:center">`;
-  html += `<input id="project-comment" placeholder="Add a comment (auto-resumes blocked/waiting projects)..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px" onkeydown="if(event.key==='Enter')addProjectComment()">`;
+  html += `<input id="project-comment" placeholder="Send a comment to this project's App..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px" onkeydown="if(event.key==='Enter')addProjectComment()">`;
   html += `<button onclick="addProjectComment()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">Comment</button>`;
   html += `</div>`;
   html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
@@ -659,7 +659,13 @@ async function addProjectComment() {
       body: JSON.stringify({ path: _projectDetailPath, comment, idempotencyKey })
     });
     const data = await res.json();
-    if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
+    if (!res.ok || data.ok === false) {
+      // A settled observation has no work to deduplicate. Keep the user's text
+      // and let a later route accept a fresh submission. Unknown outcomes keep
+      // their key so retrying cannot create duplicate work.
+      if (data.retryWithNewKey === true) delete input.dataset.idempotencyKey;
+      throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
+    }
     input.value = '';
     delete input.dataset.idempotencyKey;
     if (data.eventId) {

@@ -29,13 +29,14 @@ It tests the metric lifecycle without waiting for repeated scheduler intervals.
 | Case | What it actually checks |
 | --- | --- |
 | `e1-handler-loop-liveness` | At least two real cron/handler cycles with start, completion, and domain events. |
-| `e2-project-comment-roundtrip` | Legacy project-comment intake: stored comment, project status update, and nudge event. Not App Task reconciliation. |
+| `e2-project-comment-roundtrip` | Declared App comment subscription → Task → accepted workflow result, without modifying retained Markdown or inventing an owner/nudge. |
 | `e3b-workflow-discovery` | Configured workflow discovery, execution, and terminal `workflow_runs` persistence. |
 | `e4-metric-lifecycle` | Operator event triggers real handler phases: definition, healthy baseline without an alert, breach with an open alert, then recovery resolving that same alert. |
 | `e5-agent-reload` | A newly written agent definition becomes visible after explicit reload. |
 | `e6-host-maintenance` | Host file handlers cannot launch agents, workflows, or escalations; no worker session starts. |
 | `e7-escalation-roundtrip` | One escalation moves from `needs_human` to terminal resolution; the FIFO listener produces exactly one resume attempt and failure for a synthetic session. Not successful model execution. |
-| `e8-project-comment-ui` | Real browser loads the served UI, submits a project comment, observes storage, and executes shipped chat rendering: Markdown/raw streaming, knowledge links and escaped fallback. |
+| `e8-project-comment-ui` | Real browser reads legacy history, preserves rejected comments and retries after an App gains a work route, submits to a declared App route with an idempotent receipt, and executes shipped chat rendering: Markdown/raw streaming, knowledge links and escaped fallback. |
+| `project-comment-recovery` | Real daemon/socket timeouts confirm the exact generic-input or comment publication; observation-only Apps and unrelated same-key receipts cannot report work acceptance. |
 | `e9-session-auto-resume` | Explicit steering resumes a stored interrupted session under the same identity. Not autonomous retry/backoff or successful model execution. |
 | `control-routing-e2e` | Event admission/rejection, persistence, and retained control compatibility. |
 | `telegram-reply-e2e` | Telegram routing and control behavior with a mocked Telegram service. |

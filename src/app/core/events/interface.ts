@@ -7,6 +7,7 @@ import type {
   EventView,
   PublicEvent,
 } from "@may-agent/control/events";
+import { findPersistedEventId } from "../../../lib/db-writer.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -393,6 +394,11 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
   Object.defineProperty(event, EVENT_INGRESS_SOURCE, { value: source, configurable: true });
   Object.defineProperty(event, EVENT_INTERFACE_INPUT, { value: true, configurable: true });
   return event;
+}
+
+/** Confirm a publication without rerunning App routing or accepting a key-only receipt. */
+export function findEventPublication(db: SqliteDb, input: EventInput, context: EventPublisherContext): number | undefined {
+  return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
 }
 
 function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEvent {

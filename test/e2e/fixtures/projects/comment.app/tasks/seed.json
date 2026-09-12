@@ -1,0 +1,6 @@
+{
+  "root_task_id": "comment",
+  "groups": {
+    "comment": { "id": "comment", "parent_id": null, "agent": "may", "children": [] }
+  }
+}

@@ -147,6 +147,25 @@ function idempotencyScope(correlation: ReturnType<typeof eventCorrelation>, owne
   );
 }
 
+/** Read-only confirmation of an interface publication using its exact identity and input. */
+export function findPersistedEventId(db: SqliteDb, event: AgentEvent): number | undefined {
+  const record = event as AgentEvent & Record<string, unknown>;
+  const payload = eventPayload(record);
+  const key = typeof payload.idempotencyKey === "string" ? payload.idempotencyKey.trim() : "";
+  if (!key) return undefined;
+  const target = isRecord(record.target) ? record.target : {};
+  const source = eventSource(record);
+  const owner = eventOwner(record);
+  const row = db.prepare(`SELECT id FROM events
+    WHERE event_type = ? AND ingress_source = ? AND idempotency_scope = ?
+      AND idempotency_key = ? AND idempotency_hash = ?`).get(
+    event.type, ingressSource(event, source), idempotencyScope(eventCorrelation({ ...payload, ...target }), owner),
+    key, idempotencyHash(event, payload),
+  ) as { id?: unknown } | undefined;
+  const id = Number(row?.id);
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+}
+
 function compactEventValue(value: unknown, depth = 0): unknown {
   if (typeof value === "string") {
     const max = depth === 0 ? 4_000 : 2_000;
