@@ -775,7 +775,6 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
               parentId: "root",
               outcome: "Collect evidence",
               acceptance: ["Measure"],
-             
             },
           },
         },
