@@ -143,6 +143,7 @@ changing May's App input mapping or role instructions:
 ```sh
 bun scripts/poc/controller-judgment/shared-loop.ts --live --scenario manifest --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/manifest-loop
 bun scripts/poc/controller-judgment/shared-loop.ts --live --scenario owner-repair --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/owner-repair-loop
+bun scripts/poc/controller-judgment/shared-loop.ts --live --nested --scenario owner-repair --app-root /path/to/paired-app-checkout --model MODEL --out /tmp/nested-repair-loop --value 0.78
 ```
 
 The manifest case checks a total of 3200 compressed bytes and the component
@@ -157,10 +158,15 @@ ordinary human input asking to continue the same assignment. The gate requires
 the original Request and worker to stay open, a useful problem report, the exact
 answer, unchanged Task identities and recall after reopen. It allows twelve
 dispatches within six minutes and records failed reads and time to owner feedback.
-This exercises Topic-linked owner feedback, not failure return to a nested typed
-caller. Both scenarios use one worker and cannot combine with nested, withdrawal
-or correction options. Reports include failure evidence; a failed trial remains
-a finding to investigate, not a reason to bypass the user scenario.
+Add `--nested` to owner repair to exercise collector → reviewer → human feedback
+with an eighteen-dispatch experiment allowance. An unfinished acquisition must
+return its first blocker and later answer through the original input. If the
+reviewer explicitly requested a one-shot diagnostic, that answer remains intact:
+repair must lead to fresh input on the same collector and an exact later answer.
+The report records which path actually ran; passing one does not prove the other.
+These are experiment bounds, not product retry limits. Manifest still uses one
+worker; neither scenario combines with withdrawal or correction. Reports include
+failure evidence; a failed trial remains a finding to investigate.
 
 ## Managed recovery with human input
 
