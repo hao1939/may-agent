@@ -126,3 +126,39 @@ final-commit/active-source equality; and truthful reload-call naming. Earlier
 live attempts finished within 48 seconds, but did not test the revised timeout.
 Old raw reports retain the former `activations` field; its value counted calls,
 including the rejection, and must not be read as successful activations.
+
+## Consolidated review follow-up
+
+#165 was merged into #163's branch; #163 is the single PR against main.
+Fresh model trials at `256006c2` rejected valid waits because the fixture compared
+the entire Condition, including an optional `requestedAction` description. Each
+trial completed two model executions without activation. Those failures remain
+retained. The validator now fixes the readiness fields/predicate, not the agent's
+explanation; scripted managed execution covers both that permission and rejection
+of real predicate changes.
+
+At `2c9e9d6c`, resumed improvement completed twelve model executions with four
+correct holdouts, and withdrawal completed two with the exact inactive candidate
+retained. Actual Task prompts and input payloads were checked. The resumed agent
+hit the existing probe allowance and honestly reported an untested case; one
+target also made a refused relative shared-file read. These are retained
+imperfections, not hidden by the correct answers.
+
+The read failure exposed a fixture-root mismatch. `7f2abb05` aligns the target's
+prompt and relative reads with its immutable source. A regression verifies
+`shared/common-sense.md` is readable there while the mutable source is still
+denied. The final live resume trial completed **eleven model executions**: two
+improver attempts, four chosen probes, four holdouts and baseline. All holdouts
+passed at the exact final revision. Both improver attempts and all eight
+post-change targets had **zero tool errors**. The baseline still had 23 failed
+discovery reads, so this is not a general lookup-efficiency claim.
+
+The final Task harness hash is
+`8748803480035e9c10e956b55f9f7cd4d9d4f5a06ec865f936a65ce037b20dcd`;
+the final shared harness hash is
+`a5186659a5c9162af73eb16254329fc51bf5743044e1f777cf3c940e2e6fa203`.
+Withdrawal used the same Task harness at `2c9e9d6c`, with the earlier shared
+harness `da8c5eb52689d3351ad7c0a175aa20d132216444303fb1f261e0eba336da9a73`.
+No production change, new learning controller, general reliability or crash
+safety is claimed. Detailed sanitized review evidence remains with the App
+proposal at `docs/proposals/evidence/task-improvement-review-20260912.json`.
