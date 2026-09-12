@@ -506,7 +506,7 @@ describe("workflow tool: run", () => {
         return ctx.blocked("missing sessionId", {
           owner: "agent:may",
           requestedAction: "Fix the event producer",
-          evidence: { triggerType: "session.end" },
+          facts: { triggerType: "session.end" },
         });
       }
     `,
@@ -550,7 +550,7 @@ describe("workflow tool: run", () => {
       expect(parsed.context).toEqual({
         owner: "agent:may",
         requestedAction: "Fix the event producer",
-        evidence: { triggerType: "session.end" },
+        facts: { triggerType: "session.end" },
       });
     }
     expect(lifecycleEvents.map((event) => event.type)).toEqual(["workflow.started", "workflow.blocked"]);

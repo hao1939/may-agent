@@ -44,7 +44,7 @@ function workflowOutcomeCards(data) {
 
 function workflowCoverage(data) {
   return `<p class="health-note">${esc(healthTime(data.window.start))} – ${esc(healthTime(data.window.end))} (end excluded).
-    ${data.scope === 'top-level' ? 'Top-level runs only; children remain in run evidence.' : 'All runs, including children; not independent Task outcomes.'}
+    ${data.scope === 'top-level' ? 'Top-level runs only; children remain in run facts.' : 'All runs, including children; not independent Task outcomes.'}
     Retained records only; older coverage is not guaranteed. Later settlement or retention can change this selection.</p>
     ${data.totals.unknownOutcomes || data.coverage.undatedFinishedStartedInWindow ? `<p class="health-warning">Coverage gap: ${data.totals.unknownOutcomes} unrecognized outcomes in the window; ${data.coverage.undatedFinishedStartedInWindow} finished runs started in the window without an end time.</p>` : ''}`;
 }
@@ -67,7 +67,7 @@ async function loadWorkflowOverview() {
     el.innerHTML = `<h2>Workflow execution · last 24 hours</h2>${workflowOutcomeCards(data)}${workflowCoverage(data)}
       <p>${data.running} running now (separate from finished outcomes). <a href="${esc(workflowHealthLink(data))}">Compare workflows and inspect runs</a></p>
       <h3>Recent execution errors</h3>${workflowRunTable(data)}`;
-  } catch (error) { if (generation === overviewLoadGeneration) el.innerHTML = `<h2>Workflow execution</h2><p class="health-warning">Unable to read execution evidence: ${esc(error.message)}</p>`; }
+  } catch (error) { if (generation === overviewLoadGeneration) el.innerHTML = `<h2>Workflow execution</h2><p class="health-warning">Unable to read execution facts: ${esc(error.message)}</p>`; }
 }
 
 async function loadOverviewTasks() {
@@ -156,7 +156,7 @@ async function loadMetricsTab() {
   const id = currentRouteParams.id;
   // Independent surfaces: an unavailable metric collector cannot hide run facts.
   if (!id) {
-    workflows.innerHTML = '<p>Loading workflow evidence…</p>';
+    workflows.innerHTML = '<p>Loading workflow facts…</p>';
     const query = new URLSearchParams(location.search);
     query.set('runs', 'true');
     void readHealthJson('/api/workflow-health?' + query).then(data => {
@@ -196,8 +196,8 @@ async function showMetricHistory(id, metric, generation) {
     if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
     el.innerHTML = `<h2>${esc(metric.name || id)}</h2><p>${esc(id)} · ${esc(metric.type || 'unspecified')} · ${esc(metric.unit || 'no unit')}</p>
       <p>${esc(metric.description || metric.source || 'No source description recorded.')}</p><p>${esc(metricObservationLabel(metric))}</p><p>${esc(metricRuleLabel(metric))}</p>
-      ${metric.workflowSelection ? `<p><a href="/metrics?${attrEsc(new URLSearchParams({ ...metric.workflowSelection, runs: 'true' }).toString())}">Inspect retained runs for this observation's window</a> · Counts are recalculated; retention or later settlement can change the available evidence.</p>` : '<p class="health-note">This definition does not supply a known workflow-run selection.</p>'}
-      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)} · <a href="/api/loop-trace?alertId=${metric.alertId}">retained alert evidence (JSON)</a></p>` : ''}
+      ${metric.workflowSelection ? `<p><a href="/metrics?${attrEsc(new URLSearchParams({ ...metric.workflowSelection, runs: 'true' }).toString())}">Inspect retained runs for this observation's window</a> · Counts are recalculated; retention or later settlement can change the available facts.</p>` : '<p class="health-note">This definition does not supply a known workflow-run selection.</p>'}
+      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)} · <a href="/api/loop-trace?alertId=${metric.alertId}">retained alert facts (JSON)</a></p>` : ''}
       <p class="health-note">${metric.staleAfterMs ? 'Stale after ' + esc(healthDuration(metric.staleAfterMs)) + ' (two declared sampling intervals).' : 'No sampling cadence: freshness is unknown.'} Measurement freshness is not system health.</p>
       ${metric.collectionFailure ? `<p class="health-warning">Last retained collection failure: ${esc(healthTime(metric.collectionFailure.at))} · ${esc(metric.collectionFailure.reason)} · <a href="/events/${metric.collectionFailure.eventId}">event</a></p>` : ''}
       <h3>Recorded sample history</h3><div class="health-actions">${[1, 7, 14].map(d => `<button onclick="selectMetricDays(${jsStringAttr(id)}, ${d})">Last ${d === 1 ? '24 hours' : d + ' days'}</button>`).join('')}</div>${renderSparklineWithValues(data.snapshots, metric.threshold, 700, 160, metric.alert_op, { ...data.window, gapMs: metric.staleAfterMs, failures: data.failures })}

@@ -63,7 +63,7 @@ describe("one workflow context", () => {
           activeSignal: ctx.signal instanceof AbortSignal && !ctx.signal.aborted,
           input: ctx.input,
           done: ctx.done("nested", { accepted: true }),
-          blocked: ctx.blocked("wait", { reason: "evidence" }),
+          blocked: ctx.blocked("wait", { reason: "facts" }),
         });
       `,
         {
@@ -109,19 +109,19 @@ describe("one workflow context", () => {
             kind: "workflow",
             status: "blocked",
             summary: "wait",
-            evidence: { reason: "evidence" },
+            facts: { reason: "facts" },
           },
         },
       });
       if (result.type === "done") {
         const output = result.output as { done: object; blocked: object };
         expect(Object.keys(output.done).sort()).toEqual(["id", "kind", "output", "status", "summary"]);
-        expect(Object.keys(output.blocked).sort()).toEqual(["evidence", "id", "kind", "status", "summary"]);
+        expect(Object.keys(output.blocked).sort()).toEqual(["facts", "id", "kind", "status", "summary"]);
       }
     });
   }
 
-  it("calls an ordinary imported helper without manufacturing session/step evidence", async () => {
+  it("calls an ordinary imported helper without manufacturing session/step facts", async () => {
     const { result, events } = await runFixture(`return ctx.done("calculated", await calculate());`);
     expect(result).toMatchObject({ type: "done", output: 42, steps: [] });
     expect(events.map((event) => event.type)).toEqual(["workflow.started", "workflow.completed"]);

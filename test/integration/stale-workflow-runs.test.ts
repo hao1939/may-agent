@@ -6,7 +6,7 @@ import { SubagentManager } from "../../src/lib/manager.js";
 import { insertWorkflowRun, getWorkflowRun } from "../../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../../src/lib/requests.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
-import { readWorkflowEvidence } from "../../src/lib/workflow-evidence.js";
+import { readWorkflowFacts } from "../../src/lib/workflow-facts.js";
 
 let persistDir: string;
 
@@ -50,7 +50,7 @@ describe("stale workflow run cleanup", () => {
     expect(updated!.status).toBe("interrupted");
     expect(updated!.endedAt).toBeTypeOf("number");
     expect(updated!.result_reason).toBe("Process restarted");
-    expect(readWorkflowEvidence(persistDir, "wr_stale_1")!.diagnostics.entries[0]?.message).toBe("prepared before restart");
+    expect(readWorkflowFacts(persistDir, "wr_stale_1")!.diagnostics.entries[0]?.message).toBe("prepared before restart");
   });
 
   it("resumeStaleSessions leaves completed workflow runs untouched", () => {

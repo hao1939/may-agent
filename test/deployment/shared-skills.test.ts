@@ -110,7 +110,7 @@ describe("shared system skills", () => {
       prepareAgentExecution({
         sessionId: `role-context-${name}`,
         projectRoot: APP_ROOT,
-        task: "Inspect the supplied evidence without changing state.",
+        task: "Inspect the supplied facts without changing state.",
         definition: {
           name,
           description: "Role context test; no inference is performed",

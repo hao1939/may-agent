@@ -123,11 +123,11 @@ describe("retained detached instance control", () => {
         detached: true,
         instance: "job-legacy",
       });
-      appendSessionMessage(root, "legacy", { role: "user", content: "Retained evidence", timestamp: Date.now() });
+      appendSessionMessage(root, "legacy", { role: "user", content: "Retained facts", timestamp: Date.now() });
       expect(await manager.waitFor("legacy")).toMatchObject({
         sessionId: "legacy",
         status,
-        messages: [{ role: "user", content: "Retained evidence" }],
+        messages: [{ role: "user", content: "Retained facts" }],
       });
       expect(manager.registry.getSession("legacy")?.status).toBe(status);
     });

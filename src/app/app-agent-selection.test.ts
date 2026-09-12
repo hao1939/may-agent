@@ -18,7 +18,6 @@ describe("App agent selection boundary", () => {
           parentId: "sample",
           outcome: "Finish current work",
           acceptance: ["Work is complete"],
-          mode: "achieve",
           agent: "specialist",
         },
       }),
@@ -48,7 +47,6 @@ describe("App agent selection boundary", () => {
         parentId: "root",
         outcome: "x",
         acceptance: ["x"],
-        mode: "achieve",
         agent: "one",
         owner: "two",
       }),
@@ -62,7 +60,6 @@ describe("App agent selection boundary", () => {
         parentId: "root",
         outcome: "x",
         acceptance: ["x"],
-        mode: "achieve",
         agent: " ",
       }),
     ).toThrow("agent must be a non-empty string");

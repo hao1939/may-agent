@@ -14,6 +14,7 @@ import type { AddressInfo } from "node:net";
 import type { AppDefinition, AppInputContext, ConversationTurnResult } from "@may-agent/sdk";
 import { getDb, closeDb } from "../../src/lib/requests.js";
 import { stateTransaction } from "../../src/lib/db/transaction.js";
+import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { migrateTaskCompletionReceipts } from "../../src/app/core/state/task-receipt-cutover.js";
 import { migrateOpenTaskState } from "../../src/app/core/state/task-state-cutover.js";
@@ -127,7 +128,7 @@ const server = createServer(async (request, response) => {
               arguments: JSON.stringify({
                 status: "success",
                 summary: answer.summary,
-                verification_evidence: ["Synthetic cutover input"],
+                [stage === "old" ? "verification_evidence" : "verification_facts"]: ["Synthetic cutover input"],
                 result: answer,
               }),
             },
@@ -221,7 +222,7 @@ try {
     tasks: { maxConcurrent: 2 },
     task(input) { const supervisor = input.input.kind === "supervise"; return { kind: "desired", intent: {
       id: supervisor ? "conversation/follow-up" : "measurement", parentId: "root", mode: supervisor ? "maintain" : "achieve",
-      outcome: supervisor ? "Return linked results" : "Measure the sample", acceptance: ["Fixture evidence retained"],
+      outcome: supervisor ? "Return linked results" : "Measure the sample", acceptance: ["Fixture facts retained"],
       workflow: "cutover-probe", input: { supervisor }
     } }; }
   };`;
@@ -238,7 +239,7 @@ try {
         JSON.stringify({ pid: process.pid, held: process.env.MAY_POC_CUTOVER_HOLD === "1" }));
       if (process.env.MAY_POC_CUTOVER_HOLD === "1") await new Promise(() => {});
       if (ctx.input.supervisor) throw new Error("Retired supervisor executed");
-      return ctx.done("Measured", { state: "converged", summary: "Measurement is 17", result: { value: 17 }, evidence: ["fixture:17"] });
+      return ctx.done("Measured", { state: "converged", summary: "Measurement is 17", result: { value: 17 }, facts: ["fixture:17"] });
     }
   `,
   );
@@ -320,6 +321,19 @@ try {
     oldDb.close();
   }
 
+  // Switch the fixture App to the candidate contract before offline conversion.
+  // The old daemon above must keep its original requests and Task-mode vocabulary.
+  writeFileSync(
+    join(appDir, "app.js"),
+    definition
+      .replace('requests: { mode: "agent"', 'conversation: { mode: "agent"')
+      .replace(', mode: supervisor ? "maintain" : "achieve"', '')
+      .replace(
+        'const supervisor = input.input.kind === "supervise";',
+        'if (input.input.kind === "supervise") throw new Error("Supervisor declaration removed"); const supervisor = false;',
+      ),
+  );
+
   // No candidate execution exists before the offline transaction. Expired leases alone are insufficient.
   const db = getDb(sb.stateDir);
   let executionTaskId: string;
@@ -368,13 +382,9 @@ try {
     closeDb(sb.stateDir);
   }
 
-  writeFileSync(
-    join(appDir, "app.js"),
-    definition.replace(
-      'const supervisor = input.input.kind === "supervise";',
-      'if (input.input.kind === "supervise") throw new Error("Supervisor declaration removed"); const supervisor = false;',
-    ),
-  );
+  // Candidate startup must load the matching fixture App snapshot, not the old active one.
+  const appSources = new DefinitionSourceReleaseStore(sb.root, sb.stateDir);
+  appSources.activate(appSources.stage());
   stage = "candidate";
   current = spawn(process.execPath, [join(candidate, "src/app/may.ts"), "--socket"], {
     cwd: candidate,

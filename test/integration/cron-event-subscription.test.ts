@@ -246,11 +246,24 @@ describe("HostMaintenance event subscriptions", () => {
     const bus = new EventBus();
     const started: string[] = [];
     const resolvers: Array<() => void> = [];
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
+    const firstStarted = Promise.withResolvers<void>();
+    const secondStarted = Promise.withResolvers<void>();
+    const finished = Promise.withResolvers<void>();
+    let completed = 0;
+    const cron = new HostMaintenance({
+      configPath,
+      projectRoot: dir,
+      emitEvent: (event) => {
+        if (event.type === "handler.completed" && ++completed === 2) finished.resolve();
+      },
+    });
     cron.load();
     cron.registerHandler("single-task-executor", async (event) => {
       started.push(String(event?.data.taskId));
-      await new Promise<void>((resolve) => resolvers.push(resolve));
+      await new Promise<void>((resolve) => {
+        resolvers.push(resolve);
+        (started.length === 1 ? firstStarted : secondStarted).resolve();
+      });
     });
     cron.subscribeToBus(bus);
 
@@ -263,14 +276,20 @@ describe("HostMaintenance event subscriptions", () => {
       } as any);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["a"]);
+    try {
+      await firstStarted.promise;
+      expect(started).toEqual(["a"]);
 
-    resolvers.shift()?.();
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(started).toEqual(["a", "b"]);
+      resolvers.shift()?.();
+      await secondStarted.promise;
+      expect(started).toEqual(["a", "b"]);
 
-    for (const resolve of resolvers.splice(0)) resolve();
+      resolvers.shift()?.();
+      await finished.promise;
+    } finally {
+      cron.close();
+      for (const resolve of resolvers.splice(0)) resolve();
+    }
   });
 
   it("uses default maxQueueDepth of 3 when not configured", async () => {

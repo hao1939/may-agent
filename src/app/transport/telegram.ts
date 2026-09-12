@@ -303,7 +303,7 @@ function taskPresentationRevision(task: HumanTaskView): string {
     updatedAt: task.updatedAt,
     summary: task.summary,
     response: task.response,
-    evidence: task.evidence,
+    facts: task.facts,
     progress: task.progress,
     waitingOn: task.waitingOn,
     requestedBy: task.requestedBy,
@@ -670,7 +670,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       try {
         data = JSON.parse(stored?.data ?? "null") ?? undefined;
       } catch {
-        /* legacy evidence */
+        /* legacy facts */
       }
       const target = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
       if (target && opts.humanTasks.getTask(target)) {

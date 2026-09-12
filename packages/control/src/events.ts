@@ -41,7 +41,7 @@ export type PublicEvent = {
   timestamp?: number;
 };
 
-/** Diagnostic event plus its admission/correlation evidence. Linked route state
+/** Diagnostic event plus its admission/correlation facts. Linked route state
  * is not Task completion; read the exact Task/request for authoritative results. */
 export type EventView = {
   event: PublicEvent & { id: number; timestamp: number };

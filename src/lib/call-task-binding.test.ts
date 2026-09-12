@@ -23,7 +23,7 @@ test("input cancellation waits for execution settlement even when cancellation r
   const run = spyOn(manager, "runDefinition").mockReturnValue("exact-session");
   const wait = spyOn(manager, "waitFor").mockImplementation(() => settled.promise);
   const cancel = spyOn(manager, "cancel").mockImplementation(() => {
-    throw new Error("fixture evidence unavailable");
+    throw new Error("fixture facts unavailable");
   });
   const controller = new AbortController();
   let finished = false;

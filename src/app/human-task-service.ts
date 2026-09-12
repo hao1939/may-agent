@@ -2,6 +2,7 @@ import type { AppRegistry } from "./core/apps/registry.js";
 import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskResource } from "./core/tasks/app-task-state.js";
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
+import { storedResultFacts } from "./core/state/result-facts.js";
 import {
   TaskReferenceError,
   displayTaskReferences,
@@ -52,7 +53,7 @@ export type HumanTaskView = {
   summary?: string;
   response?: string;
   result?: Record<string, unknown>;
-  evidence?: string[];
+  facts?: string[];
   updatedAt: number;
   terminal: boolean;
   cancellable: boolean;
@@ -81,7 +82,7 @@ export type HumanTaskHistory = {
 
 export type HumanTaskDiagnostics = Pick<
   AppTaskResource["spec"],
-  "parentId" | "owner" | "mode" | "priority" | "workflow" | "executor" | "category" | "outputs"
+  "parentId" | "owner" | "priority" | "workflow" | "executor" | "category" | "outputs"
 > & {
   observedGeneration: number;
   ready: boolean;
@@ -249,7 +250,7 @@ function boundedUtf8Text(value: string, maxBytes: number): string {
 }
 
 function listCard(view: HumanTaskView): HumanTaskView {
-  const { acceptance: _acceptance, response: _response, result: _result, evidence: _evidence, ...card } = view;
+  const { acceptance: _acceptance, response: _response, result: _result, facts: _facts, ...card } = view;
   return {
     ...card,
     outcome: boundedUtf8Text(view.outcome, HUMAN_TASK_LIST_TEXT_MAX_BYTES),
@@ -447,6 +448,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (row.terminal === 2) {
     const cancellation = parseJson<AppTaskCancellation>(row.payload);
     if (!cancellation) return null;
+    storedResultFacts(cancellation);
     const status = cancellation.kind === "closed" ? "closed" : "cancelled";
     const view: HumanTaskView = {
       appId,
@@ -460,7 +462,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       summary: cancellation.summary,
       ...(cancellation.response ? { response: cancellation.response } : {}),
       ...(cancellation.result ? { result: structuredClone(cancellation.result) } : {}),
-      ...(cancellation.evidence ? { evidence: [...cancellation.evidence] } : {}),
+      ...(cancellation.facts ? { facts: [...cancellation.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(cancellation.cancelledAt),
       terminal: true,
       cancellable: false,
@@ -470,6 +472,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (terminal) {
     const receipt = parseJson<TaskCompletionReceipt>(row.payload);
     if (!receipt) return null;
+    storedResultFacts(receipt);
     const view: HumanTaskView = {
       appId,
       taskId,
@@ -483,7 +486,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       summary: receipt.summary,
       ...(receipt.response ? { response: receipt.response } : {}),
       ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
-      ...(receipt.evidence ? { evidence: [...receipt.evidence] } : {}),
+      ...(receipt.facts ? { facts: [...receipt.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
       terminal: true,
       cancellable: false,
@@ -492,6 +495,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   }
   const resource = parseJson<AppTaskResource>(row.payload);
   if (!resource) return null;
+  storedResultFacts(resource.status);
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
   const status = taskStatus(row.phase, false);
   const observationIsCurrent =
@@ -512,7 +516,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     ...(observationIsCurrent && resource.status.summary ? { summary: resource.status.summary } : {}),
     ...(observationIsCurrent && resource.status.response ? { response: resource.status.response } : {}),
     ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
-    ...(observationIsCurrent && resource.status.evidence ? { evidence: [...resource.status.evidence] } : {}),
+    ...(observationIsCurrent && resource.status.facts ? { facts: [...resource.status.facts] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
     terminal: false,
     cancellable: true,
@@ -677,7 +681,7 @@ const TASK_HISTORY_LIMIT = 20;
 
 function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
   const { spec, status } = JSON.parse(row.payload!) as AppTaskResource;
-  const { parentId, owner, mode, priority, workflow, executor, category, outputs } = spec;
+  const { parentId, owner, priority, workflow, executor, category, outputs } = spec;
   const conditionIds = status.conditionIds ?? [];
   const dependencyIds = spec.dependsOn ?? [];
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
@@ -687,7 +691,6 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
   return {
     parentId,
     owner,
-    mode,
     priority,
     workflow,
     executor,
@@ -708,10 +711,12 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
         }
       : {}),
     conditions: conditionIds.slice(0, TASK_DETAIL_LINK_LIMIT).map((id) => {
-      const condition = db
+      const conditionRow = db
         .prepare("SELECT condition_json FROM app_task_conditions WHERE app_id = ? AND condition_id = ?")
         .get(row.app_id!, id) as { condition_json: string } | null;
-      return { id, condition: parseJson<AppTaskCondition>(condition?.condition_json) };
+      const condition = parseJson<AppTaskCondition>(conditionRow?.condition_json);
+      if (condition) storedResultFacts(condition.status);
+      return { id, condition };
     }),
     conditionsTruncated: conditionIds.length > TASK_DETAIL_LINK_LIMIT,
     dependencies: dependencyIds.slice(0, TASK_DETAIL_LINK_LIMIT).map((id) => {
@@ -771,7 +776,7 @@ function taskHistory(
       historyTruncated: rows.length > TASK_HISTORY_LIMIT,
     };
   } catch (error) {
-    // History is evidence, not authority for the current Task's state.
+    // History is facts, not authority for the current Task's state.
     return { historyError: error instanceof Error ? error.message : String(error) };
   }
 }

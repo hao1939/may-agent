@@ -351,7 +351,7 @@ export function rejectConvergedDirectAgentResidue(
   return {
     state: "error",
     summary: "Direct-agent convergence was rejected because canonical workspace edits required cleanup",
-    evidence: [...result.evidence, ...restored.map((entry) => `agent-residue-restored:${entry}`)],
+    facts: [...result.facts, ...restored.map((entry) => `agent-residue-restored:${entry}`)],
     actions: [],
   };
 }

@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 export type ProjectRuntimePaths = {
   appDir: string;
   stateDir: string;
-  /** Historical JSON evidence marker. Never a live Task authority. */
+  /** Historical JSON facts marker. Never a live Task authority. */
   taskStatePath: string;
   projectStatePath: string;
 };

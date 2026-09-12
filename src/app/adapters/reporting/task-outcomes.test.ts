@@ -6,7 +6,7 @@ import type { TaskView } from "@may-agent/sdk/app";
 import { projectTaskOutcomes, readTaskOutcomeManifest, type TaskOutcomeManifest } from "./task-outcomes.js";
 
 function task(id: string, status: TaskView["status"] = "waiting"): TaskView {
-  return { id, status, generation: 1, outcome: `Legacy outcome ${id}`, evidence: [`task:${id}`] };
+  return { id, status, generation: 1, outcome: `Legacy outcome ${id}`, facts: [`task:${id}`] };
 }
 
 describe("Task outcome shadow projection", () => {

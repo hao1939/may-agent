@@ -77,7 +77,7 @@ async function withProvider(
                 arguments: JSON.stringify({
                   status: "success",
                   summary: answer.summary,
-                  verification_evidence: ["Compared the supplied fixture input"],
+                  verification_facts: ["Compared the supplied fixture input"],
                   result: answer,
                 }),
               },
@@ -202,7 +202,7 @@ async function delegation(nested = false) {
     `export default {
     id: "sample", version: 1, agent: "owner",
     workspace: { kind: "local", localPath: "." },
-    requests: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
     inputSchema: { anyOf: [
       { type: "object", properties: { kind: { const: "message" }, data: { type: "object" } }, required: ["kind", "data"] },
       { type: "object", properties: { kind: { enum: ["measure", "sample"] }, data: { type: "object" } }, required: ["kind", "data"] }
@@ -210,8 +210,7 @@ async function delegation(nested = false) {
     tasks: { maxConcurrent: 2 },
     task: (admitted) => ({ kind: "desired", intent: {
       id: admitted.input.kind === "sample" ? "sample" : "measurement",
-      parentId: "root", mode: "achieve",
-      workflow: ${nested} && admitted.input.kind === "measure" ? "assess" : "probe",
+      parentId: "root", workflow: ${nested} && admitted.input.kind === "measure" ? "assess" : "probe",
       outcome: "Get the sample measurement", acceptance: ["Return the measured value"]
     } })
   };`,
@@ -225,13 +224,13 @@ async function delegation(nested = false) {
         const returned = ctx.reconciliation.events.items.find(({ event }) =>
           event.type === "app.dependency.updated" && event.data.kind === "app");
         if (!returned) return ctx.done("Requested an independent measurement", {
-          state: "waiting", summary: "Waiting for the sample", evidence: [],
+          state: "waiting", summary: "Waiting for the sample", facts: [],
           dependencies: [{ id: "sample", appId: "sample", input: { kind: "sample", data: {} } }]
         });
         const result = returned.event.data.result;
         if (result?.value !== 17) throw Error("Expected the exact measured result");
         return ctx.done("Assessed the measured sample", {
-          state: "converged", summary: "The measurement is 17", evidence: returned.event.data.evidence,
+          state: "converged", summary: "The measurement is 17", facts: returned.event.data.facts,
           result: { ...result, assessed: true }
         });
       }`,
@@ -246,7 +245,7 @@ async function delegation(nested = false) {
       await ctx.events.emit({ localKey: "started", type: "measurement.started", data: {} });
       const result = await (await response).json();
       return ctx.done("Measured the sample", {
-        state: "converged", summary: "The measurement is 17", evidence: ["sample:17"],
+        state: "converged", summary: "The measurement is 17", facts: ["sample:17"],
         response: "Raw sample: 17", result
       });
     }

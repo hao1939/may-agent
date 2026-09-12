@@ -527,7 +527,7 @@ export class HostMaintenance {
     const previous = this.lastFireTimes.get(entryName);
     if (previous != null) return previous;
     // Private maintenance cadence uses its own observed start, never workflow
-    // execution evidence. No schedule/work ledger is introduced.
+    // execution facts. No schedule/work ledger is introduced.
     const row = getDb(this.persistDir)
       .prepare(
         "SELECT timestamp FROM events WHERE event_type = 'handler.started' AND handler = ? ORDER BY timestamp DESC LIMIT 1",

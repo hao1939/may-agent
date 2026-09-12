@@ -2,7 +2,7 @@ import type { MetricDefinition } from "../../../lib/metrics.js";
 
 /** Defaults for the optional source sampler, not workflow execution dependencies.
  * Counts share one retained, finished top-level cohort; no claim of Task success.
- * Nested runs have their own evidence but are not extra top-level failures.
+ * Nested runs have their own facts but are not extra top-level failures.
  */
 export const WORKFLOW_OUTCOMES = ["done", "error", "blocked", "interrupted"] as const;
 export const WORKFLOW_OUTCOME_WINDOW_MS = 86_400_000;

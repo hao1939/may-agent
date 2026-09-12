@@ -358,7 +358,7 @@ export async function finalizeAppTaskWorkspace(
     if (outcome === "waiting") {
       // Waiting releases execution, not unfinished work. Recreating this
       // checkout on every wake discards ignored dependencies and local
-      // evidence, turning observation into repeated setup/repair work.
+      // facts, turning observation into repeated setup/repair work.
       metadata.disposition = "active";
       return { ok: true, metadata };
     }

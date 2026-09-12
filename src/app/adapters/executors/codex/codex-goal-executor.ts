@@ -169,27 +169,27 @@ function eventMessage(event: AppEvent<Record<string, unknown>>): string {
   ].join("\n");
 }
 
-function appendEvidence(result: TaskReconcileResult, ...additional: string[]): TaskReconcileResult {
+function appendFacts(result: TaskReconcileResult, ...additional: string[]): TaskReconcileResult {
   const unique = additional.filter(
-    (item, index) => item && !result.evidence.includes(item) && additional.indexOf(item) === index,
+    (item, index) => item && !result.facts.includes(item) && additional.indexOf(item) === index,
   );
   if (unique.length === 0) return result;
   return {
     ...result,
-    // At least one unique entry is appended, preserving stopped's evidence contract.
-    evidence: [...result.evidence.slice(0, Math.max(0, 32 - unique.length)), ...unique] as [string, ...string[]],
+    // At least one unique entry is appended, preserving stopped's facts contract.
+    facts: [...result.facts.slice(0, Math.max(0, 32 - unique.length)), ...unique] as [string, ...string[]],
   };
 }
 
-function progressEvidence(stats: CodexGoalProgressStats): string[] {
-  const evidence: string[] = [];
+function progressFacts(stats: CodexGoalProgressStats): string[] {
+  const facts: string[] = [];
   if (stats.failed > 0) {
-    evidence.push(
+    facts.push(
       `codex-progress-events:degraded failed=${stats.failed}${stats.lastError ? ` last=${stats.lastError}` : ""}`,
     );
   }
-  if (stats.dropped > 0) evidence.push(`codex-progress-events:bounded dropped=${stats.dropped}`);
-  return evidence;
+  if (stats.dropped > 0) facts.push(`codex-progress-events:bounded dropped=${stats.dropped}`);
+  return facts;
 }
 
 function packetFor(attempt: TaskAttempt) {
@@ -239,7 +239,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     });
     const finish = async (result: TaskReconcileResult): Promise<TaskReconcileResult> => {
       const stats = await progress.flush();
-      return appendEvidence(result, ...progressEvidence(stats));
+      return appendFacts(result, ...progressFacts(stats));
     };
     const track = (promise: Promise<unknown>) => {
       steering.add(promise);
@@ -422,7 +422,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         await Promise.allSettled([...steering]);
         pendingEvents.length = 0;
         for (const accept of incorporatedLiveEvents) accept();
-        return finish(appendEvidence(admitted.result, `codex-thread:${threadId}`));
+        return finish(appendFacts(admitted.result, `codex-thread:${threadId}`));
       }
     } finally {
       stopped = true;
@@ -438,10 +438,10 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
 }
 
 export const codexGoalExecutorInternals = {
-  appendEvidence,
+  appendFacts,
   bindingKey,
   finalAnswer,
   packetFor,
-  progressEvidence,
+  progressFacts,
   readBindings,
 };
