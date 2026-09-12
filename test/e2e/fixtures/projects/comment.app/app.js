@@ -19,7 +19,7 @@ export default {
   }],
   task(input) {
     return { kind: "desired", intent: {
-      id: "work/comment", parentId: "comment", mode: "achieve",
+      id: "work/comment", parentId: "comment",
       workflow: "e2e-noop-workflow", outcome: input.input.data.message,
       acceptance: ["The workflow executes and the Task accepts its result"],
     } };
