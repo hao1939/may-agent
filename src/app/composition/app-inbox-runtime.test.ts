@@ -142,10 +142,10 @@ describe("App inbox runtime", () => {
       complete(taskId: string, result: Omit<AppDependencyObservation, "kind" | "id" | "status">) {
         observations.set(taskId, { kind: "task", id: taskId, status: "done", ...result });
         bus.emit({
-          type: "app.dependency.completed",
+          type: "project.task.reconciled",
           source: "test-task",
           owner: "app:evaluation",
-          data: { kind: "task", id: taskId, status: "done", ...result },
+          data: { project: "evaluation", taskId, disposition: "converged" },
         });
       },
     };
@@ -694,7 +694,7 @@ describe("App inbox runtime", () => {
     expect(runtime.host.get("restart-request")?.result?.summary).toBe("Recovered result");
   });
 
-  it("wakes only the App waiting on an exact dependency", async () => {
+  it.each(["outcome", "closure"] as const)("projects %s only for the exact App and Task", async (change) => {
     mkdirSync(join(root, "other.app"), { recursive: true });
     writeFileSync(
       join(root, "other.app", "app.js"),
@@ -756,10 +756,10 @@ describe("App inbox runtime", () => {
     });
 
     bus.emit({
-      type: "app.dependency.updated",
+      type: change === "outcome" ? "project.task.reconciled" : "app.task.cancelled",
       source: "test-task",
       owner: "app:evaluation",
-      data: { kind: "task", id: "probe/waiting-request", appId: "evaluation" },
+      data: { project: "evaluation", appId: "evaluation", taskId: "probe/waiting-request", generation: 1 },
     });
     await waitUntil(() => runtime?.host.get("waiting-request")?.status === "done");
     await Bun.sleep(25);

@@ -13,6 +13,12 @@ Mapping failures retain the input for the bounded recovery scan. Accepted Task
 outcomes are projected by exact admission identity, using events and a recovery
 scan; failure of that projection cannot roll back the Task outcome.
 
+`project.task.reconciled` and `app.task.cancelled` refresh exact input answers
+and linked Conversation observations. The runtime emits no second Task-level
+dependency notification. Only a saved App input answer produces
+`app.dependency.completed`; ordinary waits and failed retries do not relay a
+caller wake. Review deadlines and explicit App event routes remain available.
+
 [`input-context.ts`](input-context.ts) reads and freezes input identity and human
 origin. Returned answers enter through Task input; context preparation no longer
 follows historical inbox waits. [`input-result.ts`](input-result.ts) builds the

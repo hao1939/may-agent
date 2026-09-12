@@ -1233,7 +1233,6 @@ describe("canonical App task runtime", () => {
 
     const db = getDb(persistDir);
     const dependencyEvents: Array<Record<string, unknown>> = [];
-    const dependencyUpdateEvents: Array<Record<string, unknown>> = [];
     const dependencyRequests: Array<Record<string, unknown>> = [];
     const conditionPreviews: string[][] = [];
     bus.setPersistenceSubscriber((event) => {
@@ -1248,9 +1247,6 @@ describe("canonical App task runtime", () => {
       }
       if (event.type === "app.dependency.completed" && event.data.kind === "app") {
         dependencyEvents.push(event as unknown as Record<string, unknown>);
-      }
-      if (event.type === "app.dependency.updated" && event.data.kind === "app") {
-        dependencyUpdateEvents.push(event as unknown as Record<string, unknown>);
       }
     });
     let attachedDependencyTaskId: string | undefined;
@@ -1460,42 +1456,33 @@ describe("canonical App task runtime", () => {
         waitingOn: { kind: "task", id: attachedDependencyTaskId },
       });
 
-      bus.emit({
-        type: "app.dependency.updated",
-        source: "test:evaluation-task",
-        owner: "app:evaluation",
-        data: { kind: "task", id: attachedDependencyTaskId, appId: "evaluation" },
-      });
-      const progressDeadline = Date.now() + 5_000;
-      while (!readTaskSnapshot(config).taskTriggers?.[initial.taskId] && Date.now() < progressDeadline) {
-        await Bun.sleep(5);
+      // A repeated wait is visible to readers, but is not a caller answer.
+      // Duplicate notifications and removed legacy hints cannot start reviews.
+      const waitingCaller = config.resourceStore.readTask(initial.taskId);
+      for (let repeat = 0; repeat < 2; repeat++) {
+        bus.emit({
+          type: "project.task.reconciled",
+          source: "test:evaluation-task",
+          owner: "app:evaluation",
+          data: {
+            project: "evaluation",
+            taskId: attachedDependencyTaskId,
+            attemptId: waitingTarget.attemptId,
+            disposition: "waiting",
+          },
+        });
+        bus.emit({
+          type: "app.dependency.updated",
+          source: "test:legacy-task",
+          owner: "app:evaluation",
+          data: { kind: "task", id: attachedDependencyTaskId, appId: "evaluation" },
+        } as unknown as AgentEvent);
       }
-      expect(dependencyUpdateEvents).toContainEqual(
-        expect.objectContaining({
-          data: expect.objectContaining({ kind: "app", id: requestId, appId: "sample" }),
-        }),
-      );
-      const progressReview = claimObservedAppTask(config, {
-        taskId: initial.taskId,
-        appAgent: "sample-owner",
-        handler: "agent:sample-owner",
-        reason: "dependency-progress",
-      });
-      if (progressReview.kind !== "claimed") {
-        throw new Error(`expected progress review claim, got ${progressReview.kind}`);
-      }
-      expect(progressReview.events).toHaveLength(1);
-      expect(progressReview.events[0]?.event).toMatchObject({
-        type: "app.dependency.updated",
-        data: { kind: "app", id: requestId },
-      });
-      expect(
-        deferAppTask(config, progressReview, {
-          disposition: "waiting",
-          summary: "The linked reviews remain in progress",
-          conditions: expanded,
-        }).status,
-      ).toBe("applied");
+      await inbox.host.refreshTaskResults("evaluation", attachedDependencyTaskId);
+      expect(config.resourceStore.readTask(initial.taskId)).toEqual(waitingCaller);
+      expect(readTaskSnapshot(config).taskTriggers?.[initial.taskId]).toBeUndefined();
+      expect(inbox.host.get(requestId)?.status).toBe("handling");
+      expect(dependencyEvents).toHaveLength(0);
 
       const resumedTarget = claimObservedAppTask(evaluationConfig, {
         taskId: attachedDependencyTaskId,
@@ -1532,11 +1519,14 @@ describe("canonical App task runtime", () => {
       expect(readLoadedAppTaskView({ bus, appDir: evaluationDir, taskId: attachedDependencyTaskId })).toMatchObject({
         status: "waiting", result: { score: 0.1 },
       });
-      if (wake === "event") bus.emit({
-          type: "app.dependency.completed", source: "test:evaluation-task", owner: "app:evaluation",
-          data: { kind: "task", id: attachedDependencyTaskId },
+      if (wake === "event") {
+        bus.emit({
+          type: "project.task.reconciled",
+          source: "test:evaluation-task",
+          owner: "app:evaluation",
+          data: { project: "evaluation", taskId: attachedDependencyTaskId, attemptId: resumedTarget.attemptId },
         });
-      else {
+      } else {
         await inbox.host.recoverTaskResults();
         inbox.scanNow();
       }
@@ -5109,8 +5099,8 @@ describe("canonical App task runtime", () => {
       expect(await run()).toEqual([]);
       expect(events).toContainEqual(
         expect.objectContaining({
-          type: "app.dependency.updated",
-          data: expect.objectContaining({ id: taskId }),
+          type: "project.task.reconciled",
+          data: expect.objectContaining({ project: "sample", taskId }),
         }),
       );
       expect(events).not.toContainEqual(expect.objectContaining({ type: "app.dependency.completed" }));
@@ -6075,9 +6065,9 @@ describe("canonical App task runtime", () => {
           emitted.filter((event) => event.type === "project.task.reconciled").map((event) => event.data.disposition),
         ).toEqual([disposition]);
         expect(emitted.filter((event) => event.type === "app.dependency.completed")).toHaveLength(0);
-        expect(emitted.filter((event) => event.type === "app.dependency.updated").map((event) => event.data)).toEqual([
-          { kind: "task", id: taskId, appId: "sample" },
-        ]);
+        // Progress and retry reports stay readable without starting a caller
+        // attempt. Saved answers are projected from the Task fact above.
+        expect(emitted.filter((event) => event.type === "app.dependency.updated")).toHaveLength(0);
         expect(f.agentCalls()).toBe(1);
       },
     );
@@ -6237,9 +6227,10 @@ describe("canonical App task runtime", () => {
         result: f.payload,
       });
       expect(store.isCancelled("owner")).toBe(false);
-      expect(emitted.filter((event) => event.type.startsWith("app.dependency.")).map((event) => event.type)).toEqual([
-        state === "converged" ? "app.dependency.completed" : "app.dependency.updated",
-      ]);
+      expect(emitted.filter((event) => event.type === "project.task.reconciled")).toContainEqual(
+        expect.objectContaining({ data: expect.objectContaining({ taskId: "owner", disposition: state }) }),
+      );
+      expect(emitted.filter((event) => event.type.startsWith("app.dependency."))).toHaveLength(0);
       await recoverInstalledAppTasks(f.base.bus);
       expect(interrupts).toHaveLength(failure === "live owner" ? 2 : 3);
       expect(f.agentCalls()).toBe(2);

@@ -23,7 +23,6 @@ import {
   type AppTaskAttacher,
   type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
-import { listAppInboxItemsWaitingOnTask } from "../core/state/app-inbox-store.js";
 import { listConversationTopicLinksForTask } from "../core/state/conversations.js";
 import type {
   AppDefinitionSource,
@@ -679,7 +678,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           .all(String(data.project ?? ""), String(data.taskId ?? ""), String(data.taskId ?? ""));
         for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
       }
-      let dependencyWakeDelivery: DeliveryResult | undefined;
       if (event.type === "conversation.turn.stop.requested") {
         host.stopTurn({
           appId: String(data.appId ?? ""),
@@ -881,43 +879,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           note: `request:${admitted.item.id}; ${admitted.created ? "created" : "existing"}`,
         };
       }
-      if (event.type === "app.dependency.completed" || event.type === "app.dependency.updated") {
-        const kind = data.kind;
-        const id = typeof data.id === "string" ? data.id.trim() : "";
-        if ((kind === "app" || kind === "task" || kind === "session") && id) {
-          const taskAppId = kind === "task" && typeof data.appId === "string" ? data.appId.trim() : undefined;
-          if (event.type === "app.dependency.updated" && kind === "task" && taskAppId) {
-            for (const request of listAppInboxItemsWaitingOnTask(options.db, taskAppId, id)) {
-              if (request.source.kind !== "app") continue;
-              options.bus.emit({
-                type: "app.dependency.updated",
-                source: "app-inbox",
-                owner: `app:${request.source.id}`,
-                target: { appId: request.source.id, project: request.source.id },
-                data: {
-                  kind: "app",
-                  id: request.id,
-                  appId: request.source.id,
-                  idempotencyKey: `app-request-updated:${request.id}:${eventRowId(event)}`,
-                },
-              } as unknown as AgentEvent);
-            }
-          }
-          if (kind === "task") {
-            const appIds = taskAppId ? [taskAppId] : host.appIds();
-            for (const appId of appIds)
-              void host.refreshTaskResults(appId, id).catch((error) => reportRuntimeFailure("input-result", error, appId));
-          }
-          // Project the input answer and continue canonical Task-Condition admission.
-          dependencyWakeDelivery = { accepted: true, by: "app-inbox:wake" };
-        }
-      }
       if (String(event.type) === "project.task.reconciled" || event.type === "app.task.cancelled") {
         const closed = event.type === "app.task.cancelled";
         const sourceAppId = closed ? data.appId : data.project;
         const appId = typeof sourceAppId === "string" ? sourceAppId.trim() : "";
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         if (appId && taskId) {
+          // One committed Task fact refreshes both exact caller answers and
+          // linked Conversation observations. A wait or retry is not an answer.
+          void host
+            .refreshTaskResults(appId, taskId)
+            .catch((error) => reportRuntimeFailure("input-result", error, appId));
           for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
             emitConversationTaskChanged(
               link,
@@ -1102,7 +1074,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           };
         }
       }
-      return dependencyWakeDelivery;
+      // An answer can outlive its caller's wait. Keep the saved fact readable
+      // without inventing work when no current Condition or App route needs it.
+      if (event.type === "app.dependency.completed" && data.kind === "app")
+        return { accepted: true, by: "app-input-result", route: "noop" };
     },
     { label: "app-inbox-route" },
   );

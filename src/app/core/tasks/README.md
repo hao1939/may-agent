@@ -54,6 +54,13 @@ App input receipts and replays retained external Events through the same Conditi
 transition. The caller receives the saved answer even if its completion notification
 never reached the journal; no extra delivery queue is needed.
 
+`project.task.reconciled` and `app.task.cancelled` also notify result readers.
+Composition refreshes exact input answers and linked Conversation observations
+from those facts. There is no separate `app.dependency.updated` relay or special
+Condition-matching path for progress. Typed callers await their saved answer;
+routine waits and failed retries stay readable until a review or explicit input
+calls for judgment. Apps can still declare relevant event routes.
+
 ## Read the retained names correctly
 
 | Name in code | Meaning in this lifecycle |
