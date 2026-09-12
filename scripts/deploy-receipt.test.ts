@@ -42,7 +42,6 @@ function taskDatabase(projectDir: string, appId: string, taskIds: string[]): str
         intent: {
           id,
           parentId: "root",
-          mode: "achieve",
           outcome: "Verify deployment",
           acceptance: ["Return deployment evidence"],
         },
