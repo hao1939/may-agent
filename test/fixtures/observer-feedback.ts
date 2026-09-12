@@ -92,7 +92,6 @@ export async function observerFeedbackFixture(definition: AppDefinition, observe
     db,
     bus,
     persistDir: root,
-    hostCapacity: capacity,
     deferStart: true,
     schedulesEnabled: false,
     attachTask: (input) => attachLoadedAppTask({ ...input, bus }),

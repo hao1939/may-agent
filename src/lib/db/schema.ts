@@ -611,6 +611,9 @@ function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
     FROM app_inbox_items_before_analysis_wait;
     DROP TABLE app_inbox_items_before_analysis_wait;
   `);
+  // The historical rebuild has a fixed column list. Restore additive columns
+  // before the canonical schema creates indexes that depend on them.
+  ensureExistingAppInboxTableColumns(db);
 }
 
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
@@ -626,6 +629,8 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["started_at", "INTEGER"],
   ["changed_at", "INTEGER"],
   ["handling", "TEXT"],
+  ["task_admission_key", "TEXT"],
+  ["execution_task_id", "TEXT"],
 ];
 
 function ensureExistingAppInboxTableColumns(db: SqliteDb): void {

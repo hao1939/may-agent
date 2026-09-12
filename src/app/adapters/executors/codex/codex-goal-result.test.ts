@@ -3,7 +3,6 @@ import { admitCodexGoalTaskResult } from "./codex-goal-result.js";
 
 const options = {
   allowNeedsAgent: false,
-  defaultParentId: "root",
 };
 
 describe("admitCodexGoalTaskResult", () => {

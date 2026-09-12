@@ -5,6 +5,7 @@ import {
   type TaskAppDependency,
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
+import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
 
 export type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
@@ -14,9 +15,10 @@ export type TaskCapabilityRun = {
   verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
-  /** The workflow deliberately stopped; repeating it is not transport recovery. */
+  /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
+  conversation?: ConversationTaskProposal;
 };
 
 export type NormalizedTaskHandlerResult = {
@@ -38,8 +40,6 @@ export function normalizeTaskHandlerResult(
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
   options: {
     allowNeedsAgent?: boolean;
-    defaultParentId?: string;
-    rootParentAliases?: string[];
     validateAction?: (action: AppTaskAction) => string | null;
     validateCondition?: (condition: AppTaskConditionSpec) => string | null;
   } = {},
@@ -54,8 +54,6 @@ export function normalizeTaskHandlerResult(
   }
   const admission = admitAppTaskHandlerResult(output, {
     allowNeedsAgent: options.allowNeedsAgent ?? true,
-    defaultParentId: options.defaultParentId ?? "project",
-    rootParentAliases: options.rootParentAliases,
   });
   if (!admission.ok) {
     return {

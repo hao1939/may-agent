@@ -237,7 +237,7 @@ export type SystemEvent =
   | {
       /** Wake-only resource notification. Consumers re-read Conversation truth. */
       type: "conversation.updated";
-      source: "app-inbox";
+      source: "app-inbox" | "app-task-reconciler";
       owner: string;
       data: { appId: string; conversationId: string };
     }
@@ -294,27 +294,28 @@ export type SystemEvent =
       };
     }
   | {
-      type: "app.dependency.completed";
+      type: "app.task.ready";
+      source: string;
+      owner: string;
+      target: { appId: string; taskId: string };
+      data: { appId: string; taskId: string };
+    }
+  | {
+      type: "app.dependency.updated";
       source?: string;
       owner: string;
       data: {
-        kind: "app" | "task" | "session";
+        kind: "app";
         id: string;
-        /** Required for new Task events; absent only on retained legacy events. */
+        /** Destination App and Task, when the answer came from Task execution. */
         appId?: string;
+        taskId?: string;
         status?: string;
         summary?: string;
         response?: string;
         result?: Record<string, unknown>;
         evidence?: string[];
       };
-    }
-  | {
-      /** Wake-only observation; the requester re-reads exact dependency state. */
-      type: "app.dependency.updated";
-      source?: string;
-      owner: string;
-      data: { kind: "app" | "task" | "session"; id: string; appId?: string };
     }
   | {
       type: "channel.delivery.completed" | "channel.delivery.failed";
@@ -655,13 +656,14 @@ export type SystemEvent =
       };
     }
   | {
-      type: "app.task.cancelled";
+      type: "app.task.cancelled" | "app.task.attempt.stopped";
       source: "app-task-reconciler";
       owner: "human:operator";
       target: { appId: string; taskId: string };
       data: {
         appId: string;
         taskId: string;
+        generation?: number;
         attemptId?: string;
         reason: string;
       };

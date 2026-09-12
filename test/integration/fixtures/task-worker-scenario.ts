@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
 import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
-import { appTaskContext, cancelAppTask } from "../../../src/app/core/tasks/app-task-reconciler.js";
+import {
+  appTaskContext,
+  cancelAppTask,
+  readAppTaskAdmissionOutcome,
+} from "../../../src/app/core/tasks/app-task-reconciler.js";
+import { admitTaskRequest } from "../../../src/app/core/state/inbox.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { EventBus } from "../../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
@@ -21,7 +26,7 @@ import {
 
 const roots: string[] = [];
 const children: Array<{ child: ChildProcess; closed: Promise<void> }> = [];
-async function cleanup() {
+export async function cleanup() {
   await Promise.all(
     children.splice(0).map(async ({ child, closed }) => {
       if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
@@ -36,7 +41,7 @@ async function cleanup() {
   }
 }
 
-function fixture(agent: string, wait = false, workflow = true) {
+export function fixture(agent: string, wait = false, workflow = true, conversation = false) {
   const root = mkdtempSync(join(tmpdir(), "may-task-worker-"));
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -49,7 +54,7 @@ function fixture(agent: string, wait = false, workflow = true) {
     join(appDir, "app.ts"),
     `export default {
     id: "sample", version: 1, agent: "owner", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, tasks: { maxConcurrent: 1 }
+    workspace: { kind: "local", localPath: "." }, ${conversation ? 'requests: { mode: "agent" }' : "tasks: { maxConcurrent: 1 }"}
   };`,
   );
   for (const name of ["owner", "specialist"]) {
@@ -65,7 +70,12 @@ function fixture(agent: string, wait = false, workflow = true) {
         tools: [],
       }),
     );
-    writeFileSync(join(dir, "AGENTS.md"), "Run only the declared fixture workflow.\n");
+    writeFileSync(
+      join(dir, "AGENTS.md"),
+      conversation
+        ? "Answer the admitted Conversation input using fixture evidence.\n"
+        : "Run only the declared fixture workflow.\n",
+    );
     writeFileSync(
       join(dir, "workflows", "probe.ts"),
       `
@@ -95,20 +105,22 @@ function fixture(agent: string, wait = false, workflow = true) {
       project: "sample",
       project_lifecycle: "active",
       groups: { root: { id: "root", parent_id: null, owner: agent } },
-      resources: {
-        "work/one": {
-          metadata: { id: "work/one", generation: 1, resourceVersion: 1 },
-          spec: {
-            parentId: "root",
-            mode: "achieve",
-            outcome: "Probe the worker boundary",
-            acceptance: ["Fixture evidence"],
-            ...(workflow ? { workflow: "probe" } : {}),
-            input: { wait },
+      resources: conversation
+        ? {}
+        : {
+            "work/one": {
+              metadata: { id: "work/one", generation: 1, resourceVersion: 1 },
+              spec: {
+                parentId: "root",
+                mode: "achieve",
+                outcome: "Probe the worker boundary",
+                acceptance: ["Fixture evidence"],
+                ...(workflow ? { workflow: "probe" } : {}),
+                input: { wait },
+              },
+              status: { phase: "pending", observedGeneration: 0, updatedAt: new Date().toISOString() },
+            },
           },
-          status: { phase: "pending", observedGeneration: 0, updatedAt: new Date().toISOString() },
-        },
-      },
     },
     "worker-fixture",
   );
@@ -119,10 +131,20 @@ function fixture(agent: string, wait = false, workflow = true) {
     taskId: "work/one",
     dispatch: { enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0, lane: "normal" },
   };
-  return { root, appDir, persistDir, db, store, bus, request, child: undefined as ChildProcess | undefined };
+  return {
+    root,
+    appDir,
+    persistDir,
+    db,
+    store,
+    bus,
+    request,
+    modelBaseUrl: "http://127.0.0.1:1",
+    child: undefined as ChildProcess | undefined,
+  };
 }
 
-function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output: string) => void): Promise<unknown> {
+export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> {
   let diagnostics = "";
   const worker = recovery ? "runTaskRecoveryWorker" : "runTaskAttemptWorker";
   const workerOptions = {
@@ -139,7 +161,7 @@ function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output
           request: ${JSON.stringify(f.request)},
           definitionSource: ${JSON.stringify(f.request.definitionSource)},
           roots: ${JSON.stringify({ projectRoot: f.root, projectsRoot: join(f.root, "projects"), sharedRoot: join(f.root, "shared"), persistDir: f.persistDir })},
-          models: { test: { id: "test", name: "test", provider: "test", api: "openai-completions", apiKey: "fixture-only", baseUrl: "http://127.0.0.1:1", contextWindow: 8192, maxTokens: 1024, input: ["text"], cost: {} } }
+          models: { test: { id: "test", name: "test", provider: "test", api: "openai-completions", apiKey: "fixture-only", baseUrl: ${JSON.stringify(f.modelBaseUrl)}, contextWindow: 8192, maxTokens: 1024, input: ["text"], cost: {} } }
         });
         process.exit(0);
       `,
@@ -158,7 +180,6 @@ function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output
       });
       child.stdout?.on("data", (chunk) => {
         diagnostics += chunk.toString();
-        onOutput?.(diagnostics);
       });
       child.stderr?.on("data", (chunk) => {
         diagnostics += chunk.toString();
@@ -176,18 +197,38 @@ function run(f: ReturnType<typeof fixture>, recovery = false, onOutput?: (output
   });
 }
 
+function acceptedAttempt(f: ReturnType<typeof fixture>) {
+  const task = f.store.readTask("work/one")!;
+  assert(task, "Accepting an outcome must retain the Task");
+  assert.equal(f.store.readCancellation("work/one"), null);
+  assert.equal(f.store.readReceipt("work/one"), null);
+  const attempt = task.status.observedAttemptId ? f.store.readAttempt(task.status.observedAttemptId) : null;
+  assert.equal(attempt?.acceptedResult?.state, "converged");
+  assert.equal(attempt?.taskGeneration, task.metadata.generation);
+  return attempt!;
+}
+
+async function retryWhenDue(f: ReturnType<typeof fixture>) {
+  const due = f.store.readTask("work/one")!.status.executionRetryAt!;
+  assert(Number.isFinite(due), "Failure must retain a durable retry deadline");
+  await new Promise((resolve) => setTimeout(resolve, Math.max(0, due - Date.now())));
+  await run(f);
+  assert(Date.parse(acceptedAttempt(f).startedAt) >= due, "A fresh worker must obey persisted pacing");
+}
+
 const scenarios: Record<string, () => Promise<void>> = {
   async restoredAgent() {
-    const f = fixture("specialist", false, false);
+    const f = fixture("specialist");
     const agentDir = join(f.appDir, "agents", "specialist");
     const savedDir = join(f.root, "saved-specialist");
     renameSync(agentDir, savedDir);
     await run(f);
     const task = f.store.readTask("work/one")!;
-    assert.equal(task.status.phase, "attention");
+    assert.equal(task.status.phase, "pending");
     const before = f.store.readTaskContext({ taskIds: ["work/one"] });
     const attempt = Object.values(before.attempts ?? {})[0];
-    assert.equal(attempt?.handler, "agent:specialist");
+    assert.equal(attempt?.handler, "workflow:probe");
+    assert.equal(attempt?.owner, "specialist");
     assert.equal(attempt?.failureReason, "HandlerUnavailable");
     await run(f, true);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }), before);
@@ -205,47 +246,34 @@ const scenarios: Record<string, () => Promise<void>> = {
     assert.equal(
       f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.handler.recovered'").get()
         ?.count,
-      1,
+      0,
     );
+    await retryWhenDue(f);
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist");
+    assert.deepEqual(f.store.readAttempt(attempt!.metadata.id), attempt);
   },
 
-  async recoverySourceRace() {
+  async recoveryLeavesHandlerJudgmentToAttempt() {
     const f = fixture("owner");
     const path = join(f.appDir, "agents", "owner", "workflows", "probe.ts");
     rmSync(path);
     await run(f);
     const before = f.store.readTaskContext({ taskIds: ["work/one"] });
-    assert.equal(before.resources?.["work/one"]?.status.phase, "attention");
-    const gate = join(f.root, "release-inspection");
+    assert.equal(before.resources?.["work/one"]?.status.phase, "pending");
     writeFileSync(
       path,
       `
-import { watch, existsSync } from "node:fs";
-await new Promise(resolve => {
-  const watcher = watch(${JSON.stringify(f.root)}, () => {
-    if (existsSync(${JSON.stringify(gate)})) { watcher.close(); resolve(); }
-  });
-  console.log("fixture-inspecting-restored-handler");
-});
+throw new Error("Recovery must not inspect workflow definitions");
 export const name = "probe";
-export const description = "An inspection paused across source replacement";
+export const description = "No parallel recovery availability decision";
 export async function execute() { throw new Error("Recovery must not execute work"); }
 `,
     );
     const releases = new DefinitionSourceReleaseStore(f.root, f.persistDir);
     releases.activate(releases.stage());
-    // The next committed source removes the handler again while the child is
-    // awaiting inspection of the earlier, repaired release.
-    rmSync(path);
-    const replacement = releases.stage();
-    let replaced = false;
-    await run(f, true, (output) => {
-      if (replaced || !output.includes("fixture-inspecting-restored-handler")) return;
-      replaced = true;
-      releases.activate(replacement);
-      writeFileSync(gate, "continue");
-    });
-    assert.equal(replaced, true, "the race must cross the real workflow inspection");
+    // Recovery preserves work without importing handlers or announcing that
+    // repaired code is available. Only a due attempt uses the current release.
+    await run(f, true);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }), before);
     assert.equal(
       f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.handler.recovered'").get()
@@ -265,8 +293,8 @@ export async function execute(ctx) {
     releases.activate(releases.stage());
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
-    await run(f);
-    assert.equal(f.store.readReceipt("work/one")?.summary, "current handler ran");
+    await retryWhenDue(f);
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "current handler ran");
   },
 
   async restoredHandler() {
@@ -275,7 +303,7 @@ export async function execute(ctx) {
     rmSync(path);
     await run(f);
     const task = f.store.readTask("work/one")!;
-    assert.equal(task.status.phase, "attention");
+    assert.equal(task.status.phase, "pending");
     const attempts = f.store.readTaskContext({ taskIds: ["work/one"] }).attempts;
     assert.equal(Object.values(attempts ?? {})[0]?.failureReason, "HandlerUnavailable");
 
@@ -292,7 +320,6 @@ export async function execute(ctx) {
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readTask("work/one")?.metadata.generation, task.metadata.generation);
-    assert(f.store.listRecoveryCandidates().items.some(({ taskId }) => taskId === "work/one"));
     assert.equal(f.store.readReceipt("work/one"), null);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, attempts);
     await run(f, true);
@@ -300,12 +327,12 @@ export async function execute(ctx) {
     assert.equal(
       f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'project.task.handler.recovered'").get()
         ?.count,
-      1,
+      0,
     );
 
-    await run(f);
-    assert.equal(f.store.readReceipt("work/one")?.summary, "repaired workflow ran");
-    assert.equal(f.store.readReceipt("work/one")?.metadata.generation, task.metadata.generation);
+    await retryWhenDue(f);
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "repaired workflow ran");
+    assert.equal(acceptedAttempt(f).taskGeneration, task.metadata.generation);
   },
 
   async parentLoss() {
@@ -320,6 +347,72 @@ export async function execute(ctx) {
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readAttempt(attemptId)?.state, "interrupted");
     assert(f.store.listRecoveryCandidates().items.some(({ taskId }) => taskId === "work/one"));
+  },
+
+  async redoAfterParentLoss() {
+    const f = fixture("owner");
+    const config = appTaskContext({ appDir: f.appDir, projectDir: f.appDir, agent: "owner", resourceStore: f.store });
+    admitTaskRequest(config, {
+      appId: "sample",
+      attachment: { kind: "existing", taskId: "work/one" },
+      idempotencyKey: "measurement:original",
+      request: { id: "measurement", source: { kind: "app", id: "caller" }, input: { kind: "measurement", data: {} } },
+    });
+    writeFileSync(
+      join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
+      `
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+export const name = "probe";
+export const description = "Inspect a retained effect after worker loss";
+export async function execute(ctx) {
+  const path = join(ctx.workspace.root, "measurement.json");
+  if (existsSync(path)) {
+    const saved = JSON.parse(readFileSync(path, "utf8"));
+    const previous = ctx.reconciliation.previousAttempt;
+    if (!previous || previous.state !== "interrupted") throw new Error("Missing interrupted-attempt evidence");
+    return ctx.done("verified", { state: "converged", summary: "Read the existing measurement",
+      result: { value: saved.value, writes: saved.writes, previousAttemptId: previous.attemptId }, evidence: [path] });
+  }
+  writeFileSync(path, JSON.stringify({ value: 17, writes: 1 }));
+  await ctx.events.emit({ localKey: "effect-saved", type: "worker.effect.saved",
+    target: { appId: "sample", taskId: "work/one" }, data: { path } });
+  await new Promise(() => {});
+}
+`,
+    );
+    f.bus.subscribe((event) => {
+      if (event.type === "worker.effect.saved") f.child!.disconnect();
+    });
+    await assert.rejects(async () => {
+      await run(f);
+      assert.fail(`Worker returned before parent loss: ${JSON.stringify(f.store.readTask("work/one")?.status)}`);
+    }, /code 143/);
+    const firstId = f.store.readTask("work/one")!.status.currentAttemptId!;
+    const effect = readFileSync(join(f.appDir, "measurement.json"), "utf8");
+    assert.equal(readAppTaskAdmissionOutcome(config, "work/one", "measurement:original"), null);
+    assert.equal(f.store.readAttempt(firstId)?.acceptedResult, undefined);
+    // The old process has exited before another process repairs the claim.
+    await run(f, true);
+    assert.equal(f.store.readAttempt(firstId)?.state, "interrupted");
+    await run(f);
+    const accepted = acceptedAttempt(f);
+    assert.notEqual(accepted.metadata.id, firstId);
+    assert.deepEqual(readAppTaskAdmissionOutcome(config, "work/one", "measurement:original")?.result, {
+      value: 17,
+      writes: 1,
+      previousAttemptId: firstId,
+    });
+    assert.equal(readFileSync(join(f.appDir, "measurement.json"), "utf8"), effect);
+    assert.equal(Object.keys(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts ?? {}).length, 2);
+    // Repeated process entry is a hint, not another admitted ask or execution.
+    await run(f);
+    assert.deepEqual(acceptedAttempt(f), accepted);
+    assert.equal(f.store.listRecoveryCandidates().items.length, 0);
+    assert.equal(
+      f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'worker.effect.saved'").get()?.count,
+      1,
+    );
   },
 
   async pinnedSource() {
@@ -355,7 +448,7 @@ export async function execute(ctx) {
     );
     releases.activate(releases.stage());
     await run(f);
-    assert.equal(f.store.readReceipt("work/one")?.summary, "original workflow: Use fixture evidence only.");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "original workflow: Use fixture evidence only.");
   },
 
   async rejectedDisable() {
@@ -400,7 +493,7 @@ export async function execute(ctx) {
       // Recovery and the next attempt both keep the accepted App selection.
       await run(f, true);
       await run(f);
-      assert.equal(f.store.readReceipt("work/one")?.summary, "completed by specialist");
+      assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist");
     } finally {
       const closed = closeInstalledAppTaskRuntimes(f.bus);
       releaseStart();
@@ -411,8 +504,7 @@ export async function execute(ctx) {
   async inheritedAgent() {
     const f = fixture("specialist");
     await run(f);
-    assert.equal(f.store.readTask("work/one"), null);
-    assert.equal(f.store.readReceipt("work/one")?.summary, "completed by specialist");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist");
   },
 
   async liveControl() {

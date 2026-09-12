@@ -1935,6 +1935,14 @@ export class SubagentManager {
     // Extract result
     const messages = agent.state.messages as AgentMessage[];
     const finishParams = extractFinishParams(messages as any[]);
+    // A committed finish survives cancellation while the turn unwinds. Clear
+    // that interruption before validation so a missing required payload stays
+    // an execution error. Without a receipt, retain the interruption reason.
+    if (finishParams && session.status === "interrupted") {
+      errorText = undefined;
+    } else if (!finishParams && session.status === "interrupted" && session.lastError) {
+      errorText = session.lastError;
+    }
     const assistantText = extractLastAssistantText(messages);
     const assistantError = !finishParams ? extractLastAssistantError(messages) : undefined;
     const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
@@ -1953,18 +1961,10 @@ export class SubagentManager {
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }
-    // A successfully executed finish() call is the session's committed terminal
-    // receipt. Cancellation can race with the agent turn unwinding after the
-    // finish tool has returned; do not let that later control signal discard the
-    // structured result that the caller must reconcile exactly once. Without a
-    // committed receipt, retain the interruption reason as the terminal error.
-    if (finishParams && session.status === "interrupted") {
-      errorText = undefined;
-    } else if (!finishParams && session.status === "interrupted" && session.lastError) {
-      errorText = session.lastError;
-    }
+    // Structured non-success is a caller judgment, not a failed execution.
+    const legacyFailure = !session.outputSchema && finishParams?.status === "failure";
     const status: "done" | "error" | "interrupted" =
-      finishParams?.status === "failure"
+      legacyFailure || (finishParams && errorText)
         ? "error"
         : finishParams
           ? "done"

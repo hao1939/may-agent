@@ -136,6 +136,12 @@ export type AppTaskAdmission = {
   taskGeneration: number;
   specHash: string;
   admittedAt: string;
+  /** Original ask supplied again when its saved wait returns evidence. */
+  inputEvent?: Record<string, unknown>;
+  /** Exact accepted answer for this input; later Task outcomes do not replace it. */
+  resultAttemptId?: string;
+  /** First accepted failure for this input; reporting it does not answer the input. */
+  reportAttemptId?: string;
 };
 
 export type TaskTree = {
@@ -176,12 +182,6 @@ const scopedTaskSnapshots = new WeakSet<TaskTree>();
 /** Reuse one snapshot for a short-lived context dedicated to a sequential pass. */
 export function cacheTaskSnapshots(context: AppTaskContext): void {
   taskSnapshotCaches.set(context, {});
-}
-
-export function normalizeStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && Boolean(item));
-  if (typeof value === "string" && value) return [value];
-  return [];
 }
 
 export function readTaskSnapshot(
@@ -308,7 +308,6 @@ function satisfiedDependencyIds(tree: TaskTree): string[] {
       Object.values(tree.resources ?? {})
         .flatMap((resource) => resource.spec.dependsOn ?? [])
         .filter((dependencyId) => {
-          if (tree.receipts?.[dependencyId]) return true;
           const dependency = tree.resources?.[dependencyId];
           return Boolean(
             dependency &&
@@ -465,7 +464,9 @@ export function buildAppTaskTreeProjection(tree: TaskTree, configuredMaxConcurre
       ...(status.evidence ? { evidence: [...status.evidence] } : {}),
       condition_ids: [...(status.conditionIds ?? [])],
       status_updated_at: status.updatedAt,
-      attempt_count: attemptsByTask.get(taskId)?.length ?? 0,
+      // A receipt import is accepted historical evidence, not another execution.
+      attempt_count:
+        attemptsByTask.get(taskId)?.filter((attempt) => attempt.runtimeId !== "retired:task-receipt").length ?? 0,
       ...(activeAttempt
         ? {
             active_attempt: {

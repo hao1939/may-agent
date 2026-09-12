@@ -495,7 +495,7 @@ describe("workflow call empty final turn recovery", () => {
       autoClose: "immediate",
       requireFinish: true,
       outputSchema: Type.Object({
-        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
+        state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("stopped")]),
         summary: Type.String(),
         evidence: Type.Array(Type.String()),
       }),
@@ -505,23 +505,66 @@ describe("workflow call empty final turn recovery", () => {
     return { sessionId, session, messages, prompts };
   }
 
-  it("preserves tool evidence and recovers structured finish after the final prompt throws 429", async () => {
+  it("keeps the original assignment available after an empty initial response", async () => {
+    const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
+      if (promptText === "review owner message") {
+        transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
+        transcript.push({ role: "assistant", stopReason: "stop", content: [] } as any);
+        return;
+      }
+      expect(promptText).toContain("Continue the original bounded assignment");
+      expect(promptText).not.toContain("call finish() now");
+      expect(transcript).toHaveLength(1);
+      expect(transcript[0]).toMatchObject({ role: "user", content: [{ type: "text", text: "review owner message" }] });
+      // The model boundary is synthetic; the real manager must allow continued
+      // work on this same call, rather than demand a judgment with no evidence.
+      transcript.push({
+        role: "assistant",
+        content: [{ type: "toolCall", id: "read-after-empty", name: "read", arguments: { path: "proof.txt" } }],
+      } as any);
+      transcript.push({
+        role: "toolResult", toolCallId: "read-after-empty", toolName: "read",
+        content: [{ type: "text", text: "Current source inspected" }], isError: false,
+      } as any);
+      transcript.push(finishCall("finish-after-empty", {
+        status: "success", summary: "Completed after inspecting current source",
+        result: { state: "converged", summary: "Inspection complete", evidence: ["Current source inspected"] },
+      }));
+      transcript.push(finishResult("finish-after-empty", "SUCCESS: Inspection complete"));
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result).toMatchObject({ sessionId, status: "done", structuredResult: { evidence: ["Current source inspected"] } });
+    expect(prompts).toHaveLength(2);
+    expect(messages.filter((message: any) => message.toolCallId === "read-after-empty")).toHaveLength(1);
+    expect(events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toHaveLength(1);
+  });
+
+  it.each(["read", "write"])("preserves successful %s evidence after final synthesis throws 429", async (toolName) => {
+    const evidence = toolName === "write" ? "Committed proof.txt successfully" : "29 tests passed; replay tree matched";
     const { sessionId, session, messages, prompts } = makeCallSession(async (promptText, transcript) => {
       if (promptText === "review owner message") {
         transcript.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
         transcript.push({
           role: "assistant",
-          content: [{ type: "toolCall", id: "read-1", name: "read", arguments: { path: "proof.txt" } }],
+          content: [{ type: "toolCall", id: "work-1", name: toolName, arguments: { path: "proof.txt" } }],
         } as any);
         transcript.push({
           role: "toolResult",
-          toolCallId: "read-1",
-          toolName: "read",
-          content: [{ type: "text", text: "29 tests passed; replay tree matched" }],
+          toolCallId: "work-1",
+          toolName,
+          content: [{ type: "text", text: evidence }],
           isError: false,
         } as any);
         throw new Error("OpenAI API error (429): No deployments available for selected model, Try again in 5 seconds.");
       }
+      expect(promptText).toContain("Do not repeat successful work or committed effects");
+      expect(promptText).toContain("inspect current state before repeating an uncertain effect");
+      expect(transcript).toContainEqual(expect.objectContaining({
+        role: "toolResult", toolCallId: "work-1", isError: false,
+        content: [{ type: "text", text: evidence }],
+      }));
       transcript.push(
         finishCall("finish-1", {
           status: "success",
@@ -529,7 +572,7 @@ describe("workflow call empty final turn recovery", () => {
           result: {
             state: "converged",
             summary: "Recovered from transient final synthesis failure.",
-            evidence: ["29 tests passed; replay tree matched"],
+            evidence: [evidence],
           },
         }),
       );
@@ -543,15 +586,16 @@ describe("workflow call empty final turn recovery", () => {
     expect(result.structuredResult).toEqual({
       state: "converged",
       summary: "Recovered from transient final synthesis failure.",
-      evidence: ["29 tests passed; replay tree matched"],
+      evidence: [evidence],
     });
     expect(prompts).toHaveLength(2);
     expect(prompts[1]).toContain("transient runtime/provider failure or no visible answer");
     expect(prompts[1]).toContain("schema-validated result payload");
     expect(messages).toContainEqual(expect.objectContaining({
       role: "toolResult",
-      content: [{ type: "text", text: "29 tests passed; replay tree matched" }],
+      content: [{ type: "text", text: evidence }],
     }));
+    expect(messages.filter((message: any) => message.toolCallId === "work-1")).toHaveLength(1);
 
     const end = events.find((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId);
     expect(end).toMatchObject({
@@ -564,7 +608,7 @@ describe("workflow call empty final turn recovery", () => {
           status: "success",
           result: {
             state: "converged",
-            evidence: ["29 tests passed; replay tree matched"],
+            evidence: [evidence],
           },
         },
       },
@@ -666,14 +710,14 @@ describe("workflow call empty final turn recovery", () => {
     expect((end as any).data.error).toBeUndefined();
   });
 
-  it("classifies a committed failure receipt as error despite a racing cancellation", async () => {
+  it.each([true, false])("preserves a committed non-success judgment despite cancellation (structured=%s)", async (structured) => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(
         finishCall("finish-failed", {
           status: "failure",
           summary: "Verified terminal failure.",
           result: {
-            state: "converged",
+            state: "stopped",
             summary: "Verified terminal failure.",
             evidence: ["runtime-check:failed"],
           },
@@ -683,27 +727,50 @@ describe("workflow call empty final turn recovery", () => {
       session.status = "interrupted";
       session.lastError = "Cancelled";
     });
+    if (!structured) session.outputSchema = undefined;
 
     const result = await (manager as any).executeSession(session);
 
-    expect(result.status).toBe("error");
+    const expectedStatus = structured ? "done" : "error";
+    expect(result.status).toBe(expectedStatus);
     expect(result.error).toBeUndefined();
     expect(result.structuredResult).toEqual({
-      state: "converged",
+      state: "stopped",
       summary: "Verified terminal failure.",
       evidence: ["runtime-check:failed"],
     });
-    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({ status: "error" });
+    expect(readSessionMeta(persistDir, result.sessionId)).toMatchObject({ status: expectedStatus });
     const end = events.find(
       (event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId,
     );
     expect(end).toMatchObject({
       type: "session.end",
       data: {
-        status: "error",
-        finishParams: { status: "failure", result: { state: "converged" } },
+        status: expectedStatus,
+        finishParams: { status: "failure", result: { state: "stopped" } },
       },
     });
+  });
+
+  it.each([false, true])("rejects a committed finish missing the caller's required structured result (cancelled=%s)", async (cancelled) => {
+    const { session, messages } = makeCallSession(async () => {
+      messages.push(finishCall("finish-missing-result", { status: "failure", summary: "No structured judgment." }));
+      messages.push(finishResult("finish-missing-result", "FAILURE: No structured judgment."));
+      if (cancelled) {
+        session.status = "interrupted";
+        session.lastError = "Cancelled";
+      }
+    });
+
+    const result = await (manager as any).executeSession(session);
+
+    expect(result.status).toBe("error");
+    expect(result.error).toContain("without the required schema-backed");
+    expect(result.structuredResult).toBeUndefined();
+    expect(readSessionMeta(persistDir, result.sessionId)?.status).toBe("error");
+    const ends = events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId);
+    expect(ends).toHaveLength(1);
+    expect(ends[0]).toMatchObject({ data: { status: "error", error: result.error } });
   });
 
   it("keeps cancellation interrupted with its reason when no finish receipt committed", async () => {

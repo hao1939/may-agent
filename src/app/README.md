@@ -16,9 +16,8 @@ For a standalone checkout, obtain those cited contracts before changing behavior
 app-runtime.ts                              startup, reload, shutdown
   core/apps/registry.ts                     validated App generation
   core/events/interface.ts -> bus.ts        input admission and observations
-  composition/app-inbox-runtime.ts          routing and input dispatch
-    core/inbox/app-inbox-host.ts            claims, cancellation, selected handler
-    composition/conversation-inbox.ts       conversational handling
+  composition/app-inbox-runtime.ts          routing and admission recovery
+    core/inbox/app-inbox-host.ts            validation, Task mapping, input results
     core/tasks/app-task-capability.ts       durable Task handoff
   core/tasks/controller.ts                  queue and bounded dispatch
     core/tasks/app-task-runtime.ts          attempt orchestration
@@ -40,11 +39,11 @@ cross-component and process boundaries.
 | --- | --- | --- |
 | App registration | `core/apps/registry.ts`: `AppDefinitionSource`; validation in `core/apps/definition-validation.ts`; file discovery in `adapters/discovery/app-definitions.ts` | `app-runtime.ts`; `core/apps/registry.test.ts` covers rejected/serialized publication |
 | Events | `core/events/interface.ts` for ingress/reads; `core/events/bus.ts` for persisted admission and bounded observation | `app-runtime.ts` creates the interface; `daemon-events.ts` attaches persistence/subscribers; colocated interface/bus tests and `event-delivery.test.ts` |
-| Input admission | `core/inbox/app-inbox-host.ts`, `core/state/app-inbox-store.ts`, `core/state/app-event-admission-store.ts`; frozen routes and durable claims | `composition/app-inbox-runtime.ts`; inbox runtime, ownership and failure tests |
-| Conversation | `core/inbox/input-handler.ts`; `conversations/context.ts`, `conversations/turn-handler.ts`, `conversations/turn-agent.ts` | `composition/conversation-inbox.ts`; turn-agent and inbox tests; [guide](conversations/README.md) |
-| Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
-| Atomic Task attachment | `core/state/inbox.ts`: `attachRequestToTask()` | `core/tasks/app-task-capability.ts`; `core/state/inbox.test.ts` |
-| Atomic input completion | `core/state/inbox.ts`: `completeInboxInput()` commits the input result, accepted-Request closure and dependent wakes | `core/inbox/app-inbox-host.ts`; `core/state/conversation-requests.test.ts` and `core/inbox/app-inbox-host.test.ts` |
+| Input admission | `core/inbox/app-inbox-host.ts`, `core/state/app-inbox-store.ts`, `core/state/app-event-admission-store.ts`; frozen routes and durable input identities | `composition/app-inbox-runtime.ts`; inbox admission, routing and failure tests |
+| Conversation | `conversations/context.ts`, `conversations/turn-agent.ts` | `composition/conversation-task-turn.ts`; turn-agent and Task runtime tests; [guide](conversations/README.md) |
+| Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-task-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
+| Atomic Task attachment | `core/state/inbox.ts`: `admitTaskRequest()` | `core/tasks/app-task-capability.ts`; `core/state/inbox.test.ts` |
+| Atomic input completion | `core/state/inbox.ts`: `completeTaskInput()` projects an exact Task answer; Conversation Request closure belongs to fenced Turn settlement | `core/inbox/app-inbox-host.ts`; `core/state/conversation-requests.test.ts` and `core/inbox/app-inbox-host.test.ts` |
 | Task definition preparation | `core/tasks/runtime-definition.ts`: descriptors, seed authority and project read models | Publication/rollback stay in `core/tasks/app-task-runtime.ts`; [Task lifecycle reading path](core/tasks/README.md#trace-one-task) |
 | Task dispatch | `core/tasks/controller.ts`, `core/tasks/queue.ts`; `core/scheduling/host-capacity.ts`; `core/tasks/app-task-recovery.ts` | `core/tasks/app-task-runtime.ts`; controller/queue/recovery tests |
 | Task transitions | `core/tasks/app-task-reconciler.ts`, `core/tasks/app-task-state.ts`, `core/state/app-task-resource-store.ts` | `core/tasks/app-task-runtime.ts`; reconciler/resource-store, cancellation and restart tests |
@@ -77,8 +76,8 @@ Core imports contracts and foundational helpers; composition selects concrete
 adapters and conversational handlers. ESLint protects this direction. Executor
 adapters may import lifecycle types, but cannot import Task runtime or
 store mutation implementations. The persisted executor/recovery identity lives
-beside the small `core/tasks/session-binding.ts` contract. Event admission and
-inbox dispatch receive the same conversational App selection from composition.
+beside the small `core/tasks/session-binding.ts` contract. Task claims select their capacity lane from trusted input origin.
+Input admission itself consumes no worker capacity.
 
 Internal loaders import owning modules directly: `../lib/index.ts` also exports the loader,
 so importing back through it creates a cycle. The public SDK and control exports

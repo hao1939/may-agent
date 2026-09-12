@@ -1,28 +1,26 @@
 import type { AppTaskAttacher } from "../../src/app/core/inbox/app-inbox-host.js";
-import { waitAppInboxClaim, wakeAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
+import { linkTaskInput } from "../../src/app/core/state/inbox.js";
 import { linkConversationTopicTask } from "../../src/app/core/state/conversations.js";
-import type { SqliteDb } from "../../src/lib/db.js";
 import { linkConversationRequestTask } from "../../src/app/core/state/conversation-requests.js";
+import { stateTransaction } from "../../src/lib/db/transaction.js";
+import type { SqliteDb } from "../../src/lib/db.js";
 
-/** Inbox-only tests fake Task storage; state and runtime tests use the real operation. */
+/** Routing tests fake the Task executor; admission tests use the real Task store. */
 export function fakeTaskAttacher(
   db: SqliteDb,
-  resolve: (input: Parameters<AppTaskAttacher>[0]) => Promise<{ taskId: string; ready?: boolean }>,
+  resolve: (input: Parameters<AppTaskAttacher>[0]) => { taskId: string },
 ): AppTaskAttacher {
-  return async (input) => {
-    input.authorize?.();
-    const result = await resolve(input);
-    if (input.topicId) linkConversationTopicTask(db, input.topicId, input.appId, result.taskId, input.now);
-    if (input.requestLink)
-      linkConversationRequestTask(db, { ...input.requestLink, taskRef: { appId: input.appId, taskId: result.taskId } });
-    if (!input.claim) return result;
-    if (!waitAppInboxClaim(db, input.claim, { kind: "task", id: result.taskId }, { now: input.now })) {
-      throw new Error("claim is stale");
-    }
-    if (input.claim.item.topicId) {
-      linkConversationTopicTask(db, input.claim.item.topicId, input.appId, result.taskId, input.now);
-    }
-    if (result.ready) wakeAppInboxItem(db, input.claim.item.id, input.now);
-    return result;
-  };
+  return (input) =>
+    stateTransaction(db, () => {
+      input.authorize?.();
+      const result = resolve(input);
+      if (input.inboxInputId) linkTaskInput(db, input.inboxInputId, result.taskId, input.idempotencyKey, input.now);
+      if (input.topicId) linkConversationTopicTask(db, input.topicId, input.appId, result.taskId, input.now);
+      if (input.requestLink)
+        linkConversationRequestTask(db, {
+          ...input.requestLink,
+          taskRef: { appId: input.appId, taskId: result.taskId },
+        });
+      return result;
+    });
 }

@@ -6,7 +6,6 @@ import type { AppEvent, AppInput } from "@may-agent/sdk";
 import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "../../packages/control/src/server.js";
 import { closeAllDbs, getDb } from "../lib/requests.js";
-import { stateTransaction } from "../lib/db/transaction.js";
 import type { AppReporting } from "./composition/reporting.js";
 import type { AppArgs } from "./app-args.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./composition/app-inbox-runtime.js";
@@ -15,7 +14,6 @@ import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/disco
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
 import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
-import { createConversationAgentResolver } from "./conversations/turn-agent.js";
 import { readAppConversationResource } from "./core/state/conversations.js";
 import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
@@ -44,7 +42,7 @@ import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } f
 import { createTaskAdmissionProcess } from "./composition/workers/task-admission-process.js";
 import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
-import { attachTaskControlEventRoute, taskCancelRequestedEvent } from "./task-control-events.js";
+import { attachTaskControlEventRoute } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
@@ -296,27 +294,11 @@ export async function runAppRuntime(opts: {
     db: getDb(opts.persistDir),
     bus,
     persistDir: opts.persistDir,
-    hostCapacity,
-    maxConcurrentRequests: configuredHostConcurrency,
-    conversationAppId,
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
-    resolveRequest: createConversationAgentResolver({ manager, registry: appRegistry, db: getDb(opts.persistDir) }),
-    controlTask: async ({ control, authorize }) => {
-      if (control.kind !== "cancel") throw new Error(`Unsupported human Task control: ${control.kind}`);
-      const task = humanTasks.getTask({ appId: control.appId, taskId: control.taskId });
-      if (!task) throw new Error(`Task ${control.appId}/${control.taskId} was not found`);
-      const receipt = stateTransaction(getDb(opts.persistDir), () => {
-        authorize();
-        return events.publish(taskCancelRequestedEvent(task, control.reason), {
-          source: "app-inbox",
-          inputSource: { kind: "human", id: "app-inbox" },
-        });
-      });
-      if (receipt.delivery !== "accepted") {
-        throw new Error(`Task ${control.appId}/${control.taskId} cancellation was recorded but not accepted`);
-      }
-    },
+    admitConversation: appTasks.admitConversation,
+    admitConversationChange: appTasks.admitConversationChange,
+    stopConversationTurn: appTasks.stopTurn,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     createTaskAdmissionWorker: () =>
@@ -330,6 +312,7 @@ export async function runAppRuntime(opts: {
       appTasks.readDependency({
         appDir: input.appDir,
         dependency: input.dependency,
+        admissionKey: input.admissionKey,
       }),
     observerContext: (appId, appDir) => {
       const definition = appRegistry.snapshot().entries.find((entry) => entry.definition.id === appId)?.definition;

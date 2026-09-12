@@ -110,7 +110,7 @@ describe("App task parent semantics", () => {
     expect(listRunnableAppTaskIds(config)).toEqual(["parent"]);
   });
 
-  it("keeps a maintain parent nonterminal while its required child is live", () => {
+  it("releases the parent attempt when it explicitly waits for child evidence", () => {
     const config = fixture();
     recordAppTaskTrigger(config, "parent", {
       type: "project.task.tick",
@@ -125,11 +125,12 @@ describe("App task parent semantics", () => {
     if (parentClaim.kind !== "claimed") throw new Error(`expected parent claim, got ${parentClaim.kind}`);
 
     expect(
-      completeAppTask(config, parentClaim, {
+      deferAppTask(config, parentClaim, {
+        disposition: "waiting",
         summary: "review identified required child work",
         evidence: ["task:child remains pending"],
       }),
-    ).toMatchObject({ status: "applied", taskContinues: true });
+    ).toMatchObject({ status: "applied" });
     expect(readAppTaskIntent(config, "parent")).not.toBeNull();
     const parentStatus = readTaskSnapshot(config).resources?.parent?.status;
     expect(parentStatus).toMatchObject({ phase: "waiting" });

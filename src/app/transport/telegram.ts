@@ -184,6 +184,8 @@ function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): s
       return "up to date";
     case "done":
       return "done";
+    case "closed":
+      return "closed";
     case "cancelled":
       return "cancelled";
   }
@@ -208,6 +210,7 @@ function currentTaskText(task: HumanTaskView): string {
     case "done":
       return "No result summary was recorded.";
     case "cancelled":
+    case "closed":
       return "The Task will not continue.";
   }
 }

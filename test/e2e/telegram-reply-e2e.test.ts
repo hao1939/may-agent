@@ -3,11 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
-import {
-  claimAppInboxItem,
-  completeAppInboxClaim,
-  createAppInboxItem,
-} from "../../src/app/core/state/app-inbox-store.js";
+import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
+import { claimAppInboxItem, completeAppInboxClaim } from "../fixtures/legacy-inbox.js";
 import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { HumanTaskService } from "../../src/app/human-task-service.js";

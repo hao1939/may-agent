@@ -2,10 +2,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const repoRoot = resolve(import.meta.dirname, "../..");
 const setupScript = resolve(repoRoot, "container/setup-pi-config.sh");
+const exec = promisify(execFile);
 const tempDirs: string[] = [];
 
 afterEach(() => {
@@ -21,13 +23,16 @@ describe("Pi startup configuration", () => {
     expect(source).toContain('find "${PI_CODING_AGENT_DIR}" -mindepth 1 -maxdepth 1');
   });
 
-  test("writes both configured providers without persisting the API key", () => {
-    const home = mkdtempSync(join(tmpdir(), "may-pi-config-"));
-    tempDirs.push(home);
-    const result = spawnSync("bash", [setupScript], {
+  test("writes both configured providers without persisting the API key", async () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "may-pi-config-"));
+    tempDirs.push(fixtureRoot);
+    // Keep the test runner responsive if a startup subprocess stalls; inherited
+    // Pi configuration must not redirect this fixture into an installation.
+    await exec("bash", [setupScript], {
+      timeout: 10_000,
       env: {
-        ...process.env,
-        HOME: home,
+        PATH: process.env.PATH,
+        HOME: fixtureRoot,
         MODEL_BASE_URL: "https://models.example.test/",
         MODEL_API_KEY: "must-not-be-persisted",
         CODEX_MODEL: "gpt-test",
@@ -36,8 +41,7 @@ describe("Pi startup configuration", () => {
       encoding: "utf8",
     });
 
-    expect(result.status).toBe(0);
-    const source = readFileSync(join(home, ".pi/agent/models.json"), "utf8");
+    const source = readFileSync(join(fixtureRoot, ".pi/agent/models.json"), "utf8");
     const config = JSON.parse(source);
     expect(config.providers["may-openai"]).toEqual({
       baseUrl: "https://models.example.test/v1",
@@ -68,31 +72,31 @@ describe("Pi startup configuration", () => {
     });
     expect(source).not.toContain("must-not-be-persisted");
 
-    expect(JSON.parse(readFileSync(join(home, ".pi/agent/settings.json"), "utf8"))).toEqual({
+    expect(JSON.parse(readFileSync(join(fixtureRoot, ".pi/agent/settings.json"), "utf8"))).toEqual({
       defaultProvider: "may-openai",
       defaultModel: "gpt-test",
       defaultThinkingLevel: "high",
     });
   });
 
-  test("allows a dedicated persistent Pi configuration directory", () => {
-    const home = mkdtempSync(join(tmpdir(), "may-pi-config-"));
-    const configDir = join(home, "persistent-pi");
-    tempDirs.push(home);
-    const result = spawnSync("bash", [setupScript], {
-      env: { ...process.env, HOME: home, PI_CODING_AGENT_DIR: configDir },
+  test("allows a dedicated persistent Pi configuration directory", async () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "may-pi-config-"));
+    const configDir = join(fixtureRoot, "persistent-pi");
+    tempDirs.push(fixtureRoot);
+    await exec("bash", [setupScript], {
+      timeout: 10_000,
+      env: { PATH: process.env.PATH, HOME: fixtureRoot, PI_CODING_AGENT_DIR: configDir },
       encoding: "utf8",
     });
 
-    expect(result.status).toBe(0);
     expect(JSON.parse(readFileSync(join(configDir, "models.json"), "utf8")))
       .toHaveProperty("providers.may-openai.models.0.id", "gpt-5.6-sol");
   });
 
-  test("preserves existing Pi preferences while filling missing defaults", () => {
-    const home = mkdtempSync(join(tmpdir(), "may-pi-config-"));
-    const configDir = join(home, ".pi/agent");
-    tempDirs.push(home);
+  test("preserves existing Pi preferences while filling missing defaults", async () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "may-pi-config-"));
+    const configDir = join(fixtureRoot, ".pi/agent");
+    tempDirs.push(fixtureRoot);
     mkdirSync(configDir, { recursive: true });
     writeFileSync(join(configDir, "settings.json"), JSON.stringify({
       defaultProvider: "may-anthropic",
@@ -100,9 +104,11 @@ describe("Pi startup configuration", () => {
       theme: "light",
     }));
 
-    const result = spawnSync("bash", [setupScript], { env: { ...process.env, HOME: home }, encoding: "utf8" });
-
-    expect(result.status).toBe(0);
+    await exec("bash", [setupScript], {
+      timeout: 10_000,
+      env: { PATH: process.env.PATH, HOME: fixtureRoot },
+      encoding: "utf8",
+    });
     expect(JSON.parse(readFileSync(join(configDir, "settings.json"), "utf8"))).toEqual({
       defaultProvider: "may-anthropic",
       defaultModel: "claude-custom",

@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   session_id          TEXT,
   waiting_on_kind     TEXT,
   waiting_on_id       TEXT,
+  task_admission_key  TEXT,
+  execution_task_id   TEXT,
   result              TEXT,
   handling            TEXT,
   available_at        INTEGER,
@@ -42,6 +44,10 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
 );
 CREATE INDEX IF NOT EXISTS idx_app_inbox_ready
   ON app_inbox_items(app_id, status, available_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_unadmitted
+  ON app_inbox_items(id)
+  WHERE status != 'done' AND execution_task_id IS NULL
+    AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_available
   ON app_inbox_items(available_at, app_id)
   WHERE status != 'done' AND lease_owner IS NULL AND available_at IS NOT NULL;
@@ -62,6 +68,11 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
   ON app_inbox_items(origin_event_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
   ON app_inbox_items(app_id, conversation_id, conversation_seq);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_execution_task
+  ON app_inbox_items(app_id, execution_task_id) WHERE execution_task_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_app_inbox_pending_human_task
+  ON app_inbox_items(app_id, execution_task_id)
+  WHERE execution_task_id IS NOT NULL AND source_kind = 'human' AND status != 'done';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_idempotency
   ON app_inbox_items(app_id, idempotency_key)
   WHERE idempotency_key IS NOT NULL AND idempotency_key != '';

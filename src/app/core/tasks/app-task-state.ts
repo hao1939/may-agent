@@ -1,11 +1,16 @@
 import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
 
-/** Initial execution plus three retries; successful progress is not capped. */
-export const MAX_TASK_EXECUTION_FAILURES = 4;
-
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
   observedAt: string;
+};
+
+/** Return correlation for admitted input; eligibility stays with existing waits and Events. */
+export type AppTaskInputWait = {
+  taskGeneration: number;
+  /** Both lists empty means continue with already pending Task input, without replaying an old event batch. */
+  children: Array<{ id: string; generation: number }>;
+  conditions: Array<{ id: string; generation: number }>;
 };
 
 /** Host-private persisted Condition state. */
@@ -54,24 +59,31 @@ export type AppTaskResource = {
     currentAttemptId?: string;
     /** Exact attempt that produced the accepted summary/result observation. */
     observedAttemptId?: string;
-    /** Consecutive execution failures in this generation, cleared by progress or explicit retry. */
+    /** Consecutive unsuccessful attempts in this generation, cleared by progress or owner retry. */
     executionFailures?: number;
+    /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
+    executionRetryAt?: number;
+    /** A new human admission permits one fresh claim; that claim consumes the opportunity. */
+    freshHumanInput?: true;
     summary?: string;
     response?: string;
     result?: Record<string, unknown>;
     evidence?: string[];
     conditionIds?: string[];
+    inputWaits?: Record<string, AppTaskInputWait>;
     updatedAt: string;
   };
 };
 
-export function isTaskExecutionExhausted(resource: AppTaskResource): boolean {
-  return (resource.status.executionFailures ?? 0) >= MAX_TASK_EXECUTION_FAILURES;
+/** Quick transient retry, then up to 15 minutes between failures; never abandon work. */
+export function taskExecutionRetryDelay(failures: number): number {
+  return Math.min(15 * 60_000, 250 * 2 ** Math.min(12, Math.max(0, failures - 1)));
 }
 
-/** Exhausted input is retained for an owner decision, not eligible execution. */
-export function isTaskAttentionReadyForReview(resource: AppTaskResource | null, hasPendingInput: boolean): boolean {
-  return resource?.status.phase === "attention" && (!hasPendingInput || isTaskExecutionExhausted(resource));
+export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {
+  const at = resource.status.executionRetryAt;
+  return typeof at === "number" && Number.isFinite(at) && at > now
+    ? at : undefined;
 }
 
 export type AppTaskAttemptLease = {
@@ -101,6 +113,20 @@ export type AppTaskAttempt = {
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
+  /** Earlier admitted inputs brought back by this attempt's exact child/Condition evidence. */
+  continuedInputKeys?: string[];
+  /** Accepted evidence from this exact attempt; later cycles do not replace it. */
+  acceptedResult?: {
+    state: "converged" | "waiting" | "stopped";
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    evidence: string[];
+    /** Historical maintained outcomes did not retain the acceptance method. */
+    acceptanceBasis?: TaskAcceptanceBasis;
+    /** Additional durable input actually incorporated after the initial batch. */
+    acceptedLiveEventIds?: number[];
+  };
   /** Legacy/synthetic trigger retained only when no durable event batch exists. */
   trigger?: Record<string, unknown>;
   startedAt: string;
@@ -110,10 +136,15 @@ export type AppTaskAttempt = {
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
+  /** Offline import preserves an old worker self-stop as evidence, not closure. */
+  retiredCancellation?: AppTaskCancellation;
 };
 
-/** Immutable non-success terminal evidence for one exact Task generation. */
+/** Immutable closure evidence; historical records represent cancellation. */
 export type AppTaskCancellation = {
+  kind?: "closed" | "cancelled";
+  /** Optional exact outcome consumed by the App's close-after-result convention. */
+  acceptedResultAttemptId?: string;
   appId: string;
   taskId: string;
   generation: number;
@@ -122,7 +153,7 @@ export type AppTaskCancellation = {
   reason: string;
   summary: string;
   cancelledAt: string;
-  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string };
+  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" };
   response?: string;
   result?: Record<string, unknown>;
   evidence?: string[];

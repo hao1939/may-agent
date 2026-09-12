@@ -1,19 +1,33 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { Check } from "typebox/value";
 import type { EventEnvelope } from "../events/bus.js";
-import { createTaskHandlerAvailability } from "./handler-availability.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import type {
-  TaskAgentRunner, TaskAgentInput, TaskSessionRecovery,
-  TaskWorkflowRunner, TaskWorkflowInput, AppTaskExecutionObserver,
+  TaskAgentRunner,
+  TaskAgentInput,
+  TaskSessionRecovery,
+  TaskConversationRunner,
+  TaskWorkflowRunner,
+  TaskWorkflowInput,
+  AppTaskExecutionObserver,
 } from "./execution.js";
 import { appTaskSessionBinding } from "./session-binding.js";
-import { recoverUnavailableTaskHandlers } from "./handler-recovery.js";
 import { getDb } from "../../../lib/db/connection.js";
-import { admitTaskRequest, attachRequestToTask } from "../state/inbox.js";
-import type { AppInboxClaim } from "../state/app-inbox-store.js";
+import { admitTaskRequest } from "../state/inbox.js";
+import { appInputFeedbackEvent } from "../inbox/input-result.js";
+import {
+  admitConversationTaskInput,
+  conversationTaskIntent,
+  admitConversationTaskChange,
+  conversationTaskId,
+  completeConversationTaskTurn,
+  isConversationTask,
+  stopConversationTaskTurn,
+  type ConversationTaskChangeRef,
+} from "../state/conversation-task-turns.js";
+import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   taskAgentResultSchema as appTaskAgentResultSchema,
@@ -32,6 +46,7 @@ import {
 import {
   configuredAppAgent,
   prepareAppTaskRuntimeDescriptors,
+  standaloneAppTaskAdmissionDescriptors,
   syncProjectReadModel,
   type AppTaskRuntimeDescriptor,
 } from "./runtime-definition.js";
@@ -47,7 +62,7 @@ import type { TaskOutcomeReader } from "../reads/reporting.js";
 import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
-import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
+import { readAppTaskLiveEvent, readAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
@@ -69,7 +84,6 @@ import {
   type DeliveryResult,
   type EventBus,
 } from "../events/bus.js";
-import { MAX_TASK_EXECUTION_FAILURES } from "./app-task-state.js";
 import {
   assertAppTaskEffectFresh,
   assertAppTaskClaimCurrent,
@@ -81,24 +95,20 @@ import {
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
-  listHandlerExecutionFailedAppTasks,
   markAppTaskAttention,
   isAppTaskActionStaleError,
-  isAppTaskConverged,
   observeAppTaskIntent,
   appTaskQueueEntries,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
-  readAppTaskTrigger,
+  readAppTaskAdmissionOutcome,
   readPendingAppTaskTrigger,
   recordAppTaskTrigger,
-  releaseHandlerExecutionFailedAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairUnadmittedAppDependencyWaits,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   expiredAgentSessionAppTaskAttempt,
-  terminalAgentSessionAppTaskClaim,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   releaseTerminalSessionExpiredAppTaskAttempt,
@@ -137,6 +147,8 @@ function publishAppTaskTiming(
 ): void {
   const finishedAt = Date.now();
   const timer = setTimeout(() => {
+    // Execution can drain and release its database before this optional report runs.
+    if (!appRouterOptionsByBus.has(opts.bus)) return;
     opts.bus.emit({
       type: "project.task.reconcile.profiled",
       source: `app-task:${descriptor.id}:observer`,
@@ -177,6 +189,7 @@ export interface AppTaskRuntimeOptions {
   agentsRoot?: string;
   sharedRoot?: string;
   agents?: TaskAgentRunner;
+  conversations?: TaskConversationRunner;
   sessions?: TaskSessionRecovery;
   bus: EventBus;
   hostCapacity: HostCapacity;
@@ -212,7 +225,13 @@ export interface AppTaskRuntimeOptions {
 }
 
 function snapshotTaskExecution(opts: AppTaskRuntimeOptions): AppTaskRuntimeOptions {
-  return { ...opts, agents: opts.agents?.snapshot(), workflows: opts.workflows?.snapshot?.() ?? opts.workflows };
+  return {
+    ...opts,
+    appRegistrySnapshot: opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot(),
+    agents: opts.agents?.snapshot(),
+    conversations: opts.conversations?.snapshot?.() ?? opts.conversations,
+    workflows: opts.workflows?.snapshot?.() ?? opts.workflows,
+  };
 }
 
 function hasLiveAppTaskSession(opts: AppTaskRuntimeOptions, sessionId: string): boolean {
@@ -266,27 +285,6 @@ function readAppTaskSessionScope(sessions: TaskSessionRecovery | undefined, sess
   };
 }
 
-function taskRecoverySessionScopesMatch(
-  appId: string,
-  sessions: TaskSessionRecovery | undefined,
-  failedSessionId: string | undefined,
-  successfulSession: AppTaskSessionScope,
-): boolean {
-  if (!failedSessionId) return false;
-  const failed = readAppTaskSessionScope(sessions, failedSessionId);
-  if (failed.binding && successfulSession.binding) {
-    return (
-      failed.binding.appId === appId &&
-      successfulSession.binding.appId === appId &&
-      failed.binding.taskId === successfulSession.binding.taskId &&
-      failed.binding.generation === successfulSession.binding.generation
-    );
-  }
-  return Boolean(
-    failed.workflowRunId && successfulSession.workflowRunId && failed.workflowRunId === successfulSession.workflowRunId,
-  );
-}
-
 function flattenEvent(event: AgentEvent): Record<string, unknown> {
   const record = event as unknown as Record<string, unknown>;
   const data = isRecord(record.data) ? record.data : {};
@@ -327,161 +325,6 @@ function taskCompletionDisposition(
 ): "converged" | "progress" | "revised" {
   if (!taskContinues) return "converged";
   return actions.some((action) => action.kind === "update-task" && action.taskId === taskId) ? "revised" : "progress";
-}
-
-type PersistedTerminalAgentResultConsumption = {
-  claim: AppTaskClaim;
-  state: ReturnType<typeof taskCompletionDisposition> | "waiting" | "stopped";
-  summary: string;
-  response?: string;
-  evidence: string[];
-  actionsApplied: string[];
-  conditionIds?: string[];
-  reconcileTaskIds: string[];
-};
-
-export function consumePersistedTerminalAgentResult(input: {
-  result: unknown;
-  config: AppTaskContext;
-  descriptor: AppTaskRuntimeDescriptor;
-  taskId: string;
-  sessionId: string;
-  onRejected?: (error: unknown) => void;
-  prepareSupersededSessions?: (sessionIds: string[]) => void;
-}): PersistedTerminalAgentResultConsumption | null {
-  const raw = input.result;
-  if (raw === undefined) return null;
-  const claim = terminalAgentSessionAppTaskClaim(input.config, input.taskId, input.sessionId);
-  if (!claim) return null;
-  // A workflow's lost continuation includes its verifier and workspace handling.
-  // Retry through normal execution instead of accepting an agent-only shortcut.
-  if (claim.intent.workflow) return null;
-  const defaultParentId = input.config.resourceStore.rootTaskId();
-  if (!defaultParentId) return null;
-  let cleanupFailed = false;
-  const prepareSupersededSessions = (sessionIds: string[]) => {
-    try {
-      input.prepareSupersededSessions?.(sessionIds);
-    } catch (error) {
-      cleanupFailed = true;
-      throw error;
-    }
-  };
-  try {
-    const result = normalizeTaskHandlerResult(
-      raw,
-      {
-        type: "done",
-        summary: `Recovered terminal agent result from session ${input.sessionId}`,
-        runId: input.sessionId,
-      },
-      {
-        allowNeedsAgent: false,
-        defaultParentId,
-        rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
-        validateAction: input.descriptor.app.tasks?.validateAction,
-        validateCondition: input.descriptor.app.tasks?.validateCondition,
-      },
-    );
-    if (result.state === "stopped") {
-      const applied = stopAppTask(input.config, claim, result);
-      if (applied.status !== "applied") return null;
-      return {
-        claim,
-        state: "stopped",
-        summary: applied.summary!,
-        response: result.response,
-        evidence: result.evidence,
-        actionsApplied: [],
-        reconcileTaskIds: applied.parentTaskId ? [applied.parentTaskId] : [],
-      };
-    }
-    if (result.state === "converged") {
-      const applied = completeAppTask(input.config, claim, {
-        summary: result.summary,
-        response: result.response,
-        result: result.result,
-        evidence: result.evidence,
-        actions: result.actions,
-        acceptanceBasis: { method: "agent-judgment", evidence: result.evidence },
-        prepareSupersededSessions,
-      });
-      if (applied.status !== "applied") return null;
-      return {
-        claim,
-        state: taskCompletionDisposition(claim.taskId, result.actions, applied.taskContinues),
-        summary: result.summary,
-        ...(result.response ? { response: result.response } : {}),
-        evidence: result.evidence,
-        actionsApplied: applied.actionsApplied,
-        reconcileTaskIds: applied.dependentTaskIds,
-      };
-    }
-    if (result.state === "waiting") {
-      const applied = deferAppTask(input.config, claim, {
-        disposition: "waiting",
-        summary: result.summary,
-        response: result.response,
-        result: result.result,
-        evidence: result.evidence,
-        actions: result.actions,
-        conditions: result.conditions,
-        prepareSupersededSessions,
-      });
-      if (applied.status !== "applied") return null;
-      return {
-        claim,
-        state: "waiting",
-        summary: result.summary,
-        evidence: result.evidence,
-        actionsApplied: applied.actionsApplied,
-        conditionIds: result.conditions?.map((condition) => condition.id),
-        reconcileTaskIds: applied.reconcileTaskIds,
-      };
-    }
-  } catch (error) {
-    // A valid saved result is not rejected when cleanup is temporarily unsafe.
-    // Keep its claim and exact targets intact for the next recovery pass.
-    if (cleanupFailed) throw error;
-    input.onRejected?.(error);
-  }
-  return null;
-}
-
-/** Callers retain their live-session/lease checks and choose how to requeue. */
-function settlePersistedTerminalAgentResult(input: {
-  opts: AppTaskRuntimeOptions;
-  descriptor: AppTaskRuntimeDescriptor;
-  config: AppTaskContext;
-  taskId: string;
-  sessionId: string;
-  onRejected?: (error: unknown) => void;
-}): string[] | null {
-  const { opts, descriptor, taskId, sessionId } = input;
-  const consumed = consumePersistedTerminalAgentResult({
-    ...input,
-    result: opts.sessions?.result(sessionId),
-    prepareSupersededSessions: (ids) => interruptSupersededActionSessions(opts, taskId, ids),
-  });
-  if (!consumed) return null;
-  // Publication follows the committed Task disposition, not the session status.
-  emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconciled", taskId, {
-    route: "terminal-agent-result-recovery",
-    generation: consumed.claim.generation,
-    attemptId: consumed.claim.attemptId,
-    handler: consumed.claim.handler,
-    disposition: consumed.state,
-    summary: consumed.summary,
-    evidence: consumed.evidence,
-    actionsApplied: consumed.actionsApplied,
-    evidenceSessionId: sessionId,
-  });
-  const replayedTaskIds =
-    consumed.state === "waiting"
-      ? replayPersistedConditionEvents(opts, descriptor, input.config, { conditionIds: consumed.conditionIds })
-      : [];
-  emitAppTaskDependencyChange(opts, descriptor, taskId, consumed.state);
-  return [...new Set([...consumed.reconcileTaskIds, ...replayedTaskIds])];
 }
 
 async function runTaskCapability(
@@ -591,10 +434,18 @@ function runtimeTaskAttempt(input: {
   const controller = new AbortController();
   let closed = false;
   const unsubscribeCancellation = events.onEvent((incoming) => {
-    if (incoming.type !== "app.task.cancelled") return;
+    if (incoming.type !== "app.task.cancelled" && incoming.type !== "app.task.attempt.stopped") return;
+    const cancellation =
+      incoming.type === "app.task.cancelled" ? descriptor.resourceStore.readCancellation(claim.taskId) : null;
+    if (incoming.type === "app.task.cancelled" && !cancellation) return;
+    if (
+      incoming.type === "app.task.attempt.stopped" &&
+      descriptor.resourceStore.readAttempt(claim.attemptId)?.failureReason !== "owner-stopped"
+    )
+      return;
     const data = eventData(incoming) as Record<string, unknown>;
     if (data.attemptId !== claim.attemptId) return;
-    const reason = typeof data.reason === "string" ? data.reason : "Task was cancelled";
+    const reason = cancellation?.reason ?? (typeof data.reason === "string" ? data.reason : "Task was cancelled");
     controller.abort(new Error(reason));
   });
   return {
@@ -609,6 +460,7 @@ function runtimeTaskAttempt(input: {
         instructions: `Act as the selected May agent ${claim.agent}.`,
       },
       task: structuredClone(task),
+      ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
       cwd: input.cwd,
       declaredOutputPaths: [...input.declaredOutputPaths],
       children: {
@@ -629,7 +481,7 @@ function runtimeTaskAttempt(input: {
           claim.taskId,
         ),
       ),
-      events: projectAppTaskReconciliationEvents(claim),
+      events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
       resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
       async publish(localKey, event) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
@@ -640,7 +492,7 @@ function runtimeTaskAttempt(input: {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
         const unsubscribe = events.onEvent((incoming) => {
           const eventId = Number((incoming as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-          listener(canonicalAppEvent(incoming), () => {
+          listener(readAppTaskLiveEvent(appTaskConfig(descriptor), claim.taskId, incoming), () => {
             if (closed || !Number.isSafeInteger(eventId) || eventId <= 0) return;
             acceptedLiveEventIds.add(eventId);
           });
@@ -680,11 +532,11 @@ export function admitTaskAppDependencies(input: {
       throw new Error(`Task result declares App dependency ${dependency.id} more than once`);
     }
     dependencyIds.add(dependency.id);
-    assertInstalledAppDependency(input.opts, input.descriptor.id, dependency);
+    assertInstalledAppDependency(input.opts, dependency);
   }
 
   const existing = (input.existingConditions ?? []).flatMap((condition) => {
-    if (condition.type !== "app.dependency.completed" || !condition.id.startsWith("app-request:")) return [];
+    if (condition.type !== "app.dependency.updated" || !condition.id.startsWith("app-request:")) return [];
     const requestId = condition.subject.startsWith("id:") ? condition.subject.slice("id:".length) : "";
     if (!requestId || condition.id !== `app-request:${requestId}`) return [];
     const item = input.opts.persistDir ? getAppInboxItem(getDb(input.opts.persistDir), requestId) : null;
@@ -712,7 +564,7 @@ export function admitTaskAppDependencies(input: {
     item,
     condition: {
       id: `app-request:${item.id}`,
-      type: "app.dependency.completed",
+      type: "app.dependency.updated",
       subject: `id:${item.id}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${item.appId}`,
@@ -801,21 +653,10 @@ export function admitTaskAppDependencies(input: {
         `Cannot classify App dependency ${dependency.id} while open request ${unresolvedExisting.requestId} is unavailable`,
       );
     }
-    const unredeclaredSameApp = existing.filter(
-      ({ item, requestId }) => item?.appId === dependency.appId && !matchedExisting.has(requestId),
-    );
-    if (unredeclaredSameApp.length > 0) {
-      throw new Error(
-        `App dependency ${dependency.id} would replace open request ${unredeclaredSameApp[0]!.requestId}; redeclare that durable request before adding distinct ${dependency.appId} work`,
-      );
-    }
-    const detachedOpen = detachedOpenFor(dependency.appId).find((item) => !matchedExisting.has(item.id));
-    if (detachedOpen) {
-      throw new Error(
-        `App dependency ${dependency.id} would replace unlinked open request ${detachedOpen.id}; redeclare that durable request before adding distinct ${dependency.appId} work`,
-      );
-    }
   }
+  // New dependencies add work. Stored waits survive omission; asking the agent
+  // to repeat them would turn continuation back into bookkeeping. Exact reuse,
+  // duplicate checks and effect fencing still protect already admitted work.
   for (let index = 0; index < newDependencies.length; index += 1) {
     const dependency = newDependencies[index]!;
     const duplicate = newDependencies
@@ -868,14 +709,18 @@ export function admitTaskAppDependencies(input: {
       },
     });
     const delivery = requested[EVENT_DELIVERY_RESULT];
-    if (!delivery) {
+    // A worker persists the input before the parent admits its relayed event.
+    // Save the exact pending wait once publication is durable; a local receipt
+    // is only available when admission runs in this process. Event recovery
+    // can redeliver that same input if the worker/parent stops between them.
+    if (!delivery && !requested[EVENT_ROW_ID]) {
       throw new Error(
-        `App dependency ${dependency.id} was not accepted by installed App ${dependency.appId}; the Task remains runnable`,
+        `App dependency ${dependency.id} was neither admitted nor durably published for App ${dependency.appId}; the Task remains runnable`,
       );
     }
     admitted.set(dependency.id, {
       id: `app-request:${requestId}`,
-      type: "app.dependency.completed",
+      type: "app.dependency.updated",
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${dependency.appId}`,
@@ -898,7 +743,7 @@ function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string)
   const resource = tree.resources?.[taskId];
   return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
     const condition = tree.conditions?.[conditionId];
-    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.completed") {
+    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.updated") {
       return [];
     }
     return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
@@ -963,14 +808,8 @@ function configuredRegistryEntries(opts: AppTaskRuntimeOptions): AppRegistrySnap
 
 function assertInstalledAppDependency(
   opts: AppTaskRuntimeOptions,
-  sourceAppId: string,
   dependency: TaskAppDependency,
 ): void {
-  if (dependency.appId === sourceAppId && !dependency.taskId) {
-    throw new Error(
-      `App dependency ${dependency.id} cannot create sibling work in its owning App ${sourceAppId}; create a direct child or name an exact existing Task`,
-    );
-  }
   const registryConfigured = Boolean(opts.appRegistrySnapshot || opts.appRegistry);
   if (!registryConfigured) return;
   const entries = configuredRegistryEntries(opts);
@@ -1080,7 +919,6 @@ async function runRegisteredTaskExecutor(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
-  defaultParentId: string;
   executionPaths: AppTaskExecutionPaths;
   declaredOutputPaths: string[];
   childContext: AppTaskChildContext;
@@ -1108,8 +946,6 @@ async function runRegisteredTaskExecutor(input: {
             { type: "done", summary: `${input.name} executor completed`, runId },
             {
               allowNeedsAgent: true,
-              defaultParentId: input.defaultParentId,
-              rootParentAliases: [input.descriptor.id, basename(input.descriptor.projectDir)],
               validateAction: input.descriptor.app.tasks?.validateAction,
               validateCondition: input.descriptor.app.tasks?.validateCondition,
             },
@@ -1343,10 +1179,6 @@ async function reconcileTask(input: {
     const config = appTaskConfig(descriptor);
     activeConfig = config;
     const claimStartedAt = performance.now();
-    const defaultParentId = config.resourceStore.rootTaskId();
-    if (!defaultParentId) {
-      throw new Error(`App ${descriptor.id} has no root task group for convention defaults`);
-    }
     const primary = claimObservedAppTask(config, {
       taskId: input.taskId,
       appAgent: descriptor.agent,
@@ -1358,25 +1190,6 @@ async function reconcileTask(input: {
     if (primary.kind !== "claimed") {
       if (primary.kind === "busy") {
         const active = primary.attemptId ? config.resourceStore.readAttempt(primary.attemptId) : null;
-        const terminalSession = active?.sessionId && opts.persistDir ? opts.sessions?.read(active.sessionId) : null;
-        if (active?.sessionId && terminalSession?.status === "done" && !hasLiveAppTaskSession(opts, active.sessionId)) {
-          const settledTaskIds = settlePersistedTerminalAgentResult({
-            opts,
-            config,
-            descriptor,
-            taskId: input.taskId,
-            sessionId: active.sessionId,
-            onRejected: (error) => {
-              opts.bus.emit({
-                type: "info",
-                message: `[app-task:${descriptor.id}] Rejected terminal result for ${input.taskId}; the task will be retried: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
-              });
-            },
-          });
-          if (settledTaskIds) return settledTaskIds;
-        }
         const leaseCheckAt = Date.now();
         const sessionActivity =
           active?.sessionId && opts.persistDir
@@ -1393,6 +1206,9 @@ async function reconcileTask(input: {
             ? session.status
             : null;
         if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+          // A session artifact is evidence, not an accepted Task result. Drain
+          // the exact old execution before retrying through normal settlement.
+          interruptSupersededAgentSession(opts, sessionId, "Retrying an uncommitted Task attempt", input.taskId);
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
             config,
             { ...expired, sessionId, terminalStatus },
@@ -1428,7 +1244,6 @@ async function reconcileTask(input: {
         route: "task-controller",
         ...skip,
       });
-      if (primary.kind === "attention") emitAppTaskDependencyChange(opts, descriptor, input.taskId, "attention");
       return primary.kind === "attention" && primary.parentTaskId ? [primary.parentTaskId] : [];
     }
     activeClaim = primary;
@@ -1443,6 +1258,7 @@ async function reconcileTask(input: {
       );
     }
     const intent = primary.intent;
+    const conversation = isConversationTask(config, primary.taskId);
     const event = primary.trigger as EventEnvelope | undefined;
     const contextStartedAt = performance.now();
     const childContext = readAppTaskChildContext(config, primary.taskId);
@@ -1510,7 +1326,7 @@ async function reconcileTask(input: {
       workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
     // Both execution paths share workspace lineage, admission fencing, and
     // failure handling. Only the workflow may override the App's base branch.
-    if (workflowNeedsWorktree || (executorKey && descriptor.app.workspace?.kind === "git")) {
+    if (!conversation && (workflowNeedsWorktree || (executorKey && descriptor.app.workspace?.kind === "git"))) {
       try {
         if (descriptor.app.workspace?.kind !== "git") {
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
@@ -1554,7 +1370,60 @@ async function reconcileTask(input: {
         };
       }
     }
-    if (workflowKey) {
+    if (conversation) {
+      primaryResult = await runTaskExecutorAttempt({
+        opts,
+        descriptor,
+        claim: primary,
+        executionPaths,
+        declaredOutputPaths,
+        childContext,
+        event,
+        execute: async (attempt) => {
+          if (!descriptor.app.requests || !opts.conversations)
+            throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
+          const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
+          if (!registry) throw new Error("Conversation execution requires an installed App registry");
+          try {
+            observer.providerStarted(0);
+            const proposal = await opts.conversations.execute({
+              config,
+              claim: primary,
+              app: descriptor.app,
+              registry,
+              signal: attempt.signal,
+              getTaskApp(appId) {
+                const entry = registry.entries.find(({ definition }) => definition.id === appId);
+                if (!entry?.definition.tasks || !opts.persistDir)
+                  throw new Error(`App ${appId} has no installed Task capability`);
+                const target = appId === descriptor.id
+                  ? descriptor
+                  : standaloneAppTaskAdmissionDescriptors({
+                      persistDir: opts.persistDir,
+                      projectsRoot: opts.projectsRoot,
+                      entries: [entry],
+                    }).get(appId)!;
+                return { app: target.app, config: appTaskConfig(target) };
+              },
+            });
+            return {
+              handlerResult: {
+                state: "converged",
+                summary: proposal.decision.summary,
+                response: proposal.decision.response,
+                result: { conversation: proposal.decision },
+                evidence: proposal.decision.evidence ?? [],
+                actions: [],
+              },
+              runId: primary.attemptId,
+              conversation: proposal,
+            };
+          } finally {
+            observer.providerFinished();
+          }
+        },
+      });
+    } else if (workflowKey) {
       primaryResult ??= await runTaskCapability({
         opts,
         descriptor,
@@ -1564,7 +1433,6 @@ async function reconcileTask(input: {
           task: `Reconcile task through workflow ${workflowKey}`,
         },
         claim: primary,
-        defaultParentId,
         executionPaths,
         declaredOutputPaths,
         childContext,
@@ -1588,7 +1456,6 @@ async function reconcileTask(input: {
           opts,
           descriptor,
           claim: primary,
-          defaultParentId,
           executionPaths,
           declaredOutputPaths,
           childContext,
@@ -1635,7 +1502,6 @@ async function reconcileTask(input: {
           opts,
           descriptor,
           claim: primary,
-          defaultParentId,
           executionPaths,
           declaredOutputPaths,
           childContext,
@@ -1732,7 +1598,6 @@ async function reconcileTask(input: {
           summary: applied.summary ?? primaryHandlerResult.summary,
           evidence,
         });
-        if (applied.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, "stopped");
         return staleResult?.reconcileTaskIds ?? (applied.parentTaskId ? [applied.parentTaskId] : []);
       } catch (error) {
         const staleResult = rejectStaleEffect(error);
@@ -1788,17 +1653,23 @@ async function reconcileTask(input: {
       }
       if (primaryHandlerResult.state === "converged" && acceptanceBasis) {
         try {
-          const apply = persistResult(() =>
-            completeAppTask(config, primary, {
-              summary: primaryHandlerResult.summary,
-              response: primaryHandlerResult.response,
-              result: primaryHandlerResult.result,
-              evidence: primaryHandlerResult.evidence,
-              actions: primaryHandlerResult.actions,
-              acceptanceBasis,
-              acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-              prepareSupersededSessions,
-            }),
+          const apply: ReturnType<typeof completeConversationTaskTurn> = persistResult(() =>
+            primaryResult.conversation
+              ? completeConversationTaskTurn(config, primary, primaryResult.conversation.decision, {
+                  followUp: primaryResult.conversation.followUp,
+                  taskControls: primaryResult.conversation.taskControls,
+                  acceptanceBasis,
+                })
+              : completeAppTask(config, primary, {
+                  summary: primaryHandlerResult.summary,
+                  response: primaryHandlerResult.response,
+                  result: primaryHandlerResult.result,
+                  evidence: primaryHandlerResult.evidence,
+                  actions: primaryHandlerResult.actions,
+                  acceptanceBasis,
+                  acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
+                  prepareSupersededSessions,
+                }),
           );
           const appliedDisposition = taskCompletionDisposition(
             primary.taskId,
@@ -1827,7 +1698,20 @@ async function reconcileTask(input: {
             ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
             workflowRunId: primaryResult.runId,
           });
-          if (apply.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, appliedDisposition);
+          for (const cancelled of apply.cancelledTasks ?? []) publishTaskCancellation(opts.bus, cancelled);
+          if (apply.admittedTasks) {
+            for (const admitted of apply.admittedTasks) {
+              // This post-commit hint also crosses the existing worker event
+              // bridge. Durable readiness remains the recovery authority.
+              opts.bus.emit({
+                type: "app.task.ready",
+                source: `app-task:${descriptor.id}:task-reconciler`,
+                owner: `app:${descriptor.id}`,
+                target: admitted,
+                data: admitted,
+              });
+            }
+          }
           return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
         } catch (error) {
           if (cleanupFailed) throw error;
@@ -1934,14 +1818,13 @@ async function reconcileTask(input: {
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
           workflowRunId: primaryResult.runId,
         });
-        const replayedTaskIds =
+        const recoveredTaskIds =
           apply.status === "applied"
-            ? replayPersistedConditionEvents(opts, descriptor, config, {
+            ? recoverTaskConditions(opts, descriptor, config, {
                 conditionIds: primaryHandlerResult.conditions?.map((condition) => condition.id),
               })
             : [];
-        if (apply.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, "waiting");
-        return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...replayedTaskIds])];
+        return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...recoveredTaskIds])];
       } catch (error) {
         if (cleanupFailed) throw error;
         const stale = recoverStaleTaskActionResult(config, primary, error);
@@ -1985,11 +1868,8 @@ async function reconcileTask(input: {
         input: intent.input ?? {},
         summary: retry.summary,
       });
-      if (retry.status === "attention") {
-        emitAppTaskDependencyChange(opts, descriptor, intent.id, "attention");
-        return retry.parentTaskId ? [retry.parentTaskId] : [];
-      }
-      throw new Error(primaryHandlerResult.summary);
+      // The persisted deadline and existing recovery scheduler own the retry.
+      return retry.parentTaskId ? [retry.parentTaskId] : [];
     }
     let attention: ReturnType<typeof markAppTaskAttention>;
     try {
@@ -2020,7 +1900,6 @@ async function reconcileTask(input: {
       if (!stale) throw error;
       return stale.reconcileTaskIds;
     }
-    if (attention.status === "applied") emitAppTaskDependencyChange(opts, descriptor, intent.id, "attention");
     if (!agentHandoff) {
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,
@@ -2047,7 +1926,7 @@ async function reconcileTask(input: {
     return [intent.id];
   } catch (error) {
     // Cleanup refusal is not a failed execution or rejected result. Preserve
-    // the original claim so recovery can settle its saved result without redo.
+    // the original claim until recovery can drain execution and retry safely.
     if (cleanupFailed) {
       timing.outcome = "failed";
       throw error;
@@ -2084,26 +1963,27 @@ async function reconcileTask(input: {
       }`;
       try {
         const retry = persistResult(() => failAppTaskAttempt(failedConfig, failedClaim, summary));
-        if (retry.status !== "superseded") {
-          emitTaskReconciliationEvent(
-            opts,
-            descriptor,
-            failedClaim.trigger as EventEnvelope | undefined,
-            "project.task.reconciled",
-            failedClaim.taskId,
-            {
-              generation: failedClaim.generation,
-              attemptId: failedClaim.attemptId,
-              handler: failedClaim.handler,
-              disposition: retry.status,
-              summary: retry.summary,
-            },
-          );
-          if (retry.status === "attention") {
-            emitAppTaskDependencyChange(opts, descriptor, failedClaim.taskId, "attention");
-            return retry.parentTaskId ? [retry.parentTaskId] : [];
-          }
+        if (retry.status === "superseded") {
+          // The stored owner decision already ended this attempt. Its late
+          // executor error must not become a dispatch failure or another retry.
+          timing.outcome = "completed";
+          return [];
         }
+        emitTaskReconciliationEvent(
+          opts,
+          descriptor,
+          failedClaim.trigger as EventEnvelope | undefined,
+          "project.task.reconciled",
+          failedClaim.taskId,
+          {
+            generation: failedClaim.generation,
+            attemptId: failedClaim.attemptId,
+            handler: failedClaim.handler,
+            disposition: retry.status,
+            summary: retry.summary,
+          },
+        );
+        return retry.parentTaskId ? [retry.parentTaskId] : [];
       } catch {
         // Preserve the original failure. Recovery still fences attempts whose
         // persistence boundary itself is unavailable.
@@ -2142,13 +2022,6 @@ function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, n
   };
 }
 
-function appDependencyUpdateSubject(event: Record<string, unknown>): string | null {
-  if (event.type !== "app.dependency.updated") return null;
-  const data = isRecord(event.data) ? event.data : {};
-  const id = data.kind === "app" && typeof data.id === "string" ? data.id.trim() : "";
-  return id ? `id:${id}` : null;
-}
-
 function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
   const containers = [event, isRecord(event.target) ? event.target : {}, isRecord(event.data) ? event.data : {}];
   const values = new Map<string, string>();
@@ -2178,25 +2051,6 @@ function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
   return [...candidates];
 }
 
-function appDependencyUpdateWakeTaskIds(
-  config: AppTaskContext,
-  event: Record<string, unknown>,
-  allowedTaskIds?: Iterable<string>,
-): string[] {
-  const subject = appDependencyUpdateSubject(event);
-  if (!subject) return [];
-  const allowed = allowedTaskIds ? new Set(allowedTaskIds) : null;
-  const routes = config.resourceStore.readConditionRoutes("app.dependency.completed");
-  return [
-    ...new Set(
-      routes
-        .filter(({ condition }) => condition.spec.subject === subject)
-        .flatMap(({ taskIds }) => taskIds)
-        .filter((taskId) => !allowed || allowed.has(taskId)),
-    ),
-  ].sort();
-}
-
 type AppTaskAdmissionResult = {
   delivery?: DeliveryResult;
   taskIds: string[];
@@ -2219,18 +2073,10 @@ function admitResolvedAppTaskEvent(input: {
     ...new Set((input.conditionTaskIds ?? []).map((taskId) => taskId.trim()).filter(Boolean)),
   ];
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
-  const dependencyUpdateWakes = appDependencyUpdateWakeTaskIds(config, event, selectedConditionTaskIds).flatMap(
-    (taskId) => {
-      const wake = recordAppTaskTrigger(config, taskId, event);
-      return wake.kind === "recorded" ? [taskId] : [];
-    },
-  );
+  const wokenTaskIds = new Set(conditionWakes.map((wake) => wake.taskId));
   if (controller) {
-    for (const taskId of new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes])) {
-      enqueueAppTask(controller, config, taskId, { promote: true });
-    }
+    for (const taskId of wokenTaskIds) enqueueAppTask(controller, config, taskId, { promote: true });
   }
-  const wokenTaskIds = new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes]);
   // A frozen Condition route is idempotent admission authority. On recovery,
   // its task may already have consumed the fact or left its wait. Accept that
   // no-op instead of retrying the immutable plan forever. Exact targets with
@@ -2238,13 +2084,8 @@ function admitResolvedAppTaskEvent(input: {
   const conditionDelivery = selectedConditionTaskIds.length
     ? appTaskDelivery(
         descriptor,
-        (conditionWakes.length || dependencyUpdateWakes.length
-          ? [...new Set([...conditionWakes.map((wake) => wake.taskId), ...dependencyUpdateWakes])]
-          : selectedConditionTaskIds
-        ).join(","),
-        conditionWakes.length || dependencyUpdateWakes.length
-          ? "task dependency event accepted"
-          : "task dependency event already observed",
+        (wokenTaskIds.size ? [...wokenTaskIds] : selectedConditionTaskIds).join(","),
+        wokenTaskIds.size ? "task dependency event accepted" : "task dependency event already observed",
       )
     : undefined;
   if (targetedTaskId) {
@@ -2351,7 +2192,7 @@ export function wakeLoadedAppTasks(input: {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
-  if (!descriptor?.app.tasks || !controller || descriptor.reconciliationPaused) return;
+  if (!descriptor || !controller) return;
   const config = appTaskConfig(descriptor);
   const opts = appRouterOptionsByBus.get(input.bus);
   const admittedTaskId = input.taskIds.at(-1);
@@ -2365,6 +2206,81 @@ export function wakeLoadedAppTasks(input: {
   for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
     enqueueAppTask(controller, config, taskId, { promote: true });
   }
+}
+
+/** Normal Conversation admission uses a conventional Task, never an inbox execution lease. */
+export function admitLoadedConversationInput(input: {
+  bus: EventBus;
+  item: CreateAppInboxItem & { conversationId: string };
+}) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.item.appId);
+  const requests = descriptor?.app.requests;
+  if (!descriptor || !requests || (requests.inputKinds && !requests.inputKinds.includes(input.item.input.kind)))
+    throw new Error(`App ${input.item.appId} has no loaded Conversation capability for this input`);
+  if (!Check(descriptor.app.inputSchema, input.item.input)) throw new Error("Invalid Conversation input");
+  const config = appTaskConfig(descriptor);
+  const admitted = admitConversationTaskInput(config, {
+    ...input.item,
+    intent: conversationTaskIntent(config),
+    conversationInputKinds: requests.inputKinds,
+  });
+  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
+  return admitted;
+}
+
+export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTurnTarget }) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.target.appId);
+  if (!descriptor?.app.requests) throw new Error("Conversation runtime is unavailable");
+  const result = stopConversationTaskTurn(appTaskConfig(descriptor), input.target);
+  input.bus.emit({
+    type: "app.task.attempt.stopped",
+    source: "app-task-reconciler",
+    owner: "human:operator",
+    target: { appId: descriptor.id, taskId: result.taskId },
+    data: {
+      appId: descriptor.id,
+      taskId: result.taskId,
+      attemptId: input.target.turnId,
+      reason: "Human stopped this turn",
+    },
+  });
+  input.bus.emit({
+    type: "conversation.updated",
+    source: "app-task-reconciler",
+    owner: `app:${descriptor.id}`,
+    data: { appId: descriptor.id, conversationId: input.target.conversationId },
+  });
+  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [result.taskId] });
+  return result;
+}
+
+/** Notification text is a hint. Only the exact stored outcome or closure can become input. */
+export function admitLoadedConversationChange(input: ConversationTaskChangeRef & { bus: EventBus }) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  const taskId = conversationTaskId(input.appId, input.conversationId);
+  if (!descriptor || !descriptor.resourceStore.readTask(taskId)) return null;
+  if (!descriptor.app.requests) return { taskId, created: false };
+  const source = AppTaskResourceStore.activeFromDb(descriptor.resourceStore.db, input.taskAppId);
+  if (
+    descriptor.resourceStore.isCancelled(taskId) ||
+    (input.taskAppId === descriptor.id && input.taskId === taskId) ||
+    !source
+  )
+    return { taskId, created: false };
+  if (input.attemptId !== undefined) {
+    const attempt = source.readAttempt(input.attemptId);
+    if (attempt?.taskId !== input.taskId || !attempt.acceptedResult || attempt.acceptedResult.state === "waiting")
+      return { taskId, created: false };
+  } else if (source.readCancellation(input.taskId)?.generation !== input.closedGeneration)
+    return { taskId, created: false };
+  const admitted = admitConversationTaskChange(
+    appTaskConfig(descriptor),
+    { resourceStore: source },
+    input,
+    descriptor.app.requests.inputKinds,
+  );
+  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
+  return { taskId: admitted.taskId, created: admitted.created };
 }
 
 /** Bounded exact-identity check used before asynchronously admitting feedback. */
@@ -2394,7 +2310,6 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   const descriptors = (appRouterDescriptorsByBus.get(input.bus) ?? []).filter((descriptor) => descriptor.app.tasks);
   if (descriptors.length === 0) return [];
   const event = canonicalTaskEvent(input.event);
-  const updateSubject = appDependencyUpdateSubject(event);
   const subjects = conditionSubjectCandidates(event);
   const matchesByApp = new Map<string, Set<string>>();
   const loadedApps = new Set(descriptors.map((descriptor) => descriptor.id));
@@ -2405,20 +2320,12 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
     for (const taskId of route.taskIds) taskIds.add(taskId);
     matchesByApp.set(route.appId, taskIds);
   }
-  if (updateSubject) {
-    for (const route of store.readConditionRoutesForAllApps("app.dependency.completed", [updateSubject])) {
-      if (!loadedApps.has(route.appId) || route.condition.spec.subject !== updateSubject) continue;
-      const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
-      for (const taskId of route.taskIds) taskIds.add(taskId);
-      matchesByApp.set(route.appId, taskIds);
-    }
-  }
   return [...matchesByApp]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([appId, taskIds]) => ({ appId, taskIds: [...taskIds].sort() }));
 }
 
-function replayPersistedConditionEvents(
+function recoverTaskConditions(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
   config: AppTaskContext,
@@ -2474,12 +2381,38 @@ function replayPersistedConditionEvents(
     }
   }
 
+  // A feedback notification can be lost before it reaches the journal.
+  // Read each wait's exact saved answer or first report, not a later Task result.
+  // Use the normal Condition transition and trigger.
   const allowed = new Set(resourceScope.taskIds);
+  const recoveredTaskIds = new Set<string>();
+  if (eventTypes.includes("app.dependency.updated")) {
+    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated")) {
+      if (input.conditionIds && !input.conditionIds.includes(condition.metadata.id)) continue;
+      if (!condition.spec.subject.startsWith("id:")) continue;
+      const item = getAppInboxItem(db, condition.spec.subject.slice(3));
+      if (!item || item.source.kind !== "app" || item.source.id !== descriptor.id) continue;
+      const source = AppTaskResourceStore.activeFromDb(db, item.appId);
+      const report = item.status !== "done" && item.taskAdmissionKey && item.waitingOn?.kind === "task" &&
+        source && !source.isCancelled(item.waitingOn.id)
+        ? readAppTaskAdmissionOutcome({ resourceStore: source }, item.waitingOn.id, item.taskAdmissionKey, "report") : null;
+      const result = item.status === "done" ? item.result : report;
+      if (!result) continue;
+      const event = appInputFeedbackEvent(item, result, item.status === "done" ? "done" : "blocked")!;
+      if (!matchesAppTaskCondition(condition, event)) continue;
+      for (const wake of trackAppTaskConditionEventForTasks(
+        config,
+        event,
+        taskIds.filter((id) => allowed.has(id)),
+      ))
+        recoveredTaskIds.add(wake.taskId);
+    }
+  }
   const wakes = events.flatMap((event) => {
     const taskIds = matchingAppTaskConditionTaskIds(config, event).filter((taskId) => allowed.has(taskId));
     return trackAppTaskConditionEventForTasks(config, event, taskIds);
   });
-  return [...new Set(wakes.map((wake) => wake.taskId))];
+  return [...new Set([...recoveredTaskIds, ...wakes.map((wake) => wake.taskId)])];
 }
 
 function installConventionTaskControllers(
@@ -2500,9 +2433,7 @@ function installConventionTaskControllers(
   const recoverySchedulers =
     appTaskRecoverySchedulersByBus.get(opts.bus) ?? new Map<string, AppTaskRecoveryScheduler>();
   const bindings = appTaskControllerBindingsByBus.get(opts.bus) ?? new Map<string, AppTaskControllerBinding>();
-  const installedIds = new Set(
-    descriptors.filter((descriptor) => descriptor.app.tasks).map((descriptor) => descriptor.id),
-  );
+  const installedIds = new Set(descriptors.map((descriptor) => descriptor.id));
   for (const previous of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
     if (installedIds.has(previous.id)) continue;
     if (previous.resourceStore.hasUnfinishedTasks()) {
@@ -2511,8 +2442,6 @@ function installConventionTaskControllers(
   }
 
   for (const descriptor of descriptors) {
-    const tasks = descriptor.app.tasks;
-    if (!tasks) continue;
     const existingController = controllers.get(descriptor.id);
     const existingBinding = bindings.get(descriptor.id);
     if (existingController && existingBinding) {
@@ -2521,43 +2450,51 @@ function installConventionTaskControllers(
       existingBinding.descriptor = descriptor;
       existingBinding.opts = opts;
       existingController.updateMaxConcurrent(descriptor.app.tasks?.maxConcurrent ?? 1);
-      existingController.setEnabled(!descriptor.reconciliationPaused);
+      // Eligibility is read from current storage per Task, including while paused.
+      existingController.setEnabled(true);
       continue;
     }
-    if (descriptor.reconciliationPaused) continue;
 
     const binding: AppTaskControllerBinding = { descriptor, opts };
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
+      readScheduling: () => ({
+        backgroundPaused: binding.descriptor.resourceStore.projectLifecycle() !== "active",
+        foregroundTaskIds: binding.descriptor.app.requests
+          ? binding.descriptor.resourceStore.pendingHumanConversationTaskIds()
+          : new Set(),
+      }),
       startAfter: opts.startAfter,
-      maxRetries: MAX_TASK_EXECUTION_FAILURES - 1,
       reconcile: async (taskId, dispatch) => {
         const activeDescriptor = binding.descriptor;
         const activeOpts = binding.opts;
         const config = appTaskConfig(activeDescriptor);
-        const dependentTaskIds = activeOpts.executeAttempt
-          ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
-          : await reconcileTask({
-              opts: activeOpts,
-              descriptor: activeDescriptor,
-              taskId,
-              dispatch,
-              reason: "task-controller",
+        try {
+          const dependentTaskIds = activeOpts.executeAttempt
+            ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
+            : await reconcileTask({
+                opts: activeOpts,
+                descriptor: activeDescriptor,
+                taskId,
+                dispatch,
+                reason: "task-controller",
+              });
+          const dependentEntries = new Map(
+            appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
+          );
+          for (const dependentTaskId of dependentTaskIds) {
+            // A same-task result is an immediate continuation, such as a
+            // workflow-to-agent handoff. Other children/dependents enter the
+            // priority-ordered ordinary lane so continuation bursts stay bounded.
+            controller.enqueue(dependentTaskId, {
+              promote: dependentTaskId === taskId,
+              priority: dependentEntries.get(dependentTaskId)?.options.priority,
             });
-        const dependentEntries = new Map(
-          appTaskQueueEntries(config, dependentTaskIds).map((entry) => [entry.taskId, entry]),
-        );
-        for (const dependentTaskId of dependentTaskIds) {
-          // A same-task result is an immediate continuation, such as a
-          // workflow-to-agent handoff. Other children/dependents enter the
-          // priority-ordered ordinary lane so continuation bursts stay bounded.
-          controller.enqueue(dependentTaskId, {
-            promote: dependentTaskId === taskId,
-            priority: dependentEntries.get(dependentTaskId)?.options.priority,
-          });
+          }
+        } finally {
+          binding.recoveryScheduler?.stateChanged();
         }
-        binding.recoveryScheduler?.stateChanged();
       },
       onError: (taskId, error, willRetry) => {
         const activeDescriptor = binding.descriptor;
@@ -2618,7 +2555,7 @@ export async function reconcileLoadedAppTaskOnce(input: {
 }): Promise<string[]> {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   const opts = appRouterOptionsByBus.get(input.bus);
-  if (!descriptor?.app.tasks || !opts) {
+  if (!descriptor || !opts) {
     throw new Error(`App ${input.appId} has no loaded Task runtime`);
   }
   return reconcileTask({
@@ -2673,7 +2610,7 @@ export function retryLoadedFailedAppTask(input: {
     throw new Error("App Task retry requires a positive integer expectedResourceVersion");
   }
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
-  if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
+  if (!descriptor) throw new Error(`App ${appId} has no loaded task runtime`);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
   if (!controller || descriptor.reconciliationPaused) {
     throw new Error(`App ${appId} task reconciliation is unavailable`);
@@ -2709,7 +2646,7 @@ export function cancelLoadedAppTask(input: {
     throw new Error("App Task cancellation requires a positive integer expectedResourceVersion");
   }
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
-  if (!descriptor?.app.tasks) throw new Error(`App ${appId} has no loaded task runtime`);
+  if (!descriptor) throw new Error(`App ${appId} has no loaded task runtime`);
   const result = cancelAppTask(appTaskConfig(descriptor), {
     appId,
     taskId,
@@ -2718,9 +2655,23 @@ export function cancelLoadedAppTask(input: {
     reason: input.reason,
     ...(input.controlKey ? { controlKey: input.controlKey } : {}),
   });
+  publishTaskCancellation(input.bus, result);
+  return result;
+}
+
+/** Publish only after the caller's complete state transaction has committed. */
+function publishTaskCancellation(bus: EventBus, result: ReturnType<typeof cancelAppTask>): void {
   if (result.applied) {
-    if (result.parentTaskId) wakeLoadedAppTasks({ bus: input.bus, appId, taskIds: [result.parentTaskId] });
-    input.bus.emit({
+    const { appId, taskId } = result.cancellation;
+    if (result.parentTaskId)
+      bus.emit({
+        type: "app.task.ready",
+        source: "app-task-reconciler",
+        owner: "human:operator",
+        target: { appId, taskId: result.parentTaskId },
+        data: { appId, taskId: result.parentTaskId },
+      });
+    bus.emit({
       type: "app.task.cancelled",
       source: "app-task-reconciler",
       owner: "human:operator",
@@ -2728,18 +2679,12 @@ export function cancelLoadedAppTask(input: {
       data: {
         appId,
         taskId,
+        generation: result.cancellation.generation,
         ...(result.cancelledAttemptId ? { attemptId: result.cancelledAttemptId } : {}),
         reason: result.cancellation.reason,
       },
     });
-    input.bus.emit({
-      type: "app.dependency.updated",
-      source: "app-task-reconciler",
-      owner: "human:operator",
-      data: { kind: "task", id: taskId, appId },
-    });
   }
-  return result;
 }
 
 function enqueueAppTask(
@@ -2784,13 +2729,13 @@ export function attachLoadedAppTask(input: {
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   request: Readonly<AppInputContext>;
-  /** Inbox calls attach atomically; direct Task admission has no request claim. */
-  claim?: AppInboxClaim;
+  /** Persist the exact input return link with admission. */
+  inboxInputId?: string;
   now?: number;
   authorize?: () => void;
   topicId?: string;
   requestLink?: { appId: string; conversationId: string; id: string; revision: number };
-}): { taskId: string; isComplete: () => Promise<boolean> } {
+}): { taskId: string } {
   const normalizedAppDir = resolve(input.appDir);
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find(
     (candidate) => resolve(candidate.appDir) === normalizedAppDir,
@@ -2811,21 +2756,26 @@ export function attachLoadedAppTask(input: {
   const config = appTaskConfig(descriptor);
   const humanRequested = input.request.source.kind === "human" || input.request.humanRequested === true;
 
-  const observation = input.claim
-    ? attachRequestToTask(config, { ...input, claim: input.claim })
-    : admitTaskRequest(config, input);
+  const observation = admitTaskRequest(config, input);
   interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       lane: humanRequested ? "human" : "normal",
     });
   }
-  return {
-    taskId: observation.taskId,
-    isComplete: async () =>
-      isAppTaskConverged(config, observation.taskId, observation.generation) &&
-      !readAppTaskTrigger(config, observation.taskId),
-  };
+  return { taskId: observation.taskId };
+}
+
+/** Read one input's accepted answer without using a later Task cycle's result. */
+export function readLoadedAppTaskInputResult(input: {
+  bus: EventBus; appDir: string; taskId: string; admissionKey: string;
+  kind?: "answer" | "report";
+}) {
+  const appDir = resolve(input.appDir);
+  const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((entry) => resolve(entry.appDir) === appDir);
+  return descriptor
+    ? readAppTaskAdmissionOutcome(appTaskConfig(descriptor), input.taskId, input.admissionKey, input.kind)
+    : null;
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
@@ -2952,20 +2902,6 @@ export function publishLoadedAppTaskEvent(input: {
   }).publish(input.localKey, input.event);
 }
 
-function emitAppTaskDependencyChange(
-  opts: AppTaskRuntimeOptions,
-  descriptor: AppTaskRuntimeDescriptor,
-  taskId: string,
-  disposition: ReturnType<typeof taskCompletionDisposition> | "waiting" | "attention" | "stopped",
-): void {
-  opts.bus.emit({
-    type: disposition === "converged" ? "app.dependency.completed" : "app.dependency.updated",
-    source: `app-task:${descriptor.id}:task-reconciler`,
-    owner: `agent:${descriptor.agent}`,
-    data: { kind: "task", id: taskId, appId: descriptor.id },
-  });
-}
-
 function recoverInterruptedAppTasks(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
@@ -2973,7 +2909,6 @@ function recoverInterruptedAppTasks(
   includeFreshLeases = false,
 ): void {
   for (const descriptor of descriptors) {
-    if (!descriptor.app.tasks) continue;
     const controller = controllers.get(descriptor.id);
     const config = appTaskConfig(descriptor);
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
@@ -3000,30 +2935,6 @@ function recoverInterruptedAppTasks(
     for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases, runningRecoveryTaskIds)) {
       if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
         continue;
-      }
-      const persistedSession = recovery.sessionId && opts.persistDir ? opts.sessions?.read(recovery.sessionId) : null;
-      if (recovery.sessionId && persistedSession?.status === "done") {
-        let rejection: string | undefined;
-        const settledTaskIds = settlePersistedTerminalAgentResult({
-          opts,
-          config,
-          descriptor,
-          taskId: recovery.taskId,
-          sessionId: recovery.sessionId,
-          onRejected: (error) => {
-            rejection = error instanceof Error ? error.message : String(error);
-          },
-        });
-        if (settledTaskIds) {
-          for (const taskId of settledTaskIds) {
-            if (controller && !descriptor.reconciliationPaused) enqueueAppTask(controller, config, taskId);
-          }
-          continue;
-        }
-        if (rejection) {
-          releaseRecovery(recovery, `Rejected terminal result for ${recovery.taskId}: ${rejection}`);
-          continue;
-        }
       }
       releaseRecovery(recovery);
     }
@@ -3067,7 +2978,7 @@ function recoverInterruptedAppTasks(
         }
       }
     }
-    for (const taskId of replayPersistedConditionEvents(opts, descriptor, config)) {
+    for (const taskId of recoverTaskConditions(opts, descriptor, config)) {
       if (controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, taskId, { promote: true });
       }
@@ -3085,77 +2996,19 @@ export async function recoverInstalledAppTasks(
   bus: EventBus,
   isDefinitionCurrent: () => boolean = () => true,
 ): Promise<void> {
+  if (!isDefinitionCurrent()) return;
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
   if (opts.executeRecovery) {
     await opts.executeRecovery();
+    if (!isDefinitionCurrent()) return;
     for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
     return;
   }
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);
-  await requeueAvailableAppTaskHandlers(opts, descriptors, controllers, isDefinitionCurrent);
-}
-
-async function requeueAvailableAppTaskHandlers(
-  opts: AppTaskRuntimeOptions,
-  descriptors: AppTaskRuntimeDescriptor[],
-  controllers: Map<string, AppTaskController>,
-  isDefinitionCurrent: () => boolean = () => true,
-): Promise<void> {
-  for (const descriptor of descriptors) {
-    const controller = controllers.get(descriptor.id);
-    if (!descriptor.app.tasks || descriptor.reconciliationPaused) continue;
-    const config = appTaskConfig(descriptor);
-    const available = createTaskHandlerAvailability({
-      executors: opts.executors,
-      agentAvailable: (agent) => opts.agents?.available(agent) ?? false,
-      inspectWorkflow: opts.workflows
-        ? async (agent, workflow) =>
-            (await opts.workflows!.inspect({ source: opts, appDir: descriptor.appDir, agent, workflow })).available
-        : undefined,
-    });
-    await recoverUnavailableTaskHandlers({
-      config,
-      isAvailable: async (candidate) => {
-        if (!(await available(candidate))) return false;
-        // An agent handoff still requires its originating workflow verifier.
-        // Missing verification must not become agent-only completion on reload.
-        if (candidate.handler.startsWith("agent:") || candidate.handler.startsWith("owner:")) {
-          const workflow = config.resourceStore.readTask(candidate.taskId)?.spec.workflow;
-          if (workflow) {
-            const inspected = await opts.workflows?.inspect({
-              source: opts,
-              appDir: descriptor.appDir,
-              agent: candidate.agent,
-              workflow,
-            });
-            return Boolean(inspected?.available && inspected.verifier);
-          }
-        }
-        return true;
-      },
-      isCurrent: () => appRouterOptionsByBus.get(opts.bus) === opts && isDefinitionCurrent(),
-      onRecovered: (candidate) => {
-        // Isolated recovery repairs readiness without installing controllers;
-        // the parent discovers the pending Task through its normal recovery pass.
-        if (controller) enqueueAppTask(controller, config, candidate.taskId);
-        opts.bus.emit({
-          type: "project.task.handler.recovered",
-          source: `app-task:${descriptor.id}:task-recovery`,
-          owner: `agent:${candidate.agent}`,
-          target: { appId: descriptor.id },
-          data: {
-            project: descriptor.id,
-            taskId: candidate.taskId,
-            handler: candidate.handler,
-            reason: "handler-binding-available",
-          },
-        } as unknown as AgentEvent);
-      },
-    });
-  }
+  for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
 }
 
 function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskRuntimeDescriptor[]): void {
@@ -3170,6 +3023,12 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
   const bus = opts.bus;
   bus.listen(
     (rawEvent): void => {
+      if (rawEvent.type === "app.task.ready") {
+        const data = eventData(rawEvent) as Record<string, unknown>;
+        if (typeof data.appId === "string" && typeof data.taskId === "string")
+          wakeLoadedAppTasks({ bus, appId: data.appId, taskIds: [data.taskId] });
+        return;
+      }
       if (rawEvent.type !== "session.start" && rawEvent.type !== "session.end") return;
       // The listener outlives reloads and close/reinstall. Read adapters from
       // the same published generation as the descriptors for this event.
@@ -3183,7 +3042,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
         const descriptor = (appRouterDescriptorsByBus.get(opts.bus) ?? []).find(
           (candidate) => candidate.id === sessionBinding.appId,
         );
-        if (descriptor?.app.tasks) {
+        if (descriptor) {
           const association = associateAppTaskSession(appTaskConfig(descriptor), sessionBinding, startedSessionId);
           if (association.status !== "recorded") {
             interruptSupersededAgentSession(
@@ -3229,12 +3088,9 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
         if (descriptor.reconciliationPaused) continue;
         const taskController = appTaskControllersByBus.get(opts.bus)?.get(descriptor.id);
-        if (successfulAgent && hasTaskRecoveryScope && taskController && descriptor.app.tasks) {
-          // A terminal task session can repair only attempts in its own App.
-          // Avoid synchronously loading every unrelated App's task tree on each
-          // session.end; large canonical trees otherwise block control traffic.
-          // Legacy sessions with no binding or project identity keep the
-          // conservative all-App scan used before project scoping existed.
+        if (successfulAgent && hasTaskRecoveryScope && taskController) {
+          // A terminal session wakes only its bound Task. Task retries use
+          // durable eligibility, never another session's success as permission.
           if (successfulAgent.appId && successfulAgent.appId !== descriptor.id) continue;
           const config = appTaskConfig(descriptor);
           if (
@@ -3264,49 +3120,6 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
               } as unknown as AgentEvent);
             }
           }
-          for (const candidate of listHandlerExecutionFailedAppTasks(
-            config,
-            config.resourceStore.listHandlerExecutionRecoveryTaskIds(successfulAgent.agent, 512),
-          )) {
-            if (candidate.agent !== successfulAgent.agent) continue;
-            if (
-              !taskRecoverySessionScopesMatch(descriptor.id, opts.sessions, candidate.sessionId, {
-                binding: successfulAgent.binding,
-                workflowRunId: successfulAgent.workflowRunId,
-              })
-            ) {
-              continue;
-            }
-            const legacySession = candidate.failureReason === "handler-blocked" ? candidate.sessionId : undefined;
-            const allowLegacyHandlerBlocked = Boolean(
-              legacySession && opts.persistDir && opts.sessions?.read(legacySession)?.status === "error",
-            );
-            if (
-              !releaseHandlerExecutionFailedAppTask(config, candidate.taskId, {
-                agent: successfulAgent.agent,
-                sessionId: successfulAgent.sessionId,
-                observedAt: successfulAgent.observedAt,
-                allowLegacyHandlerBlocked,
-              })
-            ) {
-              continue;
-            }
-            enqueueAppTask(taskController, config, candidate.taskId);
-            opts.bus.emit({
-              type: "project.task.handler.recovered",
-              source: `app-task:${descriptor.id}:task-recovery`,
-              owner: `agent:${candidate.agent}`,
-              target: { appId: descriptor.id },
-              data: {
-                project: descriptor.id,
-                taskId: candidate.taskId,
-                handler: "agent-execution",
-                reason: "agent-session-succeeded-after-handler-execution-failure",
-                evidenceSessionId: successfulAgent.sessionId,
-                ...(successfulAgent.workflowRunId ? { evidenceWorkflowRunId: successfulAgent.workflowRunId } : {}),
-              },
-            } as unknown as AgentEvent);
-          }
           if (successfulAgent.binding?.appId === descriptor.id) {
             enqueueAppTask(taskController, config, successfulAgent.binding.taskId, { promote: true });
           }
@@ -3314,7 +3127,7 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
       }
       return undefined;
     },
-    { label: "app-task-session", types: ["session.start", "session.end"] },
+    { label: "app-task-session", types: ["session.start", "session.end", "app.task.ready"] },
   );
 }
 
@@ -3355,7 +3168,6 @@ async function commitAppTaskRuntimeDescriptors(
   }
   if (!recovery.deferred) {
     recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
-    await requeueAvailableAppTaskHandlers(opts, installed, controllers);
   }
 
   return { installed };
