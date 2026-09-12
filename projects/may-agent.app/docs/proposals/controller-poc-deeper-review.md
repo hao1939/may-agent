@@ -386,6 +386,45 @@ passes **22 focused workflow/schema/routing tests** against the candidate SDK.
 Canonical design checks and **45 changed-document links** pass. Hosted checks
 on the new Host revision are pending; optional App migration is still a gate.
 
+## Capability and cost assessment
+
+The comparison is with the supported behavior before each change, over the
+same workload and useful lifetime. Capability lost is a cost even when the
+new implementation passes every remaining test. Preserving a scenario through
+more App code, model attempts or human intervention also has a cost.
+
+| Choice | Value gained | Capability reduced or cost added | Current judgment |
+| --- | --- | --- | --- |
+| Typed App input replaces raw worker creation | One assignment route; the App owns specification and executor selection; fewer creation and replay rules | Workers cannot directly invent arbitrary child specifications or select executors. Work outside the App's input mapping may need an App change. Evaluation and Scout still need migration. | Promising for the core, conditional on ordinary work fitting simple App inputs. Nested delegation is proved; broad ad hoc delegation coverage and migration cost are not. |
+| Remove automatic retry/progress relays | Fewer redundant owner attempts and notification rules | Owners can learn about failure later through a scheduled review, explicit input or inspection. Backoff reduces retry frequency but does not bound lifetime spending. | Quiet routine waits are useful. Measure intervention delay and extra retry spending before treating failure-feedback convergence as complete. |
+| Redo an unaccepted attempt instead of accepting a saved session result | One acceptance authority and less recovery state | Extra compute, delay and possible repeated external effects | Suitable where redo or checking the existing effect is affordable. Process tests prove exercised cases; they do not make arbitrary external actions safe to repeat. |
+| Combine exact input answers and ongoing Topic/child observations | Potentially one correlation and return mechanism | A once-only answer cannot by itself replace later outcomes, failure reports or closure updates that matter to an owner | Keep useful follow-through in the common path. Retire ongoing observation only when its scenario's value does not justify the cost; no such blanket retirement is justified yet. |
+
+Use the existing philosophy's rough comparison, without invented scores:
+
+```text
+expected improvement = useful value gained + costs avoided
+                     - useful capability lost - additional costs
+```
+
+Count each consequence once. Additional costs include migration, expected uses
+times extra execution/delay, upkeep, human workarounds, and expected failure loss.
+Keep unlike units visible rather than forcing them into one monetary number.
+For this frequently used core, recurring effects deserve more weight over its
+expected lifetime. For an uncertain experiment, immediate usefulness and learning
+can justify affordable temporary inefficiency. High-consequence failures still
+need protection even when their average expected cost looks small.
+
+The automated scenarios and earlier live trials support retained abilities;
+there is no controlled before/after measurement of total maintenance effort,
+model cost or human supervision. The 273-line reduction is a concrete deletion,
+not an estimate of those savings. The next PoC should compare the same useful
+work through the common path, including an unfamiliar assignment, a worker that
+needs owner help, continued discussion and a later result or closure. Observe
+whether it succeeds, agent understanding, manual intervention, model work and
+time to a useful response. Reject or revise the simplification if displaced
+work and lost capability outweigh its recurring benefit.
+
 ## Next deletion, in order
 
 The review objective is convergence on one understandable input, reconciliation

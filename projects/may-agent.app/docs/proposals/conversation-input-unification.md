@@ -41,6 +41,15 @@ Keep App-specific judgment and presentation at the edges; code owns correlation,
 scheduling, persistence and return. The next priority is the remaining return
 paths, with line-count reduction serving as supporting evidence.
 
+Evaluate capability as part of that comparison. For the same user scenario,
+record what remains possible, what becomes harder or unavailable, and who pays
+the difference in execution, delay or human effort. Apply the
+[value/cost and time-horizon rules](../1-principles/design-philosophy.md#value-and-cost):
+compare gained value and avoided costs with lost useful capability, migration,
+ongoing costs and failure risk. Simplicity and convergence earn their value by
+helping the project deliver useful results at acceptable total cost. A shared
+path that repeatedly needs manual workarounds may be a worse tradeoff.
+
 **Persist input, wake its Task, reconcile current state, commit an outcome, and
 release execution. Run again for relevant pending input or justified recovery.
 An authorized owner decides when to close the Task.**
