@@ -178,7 +178,7 @@ describe("QueryService", () => {
       db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
         `${id}.health`,
         "threshold",
-        "Inspect the evidence",
+        "Inspect the facts",
         100,
       ]);
     }
@@ -190,7 +190,7 @@ describe("QueryService", () => {
     expect(query.projects({ owner: "app:p1" }).rows.map((row) => row.id)).toEqual(["p1"]);
     expect(query.metrics({ project: "p1", status: "active" }).rows.map((row) => row.id)).toEqual(["p1.health"]);
     expect(query.alerts({ metricId: "p1.health", resolved: false }).rows).toMatchObject([
-      { metric_id: "p1.health", message: "Inspect the evidence", resolved_at: null },
+      { metric_id: "p1.health", message: "Inspect the facts", resolved_at: null },
     ]);
     expect(query.alerts({ metricId: "p1.health", resolved: true, until: 80 }).rows).toMatchObject([
       { metric_id: "p1.health", message: "Historical alert", resolved_at: 90 },
@@ -208,7 +208,7 @@ describe("QueryService", () => {
     ]);
     db.run(
       "INSERT INTO evaluations (sessionId, agent, verdict, issues, evaluatedByHeuristic, skippedByJs, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["reviewed-session", "dev", "needs_improvement", '["missing evidence"]', 0, 0, 200],
+      ["reviewed-session", "dev", "needs_improvement", '["missing facts"]', 0, 0, 200],
     );
     closeDb(root);
 
@@ -220,7 +220,7 @@ describe("QueryService", () => {
         ["reviewed-session"],
       ).rows,
     ).toEqual([
-      { sessionId: "reviewed-session", status: "done", verdict: "needs_improvement", issues: '["missing evidence"]' },
+      { sessionId: "reviewed-session", status: "done", verdict: "needs_improvement", issues: '["missing facts"]' },
     ]);
   });
 

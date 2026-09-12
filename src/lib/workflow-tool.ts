@@ -77,7 +77,7 @@ import type {
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
 import { readMetricView } from "../app/adapters/reporting/metric-read.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
-import { cliCallEvidence } from "./tools/run-cli-agent.js";
+import { cliCallFacts } from "./tools/run-cli-agent.js";
 
 function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
   const finishStatus = result.finishResult?.status;
@@ -104,8 +104,8 @@ function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
       : result.finishResult?.result !== undefined
         ? { output: result.finishResult.result }
         : {}),
-    ...(result.finishResult ? { evidence: result.finishResult } : {}),
-    cliCalls: cliCallEvidence(result.sessionId, result.messages),
+    ...(result.finishResult ? { facts: result.finishResult } : {}),
+    cliCalls: cliCallFacts(result.sessionId, result.messages),
   };
 }
 
@@ -140,7 +140,7 @@ function normalizeAuthoredWorkflowResult(
     return {
       type: "blocked",
       reason: result.summary as string,
-      ...(result.evidence !== undefined ? { context: result.evidence } : {}),
+      ...(result.facts !== undefined ? { context: result.facts } : {}),
     };
   }
   if (result.status === "interrupted") {
@@ -1428,7 +1428,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         });
       const recordDiagnostic = createWorkflowDiagnostics(persistDir, runId);
       const workflowLog = (level: "debug" | "info" | "warn" | "error", message: string) => {
-        // Late asynchronous code must not append evidence to a settled attempt.
+        // Late asynchronous code must not append facts to a settled attempt.
         if (run.status !== "running" || signal.aborted) return;
         const safe = recordDiagnostic(level, message);
         try {
@@ -1537,7 +1537,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               kind: "workflow",
               status: "blocked",
               summary: sub.result.reason,
-              ...(sub.result.context !== undefined ? { evidence: sub.result.context } : {}),
+              ...(sub.result.context !== undefined ? { facts: sub.result.context } : {}),
             };
           },
         },
@@ -1549,12 +1549,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           summary,
           ...(output !== undefined ? { output } : {}),
         }),
-        blocked: (reason, evidence) => ({
+        blocked: (reason, facts) => ({
           id: runId,
           kind: "workflow",
           status: "blocked",
           summary: reason,
-          ...(evidence !== undefined ? { evidence } : {}),
+          ...(facts !== undefined ? { facts } : {}),
         }),
       };
 
@@ -1624,7 +1624,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           result_payload:
             result.type === "done"
               ? retainWorkflowPayload("output", result.output)
-              : retainWorkflowPayload("evidence", result.context),
+              : retainWorkflowPayload("facts", result.context),
         });
       if (result.type !== "done" && depth === 1 && !opts.taskBinding) {
         emitWorkflowBlockedOwnerWake({
@@ -1802,18 +1802,18 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       }
 
       const msg = err instanceof Error ? err.message : String(err);
-      let evidenceRunId: string | undefined;
+      let factsRunId: string | undefined;
       if (persistDir) {
         try {
           const saved = getWorkflowRun(persistDir, runId);
-          if (saved?.status === "error" && saved.endedAt != null && !saved.artifact_error) evidenceRunId = runId;
+          if (saved?.status === "error" && saved.endedAt != null && !saved.artifact_error) factsRunId = runId;
         } catch {
-          // Missing or unreadable persistence is not a usable evidence link.
+          // Missing or unreadable persistence is not a usable facts link.
         }
       }
       const toolResult: WorkflowToolResult = {
         type: "error", workflow: workflow.name, error: msg,
-        ...(evidenceRunId ? { workflowRunId: evidenceRunId } : {}),
+        ...(factsRunId ? { workflowRunId: factsRunId } : {}),
       };
       return toolResult;
     }

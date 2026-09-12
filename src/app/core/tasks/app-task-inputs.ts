@@ -2,7 +2,7 @@ import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
 import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 import type { AppTaskInputWait, AppTaskResource, AppTaskTriggerEvent } from "./app-task-state.js";
-import { matchesAppTaskConditionEvidence } from "./app-task-condition-tracker.js";
+import { matchesAppTaskConditionFacts } from "./app-task-condition-tracker.js";
 
 export function taskInputAdmissionKeys(
   events: readonly AppTaskTriggerEvent[],
@@ -41,7 +41,7 @@ export function retainTaskInputWait(
   }
 }
 
-/** Only evidence from an input's own saved wait can continue it in another attempt. */
+/** Only facts from an input's own saved wait can continue it in another attempt. */
 export function continuedTaskInputKeys(
   tree: TaskTree,
   taskId: string,
@@ -51,7 +51,7 @@ export function continuedTaskInputKeys(
   const task = tree.resources?.[taskId];
   if (!task?.status.inputWaits) return [];
   const matchingConditionIds = (task.status.conditionIds ?? []).filter((id) =>
-    events.some(({ event }) => matchesAppTaskConditionEvidence(tree.conditions?.[id], event)),
+    events.some(({ event }) => matchesAppTaskConditionFacts(tree.conditions?.[id], event)),
   );
   const conditions = new Map(
     [...readyConditionIds, ...matchingConditionIds].flatMap((id) => {

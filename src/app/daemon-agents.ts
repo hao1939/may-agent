@@ -8,7 +8,8 @@ import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentMaintenance, loadAgents, getAgentSessionId, prepareAgentTriggers } from "./agent-loader.js";
-import { installAppTaskRuntimes, type AppTaskRuntimeOptions } from "./core/tasks/app-task-runtime.js";
+import { installAppTaskRuntimes, } from "./core/tasks/app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "./core/tasks/runtime-options.js";
 import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
 import type { HostCapacity } from "./core/scheduling/host-capacity.js";
@@ -25,10 +26,6 @@ function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations cancellation
              WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
-           )
-           AND (
-             task.phase <> 'converged'
-             OR json_extract(task.resource_json, '$.spec.mode') = 'maintain'
            )
          LIMIT 1`,
       )

@@ -130,7 +130,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
             limit: 5,
           }).filter((e) => (e.data ?? "").includes(escalationId));
           if (!failed.some((row) => eventPayload(row).outcome === "resolved")) return null;
-          // Read earlier evidence only after the terminal marker is visible.
+          // Read earlier facts only after the terminal marker is visible.
           const attempted = queryEvents(db, {
             types: ["escalation.resume_attempted"],
             since: t0,

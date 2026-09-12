@@ -19,7 +19,6 @@ function desiredTask(id: string): AppTaskAttachment {
       parentId: "probes",
       outcome: `Handle ${id}`,
       acceptance: ["Probe handled"],
-      mode: "achieve",
     },
   };
 }
@@ -174,9 +173,9 @@ describe("App inbox host", () => {
           },
         },
       ],
-      attachTask: fakeTaskAttacher(db, ({ attachment, request }) => {
+      attachTask: fakeTaskAttacher(db, ({ attachment, inputContext }) => {
         expect(attachment).toEqual({ kind: "existing", taskId: "existing" });
-        received = request;
+        received = inputContext;
         return { taskId: "existing" };
       }),
     });

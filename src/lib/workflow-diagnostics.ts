@@ -21,7 +21,7 @@ function diagnosticsRef(runId: string): string {
   return `workflow-runs/${runId}/diagnostics.json`;
 }
 
-/** Bounded optional evidence. A write failure must not change execution outcome. */
+/** Bounded optional facts. A write failure must not change execution outcome. */
 export function createWorkflowDiagnostics(persistDir: string | undefined, runId: string) {
   const ref = diagnosticsRef(runId);
   const entries: WorkflowDiagnostics["entries"] = [];

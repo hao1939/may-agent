@@ -5,7 +5,8 @@ import {
   hasSuppliedDependencyObservation,
 } from "../../adapters/executors/managed-agent.js";
 import { hasDeployReceiptWake } from "../../adapters/executors/agent-workspace.js";
-import { mergeTaskConditions } from "./app-task-runtime.js";
+
+import { mergeTaskConditions } from "./dependency-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 
 // Pure projection and protocol rules need neither a repository nor a database.
@@ -91,7 +92,7 @@ describe("App Task agent prompt context", () => {
       {
         state: "waiting",
         summary: "Waiting for an invented human event",
-        evidence: [],
+        facts: [],
         conditions: [
           {
             id: "approval",

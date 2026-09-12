@@ -2,7 +2,7 @@ import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import {
-  appTaskSpecHash,
+  matchesAppTaskSpecHash,
   appendTaskTriggerEvent,
   preferredTriggerFromEvents,
   readAppTaskAgent,
@@ -18,7 +18,7 @@ function attemptEvents(attempt: AppTaskAttempt): AppTaskTriggerEvent[] {
 }
 
 /** Offline continuation of retained Task state. Run receipt import first.
- * No saved decision is executed again; only original input/evidence is restored.
+ * No saved decision is executed again; only original input/facts are restored.
  * Missing or conflicting acceptance identity aborts the transaction rather than
  * binding an old caller to an unrelated latest answer.
  */
@@ -78,7 +78,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
           !observed ||
           observed.state !== "completed" ||
           !resource.status.summary ||
-          observed.specHash !== appTaskSpecHash({ id: taskId, ...resource.spec }, observed.owner)
+          !matchesAppTaskSpecHash({ id: taskId, ...resource.spec }, observed.owner, observed.specHash)
         )
           throw new Error(`Accepted attempt is missing or conflicts with Task ${taskId}`);
         observed.acceptedResult = {
@@ -86,7 +86,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
           summary: resource.status.summary,
           response: resource.status.response,
           result: resource.status.result,
-          evidence: resource.status.evidence ?? [],
+          facts: resource.status.facts ?? [],
         };
         outcomes++;
       }
@@ -97,14 +97,14 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
             ? attempts.find((entry) => entry.metadata.id === actor.attemptId && entry.owner === actor.agent)
             : undefined;
         if (!attempt || selfStop.generation !== resource.metadata.generation || attempt.acceptedResult)
-          throw new Error(`Worker stop evidence conflicts with Task ${taskId}`);
+          throw new Error(`Worker stop facts conflicts with Task ${taskId}`);
         attempt.retiredCancellation = structuredClone(selfStop);
         attempt.acceptedResult = {
-          state: "stopped",
+          state: "incomplete",
           summary: selfStop.reason,
           response: selfStop.response,
           result: selfStop.result,
-          evidence: selfStop.evidence ?? [],
+          facts: selfStop.facts ?? [],
         };
         resource.status.observedAttemptId = attempt.metadata.id;
         // This deletion exists only inside offline cutover. The normal state
@@ -171,7 +171,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
         // Recover only a proven first report, never infer one from current status.
         if (!admission.reportAttemptId) {
           const report = attempts.find((attempt) =>
-            attempt.acceptedResult?.state === "stopped" && attempt.specHash === admission.specHash &&
+            attempt.acceptedResult?.state === "incomplete" && attempt.specHash === admission.specHash &&
             taskInputAdmissionKeys(attemptEvents(attempt), attempt.continuedInputKeys).includes(key));
           if (report) admission.reportAttemptId = report.metadata.id;
         }

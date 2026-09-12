@@ -135,7 +135,6 @@ describe("HTTP human Task reads and board", () => {
         parentId: "root",
         outcome: `Full goal ${id}: ${"detail ".repeat(30)}`,
         acceptance: ["Exact result verified"],
-        mode: "maintain",
         owner: "test",
       },
       status: { observedGeneration: 2, phase, summary: `Observe ${id}`, updatedAt: new Date(n).toISOString() },
@@ -320,6 +319,11 @@ describe("HTTP human Task reads and board", () => {
         expect(await page.$eval(".kanban-shell", (el) => el.textContent)).toContain("Page 2");
         await page.evaluate("showTaskDetail('work/34')");
         await page.waitForSelector("#kanban-steer-text");
+        const detailLabels = await page.$$eval("#task-detail-drawer .task-detail-grid b", (labels) =>
+          labels.map((label) => label.textContent),
+        );
+        expect(detailLabels).toContain("Mechanism");
+        expect(detailLabels).not.toContain("Mode");
         await page.evaluate("prefillTaskSteering('audit')");
         const prompt = await page.$eval("#kanban-steer-text", (el) => (el as HTMLTextAreaElement).value);
         expect(prompt).toContain("project: alpha\ntask: work/34");

@@ -38,7 +38,6 @@ describe("Task cancellation fence", () => {
             parentId: "root",
             outcome: "Finish the work",
             acceptance: ["done"],
-            mode: "achieve",
             owner: "may",
           },
           status: {
@@ -95,7 +94,7 @@ describe("Task cancellation fence", () => {
 
     // Recovery must trust the terminal cancellation even if a legacy writer
     // left stale scheduling columns behind. Cancellation is a fence, not a
-    // destructive cleanup of the Task's evidence.
+    // destructive cleanup of the Task's facts.
     db.prepare(
       `UPDATE app_tasks SET ready = 1, changed = 1, next_check_at = 1, lease_until = 1
        WHERE app_id = 'sample' AND task_id = 'work'`,

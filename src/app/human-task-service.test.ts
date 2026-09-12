@@ -163,7 +163,7 @@ function insertTask(
     taskId: string;
     phase: string;
     updatedAt: number;
-    mode?: "achieve" | "maintain";
+
     ready?: boolean;
     changed?: boolean;
     acceptance?: string[];
@@ -178,7 +178,7 @@ function insertTask(
       parentId: "root",
       outcome: `Handle ${input.taskId}`,
       acceptance: input.acceptance ?? ["done"],
-      mode: input.mode ?? "achieve",
+
       owner: `${input.appId}-owner`,
       ...(input.category ? { category: input.category } : {}),
     },
@@ -246,7 +246,6 @@ test("shows a converged maintain Task as live and up to date", () => {
     taskId: "conversation/follow-up",
     phase: "converged",
     updatedAt: 2,
-    mode: "maintain",
   });
   const service = new HumanTaskService(db, registry("may"));
 
@@ -259,14 +258,14 @@ test("shows a converged maintain Task as live and up to date", () => {
 test("shows a converged Task with pending work as queued in detail, lists, and status filters", () => {
   const db = database();
   const service = new HumanTaskService(db, registry("research"));
-  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1, mode: "maintain" });
+  insertTask(db, { appId: "research", taskId: "quiet", phase: "converged", updatedAt: 1 });
   for (const [taskId, ready, changed] of [
     ["scheduled", true, true],
     ["not-ready", false, true],
     ["ready", true, false],
   ] as const) {
     insertTask(db, {
-      appId: "research", taskId, phase: "converged", updatedAt: 2, mode: "maintain", ready, changed,
+      appId: "research", taskId, phase: "converged", updatedAt: 2, ready, changed,
     });
     expect(service.getTask({ appId: "research", taskId })).toMatchObject({
       status: "pending",
@@ -338,13 +337,72 @@ function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt:
       handler: "agent",
       summary: `${taskId} finished`,
       response: `${taskId} result`,
-      evidence: ["proof"],
+      facts: ["proof"],
       acceptanceBasis: { kind: "owner" },
       failureFingerprints: [],
       completedAt: new Date(completedAt).toISOString(),
     }),
   );
 }
+
+test.each(["resource", "receipt", "cancellation"])("preserves historical %s facts in human Task detail", (kind) => {
+  const db = database();
+  insertTask(db, { appId: "alpha", taskId: "work", phase: "waiting", updatedAt: 10 });
+  if (kind === "receipt") insertReceipt(db, "alpha", "work", 20);
+  if (kind === "cancellation") {
+    const store = AppTaskResourceStore.fromDb(db, "alpha");
+    const current = store.readTask("work")!;
+    cancelAppTask(taskConfig(db, store, "alpha"), {
+      appId: "alpha",
+      taskId: "work",
+      reason: "Owner withdrew work",
+      expectedGeneration: current.metadata.generation,
+      expectedResourceVersion: current.metadata.resourceVersion,
+    });
+  }
+  const [table, column] =
+    kind === "resource"
+      ? ["app_tasks", "resource_json"]
+      : kind === "receipt"
+        ? ["app_task_receipts", "receipt_json"]
+        : ["app_task_cancellations", "cancellation_json"];
+  const row = db.prepare(`SELECT ${column} AS payload FROM ${table} WHERE app_id = 'alpha'`).get() as {
+    payload: string;
+  };
+  const payload = JSON.parse(row.payload);
+  const result = kind === "resource" ? payload.status : payload;
+  delete result.facts;
+  result.evidence = ["Saved Task observation"];
+  result.result = { evidence: "App-owned data" };
+  const saved = JSON.stringify(payload);
+  db.prepare(`UPDATE ${table} SET ${column} = ? WHERE app_id = 'alpha'`).run(saved);
+
+  const service = new HumanTaskService(db, registry("alpha"));
+  expect(service.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
+    facts: ["Saved Task observation"],
+    result: { evidence: "App-owned data" },
+  });
+  expect(service.listTasks({ includeDone: true }).items[0]?.facts).toBeUndefined();
+  expect(db.prepare(`SELECT ${column} AS payload FROM ${table} WHERE app_id = 'alpha'`).get()).toEqual({
+    payload: saved,
+  });
+});
+
+test("preserves historical Condition facts in human Task diagnostics", () => {
+  const db = database();
+  insertTask(db, { appId: "alpha", taskId: "work", phase: "waiting", updatedAt: 10 });
+  insertCondition(db, { appId: "alpha", taskId: "work", conditionId: "waiting" });
+  db.prepare(
+    "UPDATE app_tasks SET resource_json = json_set(resource_json, '$.status.conditionIds', json('[\"waiting\"]'))",
+  ).run();
+  db.prepare(
+    "UPDATE app_task_conditions SET condition_json = json_set(condition_json, '$.status.evidence', json('[\"Saved Condition observation\"]'))",
+  ).run();
+  const service = new HumanTaskService(db, registry("alpha"));
+  const condition = service.getTask({ appId: "alpha", taskId: "work" })?.diagnostics?.conditions[0]?.condition;
+  expect(condition?.status.facts).toEqual(["Saved Condition observation"]);
+  expect(condition?.status).not.toHaveProperty("evidence");
+});
 
 function insertProgress(
   db: SqliteDb,
@@ -667,14 +725,14 @@ describe("Human Task service", () => {
       phase: "pending",
       updatedAt: 10,
       ready: true,
-      acceptance: ["List the identity evidence.", "Cancel only proven duplicates."],
+      acceptance: ["List the identity facts.", "Cancel only proven duplicates."],
     });
     const service = new HumanTaskService(db, registry("gym"));
 
     expect(service.getTask({ appId: "gym", taskId: "deduplicate" })).toMatchObject({
       status: "pending",
       statusDetail: "Accepted and ready to start; no attempt is running.",
-      acceptance: ["List the identity evidence.", "Cancel only proven duplicates."],
+      acceptance: ["List the identity facts.", "Cancel only proven duplicates."],
     });
     const card = service.listTasks().items[0]!;
     expect(card.statusDetail).toBe("Accepted and ready to start; no attempt is running.");
@@ -703,7 +761,7 @@ describe("Human Task service", () => {
 
   test("resolves exact detail by stable ref and preserves terminal results", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "maintain", phase: "running", updatedAt: 10, mode: "maintain" });
+    insertTask(db, { appId: "alpha", taskId: "maintain", phase: "running", updatedAt: 10 });
     insertReceipt(db, "alpha", "finished", 20);
     indexTaskReference(db, "alpha", "maintain");
     indexTaskReference(db, "alpha", "finished");
@@ -899,7 +957,7 @@ describe("Human Task service", () => {
     receipt.summary = "摘".repeat(1_000);
     receipt.response = "full response";
     receipt.result = { content: "x".repeat(3_000) };
-    receipt.evidence = ["full evidence"];
+    receipt.facts = ["full facts"];
     db.prepare("UPDATE app_task_receipts SET receipt_json = ? WHERE app_id = 'alpha' AND receipt_id = 'large'").run(
       JSON.stringify(receipt),
     );
@@ -911,7 +969,7 @@ describe("Human Task service", () => {
     expect(card.outcome.endsWith("…")).toBe(true);
     expect(card.response).toBeUndefined();
     expect(card.result).toBeUndefined();
-    expect(card.evidence).toBeUndefined();
+    expect(card.facts).toBeUndefined();
     expect(Buffer.byteLength(JSON.stringify(card), "utf8")).toBeLessThan(2_048);
 
     const detail = service.getTask({ ref: card.ref });
@@ -919,7 +977,7 @@ describe("Human Task service", () => {
     expect(detail?.summary).toBe(receipt.summary);
     expect(detail?.response).toBe("full response");
     expect(detail?.result).toEqual(receipt.result);
-    expect(detail?.evidence).toEqual(["full evidence"]);
+    expect(detail?.facts).toEqual(["full facts"]);
   });
 
   test.each([2, 4])("does not project live generation %s as active after its completion receipt exists", (generation) => {
@@ -952,7 +1010,7 @@ describe("Human Task service", () => {
 
   test("does not present the previous observation as progress for a newer running attempt", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "maintained", phase: "running", updatedAt: 200, mode: "maintain" });
+    insertTask(db, { appId: "alpha", taskId: "maintained", phase: "running", updatedAt: 200 });
     const row = db
       .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'alpha' AND task_id = 'maintained'")
       .get() as { resource_json: string };
@@ -962,7 +1020,7 @@ describe("Human Task service", () => {
     resource.status.summary = "The previous proposal is complete.";
     resource.status.response = "Adopt the previous proposal.";
     resource.status.result = { previous: true };
-    resource.status.evidence = ["previous proof"];
+    resource.status.facts = ["previous proof"];
     db.prepare(
       `INSERT INTO app_task_attempts(
          app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
@@ -996,7 +1054,7 @@ describe("Human Task service", () => {
     expect(service.getTask({ appId: "alpha", taskId: "maintained" })).not.toMatchObject({
       summary: expect.anything(),
       response: expect.anything(),
-      evidence: expect.anything(),
+      facts: expect.anything(),
     });
     expect(service.getTask({ appId: "alpha", taskId: "maintained" })?.result).toBeUndefined();
   });
@@ -1108,9 +1166,9 @@ describe("Human Task service", () => {
     })]);
   });
 
-  test.each(["achieve", "maintain"] as const)("owner cancellation uses the same contract for %s work", (mode) => {
+  test("owner cancellation closes the Task and rejects a repeated control", () => {
     const db = database();
-    insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10, mode });
+    insertTask(db, { appId: "alpha", taskId: "watch", phase: "waiting", updatedAt: 10 });
     const service = new HumanTaskService(db, registry("alpha"));
     const current = service.getTask({ appId: "alpha", taskId: "watch" });
     if (!current) throw new Error("expected open Task");

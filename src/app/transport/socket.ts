@@ -60,7 +60,7 @@ export function operatorEventInput(event: Record<string, unknown> & { type: stri
       ? (event.target as Record<string, unknown>)
       : {};
   // Only the canonical envelope target is routing authority. Legacy flat/data
-  // identities are correlation and lifecycle evidence, not implicit addresses.
+  // identities are correlation and lifecycle facts, not implicit addresses.
   const target = {
     appId: text(rawTarget.appId),
     taskId: text(rawTarget.taskId),

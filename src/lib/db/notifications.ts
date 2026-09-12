@@ -36,7 +36,7 @@ export function getNotificationMessage(
   chatId: string,
   telegramMsgId: number,
 ): NotificationMessageRecord | null {
-  if (!chatId) return null; // Unscoped legacy evidence is never reply context.
+  if (!chatId) return null; // Unscoped legacy facts are never reply context.
   const db = getDb(persistDir);
   return db
     .prepare("SELECT * FROM notification_messages WHERE chat_id = ? AND telegram_msg_id = ?")

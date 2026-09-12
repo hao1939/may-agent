@@ -116,7 +116,7 @@ const finishSchema: TSchema = Type.Object({
       { description: "Reported lessons. A local memory-stream append is best-effort; this does not load lessons into future sessions or activate guidance." },
     ),
   ),
-  verification_evidence: Type.Optional(
+  verification_facts: Type.Optional(
     Type.Array(
       Type.String({
         description:
@@ -124,7 +124,7 @@ const finishSchema: TSchema = Type.Object({
       }),
       {
         description:
-          "Evidence from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results.",
+          "Facts from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results.",
       },
     ),
   ),
@@ -156,7 +156,7 @@ interface FinishParams {
   completed_items?: string[];
   new_items?: string[];
   lessons?: Array<{ category: "fix" | "pattern" | "insight"; content: string }>;
-  verification_evidence?: string[];
+  verification_facts?: string[];
   context_updates?: Array<{ action: "add" | "remove"; content: string }>;
 }
 
@@ -170,7 +170,7 @@ interface FinishParams {
  * 2. Attempts a best-effort local append of reported lessons
  * 3. Returns a formatted summary as the tool output
  *
- * The caller extracts accepted finish arguments from session evidence and owns
+ * The caller extracts accepted finish arguments from session facts and owns
  * the resulting work state. Report fields are not additional state-changing tools.
  */
 export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema> {
@@ -243,19 +243,19 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         };
       }
 
-      // ── Require verification evidence for success ─────────────
-      if (status === "success" && (!params.verification_evidence || params.verification_evidence.length === 0)) {
+      // ── Require verification facts for success ─────────────
+      if (status === "success" && (!params.verification_facts || params.verification_facts.length === 0)) {
         return {
           content: [
             {
               type: "text" as const,
               text:
-                "finish() error: 'verification_evidence' is required when status is 'success'. " +
+                "finish() error: 'verification_facts' is required when status is 'success'. " +
                 "Cite specific tool outputs that verify your work, e.g.:\n" +
                 '- "Step 5: read(src/app.ts) shows new function added"\n' +
                 '- "Step 8: bash test suite exit code 0"\n' +
                 '- "Step 3: edit() confirmed by read-back"\n' +
-                "Add verification_evidence and try again.",
+                "Add verification_facts and try again.",
             },
           ],
           details: undefined,
@@ -321,10 +321,10 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         }
       }
 
-      if (params.verification_evidence && params.verification_evidence.length > 0) {
+      if (params.verification_facts && params.verification_facts.length > 0) {
         parts.push("");
-        parts.push("**Verification evidence:**");
-        for (const ev of params.verification_evidence) {
+        parts.push("**Verification facts:**");
+        for (const ev of params.verification_facts) {
           parts.push(`- ${ev}`);
         }
       }

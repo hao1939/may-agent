@@ -25,7 +25,7 @@ function fixture(
 ): TaskTree {
   const resource: AppTaskResource = {
     metadata: { id: "task-1", generation: 3, resourceVersion: 8 },
-    spec: { outcome: "coordinate", acceptance: ["done"], parentId: "project", mode: "achieve" },
+    spec: { outcome: "coordinate", acceptance: ["done"], parentId: "project" },
     status: {
       observedGeneration: 2,
       phase: "running",
@@ -56,7 +56,7 @@ function fixture(
   };
   const child: AppTaskResource = {
     metadata: { id: "child-1", generation: 1, resourceVersion: 1 },
-    spec: { outcome: "handle child", acceptance: ["done"], parentId: "task-1", mode: "achieve" },
+    spec: { outcome: "handle child", acceptance: ["done"], parentId: "task-1" },
     status: { observedGeneration: 1, phase: "waiting", updatedAt: new Date().toISOString() },
   };
   return {
@@ -163,7 +163,7 @@ describe("AppTaskEmitter", () => {
 
   it.each([false, true])("replays the full large fact after reopen, including legacy publication (%s)", (legacy) => {
     const f = harness(null);
-    const data = { text: "Original café evidence. ".repeat(1000), nested: { verdict: "supported" } };
+    const data = { text: "Original café facts. ".repeat(1000), nested: { verdict: "supported" } };
     const id = legacy ? f.legacy("large", data) : f.events().publish("large", { type: "sample.observed", data });
     expect(f.db.prepare("SELECT body_ref FROM events WHERE id = ?").get(id)?.body_ref).toBeString();
     closeDb(f.root);
@@ -181,7 +181,7 @@ describe("AppTaskEmitter", () => {
     "does not treat an unverifiable published fact as absent (%s)",
     (failure) => {
       const f = harness(null);
-      const data = { text: failure === "inline" ? "small" : "evidence ".repeat(1000) };
+      const data = { text: failure === "inline" ? "small" : "facts ".repeat(1000) };
       const id = f.events().publish("damaged", { type: "sample.observed", data });
       const row = f.db.prepare("SELECT body_ref FROM events WHERE id = ?").get(id)!;
       if (failure === "missing") rmSync(join(f.root, String(row.body_ref)));
@@ -304,7 +304,7 @@ describe("AppTaskEmitter", () => {
 
     const eventId = emitter.emit("executor-progress", {
       type: "project.task.executor.progress",
-      data: { executor: "codex-goal-poc", stage: "intermediate", message: "Inspecting evidence" },
+      data: { executor: "codex-goal-poc", stage: "intermediate", message: "Inspecting facts" },
     });
 
     expect(db.prepare("SELECT task_id, attempt_id FROM events WHERE id = ?").get(eventId)).toEqual({
@@ -431,13 +431,11 @@ describe("AppTaskEmitter", () => {
       attemptId: "attempt-1",
       owner: "may",
       handler: "workflow:test",
-      mode: "achieve",
       intent: {
         id: "task-1",
         parentId: "project",
         outcome: "coordinate",
         acceptance: ["done"],
-        mode: "achieve",
       },
       events: [],
       eventsTruncated: false,

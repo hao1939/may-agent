@@ -111,13 +111,13 @@ function summarizeInterruptedAgentRecovery(input: {
   reason: string;
   repairedPendingTools: string[];
   taskId?: string;
-}): { summary: string; taskId: string | null; evidence: string[] } {
+}): { summary: string; taskId: string | null; facts: string[] } {
   const taskId = input.taskId?.trim() || appTaskSessionBinding(input.meta.taskBinding)?.taskId || null;
   const summary = taskId
     ? `Agent session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
     : "Agent session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
   const checkpoint = readLatestCheckpoint(input.persistDir, input.sessionId);
-  const evidence = [
+  const facts = [
     ...(taskId ? [`task:${taskId}`] : []),
     `session:${input.sessionId}`,
     `artifact:sessions/${input.sessionId}/result.json`,
@@ -130,7 +130,7 @@ function summarizeInterruptedAgentRecovery(input: {
       ? [`recovered-pending-tools:${input.repairedPendingTools.join(",")}`]
       : []),
   ];
-  return { summary, taskId, evidence };
+  return { summary, taskId, facts };
 }
 
 function interruptSupersededAgentSession(
@@ -202,7 +202,7 @@ function interruptSupersededAgentSession(
           recovery: {
             disposition: "requeued",
             summary: interruptedRecovery.summary,
-            evidence: interruptedRecovery.evidence,
+            facts: interruptedRecovery.facts,
           },
         }
       : {}),
@@ -316,7 +316,7 @@ function latestReceiptedTranscriptCheckpoint(messages: unknown[]): Pick<Checkpoi
   return latest;
 }
 
-function checkpointRecoveryEvidence(
+function checkpointRecoveryFacts(
   checkpointPath: string,
   transcriptPath: string,
   checkpoint: CheckpointEntry | null,
@@ -352,19 +352,19 @@ export function buildRecoveredSessionHandoff(
   const checkpoint = readLatestCheckpoint(persistDir, attempt.sessionId);
   const transcriptMessages = existsSync(transcriptPath) ? readSessionMessages(persistDir, attempt.sessionId) : [];
   const transcriptCheckpoint = checkpoint ? null : latestReceiptedTranscriptCheckpoint(transcriptMessages);
-  const evidence = [
+  const facts = [
     `Recovered interrupted ${sessionLabel} path: ${interruptedSessionPath}`,
     `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
     `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
     `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
-    checkpointRecoveryEvidence(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId),
+    checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId),
   ];
   if (transcriptMessages.length > 0) {
     for (const snippet of transcriptMessages
       .map(summarizeRecoveryTranscriptEntry)
       .filter((entry): entry is string => Boolean(entry))
       .slice(-3)) {
-      evidence.push(`Recovered transcript snippet: ${snippet}`);
+      facts.push(`Recovered transcript snippet: ${snippet}`);
     }
   }
   return {
@@ -372,6 +372,6 @@ export function buildRecoveredSessionHandoff(
     summary:
       meta?.error?.trim() ||
       `Previous runtime ${sessionLabel} ${attempt.sessionId} was interrupted during recovery before a task decision was persisted`,
-    evidence,
+    facts,
   };
 }
