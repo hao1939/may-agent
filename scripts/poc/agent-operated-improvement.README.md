@@ -50,7 +50,7 @@ numeric assertions; a passing finish call is not proof of a useful improvement.
 - Uses `gpt-5.6-sol` with fallback removed; actual model identities are recorded.
 - Target preparation uses the active immutable definition. It does not test
   existing persistent sessions or durable Task adoption.
-- Probe results return the answer, revision, status, timing and a detail path;
+- Probe results return the answer, revision, status, tool-error count, timing and a detail path;
   prompts and tool traces remain readable on demand.
 - Invalid executions are retained and stop the harness; no automatic harness
   reruns hide failures. The runner retains its normal bounded finish recovery.
@@ -91,6 +91,22 @@ Those trials preceded rebasing this source onto main after #159–#161 merged.
 The publication harness now adds ordered recovery evidence and its regressions,
 plus a focused abort-during-reload-delay regression. Earlier model evidence
 does not prove the strengthened recovery check or exact publication revision.
+
+A review follow-up at `820d16d1` completed ten more model executions and four
+correct withheld answers. Its ordered trace establishes failure delivery at
+message 26, a new reload request at 27 and matching activation at 28 (zero-based
+indices). However, the authored guidance also named an evidence file outside
+the target's readable snapshot. Embedded policy supplied correct answers, but
+the three capacity probes and three capacity holdouts incurred 13 failed reads.
+The improver reported the access limitation but left the unnecessary reference.
+This is a useful mechanism result with a guidance-quality defect, not a clean
+overall improvement claim. That run is retained without rewriting its output.
+
+The next trial clarifies the target's existing read scope in the probe tool
+description and exposes tool-error counts beside compact results. These are
+capability facts and evidence, not a prescribed edit or retry policy. No target
+permissions are broadened, and error counts do not automatically reject an
+otherwise useful result; the agent must judge their meaning.
 
 The governing proposal and detailed sanitized evidence are in the separately
 maintained App tree: `docs/proposals/agent-behavior-and-capability-extension.md`

@@ -172,7 +172,10 @@ export async function runTrial(live = false) {
     const evidencePath = `evidence/runs/${id}.json`;
     write(evidencePath, JSON.stringify(clean(record), null, 2));
     // Return enough to judge a trial; retain prompts/tool traces for an explicit read.
-    return { id, status, sourceCommit, request, result, error, durationMs, evidencePath };
+    const toolErrorCount = ((record.toolResults ?? []) as { isError?: boolean }[]).filter(
+      (item) => item.isError,
+    ).length;
+    return { id, status, sourceCommit, request, result, error, toolErrorCount, durationMs, evidencePath };
   };
   async function prepareTarget(id: string, request: string) {
     const release = store.current()!;
@@ -340,8 +343,16 @@ export async function runTrial(live = false) {
     if (!live) {
       // Exercise real model/tool preparation without spending a provider call.
       assert((await prepareTarget("preflight", "Ordinary fixture request")).prepared.requireFinish);
-      const packet = exposeEvidence({ id: "preflight", result: { reply: "sample" }, systemPrompt: "details" });
+      const packet = exposeEvidence({
+        id: "preflight",
+        status: "done",
+        result: { reply: "sample" },
+        systemPrompt: "details",
+        toolResults: [{ isError: false }, { isError: true }],
+      });
       assert(!("systemPrompt" in packet));
+      assert.equal(packet.status, "done");
+      assert.equal(packet.toolErrorCount, 1, "Completed answers must not hide failed tool calls");
       assert.equal(JSON.parse(readFileSync(join(sb.root, packet.evidencePath), "utf8")).systemPrompt, "details");
       assert.deepEqual(decoded(await list.execute("list", {})), { directories: ["agents", "shared", "evidence"] });
       const writer = fixtureWrite({ projectRoot: sb.root });
@@ -383,7 +394,7 @@ export async function runTrial(live = false) {
         name: "try_agent",
         label: "Try a fresh target execution",
         description:
-          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. Returns actual revision, answer and a detailed evidence reference. Read-only target execution; at most six trials. Use results to judge your change; no hidden expected answers are supplied.",
+          "Ask May an ordinary request using the currently ACTIVE definition, not unactivated source edits. The target can read only its active definition snapshot; your evidence directory is not accessible to it. Returns actual revision, answer, tool-error count and a detailed evidence reference. Read-only target execution; at most six trials. Use results to judge your change; no hidden expected answers are supplied.",
         parameters: Type.Object({ request: Type.String({ minLength: 1, maxLength: 4000 }) }),
         execute: async (_id, input, signal) => {
           signal?.throwIfAborted();
