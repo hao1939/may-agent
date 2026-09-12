@@ -2253,6 +2253,7 @@ describe("canonical App task runtime", () => {
       let requestId = "";
       let succeed = false;
       let failures = 0;
+      const diagnostics: AgentEvent[] = [];
       const inputs: Parameters<TaskExecutor>[0]["events"][] = [];
       const app = defineApp({
         ...definition(),
@@ -2263,6 +2264,10 @@ describe("canonical App task runtime", () => {
         } }),
       });
       const install = async () => {
+        bus.listen((event) => {
+          if (event.type === "project.task.reconcile.skipped" || event.type === "project.task.reconciled")
+            diagnostics.push(structuredClone(event));
+        });
         await installCoreTaskRuntimes({
           ...options(f, bus), installControllers: false,
           appRegistrySnapshot: { id: "feedback", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
@@ -2357,8 +2362,14 @@ describe("canonical App task runtime", () => {
       await host!.recoverTaskResults();
       await recoverInstalledAppTasks(bus);
       expect(condition()?.status.state).toBe("true");
+      // Keep the claim preconditions if the caller unexpectedly fails to resume.
+      const beforeFinal = {
+        now: Date.now(),
+        task: loadedTaskConfig(f).resourceStore.readTask("work/caller"),
+        trigger: loadedTaskConfig(f).resourceStore.readTrigger("work/caller"),
+      };
       await run("work/caller");
-      expect(inputs).toHaveLength(3);
+      expect(inputs, JSON.stringify({ route, beforeFinal, now: Date.now(), diagnostics })).toHaveLength(3);
       expect(inputs[2]!.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done")?.event.data)
         .toMatchObject({ id: requestId, status: "done", result: { score: 0.92 } });
       for (const input of inputs)
@@ -4338,7 +4349,12 @@ describe("canonical App task runtime", () => {
 
     await install(false);
     attach("work/missing");
-    await until(() => Boolean(store.readTask("work/missing")?.status.executionRetryAt));
+    let retryAt = 0;
+    await until(() => {
+      const deadline = store.readTask("work/missing")?.status.executionRetryAt;
+      if (deadline) retryAt = deadline;
+      return Boolean(deadline);
+    });
     const failure = Object.values(store.readTaskContext({ taskIds: ["work/missing"] }).attempts ?? {})
       .find((attempt) => attempt.failureReason === "HandlerUnavailable")!;
     expect(failure).toMatchObject({ handler: "executor:reviewer", state: "failed" });
@@ -4346,7 +4362,8 @@ describe("canonical App task runtime", () => {
     attach("work/independent", "other");
     await until(() => accepted("work/independent")?.state === "converged");
     expect(calls).not.toContain("work/missing");
-    const retryAt = store.readTask("work/missing")!.status.executionRetryAt!;
+    // The controller may already have claimed another retry while the
+    // independent Task ran. Its current status need not retain the deadline.
     await install(true);
     await until(() => accepted("work/missing")?.state === "converged");
     expect(startedAt.get("work/missing")).toBeGreaterThanOrEqual(retryAt);
@@ -5405,7 +5422,7 @@ describe("canonical App task runtime", () => {
     while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < 5 && performance.now() < deadline) {
       await Bun.sleep(5);
     }
-    expect(calls).toBe(5);
+    expect(calls, JSON.stringify(config.resourceStore.readTaskContext({ taskIds: ["work/broken"] }).attempts)).toBe(5);
     expect(config.resourceStore.readTask("work/broken")?.status).toMatchObject({
       phase: "pending",
       executionFailures: 5,
