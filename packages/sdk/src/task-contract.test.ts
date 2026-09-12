@@ -28,6 +28,42 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it("exposes the admitted Condition owner syntax to the agent before finish", () => {
+    const owners = [
+      ["human", true],
+      ["human:requester", true],
+      ["app:measurement", true],
+      ["source-owner:sample/Read.v2", true],
+      ["  human  ", true],
+      ["\tapp:measurement\n", true],
+      ["", false],
+      ["   ", false],
+      ["human requester", false],
+      ["Human:requester", false],
+      ["app:", false],
+      ["app:two words", false],
+      ["app:sample:owner", false],
+    ] as const;
+    for (const [owner, valid] of owners) {
+      const output = {
+        state: "waiting",
+        summary: "Waiting for source access",
+        evidence: ["source:sample"],
+        conditions: [{
+          id: "source-access", type: "source.access", subject: "source:sample",
+          expected: true, owner, reviewAfterMs: 60_000,
+        }],
+      };
+      expect({ owner, valid: Check(taskAgentResultSchema, output) }).toEqual({ owner, valid });
+      const admitted = admitTaskReconcileResult(output, workflowOptions);
+      expect({ owner, valid: admitted.ok }).toEqual({ owner, valid });
+      if (admitted.ok) {
+        expect(admitted.result.conditions?.[0]?.owner).toBe(owner.trim());
+        expect(Check(taskAgentResultSchema, admitted.result)).toBe(true);
+      }
+    }
+  });
+
   it("rejects legacy close actions instead of manufacturing a successful outcome", () => {
     const result = {
       state: "converged",

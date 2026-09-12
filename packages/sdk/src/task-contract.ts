@@ -27,6 +27,12 @@ const typedConditionSubjectSchema = Type.String({
   pattern: TYPED_CONDITION_SUBJECT_PATTERN,
   description: "Typed resource identity in kind:value form, for example credential:xhs or pipeline-run:42",
 });
+const CONDITION_OWNER_PATTERN = "^\\s*(?:human|[a-z][a-z0-9-]*:[^\\s:]+)\\s*$";
+const conditionOwnerPattern = new RegExp(CONDITION_OWNER_PATTERN);
+const conditionOwnerSchema = Type.String({
+  pattern: CONDITION_OWNER_PATTERN,
+  description: "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
+});
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
   additionalProperties: true,
@@ -71,7 +77,7 @@ export const conditionSchema = Type.Object(
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
     requestedAction: Type.Optional(nonEmptyStringSchema),
-    owner: nonEmptyStringSchema,
+    owner: conditionOwnerSchema,
     reviewAfterMs: Type.Integer({ minimum: MIN_CONDITION_REVIEW_AFTER_MS }),
   },
   { additionalProperties: false },
@@ -343,7 +349,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   }
   const owner = normalizedString(value.owner);
   if (!owner) return `conditions[${index}].owner must be a canonical non-empty identity`;
-  if (owner !== "human" && !/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
+  if (!conditionOwnerPattern.test(owner)) {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
   const reviewAfterMs = value.reviewAfterMs;
