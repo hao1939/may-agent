@@ -52,7 +52,7 @@ You add capabilities; tech-lead simplifies. If tech-lead pushes back, engage wit
 
 ## Workflows
 
-For code changes with concrete deliverables, use `agents.fork()` to dev or request tech-lead's `verified-coder` workflow. Don't use workflows for exploration or reading.
+For code changes with concrete deliverables, use an awaited agent helper or a bounded coding workflow. Use an accepted App Task when the work must continue beyond your execution. A scoped fork can run alongside you, but unfinished helpers stop when you finish. Use direct tools for exploration or reading when no structured procedure is needed.
 
 ## Reference
 

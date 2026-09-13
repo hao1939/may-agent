@@ -151,11 +151,11 @@ than tracking timers. Intervention can wait for the current execution boundary
 unless a demonstrated need justifies review while a helper is still running.
 
 **Implementation limit:** Task ownership, caller feedback and mechanical recovery
-exist. The [tested candidate](../archive/reviews/execution-feedback-poc-20260913.md)
-removes silence stopping for verified Task execution. Other entries, including
-some with configured limits, retain inconsistent execution/recovery rules. The
-[consolidation proposal](../proposals/execution-entrypoint-consolidation.md)
-tracks their migration and retirement. Automatic supervisor fallback and review
+exist. The [consolidated candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
+removes silence stopping and heuristic standalone revival across the supported
+entry points. Its scoped helper cleanup is locally tested; rollout remains
+separate. The [consolidation proposal](../proposals/execution-entrypoint-consolidation.md)
+records the changed defaults and consumer guidance. Automatic supervisor fallback and review
 during an awaited helper remain deferred. The
 [ownership review](../archive/reviews/ownership-boundary-review-20260913.md)
 separates reproduced gaps from source findings; the
@@ -299,7 +299,8 @@ All supported Host executions share rules for limits, cancellation, cleanup and
 results. Entry points and provider adapters may differ; they do not select a
 second work lifecycle. Core owns durable Task admission and result fences;
 execution helpers/adapters run the work, and composition supplies trusted scope.
-The source still has the [entry-point gaps](../proposals/execution-entrypoint-consolidation.md#source-findings-and-their-limits).
+The [candidate and evidence](../archive/reviews/execution-consolidation-poc-20260914.md)
+record consolidation of these entry points; this is not a deployment claim.
 
 | Invocation | Ownership and result |
 | --- | --- |
@@ -314,6 +315,12 @@ do not extend an invocation's allowance. Code supplies and enforces these limits
 agents judge continuation or steering without managing timeout counters. The
 allowance bounds active work, not an idle chat's lifetime or a durable Task's life.
 Unconfirmed cleanup is a visible failure, not permission to overlap executions.
+
+When no limit is configured, the candidate uses a 30-minute invocation default,
+matching the existing Task workflow default. One-shot CLI keeps its five-minute
+default and explicit positive configured limits remain supported. Each active
+direct chat turn gets a fresh allowance; idle time consumes none. These are
+execution limits, not instructions for an agent to track time or judge progress.
 
 Keep bounded agent calls as ordinary capabilities; `ctx.agents.call` and the
 model-facing call can be thin wrappers. Required work that outlives a caller

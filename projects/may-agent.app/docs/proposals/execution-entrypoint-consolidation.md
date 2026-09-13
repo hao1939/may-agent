@@ -1,12 +1,57 @@
 # Consolidate execution entry points
 
-**Status:** Proposal for implementation review, September 13, 2026.
-The ownership direction is accepted; the changes below are not implemented,
-merged or deployed. Source review: Host `b478bc5cf1a8ff8f93583d7ed8bf9a17b3f0815d`
-and App/design `56c9179442`. This follows the
+**Status:** Implemented as a local candidate, September 14, 2026; not merged or deployed.
+The [consolidation PoC record](../archive/reviews/execution-consolidation-poc-20260914.md)
+owns exact revisions, validation results and remaining limits. Original source
+review: Host `b478bc5cf1a8ff8f93583d7ed8bf9a17b3f0815d` and App/design `56c9179442`. This follows the
 [execution-feedback PoC](../archive/reviews/execution-feedback-poc-20260913.md).
-Its passing tests do not verify the remaining callers listed here. Recheck the
-implementation base before making PRs and reuse any prerequisites already landed.
+The earlier PoC did not verify all callers; this candidate extends their scopes
+and tests. Recheck the implementation base before making PRs and reuse any
+prerequisites already landed.
+
+## Candidate outcome
+
+The shared `ExecutionScope` owns one invocation's timer and abort signal. It
+adds no storage, task state, observer loop or automatic review. Manager, direct
+execution and workflow steps use it; provider adapters retain protocol and
+process cleanup. Agents still call tools directly and receive their results.
+
+| Gap | Candidate change |
+| --- | --- |
+| G1 | Remove the silence watchdog and its Task-identity exception. Quiet and active work use their admitted fixed allowance. |
+| G2 | Resolve the generic tool's live caller at invocation; inherit its Task binding, workspace, restriction, cancellation and deadline. Reject a missing caller. |
+| G3 | One-shot waits for the exact terminal result, returns its text/output/error and derives exit status from it. |
+| G4 | Share invocation bounds across manager and direct execution. Join child cleanup before returning; repeated cancellation cannot make draining work appear idle. |
+| G5 | Clamp workflow steps to the remaining allowance and join cancelled helpers, nested workflows and corrective steps before settlement. Fence late calls through the existing signal. |
+| G6 | Remove error-count stopping, automatic standalone resume and their escalation wiring. Keep Task recovery, explicit permitted resume and stale-process cleanup. |
+| G7 | Update owning docs and May/Bob dispatch guidance; keep historical evidence as historical evidence. |
+
+Two review findings refined the implementation: old chat-turn cleanup could
+close a new turn, and child receipt failure could leave its chat parent looking
+running. Cleanup now uses the exact scope; chat terminal handling reports helper
+cleanup failure. The old turn clears its trace links before publishing idle.
+
+The supported model-facing `fork` action remains for scoped concurrency, with a
+portable test exercising that action under a live caller. It shares the manager
+scope and returns existing session evidence; it does not emit a second dispatch
+message or revive itself after restart. No executable App workflow found in the
+consumer inventory requires detached forks. Guidance that requested detached
+dispatch now requests durable Tasks. Keeping the generic action preserves its
+useful capability without keeping an independent background-work lifecycle.
+
+**Behavior changes to review:** an omitted execution limit now resolves to
+30 minutes, matching the existing Task workflow default. Configured shorter or
+longer positive limits remain effective, subject to the caller deadline. The
+one-shot CLI keeps its five-minute default; timeout now returns an exact error
+receipt instead of a separately manufactured `timeout` response. Invalid or
+overflowing effective limits are rejected; invalid CLI minute flags use its
+existing default. Idle direct-chat time consumes no active-turn allowance.
+
+Publish the paired Host and guidance changes through normal review. No stored
+Task identities or historical session records need rewriting. Before rollout,
+inventory installation-specific direct/fork consumers and effective timeout
+configuration; an external caller depending on detached sessions must use the
+normal Task route. Test a live provider separately after source review.
 
 ## Problem and useful outcome
 
@@ -42,7 +87,7 @@ tool call a Task or make every direct response an Event.
 | CLI submits durable App work | Normal validated App input and Task identity | No CLI-owned background job or alternate App-agent launch route |
 | Agent invokes a CLI tool | Direct tool response; adapter-owned process handling | Inherit caller cancellation and remaining allowance; keep provider protocol outside core |
 | `ctx.agents.call` and model-facing `agents.call` | Bounded helper calls, structured results, permitted context and workflow parallelism | Thin scoped wrappers over shared execution rules, without independent recovery |
-| `agents.fork` | Useful caller-owned concurrency if a supported consumer needs it | Remove detached responsibility: migrate durable consumers to Tasks; retire the action if no scoped consumer remains |
+| `agents.fork` | Supported model-tool concurrency within its live caller | Remove detached responsibility; durable consumers use Tasks and unfinished helpers stop with their caller |
 | Persistent direct chat | Reusable conversation context and idle terminal | Bound active work, not the lifetime of an idle chat; do not treat silence as a reason to intervene |
 
 Keep the existing call names for now. Removing `ctx.agents.call` would break
@@ -63,8 +108,9 @@ or event registration instructions.
 
 Runtime paths below are relative to the reviewed Host; `2a-design/` paths are
 relative to this documentation tree at the reviewed App/design revision.
-These are source findings; no new hang, production failure or timing benchmark
-was reproduced during this review.
+These are the original source findings. The candidate changes and portable
+reproductions are recorded above and in the linked PoC evidence; the original
+review itself reproduced no production failure or timing benchmark.
 
 | Gap | Evidence | Proposed treatment |
 | --- | --- | --- |

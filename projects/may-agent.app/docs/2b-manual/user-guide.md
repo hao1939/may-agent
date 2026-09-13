@@ -247,7 +247,7 @@ Agents cooperate through these canonical actions on the `agents` tool:
 | Action     | Type    | Description                                   |
 | ---------- | ------- | --------------------------------------------- |
 | `call`     | Sync    | Block until child agent completes, get result |
-| `fork`     | Async   | Start agent in background, returns sessionId  |
+| `fork`     | Async   | Start a helper owned by the live caller; returns sessionId |
 | `context`  | Query   | Read parent/origin/root/workflow context      |
 | `list`     | Query   | List available agents and active sessions     |
 | `peek`     | Query   | Read a running session's progress             |
@@ -262,18 +262,20 @@ sessions/event traces for execution and causality.
 message is notification only; durable cross-App work uses a child App request
 and durable desired work uses a task.
 
-The intended [execution contract](../2a-design/system-boundary.md#execution)
-keeps helpers under their caller and uses the same limits and result handling.
-Generic call/fork scope still has [implementation gaps](../proposals/execution-entrypoint-consolidation.md).
-Do not treat a fork's session ID or automatic session resume as durable Task
-ownership. A CLI used directly by a human is not automatically supervised by May.
+The [consolidation candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
+keeps helpers under their live caller and joins their cleanup. Finishing the
+caller stops unfinished forks; work owed afterward needs an accepted Task.
+Standalone sessions require explicit resume. A CLI used directly by a human is
+not automatically supervised by May. The candidate uses a 30-minute default
+invocation allowance, preserves the one-shot five-minute default, and returns
+the exact one-shot result and error. It is locally tested, not yet deployed.
 
 ## Session Kinds
 
 | Kind   | Created by                                                                 | Lifecycle                                                   |
 | ------ | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `chat` | Explicit direct-agent chat                                                 | Persistent execution context; never May App work authority. |
-| `job`  | `agents.fork` and other background/detached dispatch                       | Existing session behavior; detached recovery is pending consolidation, not durable Task ownership. |
+| `job`  | Scoped `agents.fork` or a direct managed invocation                       | Bounded execution; no independent recovery or durable Task ownership. |
 | `call` | `agents.call`, workflow `ctx.agents.call`, standalone heartbeat agent step | Bounded synchronous work owned by its caller/workflow.      |
 
 See [sessions.md](../2a-design/sessions.md) for details.

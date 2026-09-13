@@ -12,19 +12,19 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 - **Applies to**: all
 - **Reason**: Hao's direct order. We watch what you did, not listen to what you say.
 
-### [ORDER-003] Use workflows for structured work (2026-04-13, updated 2026-05-20)
+### [ORDER-003] Use workflows for structured work (2026-04-13, updated 2026-09-14)
 Workflows are for **structured bounded work** — heartbeats, reusable procedures, and task-level recipes. These are handled automatically:
 - **Projects** → the project App reconciles durable Tasks through bounded agent or workflow attempts
 - **Heartbeats** → per-agent heartbeat workflow (launched by cron)
-- **Code changes** → `workflow.run("verified-coder", ...)` (tech-lead) or inline via `agents.fork()` to dev
+- **Code changes** → a bounded coding workflow or an awaited `agents.call` helper within the current Task
 
-**Dispatching work to other agents:** Use `agents.fork()` — it's fire-and-forget, doesn't block you. The session is tracked in the DB. Don't wrap dispatch in a blocking workflow — `agents.fork()` is the dispatch primitive.
+**Dispatching work to other agents:** Use an awaited helper for work needed by the current execution. Parallel workflow calls and scoped `agents.fork` can provide concurrency, but unfinished helpers stop with their caller. Work that must continue afterward needs an accepted App Task with its exact input and result link. A session record alone does not preserve that responsibility.
 
 - **Applies to**: all agents
-- **Reason**: Fork is the correct dispatch mechanism. Workflows are for process structure, not dispatch tracking.
+- **Reason**: Workflows structure bounded execution; Tasks preserve responsibility across executions.
 
-### [ORDER-008] May dispatch rules (2026-04-15, updated 2026-04-22)
-When Hao asks May to dispatch work, May must start it immediately using `agents.fork()`. Never use `message()` for human-initiated work — it queues and waits up to 30 minutes.
+### [ORDER-008] May dispatch rules (2026-04-15, updated 2026-09-14)
+When Hao asks May to dispatch durable work, promptly submit it to the responsible App through the supported Task/input capability. Reuse fitting unfinished work by exact identity and report what was accepted. A bounded helper may answer within May's current execution. `message()` is an optional notification, not acceptance of required work.
 - **Applies to**: may
 - **Reason**: Human requests should not wait.
 

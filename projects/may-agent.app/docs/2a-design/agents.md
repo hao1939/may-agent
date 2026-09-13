@@ -3,8 +3,9 @@
 **Design status:** Accepted.
 **Implementation status:** Bounded agent execution and Runtime-managed
 cross-App Task dependencies are implemented. App delegation dispositions have
-been removed. Generic call/fork scope and standalone recovery still have
-[consolidation gaps](../proposals/execution-entrypoint-consolidation.md).
+been removed. The [locally tested consolidation candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
+adds caller scope to generic calls/forks and removes automatic standalone
+recovery. It has not been deployed.
 
 Agent registration has two scopes:
 
@@ -75,10 +76,16 @@ recoverable work belongs in an App request or task.
 
 Required helpers must be joined or stopped before their caller completes, and
 caller cancellation stops them. Parallel awaited workflow calls already support
-concurrent bounded work. `fork` is retained only where a supported caller needs
-scoped concurrency; its current detached job/recovery behavior is an implementation
-gap. Migration or removal must preserve result return and concurrency for actual
-consumers. A returned session ID is not a durable result promise.
+concurrent bounded work. The candidate retains `fork` as a scoped model-tool
+capability, tested through its public action. It no longer creates detached
+responsibility or a second message notification. Existing durable dispatch
+guidance is migrated to App Tasks. A returned session ID is not a durable result
+promise; inspect the result or use an awaited call when it is required.
+
+Trusted live caller context supplies Task binding, execution root, tool policy,
+abort signal and deadline. A restricted caller's helper retains that policy;
+conflicting profile overrides are rejected rather than guessing a privilege
+hierarchy. Different profiles are not automatically ordered by name.
 
 ## Workflow capability
 
@@ -159,8 +166,8 @@ the appropriate App contract rather than relying on a generic owner inbox.
 | Optional FYI with no result obligation                         | `message` notification                  |
 | Repeatable multi-step bounded process                          | `ctx.workflows.run`                     |
 
-The fork row describes its required ownership contract; see the implementation
-gap above. Do not rely on detached auto-resume to fulfill an App obligation.
+The fork row follows the tested candidate contract above. Do not rely on
+detached auto-resume to fulfill an App obligation.
 Provider-specific helpers and direct CLI calls follow the same
 [execution rules](system-boundary.md#execution) without needing their own Tasks.
 

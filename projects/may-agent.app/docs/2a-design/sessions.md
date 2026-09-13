@@ -2,8 +2,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented, including per-turn trace propagation,
-fail-closed start persistence, and terminal error persistence. Execution limits
-and standalone recovery retain [consolidation gaps](../proposals/execution-entrypoint-consolidation.md).
+fail-closed start persistence, and terminal error persistence. Shared execution
+limits, scoped helpers and explicit standalone recovery are a
+[locally tested candidate](../archive/reviews/execution-consolidation-poc-20260914.md), not deployed behavior.
 
 ## The Model
 
@@ -107,8 +108,8 @@ Root (May heartbeat)
 Workflow steps also carry `workflowRunId`; a workflow without a parent agent
 session need not invent one. Task ownership uses the exact runtime-supplied
 Task/attempt binding, not either lineage field. Trace links describe event
-causality. The [cooperation contract](agents.md) owns helper lifetime; current
-generic fork/recovery behavior does not fully enforce it.
+causality. The [cooperation contract](agents.md) owns helper lifetime; the
+consolidation candidate enforces it using the live caller's execution scope.
 
 ## Persistence
 
@@ -159,23 +160,28 @@ does not renew the invocation allowance. Silence and repeated tool errors are
 evidence for the owner, not independent permission to stop or steer work. The
 [execution boundary](system-boundary.md#execution) owns these shared rules.
 
-**Candidate limitation:** the [feedback PoC](../archive/reviews/execution-feedback-poc-20260913.md)
-removes manager silence cancellation only when both a Task binding and a finite
-positive admitted timeout are present. Other managed non-chat entries can still
-receive the five-minute no-observation deadline, even with a configured total
-timeout. This is a remaining implementation inconsistency, not an accepted
-alternative policy. The [consolidation proposal](../proposals/execution-entrypoint-consolidation.md)
-requires verified bounds and cleanup before deleting that path and the separate
-error-count cancellation. Idle chat context does not need a lifetime deadline.
+The [consolidation candidate](../archive/reviews/execution-consolidation-poc-20260914.md)
+removes manager silence cancellation and error-count stopping. The common scope
+uses a 30-minute default when no invocation limit is configured; a caller's
+remaining allowance can shorten it. One-shot CLI retains its five-minute default.
+Direct chat creates a scope per active turn, closes it before becoming idle, and
+does not charge idle time against the next turn. Old-turn cleanup cannot close a
+new scope on the same session.
+
+Cancellation signals the work first. While it or required helpers are draining,
+live status remains running, with the interruption reason available. Repeated
+cancellation is harmless. Terminal results follow cleanup; disappearing from
+the live map is not evidence of success. In-process cancellation is cooperative;
+existing worker/process isolation handles supported unresponsive execution.
 
 An interrupted `call` returns to its caller; generic session auto-resume must
 not start it again independently. The owning workflow or Task decides the next
 bounded attempt using current state. Otherwise a timed-out call can keep editing
 after its workflow settled, outside Task capacity and result fencing. Explicit
-cancellation is likewise not an automatic retry request. Existing automatic
-standalone `job` resume is a migration gap: durable obligations belong to Tasks;
-local invocations return to their caller. Keep explicit permitted user resume
-and stale-state/process cleanup without inventing another work owner.
+cancellation is likewise not an automatic retry request. The candidate removes
+automatic standalone `job` resume: durable obligations belong to Tasks; local
+invocations return to their caller. Explicit permitted user resume and
+stale-state/process cleanup remain, without inventing another work owner.
 
 ## Data Retention
 
