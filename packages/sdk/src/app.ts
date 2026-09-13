@@ -413,6 +413,8 @@ export type AppConversationPolicy = {
 /** Minimal declaration used by the App host. Domain payloads remain App-owned. */
 type AppDefinitionBase<TInputSchema extends TSchema> = {
   id: string;
+  /** Prior durable App addresses accepted as ingress aliases and migrated by the Host. */
+  previousIds?: string[];
   version: 1;
   description?: string;
   inputSchema: TInputSchema;

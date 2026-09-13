@@ -23,9 +23,23 @@ export type AppRegistrySnapshot = Readonly<{
   entries: readonly Readonly<LoadedAppDefinition>[];
 }>;
 
+function normalizedAppId(appId: string): string {
+  return appId.trim().replace(/\.app$/, "");
+}
+
+export function canonicalAppId(entries: AppRegistrySnapshot["entries"], appId: string): string | undefined {
+  const requested = normalizedAppId(appId);
+  if (!requested) return undefined;
+  for (const { definition } of entries) {
+    if (definition.id === requested || definition.previousIds?.includes(requested)) return definition.id;
+  }
+  return undefined;
+}
+
 function immutableEntries(entries: Awaited<ReturnType<AppDefinitionSource>>): readonly Readonly<LoadedAppDefinition>[] {
   const ids = new Set<string>();
-  return Object.freeze(
+  const aliases = new Set<string>();
+  const immutable = Object.freeze(
     entries.map(({ appDir, definition }) => {
       assertValidAppDefinition(definition);
       if (ids.has(definition.id)) throw new Error(`Duplicate App id: ${definition.id}`);
@@ -33,6 +47,16 @@ function immutableEntries(entries: Awaited<ReturnType<AppDefinitionSource>>): re
       return Object.freeze({ appDir, definition: Object.freeze(normalizeAppAgent(definition)) });
     }),
   );
+  for (const { definition } of immutable) {
+    for (const previousId of definition.previousIds ?? []) {
+      if (ids.has(previousId)) {
+        throw new Error(`App previous id ${previousId} conflicts with an installed canonical App id`);
+      }
+      if (aliases.has(previousId)) throw new Error(`Duplicate App previous id: ${previousId}`);
+      aliases.add(previousId);
+    }
+  }
+  return immutable;
 }
 
 /**
@@ -60,6 +84,10 @@ export class AppRegistry {
     return this.current;
   }
 
+  canonicalId(appId: string): string | undefined {
+    return canonicalAppId(this.current.entries, appId);
+  }
+
   resolveInstalledTask(
     appId: string,
     event: AppEvent<Record<string, unknown>>,
@@ -69,13 +97,14 @@ export class AppRegistry {
     intent: TaskIntent | null;
   } {
     const snapshot = this.current;
-    const entry = snapshot.entries.find((candidate) => candidate.definition.id === appId);
+    const canonicalId = canonicalAppId(snapshot.entries, appId);
+    const entry = snapshot.entries.find((candidate) => candidate.definition.id === canonicalId);
     if (!entry) throw new Error(`App ${appId} is not loaded`);
     const resolver = entry.definition.tasks?.resolve;
     if (!resolver) throw new Error(`App ${appId} does not declare tasks.resolve`);
     return {
       snapshot: { id: snapshot.id, generation: snapshot.generation },
-      appId,
+      appId: entry.definition.id,
       intent: resolver(event),
     };
   }

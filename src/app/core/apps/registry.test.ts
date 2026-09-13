@@ -53,6 +53,40 @@ describe("App registry", () => {
     },
   );
 
+  it("resolves prior ids without exposing them as duplicate installed Apps", async () => {
+    const renamed = entry("scout-lib");
+    const registry = new AppRegistry(async () => [
+      {
+        ...renamed,
+        definition: {
+          ...renamed.definition,
+          previousIds: ["scout-knowledge-lib"],
+          tasks: { resolve: () => ({ id: "probe", outcome: "Probe", acceptance: ["Done"] }) },
+        },
+      },
+    ]);
+    await registry.reload();
+
+    expect(registry.entries().map(({ definition }) => definition.id)).toEqual(["scout-lib"]);
+    expect(registry.canonicalId("scout-knowledge-lib.app")).toBe("scout-lib");
+    expect(registry.canonicalId("scout-lib")).toBe("scout-lib");
+    expect(registry.resolveInstalledTask("scout-knowledge-lib", { type: "probe", data: {} }).appId).toBe("scout-lib");
+  });
+
+  it("rejects previous ids that collide with canonical or other alias identities", async () => {
+    const canonical = entry("scout-lib");
+    const previous = (id: string, alias: string) => {
+      const value = entry(id);
+      return { ...value, definition: { ...value.definition, previousIds: [alias] } };
+    };
+    await expect(new AppRegistry(async () => [canonical, previous("other", "scout-lib")]).reload()).rejects.toThrow(
+      "conflicts with an installed canonical App id",
+    );
+    await expect(
+      new AppRegistry(async () => [previous("one", "legacy"), previous("two", "legacy")]).reload(),
+    ).rejects.toThrow("Duplicate App previous id");
+  });
+
   it("publishes a replacement only after its consumer accepts it", async () => {
     const registry = new AppRegistry(async () => [entry("before")]);
     await registry.reload();

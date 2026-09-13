@@ -88,6 +88,17 @@ describe("App inbox host", () => {
     });
   });
 
+  it("accepts a declared prior App id but persists and exposes only the canonical id", () => {
+    const renamed = defineApp({ ...app("scout-lib"), previousIds: ["scout-knowledge-lib"] });
+    const host = new AppInboxHost({ db, apps: [renamed] });
+
+    expect(host.appIds()).toEqual(["scout-lib"]);
+    expect(host.hasApp("scout-knowledge-lib.app")).toBe(true);
+    expect(host.acceptsInput("scout-knowledge-lib", { kind: "probe", data: { value: "legacy" } })).toBe(true);
+    expect(admit(host, "legacy-input", "scout-knowledge-lib").appId).toBe("scout-lib");
+    expect(host.isOwnedApp("scout-knowledge-lib", "scout-lib-owner")).toBe(true);
+  });
+
   it("atomically replaces exact inbox subscription routes", () => {
     const routed: string[] = [];
     const subscribed = (eventType: string) =>

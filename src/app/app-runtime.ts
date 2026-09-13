@@ -15,6 +15,7 @@ import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./ap
 import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
 import { readAppConversationResource } from "./core/state/conversations.js";
+import { migrateAppIdentities } from "./core/state/app-identity-migration.js";
 import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { attachCommandRouter } from "./command-router.js";
 import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
@@ -38,7 +39,10 @@ import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 import { HumanTaskService } from "./human-task-service.js";
-import { createTaskAttemptProcessExecutor, createTaskRecoveryProcessExecutor } from "./composition/workers/task-attempt-process.js";
+import {
+  createTaskAttemptProcessExecutor,
+  createTaskRecoveryProcessExecutor,
+} from "./composition/workers/task-attempt-process.js";
 import { createTaskAdmissionProcess } from "./composition/workers/task-admission-process.js";
 import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
@@ -197,7 +201,12 @@ export async function runAppRuntime(opts: {
   const appRegistry = new AppRegistry(
     discoverAppDefinitions(activeAppSource.projectsRoot, opts.projectsRoot, {}, activeAppDirectories),
   );
-  await appRegistry.reload();
+  await appRegistry.reload((snapshot) => {
+    migrateAppIdentities(
+      getDb(opts.persistDir),
+      snapshot.entries.map((entry) => entry.definition),
+    );
+  });
   // Registry publication can await recovery after the source link has moved.
   // Workers must capture one accepted pair, never combine those two clocks.
   let acceptedWorkerSource = { ...activeAppSource, appDirectories: activeAppDirectories };
@@ -269,8 +278,7 @@ export async function runAppRuntime(opts: {
     db: getDb(opts.persistDir),
     conversationAppId,
     acceptsAppInput: (appId, input) => appInboxRuntime?.host.acceptsInput(appId, input) ?? false,
-    hasApp: (appId) =>
-      appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
+    hasApp: (appId) => Boolean(appRegistry.canonicalId(appId)),
     hasAgent: (agent) => manager.hasAgent(agent),
     hasSession: (sessionId) =>
       manager.getSessionSummary(sessionId).status !== "unknown" ||
@@ -500,10 +508,15 @@ export async function runAppRuntime(opts: {
     reportInfo: (message) => bus.emit({ type: "info", message }),
     admitAppInput,
     getAppConversation: (appId, conversationId, options) =>
-      readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
+      readAppConversationResource(
+        getDb(opts.persistDir),
+        appRegistry.canonicalId(appId) ?? appId,
+        conversationId,
+        options,
+      ),
     listAppTasks: (appId, options) => {
       return appTasks.list({
-        appId,
+        appId: appRegistry.canonicalId(appId) ?? appId,
         options: {
           ...(options?.status ? { status: options.status as TaskListOptions["status"] } : {}),
           ...(options?.limit === undefined ? {} : { limit: options.limit }),
@@ -511,7 +524,7 @@ export async function runAppRuntime(opts: {
         },
       });
     },
-    getAppTask: (appId, taskId) => appTasks.get({ appId, taskId }),
+    getAppTask: (appId, taskId) => appTasks.get({ appId: appRegistry.canonicalId(appId) ?? appId, taskId }),
     resolveAppTask: (appId, event) =>
       appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
     listApps: (appId) => humanTasks.listApps(appId),

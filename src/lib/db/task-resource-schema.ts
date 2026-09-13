@@ -95,6 +95,13 @@ CREATE TABLE IF NOT EXISTS app_task_refs (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_refs_prefix8 ON app_task_refs(prefix8, digest);
 CREATE INDEX IF NOT EXISTS idx_app_task_refs_prefix16 ON app_task_refs(prefix16, digest);
+CREATE TABLE IF NOT EXISTS app_task_ref_aliases (
+  digest TEXT PRIMARY KEY, prefix8 TEXT NOT NULL, prefix16 TEXT NOT NULL,
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL, indexed_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_app_task_ref_aliases_prefix8 ON app_task_ref_aliases(prefix8, digest);
+CREATE INDEX IF NOT EXISTS idx_app_task_ref_aliases_prefix16 ON app_task_ref_aliases(prefix16, digest);
+CREATE INDEX IF NOT EXISTS idx_app_task_ref_aliases_task ON app_task_ref_aliases(app_id, task_id);
 CREATE TABLE IF NOT EXISTS app_task_cancellations (
   app_id TEXT NOT NULL, task_id TEXT NOT NULL,
   requested_at INTEGER NOT NULL, reason TEXT NOT NULL, cancellation_json TEXT NOT NULL,
@@ -129,7 +136,8 @@ CREATE INDEX IF NOT EXISTS idx_app_task_admissions_target
 
 /** Rebuild compact delivery identities from retained Task input/attempt evidence. */
 export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
-  db.prepare(`
+  db.prepare(
+    `
     INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
     SELECT app_id, task_id, 'event:' || event_id, observed_at, '{}'
     FROM (
@@ -151,7 +159,8 @@ export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
       SELECT app_id, task_id, updated_at, json_extract(trigger_json, '$.event.eventId')
       FROM app_tasks WHERE app_id = ?1
     ) WHERE typeof(event_id) = 'integer' AND event_id > 0 AND event_id <= 9007199254740991
-  `).run(appId);
+  `,
+  ).run(appId);
   // Synthetic hints have no durable delivery identity and remain coalescible
   // in the pending trigger, without accumulating lifetime receipt hashes.
   db.prepare("DELETE FROM app_task_events WHERE app_id = ? AND event_key NOT LIKE 'event:%'").run(appId);
@@ -160,9 +169,9 @@ export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
 }
 
 function migrateTaskEventReceipts(db: SqliteDb): void {
-  const apps = db.prepare(
-    "SELECT app_id FROM app_task_store_meta WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 3",
-  ).all() as Array<{ app_id: string }>;
+  const apps = db
+    .prepare("SELECT app_id FROM app_task_store_meta WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 3")
+    .all() as Array<{ app_id: string }>;
   if (!apps.length) return;
   db.exec("SAVEPOINT task_event_receipts");
   try {

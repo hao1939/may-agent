@@ -141,6 +141,7 @@ function errorMessage(error: unknown): string {
 export class AppInboxHost {
   readonly #db: SqliteDb;
   #apps: Map<string, RegisteredApp>;
+  #previousIds: Map<string, string>;
   #subscriptionsByEventType: Map<string, RegisteredSubscription[]>;
   readonly #readDependency?: AppDependencyReader;
   readonly #attachTask?: AppTaskAttacher;
@@ -165,6 +166,7 @@ export class AppInboxHost {
     this.#onRequestUpdated = options.onRequestUpdated;
     this.#onFailure = options.onFailure;
     this.#apps = new Map();
+    this.#previousIds = new Map();
     this.#subscriptionsByEventType = new Map();
     this.replaceApps(options.apps);
   }
@@ -174,12 +176,12 @@ export class AppInboxHost {
   }
 
   hasApp(appId: string): boolean {
-    return this.#apps.has(appId.trim().replace(/\.app$/, ""));
+    return Boolean(this.#canonicalId(appId));
   }
 
   describeActions(appId: string): AppActionDescription[] {
-    const normalized = appId.trim().replace(/\.app$/, "");
-    const app = this.#apps.get(normalized);
+    const normalized = this.#canonicalId(appId);
+    const app = normalized ? this.#apps.get(normalized) : undefined;
     if (!app) throw new Error(`App ${appId} is not loaded`);
     return Object.entries(app.actions ?? {}).map(([id, action]) => ({
       id,
@@ -189,8 +191,8 @@ export class AppInboxHost {
   }
 
   invokeAction(appId: string, actionId: string, params: unknown): AppInput {
-    const normalized = appId.trim().replace(/\.app$/, "");
-    const app = this.#apps.get(normalized);
+    const normalized = this.#canonicalId(appId);
+    const app = normalized ? this.#apps.get(normalized) : undefined;
     if (!app) throw new Error(`App ${appId} is not loaded`);
     const action = app.actions?.[actionId];
     if (!action) throw new Error(`App ${normalized} has no action ${actionId}`);
@@ -206,6 +208,7 @@ export class AppInboxHost {
   /** Atomically replace the live App definitions after a validated reload. */
   replaceApps(definitions: AppDefinition[]): void {
     const next = new Map<string, RegisteredApp>();
+    const nextPreviousIds = new Map<string, string>();
     const nextSubscriptions = new Map<string, RegisteredSubscription[]>();
     for (const definition of definitions) {
       const app = validateAppDefinition(definition);
@@ -216,6 +219,15 @@ export class AppInboxHost {
         const routes = nextSubscriptions.get(eventType) ?? [];
         routes.push({ app, subscription });
         nextSubscriptions.set(eventType, routes);
+      }
+    }
+    for (const app of next.values()) {
+      for (const previousId of app.previousIds ?? []) {
+        if (next.has(previousId)) {
+          throw new Error(`App previous id ${previousId} conflicts with an installed canonical App id`);
+        }
+        if (nextPreviousIds.has(previousId)) throw new Error(`Duplicate App previous id: ${previousId}`);
+        nextPreviousIds.set(previousId, app.id);
       }
     }
     const pendingAdmissions = this.#db
@@ -275,11 +287,13 @@ export class AppInboxHost {
       if (unfinished) throw new Error(`Cannot remove App ${id} while it owns unfinished inbox items`);
     }
     this.#apps = next;
+    this.#previousIds = nextPreviousIds;
     this.#subscriptionsByEventType = nextSubscriptions;
   }
 
   acceptsInput(appId: string, input: AppInput): boolean {
-    const app = this.#apps.get(appId.trim());
+    const canonicalId = this.#canonicalId(appId);
+    const app = canonicalId ? this.#apps.get(canonicalId) : undefined;
     return Boolean(app && Check(app.inputSchema, input));
   }
 
@@ -312,7 +326,8 @@ export class AppInboxHost {
   }
 
   isOwnedApp(appId: string, owner: string): boolean {
-    const app = this.#apps.get(appId.trim());
+    const canonicalId = this.#canonicalId(appId);
+    const app = canonicalId ? this.#apps.get(canonicalId) : undefined;
     const normalizedOwner = owner.trim().replace(/^(?:agent|app):/, "");
     return Boolean(
       app &&
@@ -336,6 +351,7 @@ export class AppInboxHost {
       input.originEventId !== undefined;
     const prepared = {
       ...input,
+      appId: app.id,
       ...(useDefaultConversation
         ? { conversationId: defaultConversationId, conversationSequence: input.originEventId }
         : {}),
@@ -360,19 +376,26 @@ export class AppInboxHost {
   }
 
   stopTurn(target: AppTurnTarget): void {
-    this.#requiredApp(target.appId);
+    const app = this.#requiredApp(target.appId);
     if (!this.#stopConversationTurn) throw new Error("Conversation Task control is not configured");
-    this.#stopConversationTurn(target);
+    this.#stopConversationTurn({ ...target, appId: app.id });
   }
 
   close(): void {
     this.#closed = true;
   }
 
+  #canonicalId(appId: string): string | undefined {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    if (!normalized) return undefined;
+    return this.#apps.has(normalized) ? normalized : this.#previousIds.get(normalized);
+  }
+
   #requiredApp(appId: string): RegisteredApp {
-    const normalized = requiredText(appId, "App id");
-    const app = this.#apps.get(normalized);
-    if (!app) throw new Error(`Unknown App: ${normalized}`);
+    const requested = requiredText(appId, "App id");
+    const canonicalId = this.#canonicalId(requested);
+    const app = canonicalId ? this.#apps.get(canonicalId) : undefined;
+    if (!app) throw new Error(`Unknown App: ${requested}`);
     return app;
   }
 

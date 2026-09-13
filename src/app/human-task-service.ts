@@ -789,8 +789,19 @@ export class HumanTaskService {
     ensureTaskReferenceIndex(db);
   }
 
+  private canonicalAppId(appId: string | undefined): string | undefined {
+    const normalized = normalizeAppId(appId);
+    if (!normalized) return undefined;
+    const match = this.registry
+      .snapshot()
+      .entries.find(
+        ({ definition }) => definition.id === normalized || definition.previousIds?.includes(normalized),
+      );
+    return match?.definition.id ?? normalized;
+  }
+
   listApps(appId?: string): HumanAppView[] {
-    const selected = normalizeAppId(appId);
+    const selected = this.canonicalAppId(appId);
     const counts = this.db
       .prepare(
         `SELECT app_id,
@@ -873,7 +884,7 @@ export class HumanTaskService {
     // Keep the indexed stored-phase search, then narrow by the display phase.
     // Pending also includes converged rows with a newly queued cycle.
     const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged"])] : livePhases;
-    const appId = normalizeAppId(input.appId);
+    const appId = this.canonicalAppId(input.appId);
     const humanOwners = humanActionOnly
       ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
       : [];
@@ -1010,7 +1021,7 @@ export class HumanTaskService {
       }
       identity = resolved.task;
     } else {
-      const appId = normalizeAppId(input.appId);
+      const appId = this.canonicalAppId(input.appId);
       const taskId = input.taskId?.trim();
       if (!appId || !taskId) throw new Error("Task read requires ref or App and Task ids");
       identity = { appId, taskId, digest: taskReferenceDigest(appId, taskId) };

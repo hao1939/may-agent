@@ -55,6 +55,17 @@ export function validateAppDefinition(definition: unknown): string[] {
   const appId = nonEmpty(app.id) ? app.id : "<unknown>";
 
   if (!nonEmpty(app.id)) errors.push("App id must be a non-empty string");
+  if (app.previousIds !== undefined) {
+    if (
+      !Array.isArray(app.previousIds) ||
+      app.previousIds.some((id) => !nonEmpty(id)) ||
+      new Set(app.previousIds).size !== app.previousIds.length
+    ) {
+      errors.push(`App ${appId} previousIds must contain unique non-empty strings`);
+    } else if (app.previousIds.includes(app.id)) {
+      errors.push(`App ${appId} previousIds cannot contain its canonical id`);
+    }
+  }
   if (app.version !== 1) errors.push(`App ${appId} must declare version 1`);
   const agent = nonEmpty(app.agent) ? app.agent.trim() : undefined;
   const legacyOwner = nonEmpty(app.owner) ? app.owner.trim() : undefined;

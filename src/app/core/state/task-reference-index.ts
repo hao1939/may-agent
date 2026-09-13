@@ -84,12 +84,16 @@ export function resolveTaskReference(db: SqliteDb, input: string): TaskReference
   }
   const column = reference.length === 8 ? "prefix8" : reference.length === 16 ? "prefix16" : "digest";
   const rows = db
-    .prepare(`SELECT app_id, task_id, digest FROM app_task_refs WHERE ${column} = ? ORDER BY app_id, task_id LIMIT 11`)
+    .prepare(
+      `SELECT app_id, task_id, digest FROM (
+         SELECT app_id, task_id, digest, prefix8, prefix16 FROM app_task_refs
+         UNION ALL
+         SELECT app_id, task_id, digest, prefix8, prefix16 FROM app_task_ref_aliases
+       ) WHERE ${column} = ? ORDER BY app_id, task_id LIMIT 11`,
+    )
     .all(reference) as Array<{ app_id?: string; task_id?: string; digest?: string }>;
   const candidates = rows.flatMap((row) =>
-    row.app_id && row.task_id && row.digest
-      ? [{ appId: row.app_id, taskId: row.task_id, digest: row.digest }]
-      : [],
+    row.app_id && row.task_id && row.digest ? [{ appId: row.app_id, taskId: row.task_id, digest: row.digest }] : [],
   );
   if (candidates.length === 0) return { kind: "missing" };
   if (candidates.length > 1) return { kind: "ambiguous", candidates };
@@ -111,8 +115,10 @@ export function displayTaskReferences(
   if (prefixes.length > 0) {
     const rows = db
       .prepare(
-        `SELECT prefix8, COUNT(*) AS count FROM app_task_refs
-         WHERE prefix8 IN (${prefixes.map(() => "?").join(", ")}) GROUP BY prefix8`,
+        `SELECT prefix8, COUNT(*) AS count FROM (
+           SELECT prefix8 FROM app_task_refs
+           UNION ALL SELECT prefix8 FROM app_task_ref_aliases
+         ) WHERE prefix8 IN (${prefixes.map(() => "?").join(", ")}) GROUP BY prefix8`,
       )
       .all(...prefixes) as Array<{ prefix8?: string; count?: number }>;
     for (const row of rows) if (row.prefix8) collisionCounts.set(row.prefix8, Number(row.count ?? 0));
@@ -126,8 +132,10 @@ export function displayTaskReferences(
     if (collidingPrefix16.length > 0) {
       const prefix16Rows = db
         .prepare(
-          `SELECT prefix16, COUNT(*) AS count FROM app_task_refs
-           WHERE prefix16 IN (${collidingPrefix16.map(() => "?").join(", ")}) GROUP BY prefix16`,
+          `SELECT prefix16, COUNT(*) AS count FROM (
+             SELECT prefix16 FROM app_task_refs
+             UNION ALL SELECT prefix16 FROM app_task_ref_aliases
+           ) WHERE prefix16 IN (${collidingPrefix16.map(() => "?").join(", ")}) GROUP BY prefix16`,
         )
         .all(...collidingPrefix16) as Array<{ prefix16?: string; count?: number }>;
       for (const row of prefix16Rows) {

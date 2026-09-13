@@ -25,11 +25,12 @@ import {
   type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
 import { listConversationTopicLinksForTask } from "../core/state/conversations.js";
-import type {
-  AppDefinitionSource,
-  AppRegistry,
-  AppRegistrySnapshot,
-  LoadedAppDefinition,
+import {
+  canonicalAppId,
+  type AppDefinitionSource,
+  type AppRegistry,
+  type AppRegistrySnapshot,
+  type LoadedAppDefinition,
 } from "../core/apps/registry.js";
 import {
   completeAppEventAdmissionPlan,
@@ -450,7 +451,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           originEventId: plan.eventId,
           idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
         });
-
       }
       if (command.kind !== "inbox" || command.conditionTaskIds.length > 0) {
         if (!entry.definition.tasks) {
@@ -667,9 +667,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped")
         return { accepted: true, by: "task-runtime-notification", route: "direct" };
       if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
-        const rows = options.db.prepare(`SELECT DISTINCT conversation_id FROM app_inbox_items
+        const rows = options.db
+          .prepare(
+            `SELECT DISTINCT conversation_id FROM app_inbox_items
           WHERE app_id = ? AND conversation_id IS NOT NULL AND
-            (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`)
+            (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`,
+          )
           .all(String(data.project ?? ""), String(data.taskId ?? ""), String(data.taskId ?? ""));
         for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
       }
@@ -923,7 +926,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               `Exact task target ${exactTarget.taskId} for event ${identity} has no canonical App identity in registry generation ${routeGeneration}`,
             );
           }
-          const entry = loadedById.get(exactTarget.appId);
+          const targetAppId = canonicalAppId(routeSnapshot.entries, exactTarget.appId);
+          const entry = targetAppId ? loadedById.get(targetAppId) : undefined;
           const tasks = entry?.definition.tasks;
           if (!entry) {
             throw new Error(
@@ -938,7 +942,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           if (
             taskAdmissionWorker &&
             options.hasTaskTarget &&
-            !options.hasTaskTarget({ appId: exactTarget.appId, taskId: exactTarget.taskId })
+            !options.hasTaskTarget({ appId: entry.definition.id, taskId: exactTarget.taskId })
           ) {
             throw new Error(
               `Exact task target ${exactTarget.appId}/${exactTarget.taskId} for event ${identity} does not exist`,

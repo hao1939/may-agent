@@ -8,6 +8,7 @@ describe("canonical App definition validation", () => {
   it("accepts one complete canonical declaration", () => {
     const definition = defineApp({
       id: "evaluation",
+      previousIds: ["evaluation-library"],
       version: 1,
       agent: "evaluator",
       inputSchema,
@@ -67,6 +68,27 @@ describe("canonical App definition validation", () => {
     });
 
     expect(validateAppDefinition(definition)).toEqual([]);
+  });
+
+  it("rejects malformed or self-referential previous App ids", () => {
+    expect(
+      validateAppDefinition({
+        id: "renamed",
+        previousIds: ["old", "old"],
+        version: 1,
+        agent: "worker",
+        inputSchema,
+      }),
+    ).toContain("App renamed previousIds must contain unique non-empty strings");
+    expect(
+      validateAppDefinition({
+        id: "renamed",
+        previousIds: ["renamed"],
+        version: 1,
+        agent: "worker",
+        inputSchema,
+      }),
+    ).toContain("App renamed previousIds cannot contain its canonical id");
   });
 
   it("accepts legacy owner only at the migration boundary and rejects ambiguity", () => {
