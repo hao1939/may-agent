@@ -51,7 +51,7 @@ export function listConversationRequests(
     db
       .prepare(
         `SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ?
-    AND (status = 'open' ${topicId ? "OR topic_id = ?" : ""})
+    ${topicId ? "AND (status = 'open' OR topic_id = ?)" : ""}
     ${taskRef ? "AND EXISTS (SELECT 1 FROM json_each(task_refs) ref WHERE json_extract(ref.value, '$.appId') = ? AND json_extract(ref.value, '$.taskId') = ?)" : ""}
     ORDER BY (status = 'open') DESC, ${topicId ? "(topic_id = ?) DESC," : ""} updated_at DESC, id LIMIT 12`,
       )
@@ -101,6 +101,8 @@ export function applyConversationRequestUpdates(
         .prepare("SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND id = ?")
         .get(input.appId, input.conversationId, update.id) as Row | undefined;
       const current = row ? view(row) : null;
+      const scope = update.scope ?? current?.scope;
+      if (!scope?.trim()) throw new ConversationRequestConflict(`New Request ${update.id} requires a scope`);
       const closed = update.disposition !== "open";
       if (closed && (!update.reason?.trim() || !input.messageId))
         throw new Error("Request closure requires a reason and Conversation explanation");
@@ -115,14 +117,18 @@ export function applyConversationRequestUpdates(
       if (
         row?.update_key === input.updateKey &&
         current?.revision === update.expectedRevision + 1 &&
-        current.scope === update.scope &&
+        current.scope === scope &&
         JSON.stringify(current.closure) === JSON.stringify(closure) &&
         JSON.stringify(current.taskRefs) === JSON.stringify(refs)
       )
         continue;
-      if ((current?.revision ?? 0) !== update.expectedRevision || (closed && current && current.scope !== update.scope))
+      if ((current?.revision ?? 0) !== update.expectedRevision)
         throw new ConversationRequestConflict(
-          `Accepted Request ${update.id} changed; review its current scope and revision`,
+          `Accepted Request ${update.id} revision changed: expected ${update.expectedRevision}, current ${current?.revision ?? 0}; review its current scope and revision`,
+        );
+      if (closed && current && current.scope !== scope && !update.correctionReason?.trim())
+        throw new ConversationRequestConflict(
+          `Request ${update.id} closure changes scope; omit scope to retain it, or supply correctionReason for an authorized correction`,
         );
       for (const ref of refs) {
         const known = db
@@ -144,7 +150,7 @@ export function applyConversationRequestUpdates(
           input.conversationId,
           update.id,
           update.expectedRevision + 1,
-          update.scope,
+          scope,
           closed ? "closed" : "open",
           input.topicId ?? current?.topicId ?? null,
           JSON.stringify(refs),

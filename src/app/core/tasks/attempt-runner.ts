@@ -4,6 +4,7 @@ import {
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskIntent as AppTaskIntent,
   type TaskAction,
+  type TaskAttempt,
 } from "@may-agent/sdk";
 import { join } from "node:path";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -80,6 +81,7 @@ export async function runTaskAttempt(input: {
   reportTiming: (timing: AppTaskTiming) => void;
 }): Promise<string[]> {
   const { opts, descriptor } = input;
+  let unacceptedResult: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
 
   const timing: AppTaskTiming = {
     dispatch: input.dispatch,
@@ -687,6 +689,15 @@ export async function runTaskAttempt(input: {
             });
             return stale.reconcileTaskIds;
           }
+          unacceptedResult = {
+            attemptId: primary.attemptId,
+            sessionId: config.resourceStore.readAttempt(primary.attemptId)?.sessionId,
+            settlementError: error instanceof Error ? error.message : String(error),
+            summary: primaryHandlerResult.summary,
+            response: primaryHandlerResult.response,
+            result: primaryHandlerResult.result,
+            facts: primaryHandlerResult.facts,
+          };
           primaryHandlerResult.state = "error";
           primaryHandlerResult.summary = `Handler actions were rejected: ${error instanceof Error ? error.message : String(error)}`;
         }
@@ -811,7 +822,11 @@ export async function runTaskAttempt(input: {
       !agentHandoff &&
       !primaryHandlerResult.resultRejected
     ) {
-      const retry = persistResult(() => failAppTaskAttempt(config, primary, primaryHandlerResult.summary));
+      const retry = persistResult(() =>
+        failAppTaskAttempt(config, primary, primaryHandlerResult.summary, {
+          ...(unacceptedResult ? { reason: "HandlerResultSettlementFailed", unacceptedResult } : {}),
+        }),
+      );
       if (retry.status === "superseded") return [];
       emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
         generation: primary.generation,

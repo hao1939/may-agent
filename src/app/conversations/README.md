@@ -38,6 +38,22 @@ the input for normal Task retry. Rejected proposals do not publish a misleading
 reply. Previous-attempt facts let the App correct its decision after backoff,
 including after storage reopen; there is no extra conversational retry loop.
 
+Request updates may omit `scope` to retain the stored ask. A new ask requires
+scope; correcting and closing an existing ask together requires an explicit
+`correctionReason`. The App explains and judges the correction. The Host checks
+the observed revision and atomically commits scope, disposition and reply.
+Ordinary closure cannot silently change scope. The bounded Request list prefers
+open asks, then includes recent closed asks so a human can naturally correct one.
+
+When final result settlement fails, the attempt retains `unacceptedResult`
+separately from accepted state, including its originating attempt/session and
+the returned facts. Ordinary recovery brings that evidence forward, even when
+an intervening repair attempt fails. The Conversation adapter also reads the
+current Requests named by the rejected decision, including closed asks. The
+agent judges whether to repair its decision or perform more work; failed
+settlement never automatically replays the proposed effects or establishes
+fulfillment. This is evidence for review, not an exactly-once tool guarantee.
+
 A handoff links the responsible Task to the caller's Topic and, when declared,
 accepted Request. Linked answers, honest failure reports and owner closures
 return as durable input. Intermediate waits remain readable without executing

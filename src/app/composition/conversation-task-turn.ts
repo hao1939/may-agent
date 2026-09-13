@@ -1,12 +1,18 @@
-import type { AppDefinition, AppTaskAttachment } from "@may-agent/sdk";
+import {
+  conversationTurnResultSchema,
+  type AppDefinition,
+  type AppTaskAttachment,
+  type ConversationTurnResult,
+} from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import { readConversationTaskInputs, type ConversationTaskProposal } from "../core/state/conversation-task-turns.js";
 import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
-import { prepareConversationInput } from "../conversations/context.js";
+import { boundedAppRequestConversation, prepareConversationInput } from "../conversations/context.js";
 import { readConversationTopic } from "../core/state/conversations.js";
 import type { AppInputResolver } from "../conversations/turn-agent.js";
+import { readConversationRequest } from "../core/state/conversation-requests.js";
 
 /** Prepare a judgment under the Task claim. The common runtime alone settles it. */
 export async function prepareConversationTaskTurn(input: {
@@ -31,6 +37,28 @@ export async function prepareConversationTaskTurn(input: {
   );
   inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
   if (claim.previousAttempt) inputContext.previousAttempt = structuredClone(claim.previousAttempt);
+  // Bring the exact Requests involved in rejected settlement back into bounded
+  // context, including closed asks outside the ordinary context window.
+  const priorDecision = claim.previousAttempt?.unacceptedResult?.result?.conversation;
+  if (inputContext.conversation && Check(conversationTurnResultSchema, priorDecision)) {
+    const requests =
+      (priorDecision as ConversationTurnResult).requestUpdates?.flatMap(({ id }) => {
+        const request = readConversationRequest(config.resourceStore.db, app.id, item.conversationId!, id);
+        return request ? [request] : [];
+      }) ?? [];
+    inputContext.conversation = boundedAppRequestConversation(
+      {
+        ...inputContext.conversation,
+        requests: [
+          ...requests,
+          ...(inputContext.conversation.requests ?? []).filter(
+            (request) => !requests.some((prior) => prior.id === request.id),
+          ),
+        ],
+      },
+      item.id,
+    );
+  }
   const decision = await input.resolveConversationInput({
     app,
     inputContext: freezeInputContext(inputContext),

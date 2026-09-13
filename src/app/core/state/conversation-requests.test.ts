@@ -242,6 +242,112 @@ test("failed reply rolls back Request closure; restart redoes the retained input
   expect(getAppInboxItem(f.db, "turn-2")?.status).toBe("done");
 });
 
+test("an explicit correction and closure commit together; failed reply rolls back both", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [{ ...ask, disposition: "unfulfilled", reason: "Source unavailable" }] });
+  const decision: ConversationTurnResult = {
+    ...answer,
+    response: "You corrected the source; I compared the corrected options including costs.",
+    requestUpdates: [
+      {
+        id: ask.id,
+        expectedRevision: 1,
+        scope: "Compare corrected options including costs",
+        correctionReason: "Human corrected the source",
+        disposition: "fulfilled",
+        reason: "Comparison verified",
+      },
+    ],
+  };
+  const turn = await f.prepare(decision);
+  f.db.exec(`CREATE TRIGGER reject_correction BEFORE UPDATE ON app_inbox_items WHEN NEW.result IS NOT NULL
+    BEGIN SELECT RAISE(ABORT, 'fixture reply failure'); END;`);
+  expect(turn.settle).toThrow("fixture reply failure");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 1,
+    scope: ask.scope,
+    closure: { disposition: "unfulfilled" },
+  });
+  f.db.exec("DROP TRIGGER reject_correction");
+  expect(turn.settle().status).toBe("applied");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 2,
+    scope: decision.requestUpdates![0]!.scope,
+    closure: { disposition: "fulfilled" },
+  });
+  expect(readAppConversationResource(f.db, app.id, "chat").messages.at(-1)?.text).toBe(decision.response);
+});
+
+test("closure omits scope; new asks require scope and correction cannot bypass revision", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [ask] });
+  await f.turn({
+    ...answer,
+    requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "fulfilled", reason: "Compared" }],
+  });
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 2,
+    scope: ask.scope,
+    status: "closed",
+  });
+  expect(readAppConversationResource(f.db, app.id, "chat").requests).toEqual([
+    expect.objectContaining({ id: ask.id, revision: 2, status: "closed" }),
+  ]);
+  const apply = (updates: AppConversationRequestUpdate[], updateKey = "test") =>
+    applyConversationRequestUpdates(f.db, {
+      appId: app.id,
+      conversationId: "chat",
+      messageId: "test-response",
+      now: Date.now(),
+      updates,
+      updateKey,
+    });
+  expect(() => apply([{ id: "missing", expectedRevision: 0, disposition: "open" }])).toThrow("requires a scope");
+  expect(() =>
+    apply([
+      {
+        ...ask,
+        expectedRevision: 1,
+        scope: "Changed",
+        correctionReason: "Human correction",
+        disposition: "fulfilled",
+        reason: "Done",
+      },
+    ]),
+  ).toThrow("revision changed");
+  expect(() =>
+    apply([
+      {
+        ...ask,
+        expectedRevision: 2,
+        scope: "Narrower",
+        correctionReason: " ",
+        disposition: "fulfilled",
+        reason: "Done",
+      },
+    ]),
+  ).toThrow("closure changes scope");
+  const correction: AppConversationRequestUpdate = {
+    ...ask,
+    expectedRevision: 2,
+    scope: "Corrected",
+    correctionReason: "Human correction",
+    disposition: "fulfilled",
+    reason: "Done",
+  };
+  apply([correction], "correct-and-close");
+  apply([correction], "correct-and-close");
+  const close: AppConversationRequestUpdate = {
+    id: ask.id,
+    expectedRevision: 3,
+    disposition: "fulfilled",
+    reason: "Same outcome",
+  };
+  apply([close], "close-without-scope");
+  apply([close], "close-without-scope");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 4, scope: "Corrected" });
+});
+
 test("Task links accumulate without duplicates; overflow and unknown links roll back the update batch", () => {
   const { db } = fixture();
   createConversationTopic(db, {

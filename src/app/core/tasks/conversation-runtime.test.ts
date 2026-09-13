@@ -119,12 +119,12 @@ async function fixture(
   const options = await install();
   const context = () =>
     appTaskContext({ appDir, projectDir: appDir, agent: app.agent!, maxConcurrent: 1, resourceStore: store });
-  const admit = (id = "ask", text = "Compare A and B") =>
+  const admit = (id = "ask", text = "Compare A and B", conversationSequence = 1) =>
     admitConversationTaskInput(context(), {
       id,
       appId: app.id,
       conversationId: "primary",
-      conversationSequence: 1,
+      conversationSequence,
       source: { kind: "human", id },
       input: { kind: "message", data: { text } },
       intent: {
@@ -246,6 +246,152 @@ test("Conversation admission survives reopen and runs without an ingress wake", 
   expect(f.admit().created).toBe(false);
   expect(Object.keys(readTaskSnapshot(f.context()).resources!)).toEqual([admitted.taskId]);
 });
+
+test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
+  "settlement recovery retains completed work and current Request after reopen (%s)",
+  async (failure) => {
+    let helperCalls = 0;
+    const contexts: AppInputContext[] = [];
+    const f = await fixture(
+      async (_definition, prompt) => {
+        const context: AppInputContext = JSON.parse(
+          prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
+        );
+        contexts.push(context);
+        if (contexts.length === 1) {
+          helperCalls++;
+          return {
+            status: "done",
+            structuredResult: {
+              summary: "Corrected helper succeeded",
+              response: "The helper completed from the corrected source.",
+              topic: { kind: "none" },
+              facts: ["helper-receipt:completed:exit-0"],
+              requestUpdates: [
+                {
+                  id: "probe",
+                  expectedRevision: 1,
+                  scope: "Check corrected source",
+                  disposition: "fulfilled",
+                  reason: "Verified",
+                  ...(failure === "storage" ? { correctionReason: "Human corrected source" } : {}),
+                },
+              ],
+            },
+          };
+        }
+        expect(context.previousAttempt?.unacceptedResult).toMatchObject({
+          summary: "Corrected helper succeeded",
+          facts: ["helper-receipt:completed:exit-0"],
+          settlementError: expect.stringContaining(failure === "storage" ? "fixture write failure" : "closure changes scope"),
+        });
+        expect(context.previousAttempt?.acceptedResult).toBeUndefined();
+        expect(context.previousAttempt?.failureReason).toBe(
+          contexts.length === 3 ? "HandlerExecutionFailed" : "HandlerResultSettlementFailed",
+        );
+        if (failure === "provider-failure" && contexts.length === 2)
+          throw new Error("Provider unavailable during repair");
+        const request = context.conversation!.requests!.find((request) => request.id === "probe")!;
+        expect(request).toBeDefined(); // Includes the closed Request omitted from ordinary context.
+        if (failure === "new-correction") {
+          expect(request.scope).toBe("Check corrected source and compare costs");
+          expect(context.inputs!.some((input) => input.source.id === "new-input")).toBe(true);
+        } else expect(request.scope).toBe("Check original source");
+        return {
+          status: "done",
+          structuredResult: {
+            summary: "Reviewed retained result",
+            response:
+              failure === "new-correction"
+                ? "The source passed; cost comparison remains."
+                : "Your source correction was verified.",
+            topic: { kind: "none" },
+            requestUpdates: [
+              {
+                id: "probe",
+                expectedRevision: request.revision,
+                ...(failure === "new-correction"
+                  ? {}
+                  : { scope: "Check corrected source", correctionReason: "Human corrected source" }),
+                disposition: failure === "new-correction" ? "open" : "fulfilled",
+                reason: "Reviewed existing execution evidence",
+              },
+            ],
+          },
+        };
+      },
+      { installControllers: false },
+    );
+    // Fill ordinary context with open asks. Recovery must explicitly retrieve
+    // the closed ask named by the unaccepted decision, rather than rely on recency.
+    for (let index = 0; index < 12; index++)
+      applyConversationRequestUpdates(f.db, {
+        appId: app.id,
+        conversationId: "primary",
+        updateKey: `other-${index}`,
+        now: Date.now(),
+        updates: [{ id: `other-${index}`, expectedRevision: 0, scope: `Unrelated ask ${index}`, disposition: "open" }],
+      });
+    applyConversationRequestUpdates(f.db, {
+      appId: app.id,
+      conversationId: "primary",
+      updateKey: "original",
+      messageId: "original-answer",
+      now: Date.now(),
+      updates: [
+        {
+          id: "probe",
+          expectedRevision: 0,
+          scope: "Check original source",
+          disposition: "unfulfilled",
+          reason: "Source unavailable",
+        },
+      ],
+    });
+    if (failure === "storage")
+      f.db.exec(`CREATE TRIGGER reject_reply BEFORE UPDATE ON app_inbox_items WHEN NEW.result IS NOT NULL
+      BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END;`);
+    const admitted = f.admit("correction", "Use the corrected source and check once");
+    await f.run(admitted.taskId);
+    expect(helperCalls).toBe(1);
+    const attempts = f.store.readTaskContext({ taskIds: [admitted.taskId] }).attempts!;
+    expect(Object.values(attempts).at(-1)?.unacceptedResult?.facts).toEqual(["helper-receipt:completed:exit-0"]);
+    expect(readConversationRequest(f.db, app.id, "primary", "probe")?.revision).toBe(1);
+    expect(getAppInboxItem(f.db, admitted.item.id)?.status).not.toBe("done");
+    if (failure === "storage") f.db.exec("DROP TRIGGER reject_reply");
+    const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+    await f.reopen();
+    if (failure === "new-correction") {
+      applyConversationRequestUpdates(f.db, {
+        appId: app.id,
+        conversationId: "primary",
+        updateKey: "new-correction",
+        now: Date.now(),
+        updates: [
+          { id: "probe", expectedRevision: 1, scope: "Check corrected source and compare costs", disposition: "open" },
+        ],
+      });
+      f.admit("new-input", "Also compare costs; do not repeat the source check", 2);
+    }
+    setSystemTime(new Date(due + 1));
+    await f.run(admitted.taskId);
+    if (failure === "provider-failure") {
+      const secondDue = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+      expect(contexts).toHaveLength(2);
+      await f.reopen();
+      setSystemTime(new Date(secondDue + 1));
+      await f.run(admitted.taskId);
+      expect(contexts[2]!.previousAttempt!.unacceptedResult!.attemptId).toBe(contexts[1]!.previousAttempt!.attemptId);
+    }
+    expect(helperCalls).toBe(1);
+    expect(contexts).toHaveLength(failure === "provider-failure" ? 3 : 2);
+    expect(readConversationRequest(f.db, app.id, "primary", "probe")).toMatchObject({
+      revision: failure === "new-correction" ? 3 : 2,
+      status: failure === "new-correction" ? "open" : "closed",
+    });
+    expect(getAppInboxItem(f.db, admitted.item.id)?.status).toBe("done");
+  },
+);
 
 test.each(["during failure", "during cooldown and reopen"])(
   "new human input gets a fresh Conversation attempt (%s) without dropping the original Request",

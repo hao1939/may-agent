@@ -1,4 +1,4 @@
-import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
+import type { Condition, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
@@ -134,6 +134,8 @@ export type AppTaskAttempt = {
   finishedAt?: string;
   summary?: string;
   failureReason?: string;
+  /** Retained separately from acceptance so recovery can reuse execution evidence. */
+  unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;

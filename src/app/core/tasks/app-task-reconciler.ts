@@ -553,6 +553,7 @@ function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt[
     ...(attempt.failureReason ? { failureReason: attempt.failureReason } : {}),
     ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
     ...(attempt.workspace ? { workspacePath: attempt.workspace.path } : {}),
+    ...(attempt.unacceptedResult ? { unacceptedResult: structuredClone(attempt.unacceptedResult) } : {}),
     ...(result
       ? {
           acceptedResult: {
@@ -2833,7 +2834,12 @@ export function failAppTaskAttempt(
   config: AppTaskContext,
   claim: AppTaskClaim,
   failure: string,
-  details: { reason?: string; result?: Record<string, unknown>; facts?: string[] } = {},
+  details: {
+    reason?: string;
+    result?: Record<string, unknown>;
+    facts?: string[];
+    unacceptedResult?: AppTaskAttempt["unacceptedResult"];
+  } = {},
 ): { status: "retrying" | "handoff" | "superseded"; summary: string; retryAt?: number | null } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingTaskAttempt(tree, claim);
@@ -2850,6 +2856,9 @@ export function failAppTaskAttempt(
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "failed", failure, now);
   attempt.failureReason = details.reason ?? "HandlerExecutionFailed";
+  // A provider failure during repair must not hide earlier completed work.
+  const unacceptedResult = details.unacceptedResult ?? claim.previousAttempt?.unacceptedResult;
+  if (unacceptedResult) attempt.unacceptedResult = structuredClone(unacceptedResult);
   touchResource(resource, {
     phase: handoff ? "attention" : "pending",
     ...(handoff

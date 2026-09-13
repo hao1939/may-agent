@@ -323,6 +323,16 @@ export type TaskAttempt = {
     failureReason?: string;
     sessionId?: string;
     workspacePath?: string;
+    /** Execution's proposed result whose settlement failed. Evidence for review, never accepted effects. */
+    unacceptedResult?: {
+      attemptId: string;
+      sessionId?: string;
+      settlementError: string;
+      summary: string;
+      response?: string;
+      result?: Record<string, unknown>;
+      facts: string[];
+    };
     /** Exact admitted report, when one exists. An execution error need not have one. */
     acceptedResult?: {
       state: "converged" | "waiting" | "incomplete";
