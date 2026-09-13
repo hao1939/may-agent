@@ -15,8 +15,14 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createSystemStatusTool } from "./system-status.js";
+import { createSystemStatusTool as statusTool } from "./system-status.js";
 import { upsertSession } from "../db/sessions.js";
+import { readExecutionStatus } from "../../app/core/reads/execution-status.js";
+import { markSessionActive } from "../persistence.js";
+
+function createSystemStatusTool(stateDir: string, agentsRoot: string) {
+  return statusTool(stateDir, agentsRoot, undefined, () => readExecutionStatus(stateDir));
+}
 
 // ── Test fixtures ───────────────────────────────────────────────────────
 
@@ -43,7 +49,7 @@ function createTestState() {
       kind: "job",
     }),
   );
-  writeFileSync(join(stateDir, "sessions", activeSession1, "[ACTIVE]"), "active");
+  markSessionActive(stateDir, activeSession1);
   upsertSession(stateDir, {
     sessionId: activeSession1,
     agent: "bob",
@@ -65,7 +71,7 @@ function createTestState() {
       kind: "chat",
     }),
   );
-  writeFileSync(join(stateDir, "sessions", activeSession2, "[ACTIVE]"), "active");
+  markSessionActive(stateDir, activeSession2);
   upsertSession(stateDir, {
     sessionId: activeSession2,
     agent: "may",
@@ -314,13 +320,14 @@ describe("system-status tool", () => {
     const result = await tool.execute("test-call-8", {});
     expect(result.details).toEqual({
       activeSessions: 2,
+      activeWork: true,
       historyInWindow: 2,
       delegationCount: 3,
       jobCount: 0,
     });
   });
 
-  it("reads sessions from the indexed projection without a session artifact directory", async () => {
+  it("does not report a retained running row as a live execution", async () => {
     const projectionState = join(root, "projection-only-state");
     upsertSession(projectionState, {
       sessionId: "projection-active",
@@ -333,18 +340,33 @@ describe("system-status tool", () => {
 
     const result = await projectionTool.execute("projection-only", {});
     const text = (result.content[0] as { type: "text"; text: string }).text;
-    expect(text).toContain("Active Sessions (1)");
-    expect(text).toContain("Reconcile one Task");
+    expect(text).toContain("Active Sessions (0)");
+    expect(text).not.toContain("Reconcile one Task");
+    expect(result.details).toMatchObject({ activeSessions: 0, activeWork: false });
   });
 
-  it("handles missing state directory gracefully", async () => {
-    const emptyTool = createSystemStatusTool("/nonexistent/path", "/nonexistent/agents");
+  it("reports an unreadable execution source as unknown instead of idle", async () => {
+    const path = join(root, "not-a-state-directory");
+    writeFileSync(path, "fixture");
+    const emptyTool = createSystemStatusTool(path, agentsRoot);
     const result = await emptyTool.execute("test-call-9", {});
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
-    expect(text).toContain("Active Sessions (0)");
-    expect(text).toContain("(none)");
+    expect(text).toContain("Active Sessions (unavailable)");
+    expect(result.details).toMatchObject({ activeSessions: null, activeWork: null });
     expect(text).toContain("(no delegation data)");
+  });
+
+  it("exposes work without inventing an agent session", async () => {
+    const reader = () => ({ sessions: [], activeWork: true });
+    const result = await statusTool(stateDir, agentsRoot, undefined, reader).execute("claim", {});
+    expect(result.details).toMatchObject({ activeSessions: 0, activeWork: true });
+    expect(JSON.stringify(result.content)).toContain("Task execution claim");
+  });
+
+  it("does not substitute a private query when no execution reader is supplied", async () => {
+    const result = await statusTool(stateDir, agentsRoot).execute("unconfigured", {});
+    expect(result.details).toMatchObject({ activeSessions: null, activeWork: null });
   });
 });
 

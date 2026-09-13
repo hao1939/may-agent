@@ -8,6 +8,7 @@ export type ExecutionSession = {
   status: string;
   kind: string;
   task: string;
+  startedAt?: number;
 };
 export type ExecutionStatus = { sessions: ExecutionSession[]; activeWork: boolean };
 
@@ -18,7 +19,7 @@ export function readExecutionStatus(persistDir: string, now = Date.now()): Execu
     .prepare(
       `
     SELECT s.agent, s.sessionId, s.status, COALESCE(s.kind, '') AS kind,
-           substr(s.task, 1, 100) AS task
+           substr(s.task, 1, 100) AS task, s.startedAt
     FROM sessions s
     LEFT JOIN app_tasks t ON t.app_id = s.app_id AND t.task_id = s.task_id
     WHERE s.status IN ('running', 'idle') AND s.endedAt IS NULL
