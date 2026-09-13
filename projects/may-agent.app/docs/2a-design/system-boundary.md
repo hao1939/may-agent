@@ -36,6 +36,51 @@ event
 The Host does not invent domain work. The App does not implement storage,
 queues, retries, recovery, or presentation transport.
 
+## Core, external capabilities and composition
+
+Here **external** means outside the core responsibility boundary. It includes
+local tools, executors and interfaces shipped in the Host; it does not mean
+another process, remote service, or separate repository. App policy is also
+outside core. Folder location alone does not establish ownership.
+
+| Part | Owns | Must leave to another part |
+| --- | --- | --- |
+| Core: registration and admission | Validate definitions/inputs, preserve exact work and caller identity, publish an accepted generation | Filesystem discovery and App decisions about the requested outcome |
+| Core: Events | Durable facts, validated routes, pending delivery and recovery of accepted input | Provider protocols and deciding what an observation means |
+| Core: State and reads | Accepted work/results, outstanding waits, execution claims and truthful shared projections | Interface wording, reports and provider-specific caches |
+| Core: Work runtime | One current Task attempt, eligibility, capacity, timing, cancellation fences and mechanical recovery | Selecting a strategy because work is quiet or difficult |
+| External execution/tools | Model or process execution, provider I/O, operation references, bounded evidence and cleanup under the chosen contract | Creating a second durable work lifecycle or bypassing Task controls |
+| External observation/reporting/interfaces | Read sources, normalize changes, present shared facts, submit validated controls | Claiming work was accepted because a message was emitted; deriving live execution from history |
+| App and responsible agent | Desired outcomes, useful actions, acceptance, scope, help and closure decisions | Implementing queues, polling bookkeeping, leases or storage recovery |
+| Composition/installation | Select and connect concrete capabilities, trusted operational scope and any supervisor route | Owning a competing scheduler or inferring domain success |
+
+The agent sees useful actions and their results. Capability implementations
+handle whether those actions use an awaited helper, a Task or an external
+provider's operation. Keep the differences needed for correct cancellation,
+recovery and ownership inside those implementations. An agent still needs to
+know the observable promise and its authority; it should not invent an event
+type, timer cadence or registration merely to receive a supported result.
+
+For a supported asynchronous action, acceptance preserves the trusted caller
+link and operation reference before reporting that feedback will arrive later.
+The operation may finish before the caller yields; preserve that result too.
+When useful independent work remains, execution may continue. When the caller
+yields, retained results/waits and normal Task scheduling carry the obligation.
+Use existing Task/input/Condition records where appropriate; do not introduce
+a second operation registry or require every provider resource to become a Task.
+
+Direct calls continue to return synchronous results to their caller. Events
+provide asynchronous notification. Source scans and pending-input recovery
+repair missed opportunities through the same route; neither an extra model
+poll nor a second notification for every direct result is required. An
+unsupported shell-created resource does not acquire automatic feedback by
+convention alone. The capability must say what it actually supports.
+
+This is the target contract. Current typed delegation already preserves exact
+caller links; general tool-driven wait setup and immediate parent continuation
+still have [documented gaps](../archive/reviews/ownership-boundary-review-20260913.md#component-family-review).
+Keep existing validated contracts until their specific replacements are tested.
+
 ## Ownership and intervention
 
 Use the same division of responsibility for normal results and difficult cases:
@@ -66,13 +111,13 @@ A retained dependency may coexist with a running attempt. Keep lifecycle,
 execution and outstanding results separate as described in
 [System Model](system-model.md#execution-and-outstanding-results).
 
-The recipient's name does not select a lifecycle. An agent can perform a
-bounded helper call or execute a durable Task. A provider operation such as a
-pipeline already owns its external execution; its caller Task owns interpreting
-the result. Such an operation needs a durable reference and supported feedback
-route before the parent releases execution, but not an automatic wrapper Task
-or new agent. A call-scoped subprocess instead returns directly and is cleaned
-up with that call. Ending the attempt must respect that distinction.
+For implementers, the recipient's name does not select a lifecycle. An agent
+can perform a helper call or execute a Task. A pipeline can retain its native
+provider identity while the caller Task owns interpreting its result. Its
+reference and feedback must survive a yielded attempt. An attempt-scoped
+subprocess instead returns within that execution and is cleaned up with it.
+These internal lifetime rules preserve the simple agent-facing promise; they
+are not three kinds of work the agent must learn to route or recover.
 
 Events notify the owner that something deserves attention. The handler rereads
 current state, judges what remains necessary and uses the same bounded Task

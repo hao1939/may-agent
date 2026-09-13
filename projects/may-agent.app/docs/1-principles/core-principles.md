@@ -117,6 +117,14 @@ progress; preserves outputs and failures; and makes relevant evidence available
 to the responsible agent. The agent should not have to manage routine polling,
 output discovery or a separate tracking registration after starting work.
 
+Keep the agent's activity model small: execution can be running while results
+are outstanding. Continue useful independent work; yield when only results
+remain. Supported capabilities supply correlation, notification and recovery
+mechanics. The agent requests an outcome and understands whether its result is
+complete, pending or failed; it need not select an infrastructure lifecycle.
+Direct tools still return directly. See
+[execution and outstanding results](../2a-design/system-model.md#execution-and-outstanding-results).
+
 The agent judges what the facts mean, whether a result is sufficient and which
 authorized action comes next. For assigned work, the worker decides how to
 make progress; the assigning App, parent agent or human decides whether to
@@ -213,9 +221,10 @@ session, workflow, event, metric, queue entry, or transport receipt is not one
 either.
 
 When a Task needs another Task's result, describe the work through typed App
-input. The Host preserves the exact return link and releases execution while
-waiting. Relevant input can wake the assigning Task again, including human
-discussion or the delegated result. Conversation is its human-facing role;
+input. The Host preserves the exact return link. The parent can do useful
+independent work while that result is pending, and release execution when it
+needs only to wait. Relevant input can wake the assigning Task again, including
+human discussion or the delegated result. Conversation is its human-facing role;
 it adds no execution lifecycle. Both Tasks may belong to May. Another App is
 useful for existing ownership, required authority, or expertise. The
 [common-lifecycle proposal](../proposals/conversation-input-unification.md)

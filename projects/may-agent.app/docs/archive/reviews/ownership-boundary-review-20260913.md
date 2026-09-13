@@ -40,7 +40,9 @@ not demonstrate a duplicate live worker or actual process termination.
 | First | The `agents` tool has a separate cancellation path | Apply execution-ownership checks at this entry point; preserve exact parent-owned helper cancellation. Never turn a rejected control into a raw process kill. Tool adapter/composition. | Makes all controls obey the same contract. Small to medium, including detached-session cases. |
 | First | Scout remembers a transition before publication succeeds | Use existing observer `previousObservation` / `nextObservation`; remove duplicate discovery cache. Scout adapter. | Restores the periodic safety net. Small, no new Host service. |
 | First, small read fix | Running detail hides waits; ready work can still look parked | Read retained waits alongside current execution and eligibility. Human Task read adapter. | Shows useful work and pending results together; no schema change. See clarification evidence below. |
+| First, small read fix | The agent's `system_status` tool has a second definition of active execution | Inject the canonical execution read; distinguish unavailable sections from empty results. Tool adapter/composition. | Avoids contradictory status and false reassurance. Small; replace tests that currently expect stale rows to count as active. |
 | Next | Independent session jobs coexist with durable Tasks | Inventory `agents.fork` consumers; move durable assignments only after proving replacement concurrency and feedback. Retain bounded calls and provider-owned async operations. | Removes an alternate work lifecycle; current result-only delegation is not a complete replacement for every concurrency need. |
+| Next, with a supported consumer | Agent protocol requires mechanical wait authoring | Have the supplying capability provide trusted source/operation identity and review defaults. Keep the validated internal contract. | Removes routine event/timer bookkeeping from the agent. Medium; prove early result and restart behavior before changing the protocol. |
 | Next | Executors contain inconsistent progress/timeout policy | Document explicit execution limits separately from observations; make uncertain strategy an owner decision at a supported boundary. | Clearer behavior and fewer false interventions. Policy change needs evidence; concurrent review is additional work. |
 | Next | Name-based privilege remains in generic tools | Supply narrow trusted installation/tool capabilities; keep existing protections until replacements pass. | Clarifies supervisor scope. Medium, security-sensitive migration. |
 | As needed | Hung observers have no generic recovery | Bound source I/O; expose an unresolved adapter for intervention. Add a shared cancellation primitive only if a consumer needs it. | Avoids overlapping abandoned operations; a generic timeout alone cannot stop arbitrary promises. |
@@ -347,6 +349,150 @@ The clarification documentation passed `bun run check:may-design`: zero design
 errors or warnings, with SDK/control examples, Task admission/replay, Condition
 and dependency result admission, and canonical App integrity passing. This
 turn changes documentation only; all new implementation findings remain open.
+
+## Component-family review
+
+This pass revisits the same Host candidate against the simpler agent model:
+**running execution and waiting for results are independent**. The agent does
+not select an infrastructure lifecycle. Core preserves work and executes its
+mechanics; capabilities supply useful actions and evidence; the agent/owner
+judges the next move. The owning
+[boundary table](../../2a-design/system-boundary.md#core-external-capabilities-and-composition)
+defines those responsibilities.
+
+The inventory covers production `src/app`, `src/lib`, SDK and control-package
+families, plus the May/Scout definitions involved in feedback. Table paths use
+`src/app` as their base; `lib/` means `src/lib`, `tools/` means `src/lib/tools`,
+and `packages/` starts at the Host repository root. Other bare filenames share
+their named component's directory. App source is marked separately.
+Related small helpers are grouped with their owner. This is a component-level review of contracts and
+representative paths, not an every-file correctness certification. Existing
+findings above remain open; this pass implements no runtime changes.
+
+| Component family and source | Boundary | Assessment and smallest response |
+| --- | --- | --- |
+| App definitions/registration: `core/apps/registry.ts`, `definition-validation.ts` | Core validates identity and accepted generations; App supplies meaning | Fits reviewed contract. Failed discovery/activation keeps the accepted definition; retain one registry. |
+| Discovery and agent/tool/skill loading: `adapters/discovery/*`, `loader/*`, `lib/skills.ts` | External capability, wired by composition | Conventional source discovery and `.disabled` exclusion fit. Keep definition loading outside core; named privilege exceptions need the separate fix in finding 6. |
+| Input admission and caller results: `core/inbox/*`, `core/state/app-event-admission-store.ts` | Core | Exact input/Task links and recoverable admission fit. A recorded notification remains distinct from accepted work. Unavailable-owner handling is not universal. |
+| Events and routing: `core/events/*`, `canonical-app-event.ts` | Core mechanisms with App-selected routes | Fits normal exact-target feedback. Provider event catalogs and May default labels remain cleanup; labels are not supervisor delivery. |
+| Storage, projections and journals: `core/state/*`, `lib/db/*`, `lib/db-writer.ts`, `lib/persistence.ts` | Core facts; execution artifacts support those facts | One accepted state authority fits. SQLite implementation files in `lib` are still core infrastructure; moving folders would not improve the contract. Retained cutover code is not another active controller. |
+| Task controller, queue and settlement: `core/tasks/controller.ts`, `app-task-runtime.ts`, `app-task-reconciler.ts` | Core | Existing claims, acceptance and owner closure fit. Running with retained waits already works; do not add combined phases or an agent availability service. |
+| Timing and capacity: `core/scheduling/*`, Task recovery/checkpoints | Core | Eligibility, leases and bounded resource use fit. Keep required recovery timing independent of optional schedule producers. A static `dependsOn` gate must retain its meaning. |
+| Dependency admission and Conditions: `core/tasks/dependency-admission.ts`, `app-task-condition-tracker.ts` | Core correlation; App/capability supplies required facts | Durable feedback fits. Immediate continuation after new typed delegation is missing; evaluate the existing scoped continuation PoC before replacing concurrent session consumers. |
+| SDK contracts: `packages/sdk/src/{app,task,task-contract,workflow,event}.ts` | Typed boundary for Apps/capabilities and core | Keep explicit validation. Model-required Condition mechanics are a simplification gap, detailed below; a technical SDK is not itself a design violation. |
+| Conversation and Requests: `conversations/*`, `composition/conversation-task-turn.ts`, `core/state/conversation-requests.ts` | Core stores/guards; replaceable handler judges scope and response | Shared Task execution and separate Request fulfillment fit. Pending work need not prevent another answer. Source guarantees do not prove the model always judges fulfillment correctly. |
+| Managed agents/workflows: `adapters/executors/{managed-agent,workflow}.ts`, `lib/agent-execution.ts`, `lib/workflow.ts` | External executors | Proposed results return to core admission. Keep that split; timeout/finish heuristics require the finding 5 policy review. Prompt bookkeeping is addressed below. |
+| Native coding and process I/O: `adapters/executors/codex/*`, `lib/cli-agent.ts`, `tools/run-cli-agent.ts`, `tools/bash.ts` | External execution capability | Progress is evidence; terminal claims require accepted results. Keep provider control and cleanup here. Awaited coding calls are not restart-safe delegation; do not promise otherwise. |
+| Direct and background tools: `direct-agent.ts`, `lib/background-exec.ts`, `loader/toolset-loader.ts` | External capability with its own execution lifetime | Direct runner cleans up in `finally`. Background exec keeps in-memory process handles and loader-owned cleanup; it is not durable accepted work. Normal App-owner execution filters it out. Do not replace it with a generic async-job service. |
+| Session manager, recovery and controls: `lib/manager.ts`, `manager-agents-tool.ts`, `session-subscribers.ts`, `escalation-lifecycle.ts` | Execution adapter/composition; Task core owns durable authority | Mixed. Public controls were fixed in the candidate; alternate cancellation/resume and independent session jobs retain the concrete gaps in findings 1, 2 and 4. |
+| External observation: `adapters/producers/app-observer-runtime.ts`; App `watchers/xhs-credential.ts` | Adapter reads sources; Host persists publication/discovery progress | Host publish-before-advance fits. Scout's duplicate memory loses an unavailable transition; use the existing contract. Bound source I/O before relying on periodic scans. |
+| Schedule production: `adapters/producers/app-schedules.ts` | External producer selected by composition | Declared inputs/facts and explicit catch-up semantics fit. Disabling these registrations must not turn off Task recovery. |
+| Host-private maintenance: `adapters/maintenance/*`, `composition/maintenance*.ts` | Optional private Host capability | State access for mechanical maintenance fits; timeouts retain in-flight ownership until settlement. A maintenance notification is not App admission. Keep failure containment and avoid a public storage escape hatch. |
+| Installation liveness: `modes/maintenance.ts` | External process recovery | Socket/heartbeat checks, canonical execution reads and bounded restart policy serve process availability. Keep separate from judgments about meaningful worker progress. No LLM is required to restart an unresponsive daemon. |
+| Human/control interfaces: `human-task-service.ts`, `transport/*`, `http/*`, `packages/control/src/*`, CLI modes | External presentation/control, consuming shared core reads | Current execution and outstanding waits must both be visible. Task detail and `system_status` drift are concrete read defects. Legacy project policy in the command router remains finding 8. |
+| Reporting/metrics: `adapters/reporting/*`, `lib/metrics.ts`, `tools/system-dashboard.ts`, `tools/system-status.ts` | Optional read capability | Historical reports fit; Recently Seen Agents is an honest label. The separate system-status tool still presents history as current activity; see reproduction below. |
+| Workspace/artifact lifecycle: `core/tasks/workspace.ts`, `adapters/workspaces/git.ts`, `adapters/executors/agent-workspace.ts`, `lib/artifacts.ts` | Core orders/adopts facts; adapters implement Git/files | Contract split fits. Git operations are bounded; unintegrated/failed work retains recovery evidence. Waiting does not by itself authorize deleting work or merging it. |
+| Model/provider configuration: `model-registry.ts`, `lib/agent-runner.ts`, `lib/agent-execution.ts` | External capability and installation composition | Provider catalog, endpoint limits and credentials are outside core Task policy. Keep them there; this review did not revalidate remote model behavior. |
+| Permissions and guard tools: `lib/tools/*guard*.ts`, `lib/security/*`, loader tool selection | Capability enforcement with trusted installation scope | Mechanical checks fit; name-based privileges and alternate control paths remain concrete boundary debt. Preserve protections while migrating them. |
+| Bootstrap, reload, worker processes and shutdown: `app-runtime.ts`, `daemon*.ts`, `composition/*`, `interface-startup.ts` | Composition | Selects executors, workers, state, timing and interfaces. Pinned worker definitions and accepted generations fit. This wiring should not accumulate new domain decisions or its own work lifecycle. |
+
+Import checks in `eslint.config.mjs:95` prohibit core imports from executor,
+composition, Conversation, HTTP and transport implementations. Executor checks
+also reject direct imports of Task mutation modules, while permitting types.
+These checks support the boundary; they cannot establish that every helper
+outside those directories obeys it. The session/control and read gaps illustrate
+why source tracing is still necessary.
+
+### New reproduced gap: agent status disagrees with core
+
+`src/lib/tools/system-status.ts:234` reads any session whose saved status is
+`running` or `idle`, without checking its end time, current Task attempt or live
+process marker. Its active section labels those rows as current execution.
+The tool is exposed by `loader/toolset-loader.ts:188`; the reviewed May config
+includes `system-status`. This is separate from the socket status repaired in
+the candidate.
+
+A temporary SQLite fixture inserted a running session row with no execution
+marker. Calling the production readers returned:
+
+| Read | Result |
+| --- | --- |
+| `readExecutionStatus` | Zero sessions; `activeWork: false` |
+| `createSystemStatusTool(...).execute(...)` | One active session |
+
+A second fixture placed a regular file where the state directory should be.
+The core read threw; the tool returned `activeSessions: 0` and an empty active
+section. Its unrelated Ops Queue text said `DB unavailable`, so this is a
+misleading per-section result, not complete suppression of every diagnostic.
+No live process, model or App was involved; temporary state was removed.
+
+**Fix:** supply the canonical execution reader through the tool's composition
+boundary, keeping history as history. Report an unavailable active read as
+unavailable; do not equate it with zero. Keep query work bounded. Existing
+`system-status.test.ts:321` explicitly expects a projection-only session with
+no execution marker to be active; replace that expectation with a real current
+execution fixture and stale/replaced/unavailable cases. Add current workflow
+claims to the presentation where useful without inventing an agent session.
+
+Reproduction uses `upsertSession` for one standalone `running` row without a
+process marker, then compares the two exported readers. For the failure case,
+use a temporary regular file as the state path. The private probe reported
+`canonicalSessions: 0`, `dashboardSessions: 1`, `failedReadActiveSessions: 0`.
+
+### New source gap: the agent still authors notification mechanics
+
+`adapters/executors/managed-agent.ts:85` gives the model `appTaskAgentProtocol`
+and `taskAgentResultSchema`. `packages/sdk/src/task-contract.ts:75` requires a
+Condition ID, event type, typed subject, expected value, owner and
+`reviewAfterMs`. The protocol explains that naming an owner does not send a
+request and choosing review timing does not repair anything. These rules are
+accurate, but routine supported waits still require infrastructure bookkeeping
+from the model. The agent should choose the desired result and next useful
+action; the capability should supply those mechanics.
+
+**Fix:** start with one supported operation, using the App/tool's existing
+typed contract to supply its trusted operation reference, feedback route and
+review defaults. Keep the expected domain outcome visible for agent judgment.
+Preserve internal validation and exact identity; do not accept invented owners
+or event names from untrusted output. A human decision can still be requested
+explicitly through its supported capability. Unsupported sources should state
+the limitation rather than imply notification exists.
+
+This is a scoped interface improvement, not proof that every SDK Condition
+author is wrong or that all async tools already have a return route. Before
+adoption, show result-before-yield, parent continuation, a quiet durable wait,
+lost notification/restart recovery and cancellation through existing records.
+An ordinary FYI must not create a wait. Do not introduce an operation registry,
+global agent state, universal tool API or another daemon for this PoC.
+
+### What this changes in the recommendation
+
+Keep core Task execution, events, storage and recovery. Fix the two control
+entry points, Scout publication memory and the two read projections first.
+Then prove capability-provided wait mechanics and useful parent continuation
+with one real consumer before retiring independent session jobs. Keep uncertain
+progress decisions with the worker/assigning owner; retain documented execution
+limits until a tested replacement exists.
+
+This gives clearer behavior without a core rewrite. The small fixes repair
+demonstrated contradictions. Protocol/continuation work has a larger correctness
+cost and needs the focused PoC. Automatic supervisor fallback, concurrent model
+review and a generic notification framework remain unnecessary for these fixes.
+
+The added component checks ran 43 tests across nine files: zero failures,
+152 assertions. They cover import restrictions, registry replacement, disabled
+discovery, schedule activation, foreground capacity, maintenance admission/
+failure isolation, optional reporting, and liveness decisions. They do not
+certify process restart on a live installation. Reproduce with:
+
+```sh
+bun test scripts/eslint-config.test.ts src/app/core/apps/registry.test.ts src/app/adapters/discovery/app-definitions.test.ts src/app/adapters/producers/app-schedules.test.ts src/app/core/scheduling/host-capacity.test.ts src/app/adapters/maintenance/runtime-boundary.test.ts src/app/composition/maintenance-activation.test.ts src/app/composition/reporting.test.ts src/app/modes/maintenance.test.ts
+```
+
+The refined docs also passed `bun run check:may-design`: zero design errors or
+warnings, valid SDK/control examples and Task/Condition/dependency admission,
+and canonical App integrity. No full-CI rerun or deployment was needed for
+this documentation change.
 
 ## Validation and next change
 

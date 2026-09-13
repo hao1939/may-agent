@@ -43,6 +43,17 @@ and the [code/agent boundary](../1-principles/core-principles.md#code-executes-a
 It introduces no new service, Task lifecycle, public handler category or
 requirement for continuous supervision.
 
+The agent-facing activity model has two independent facts: execution is
+running, and a result is outstanding. Both can be true. The agent chooses a
+useful action, continues other useful work, or yields. It does not have to
+classify the underlying work as a helper, Task or provider operation. Those
+implementation contracts still determine cleanup and recovery, and a capability
+must tell the caller whether it returns now or has accepted work with later
+feedback. Common semantics do not require identical tools or a new result API.
+The [core/external responsibility table](../2a-design/system-boundary.md#core-external-capabilities-and-composition)
+owns that division; the [component review](../archive/reviews/ownership-boundary-review-20260913.md#component-family-review)
+records where current code falls short.
+
 The accepted [ownership and intervention boundary](../2a-design/system-boundary.md#ownership-and-intervention)
 also covers difficult cases. The worker judges how to progress within scope;
 the assigning owner judges scope, help and closure. A supervisor uses the same
@@ -130,6 +141,16 @@ bounded calls. Provider-owned asynchronous operations need stable operation
 identity and feedback, not automatic conversion into Tasks. The
 [clarification review](../archive/reviews/ownership-boundary-review-20260913.md#clarification-review-execution-and-pending-results)
 records the narrower recommendation and the current human-read defect.
+
+The existing agent protocol also exposes Condition owner, event type, subject
+and review timing. For supported operations, put their mechanical values in
+the supplying tool/App adapter and its trusted conventions. Keep outcome,
+acceptance and next-action judgment with the agent. This is a separate,
+consumer-led simplification: do not delete validated Condition fields or
+pretend arbitrary tools already create durable return paths. A small PoC
+should show an accepted operation, parent continuation/yield, a result that
+arrives before yield, and recovery after a lost notification without model
+polling or per-operation registration.
 
 ## Periodic checks provide another delivery opportunity
 

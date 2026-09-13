@@ -85,10 +85,37 @@ another Task controller.
 
 ## Execution and outstanding results
 
-Keep three questions separate: is the Task still open, is an attempt executing,
-and which results or external facts remain outstanding? Existing Task closure,
-attempt/claim and Condition/input links answer them. The scheduling phase is
-one summary of eligibility; it need not become several simultaneous phases.
+For the agent's work, ask two independent questions:
+
+- **Running:** is an execution in progress?
+- **Waiting:** is a needed result still outstanding?
+
+| Running | Waiting | Meaning |
+| --- | --- | --- |
+| Yes | No | Working, with no outstanding result needed from elsewhere. |
+| Yes | Yes | Working while also waiting for a result; for example, preparing a review while a pipeline runs. |
+| No | Yes | No current execution; a result remains outstanding. Other useful work may already be queued. |
+| No | No | No current execution or outstanding wait. Work may be queued, up to date, closed, or need attention; read those facts separately. |
+
+An execution includes its tool calls and I/O; running does not mean the model
+is continuously generating text or consuming CPU. A direct tool call can keep
+that execution open while it awaits its response. Such a call does not require
+a persisted Condition merely to describe that it is waiting.
+
+The agent requests an outcome and handles a completed result, a pending result
+or a failure. It need not choose between infrastructure categories such as a
+helper call, delegated Task or provider operation. The selected capability must
+make its promise clear: does this call return the result, or has work been
+accepted with a reference and a supported later return path? Code owns that
+bookkeeping and cleanup. These are common meanings, not a new universal tool
+schema. See the [capability boundary](system-boundary.md#core-external-capabilities-and-composition).
+
+Task closure remains separate: an open Task is a responsibility, not proof of
+running execution or waiting. Existing attempts/claims and Condition/input
+links provide the durable facts. The scheduling phase describes eligibility;
+do not add combined phases, duplicate running/waiting flags or an agent-wide
+availability registry. A child relationship or an FYI event alone is not an
+outstanding result obligation.
 
 A Task can execute useful work while retaining outstanding dependencies. New
 relevant input can start a pass without satisfying an older wait. The agent
@@ -123,7 +150,8 @@ outstanding dependencies do not authorize a second competing parent attempt.
 later running attempt. The canonical typed dependency path submits new work
 when the parent returns `waiting`; it does not yet express immediate parent
 continuation after that handoff without another wake. Human Task detail also
-hides its ordinary wait list during running execution. The
+hides its ordinary wait list during running execution. The agent protocol still
+requires explicit Condition mechanics for some sources. The
 [clarification review](../archive/reviews/ownership-boundary-review-20260913.md#clarification-review-execution-and-pending-results)
 records the evidence and scoped changes; this model does not claim those gaps
 are already fixed.
