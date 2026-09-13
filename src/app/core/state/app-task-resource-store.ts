@@ -1,4 +1,5 @@
 import { storedResultFacts } from "./result-facts.js";
+import { taskViewPhaseSql } from "./task-view-phase.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as transaction } from "../../../lib/db/transaction.js";
 import {
@@ -29,8 +30,7 @@ const MAX_CONTEXT_ATTEMPTS_PER_TASK = 16;
 
 // Read projection only: new input can await a claim while the last accepted
 // maintained cycle still has phase=converged. Do not rewrite that authority.
-const TASK_VIEW_PHASE_SQL =
-  "CASE WHEN phase = 'converged' AND (changed = 1 OR ready = 1) THEN 'pending' ELSE phase END";
+const TASK_VIEW_PHASE_SQL = taskViewPhaseSql("app_tasks");
 
 /**
  * Task rows share the Host database with events so a later fenced emit can
@@ -785,7 +785,7 @@ export class AppTaskResourceStore {
         )
       : ["pending", "running", "waiting", "attention", "converged"];
     // Preserve the indexed stored-phase predicate before applying readiness.
-    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged"])] : livePhases;
+    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged", "waiting"])] : livePhases;
     const clauses: string[] = [];
     const values: unknown[] = [];
     if (livePhases.length > 0) {
