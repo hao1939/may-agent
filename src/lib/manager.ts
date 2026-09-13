@@ -2399,6 +2399,9 @@ export class SubagentManager {
 
     agent.subscribe((event) => {
       switch (event.type) {
+        case "tool_execution_update":
+          persistProgress();
+          break;
         case "turn_start":
           session.modelStepCount++;
           persistProgress();
