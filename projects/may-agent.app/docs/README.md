@@ -36,7 +36,8 @@ addresses inconsistent helper scope, watchdog rules, one-shot completion and
 standalone session recovery after the execution-feedback PoC. Keep bounded agent
 calls and direct CLI use; share execution rules without giving every invocation a
 Task. It records source findings, consumer migration, deletion gates and checks.
-The design is refined; this follow-up is not implemented or deployed.
+The [implemented candidate and PoC evidence](archive/reviews/execution-consolidation-poc-20260914.md)
+record the passing source checks and remaining live-trial limits; deployment is separate.
 
 The [scripts review proposal](proposals/poc-retirement-and-knowledge-20260912.md)
 accounts for the refreshed 54-file Host inventory, including all 27 files in
