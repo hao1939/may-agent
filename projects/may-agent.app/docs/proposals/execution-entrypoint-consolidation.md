@@ -1,13 +1,14 @@
 # Consolidate execution entry points
 
-**Status:** Implemented as a local candidate, September 14, 2026; not merged or deployed.
+**Status:** Implemented and submitted as [Host PR #186](https://github.com/hao1939/may-agent/pull/186),
+September 14, 2026. Paired App/design source is merged locally; Host merge and deployment remain separate.
 The [consolidation PoC record](../archive/reviews/execution-consolidation-poc-20260914.md)
 owns exact revisions, validation results and remaining limits. Original source
 review: Host `b478bc5cf1a8ff8f93583d7ed8bf9a17b3f0815d` and App/design `56c9179442`. This follows the
 [execution-feedback PoC](../archive/reviews/execution-feedback-poc-20260913.md).
 The earlier PoC did not verify all callers; this candidate extends their scopes
-and tests. Recheck the implementation base before making PRs and reuse any
-prerequisites already landed.
+and tests. PR #186 starts from current Host main `6935b325`; it includes the ten
+remaining execution-feedback commits, without already merged prerequisites.
 
 ## Candidate outcome
 

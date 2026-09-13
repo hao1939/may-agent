@@ -1,11 +1,19 @@
 # Execution consolidation: candidate and PoCs
 
 September 14, 2026. Isolated source implementation and portable experiments;
-no live deployment, provider credentials, public push or PR. The
+the original trials used no live deployment or provider credentials. The
 [proposal](../../proposals/execution-entrypoint-consolidation.md) owns the change;
 the [execution boundary](../../2a-design/system-boundary.md#execution) owns the contract.
 
 ## Source and result
+
+Publication follow-up: [Host PR #186](https://github.com/hao1939/may-agent/pull/186)
+contains candidate `9ba26ee768e751b4e10fa3d0147ae41566a538e6`, based on Host main
+`6935b325`. Paired App/design changes were integrated locally at
+`73ec4e945030ce2308b6b05c469a40fd48643195`; the integration design check passed.
+Hosted Quality and Container results belong to the PR. Land the Host before
+enabling consumers of the new continuation/helper contract; deployment and a
+live provider trial remain separate.
 
 Host base: `b478bc5cf1a8ff8f93583d7ed8bf9a17b3f0815d` on the existing execution-feedback
 candidate. App/design base: `4f7724e9ef`. Reviewed local Host commits:
