@@ -11,6 +11,11 @@ and Task workers exercise the production paths. The local installation has not
 been changed by this experiment. Concurrent review and automatic fallback remain
 deferred.
 
+The follow-up source review is implemented in Host `6fdc03d8`. It separates the
+execution read from its socket presentation and fences session controls at the
+existing Task ownership boundary. It does not introduce review while execution
+is running.
+
 Source reviewed: Host v3.0.1 `6935b325` and release-derived candidate `db5e548c`,
 whose affected execution/routing files agree; App source `3ca8696a90`.
 Existing working design drafts supplied context, not release evidence.
@@ -260,18 +265,95 @@ call is needed. Keep direct tool returns direct and use Events for asynchronous
 feedback. Revisit timeout policy or concurrent review only when their concrete
 value justifies a separate change.
 
+## Follow-up ownership review
+
+The reviewed paths mostly support the common model, but process-local assumptions
+survived the move to Task workers. Those are concrete implementation gaps; a new
+notification service would not repair them.
+
+### Repairs in this follow-up
+
+- **Canonical execution read:** `src/app/core/reads/execution-status.ts` owns
+  transport-independent `ExecutionSession` and `ExecutionStatus` types. Socket
+  presentation and maintenance consume that read. Core no longer imports the
+  socket server's response type. The import guard now also rejects transport,
+  HTTP and control-server implementation imports in core, while allowing public
+  Event contract types.
+- **Session controls respect the execution owner:** a real worker reproduction
+  showed public Cancel returning `accepted` while the daemon manager had no
+  corresponding session to cancel. The same old Steer path could call local
+  `resumeSession` for that worker's session; source inspection showed it could
+  reset the session outside its Task. The probe reproduced the false Cancel
+  acknowledgment, not a second model execution. The fix checks trusted session
+  ownership before public admission and again in the command router on replay.
+  Task-owned sessions, including completed attempts, require the owning App's
+  input/Task controls or Conversation Stop. A live standalone session in another
+  manager is also rejected. Cold standalone chat resumption remains supported.
+- **Bulk session cancellation is honest:** validate the current shared and local
+  session targets before cancelling any local session. If one belongs to another
+  execution owner, reject instead of partially stopping local work and claiming
+  all sessions were cancelled. This is not bulk Task or workflow cancellation.
+- **Health recognizes worker processes:** `SubagentManager.auditHealth()` checks
+  existing process markers before calling an out-of-process session stale. The
+  scan retains its candidate limit. An incomplete scan cannot report healthy.
+  `manager.status()` and `health()` remain local-manager diagnostics; their local
+  maps still serve local execution and cancellation.
+- **Dashboard wording reflects the data:** the former “Active Agents” card is
+  “Recently Seen Agents.” Its two-hour historical query and API field remain
+  unchanged. It is not a claim that those agents are executing now.
+
+The validator is an ordinary function supplied by composition to Event ingress,
+then reused by the existing command router. Core does not select a new handler
+or depend on a manager implementation. No worker relay, fallback hierarchy,
+control queue, schema or App migration is added. Existing persisted invalid
+controls remain unaccepted under normal Event recovery; this change does not
+rewrite their delivery history. Public callers receive an error before a receipt.
+Session-control rejection must not silently become Task cancellation: stopping
+a turn, closing a Task and stopping a standalone session have different scope.
+
+The real worker fixture verifies rejection through public Event ingress while
+its provider request is pending, unchanged Task binding, no new daemon session,
+and normal completion of the same Task. It repeats after reopening storage.
+Focused regressions cover old control replay, foreign managers, current process
+markers and incomplete health scans. These remain portable fixture results,
+not evidence that the local installation is already running the fixes.
+
+### Remaining gaps and smallest next steps
+
+| Finding | Evidence and consequence | Suggested next step |
+| --- | --- | --- |
+| An unresolved observer can suppress every later periodic scan | `app-observer-runtime.ts` keeps `running` true until `run()` settles. An isolated probe advanced ten intervals and called `scanNow()` twice; the unresolved observer ran only once. | Bound I/O in the source adapter. Scout's credential subprocess already has a 30-second kill timeout. Do not add a timer that abandons an unresolved operation and starts unlimited replacements. A generic cancellation contract needs its own demonstrated requirement. |
+| Scout saves discovery state before the Host publishes its event | `watchers/xhs-credential.ts` writes the observed state before returning facts. An isolated temporary-directory probe returned one unavailable fact, discarded it to simulate failed publication, then returned zero facts for the next unchanged observation. | Use existing `previousObservation` / `nextObservation` so the Host advances discovery memory only after durable publication. Keep source probing in Scout; keep publication and generation fencing in the Host. This is the next concrete adapter cleanup, not yet applied here. |
+| Some generic Events still name May | `core/events/bus.ts` labels subscriber failures `agent:may`; `core/events/interface.ts` uses it as a final owner-label default. The event catalog also includes provider-specific types. | Distinguish these labels from routing. They do not prove automatic May fallback. Move installation defaults and provider catalog details only with an identified consumer and contract tests; avoid renaming the whole Event system. |
+| Quiet execution can still hit the five-minute silence deadline | Native activity forwarding repairs missing evidence; it does not change the deadline or create activity while a command is silent. | Keep this explicit until timeout policy or agent review is separately changed. Do not describe progress forwarding as the deferred agent-judged watchdog. |
+
+For the Scout reproduction, use a temporary App root and a stub inspector that
+always returns `state: unavailable`. Call `observeXhsCredential` twice without
+publishing the first returned batch. The observed batch lengths were `1, 0`.
+No browser, credentials, live App state or domain work was used. Ready-state
+facts are emitted each scan by current Scout code; this reproduction specifically
+concerns a lost unavailable transition. The generic Host already supports
+publish-then-advance observer memory; migrating this adapter needs no new daemon.
+
+This review covered CLI feedback, shared status, session controls, health,
+observer publication and Event ownership labels. It does not certify every
+adapter or long-running behavior. The useful next change is the demonstrated
+Scout publication gap; broad restructuring has a higher cost and no equivalent
+evidence of benefit here.
+
 ## Reproduction and validation scope
 
 From the Host checkout:
 
 ```sh
 bun test src/lib/cli-progress.test.ts src/lib/cli-agent.test.ts src/lib/session-observation-timeout.test.ts
-bun test src/app/adapters/reporting/execution-status.test.ts packages/control/src/control-socket.test.ts src/app/modes/maintenance.test.ts src/app/task-worker-integration.test.ts
+bun test src/app/core/reads/execution-status.test.ts packages/control/src/control-socket.test.ts src/app/modes/maintenance.test.ts src/app/task-worker-integration.test.ts
+bun test src/app/command-router.test.ts test/integration/command-router.test.ts test/integration/health-api.test.ts scripts/eslint-config.test.ts
 bun test/integration/fixtures/task-interaction-scenario.ts conversation
 bun run ci
 ```
 
-The first two commands exercise the owning contracts. The third prints timing
+The first three commands exercise the owning contracts. The fourth prints timing
 samples through the public socket while actual worker processes run. The final
 command is the full Host gate, including browser checks. These portable fixtures
 use temporary state and a deterministic local provider; they do not require
@@ -289,3 +371,10 @@ design integrity, proposal links, SDK/control
 examples, seeded Task admission/replay, Condition/dependency result admission
 and canonical App integrity. Historical live investigation evidence was
 reviewed, not rerun. Existing unrelated design drafts remain untouched.
+
+At follow-up Host `6fdc03d8`, `bun run ci` passed: 2,997 tests, zero failures,
+13,275 assertions and the same three installation-only skips. The test phase
+took 162.16 seconds; browser coverage executed. Type checks, App-boundary and
+lint gates passed. `bun run check:may-design` also passed with zero errors or
+warnings. The changes are local commits; no image, live deployment or public
+push was made for this review.
