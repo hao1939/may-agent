@@ -20,6 +20,47 @@ describe("SubagentManager timeout enforcement", () => {
     }
   });
 
+  it.each(["quiet", "hung", "active"])("bounded Task %s work uses only its fixed execution deadline", async (mode) => {
+    let cancelled = false;
+    let updates: ReturnType<typeof setInterval> | undefined;
+    const complete = Promise.withResolvers<void>();
+    const manager = new SubagentManager({ persistDir, noObservationTimeoutMs: 10,
+      agentRunFactory: () => {
+        const listeners = new Set<(event: any) => void>();
+        const state = { messages: [] } as any;
+        return {
+          state,
+          prompt: async () => {
+            if (mode === "quiet") setTimeout(() => {
+              state.messages.push({ role: "assistant", content: [{ type: "text", text: "Useful result" }] });
+              complete.resolve();
+            }, 40);
+            if (mode === "active") updates = setInterval(() => {
+              for (const listener of listeners) listener({ type: "tool_execution_update", toolCallId: "fixture" });
+            }, 5);
+            await complete.promise;
+          },
+          cancel: () => { cancelled = true; complete.reject(new Error("cancelled")); },
+          waitForIdle: async () => undefined, followUp: () => undefined,
+          continue: async () => undefined, steer: () => undefined,
+          subscribe: (listener: (event: any) => void) => { listeners.add(listener); return () => listeners.delete(listener); },
+        };
+      },
+    });
+    const definition = { name: "worker", description: "fixture", domain: "fixture", model: fakeModel(), tools: [] };
+    try {
+      const result = await manager.callAgentDefinition(definition, "Do useful work", {
+        timeout: 150, taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" },
+      });
+      expect(result.status).toBe(mode === "quiet" ? "done" : "interrupted");
+      expect(cancelled).toBe(mode !== "quiet");
+      if (mode !== "quiet") expect(result.error).toBe("Agent timed out after 150ms");
+      expect(manager.hasActiveSession(result.sessionId)).toBe(false);
+    } finally {
+      clearInterval(updates);
+    }
+  });
+
   it("cancels a session after timeoutMs elapses", async () => {
     const manager = new SubagentManager({ persistDir });
 

@@ -1815,6 +1815,11 @@ export class SubagentManager {
 
   private async withObservationDeadline<T>(session: ActiveSession, work: () => Promise<T>): Promise<T> {
     const timeoutMs = this._noObservationTimeoutMs;
+    // Task execution already has an admitted wall-clock budget and exact
+    // cleanup. Quiet work is evidence for its owner, not a second deadline.
+    if (session.taskBinding && Number.isFinite(session.admittedTimeoutMs) && Number(session.admittedTimeoutMs) > 0) {
+      return work();
+    }
     if (timeoutMs <= 0 || this.isPersistentChat(session)) return work();
 
     let timer: ReturnType<typeof setTimeout> | undefined;
