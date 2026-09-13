@@ -31,6 +31,13 @@ small shared state boundary.
 
 ## Current focus
 
+The [execution consolidation proposal](proposals/execution-entrypoint-consolidation.md)
+addresses inconsistent helper scope, watchdog rules, one-shot completion and
+standalone session recovery after the execution-feedback PoC. Keep bounded agent
+calls and direct CLI use; share execution rules without giving every invocation a
+Task. It records source findings, consumer migration, deletion gates and checks.
+The design is refined; this follow-up is not implemented or deployed.
+
 The [scripts review proposal](proposals/poc-retirement-and-knowledge-20260912.md)
 accounts for the refreshed 54-file Host inventory, including all 27 files in
 `scripts/poc/`. Its isolated implementation removes that folder, retains useful

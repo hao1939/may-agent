@@ -3,7 +3,8 @@
 **Design status:** Accepted.
 **Implementation status:** Bounded agent execution and Runtime-managed
 cross-App Task dependencies are implemented. App delegation dispositions have
-been removed.
+been removed. Generic call/fork scope and standalone recovery still have
+[consolidation gaps](../proposals/execution-entrypoint-consolidation.md).
 
 Agent registration has two scopes:
 
@@ -38,6 +39,13 @@ A cross-App task dependency creates a destination task with its own owner,
 restart recovery, and correlated result. Use it when another domain remains
 responsible beyond the current bounded attempt.
 
+These relationships guide capability implementation, not a second routing job
+for the model. A helper remains an ordinary tool: supply input and receive a
+result. Retain `ctx.agents.call` and the model-facing `agents.call` as thin scoped
+wrappers, preserving useful agent cooperation without independent session recovery.
+The caller's trusted execution context supplies permissions, exact ownership,
+cancellation and remaining allowance; the agent does not construct that context.
+
 ## Agent tool actions
 
 The model-facing `agents` tool manages bounded execution:
@@ -65,6 +73,13 @@ Forking does not create durable App ownership. A workflow must not fork work and
 then return while still owing its result. Long-lived or independently
 recoverable work belongs in an App request or task.
 
+Required helpers must be joined or stopped before their caller completes, and
+caller cancellation stops them. Parallel awaited workflow calls already support
+concurrent bounded work. `fork` is retained only where a supported caller needs
+scoped concurrency; its current detached job/recovery behavior is an implementation
+gap. Migration or removal must preserve result return and concurrency for actual
+consumers. A returned session ID is not a durable result promise.
+
 ## Workflow capability
 
 Canonical workflows call agents through their scoped context:
@@ -87,7 +102,7 @@ type ExecutionResult<T = unknown> = {
   status: "done" | "blocked" | "error" | "interrupted";
   summary: string;
   output?: T;
-  evidence?: unknown;
+  facts?: unknown;
 };
 ```
 
@@ -143,6 +158,11 @@ the appropriate App contract rather than relying on a generic owner inbox.
 | Durable desired outcome needs repeated attempts                | App task                                |
 | Optional FYI with no result obligation                         | `message` notification                  |
 | Repeatable multi-step bounded process                          | `ctx.workflows.run`                     |
+
+The fork row describes its required ownership contract; see the implementation
+gap above. Do not rely on detached auto-resume to fulfill an App obligation.
+Provider-specific helpers and direct CLI calls follow the same
+[execution rules](system-boundary.md#execution) without needing their own Tasks.
 
 ## Integrity checklist
 

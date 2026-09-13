@@ -25,6 +25,7 @@ archive.
 | How should Conversation, Request and Topic reads/writes be coordinated? | [Conversation state API](2a-design/storage.md#conversation-state-api) |
 | Is this Host or App responsibility? | [system-boundary.md](2a-design/system-boundary.md) |
 | How do code execution and agent judgment share the feedback loop? | [Execution feedback and wakes](2a-design/events.md#execution-feedback-and-agent-wakes) |
+| How do CLI runs, agent helpers and Tasks share execution rules? | [Execution boundary](2a-design/system-boundary.md#execution), [agent cooperation](2a-design/agents.md), and [consolidation proposal](proposals/execution-entrypoint-consolidation.md) |
 | How do contracts and conventions keep extensions local? | [Convention over configuration](1-principles/core-principles.md#convention-over-configuration) and [resource ownership](2a-design/agent-app.md#resource-ownership-by-convention) |
 | Is this a request, task, or fact? | [work-model.md](1-principles/work-model.md) |
 | How does an App declare behavior? | [agent-app.md](2a-design/agent-app.md) |

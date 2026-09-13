@@ -96,8 +96,9 @@ Use the same division of responsibility for normal results and difficult cases:
 | Review a problem the normal owner cannot handle | Installation-selected supervisor, within granted scope |
 
 These are responsibilities, not five new services or a required agent hierarchy.
-The same App or agent can perform more than one role. The Task remains the
-durable execution identity. A supervisor uses existing App inputs and exact
+The same App or agent can perform more than one role. A Task is the durable
+identity when work needs to survive its caller's execution; a direct invocation
+need not create one. A supervisor uses existing App inputs and exact
 controls; it does not directly revive a worker session or overwrite Task state.
 
 Starting work establishes its feedback owner through trusted existing identity.
@@ -150,9 +151,12 @@ than tracking timers. Intervention can wait for the current execution boundary
 unless a demonstrated need justifies review while a helper is still running.
 
 **Implementation limit:** Task ownership, caller feedback and mechanical recovery
-exist. Automatic supervisor fallback, review during an awaited helper, and
-replacement of the current silence policies remain deferred. Legacy session
-helpers also retain exceptions to this boundary. The
+exist. The [tested candidate](../archive/reviews/execution-feedback-poc-20260913.md)
+removes silence stopping for verified Task execution. Other entries, including
+some with configured limits, retain inconsistent execution/recovery rules. The
+[consolidation proposal](../proposals/execution-entrypoint-consolidation.md)
+tracks their migration and retirement. Automatic supervisor fallback and review
+during an awaited helper remain deferred. The
 [ownership review](../archive/reviews/ownership-boundary-review-20260913.md)
 separates reproduced gaps from source findings; the
 [feedback proposal](../proposals/execution-feedback-and-review.md) records the
@@ -291,9 +295,31 @@ This optional discovery tick is separate from required Host recovery.
 
 ## Execution
 
-The Host has one bounded execution implementation for direct, Gym, App-agent,
-and workflow runs. It owns provider calls, tool permissions, timeouts,
-cancellation, transcripts, and the common execution result.
+All supported Host executions share rules for limits, cancellation, cleanup and
+results. Entry points and provider adapters may differ; they do not select a
+second work lifecycle. Core owns durable Task admission and result fences;
+execution helpers/adapters run the work, and composition supplies trusted scope.
+The source still has the [entry-point gaps](../proposals/execution-entrypoint-consolidation.md#source-findings-and-their-limits).
+
+| Invocation | Ownership and result |
+| --- | --- |
+| A user runs an unrelated CLI | Its native caller owns it; May does not automatically discover or recover it. |
+| Direct Host execution, one-shot CLI or evaluation | One bounded invocation returns to its caller; no Task, EventBus or database is required merely to run a model. |
+| An agent invokes a helper or CLI tool | Caller scope supplies authority, cancellation and remaining allowance; the tool returns its result directly. |
+| A CLI or other interface submits durable App work | Normal App admission creates or addresses the exact Task; the CLI does not own background execution. |
+
+Helpers share the caller's remaining allowance and stop with its cancellation.
+Shorter provider/operation limits can apply. Activity, retries and corrections
+do not extend an invocation's allowance. Code supplies and enforces these limits;
+agents judge continuation or steering without managing timeout counters. The
+allowance bounds active work, not an idle chat's lifetime or a durable Task's life.
+Unconfirmed cleanup is a visible failure, not permission to overlap executions.
+
+Keep bounded agent calls as ordinary capabilities; `ctx.agents.call` and the
+model-facing call can be thin wrappers. Required work that outlives a caller
+uses existing Task ownership or a supported provider operation with durable
+feedback. A session ID alone is no such promise. See
+[agent cooperation](agents.md) and [execution evidence](sessions.md).
 
 A workflow receives typed App input and narrow capabilities. It does not
 receive the database, event bus, scheduler, queues, manager, global paths, or
@@ -328,7 +354,8 @@ bounded workflows. The SDK does not expose SQL, files and locks, queues,
 leases, scheduler handles, event-bus handles, process recovery, delivery
 internals, or global paths.
 
-External interfaces have one state-changing operation:
+External interfaces submitting work or controls to an installed Host have one
+state-changing operation:
 
 ```text
 publish(event)
@@ -337,8 +364,10 @@ publish(event)
 The event type selects one of four existing Host meanings: App input, reported
 fact, exact task/session control, or Host lifecycle control. `get(eventId)`
 reads admission and linked outcomes; `subscribe(filter)` observes Events.
-Adapters do not call App agents or the model runner directly, and Apps do not
-receive this Host interface.
+Those interfaces do not bypass App admission by launching its agent or model
+runner directly, and Apps do not receive this Host interface. A standalone local
+execution wrapper uses the execution capability described above; it neither
+claims an App Task nor becomes an alternate control route for installed work.
 
 ## Extension rule
 

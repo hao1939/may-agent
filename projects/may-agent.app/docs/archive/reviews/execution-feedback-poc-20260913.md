@@ -143,7 +143,12 @@ Continuation costs an additional bounded attempt when the agent requests it.
 It introduces no lifetime budget for a months-long Task; its owner still
 decides whether continued work is worthwhile.
 
-Legacy executions without a proven finite bound retain their silence protection.
+**Scope clarification from the follow-up source review:** manager silence
+protection is skipped only for a Task binding plus a finite positive admitted
+timeout. Remaining entries include standalone calls that already have a configured
+limit; they are not all unbounded. The [consolidation proposal](../../proposals/execution-entrypoint-consolidation.md)
+tracks that implementation gap. This clarification does not add verification to
+the completed PoC.
 The daemon's separate error-only-turn detector remains; current Task worker
 relay does not supply its turn-end inputs. Concurrent model review of an awaited
 helper remains deferred. Missing owners remain visible failures handled through

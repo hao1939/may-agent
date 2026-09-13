@@ -2,7 +2,10 @@
 
 **Status:** Implemented candidate with isolated PoCs, September 13, 2026.
 The four repairs, bounded-execution policy and explicit parent continuation
-are implemented locally. The [PoC record](../archive/reviews/execution-feedback-poc-20260913.md)
+are implemented locally for the recorded scope. Entry-point consolidation is
+still incomplete; the [follow-up proposal](execution-entrypoint-consolidation.md)
+owns remaining caller migration, CLI result handling and heuristic retirement.
+The [PoC record](../archive/reviews/execution-feedback-poc-20260913.md)
 records exact revisions, failures, verification and remaining limits. They are
 not merged or deployed. This is the implementation plan following
 the [component review](../archive/reviews/ownership-boundary-review-20260913.md#component-family-review).
@@ -245,6 +248,12 @@ scans while the same generation's previous scan is still alive.
 
 ## Watchdog follow-up: separate limits from judgment
 
+This section records the staged policy used by the first candidate. The
+[consolidation proposal](execution-entrypoint-consolidation.md) now owns completing
+it across supported entries. The manager's retained category is not simply
+“unbounded”: its exemption requires both a Task binding and a finite admitted
+timeout, so some bounded standalone calls still receive the silence watchdog.
+
 Silence and repeated tool errors are observations for judgment. Explicit provider
 deadlines and daemon liveness have mechanical handling. Automatically cancelling
 or nudging quiet work mixes those responsibilities; activity forwarding alone
@@ -287,6 +296,8 @@ The owner receives an honest interruption through the existing Task result and
 caller-feedback path, not a second watchdog inbox. If a legacy entry point lacks
 a proven bound, leave its current protection in place and label the remaining
 gap. Do not disable limits globally or claim full policy alignment prematurely.
+Each retained entry must now have a named migration or retirement step in the
+consolidation work; a permanent legacy exception is not the target contract.
 
 ## One small experiment for simpler async work
 
@@ -336,7 +347,9 @@ After the example passes, inventory `agents.fork` callers. Move only durable
 assignments whose replacement preserves useful concurrency, result return and
 control. Remove legacy job/resume paths only after their last supported caller
 moves. Keep useful direct calls and provider-owned operations. The agent need
-not understand those internal implementation differences.
+not understand those internal implementation differences. The
+[consolidation proposal](execution-entrypoint-consolidation.md#implementation-order-and-review-boundaries)
+now specifies the consumer inventory, scoped-helper preservation and deletion gates.
 
 ## Remaining findings and explicit deferrals
 

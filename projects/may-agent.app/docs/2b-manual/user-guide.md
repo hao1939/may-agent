@@ -262,12 +262,18 @@ sessions/event traces for execution and causality.
 message is notification only; durable cross-App work uses a child App request
 and durable desired work uses a task.
 
+The intended [execution contract](../2a-design/system-boundary.md#execution)
+keeps helpers under their caller and uses the same limits and result handling.
+Generic call/fork scope still has [implementation gaps](../proposals/execution-entrypoint-consolidation.md).
+Do not treat a fork's session ID or automatic session resume as durable Task
+ownership. A CLI used directly by a human is not automatically supervised by May.
+
 ## Session Kinds
 
 | Kind   | Created by                                                                 | Lifecycle                                                   |
 | ------ | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `chat` | Explicit direct-agent chat                                                 | Persistent execution context; never May App work authority. |
-| `job`  | `agents.fork` and other background/detached dispatch                       | Bounded background work with restart recovery policy.       |
+| `job`  | `agents.fork` and other background/detached dispatch                       | Existing session behavior; detached recovery is pending consolidation, not durable Task ownership. |
 | `call` | `agents.call`, workflow `ctx.agents.call`, standalone heartbeat agent step | Bounded synchronous work owned by its caller/workflow.      |
 
 See [sessions.md](../2a-design/sessions.md) for details.

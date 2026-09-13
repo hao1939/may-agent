@@ -2,7 +2,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented, including per-turn trace propagation,
-fail-closed start persistence, and terminal error persistence.
+fail-closed start persistence, and terminal error persistence. Execution limits
+and standalone recovery retain [consolidation gaps](../proposals/execution-entrypoint-consolidation.md).
 
 ## The Model
 
@@ -97,17 +98,17 @@ ID and linked session read to observe progress.
 Root (May heartbeat)
   ├── call("tech-lead", task)          ← child (blocks parent)
   │     └── call("dev", subtask)       ← grandchild
-  └── fork("dev", task)                ← new root (async, returns immediately)
+  └── fork("dev", task)                ← caller-owned helper (returns immediately)
 ```
 
-- **call** = synchronous, parent waits, child linked via `workflowRunId` (not `parentSessionId`)
+- **call** = awaited result; agent calls carry `parentSessionId` where available
 - **fork** = asynchronous, returns sessionId, child linked via `parentSessionId`
 
-**Linking note:** Despite the diagram, workflow `call` sessions use
-`workflowRunId` for ordered step lineage rather than relying on
-`parentSessionId`. Asynchronous `agents.fork()` jobs use `parentSessionId`.
-Trace links remain the authority for event causality; neither session field is
-a substitute for the trace.
+Workflow steps also carry `workflowRunId`; a workflow without a parent agent
+session need not invent one. Task ownership uses the exact runtime-supplied
+Task/attempt binding, not either lineage field. Trace links describe event
+causality. The [cooperation contract](agents.md) owns helper lifetime; current
+generic fork/recovery behavior does not fully enforce it.
 
 ## Persistence
 
@@ -151,35 +152,30 @@ exit status as data. Timeout and abort settle independently of output-stream
 closure; they must not leave the session, workflow, and owning task permanently
 running behind a zombie process.
 
-Provider requests are bounded independently from the longer session budget. A
-request carries a hard abort deadline: when it produces no usable response
-within five minutes, the turn fails visibly. The owning workflow or task
-reconciler then decides whether fresh evidence justifies another iteration. One
-dead provider connection must not occupy a project worker for the rest of a
-long-running session timeout.
+Provider requests may have a shorter fixed limit than their invocation. The
+current Pi model-request adapter uses a five-minute abort limit; that is a
+provider-call boundary, not a universal five-minute coding limit. Tool progress
+does not renew the invocation allowance. Silence and repeated tool errors are
+evidence for the owner, not independent permission to stop or steer work. The
+[execution boundary](system-boundary.md#execution) owns these shared rules.
 
-Job and call sessions also have a five-minute **no-observation deadline** at
-the manager boundary. The deadline starts when execution starts and resets on
-usable progress: a completed model message, a tool start/update/end event, or a
-turn boundary. Partial model deltas alone do not extend it; a provider that
-streams partial tokens forever has still failed to return a usable agent move.
-If the manager observes no usable progress before the deadline, it cancels the
-agent and concludes the session as interrupted so the owning workflow or task
-reconciler can recover and capacity is released. This catches stalls before a
-provider stream exists as well as stalls outside the provider request itself.
-Persistent chat sessions are excluded because an idle chat is waiting for a
-human, not stalled work.
-
-The no-observation deadline is not the session's total runtime budget. Active
-work may continue beyond five minutes while it produces observations; the
-separately configured session timeout still bounds total execution time.
+**Candidate limitation:** the [feedback PoC](../archive/reviews/execution-feedback-poc-20260913.md)
+removes manager silence cancellation only when both a Task binding and a finite
+positive admitted timeout are present. Other managed non-chat entries can still
+receive the five-minute no-observation deadline, even with a configured total
+timeout. This is a remaining implementation inconsistency, not an accepted
+alternative policy. The [consolidation proposal](../proposals/execution-entrypoint-consolidation.md)
+requires verified bounds and cleanup before deleting that path and the separate
+error-count cancellation. Idle chat context does not need a lifetime deadline.
 
 An interrupted `call` returns to its caller; generic session auto-resume must
 not start it again independently. The owning workflow or Task decides the next
 bounded attempt using current state. Otherwise a timed-out call can keep editing
 after its workflow settled, outside Task capacity and result fencing. Explicit
-cancellation is likewise not an automatic retry request. Independent `job`
-recovery remains separate from caller-owned execution.
+cancellation is likewise not an automatic retry request. Existing automatic
+standalone `job` resume is a migration gap: durable obligations belong to Tasks;
+local invocations return to their caller. Keep explicit permitted user resume
+and stale-state/process cleanup without inventing another work owner.
 
 ## Data Retention
 
