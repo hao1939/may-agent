@@ -7,6 +7,16 @@ are accepted; the implementation choices below are not yet approved.
 **Implementation status:** Source review and a synthetic failure reproduction
 only. No runtime changes, provider operations or deployment were performed.
 
+**September 13 source update:** The reviewed Host v3.0.1 (`6935b325`)
+already implements the publication-aware snapshot support described below.
+The reviewed Scout source still uses its file cache; provider discovery and
+end-to-end adoption remain separate work. The earlier status and baseline below
+record the original proposal, not the present Host implementation.
+[Execution feedback and review](execution-feedback-and-review.md) now owns the
+shared execution/observer feedback refinement, running-helper review, unavailable
+owner handling and their value/cost assessment. Keep the provider-specific work
+here; do not recreate the implemented Host capability.
+
 ## Outcome and stopping point
 
 An agent starts authorized work and receives useful feedback on the same Task
