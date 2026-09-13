@@ -34,12 +34,12 @@ export interface AgentsToolManagerDeps {
   callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; skill?: string },
+    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; skill?: string; signal?: AbortSignal },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; skill?: string },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; skill?: string; signal?: AbortSignal },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
@@ -61,8 +61,6 @@ export interface CreateAgentsToolOptions {
   callDeny?: { agents: string[]; hint: string };
   /** Root directory of agent definitions (for message action). */
   agentsRoot?: string;
-  /** EventBus for emitting message events. When set, message action emits on bus instead of writing to DB directly. */
-  bus?: { emit(event: Record<string, unknown>): void };
   validateControl?: (sessionId: string, callerSessionId?: string) => void;
 }
 
@@ -81,7 +79,7 @@ const AgentsToolParams = Type.Object({
     {
       description: [
         "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
-        "'fork': start an agent in a new independent session (non-blocking). Returns sessionId. You continue immediately. The forked session can query your context via origin link.",
+        "'fork': start a bounded helper owned by your live execution. Returns sessionId. Inspect its result before finishing; unfinished helpers stop with you. Durable work belongs to a Task.",
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
         "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
@@ -218,7 +216,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   const getCallerSessionId = opts?.getCallerSessionId;
   const getCallerAgentName = opts?.getCallerAgentName;
   const callDeny = opts?.callDeny;
-  const bus = opts?.bus;
 
   const callerDefinition = (caller?: string, sessionId = getCallerSessionId?.()) =>
     (sessionId ? manager.activeSessions.get(sessionId)?.definition : undefined) ??
@@ -261,7 +258,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     description:
       "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' to start one in the background, 'peek'/'cancel' to monitor sessions, and 'sessions' to query persisted execution. For one-way FYI notifications, use the separate `message` tool.",
     parameters: AgentsToolParams,
-    execute: async (_toolCallId, _params) => {
+    execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {
         // Back-compat: 'message' and 'send' actions are removed. Direct callers
@@ -309,6 +306,10 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             const lineage = getCallerLineage(parentSid);
 
+            if (!parentSid || !manager.activeSessions.has(parentSid)) {
+              throw new Error("Agent call requires its live caller session");
+            }
+
             // Sync call: blocks until done
             const task = appendContextFiles(params.task, params.context_files, params.success_criteria);
             const result = await manager.callAgent(params.agent, task, {
@@ -318,6 +319,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               source: "agents.call",
               trace: lineage.trace,
               skill: params.skill,
+              signal,
             });
 
             // Return result without full messages array (too large for tool output)
@@ -360,20 +362,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             const lineage = getCallerLineage(parentSidRun);
 
-            // Emit message.created for traceability (v2 convergence)
-            if (bus) {
-              const caller = callerAgentRun || "unknown";
-              bus.emit({
-                type: "message.created",
-                source: `agent:${caller}`,
-                owner: `agent:${params.agent}`,
-                urgency: "immediate",
-                data: { from: caller, to: params.agent, content: forkTask, intent: "fork", priority: "P0" },
-              });
-            }
-
-            // Fire-and-forget: start agent immediately, don't wait.
-            // It is still a causal child of the caller for traceability.
+            // Return immediately; the live caller still owns helper cleanup.
             const sessionId = manager.runAgent(params.agent, forkTask, {
               parentSessionId: parentSidRun,
               originSessionId: parentSidRun,
@@ -382,6 +371,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               source: "agents.fork",
               trace: lineage.trace,
               skill: params.skill,
+              signal,
             });
 
             return textResult(

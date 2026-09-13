@@ -53,6 +53,8 @@ export type DirectAgentRunOptions = {
   outputSchema?: TSchema;
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
+  signal?: AbortSignal;
+  deadlineAt?: number;
   /** Fixed only when deterministic preparation/evaluation facts are required. */
   promptTimestamp?: string;
   /** Fixed only when deterministic preparation/evaluation facts are required. */
@@ -257,6 +259,8 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
   try {
     const result = await executePreparedAgent(prepared, {
       timeoutMs: options.timeoutMs,
+      signal: options.signal,
+      deadlineAt: options.deadlineAt,
       onObservation: (event) => {
         if (event.type === "message_end" && "message" in event) {
           appendFileSync(transcriptPath, `${JSON.stringify((event as { message: AgentMessage }).message)}\n`);

@@ -73,11 +73,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         const denyConfig = config.delegateDeny;
         tools.push(
           manager.createAgentsTool({
-            getCallerSessionId: () => opts.getAgentSessionId(config.name),
+            getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerAgentName: () => config.name,
             callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
             agentsRoot: opts.agentsRoot,
-            bus: opts.bus,
           }),
         );
         break;

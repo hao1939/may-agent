@@ -9,7 +9,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
-import { upsertSession } from "./requests.js";
+import { closeDb, upsertSession } from "./requests.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 
 function registerTestAgents(manager: SubagentManager) {
@@ -50,11 +50,33 @@ describe("createAgentsTool()", () => {
     registerTestAgents(manager);
   });
 
-  afterEach(() => {
-    for (const s of manager.status()) manager.cancel(s.sessionId);
+  afterEach(async () => {
+    const sessions = manager.status();
+    for (const s of sessions) manager.cancel(s.sessionId);
+    await Promise.allSettled(sessions.map((s) => manager.waitFor(s.sessionId)));
+    closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
     rmSync(agentsRoot, { recursive: true, force: true });
   });
+
+  function startCaller(): string {
+    manager = new SubagentManager({ persistDir, agentRunFactory: () => {
+      const stopped = Promise.withResolvers<void>();
+      const state = { messages: [] as any[] } as any;
+      return {
+        state,
+        prompt: async (text: unknown) => {
+          if (text === "hold caller") await stopped.promise;
+          state.messages.push({ role: "assistant", content: [{ type: "text", text: "Fixture result" }] });
+        },
+        cancel: () => stopped.resolve(), waitForIdle: async () => undefined,
+        followUp: () => undefined, continue: async () => undefined, steer: () => undefined,
+        subscribe: () => () => undefined,
+      };
+    } });
+    registerTestAgents(manager);
+    return manager.run("writer", "hold caller");
+  }
 
   it("returns a tool with name 'agents'", () => {
     const tool = manager.createAgentsTool();
@@ -144,7 +166,8 @@ describe("createAgentsTool()", () => {
 
   describe("action: call", () => {
     it("runs agent to completion and returns result", async () => {
-      const tool = manager.createAgentsTool();
+      const caller = startCaller();
+      const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
       const result = await tool.execute("tc1", {
         action: "call",
         agent: "researcher",
@@ -153,7 +176,8 @@ describe("createAgentsTool()", () => {
 
       const parsed = parseResult(result);
       expect(parsed.sessionId).toBeDefined();
-      expect(parsed.status).toBeDefined();
+      expect(parsed.status).toBe("done");
+      expect(parsed.lastAssistantText).toBe("Fixture result");
       expect(parsed.duration).toBeDefined();
       // Should not include full messages array
       expect(parsed.messages).toBeUndefined();
@@ -299,7 +323,9 @@ describe("createAgentsTool()", () => {
     });
 
     it("allows call to non-denied agent", async () => {
+      const caller = startCaller();
       const tool = manager.createAgentsTool({
+        getCallerSessionId: () => caller,
         callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
       });
       const result = await tool.execute("tc1", {
@@ -309,9 +335,7 @@ describe("createAgentsTool()", () => {
       });
       const parsed = parseResult(result);
       expect(parsed.sessionId).toBeDefined();
-      if (parsed.error) {
-        expect(parsed.error).not.toContain("Cannot call");
-      }
+      expect(parsed.status).toBe("done");
     });
 
     it("list still works with callDeny", async () => {

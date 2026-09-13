@@ -55,14 +55,14 @@ test("only structured work observations count; progress callback failure preserv
 });
 
 test.each(["codex", "claude", "tokens", "deadline"] as const)(
-  "real %s subprocess -> tool updates -> agent loop -> watchdog and stored activity",
+  "real %s subprocess -> tool updates -> agent loop -> result and stored activity",
   async (mode) => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-progress-"));
     roots.push(root);
     const persistDir = join(root, ".state");
     const sessionId = "caller";
     const bus = new EventBus();
-    const runtime = new SubagentManager({ persistDir, bus, noObservationTimeoutMs: 2_000 });
+    const runtime = new SubagentManager({ persistDir, bus });
     const tool = createRunCliAgentTool({
       agentName: "owner",
       projectRoot: root,
@@ -163,10 +163,11 @@ test.each(["codex", "claude", "tokens", "deadline"] as const)(
     });
     let prompt: Promise<void> | undefined;
     try {
-      const work = (runtime as any).withObservationDeadline(active, () => (prompt = agent.prompt("Run the fixture")));
+      const work = (runtime as any).withExecutionScope(active, () => (prompt = agent.prompt("Run the fixture")));
       if (mode === "tokens") {
-        await expect(work).rejects.toThrow("No agent observation");
-        expect(activity).toEqual([]);
+        await work;
+        expect(activity).toHaveLength(1); // Terminal result, not the streamed token deltas.
+        expect(modelCalls).toBe(2);
       } else {
         await work;
         expect(modelCalls).toBe(2); // Updates did not ask the model to review.

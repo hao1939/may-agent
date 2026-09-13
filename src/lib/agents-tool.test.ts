@@ -129,7 +129,8 @@ describe("V2 agents tool", () => {
       return { status: "done", agent: "coder", summary: "ok", messages: [] };
     };
 
-    const tool = manager.createAgentsTool();
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("coder") } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
     const result = await callTool(tool, {
       action: "call",
       agent: "coder",
@@ -457,7 +458,8 @@ describe("V2 agents tool", () => {
     });
     (manager as any).callAgent = async () => ({ status: "done", summary: "ok", messages: [] });
 
-    const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner" });
+    manager.activeSessions.set("owner-session", { definition: manager.getAgentDefinition("owner") } as any);
+    const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner", getCallerSessionId: () => "owner-session" });
     expect((await callTool(sameApp, { action: "call", agent: "dev", task: "Implement it" })).status).toBe("done");
 
     (manager as any)._sessions.set("s_break_glass", { requestId: "may-break-glass:42" });

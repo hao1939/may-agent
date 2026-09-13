@@ -633,8 +633,10 @@ describe("direct structured judgment execution", () => {
     expect(result.structuredResult).toBeUndefined();
   });
 
-  test("keeps timeout before any committed judgment interrupted", async () => {
+  test.each(["deadline", "caller"])("keeps %s stop before any committed judgment interrupted", async (cause) => {
     const prepared = prepare();
+    const controller = new AbortController();
+    const started = Promise.withResolvers<void>();
     prepared.runner.streamFn = (_model, _context, options) => {
       const stream = createAssistantMessageEventStream();
       const aborted = () => stream.push({
@@ -644,10 +646,14 @@ describe("direct structured judgment execution", () => {
       });
       if (options?.signal?.aborted) aborted();
       else options?.signal?.addEventListener("abort", aborted, { once: true });
+      started.resolve();
       return stream;
     };
 
-    const result = await executePreparedAgent(prepared, { timeoutMs: 10 });
+    const pending = executePreparedAgent(prepared, { timeoutMs: cause === "deadline" ? 50 : 5_000, signal: controller.signal });
+    await started.promise;
+    if (cause === "caller") controller.abort(new Error("caller stopped"));
+    const result = await pending;
 
     expect(result.status).toBe("interrupted");
     expect(result.structuredResult).toBeUndefined();

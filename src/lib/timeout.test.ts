@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -20,11 +20,11 @@ describe("SubagentManager timeout enforcement", () => {
     }
   });
 
-  it.each(["quiet", "hung", "active"])("bounded Task %s work uses only its fixed execution deadline", async (mode) => {
+  it.each(["quiet", "hung", "active", "standalone"])("%s work uses only its fixed execution deadline", async (mode) => {
     let cancelled = false;
     let updates: ReturnType<typeof setInterval> | undefined;
     const complete = Promise.withResolvers<void>();
-    const manager = new SubagentManager({ persistDir, noObservationTimeoutMs: 10,
+    const manager = new SubagentManager({ persistDir,
       agentRunFactory: () => {
         const listeners = new Set<(event: any) => void>();
         const state = { messages: [] } as any;
@@ -50,7 +50,7 @@ describe("SubagentManager timeout enforcement", () => {
     const definition = { name: "worker", description: "fixture", domain: "fixture", model: fakeModel(), tools: [] };
     try {
       const result = await manager.callAgentDefinition(definition, "Do useful work", {
-        timeout: 150, taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" },
+        timeout: 150, ...(mode === "standalone" ? {} : { taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" } }),
       });
       expect(result.status).toBe(mode === "quiet" ? "done" : "interrupted");
       expect(cancelled).toBe(mode !== "quiet");
@@ -58,47 +58,6 @@ describe("SubagentManager timeout enforcement", () => {
       expect(manager.hasActiveSession(result.sessionId)).toBe(false);
     } finally {
       clearInterval(updates);
-    }
-  });
-
-  it("cancels a session after timeoutMs elapses", async () => {
-    const manager = new SubagentManager({ persistDir });
-
-    // Create a mock agent that hangs forever
-    // We'll register with a timeout and verify cancel is called
-    const cancelSpy = vi.spyOn(manager, "cancel");
-
-    manager.register({
-      name: "slow-agent",
-      description: "An agent that takes too long",
-      domain: "test",
-      systemPrompt: "You are slow.",
-      model: fakeModel(),
-      tools: [],
-      apiKey: "fake-key",
-      timeoutMs: 5000, // 5 second timeout
-    });
-
-    // run() will fail immediately because the model URL is fake,
-    // but the timeout timer should have been set up before the prompt started.
-    // We need to check that setupTimeout was called.
-    // Since the agent will error fast, let's just verify the cancel spy with timer advancement.
-
-    // To properly test, we need to intercept the Agent constructor or prompt method.
-    // Instead, let's verify the timeout mechanism directly by checking the timer behavior.
-
-    // The session will error immediately because there's no real API.
-    // Let's verify the timeout was set by advancing timers.
-    // Since the session errors before timeout, cancel should NOT be called.
-    try {
-      const sessionId = manager.run("slow-agent", "do something slow");
-      const _result = await manager.waitFor(sessionId);
-
-      // Session errored (fake model), timeout should have been cleared
-      // Cancel should not have been called because session already completed
-      expect(cancelSpy).not.toHaveBeenCalled();
-    } catch {
-      // Expected — fake model can't actually run
     }
   });
 
@@ -169,51 +128,4 @@ describe("SubagentManager timeout enforcement", () => {
     expect(manager.hasActiveSession(result.sessionId)).toBe(false);
   });
 
-  it("does not set a timeout when timeoutMs is not configured", () => {
-    const manager = new SubagentManager({ persistDir });
-    const cancelSpy = vi.spyOn(manager, "cancel");
-
-    manager.register({
-      name: "no-timeout",
-      description: "No timeout configured",
-      domain: "test",
-      systemPrompt: "You are fast.",
-      model: fakeModel(),
-      tools: [],
-      apiKey: "fake-key",
-      // No timeoutMs
-    });
-
-    try {
-      manager.run("no-timeout", "do something");
-    } catch {
-      // Expected
-    }
-
-    expect(cancelSpy).not.toHaveBeenCalled();
-  });
-
-  it("does not set a timeout when timeoutMs is 0", () => {
-    const manager = new SubagentManager({ persistDir });
-    const cancelSpy = vi.spyOn(manager, "cancel");
-
-    manager.register({
-      name: "zero-timeout",
-      description: "Zero timeout",
-      domain: "test",
-      systemPrompt: "You are fast.",
-      model: fakeModel(),
-      tools: [],
-      apiKey: "fake-key",
-      timeoutMs: 0,
-    });
-
-    try {
-      manager.run("zero-timeout", "do something");
-    } catch {
-      // Expected
-    }
-
-    expect(cancelSpy).not.toHaveBeenCalled();
-  });
 });

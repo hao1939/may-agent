@@ -81,6 +81,7 @@ export const guard = {
     const completions: Array<{ step: string; result: TaskResult }> = [];
     const cancelled: string[] = [];
     const started = Promise.withResolvers<void>();
+    const stopped = Promise.withResolvers<void>();
     const definition = { name: "repairer" } as SubagentDefinition;
     const binding = { appId: "fixture", taskId: "work/one", generation: 3, attemptId: "attempt-one" };
     const call = async (agent: string, _task: string, callOptions: CallOptions, pinned?: SubagentDefinition) => {
@@ -94,7 +95,7 @@ export const guard = {
       callAgentDefinition: (pinned: SubagentDefinition, task: string, callOptions: CallOptions) =>
         call(pinned.name, task, callOptions, pinned),
       status: () => [{ sessionId: "repair-session", workflowRunId: calls.at(-1)?.options?.workflowRunId }],
-      cancel: (sessionId: string) => cancelled.push(sessionId),
+      cancel: (sessionId: string) => { cancelled.push(sessionId); stopped.resolve(); },
     } as unknown as SubagentManager;
     const runner = createWorkflowRunner({
       manager,
@@ -114,7 +115,7 @@ export const guard = {
         if (event.type === "workflow.step_completed") completions.push(event);
       },
     });
-    return { root, runner, calls, completions, cancelled, started: started.promise, definition, binding };
+    return { root, runner, calls, completions, cancelled, started: started.promise, stopped: stopped.promise, definition, binding };
   }
 
   for (const stage of ["step_done", "workflow_done"] as const) {
@@ -200,34 +201,28 @@ export const guard = {
       const abort = new AbortController();
       const h = setup({
         pending: repair.promise,
-        timeoutMs: stop === "timeout" ? 50 : undefined,
+        timeoutMs: stop === "timeout" ? 1_000 : undefined,
         signal: abort.signal,
         secondRepair: true,
       });
-      const running = h.runner.run("bounded", "test");
-      let watchdog: ReturnType<typeof setTimeout> | undefined;
+      let settled = false;
+      const running = h.runner.run("bounded", "test").then((result) => { settled = true; return result; });
       try {
         await h.started;
         if (stop === "abort") abort.abort(new Error("Owning Task cancelled"));
-        const outcome = await Promise.race([
-          running,
-          new Promise<"watchdog">((resolve) => {
-            watchdog = setTimeout(() => resolve("watchdog"), 500);
-          }),
-        ]);
-        expect(outcome).not.toBe("watchdog");
+        await h.stopped;
+        expect(settled).toBe(false);
+        expect(getWorkflowRun(h.root, h.calls[0].options!.workflowRunId!)?.status).toBe("running");
+        repair.resolve(success());
+        const outcome = await running;
         expect(outcome).toMatchObject({
           type: "error",
-          error: expect.stringContaining(stop === "timeout" ? "timed out after 50ms" : "Owning Task cancelled"),
+          error: expect.stringContaining(stop === "timeout" ? "timed out after 1000ms" : "Owning Task cancelled"),
         });
         expect(h.cancelled).toEqual(["repair-session"]);
-        repair.resolve(success());
-        // Let the ignored provider result unwind before inspecting durable state.
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
         expect(h.calls.map((call) => call.agent)).toEqual(["worker", "repairer"]);
         expect(getWorkflowRun(h.root, h.calls[0].options!.workflowRunId!)?.status).toBe("error");
       } finally {
-        if (watchdog) clearTimeout(watchdog);
         repair.resolve(success());
         await running;
       }
