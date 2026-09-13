@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/hao1939/may-agent/compare/v3.0.1...v4.0.0) (2026-09-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **execution:** unify helper ownership and execution limits ([#186](https://github.com/hao1939/may-agent/issues/186))
+
+### Code Refactoring
+
+* **execution:** unify helper ownership and execution limits ([#186](https://github.com/hao1939/may-agent/issues/186)) ([91ed9ca](https://github.com/hao1939/may-agent/commit/91ed9ca6a0680786c2eea69c1ae5b767febe616e))
+
 ## [3.0.1](https://github.com/hao1939/may-agent/compare/v3.0.0...v3.0.1) (2026-09-12)
 
 
