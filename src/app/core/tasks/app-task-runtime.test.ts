@@ -1551,6 +1551,7 @@ describe("canonical App task runtime", () => {
       expect(
         deferAppTask(config, initial, {
           disposition: "waiting",
+          continue: true,
           summary: "Waiting for the independent review",
           conditions,
         }).status,
@@ -1581,12 +1582,10 @@ describe("canonical App task runtime", () => {
         input: { kind: "deep-scan", data: { reason: "parent-needs-review" } },
       });
 
-      expect(
-        recordAppTaskTrigger(config, initial.taskId, {
-          type: "message.created",
-          data: { message: "Review the current dependency without replacing it" },
-        }),
-      ).toEqual({ kind: "recorded" });
+      // Explicit continuation releases the parent claim and allows useful work
+      // before the child answers, without an invented event or another Task.
+      expect(config.resourceStore.readTask(initial.taskId)?.status).toMatchObject({ phase: "pending", conditionIds: [conditions[0]!.id] });
+      expect(readTaskSnapshot(config).taskTriggers?.[initial.taskId]).toBeUndefined();
       const checkpointReview = claimObservedAppTask(config, {
         taskId: initial.taskId,
         appAgent: "sample-owner",

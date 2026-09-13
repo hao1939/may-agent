@@ -4,6 +4,19 @@ import { admitTaskReconcileResult, admitTaskVerificationResult, taskAgentResultS
 
 const workflowOptions = { allowNeedsAgent: true };
 
+it("admits explicit useful continuation without confusing it with an answer or failure", () => {
+  const result = { state: "waiting", continue: true, summary: "Review requested; prepare independent notes next",
+    facts: ["review:requested"], dependencies: [{ id: "review", appId: "reviewer", input: { kind: "review", data: {} } }] };
+  expect(Check(taskAgentResultSchema, result)).toBe(true);
+  const admitted = admitTaskReconcileResult(result, workflowOptions);
+  expect(admitted.ok).toBe(true);
+  if (!admitted.ok) throw new Error(admitted.error);
+  expect(admitTaskReconcileResult(admitted.result, workflowOptions)).toEqual(admitted);
+  for (const invalid of [{ continue: false }, { state: "converged" }, { dependencies: [] }, { facts: [] }, { report: true }]) {
+    expect(admitTaskReconcileResult({ ...result, ...invalid }, workflowOptions).ok).toBe(false);
+  }
+});
+
 describe("App stop contract", () => {
   const incomplete = {
     state: "incomplete",
