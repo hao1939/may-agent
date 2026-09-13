@@ -54,11 +54,11 @@ function fixture() {
   };
 }
 
-it("paces prolonged failure without ending the assignment, including after reopen", () => {
+it("continues hourly after prolonged failure, preserving its deadline and input across reopen", () => {
   const f = fixture();
   let now = Date.now();
   let previousDelay = 0;
-  for (let failures = 1; failures <= 16; failures++) {
+  for (let failures = 1; failures <= 20; failures++) {
     setSystemTime(now);
     const claim = f.claim();
     expect(claim.events.some(({ event }) => event.type === "app.task.requested")).toBe(true);
@@ -67,11 +67,13 @@ it("paces prolonged failure without ending the assignment, including after reope
     const due = task.status.executionRetryAt!;
     const delay = due - now;
     expect(delay).toBeGreaterThanOrEqual(previousDelay);
-    expect(delay).toBeLessThanOrEqual(15 * 60_000);
-    if (failures >= 13) expect(delay).toBe(15 * 60_000);
-    if (failures === 13) {
+    expect(delay).toBeLessThanOrEqual(60 * 60_000);
+    if (failures >= 15) expect(delay).toBe(60 * 60_000);
+    if (failures === 15) {
+      recordAppTaskTrigger(f.config, "work", { type: "sample.source.changed", eventId: 99 });
       f.reopen();
-      recordAppTaskTrigger(f.config, "work", { type: "project.task.tick" });
+      expect(f.config.resourceStore.nextDueAt()).toBe(due);
+      setSystemTime(due - 1);
       expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }))
         .toMatchObject({ kind: "waiting", retryAt: due });
     }
@@ -83,6 +85,7 @@ it("paces prolonged failure without ending the assignment, including after reope
   }
   setSystemTime(now);
   const final = f.claim();
+  expect(final.events.some(({ event }) => event.eventId === 99)).toBe(true);
   completeAppTask(f.config, final, { summary: "Source restored", result: { value: 17 } });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")?.attemptId).toBe(final.attemptId);
   expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();

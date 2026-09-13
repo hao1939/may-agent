@@ -87,7 +87,7 @@ This is not a general progress stream. Apps can still declare relevant event rou
 | `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained facts remains readable |
 
 Task attempt failures persist their retry deadline, backing off from 250 ms to
-15 minutes during prolonged failure. Fresh human input still permits one new
+one hour during prolonged failure. Fresh human input still permits one new
 attempt. Dispatch or storage errors before that write use `controller.ts`'s local
 timer (250 ms to 30 seconds). Neither path has a failure-count stop. These timers
 pace different work: a dispatch may only retry a storage operation; an attempt

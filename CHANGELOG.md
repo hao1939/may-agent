@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.1](https://github.com/hao1939/may-agent/compare/v3.0.0...v3.0.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **tasks:** back off prolonged execution failures to one hour ([#183](https://github.com/hao1939/may-agent/issues/183)) ([a473990](https://github.com/hao1939/may-agent/commit/a473990026436d43b1268eceff3038fad94e4aaa))
+* **tasks:** keep control commands out of task wake admission ([#182](https://github.com/hao1939/may-agent/issues/182)) ([54c72b6](https://github.com/hao1939/may-agent/commit/54c72b67031c7c8b1fce095438c2b91a7c20c5c5))
+
 ## [3.0.0](https://github.com/hao1939/may-agent/compare/v2.0.0...v3.0.0) (2026-09-12)
 
 
