@@ -23,7 +23,6 @@ export default defineApp({
         parentId: "root",
         outcome: `Review ${input.data.subject}`,
         acceptance: ["A supported review with evidence is recorded"],
-        mode: "achieve",
         input,
       },
     };
@@ -35,7 +34,7 @@ export default defineApp({
 export const waitingResult = {
   state: "waiting",
   summary: "Waiting for pipeline run 123 to complete",
-  evidence: ["pipeline-run:123"],
+  facts: ["pipeline-run:123"],
   conditions: [{
     id: "report-run-finished",
     type: "pipeline-run.state",
@@ -51,7 +50,7 @@ export const waitingResult = {
 export const dependencyResult = {
   state: "waiting",
   summary: "Waiting for release governance",
-  evidence: ["verification/report.json"],
+  facts: ["verification/report.json"],
   dependencies: [{
     id: "release-governance-v4",
     appId: "release-governance",
