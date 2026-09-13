@@ -1,5 +1,9 @@
 # One execution feedback model
 
+The follow-up [repair proposal](execution-feedback-repair-plan.md) turns the
+component review into focused implementation slices, tradeoffs and acceptance
+checks. This document retains the common model and preceding PoC evidence.
+
 **Design status:** Refined September 13, 2026. The user prioritizes one simple
 mental model and explicitly defers review during execution. Keep the shared
 contract; implement only demonstrated gaps. Deferred capabilities are not

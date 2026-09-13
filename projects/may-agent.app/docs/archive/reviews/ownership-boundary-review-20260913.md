@@ -4,6 +4,8 @@
 implemented by this document. The owning contract is
 [Host and App Boundary](../../2a-design/system-boundary.md#ownership-and-intervention),
 with implementation history in the [feedback proposal](../../proposals/execution-feedback-and-review.md).
+The [repair proposal](../../proposals/execution-feedback-repair-plan.md) records
+the recommended changes, alternatives, sequencing and acceptance checks.
 
 The Task core largely fits the agreed model. The most consequential drift is
 around its edges: older session helpers can control execution independently,
