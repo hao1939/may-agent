@@ -36,6 +36,68 @@ event
 The Host does not invent domain work. The App does not implement storage,
 queues, retries, recovery, or presentation transport.
 
+## Ownership and intervention
+
+Use the same division of responsibility for normal results and difficult cases:
+
+| Responsibility | Owner |
+| --- | --- |
+| Preserve accepted work, schedule attempts, validate identity and controls, recover execution, expose truthful state | Host core |
+| Perform external I/O, translate a provider protocol, bound operations and report observations | Executor or source adapter |
+| Judge progress and choose how to continue, wait, steer, or report a result within the assignment | Task's worker, under App policy |
+| Judge scope, coordinate help, accept an outcome, revise or close the assignment | Assigning App, parent agent, or human |
+| Review a problem the normal owner cannot handle | Installation-selected supervisor, within granted scope |
+
+These are responsibilities, not five new services or a required agent hierarchy.
+The same App or agent can perform more than one role. The Task remains the
+durable execution identity. A supervisor uses existing App inputs and exact
+controls; it does not directly revive a worker session or overwrite Task state.
+
+Starting work establishes its feedback owner through trusted existing identity.
+An awaited tool returns directly. Independent asynchronous work returns through
+its Task/caller link; supported external observations use their declared App
+route. Agents do not register a second watch for work the system already owns.
+Conventions still require a source adapter: arbitrary shell commands cannot
+automatically expose every external resource they create.
+
+Events notify the owner that something deserves attention. The handler rereads
+current state, judges what remains necessary and uses the same bounded Task
+execution path. A periodic check does the same after a missed notification.
+This is what reconciliation means here: compare the intended outcome with
+current facts and act through the existing owner. It is not another lifecycle.
+
+| Situation | Handling |
+| --- | --- |
+| Owner is busy | Preserve pending feedback; keep one executing attempt for the Task. |
+| Execution disappeared | Fence it and recover the same Task under existing policy. |
+| Worker cannot progress within scope | Report the blocker, attempted alternatives and useful remaining work to its assigning owner. |
+| Task was closed or cancelled | Retain late evidence; do not reopen it because a notification arrived. |
+| Task is unexpectedly missing | Report to its owning App; do not guess a replacement Task. |
+| Owning App cannot accept feedback | Preserve the delivery problem; use one explicit supervisor route if installed. |
+| Supervisor is unavailable | Expose the unresolved problem for human attention; stop fallback traversal. |
+
+Fallback reports a problem with references to the original work. It does not
+reassign that work, replay its action under a different authority, enable an
+App, or grant new permissions. Unknown public targets remain validation errors;
+an unhandled record-only fact needs no fallback. Publication and routing labels
+are not proof that an agent accepted responsibility.
+
+Silence and repeated errors are evidence for judgment. An explicit attempt or
+operation budget is a mechanical execution limit; reaching it must preserve
+the Task and report the interruption honestly. Agents choose actions, rather
+than tracking timers. Intervention can wait for the current execution boundary
+unless a demonstrated need justifies review while a helper is still running.
+
+**Implementation limit:** Task ownership, caller feedback and mechanical recovery
+exist. Automatic supervisor fallback, review during an awaited helper, and
+replacement of the current silence policies remain deferred. Legacy session
+helpers also retain exceptions to this boundary. The
+[ownership review](../archive/reviews/ownership-boundary-review-20260913.md)
+separates reproduced gaps from source findings; the
+[feedback proposal](../proposals/execution-feedback-and-review.md) records the
+implemented candidate repairs. This contract does not claim universal delivery
+or supervision is already implemented.
+
 ## Plain names
 
 Host and App identify responsibility. Core and replaceable capabilities identify

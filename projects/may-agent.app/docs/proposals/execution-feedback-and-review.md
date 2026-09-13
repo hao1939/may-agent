@@ -43,6 +43,13 @@ and the [code/agent boundary](../1-principles/core-principles.md#code-executes-a
 It introduces no new service, Task lifecycle, public handler category or
 requirement for continuous supervision.
 
+The accepted [ownership and intervention boundary](../2a-design/system-boundary.md#ownership-and-intervention)
+also covers difficult cases. The worker judges how to progress within scope;
+the assigning owner judges scope, help and closure. A supervisor uses the same
+inputs and controls within granted authority. Giving an uncertain decision to
+that owner can be simpler than teaching the runtime another recovery heuristic.
+It does not require concurrent review or a fallback hierarchy now.
+
 ## Ownership, evidence and delivery
 
 Use the existing trusted App, Task, attempt, session and operation identities.
@@ -335,11 +342,16 @@ facts are emitted each scan by current Scout code; this reproduction specificall
 concerns a lost unavailable transition. The generic Host already supports
 publish-then-advance observer memory; migrating this adapter needs no new daemon.
 
-This review covered CLI feedback, shared status, session controls, health,
+This first review covered CLI feedback, shared status, session controls, health,
 observer publication and Event ownership labels. It does not certify every
-adapter or long-running behavior. The useful next change is the demonstrated
-Scout publication gap; broad restructuring has a higher cost and no equivalent
-evidence of benefit here.
+adapter or long-running behavior. The broader
+[ownership audit](../archive/reviews/ownership-boundary-review-20260913.md)
+subsequently found direct session-control paths outside the public guard.
+Those control gaps and the Scout publication gap are the next focused fixes.
+The audit also covers independent session jobs, executor policies, fallback,
+permissions, storage and reporting. It recommends retaining the shared Task
+runtime and distinguishes cleanup from optional capabilities. These additional
+findings are not implemented by the progress/status candidate.
 
 ## Reproduction and validation scope
 

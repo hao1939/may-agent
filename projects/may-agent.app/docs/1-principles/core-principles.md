@@ -131,6 +131,22 @@ existing Host Events, State and Work runtime preserve and deliver their feedback
 See [execution feedback and wakes](../2a-design/events.md#execution-feedback-and-agent-wakes)
 for the concrete contract.
 
+### Use ownership to simplify intervention
+
+When the worker cannot make progress within its scope, bring the facts and
+remaining options to its assigning owner. That owner can clarify the goal,
+authorize a different approach, coordinate help, wait, or close the work.
+An installation-selected supervisor can handle an unavailable owner when that
+route is provided. It receives a problem to judge, not ownership of the original
+Task or additional permissions merely by being called a supervisor.
+
+Code preserves the obligation and enforces the chosen action. It need not infer
+a repair strategy from silence, error counts, agent names, or historical
+sessions. Explicit execution budgets and safe mechanical recovery still apply.
+Prefer this division of responsibility to an expanding collection of automatic
+rescue rules. See [intervention boundaries](../2a-design/system-boundary.md#ownership-and-intervention)
+for normal handling, fallback, and the current implementation limits.
+
 ## Apps own meaning; the Host owns mechanics
 
 An App decides what an input means, what outcome it owns, and whether one
