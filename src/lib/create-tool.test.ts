@@ -264,7 +264,7 @@ describe("createAgentsTool()", () => {
       });
 
       const parsed = parseResult(result);
-      expect(parsed.cancelled).toBe(sessionId);
+      expect(parsed).toMatchObject({ accepted: true, sessionId, method: "local" });
 
       await manager.waitFor(sessionId);
     });
@@ -277,7 +277,8 @@ describe("createAgentsTool()", () => {
       });
 
       const parsed = parseResult(result);
-      expect(parsed.cancelled).toBe("nonexistent");
+      expect(parsed.error).toContain("not known");
+      expect(parsed.cancelled).toBeUndefined();
     });
   });
 

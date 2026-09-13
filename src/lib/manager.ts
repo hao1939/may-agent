@@ -76,6 +76,7 @@ import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.j
 import type { ToolPolicy } from "./session-policy.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
+import { validateSessionControl } from "../app/adapters/executors/session-control.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
@@ -1403,7 +1404,11 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this as any, opts);
+    return createAgentsToolFn(this as any, {
+      ...opts,
+      validateControl: (sessionId, callerSessionId) =>
+        validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),
+    });
   }
 
   // ── Path helpers ──

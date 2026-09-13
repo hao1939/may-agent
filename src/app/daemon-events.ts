@@ -12,6 +12,7 @@ import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
+import { validateSessionControl } from "./adapters/executors/session-control.js";
 
 function createEscalationId(): string {
   return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -281,7 +282,11 @@ export function attachDaemonEventSubscribers(opts: {
     ),
     { label: "session-auto-resume", types: ["session.end"] },
   );
-  const escalationLifecycle = createEscalationLifecycleSubscriber({ bus, manager, persistDir });
+  const escalationLifecycle = createEscalationLifecycleSubscriber({
+    bus, manager, persistDir,
+    readSession: (id) => manager.registryStore.getSession(id),
+    validateSessionControl: (id) => validateSessionControl(manager, "session.steer.requested", id),
+  });
   bus.listen((event) => void escalationLifecycle(event), {
     label: "escalation-lifecycle",
     types: ["escalation.resolved", "escalation.dismissed"],

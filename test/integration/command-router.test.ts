@@ -36,7 +36,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
     restart: () => {},
     shutdown: () => {},
   });
-  return { projectRoot, bus, emitted, router };
+  return { projectRoot, bus, emitted, router, manager };
 }
 
 async function waitForFile(path: string, timeoutMs = 1_000): Promise<void> {
@@ -82,6 +82,7 @@ describe("command router integration", () => {
       },
     } as Partial<SubagentManager>);
 
+    h.manager.registryStore.saveSession("s_cold", { agent: "may", task: "saved conversation", status: "done", startedAt: 1 });
     h.bus.emit({
       type: "session.steer.requested",
       source: "telegram",

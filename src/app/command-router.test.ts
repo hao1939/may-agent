@@ -40,6 +40,7 @@ function fixture(
       status: runs.some((run) => run.opts?.sessionId === sessionId) ? "running" : "unknown",
     }),
   };
+  manager.registryStore.saveSession("s_chat", { agent: "may", task: "chat", status: "idle", startedAt: 1 });
   const router = attachCommandRouter({
     bus,
     manager: manager as any,

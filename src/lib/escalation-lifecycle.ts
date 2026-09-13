@@ -8,6 +8,7 @@ import {
 } from "../app/core/events/bus.js";
 import { appOwnerReviewEvent } from "../app/app-input-event.js";
 import { getDb } from "./requests.js";
+import type { PersistedSession } from "./persistence.js";
 
 type ResumeManager = {
   hasActiveSession?: (sessionId: string) => boolean;
@@ -208,6 +209,8 @@ export function createEscalationLifecycleSubscriber(opts: {
   bus: EventBus;
   manager: ResumeManager;
   persistDir: string;
+  readSession: (sessionId: string) => PersistedSession | null;
+  validateSessionControl: (sessionId: string) => void;
 }): Subscriber {
   return (event) => {
     const outcome = terminalOutcome(event);
@@ -306,6 +309,22 @@ export function createEscalationLifecycleSubscriber(opts: {
     emitResumeAttempted(opts.bus, owner, attemptData);
 
     try {
+      const session = opts.readSession(sessionId);
+      if (!session) throw new Error(`Session ${sessionId} has no saved execution owner`);
+      if (session.taskBinding) {
+        const { appId, taskId } = session.taskBinding;
+        opts.bus.emit(appOwnerReviewEvent({
+          appId, targetTaskId: taskId, source: "escalation-lifecycle",
+          sourceId: `escalation-resolution:${sourceEscalationId}:${outcome}`,
+          data: { ...baseData, text: resumeText, sourceSessionId: sessionId },
+        }));
+        emitResumeStarted(opts.bus, owner, {
+          ...baseData, sourceKind: "task", sourceRef: `${appId}/${taskId}`,
+          summary: "Resolution submitted to the owning Task; no session was resumed.",
+        });
+        return;
+      }
+      opts.validateSessionControl(sessionId);
       if (isActiveSession) {
         if (!opts.manager.send) throw new Error("manager cannot send to active sessions");
         opts.manager.send(sessionId, resumeText, { trace: childEventTrace(event) });

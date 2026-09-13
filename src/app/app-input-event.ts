@@ -30,6 +30,7 @@ export function appOwnerReviewEvent(input: {
   appId: string;
   source: string;
   sourceId: string;
+  targetTaskId?: string;
   data: Record<string, unknown>;
 }): AgentEvent {
   const appId = input.appId.trim().replace(/\.app$/, "");
@@ -43,6 +44,7 @@ export function appOwnerReviewEvent(input: {
     owner: `app:${appId}`,
     data: {
       appId,
+      ...(input.targetTaskId ? { targetTaskId: input.targetTaskId } : {}),
       input: { kind: "owner-review", data: input.data },
       source: { kind: "system", id: sourceId },
       idempotencyKey: `owner-review:${sourceId}`,

@@ -63,7 +63,7 @@ describe("retained detached instance control", () => {
         sessionId: "legacy",
       });
 
-      expect(await cancel("legacy")).toEqual({ cancelled: "legacy", method: "socket" });
+      expect(await cancel("legacy")).toMatchObject({ accepted: true, sessionId: "legacy", method: "socket" });
       expect(frames).toEqual([
         {
           type: "publish",
@@ -75,14 +75,14 @@ describe("retained detached instance control", () => {
           },
         },
       ]);
-      expect(manager.registry.getSession("legacy")?.status).toBe("interrupted");
+      expect(manager.registry.getSession("legacy")?.status).toBe("running");
     } finally {
       for (const socket of sockets) socket.destroy();
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });
 
-  it("keeps the SIGTERM fallback for an existing instance with an unavailable socket", async () => {
+  it("leaves unreachable execution alive and reports the socket failure", async () => {
     const child = spawn(process.execPath, ["-e", "process.stdout.write('ready'); setInterval(() => {}, 1000)"], {
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -103,9 +103,10 @@ describe("retained detached instance control", () => {
         socket: join(root, "absent.sock"),
         sessionId: "legacy",
       });
-      expect(await cancel("legacy")).toEqual({ cancelled: "legacy", method: "sigterm" });
-      expect(await exited).toEqual([null, "SIGTERM"]);
-      expect(manager.registry.getSession("legacy")?.status).toBe("interrupted");
+      expect((await cancel("legacy")).error).toContain("ENOENT");
+      expect(child.exitCode).toBeNull();
+      expect(child.signalCode).toBeNull();
+      expect(manager.registry.getSession("legacy")?.status).toBe("running");
     } finally {
       if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
       await exited;

@@ -50,11 +50,6 @@ export interface AgentsToolManagerDeps {
   registry: {
     persistDir: string;
     getSession(sessionId: string): PersistedSession | null;
-    updateSessionStatus(
-      sessionId: string,
-      status: "running" | "done" | "error" | "interrupted" | "idle",
-      error?: string,
-    ): void;
   };
 }
 export interface CreateAgentsToolOptions {
@@ -68,6 +63,7 @@ export interface CreateAgentsToolOptions {
   agentsRoot?: string;
   /** EventBus for emitting message events. When set, message action emits on bus instead of writing to DB directly. */
   bus?: { emit(event: Record<string, unknown>): void };
+  validateControl?: (sessionId: string, callerSessionId?: string) => void;
 }
 
 // ── Main export ────────────────────────────────────────────────────────
@@ -89,7 +85,7 @@ const AgentsToolParams = Type.Object({
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
         "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
-        "'cancel': kill a running session (requires sessionId).",
+        "'cancel': request cancellation through the owning runtime (requires sessionId).",
         "'sessions': query persisted execution sessions (optionally filter by agent or status).",
         "To send a one-way FYI notification, use the separate `message` tool instead of this action list.",
       ].join(" "),
@@ -431,52 +427,29 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: msg }));
             }
           }
-
           case "cancel": {
-            if (!params.sessionId) {
-              return textResult(JSON.stringify({ error: "'cancel' requires 'sessionId'" }));
-            }
-            // Attached: in-memory cancel
+            if (!params.sessionId) return textResult(JSON.stringify({ error: "'cancel' requires 'sessionId'" }));
+            if (!opts?.validateControl) throw new Error("Session control is not configured");
+            opts.validateControl(params.sessionId, getCallerSessionId?.());
             if (manager.hasActiveSession(params.sessionId)) {
               manager.cancel(params.sessionId);
-              return textResult(JSON.stringify({ cancelled: params.sessionId }));
+              return textResult(JSON.stringify({ accepted: true, sessionId: params.sessionId, method: "local" }));
             }
-            // Detached: try socket, fall back to SIGTERM
-            const cancelMeta = manager.registry.getSession(params.sessionId);
-            if (cancelMeta?.detached) {
-              const { sendSocketCommand } = await import("./socket-client.js");
-              if (cancelMeta.instance) {
-                const cancelIdentity = readIdentity(manager.registry.persistDir, cancelMeta.instance);
-                if (cancelIdentity?.socket) {
-                  try {
-                    await sendSocketCommand(cancelIdentity.socket, {
-                      type: "publish",
-                      event: {
-                        type: "session.cancel.requested",
-                        target: { sessionId: params.sessionId },
-                        data: { reason: "agent tool requested cancellation" },
-                        idempotencyKey: `agents-tool-cancel:${params.sessionId}`,
-                      },
-                    });
-                    manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (socket)");
-                    return textResult(JSON.stringify({ cancelled: params.sessionId, method: "socket" }));
-                  } catch {
-                    /* fall through to SIGTERM */
-                  }
-                }
-              }
-              if (cancelMeta.pid) {
-                try {
-                  process.kill(cancelMeta.pid, "SIGTERM");
-                } catch {
-                  /* process gone */
-                }
-                manager.registry.updateSessionStatus(params.sessionId, "interrupted", "Cancelled (SIGTERM)");
-                return textResult(JSON.stringify({ cancelled: params.sessionId, method: "sigterm" }));
-              }
-            }
-            manager.cancel(params.sessionId);
-            return textResult(JSON.stringify({ cancelled: params.sessionId }));
+            const meta = manager.registry.getSession(params.sessionId);
+            const identity = meta?.detached && meta.instance
+              ? readIdentity(manager.registry.persistDir, meta.instance) : null;
+            if (!identity?.socket) throw new Error("No reachable execution owner for this session");
+            const { sendSocketCommand } = await import("./socket-client.js");
+            const receipt = await sendSocketCommand(identity.socket, {
+              type: "publish",
+              event: {
+                type: "session.cancel.requested",
+                target: { sessionId: params.sessionId },
+                data: { reason: "agent tool requested cancellation" },
+                idempotencyKey: `agents-tool-cancel:${params.sessionId}`,
+              },
+            });
+            return textResult(JSON.stringify({ accepted: true, sessionId: params.sessionId, method: "socket", receipt }));
           }
 
           case "context": {
