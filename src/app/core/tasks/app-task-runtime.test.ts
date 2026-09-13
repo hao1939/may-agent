@@ -2365,6 +2365,10 @@ describe("canonical App task runtime", () => {
       await host!.recoverTaskResults();
       await recoverInstalledAppTasks(bus);
       expect(condition()?.status.state).toBe("true");
+      // The caller reported incomplete too, so it may still have its own
+      // backoff after the collector is ready. Follow that saved schedule.
+      const callerRetryAt = loadedTaskConfig(f).resourceStore.readTask("work/caller")!.status.executionRetryAt;
+      if (callerRetryAt && callerRetryAt > Date.now()) setSystemTime(callerRetryAt + 1);
       // Keep the claim preconditions if the caller unexpectedly fails to resume.
       const beforeFinal = {
         now: Date.now(),
