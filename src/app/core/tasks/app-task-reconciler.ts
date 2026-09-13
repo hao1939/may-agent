@@ -2664,11 +2664,16 @@ export function claimObservedAppTask(
     return { kind: "waiting", taskId: input.taskId, conditionIds: openConditionIds };
   }
 
-  const continuedInputKeys = continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
-    ...missedCheckpointConditionIds,
-    ...taskConditionEntries(tree, input.taskId)
-      .filter(([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true").map(([id]) => id),
-  ]);
+  const continuedInputKeys = [...new Set([
+    ...(latestAttempt?.acceptedResult?.continue
+      ? taskInputAdmissionKeys(latestAttempt.events ?? [], latestAttempt.continuedInputKeys) : []),
+    ...continuedTaskInputKeys(tree, input.taskId, claimedEvents, [
+      ...missedCheckpointConditionIds,
+      ...taskConditionEntries(tree, input.taskId)
+        .filter(([, condition]) => isAppTaskCondition(condition) && condition.status.state === "true")
+        .map(([id]) => id),
+    ]),
+  ])];
   // Claiming is not acceptance. Retain satisfied waits until settlement so
   // interrupted execution can still find their original inputs and facts.
 
@@ -3662,6 +3667,7 @@ export function deferAppTask(
   claim: AppTaskClaim,
   input: {
     disposition: "waiting";
+    continue?: true;
     report?: true;
     summary: string;
     response?: string;
@@ -3710,6 +3716,7 @@ export function deferAppTask(
   const inputKeys = consideredInputKeys(config, tree, claim, input.acceptedLiveEventIds);
   const admissions = input.report ? inputOutcomeAdmissions(config, tree, claim, input.acceptedLiveEventIds, "report", true) : [];
   if (input.report) acceptedResult.report = true;
+  if (input.continue) acceptedResult.continue = true;
   consumeAcceptedLiveTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
   // A review checkpoint is recovery insurance for an event-driven wait. It
   // never makes the awaited fact true, so preserve the owner's Conditions.
@@ -3745,7 +3752,7 @@ export function deferAppTask(
     retainTaskInputWait(config, resource, inputKeys, wait);
   }
   touchResource(resource, {
-    phase: input.disposition,
+    phase: input.continue ? "pending" : input.disposition,
     observedGeneration: claim.generation,
     observedAttemptId: claim.attemptId,
     currentAttemptId: undefined,
@@ -3766,7 +3773,9 @@ export function deferAppTask(
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
   input.prepareSupersededSessions?.(supersededSessionIds);
   commitTaskMutation(config, tree, { resourceMutation: { ...resourceMutation, admissions } });
-  const reconcileTaskIds = actions.map((action) => action.taskId);
+  const reconcileTaskIds = [...new Set([
+    ...actions.map((action) => action.taskId), ...(input.continue ? [claim.taskId] : []),
+  ])];
   return { status: "applied", actionsApplied, reconcileTaskIds, supersededSessionIds };
 }
 

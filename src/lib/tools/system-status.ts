@@ -18,6 +18,7 @@ import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } fro
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
 import { getDb } from "../requests.js";
+import type { ExecutionStatus } from "../../app/core/reads/execution-status.js";
 
 // ── Tail utility ────────────────────────────────────────────────────────
 
@@ -231,24 +232,6 @@ function dashboardSessions(rows: SessionDashboardRow[]): Array<{ id: string; met
   return rows.map(({ id, ...meta }) => ({ id, meta }));
 }
 
-function getActiveSessions(stateDir: string): Array<{ id: string; meta: PersistedSession }> {
-  try {
-    return dashboardSessions(
-      getDb(stateDir)
-        .prepare(
-          `SELECT sessionId AS id, agent, task, status, startedAt, endedAt, error, kind
-           FROM sessions INDEXED BY idx_sess_status
-           WHERE status IN ('running', 'idle')
-           ORDER BY startedAt, sessionId
-           LIMIT 1000`,
-        )
-        .all() as unknown as SessionDashboardRow[],
-    );
-  } catch {
-    return [];
-  }
-}
-
 function getRecentHistory(
   stateDir: string,
   windowMs: number,
@@ -351,6 +334,8 @@ function formatMarkdown(
   todoSummary: string,
   windowMinutes: number,
   metricsSection?: string,
+  execution?: ExecutionStatus,
+  executionError?: string,
 ): string {
   const now = new Date();
   const lines: string[] = [];
@@ -362,8 +347,10 @@ function formatMarkdown(
   const running = active.filter((s) => s.meta.status === "running");
   const idle = active.filter((s) => s.meta.status === "idle");
   const statusIcon = running.length > 0 ? "🟢" : "⚪";
-  lines.push(`## ${statusIcon} Active Sessions (${active.length})`);
-  if (active.length === 0) {
+  lines.push(`## ${statusIcon} Active Sessions (${executionError ? "unavailable" : active.length})`);
+  if (executionError) {
+    lines.push(`- Execution status unavailable: ${executionError}`);
+  } else if (active.length === 0) {
     lines.push("- (none)");
   } else {
     // Sort: running first, then by startedAt
@@ -383,6 +370,9 @@ function formatMarkdown(
   }
   if (running.length > 0 || idle.length > 0) {
     lines.push(`- _Running: ${running.length}, Idle: ${idle.length}_`);
+  }
+  if (execution?.activeWork && running.length === 0) {
+    lines.push("- A current Task execution claim exists without a running agent session.");
   }
   lines.push("");
 
@@ -500,6 +490,7 @@ export function createSystemStatusTool(
   stateDir: string,
   agentsRoot: string,
   sharedRoot = join(agentsRoot, "shared"),
+  readExecution?: () => ExecutionStatus,
 ): AgentTool {
   return {
     name: "system_status",
@@ -525,7 +516,23 @@ export function createSystemStatusTool(
       const windowMinutes = wm ?? 60;
       const windowMs = windowMinutes * 60 * 1000;
 
-      const active = getActiveSessions(stateDir);
+      let execution: ExecutionStatus | undefined;
+      let executionError: string | undefined;
+      try {
+        if (!readExecution) throw new Error("Execution reader is not configured");
+        execution = readExecution();
+      } catch (error) {
+        executionError = (error instanceof Error ? error.message : String(error)).slice(0, 300) || "Execution read failed";
+      }
+      const active = (execution?.sessions ?? []).map((session) => ({
+        id: session.sessionId,
+        meta: {
+          agent: session.agent,
+          task: session.task,
+          status: session.status as PersistedSession["status"],
+          startedAt: session.startedAt ?? Date.now(),
+        },
+      }));
       const history = getRecentHistory(stateDir, windowMs);
       const delegations = getRecentDelegations(stateDir, 50);
       const jobs = getRecentJobs(stateDir, 50);
@@ -545,12 +552,16 @@ export function createSystemStatusTool(
         todoSummary,
         windowMinutes,
         metricsSection,
+        execution,
+        executionError,
       );
 
       return {
         content: [{ type: "text", text: markdown }],
         details: {
-          activeSessions: active.length,
+          activeSessions: execution ? active.length : null,
+          activeWork: execution?.activeWork ?? null,
+          ...(executionError ? { executionError } : {}),
           historyInWindow: history.length,
           delegationCount: delegations.length,
           jobCount: jobs.length,

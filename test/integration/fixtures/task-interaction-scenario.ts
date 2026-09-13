@@ -25,10 +25,18 @@ import {
 } from "../../../src/app/core/state/conversation-task-turns.js";
 import { getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js";
 import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
+import { attachControlSocket } from "../../../packages/control/src/server.js";
+import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
+import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
+import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
+import { readActiveSessionProcessId } from "../../../src/lib/persistence.js";
+import { SubagentManager } from "../../../src/lib/manager.js";
+import { attachCommandRouter, validateSessionControl } from "../../../src/app/command-router.js";
+import { createEventInterface } from "../../../src/app/core/events/interface.js";
 
 async function withProvider(
   f: ReturnType<typeof fixture>,
-  decide: (context: AppInputContext) => ConversationTurnResult,
+  decide: (context: AppInputContext) => ConversationTurnResult | Promise<ConversationTurnResult>,
   execute: (contexts: AppInputContext[]) => Promise<void>,
 ) {
   const contexts: AppInputContext[] = [];
@@ -52,7 +60,7 @@ async function withProvider(
       assert.equal(toolError, undefined, JSON.stringify(toolError));
       assert(contexts.length <= 4, "Unexpected extra provider execution");
       assert(payload.tools.some((tool: { function: { name: string } }) => tool.function.name === "finish"));
-      const answer = decide(context);
+      const answer = await decide(context);
       response.writeHead(200, { "Content-Type": "text/event-stream" });
       const chunk = (delta: unknown, finish: string | null) =>
         response.write(
@@ -111,6 +119,19 @@ async function withProvider(
 
 async function conversation() {
   const f = fixture("owner", false, false, true);
+  const socketPath = daemonSocketPath(f.persistDir, {
+    instance: process.env.INSTANCE || "default",
+    interfaceAgent: process.env.DAEMON_AGENT || "may",
+  });
+  const control = await attachControlSocket({
+    socketPath,
+    getSessionId: () => "",
+    getStatus: () => readExecutionStatus(f.persistDir),
+    emitEvent: () => {},
+    subscribeEvents: () => () => {},
+    agentName: "owner",
+    instance: "fixture",
+  });
   const config = () =>
     appTaskContext({ appDir: f.appDir, projectDir: f.appDir, agent: "owner", resourceStore: f.store });
   const admit = (id: string) =>
@@ -129,41 +150,99 @@ async function conversation() {
     f.bus = new EventBus();
     attachEventPersistence({ bus: f.bus, persistDir: f.persistDir });
   };
-  await withProvider(
-    f,
-    (context) => ({
-      summary: "Compared the fixture options",
-      response: `Reply to ${context.id}`,
-      topic: { kind: "none" },
-    }),
-    async (contexts) => {
-      const first = admit("first");
-      f.request.taskId = first.taskId;
-      f.request.dispatch.lane = "human";
-      await run(f);
-      assert.equal(getAppInboxItem(f.db, "first")?.result?.response, "Reply to first");
-      assert.equal(f.store.isCancelled(first.taskId), false);
-      assert.equal(f.store.readReceipt(first.taskId), null);
-      assert.equal(claimAppInboxItem(f.db, "first", "old-inbox", 1_000), null);
-      const accepted = f.store.readTask(first.taskId)!.status.observedAttemptId!;
-      assert.equal(f.store.readAttempt(accepted)?.acceptedResult?.state, "converged");
-      reopen();
-      const second = admit("second");
-      assert.equal(second.taskId, first.taskId);
-      await run(f);
-      assert.equal(getAppInboxItem(f.db, "first")?.result?.response, "Reply to first");
-      assert.equal(getAppInboxItem(f.db, "second")?.result?.response, "Reply to second");
-      assert.deepEqual(
-        contexts.map(({ id }) => id),
-        ["first", "second"],
-      );
-      assert.notEqual(f.store.readTask(first.taskId)!.status.observedAttemptId, accepted);
-      await run(f); // A duplicate process dispatch cannot manufacture new Conversation input.
-      assert.equal(contexts.length, 2);
-      assert.equal(f.store.isCancelled(first.taskId), false);
-      assert.deepEqual(f.store.listRecoveryCandidates().items, []);
-    },
-  );
+  try {
+    await withProvider(
+      f,
+      async (context) => {
+        // The provider request is an exact checkpoint: the real child agent is running.
+        const started = performance.now();
+        const status = await sendSocketCommand(socketPath, { type: "status" });
+        console.log(JSON.stringify({ probe: "worker-status", durationMs: performance.now() - started }));
+        const sessions = status.activeAgents as Array<{ sessionId: string }>;
+        assert.equal(status.activeWork, true);
+        assert.equal(sessions.length, 1);
+        assert.equal(readActiveSessionProcessId(f.persistDir, sessions[0]!.sessionId), f.child!.pid);
+        assert.notEqual(f.child!.pid, process.pid);
+        assert.deepEqual(await observeDaemonLiveness(f.persistDir), { responsive: true, activeWork: true });
+        // Public session controls must not bypass the Task that owns this child.
+        const manager = new SubagentManager({ persistDir: f.persistDir });
+        const router = attachCommandRouter({
+          bus: f.bus,
+          manager,
+          projectRoot: f.root,
+          reload: () => ({ ok: true, summary: "fixture" }),
+          restart: () => {},
+          shutdown: () => {},
+        });
+        const events = createEventInterface({
+          bus: f.bus,
+          db: f.db,
+          acceptsAppInput: () => false,
+          hasApp: () => true,
+          hasAgent: () => true,
+          hasSession: (id) => manager.registryStore.getSession(id) !== null,
+          validateSessionControl: (type, id) => validateSessionControl(manager, type, id),
+        });
+        const sessionId = sessions[0]!.sessionId;
+        const binding = manager.registryStore.getSession(sessionId)!.taskBinding;
+        assert(binding);
+        try {
+          for (const type of ["session.cancel.requested", "session.steer.requested"] as const) {
+            assert.throws(
+              () =>
+                events.publish(
+                  {
+                    type,
+                    target: { sessionId },
+                    data: type === "session.steer.requested" ? { message: "continue" } : {},
+                  },
+                  { source: "fixture" },
+                ),
+              (error) => error instanceof Error && error.message.includes(binding.taskId),
+            );
+          }
+          assert.deepEqual(manager.registryStore.getSession(sessionId)!.taskBinding, binding);
+          assert.deepEqual(manager.status(), []);
+          assert.deepEqual((await manager.auditHealth()).staleSessions, []);
+          assert.equal(f.store.isCancelled(binding.taskId), false);
+        } finally {
+          router.close();
+        }
+        return { summary: "Compared the fixture options", response: `Reply to ${context.id}`, topic: { kind: "none" } };
+      },
+      async (contexts) => {
+        const first = admit("first");
+        f.request.taskId = first.taskId;
+        f.request.dispatch.lane = "human";
+        await run(f);
+        assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: false });
+        assert.equal((await sendSocketCommand(socketPath, { type: "status" })).activeWork, false);
+        assert.equal(getAppInboxItem(f.db, "first")?.result?.response, "Reply to first");
+        assert.equal(f.store.isCancelled(first.taskId), false);
+        assert.equal(f.store.readReceipt(first.taskId), null);
+        assert.equal(claimAppInboxItem(f.db, "first", "old-inbox", 1_000), null);
+        const accepted = f.store.readTask(first.taskId)!.status.observedAttemptId!;
+        assert.equal(f.store.readAttempt(accepted)?.acceptedResult?.state, "converged");
+        reopen();
+        const second = admit("second");
+        assert.equal(second.taskId, first.taskId);
+        await run(f);
+        assert.equal(getAppInboxItem(f.db, "first")?.result?.response, "Reply to first");
+        assert.equal(getAppInboxItem(f.db, "second")?.result?.response, "Reply to second");
+        assert.deepEqual(
+          contexts.map(({ id }) => id),
+          ["first", "second"],
+        );
+        assert.notEqual(f.store.readTask(first.taskId)!.status.observedAttemptId, accepted);
+        await run(f); // A duplicate process dispatch cannot manufacture new Conversation input.
+        assert.equal(contexts.length, 2);
+        assert.equal(f.store.isCancelled(first.taskId), false);
+        assert.deepEqual(f.store.listRecoveryCandidates().items, []);
+      },
+    );
+  } finally {
+    control.close();
+  }
 }
 
 function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {

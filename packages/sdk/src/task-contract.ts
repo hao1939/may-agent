@@ -110,7 +110,9 @@ export const taskAgentResultSchema = Type.Union([
     { additionalProperties: false },
   ),
   Type.Object(
-    { state: Type.Literal("waiting"), ...resultFields },
+    { state: Type.Literal("waiting"), ...resultFields, continue: Type.Optional(Type.Literal(true, {
+      description: "After submitting dependencies, queue another bounded pass for useful independent work. Keeps the input unanswered. Omit to sleep until feedback or review.",
+    })) },
     { additionalProperties: false },
   ),
   Type.Object(
@@ -490,6 +492,10 @@ export function admitTaskReconcileResult(
   if (output.state !== "waiting" && dependencies.length > 0) {
     return { ok: false, error: "dependencies are valid only for waiting" };
   }
+  if (output.continue !== undefined &&
+    (output.continue !== true || output.state !== "waiting" || output.report !== undefined || !dependencies.length || !facts.length)) {
+    return { ok: false, error: "continue requires waiting, dependencies and progress facts, without report" };
+  }
   if (!Check(taskReconcileResultSchema, output)) {
     const first = [...Errors(taskReconcileResultSchema, output)][0];
     return {
@@ -506,6 +512,7 @@ export function admitTaskReconcileResult(
   if (output.state === "waiting") {
     const waiting = {
       ...report, state: "waiting" as const, actions,
+      ...(admittedOutput.continue === true ? { continue: true as const } : {}),
       ...(conditions.length ? { conditions } : {}),
       ...(dependencies.length ? { dependencies } : {}),
     };

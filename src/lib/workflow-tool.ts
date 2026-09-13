@@ -1,3 +1,4 @@
+import { ExecutionScope, executionTimeout } from "./execution-scope.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
@@ -1113,7 +1114,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
       const injectedStepCount = { value: 0 };
       const guardWarnings: string[] = [];
-      const executionTimeoutMs = workflow.executionTimeoutMs ?? opts.executionTimeoutMs;
+      const executionTimeoutMs = executionTimeout(workflow.executionTimeoutMs ?? opts.executionTimeoutMs);
+      const executionDeadlineAt = run.startedAt + executionTimeoutMs;
       const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
       const assertExecutionActive = (): void => {
         signal.throwIfAborted();
@@ -1159,7 +1161,17 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         emitAndCollectDemands(guards, startEvent); // start events: collect but don't expect demands (logging only)
       }
 
-      const runAgentStep = async (
+      const pendingSteps = new Set<Promise<unknown>>();
+      const trackStep = <T>(execution: Promise<T>): Promise<T> => {
+        pendingSteps.add(execution);
+        // Observe rejection immediately, including an authored unawaited helper.
+        void execution.then(
+          () => pendingSteps.delete(execution),
+          () => pendingSteps.delete(execution),
+        );
+        return execution;
+      };
+      const executeAgentStep = async (
         agentName: string,
         agentTask: string,
         reuseSessionId?: string,
@@ -1168,6 +1180,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       ): Promise<TaskResult> => {
         assertExecutionActive();
         validateOperationAllowance(stepOpts?.operationAllowance);
+        const stepTimeoutMs = executionTimeout(stepOpts?.timeoutMs ?? executionTimeoutMs, executionDeadlineAt);
         // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
         // where they'd produce the confusing "Agent \"undefined\" not registered" error.
         if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
@@ -1231,24 +1244,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         let sid = sessionToReuse;
         let taskResult: TaskResult | undefined;
         const waitForStep = async (sessionId: string): Promise<TaskResult> => {
-          if (!stepOpts?.timeoutMs) return manager.waitFor(sessionId);
-          let timer: ReturnType<typeof setTimeout> | undefined;
+          const scope = new ExecutionScope(stepTimeoutMs, signal, executionDeadlineAt, () => manager.cancel(sessionId));
           try {
-            return await Promise.race([
-              manager.waitFor(sessionId),
-              new Promise<never>((_, reject) => {
-                timer = setTimeout(() => {
-                  try {
-                    manager.cancel(sessionId);
-                  } catch {
-                    // Best-effort cancellation; the timeout still rejects.
-                  }
-                  reject(new Error(`Agent step "${agentName}" timed out after ${stepOpts.timeoutMs}ms`));
-                }, stepOpts.timeoutMs);
-              }),
-            ]);
+            const result = await manager.waitFor(sessionId);
+            scope.signal.throwIfAborted();
+            return result;
           } finally {
-            if (timer) clearTimeout(timer);
+            scope.close();
           }
         };
         if (sid) {
@@ -1261,7 +1263,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 manager.resumeSession(sid, effectiveTask, {
                   source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
                   taskBinding: opts.taskBinding,
-                  timeoutMs: stepOpts?.timeoutMs,
+                  timeoutMs: stepTimeoutMs,
+                  signal,
+                  deadlineAt: executionDeadlineAt,
                   operationAllowance: stepOpts?.operationAllowance,
                   suppressBenignRaceEvent: true,
                   requireFinish: true,
@@ -1285,7 +1289,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 stepLabel: agentName,
                 source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
                 kind: "call",
-                timeoutMs: stepOpts?.timeoutMs,
+                timeoutMs: stepTimeoutMs,
+                signal,
+                deadlineAt: executionDeadlineAt,
                 operationAllowance: stepOpts?.operationAllowance,
                 trace: resolveTrace(),
                 skill: stepOpts?.skill,
@@ -1311,7 +1317,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             taskBinding: opts.taskBinding,
             recoveryOwner: opts.recoveryOwner,
             stepLabel: label,
-            timeout: stepOpts?.timeoutMs,
+            timeout: stepTimeoutMs,
+            signal,
+            deadlineAt: executionDeadlineAt,
             operationAllowance: stepOpts?.operationAllowance,
             trace: resolveTrace(),
             skill: stepOpts?.skill,
@@ -1377,6 +1385,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
         return taskResult;
       };
+
+      const runAgentStep = (...args: Parameters<typeof executeAgentStep>): Promise<TaskResult> =>
+        trackStep(executeAgentStep(...args));
 
       const runNestedWorkflow = async (
         workflowName: string,
@@ -1479,8 +1490,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             }
           : {}),
         agents: {
-          call: async (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
-            appAgentExecutionResult(await runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions)),
+          call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
+            trackStep(runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions).then(appAgentExecutionResult)),
         },
 
         events: {
@@ -1516,30 +1527,31 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         },
 
         workflows: {
-          run: async (wfName: string, workflowInput: unknown): Promise<AppExecutionResult> => {
-            const nestedTask = typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
-            const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
-            if ("reason" in nested) {
-              return { id: runId, kind: "workflow", status: "blocked", summary: nested.reason };
-            }
-            const { sub } = nested;
-            if (sub.result.type === "done") {
+          run: (wfName: string, workflowInput: unknown): Promise<AppExecutionResult> =>
+            trackStep((async () => {
+              const nestedTask = typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
+              const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
+              if ("reason" in nested) {
+                return { id: runId, kind: "workflow", status: "blocked", summary: nested.reason };
+              }
+              const { sub } = nested;
+              if (sub.result.type === "done") {
+                return {
+                  id: sub.runId,
+                  kind: "workflow",
+                  status: "done",
+                  summary: sub.result.summary,
+                  ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+                };
+              }
               return {
                 id: sub.runId,
                 kind: "workflow",
-                status: "done",
-                summary: sub.result.summary,
-                ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+                status: "blocked",
+                summary: sub.result.reason,
+                ...(sub.result.context !== undefined ? { facts: sub.result.context } : {}),
               };
-            }
-            return {
-              id: sub.runId,
-              kind: "workflow",
-              status: "blocked",
-              summary: sub.result.reason,
-              ...(sub.result.context !== undefined ? { facts: sub.result.context } : {}),
-            };
-          },
+            })()),
         },
 
         done: (summary, output) => ({
@@ -1606,9 +1618,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         assertExecutionActive();
         return result;
       })();
-      const result = await Promise.race([execution, stopped]).finally(() => {
+      const result = await Promise.race([execution, stopped]).finally(async () => {
         if (executionTimer) clearTimeout(executionTimer);
+        // Fence late calls and stop nested workflows even after a normal return.
+        controller.abort(new Error("Workflow execution finished"));
         signal.removeEventListener("abort", stopForAbort);
+        // Do not release the owning attempt while a cancelled helper is draining.
+        await Promise.allSettled([...pendingSteps]);
       });
 
       // Finalize the workflow run

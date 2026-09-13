@@ -129,7 +129,8 @@ describe("V2 agents tool", () => {
       return { status: "done", agent: "coder", summary: "ok", messages: [] };
     };
 
-    const tool = manager.createAgentsTool();
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("coder") } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
     const result = await callTool(tool, {
       action: "call",
       agent: "coder",
@@ -177,10 +178,40 @@ describe("V2 agents tool", () => {
     expect(dispatchedTask).toContain("shared/skills/control-plane-operation/SKILL.md");
   });
 
-  it("cancel on non-existent session returns cancelled (no-op)", async () => {
+  it("cancel on non-existent session reports an unknown owner", async () => {
     const tool = manager.createAgentsTool();
     const result = await callTool(tool, { action: "cancel", sessionId: "s_nonexistent" });
-    expect(result.cancelled).toBe("s_nonexistent");
+    expect(result.error).toContain("not known");
+    expect(result.cancelled).toBeUndefined();
+  });
+
+  it("rejects Task sessions but allows the caller's live bounded helper", async () => {
+    const binding = { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" };
+    const cancelled: string[] = [];
+    (manager as any).cancel = (id: string) => cancelled.push(id);
+    for (const [id, parentSessionId, taskBinding] of [
+      ["parent", undefined, binding], ["helper", "parent", binding],
+      ["other", "parent", { ...binding, attemptId: "old" }],
+    ] as const) {
+      manager.registryStore.saveSession(id, { agent: "worker", task: "fixture", status: "running", startedAt: 1, taskBinding });
+      manager.activeSessions.set(id, { sessionId: id, parentSessionId, taskBinding } as never);
+    }
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "parent" });
+    expect((await callTool(tool, { action: "cancel", sessionId: "parent" })).error).toContain("belongs to Task");
+    expect((await callTool(tool, { action: "cancel", sessionId: "other" })).error).toContain("belongs to Task");
+    expect((await callTool(tool, { action: "cancel", sessionId: "helper" })).accepted).toBe(true);
+    expect(cancelled).toEqual(["helper"]);
+    expect(manager.registryStore.getSession("helper")?.status).toBe("running");
+    manager.activeSessions.clear();
+  });
+
+  it("does not kill or rewrite unreachable detached execution", async () => {
+    manager.registryStore.saveSession("detached", { agent: "worker", task: "fixture", status: "running",
+      startedAt: 1, detached: true, pid: process.pid });
+    const result = await callTool(manager.createAgentsTool(), { action: "cancel", sessionId: "detached" });
+    expect(result.error).toContain("No reachable execution owner");
+    expect(result.accepted).toBeUndefined();
+    expect(manager.registryStore.getSession("detached")?.status).toBe("running");
   });
 
   it("peek without sessionId returns error", async () => {
@@ -427,7 +458,8 @@ describe("V2 agents tool", () => {
     });
     (manager as any).callAgent = async () => ({ status: "done", summary: "ok", messages: [] });
 
-    const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner" });
+    manager.activeSessions.set("owner-session", { definition: manager.getAgentDefinition("owner") } as any);
+    const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner", getCallerSessionId: () => "owner-session" });
     expect((await callTool(sameApp, { action: "call", agent: "dev", task: "Implement it" })).status).toBe("done");
 
     (manager as any)._sessions.set("s_break_glass", { requestId: "may-break-glass:42" });

@@ -3,6 +3,7 @@ import type { AppTaskAttempt, AppTaskCancellation, AppTaskCondition, AppTaskReso
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
+import { taskViewPhaseSql } from "./core/state/task-view-phase.js";
 import {
   TaskReferenceError,
   displayTaskReferences,
@@ -223,9 +224,7 @@ function normalizeAppId(value: string | undefined): string | undefined {
 
 // A wake can queue the next cycle without rewriting the last accepted phase.
 // Project that work consistently in exact reads, lists, and status filters.
-const LIVE_TASK_PHASE_SQL = `CASE
-  WHEN t.phase = 'converged' AND (t.ready = 1 OR t.changed = 1) THEN 'pending'
-  ELSE t.phase END`;
+const LIVE_TASK_PHASE_SQL = taskViewPhaseSql("t");
 
 function taskStatus(phase: string | undefined, terminal: boolean): HumanTaskStatus {
   if (terminal) return "done";
@@ -883,7 +882,9 @@ export class HumanTaskService {
       : ["pending", "running", "waiting", "attention", "converged"];
     // Keep the indexed stored-phase search, then narrow by the display phase.
     // Pending also includes converged rows with a newly queued cycle.
-    const storedPhases = livePhases.includes("pending") ? [...new Set([...livePhases, "converged"])] : livePhases;
+    const storedPhases = livePhases.includes("pending")
+      ? [...new Set([...livePhases, "converged", "waiting"])]
+      : livePhases;
     const appId = this.canonicalAppId(input.appId);
     const humanOwners = humanActionOnly
       ? reachableHumanConditionOwners(this.db, appId ? { activeAppId: appId } : {})
@@ -1039,7 +1040,7 @@ export class HumanTaskService {
     };
     if (view.terminal) return linkedView;
     const progress = latestTaskProgress(this.db, identity.appId, identity.taskId, view.execution?.attemptId);
-    const waitingOn = view.status === "waiting" ? taskWaits(this.db, identity.appId, identity.taskId) : [];
+    const waitingOn = taskWaits(this.db, identity.appId, identity.taskId);
     const detail = {
       ...linkedView,
       diagnostics: taskDiagnostics(this.db, row),

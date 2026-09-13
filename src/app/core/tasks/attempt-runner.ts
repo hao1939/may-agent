@@ -741,6 +741,7 @@ export async function runTaskAttempt(input: {
         const apply = persistResult(() =>
           deferAppTask(config, primary, {
             disposition: "waiting",
+            continue: primaryHandlerResult.continue,
             report: primaryHandlerResult.report,
             summary: primaryHandlerResult.summary,
             response: primaryHandlerResult.response,

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { closeDb } from "./requests.js";
 
 describe("cascading cancel", () => {
   let persistDir: string;
@@ -23,7 +24,11 @@ describe("cascading cancel", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    const sessions = manager.status();
+    for (const session of sessions) manager.cancel(session.sessionId);
+    await Promise.allSettled(sessions.map((session) => manager.waitFor(session.sessionId)));
+    closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
   });
 
@@ -89,7 +94,20 @@ describe("parentSessionId via createAgentsTool", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-parent-"));
-    manager = new SubagentManager({ persistDir });
+    manager = new SubagentManager({ persistDir, agentRunFactory: () => {
+      const stopped = Promise.withResolvers<void>();
+      const state = { messages: [] as any[] } as any;
+      return {
+        state,
+        prompt: async (text: unknown) => {
+          if (text === "caller") await stopped.promise;
+          state.messages.push({ role: "assistant", content: [{ type: "text", text: "Fixture result" }] });
+        },
+        cancel: () => stopped.resolve(), waitForIdle: async () => undefined,
+        followUp: () => undefined, continue: async () => undefined, steer: () => undefined,
+        subscribe: () => () => undefined,
+      };
+    } });
     manager.register({
       name: "worker",
       description: "Worker agent",
@@ -101,12 +119,16 @@ describe("parentSessionId via createAgentsTool", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    const sessions = manager.status();
+    for (const session of sessions) manager.cancel(session.sessionId);
+    await Promise.allSettled(sessions.map((session) => manager.waitFor(session.sessionId)));
+    closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
   });
 
   it("call action sets parentSessionId from getCallerSessionId", async () => {
-    const callerSid = "caller_123";
+    const callerSid = manager.run("worker", "caller");
     const tool = manager.createAgentsTool({
       getCallerSessionId: () => callerSid,
     });
@@ -125,12 +147,7 @@ describe("parentSessionId via createAgentsTool", () => {
   });
 
   it("call action inherits workflowRunId and projectId from the caller session", async () => {
-    const callerSid = "caller_project";
-    (manager as any).registry.saveSession(callerSid, {
-      agent: "worker",
-      task: "caller",
-      status: "running",
-      startedAt: Date.now(),
+    const callerSid = manager.run("worker", "caller", {
       workflowRunId: "wr_project",
       projectId: "scout/scout-second-brain-learning",
     });
@@ -154,12 +171,7 @@ describe("parentSessionId via createAgentsTool", () => {
   });
 
   it("fork action sets parentSessionId and inherits workflow/project lineage", async () => {
-    const callerSid = "caller_fork_project";
-    (manager as any).registry.saveSession(callerSid, {
-      agent: "worker",
-      task: "caller",
-      status: "running",
-      startedAt: Date.now(),
+    const callerSid = manager.run("worker", "caller", {
       workflowRunId: "wr_fork_project",
       projectId: "scout/scout-second-brain-learning",
     });
@@ -182,7 +194,7 @@ describe("parentSessionId via createAgentsTool", () => {
     expect(registry.sessions[sessionId].projectId).toBe("scout/scout-second-brain-learning");
   });
 
-  it("call without getCallerSessionId has no parentSessionId", async () => {
+  it("call without a live caller is rejected without starting a session", async () => {
     const tool = manager.createAgentsTool();
 
     const result = await tool.execute("tc1", {
@@ -192,9 +204,7 @@ describe("parentSessionId via createAgentsTool", () => {
     });
 
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-    const sessionId = parsed.sessionId;
-
-    const registry = (manager as any).registry.getRegistry();
-    expect(registry.sessions[sessionId].parentSessionId).toBeUndefined();
+    expect(parsed.error).toContain("live caller");
+    expect(manager.status()).toEqual([]);
   });
 });

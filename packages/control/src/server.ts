@@ -13,14 +13,17 @@ export interface ControlStatusItem {
   agent: string;
   sessionId: string;
   status: string;
-  kind: string;
+  kind?: string;
   task: string;
 }
+
+export type ControlStatusSnapshot = { sessions: ControlStatusItem[]; activeWork: boolean };
+export type ControlStatus = ControlStatusItem[] | ControlStatusSnapshot;
 
 export interface AttachControlSocketOptions {
   socketPath: string;
   getSessionId: () => string;
-  getStatus: () => ControlStatusItem[];
+  getStatus: () => ControlStatus;
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: (event: EventInput) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
@@ -121,7 +124,7 @@ function activeStatus(status: ControlStatusItem[]): ControlStatusItem[] {
       agent: item.agent,
       sessionId: item.sessionId,
       status: item.status,
-      kind: item.kind,
+      kind: item.kind ?? "",
       task: item.task.slice(0, 100),
     }));
 }
@@ -159,6 +162,12 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
     });
   }
   return active;
+}
+
+function statusFields(status: ControlStatus, sessionId: string, agentName: string): Record<string, unknown> {
+  return Array.isArray(status)
+    ? { activeAgents: socketStatus(status, sessionId, agentName) }
+    : { activeAgents: socketStatus(status.sessions, sessionId, agentName), activeWork: status.activeWork };
 }
 
 function runtimeDiagnostics(): Record<string, unknown> {
@@ -204,7 +213,7 @@ function eventPayload(event: ControlEvent): Record<string, unknown> {
 
 export interface ControlSocketCoreOptions {
   getSessionId: () => string;
-  getStatus: () => ControlStatusItem[];
+  getStatus: () => ControlStatus;
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: AttachControlSocketOptions["publishEvent"];
   getEvent?: AttachControlSocketOptions["getEvent"];
@@ -368,13 +377,19 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     socket.on("end", removeClient);
     socket.on("finish", removeClient);
 
+    let initialStatus: Record<string, unknown>;
+    try {
+      initialStatus = statusFields(getStatus(), getSessionId(), agentName);
+    } catch {
+      initialStatus = { statusError: "Execution status unavailable" };
+    }
     writeFrame(socket, {
       type: "connected",
       pid: process.pid,
       agent: agentName,
       instance,
       sessionId: getSessionId(),
-      activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
+      ...initialStatus,
     });
 
     let buffer = "";
@@ -504,12 +519,16 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         }
 
         if (normalized.kind === "control" && normalized.command === "status") {
-          writeFrame(socket, {
-            type: "status",
-            command: "status",
-            activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
-            ...(frame.diagnostics === true ? { diagnostics: runtimeDiagnostics() } : {}),
-          });
+          try {
+            writeFrame(socket, {
+              type: "status",
+              command: "status",
+              ...statusFields(getStatus(), getSessionId(), agentName),
+              ...(frame.diagnostics === true ? { diagnostics: runtimeDiagnostics() } : {}),
+            });
+          } catch {
+            writeFrame(socket, { type: "error", command: "status", message: "Execution status unavailable" });
+          }
           continue;
         }
 

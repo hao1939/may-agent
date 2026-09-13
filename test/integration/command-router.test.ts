@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import type { SubagentManager } from "../../src/lib/index.js";
+import { RegistryStore } from "../../src/lib/persistence.js";
 
 const roots: string[] = [];
 
@@ -19,6 +20,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
   const emitted: AgentEvent[] = [];
   bus.subscribe((event) => emitted.push(event));
   const manager = {
+    registryStore: new RegistryStore(projectRoot),
     status: () => [],
     cancel: () => {},
     send: () => {},
@@ -34,7 +36,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
     restart: () => {},
     shutdown: () => {},
   });
-  return { projectRoot, bus, emitted, router };
+  return { projectRoot, bus, emitted, router, manager };
 }
 
 async function waitForFile(path: string, timeoutMs = 1_000): Promise<void> {
@@ -80,6 +82,7 @@ describe("command router integration", () => {
       },
     } as Partial<SubagentManager>);
 
+    h.manager.registryStore.saveSession("s_cold", { agent: "may", task: "saved conversation", status: "done", startedAt: 1 });
     h.bus.emit({
       type: "session.steer.requested",
       source: "telegram",

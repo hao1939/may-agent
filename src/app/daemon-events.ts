@@ -2,54 +2,14 @@ import { eventData, type EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { DbWriter } from "../lib/db-writer.js";
 import {
-  createAutoResume,
   createDigestWriter,
   createLastSessionWriter,
-  createStuckDetector,
 } from "../lib/session-subscribers.js";
 import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle.js";
-import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
-
-function createEscalationId(): string {
-  return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function emitRuntimeEscalation(
-  bus: EventBus,
-  input: {
-    source: string;
-    sourceAgent: string;
-    sourceSessionId: string;
-    reason: string;
-    requestedAction: string;
-    trigger: "circuit_break" | "resume_exhausted";
-  },
-): void {
-  bus.emit({
-    type: "escalation.created",
-    source: input.source,
-    owner: "agent:may",
-    urgency: "high",
-    data: {
-      escalationId: createEscalationId(),
-      sourceAgent: input.sourceAgent,
-      sourceSessionId: input.sourceSessionId,
-      reason: input.reason,
-      requestedAction: input.requestedAction,
-      severity: "P1",
-      facts: { trigger: input.trigger },
-      resume: {
-        kind: "session",
-        sessionId: input.sourceSessionId,
-        checkpointRef: `runtime:${input.trigger}`,
-      },
-      dedupKey: `runtime:${input.trigger}:${input.sourceSessionId}`,
-    },
-  } as any);
-}
+import { validateSessionControl } from "./adapters/executors/session-control.js";
 
 export function attachEventPersistence(opts: { bus: EventBus; persistDir: string }): void {
   const dbWriter = new DbWriter(opts.persistDir);
@@ -222,66 +182,11 @@ export function attachDaemonEventSubscribers(opts: {
     label: "last-session",
     types: ["session.end"],
   });
-  bus.listen(
-    createStuckDetector(
-      (sessionId, reason) => {
-        bus.emit({
-          type: "session.cancel.requested",
-          source: "runtime:stuck-detector",
-          owner: "agent:may",
-          target: { sessionId },
-          data: { reason },
-        } as any);
-      },
-      (agent, sessionId, reason) => {
-        emitRuntimeEscalation(bus, {
-          source: "runtime:circuit-breaker",
-          sourceAgent: agent,
-          sourceSessionId: sessionId,
-          reason,
-          requestedAction: `Investigate the root cause for ${agent}: check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
-          trigger: "circuit_break",
-        });
-      },
-    ),
-    {
-      label: "session-stuck-detection",
-      types: ["session.start", "session.end", "turn_end"],
-    },
-  );
-  bus.listen(
-    createAutoResume(
-      (sessionId, agent, attempt) => {
-        try {
-          manager.resumeSession(
-            sessionId,
-            `[auto-resume] Session was interrupted after partial progress. Continue from where you left off. (attempt ${attempt + 1})`,
-            {
-              source: "runtime:auto-resume",
-              suppressBenignRaceEvent: true,
-            },
-          );
-          log("info", `[resume] Resumed ${agent} session ${sessionId} (attempt ${attempt + 1})`);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          log("warn", `[resume] Could not resume ${agent} session ${sessionId}: ${msg}`);
-        }
-      },
-      (agent, _sessionId, reason) => {
-        log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
-        emitRuntimeEscalation(bus, {
-          source: "runtime:auto-resume",
-          sourceAgent: agent,
-          sourceSessionId: _sessionId,
-          reason,
-          requestedAction: `Investigate repeated auto-resume failure for ${agent} and decide whether to resume, requeue, or fix runtime state.`,
-          trigger: "resume_exhausted",
-        });
-      },
-    ),
-    { label: "session-auto-resume", types: ["session.end"] },
-  );
-  const escalationLifecycle = createEscalationLifecycleSubscriber({ bus, manager, persistDir });
+  const escalationLifecycle = createEscalationLifecycleSubscriber({
+    bus, manager, persistDir,
+    readSession: (id) => manager.registryStore.getSession(id),
+    validateSessionControl: (id) => validateSessionControl(manager, "session.steer.requested", id),
+  });
   bus.listen((event) => void escalationLifecycle(event), {
     label: "escalation-lifecycle",
     types: ["escalation.resolved", "escalation.dismissed"],

@@ -45,6 +45,7 @@ import {
 } from "./workflow-finish-recovery.js";
 import { runWithAgentSessionContext } from "./agent-session-context.js";
 import type { ToolPolicy } from "./session-policy.js";
+import { ExecutionScope } from "./execution-scope.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -254,6 +255,8 @@ export type DirectAgentExecutionResult = {
 export type DirectAgentExecutionOptions = {
   initialMessages?: AgentMessage[];
   timeoutMs?: number;
+  signal?: AbortSignal;
+  deadlineAt?: number;
   onObservation?: AgentRuntimeListener;
 };
 
@@ -551,13 +554,13 @@ export async function executePreparedAgent(
       })
     : undefined;
   let timedOut = false;
+  let interrupted = false;
   let error: string | undefined;
-  const timer = options.timeoutMs
-    ? setTimeout(() => {
-        timedOut = true;
-        agent.cancel();
-      }, options.timeoutMs)
-    : undefined;
+  const scope = new ExecutionScope(options.timeoutMs ?? prepared.definition.timeoutMs, options.signal, options.deadlineAt, () => {
+    timedOut = scope.timedOut;
+    interrupted = true;
+    agent.cancel();
+  });
 
   try {
     let recoveredThrownFailure = false;
@@ -565,6 +568,7 @@ export async function executePreparedAgent(
       await agent.prompt(prepared.prompt);
       await agent.waitForIdle();
     } catch (initialCause) {
+      scope.signal.throwIfAborted();
       const initialError = initialCause instanceof Error ? initialCause.message : String(initialCause);
       const messages = agent.state.messages as AgentMessage[];
       const captured = prepared.requireFinish
@@ -598,6 +602,7 @@ export async function executePreparedAgent(
       }
     }
     if (prepared.requireFinish && !recoveredThrownFailure) {
+      scope.signal.throwIfAborted();
       const messages = agent.state.messages as AgentMessage[];
       const terminalError = extractLastAssistantError(messages) ?? classifyTerminalAssistantFailure(messages);
       if (!extractFinishParams(messages as any[])) {
@@ -618,12 +623,12 @@ export async function executePreparedAgent(
     }
   } catch (cause) {
     error = timedOut
-      ? `Agent timed out after ${options.timeoutMs}ms`
+      ? `Agent timed out after ${scope.timeoutMs}ms`
       : cause instanceof Error
         ? cause.message
         : String(cause);
   } finally {
-    if (timer) clearTimeout(timer);
+    scope.close();
     if (typeof unsubscribe === "function") unsubscribe();
     if (typeof unsubscribeBoundedFinish === "function") unsubscribeBoundedFinish();
   }
@@ -632,7 +637,8 @@ export async function executePreparedAgent(
   const finishResult = extractFinishParams(messages as any[]) ?? undefined;
   // A committed finish survives a timeout while the turn unwinds. Validate the
   // caller's required payload below before treating that receipt as a result.
-  if (finishResult && timedOut) error = undefined;
+  if (finishResult && interrupted) error = undefined;
+  if (interrupted && !finishResult) error ??= scope.signal.reason?.message ?? "Execution interrupted";
   const assistantError = !finishResult ? extractLastAssistantError(messages) : undefined;
   const terminalFailure = !finishResult ? classifyTerminalAssistantFailure(messages) : undefined;
   error ??= assistantError ?? terminalFailure;
@@ -649,7 +655,7 @@ export async function executePreparedAgent(
   // A validated caller-defined result can report an unsuccessful domain outcome.
   // Its caller judges that outcome; it is not an execution failure to retry.
   const legacyFailure = !prepared.outputSchema && finishResult?.status === "failure";
-  const status = timedOut && !finishResult ? "interrupted" : error || legacyFailure ? "error" : "done";
+  const status = interrupted && !finishResult ? "interrupted" : error || legacyFailure ? "error" : "done";
 
   return {
     status,
