@@ -1,7 +1,10 @@
 # Execution feedback: repair proposal
 
-**Status:** Proposed for review, September 13, 2026. No fixes in this plan have
-been implemented by this document. This is the implementation plan following
+**Status:** Implemented candidate with isolated PoCs, September 13, 2026.
+The four repairs, bounded-execution policy and explicit parent continuation
+are implemented locally. The [PoC record](../archive/reviews/execution-feedback-poc-20260913.md)
+records exact revisions, failures, verification and remaining limits. They are
+not merged or deployed. This is the implementation plan following
 the [component review](../archive/reviews/ownership-boundary-review-20260913.md#component-family-review).
 The [System Model](../2a-design/system-model.md#execution-and-outstanding-results)
 and [core/external boundary](../2a-design/system-boundary.md#core-external-capabilities-and-composition)
@@ -51,6 +54,13 @@ only machinery whose benefit justifies its total cost.
 Recommend four independent repairs first. Then run the small experiments below
 before changing delegation or wait authoring. The watchdog change has a separate
 acceptance gate because altering when execution stops changes cost and behavior.
+
+The implementation keeps those boundaries. The continuation contract is
+`waiting` with optional `continue: true`, new typed dependencies and progress
+facts. It reuses the existing pending phase and queue. No new phase, timer,
+notification service or operation registry was added. Scout's existing
+`xhsWaitResult` already supplies its wait mechanics; the combined test used it
+unchanged, so no new capability API was needed for that source.
 
 ## Fold corner cases into the existing process
 

@@ -76,10 +76,12 @@ poll nor a second notification for every direct result is required. An
 unsupported shell-created resource does not acquire automatic feedback by
 convention alone. The capability must say what it actually supports.
 
-This is the target contract. Current typed delegation already preserves exact
-caller links; general tool-driven wait setup and immediate parent continuation
-still have [documented gaps](../archive/reviews/ownership-boundary-review-20260913.md#component-family-review).
-Keep existing validated contracts until their specific replacements are tested.
+Typed delegation preserves exact caller links. The
+[tested implementation candidate](../archive/reviews/execution-feedback-poc-20260913.md)
+adds explicit parent continuation at the existing attempt boundary. Scout's
+credential capability already supplies its wait. General tool-driven wait
+setup remains source-specific; arbitrary shell operations do not gain feedback
+automatically. Candidate source is not a deployment claim.
 
 ## Ownership and intervention
 

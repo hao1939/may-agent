@@ -39,34 +39,37 @@ reevaluation, and elapsed time alone never satisfies it. See
 
 ## Task changes and safety
 
-Task changes create, update, close, or unblock task resources. The SDK field
-and type remain `actions` and `TaskAction` during compatibility migration.
+Workers use `actions` and `TaskAction` to update or unblock existing Tasks.
+Typed dependencies request new work; assigning-owner controls close Tasks.
 Updates use
 `expectedGeneration`; the reconciler checks generation and resource version,
 then commits task state, receipts, Conditions, and dependent wakeups atomically.
 
-An executable parent owns decomposition and aggregate acceptance. It may return
-`waiting` while creating direct child tasks. Those children run as independent
-keys in the same app controller and do not hold the parent's worker slot. Child
-convergence or attention durably wakes the parent, which rereads bounded live
-child state and completion receipts before refilling, repairing, or accepting
-the aggregate result. Do not author task-lifecycle Conditions or an app-local
-refill event for this path.
+An executable parent owns decomposition and aggregate acceptance. Return
+`waiting` with typed dependencies to request an answer from another Task.
+The target App chooses its Task and executor; the Host retains the exact return
+link. Those Tasks run independently and do not hold the parent's worker slot.
+Read their correlated reports and answers before accepting the aggregate result.
+Do not author a task-lifecycle Condition or an App-local refill event for this path.
 
-Count only direct children as the parent's in-flight work. A related task under
-another parent is evidence, not a child representation.
+The [continuation candidate](../archive/reviews/execution-feedback-poc-20260913.md)
+allows `continue: true` with new dependencies and progress facts when useful
+independent work remains. Another bounded pass of the same parent can prepare
+that work. Omit it when only results remain. Existing Conditions survive;
+neither yielding nor continuing answers the original input by itself.
+
+Exact input-return links determine outstanding results. A parent link or a
+related Task is not, by itself, a wait or a subscription.
 
 Parent status does not automatically follow child status. The parent still
 decides whether its own acceptance is satisfied. Use `dependsOn` for ordering,
 exact Conditions for facts outside the task graph, and a structural group when
-a node has no independently reconcilable outcome. An achieve task cannot close
-while it still contains live child tasks.
+a node has no independently reconcilable outcome. Closing a parent does not
+silently cancel independently owned children.
 
-A running handler must not close or unblock its own task. It may return one
-`update-task` change for that task only when current evidence proves the
-desired execution intent itself must change; that change must be the sole
-change, advance the generation, finish the current attempt, and queue the same
-task again. A no-op or mixed self-update is rejected. Broad reprioritization,
+A running handler must not close, unblock or rewrite its own assignment.
+Its result advances the attempt. Bring necessary scope changes to its assigning
+owner through the normal feedback path. Broad reprioritization,
 duplicate cleanup, and unrelated-branch changes belong to a bounded App task
 with an explicit outcome.
 

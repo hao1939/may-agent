@@ -264,7 +264,7 @@ task. Work for another App is a typed Runtime-managed task dependency, not
 
 The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
 [result admission](../../../may-agent/packages/sdk/src/task-contract.ts) define
-the executable contract. A result supplies `state`, `summary`, `evidence`, and
+the executable contract. A result supplies `state`, `summary`, `facts`, and
 optional bounded `result`, caller `response`, Task `actions`, Conditions, and
 `TaskAppDependency` entries. `actions` are Task changes, not App commands.
 See the [checked wait example](../examples/app.ts).
@@ -273,7 +273,7 @@ See the [checked wait example](../examples/app.ts).
 | --- | --- |
 | Valid `converged` result | Accept the exact input's outcome when current-input fences, evidence, actions and verification permit; keep the Task open |
 | Valid `waiting` result | Retain exact external Conditions or typed input dependencies; release execution capacity; structural children alone do not establish a wait |
-| Valid `stopped` result | Retain unsuccessful attempt evidence, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
+| Valid `incomplete` result | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
 | Workflow `needs-agent` | At most one sequential selected-agent judgment for the same Task; no ownership transfer |
 | Unavailable agent/workflow/executor or failed workspace prerequisite | Visible failure and same-Task paced retry; no silent executor substitution |
 | Invalid/rejected handler result or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer |
@@ -287,16 +287,19 @@ without reconstructing state from prose. A failed verifier cannot establish
 completion. Result settlement, including newer input, uses the fences described
 below; this table does not override them.
 
-`stopped` requires a reason and evidence; it cannot include actions, Conditions
+`incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.
 It ends only the attempt, without fulfilling the input or a linked Request.
 The same Task remains pending. Turn Stop and owner closure are different
-controls: closure fences future work; new work after closure needs a new linked
-identity. The older finite-stop proposal is historical, not the active contract.
+controls: closure fences future work; work after closure needs a new linked identity.
 
 Creating follow-up work does not complete the current task. Required
 decomposition uses typed dependencies and returns `waiting`; independent later
 work may be a successor only after the current outcome is actually accepted.
+
+**Implemented candidate:** `waiting` with `continue: true` queues independent work
+on the same Task, retaining unanswered input and waits. Dependencies and facts are
+required; see [admission and bounds](../archive/reviews/execution-feedback-poc-20260913.md#candidate-and-decisions).
 
 Task changes and the final result apply in one transaction. Events emitted
 while an attempt runs are separate durable commit points: a resource-backed
@@ -515,8 +518,8 @@ caller returns waiting + typed dependencies
   -> caller judges the returned evidence for its own assignment
 ```
 
-The caller consumes no attempt slot while waiting. A worker's answer does not
-automatically prove the caller's aggregate outcome. Missing parents,
+Parked callers use no attempt slot; independent work can use another bounded pass.
+A worker's answer does not prove the caller's aggregate outcome. Missing parents,
 self-parenting, and cycles remain invalid. `dependsOn` is a static execution
 prerequisite, not a result return link: it can prevent execution until its gate
 is satisfied, so it is not a substitute for a caller that must review failures.
