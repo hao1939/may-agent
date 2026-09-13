@@ -10,13 +10,7 @@ export interface InterfaceStartupOptions {
   instanceLabel: string;
   interfaceAgent: string;
   events: EventInterface;
-  getStatus: () => Array<{
-    agent: string;
-    sessionId: string;
-    status: string;
-    kind?: string;
-    task: string;
-  }>;
+  getStatus: AttachControlSocketOptions["getStatus"];
   reportInfo: (message: string) => void;
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
@@ -67,14 +61,7 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
             inputSource: { kind: "human", id: "control-socket" },
             allowUnregisteredFact: true,
           }),
-        getStatus: () =>
-          options.getStatus().map((item) => ({
-            agent: item.agent,
-            sessionId: item.sessionId,
-            status: item.status,
-            kind: item.kind ?? "",
-            task: item.task,
-          })),
+        getStatus: options.getStatus,
         reportInfo: options.reportInfo,
         admitAppInput: options.admitAppInput,
         getAppConversation: options.getAppConversation,

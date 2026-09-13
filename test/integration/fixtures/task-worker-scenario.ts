@@ -18,6 +18,8 @@ import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
 import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
 import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
+import { readExecutionStatus } from "../../../src/app/adapters/reporting/execution-status.js";
+import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
@@ -345,6 +347,7 @@ export async function execute(ctx) {
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readAttempt(attemptId)?.state, "interrupted");
+    assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: false });
     assert(f.store.listRecoveryCandidates().items.some(({ taskId }) => taskId === "work/one"));
   },
 
@@ -525,6 +528,9 @@ export async function execute(ctx) {
       throw new Error("Worker exited before the control probe");
     });
     await Promise.race([readyEvent, prematureExit]);
+    // This real workflow worker owns a lease but has no agent session.
+    assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: true });
+    assert.deepEqual(await observeDaemonLiveness(f.persistDir), { responsive: false, activeWork: true });
     const target = { appId: "sample", taskId: "work/one" };
     f.bus.emit({
       type: "worker.feedback",
@@ -558,6 +564,7 @@ export async function execute(ctx) {
       data: { attemptId: result.cancelledAttemptId, reason: "Fixture cancellation" },
     });
     await execution;
+    assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: false });
     assert.equal(f.store.readReceipt("work/one"), null);
     assert(f.store.readCancellation("work/one"));
     assert.deepEqual(

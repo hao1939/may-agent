@@ -3,6 +3,7 @@ import { runDbMaintenancePass } from "../../lib/db/maintenance.js";
 import { closeAllDbs, getDb } from "../../lib/db/connection.js";
 import { DbWriter, EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS } from "../../lib/db-writer.js";
 import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
+import { readExecutionStatus } from "../adapters/reporting/execution-status.js";
 
 const LIVENESS_INTERVAL_MS = 30_000;
 const LIVENESS_STARTUP_GRACE_MS = 2 * 60_000;
@@ -70,7 +71,7 @@ export function observeDurableDaemonHeartbeat(
   };
 }
 
-async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenessObservation> {
+export async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenessObservation> {
   const socketPath = daemonSocketPath(persistDir, {
     instance: process.env.INSTANCE || "default",
     interfaceAgent: process.env.DAEMON_AGENT || "may",
@@ -79,7 +80,8 @@ async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenes
     const response = await sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: LIVENESS_PROBE_TIMEOUT_MS });
     return {
       responsive: true,
-      activeWork: Array.isArray(response.activeAgents) && response.activeAgents.length > 0,
+      activeWork:
+        typeof response.activeWork === "boolean" ? response.activeWork : readExecutionStatus(persistDir).activeWork,
     };
   } catch {
     const db = getDb(persistDir);
@@ -92,14 +94,8 @@ async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenes
        LIMIT 1`,
       )
       .get() as { timestamp?: number } | undefined;
-    const active = db
-      .prepare(
-        `SELECT COUNT(*) AS count
-       FROM sessions
-       WHERE status IN ('running', 'idle') AND endedAt IS NULL`,
-      )
-      .get() as { count?: number } | undefined;
-    return observeDurableDaemonHeartbeat(heartbeat?.timestamp, Number(active?.count ?? 0), Date.now());
+    const execution = readExecutionStatus(persistDir);
+    return observeDurableDaemonHeartbeat(heartbeat?.timestamp, execution.activeWork ? 1 : 0, Date.now());
   }
 }
 
@@ -190,6 +186,10 @@ export async function runMaintenanceMode(opts: { persistDir: string; argv?: stri
                 activeWorkProtectedUntil: 0,
               };
             }
+          })
+          .catch((error) => {
+            // Unavailable storage/status is not evidence that the installation is idle.
+            console.error(JSON.stringify({ type: "runtime.liveness.observation_failed", error: String(error) }));
           })
           .finally(() => {
             livenessRunning = false;

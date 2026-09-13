@@ -31,6 +31,7 @@ import {
 import { EventBus } from "./core/events/bus.js";
 import { createEventInterface, type EventInterface } from "./core/events/interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
+import { readExecutionStatus } from "./adapters/reporting/execution-status.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -496,7 +497,7 @@ export async function runAppRuntime(opts: {
     instanceLabel: opts.instanceLabel,
     interfaceAgent,
     events,
-    getStatus: () => manager.status(),
+    getStatus: () => readExecutionStatus(opts.persistDir),
     reportInfo: (message) => bus.emit({ type: "info", message }),
     admitAppInput,
     getAppConversation: (appId, conversationId, options) =>

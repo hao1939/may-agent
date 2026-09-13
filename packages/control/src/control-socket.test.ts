@@ -824,6 +824,32 @@ describe("control socket protocol", () => {
     });
   });
 
+  it("reports active work independently of the synthetic ready chat", async () => {
+    let activeWork = false;
+    const core = createCore({ getStatus: () => ({ sessions: [], activeWork }) });
+    const idle = await sendSocketCommand(core.endpoint, { type: "status" });
+    expect(idle.activeWork).toBe(false);
+    expect(idle.activeAgents).toMatchObject([{ status: "ready" }]);
+    activeWork = true; // A workflow can run without an agent session.
+    expect((await sendSocketCommand(core.endpoint, { type: "status" })).activeWork).toBe(true);
+    expect(core.emitted).toEqual([]);
+  });
+
+  it("contains status read failures without reporting empty execution", async () => {
+    const core = createCore({
+      getStatus: () => {
+        throw new Error("storage unavailable");
+      },
+    });
+    const stream = (core.endpoint as () => Duplex)();
+    const connected = await nextFrame(stream);
+    expect(connected.type).toBe("connected");
+    expect(connected.statusError).toBe("Execution status unavailable");
+    expect(connected.activeAgents).toBeUndefined();
+    stream.destroy();
+    await expect(sendSocketCommand(core.endpoint, { type: "status" })).rejects.toThrow("Execution status unavailable");
+  });
+
   it("includes the current chat target as ready when it is not active", async () => {
     const core = createCore({
       getSessionId: () => "s_chat_done",

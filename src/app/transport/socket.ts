@@ -11,7 +11,6 @@ import {
   attachControlSocket,
   type AttachControlSocketOptions,
   type ControlSocket,
-  type ControlStatusItem,
 } from "../../../packages/control/src/server.js";
 export type { SocketFrame } from "../../../packages/control/src/protocol.js";
 
@@ -21,7 +20,7 @@ export interface SocketUIOptions {
   publishEvent: (input: EventInput) => EventReceipt;
   /** Bounded operator fact ingress used by direct event frames and --emit. */
   publishOperatorEvent: (input: EventInput) => EventReceipt;
-  getStatus: () => ControlStatusItem[];
+  getStatus: AttachControlSocketOptions["getStatus"];
   reportInfo: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
   agentName: string;
