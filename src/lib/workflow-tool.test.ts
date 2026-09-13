@@ -63,6 +63,8 @@ export async function execute(ctx) {
     let workflowRunId = "";
     let resolveStep!: (result: any) => void;
     let cancelled = 0;
+    const stopped = Promise.withResolvers<void>();
+    const cleanup = Promise.withResolvers<void>();
     const manager = {
       callAgent: (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
         workflowRunId = opts.workflowRunId ?? "";
@@ -73,27 +75,72 @@ export async function execute(ctx) {
       status: () => (workflowRunId ? [{ sessionId: "step-session", workflowRunId }] : []),
       cancel: () => {
         cancelled += 1;
-        resolveStep({
+        stopped.resolve();
+        void cleanup.promise.then(() => resolveStep({
           sessionId: "step-session",
           status: "interrupted",
           lastAssistantText: null,
           messages: [],
           duration: "0s",
           outputDir: "",
-        });
+        }));
       },
     } as any;
     const controller = new AbortController();
     const runner = createWorkflowRunner({ manager, workflowDir, agentName: "owner", signal: controller.signal });
 
-    const running = runner.run("cancel", "test");
+    let settled = false;
+    const running = runner.run("cancel", "test").then((result) => { settled = true; return result; });
     while (!workflowRunId) await Bun.sleep(1);
     controller.abort(new Error("Task was cancelled"));
+    await stopped.promise;
+    expect(settled).toBe(false);
+    cleanup.resolve();
     const result = await running;
 
     expect(result.type).toBe("error");
     expect(result.type === "error" ? result.error : "").toContain("Task was cancelled");
     expect(cancelled).toBe(1);
+  });
+
+  it.each(["agent", "workflow"])("joins an unawaited %s helper before returning", async (kind) => {
+    const root = workflowRoot("workflow-unawaited-");
+    writeFileSync(join(root, "parent.ts"), `
+export const name = "parent";
+export const description = "Unawaited child fixture";
+export async function execute(ctx) {
+  void ${kind === "workflow" ? 'ctx.workflows.run("child", {})' : 'ctx.agents.call("worker", "work")'};
+  await ctx.read.execution("entered");
+  return ctx.done("parent result");
+}`);
+    writeFileSync(join(root, "child.ts"), `
+export const name = "child";
+export const description = "Required helper fixture";
+export async function execute(ctx) {
+  await ctx.agents.call("worker", "work");
+  return ctx.done("child result");
+}`);
+    const entered = Promise.withResolvers<void>();
+    const stopped = Promise.withResolvers<void>();
+    const cleanup = Promise.withResolvers<void>();
+    const manager = {
+      status: () => [],
+      callAgent: async (_agent: string, _task: string, opts: { signal: AbortSignal }) => {
+        entered.resolve();
+        opts.signal.addEventListener("abort", () => stopped.resolve(), { once: true });
+        await stopped.promise;
+        await cleanup.promise;
+        return { sessionId: "child-helper", status: "interrupted", messages: [], duration: "0s", outputDir: "" };
+      },
+    } as any;
+    const runner = createWorkflowRunner({ manager, workflowDir: root, agentName: "owner",
+      read: { execution: () => entered.promise } as any });
+    let settled = false;
+    const running = runner.run("parent", "test").then((result) => { settled = true; return result; });
+    await stopped.promise;
+    expect(settled).toBe(false);
+    cleanup.resolve();
+    expect(await running).toMatchObject({ type: "done", summary: "parent result" });
   });
 
   it("cancels the active step and rejects late workflow effects", async () => {

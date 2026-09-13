@@ -100,6 +100,8 @@ export type TaskReconcileResult = {
     }
   | ({
       state: "waiting";
+      /** After submitting dependencies, queue another bounded pass for useful independent work. */
+      continue?: true;
       response?: never;
       result?: Record<string, unknown>;
       actions?: TaskAction[];

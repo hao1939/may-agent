@@ -65,18 +65,12 @@ export type CodexGoalExecutorOptions = {
   stateFile: string;
   executorName?: string;
   command?: string;
-  softStaleAfterMs?: number;
-  hardStaleAfterMs?: number;
-  checkIntervalMs?: number;
   turnTimeoutMs?: number;
   maxProgressEvents?: number;
   createClient?: (cwd: string) => CodexGoalClient;
   now?: () => number;
 };
 
-const DEFAULT_SOFT_STALE_MS = 2 * 60_000;
-const DEFAULT_HARD_STALE_MS = 10 * 60_000;
-const DEFAULT_CHECK_INTERVAL_MS = 5_000;
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
 const MAX_PENDING_STEERING_EVENTS = 64;
 
@@ -198,14 +192,10 @@ function packetFor(attempt: TaskAttempt) {
 
 export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): TaskExecutor {
   const now = options.now ?? Date.now;
-  const softStaleAfterMs = options.softStaleAfterMs ?? DEFAULT_SOFT_STALE_MS;
-  const hardStaleAfterMs = options.hardStaleAfterMs ?? DEFAULT_HARD_STALE_MS;
-  const checkIntervalMs = options.checkIntervalMs ?? DEFAULT_CHECK_INTERVAL_MS;
   const turnTimeoutMs = options.turnTimeoutMs ?? DEFAULT_TURN_TIMEOUT_MS;
   const maxProgressEvents = options.maxProgressEvents ?? DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS;
-  if (softStaleAfterMs <= 0 || hardStaleAfterMs <= softStaleAfterMs || checkIntervalMs <= 0) {
-    throw new Error("Codex goal liveness timings must satisfy 0 < soft < hard and checkInterval > 0");
-  }
+  if (!Number.isFinite(turnTimeoutMs) || turnTimeoutMs <= 0)
+    throw new Error("Codex execution budget must be finite and positive");
   if (!Number.isSafeInteger(maxProgressEvents) || maxProgressEvents <= 0) {
     throw new Error("Codex goal progress maxProgressEvents must be a positive integer");
   }
@@ -223,8 +213,6 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     const updateGoalStatus = (status: CodexGoalObservation["goal"]["status"]) => {
       live.goalStatus = status;
     };
-    let lastActivityAtMs = now();
-    let nudgeCount = 0;
     let stopped = false;
     let liveInputOpen = true;
     let aborting: Promise<void> | null = null;
@@ -265,7 +253,6 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       }
     };
     const unsubscribeNotification = client.onNotification((notification) => {
-      lastActivityAtMs = now();
       progress.observe(notification);
       if (notification.method === "turn/started") {
         const turn = notification.params?.turn;
@@ -319,6 +306,14 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     attempt.signal.addEventListener("abort", stopForAbort, { once: true });
     if (attempt.signal.aborted) stopForAbort();
 
+    let deadlineError: Error | undefined;
+    // One budget covers startup, native turns and schema correction. Activity
+    // and retries never renew it. The client's stop rejects pending protocol
+    // calls and drains its owned process tree.
+    const deadline = setTimeout(() => {
+      deadlineError = new Error(`Codex execution timed out after ${turnTimeoutMs}ms`);
+      stopForAbort();
+    }, turnTimeoutMs);
     try {
       attempt.signal.throwIfAborted();
       await client.initialize();
@@ -350,56 +345,19 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
 
       let correction: string | null = null;
       while (true) {
-        nudgeCount = 0;
         await client.setGoal({ threadId, objective: rendered.goalObjective, status: "active" });
         updateGoalStatus("active");
-        lastActivityAtMs = now();
         turnId = await client.waitForActiveTurn(threadId, Math.min(turnTimeoutMs, 30_000));
         if (correction) await client.steer({ threadId, turnId, message: correction });
         correction = null;
         await deliverPendingEvents(turnId);
 
-        const terminalGoalPromise = client
-          .waitForGoal(threadId, (observation) => observation.goal.status !== "active", turnTimeoutMs)
-          .then(
-            (goal) => ({ kind: "goal" as const, goal }),
-            (error: unknown) => ({ kind: "error" as const, error }),
-          );
-        let terminalGoal: CodexGoalObservation | null = null;
-        while (!terminalGoal) {
-          const outcome = await Promise.race([
-            terminalGoalPromise,
-            new Promise<{ kind: "tick" }>((resolve) => {
-              const timer = setTimeout(() => resolve({ kind: "tick" }), checkIntervalMs);
-              timer.unref?.();
-            }),
-          ]);
-          if (outcome.kind === "goal") {
-            terminalGoal = outcome.goal;
-            updateGoalStatus(terminalGoal.goal.status);
-            break;
-          }
-          if (outcome.kind === "error") throw outcome.error;
-          const silentForMs = Math.max(0, now() - lastActivityAtMs);
-          if (silentForMs >= hardStaleAfterMs) {
-            await client.interrupt({ threadId, turnId });
-            await client.waitForTurn(turnId, 30_000);
-            persisted.staleInterrupts += 1;
-            persisted.updatedAt = new Date(now()).toISOString();
-            writeBinding(options.stateFile, key, persisted);
-            throw new Error("Codex stopped responding and its turn was interrupted");
-          }
-          if (silentForMs >= softStaleAfterMs && nudgeCount === 0) {
-            await client.steer({
-              threadId,
-              turnId,
-              message:
-                "Continue toward the Task goal. If something external is required, return the exact waiting condition.",
-            });
-            nudgeCount = 1;
-            lastActivityAtMs = now();
-          }
-        }
+        const terminalGoal = await client.waitForGoal(
+          threadId,
+          (observation) => observation.goal.status !== "active",
+          turnTimeoutMs,
+        );
+        updateGoalStatus(terminalGoal.goal.status);
 
         const completedTurnId = terminalGoal.turnId ?? turnId;
         const completion = await client.waitForTurn(completedTurnId, turnTimeoutMs);
@@ -424,7 +382,10 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         for (const accept of incorporatedLiveEvents) accept();
         return finish(appendFacts(admitted.result, `codex-thread:${threadId}`));
       }
+    } catch (error) {
+      throw deadlineError ?? error;
     } finally {
+      clearTimeout(deadline);
       stopped = true;
       attempt.signal.removeEventListener("abort", stopForAbort);
       unsubscribeEvent();

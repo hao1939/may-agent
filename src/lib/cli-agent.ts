@@ -19,6 +19,7 @@ import { addSessionBashProcessGroup, removeSessionBashProcessGroup } from "./per
 import { BASH_PROCESS_GROUP_KILL_GRACE_MS, drainBashProcessGroup } from "./tools/bash.js";
 
 type CliTool = "codex" | "claude";
+export type CliAgentProgress = { tool: CliTool; event: string };
 export type CliAgentInput = {
   tool: CliTool;
   prompt: string;
@@ -61,6 +62,8 @@ export type CliAgentOptions = {
   trace?: EventTrace;
   emit?: (event: { type: string; [key: string]: unknown }) => void;
   signal?: AbortSignal;
+  /** Bounded native activity, not logs or a second result delivery. */
+  onProgress?: (progress: CliAgentProgress) => void;
   spawnCommand?: typeof spawn;
   drainProcessGroup?: (pid: number) => Promise<boolean>;
 };
@@ -147,7 +150,10 @@ function appendBoundedTail(current: Buffer, chunk: Buffer): Buffer {
 }
 
 /** Incrementally reads native JSONL protocol while retaining only bounded diagnostics. */
-export function createCliOutputCollector(tool: CliTool): {
+export function createCliOutputCollector(
+  tool: CliTool,
+  onProgress?: (progress: CliAgentProgress) => void,
+): {
   stdout: (chunk: Buffer) => void;
   stderr: (chunk: Buffer) => void;
   finish: () => CliOutputSnapshot;
@@ -164,6 +170,14 @@ export function createCliOutputCollector(tool: CliTool): {
   let permissionFailure = false;
   let toolFailure = false;
   let diagnosticCarry = "";
+  const progress = (event: string): void => {
+    // Observation failure must not change the native operation's outcome.
+    try {
+      onProgress?.({ tool, event });
+    } catch {
+      // A later native event can report activity again; the raw evidence remains.
+    }
+  };
 
   const inspectDiagnostics = (text: string): void => {
     const sample = diagnosticCarry + text;
@@ -189,6 +203,13 @@ export function createCliOutputCollector(tool: CliTool): {
         if (event.type === "item.completed" && event.item?.type === "agent_message") {
           if (typeof event.item.text === "string") finalText = event.item.text;
         }
+        if (["turn.started", "turn.completed", "turn.failed"].includes(event.type)) progress(event.type);
+        if (
+          (event.type === "item.started" || event.type === "item.completed") &&
+          ["command_execution", "mcp_tool_call", "file_change", "agent_message"].includes(event.item?.type)
+        ) {
+          progress(`${event.type}:${event.item.type}`);
+        }
         return;
       }
       if (typeof event.session_id === "string") cliSessionId = event.session_id;
@@ -199,11 +220,24 @@ export function createCliOutputCollector(tool: CliTool): {
           inspectDiagnostics(JSON.stringify(event.errors ?? event.result ?? ""));
         }
         if (typeof event.result === "string") finalText = event.result;
+        progress("result");
       }
       if (event.type === "assistant" && Array.isArray(event.message?.content)) {
         for (const block of event.message.content) {
           if (block?.type === "text" && typeof block.text === "string") finalText = block.text;
         }
+        if (
+          event.message.content.some((block: { type?: string }) => block?.type === "text" || block?.type === "tool_use")
+        ) {
+          progress("assistant");
+        }
+      }
+      if (
+        event.type === "user" &&
+        Array.isArray(event.message?.content) &&
+        event.message.content.some((block: { type?: string }) => block?.type === "tool_result")
+      ) {
+        progress("tool_result");
       }
     } catch {
       // Non-protocol output remains available in the durable events file.
@@ -281,7 +315,13 @@ async function executeNative(input: {
 }): Promise<CliOutputSnapshot & { exitCode: number | null; stop?: "timeout" | "cancelled"; error?: string }> {
   const { opts } = input;
   opts.signal?.throwIfAborted();
-  const collector = createCliOutputCollector(input.tool);
+  let lastProgressAt = -Infinity;
+  const collector = createCliOutputCollector(input.tool, (progress) => {
+    const now = performance.now();
+    if (now - lastProgressAt < 1_000 || opts.signal?.aborted) return;
+    opts.onProgress?.(progress);
+    lastProgressAt = now;
+  });
   const fd = openSync(input.eventsPath, "w");
   let child: ReturnType<typeof spawn>;
   try {

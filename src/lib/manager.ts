@@ -55,6 +55,7 @@ import {
   loadActiveSessionMetas,
   listActiveSessionIds,
   markSessionActive,
+  readActiveSessionProcessId,
   markSessionInactive,
   RegistryStore,
   sessionDir,
@@ -75,6 +76,7 @@ import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.j
 import type { ToolPolicy } from "./session-policy.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
+import { validateSessionControl } from "../app/adapters/executors/session-control.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
@@ -94,6 +96,7 @@ export { classifyError } from "./classify-error.js";
 export { extractFinishParams } from "./agent-result.js";
 export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
 export type { RegisteredAgent } from "./manager-utils.js";
+import { ExecutionScope, executionTimeout } from "./execution-scope.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -120,6 +123,8 @@ export interface RunOptions {
   orderId?: string;
   startedAt?: number;
   timeoutMs?: number;
+  signal?: AbortSignal;
+  deadlineAt?: number;
   resumeMessages?: AgentMessage[];
   trace?: EventTrace;
   /** Explicit primary skill to activate for this turn. */
@@ -152,6 +157,7 @@ export type CallAgentOptions = Pick<
   | "outputSchema"
   | "toolPolicy"
   | "executionRoot"
+  | "deadlineAt"
 > & {
   timeout?: number;
   signal?: AbortSignal;
@@ -168,7 +174,7 @@ interface ActiveSession {
   startedAt: number;
   status: "running" | "paused" | "idle" | "interrupted";
   lastError?: string;
-  interruptionKind?: "execution-timeout" | "observation-timeout" | "cancelled";
+  interruptionKind?: "execution-timeout" | "cancelled";
   kind: SessionKind;
   autoClose: "immediate" | "never";
   parentSessionId?: string;
@@ -176,7 +182,9 @@ interface ActiveSession {
   workflowRunId?: string;
   stepLabel?: string;
   source?: string;
-  timeoutTimer?: ReturnType<typeof setTimeout>;
+  executionScope?: ExecutionScope;
+  parentSignal?: AbortSignal;
+  parentDeadlineAt?: number;
   admittedTimeoutMs?: number;
   toolCalls: number;
   modelStepCount: number;
@@ -274,8 +282,6 @@ export interface SubagentManagerOptions {
   projectRoot?: string;
   bus?: EventBus;
   maxCallDepth?: number;
-  /** Maximum silence for job/call sessions. Set to 0 to disable. */
-  noObservationTimeoutMs?: number;
   /** Runtime construction seam used by focused lifecycle tests. */
   agentRunFactory?: typeof createAgentRun;
 }
@@ -283,7 +289,6 @@ export interface SubagentManagerOptions {
 const MAX_COMPLETED_RESULTS_IN_MEMORY = 16;
 const MAX_RESULT_MESSAGES = 1_000;
 const MAX_TRANSCRIPT_TAIL_BYTES = 8 * 1024 * 1024;
-const DEFAULT_NO_OBSERVATION_TIMEOUT_MS = 5 * 60 * 1000;
 
 function isProcessAlive(pid: number | undefined): boolean {
   if (!pid) return false;
@@ -310,7 +315,6 @@ export class SubagentManager {
   private bus?: EventBus;
   private _registry: RegistryStore;
   private _maxCallDepth: number;
-  private _noObservationTimeoutMs: number;
   private _agentRunFactory: typeof createAgentRun;
   private _createdAt = Date.now();
   private _promptTimestamp = new Date().toISOString();
@@ -326,7 +330,6 @@ export class SubagentManager {
     this.bus = opts.bus;
     this._registry = new RegistryStore(opts.persistDir);
     this._maxCallDepth = opts.maxCallDepth ?? 8;
-    this._noObservationTimeoutMs = opts.noObservationTimeoutMs ?? DEFAULT_NO_OBSERVATION_TIMEOUT_MS;
     this._agentRunFactory = opts.agentRunFactory ?? createAgentRun;
   }
 
@@ -389,6 +392,8 @@ export class SubagentManager {
       injectUserMessage?: string;
       resetDbRow?: boolean;
       timeoutMs?: number;
+      signal?: AbortSignal;
+      deadlineAt?: number;
       trace?: EventTrace;
       requireFinish?: boolean;
       operationAllowance?: number;
@@ -485,6 +490,8 @@ export class SubagentManager {
         projectId: meta.projectId,
         recoveryOwner: meta.recoveryOwner,
         timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
+        deadlineAt: opts.deadlineAt,
         resumeMessages,
         trace: opts.trace,
         requireFinish: opts.requireFinish ?? meta.requireFinish,
@@ -546,6 +553,27 @@ export class SubagentManager {
 
   /** Start from an immutable definition captured by the caller. */
   runDefinition(def: SubagentDefinition, task: string, opts?: RunOptions): string {
+    const parent = opts?.parentSessionId ? this._sessions.get(opts.parentSessionId) : undefined;
+    if (parent) {
+      if (parent.status !== "running" || !parent.executionScope) throw new Error("Caller is not executing");
+      parent.executionScope.signal.throwIfAborted();
+      if (opts?.toolPolicy && parent.toolPolicy !== "full" && opts.toolPolicy !== parent.toolPolicy) {
+        throw new Error("Helper tool policy must retain the caller restriction");
+      }
+      opts = {
+        ...opts,
+        taskBinding: parent.taskBinding ?? opts?.taskBinding,
+        recoveryOwner: parent.recoveryOwner ?? opts?.recoveryOwner,
+        executionRoot: parent.executionRoot ?? opts?.executionRoot,
+        toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
+        signal: opts?.signal
+          ? AbortSignal.any([opts.signal, parent.executionScope.signal])
+          : parent.executionScope.signal,
+        deadlineAt: Math.min(opts?.deadlineAt ?? Infinity, parent.executionScope.deadlineAt),
+      };
+    }
+    opts?.signal?.throwIfAborted();
+    const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
     const startedAt = opts?.startedAt ?? Date.now();
@@ -660,7 +688,9 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       source: opts?.source,
-      admittedTimeoutMs: opts?.timeoutMs ?? def.timeoutMs,
+      admittedTimeoutMs: timeoutMs,
+      parentSignal: opts?.signal,
+      parentDeadlineAt: opts?.deadlineAt,
       toolCalls: 0,
       modelStepCount: 0,
       requestId: opts?.requestId,
@@ -736,19 +766,6 @@ export class SubagentManager {
       throw err;
     }
 
-    // Timeout
-    const timeoutMs = opts?.timeoutMs ?? def.timeoutMs;
-    if (timeoutMs) {
-      session.timeoutTimer = setTimeout(() => {
-        const reason = `Agent timed out after ${timeoutMs}ms`;
-        log("warn", `[runtime] ${sessionId} timed out after ${timeoutMs}ms`);
-        session.status = "interrupted";
-        session.lastError = reason;
-        session.interruptionKind = "execution-timeout";
-        agent.cancel();
-      }, timeoutMs);
-    }
-
     // Run agent. Persistent chat sessions complete a turn by going idle;
     // task/call sessions complete by emitting session.end and leaving memory.
     if (this.isPersistentChat(session)) {
@@ -772,11 +789,16 @@ export class SubagentManager {
   cancel(sessionId: string): void {
     const session = this._sessions.get(sessionId);
     if (session) {
+      if (session.status === "interrupted") return;
       const wasRunning = session.status === "running";
-      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       session.status = "interrupted";
       session.interruptionKind = "cancelled";
-      session.agent.cancel();
+      session.lastError = "Cancelled";
+      if (session.executionScope) session.executionScope.stop(new Error("Cancelled"));
+      else session.agent.cancel();
+      // A running invocation owns cleanup and its terminal receipt. Do not
+      // mark it offline while it or one of its helpers can still have effects.
+      if (wasRunning) return;
       this._registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
       updateSessionDb(this._persistDir, sessionId, {
         status: "interrupted",
@@ -843,12 +865,11 @@ export class SubagentManager {
 
   status(): SessionInfo[] {
     return [...this._sessions.values()]
-      .filter((s) => s.status !== "interrupted")
       .map((s) => ({
         sessionId: s.sessionId,
         agent: s.agentName,
         task: s.task,
-        status: s.status === "running" ? ("running" as const) : ("idle" as const),
+        status: s.status === "idle" || s.status === "paused" ? ("idle" as const) : ("running" as const),
         startedAt: s.startedAt,
         runtime: formatDuration(Date.now() - s.startedAt),
         outputDir: sessionOutputDir(this._persistDir, s.sessionId),
@@ -977,6 +998,8 @@ export class SubagentManager {
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       timeoutMs: opts?.timeout,
+      deadlineAt: opts?.deadlineAt,
+      signal: opts?.signal,
       trace: opts?.trace,
       skill: opts?.skill,
       requireFinish: opts?.requireFinish,
@@ -995,22 +1018,17 @@ export class SubagentManager {
         console.error(`[session:${sessionId}] cancellation facts failed: ${String(error)}`);
       }
     };
-    opts?.signal?.addEventListener("abort", cancel, { once: true });
     try {
-      try {
-        opts?.signal?.throwIfAborted();
-        opts?.sessionStarted?.(sessionId);
-      } catch (error) {
-        cancel();
-        await this.waitFor(sessionId);
-        throw error;
-      }
-      const result = await this.waitFor(sessionId);
       opts?.signal?.throwIfAborted();
-      return { ...result, messages: this.progress(sessionId, 1000) };
-    } finally {
-      opts?.signal?.removeEventListener("abort", cancel);
+      opts?.sessionStarted?.(sessionId);
+    } catch (error) {
+      cancel();
+      await this.waitFor(sessionId);
+      throw error;
     }
+    const result = await this.waitFor(sessionId);
+    opts?.signal?.throwIfAborted();
+    return { ...result, messages: this.progress(sessionId, 1000) };
   }
 
   runAgent(
@@ -1031,8 +1049,12 @@ export class SubagentManager {
       outputSchema?: TSchema;
       toolPolicy?: ToolPolicy;
       executionRoot?: string;
+      signal?: AbortSignal;
     },
   ): string {
+    if (!opts?.parentSessionId || !this._sessions.get(opts.parentSessionId)?.executionScope) {
+      throw new Error("Fork requires a live caller; durable work belongs to a Task");
+    }
     return this.run(agentName, task, {
       parentSessionId: opts?.parentSessionId,
       originSessionId: opts?.originSessionId,
@@ -1049,6 +1071,7 @@ export class SubagentManager {
       outputSchema: opts?.outputSchema,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
+      signal: opts?.signal,
     });
   }
 
@@ -1222,6 +1245,8 @@ export class SubagentManager {
     opts?: {
       source?: string;
       timeoutMs?: number;
+      signal?: AbortSignal;
+      deadlineAt?: number;
       suppressBenignRaceEvent?: boolean;
       taskBinding?: TaskBinding;
       trace?: EventTrace;
@@ -1278,6 +1303,8 @@ export class SubagentManager {
       taskBinding: opts?.taskBinding,
       resetDbRow: true,
       timeoutMs: opts?.timeoutMs,
+      signal: opts?.signal,
+      deadlineAt: opts?.deadlineAt,
       trace: opts?.trace,
       requireFinish: opts?.requireFinish,
       operationAllowance: opts?.operationAllowance,
@@ -1346,7 +1373,9 @@ export class SubagentManager {
       startedAt: number;
       status: string;
     }>;
-    const staleSessions = staleCandidates.slice(0, 1000);
+    const staleSessions = staleCandidates
+      .slice(0, 1000)
+      .filter((session) => readActiveSessionProcessId(this._persistDir, session.sessionId) === null);
     const workflowRuns = db
       .prepare(
         `SELECT COUNT(*) AS total,
@@ -1388,6 +1417,7 @@ export class SubagentManager {
     const health = this.health();
     const audit = await this.auditHealth();
     const discrepancies = audit.staleSessions.map((s: any) => `Stale session ${s.sessionId} (${s.agent})`);
+    if (audit.staleSessionsTruncated) discrepancies.push("Session health scan incomplete; more candidates remain");
     return {
       healthy: discrepancies.length === 0,
       discrepancies,
@@ -1399,7 +1429,11 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this as any, opts);
+    return createAgentsToolFn(this as any, {
+      ...opts,
+      validateControl: (sessionId, callerSessionId) =>
+        validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),
+    });
   }
 
   // ── Path helpers ──
@@ -1804,45 +1838,35 @@ export class SubagentManager {
     promise.catch(() => undefined);
   }
 
-  private async withObservationDeadline<T>(session: ActiveSession, work: () => Promise<T>): Promise<T> {
-    const timeoutMs = this._noObservationTimeoutMs;
-    if (timeoutMs <= 0 || this.isPersistentChat(session)) return work();
-
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let settled = false;
-    let rejectDeadline: (error: Error) => void = () => undefined;
-    const deadline = new Promise<never>((_resolve, reject) => {
-      rejectDeadline = reject;
-    });
-    const reset = (): void => {
-      if (settled) return;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        const reason = `No agent observation for ${timeoutMs}ms`;
+  private async withExecutionScope<T>(session: ActiveSession, work: () => Promise<T>): Promise<T> {
+    const scope = new ExecutionScope(
+      session.admittedTimeoutMs,
+      session.parentSignal,
+      session.parentDeadlineAt,
+      (reason) => {
         session.status = "interrupted";
-        session.lastError = reason;
-        session.interruptionKind = "observation-timeout";
-        log("warn", `[runtime] ${session.sessionId} interrupted: ${reason}`);
+        session.lastError = reason.message;
+        session.interruptionKind = scope.timedOut ? "execution-timeout" : "cancelled";
         session.agent.cancel();
-        rejectDeadline(new Error(reason));
-      }, timeoutMs);
-    };
-    const unsubscribe = session.agent.subscribe((event) => {
-      // Partial token deltas can stream forever without yielding a usable
-      // agent move. Require a completed message, tool progress, or turn edge.
-      if (event.type !== "message_update" && event.type !== "message_start") reset();
-    });
-    reset();
-
+      },
+    );
+    session.executionScope = scope;
     try {
-      return await Promise.race([work(), deadline]);
+      return await work();
     } finally {
-      settled = true;
-      if (timer) clearTimeout(timer);
-      unsubscribe();
+      await this.closeExecutionScope(session, scope);
     }
+  }
+
+  private async closeExecutionScope(session: ActiveSession, scope = session.executionScope): Promise<void> {
+    scope?.close();
+    // An idle listener may already have started another turn on this session.
+    if (session.executionScope !== scope) return;
+    // Joining is necessary: an accepted cancellation is not completed cleanup.
+    const children = [...this._sessions.values()].filter((child) => child.parentSessionId === session.sessionId);
+    const results = await Promise.allSettled(children.map((child) => this.waitFor(child.sessionId)));
+    const failed = results.find((result) => result.status === "rejected");
+    if (failed?.status === "rejected") throw failed.reason;
   }
 
   private async executeSession(session: ActiveSession): Promise<TaskResult> {
@@ -1850,7 +1874,7 @@ export class SubagentManager {
     let errorText: string | undefined;
 
     try {
-      await this.withObservationDeadline(session, async () => {
+      await this.withExecutionScope(session, async () => {
         if (session.resumeMessages) {
           agent.state.messages = session.resumeMessages as any;
         }
@@ -1926,7 +1950,6 @@ export class SubagentManager {
             : String(err);
       log("error", `[runtime] ${sessionId} failed: ${err}`);
     } finally {
-      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       try {
         unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
       } catch {}
@@ -2116,7 +2139,7 @@ export class SubagentManager {
       /* best-effort */
     }
 
-    const promise = this.executeChatTurn(session, start);
+    const promise = this.withExecutionScope(session, () => this.executeChatTurn(session, start));
     this.idlePromises.set(sessionId, promise);
     promise.catch(() => undefined);
   }
@@ -2146,7 +2169,7 @@ export class SubagentManager {
       errorText = assistantError;
     }
 
-    if (!errorText && isRetryableEmptyAssistantFailure(terminalAssistantFailure)) {
+    if (session.status !== "interrupted" && !errorText && isRetryableEmptyAssistantFailure(terminalAssistantFailure)) {
       retryReason = terminalAssistantFailure ?? "Agent ended with an empty assistant turn";
       const retry = await this.retryChatTurnAfterEmptyAssistant(session, retryReason);
       retriedEmptyTurn = retry.attempted;
@@ -2178,9 +2201,15 @@ export class SubagentManager {
 
     const retryableChatFailure = !!errorText && retriedEmptyTurn && isRetryableEmptyAssistantFailure(errorText);
 
+    try {
+      await this.closeExecutionScope(session);
+    } catch (error) {
+      errorText ??= error instanceof Error ? error.message : String(error);
+    }
+    if (session.status === "interrupted") errorText ??= session.lastError;
+
     if (session.status === "interrupted" || (errorText && !retryableChatFailure)) {
       const status: "error" | "interrupted" = session.status === "interrupted" ? "interrupted" : "error";
-      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       try {
         unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
       } catch {}
@@ -2259,6 +2288,7 @@ export class SubagentManager {
     } catch {}
 
     const trace = this.terminalTrace(session);
+    this.clearTurnTraces(session);
     this.bus?.emit({
       type: "session.idle",
       source: session.source ?? "runtime",
@@ -2285,7 +2315,6 @@ export class SubagentManager {
       },
       ...(trace ? { trace } : {}),
     });
-    this.clearTurnTraces(session);
   }
 
   private async retryChatTurnAfterEmptyAssistant(
@@ -2399,6 +2428,9 @@ export class SubagentManager {
 
     agent.subscribe((event) => {
       switch (event.type) {
+        case "tool_execution_update":
+          persistProgress();
+          break;
         case "turn_start":
           session.modelStepCount++;
           persistProgress();

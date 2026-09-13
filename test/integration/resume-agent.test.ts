@@ -121,7 +121,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       import { createAgentRun } from ${JSON.stringify(new URL("../../src/lib/agent-runner.ts", import.meta.url).href)};
       import { buildAgentDefinition } from ${JSON.stringify(new URL("../../src/app/loader/agent-definition.ts", import.meta.url).href)};
       const manager = new SubagentManager({
-        persistDir: ${JSON.stringify(persistDir)}, projectRoot: ${JSON.stringify(root)}, noObservationTimeoutMs: 0,
+        persistDir: ${JSON.stringify(persistDir)}, projectRoot: ${JSON.stringify(root)},
         agentRunFactory: config => { const run = createAgentRun(config); run.prompt = () => new Promise(() => {}); return run; }
       });
       manager.register(await buildAgentDefinition(${JSON.stringify({ ...definitionOptions, source })}));
@@ -163,7 +163,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     });
     expect(resumed).toEqual([]);
     expect(interrupted).toHaveLength(1);
-    expect(interrupted[0].error).toContain("refusing cross-owner resume");
+    expect(interrupted[0].error).toContain("requires an explicit caller");
     expect(() => manager.resumeSession(sessionId, "Continue")).toThrow("refusing cross-owner resume");
     expect(executions).toBe(0);
     expect(existsSync(join(persistDir, "sessions", sessionId, "session.jsonl"))).toBe(false);

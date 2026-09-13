@@ -33,7 +33,7 @@ export function shouldResumeStartupSession(
       reason: "Task-bound execution is recovered through its Task, not by resuming the old session",
     };
   }
-  if (!session.projectId) return { resume: true };
+  if (!session.projectId) return { resume: false, reason: "Standalone execution requires an explicit caller to resume" };
 
   if (currentProjectLifecycle(session.projectId, persistDir) === "paused") {
     return {
@@ -42,5 +42,5 @@ export function shouldResumeStartupSession(
     };
   }
 
-  return { resume: true };
+  return { resume: false, reason: "Standalone execution requires an explicit caller to resume" };
 }

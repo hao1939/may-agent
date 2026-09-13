@@ -106,6 +106,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
       toolCallId,
       rawParams,
       signal,
+      onUpdate,
     ): Promise<AgentToolResult<{ cliCall: CliCallFacts } | undefined>> => {
       try {
         // Capture identity once, before awaiting: tools can be shared by concurrent sessions.
@@ -116,6 +117,11 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           sessionId,
           trace: opts.getCallerTrace?.(),
           signal,
+          onProgress: (progress) =>
+            onUpdate?.({
+              content: [{ type: "text", text: `${progress.tool}: ${progress.event}` }],
+              details: undefined,
+            }),
         });
         const cliCall: CliCallFacts = {
           sessionId,

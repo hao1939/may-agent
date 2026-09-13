@@ -16,7 +16,10 @@ afterEach(() => {
   }
 });
 
-function setup() {
+function setup(options: {
+  readSession?: Parameters<typeof createEscalationLifecycleSubscriber>[0]["readSession"];
+  validateSessionControl?: (id: string) => void;
+} = {}) {
   const persistDir = mkdtempSync(join(tmpdir(), "may-escalation-lifecycle-"));
   roots.push(persistDir);
   const bus = new EventBus();
@@ -34,11 +37,38 @@ function setup() {
   };
 
   bus.setPersistenceSubscriber(writer.handler);
-  bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir }));
+  bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir,
+    readSession: options.readSession ?? (() => ({ agent: "dev", task: "fixture", status: "done", startedAt: 1 })),
+    validateSessionControl: options.validateSessionControl ?? (() => undefined),
+  }));
   return { persistDir, bus, resumed, sent, activeSessions };
 }
 
 describe("escalation lifecycle", () => {
+  it.each(["task", "unknown", "foreign"])("keeps %s resolution with its owner", (kind) => {
+    const { bus, sent, resumed } = setup({
+      readSession: () => kind === "unknown" ? null : ({ agent: "dev", task: "fixture", status: "done", startedAt: 1,
+        ...(kind === "task" ? { taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "old" } } : {}),
+      }),
+      validateSessionControl: () => { throw new Error("foreign owner"); },
+    });
+    const events: any[] = [];
+    bus.subscribe(event => events.push(event));
+    bus.emit({ type: "escalation.created", source: "agent:dev", owner: "agent:may",
+      data: { escalationId: "fixture", sourceSessionId: "old-session", reason: "blocked", requestedAction: "decide" } } as never);
+    bus.emit({ type: "escalation.resolved", source: "agent:may", owner: "agent:dev",
+      data: { escalationId: "fixture", outcome: "answered", summary: "Continue" } } as never);
+    expect(sent).toEqual([]);
+    expect(resumed).toEqual([]);
+    if (kind === "task") {
+      expect(events.find(e => e.type === "app.input.requested")?.data).toMatchObject({
+        appId: "sample", targetTaskId: "work", input: { kind: "owner-review" },
+      });
+    } else {
+      expect(events.some(e => e.type === "app.input.requested")).toBe(false);
+      expect(events.some(e => e.type === "escalation.resume_failed")).toBe(true);
+    }
+  });
   it.each([
     { facts: { decision: "B" } },
     { evidence: { decision: "B" } },
