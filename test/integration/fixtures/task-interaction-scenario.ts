@@ -27,9 +27,12 @@ import { getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js"
 import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
 import { attachControlSocket } from "../../../packages/control/src/server.js";
 import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
-import { readExecutionStatus } from "../../../src/app/adapters/reporting/execution-status.js";
+import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
 import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
 import { readActiveSessionProcessId } from "../../../src/lib/persistence.js";
+import { SubagentManager } from "../../../src/lib/manager.js";
+import { attachCommandRouter, validateSessionControl } from "../../../src/app/command-router.js";
+import { createEventInterface } from "../../../src/app/core/events/interface.js";
 
 async function withProvider(
   f: ReturnType<typeof fixture>,
@@ -161,6 +164,50 @@ async function conversation() {
         assert.equal(readActiveSessionProcessId(f.persistDir, sessions[0]!.sessionId), f.child!.pid);
         assert.notEqual(f.child!.pid, process.pid);
         assert.deepEqual(await observeDaemonLiveness(f.persistDir), { responsive: true, activeWork: true });
+        // Public session controls must not bypass the Task that owns this child.
+        const manager = new SubagentManager({ persistDir: f.persistDir });
+        const router = attachCommandRouter({
+          bus: f.bus,
+          manager,
+          projectRoot: f.root,
+          reload: () => ({ ok: true, summary: "fixture" }),
+          restart: () => {},
+          shutdown: () => {},
+        });
+        const events = createEventInterface({
+          bus: f.bus,
+          db: f.db,
+          acceptsAppInput: () => false,
+          hasApp: () => true,
+          hasAgent: () => true,
+          hasSession: (id) => manager.registryStore.getSession(id) !== null,
+          validateSessionControl: (type, id) => validateSessionControl(manager, type, id),
+        });
+        const sessionId = sessions[0]!.sessionId;
+        const binding = manager.registryStore.getSession(sessionId)!.taskBinding;
+        assert(binding);
+        try {
+          for (const type of ["session.cancel.requested", "session.steer.requested"] as const) {
+            assert.throws(
+              () =>
+                events.publish(
+                  {
+                    type,
+                    target: { sessionId },
+                    data: type === "session.steer.requested" ? { message: "continue" } : {},
+                  },
+                  { source: "fixture" },
+                ),
+              (error) => error instanceof Error && error.message.includes(binding.taskId),
+            );
+          }
+          assert.deepEqual(manager.registryStore.getSession(sessionId)!.taskBinding, binding);
+          assert.deepEqual(manager.status(), []);
+          assert.deepEqual((await manager.auditHealth()).staleSessions, []);
+          assert.equal(f.store.isCancelled(binding.taskId), false);
+        } finally {
+          router.close();
+        }
         return { summary: "Compared the fixture options", response: `Reply to ${context.id}`, topic: { kind: "none" } };
       },
       async (contexts) => {

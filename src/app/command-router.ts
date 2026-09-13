@@ -1,10 +1,12 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
+import { readActiveSessionProcessId } from "../lib/persistence.js";
 import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
+import { readExecutionStatus } from "./core/reads/execution-status.js";
 
 export interface CommandRouterOptions {
   bus: EventBus;
@@ -38,6 +40,31 @@ function integerField(value: unknown, key: string): number | null {
   if (!isRecord(value)) return null;
   const next = value[key];
   return typeof next === "number" && Number.isInteger(next) ? next : null;
+}
+
+/** The same execution-ownership check guards public admission and redelivery. */
+export function validateSessionControl(manager: SubagentManager, type: string, sessionId?: string): void {
+  const check = (id: string): void => {
+    const meta = manager.registryStore.getSession(id);
+    if (meta?.taskBinding) {
+      const { appId, taskId } = meta.taskBinding;
+      throw new Error(
+        `Session ${id} belongs to Task ${appId}/${taskId}. Use its App input or Task control; use Conversation Stop to stop a turn.`,
+      );
+    }
+    if (manager.status().some((session) => session.sessionId === id)) return;
+    if (readActiveSessionProcessId(manager.registryStore.getFilePath(), id) !== null) {
+      throw new Error(`Session ${id} is active in another manager; control it through its owning runtime.`);
+    }
+    if (type !== "session.steer.requested" && (meta?.status === "running" || meta?.status === "idle")) {
+      throw new Error(`Session ${id} has no reachable execution; wait for recovery before controlling it.`);
+    }
+  };
+  if (type === "session.cancel_all.requested") {
+    // Check all targets before any mutation, including workers outside this manager.
+    const shared = readExecutionStatus(manager.registryStore.getFilePath()).sessions;
+    for (const session of [...shared, ...manager.status()]) check(session.sessionId);
+  } else if (sessionId) check(sessionId);
 }
 
 /** Normalize external input, apply deterministic controls, and admit semantic work to an App. */
@@ -157,6 +184,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const text = nonEmptyString(message);
     if (!id || !text) return false;
     try {
+      validateSessionControl(manager, "session.steer.requested", id);
       if (manager.status().some((session) => session.sessionId === id)) {
         manager.send(id, text, { trace: childEventTrace(event) });
       } else {
@@ -300,12 +328,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         const target: Record<string, unknown> = isRecord(event) && isRecord(event.target) ? event.target : {};
         const sessionId = nonEmptyString(target.sessionId);
         if (!sessionId) return;
+        validateSessionControl(manager, "session.cancel.requested", sessionId);
         manager.cancel(sessionId);
         return accepted("session-cancel");
       }
-      case "session.cancel_all.requested":
-        for (const session of manager.status()) if (session.status === "running") manager.cancel(session.sessionId);
+      case "session.cancel_all.requested": {
+        validateSessionControl(manager, "session.cancel_all.requested");
+        const local = manager.status().filter((session) => session.status === "running");
+        for (const session of local) manager.cancel(session.sessionId);
         return accepted("session-cancel-all");
+      }
       case "runtime.reload.requested":
         finishReload(event);
         return accepted("runtime-reload");

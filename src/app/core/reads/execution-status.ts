@@ -1,9 +1,18 @@
 import { getDb } from "../../../lib/db/connection.js";
 import { readActiveSessionProcessId } from "../../../lib/persistence.js";
-import type { ControlStatusItem, ControlStatusSnapshot } from "../../../../packages/control/src/server.js";
+
+/** Current execution facts; interfaces choose their own presentation. */
+export type ExecutionSession = {
+  agent: string;
+  sessionId: string;
+  status: string;
+  kind: string;
+  task: string;
+};
+export type ExecutionStatus = { sessions: ExecutionSession[]; activeWork: boolean };
 
 /** Current execution authority across processes; never scan historical session directories. */
-export function readExecutionStatus(persistDir: string, now = Date.now()): ControlStatusSnapshot {
+export function readExecutionStatus(persistDir: string, now = Date.now()): ExecutionStatus {
   const db = getDb(persistDir);
   const candidates = db
     .prepare(
@@ -19,7 +28,7 @@ export function readExecutionStatus(persistDir: string, now = Date.now()): Contr
     ORDER BY s.startedAt, s.sessionId
   `,
     )
-    .all() as Array<ControlStatusItem & Record<string, unknown>>;
+    .all() as Array<ExecutionSession & Record<string, unknown>>;
   const sessions = candidates.filter((session) => readActiveSessionProcessId(persistDir, session.sessionId) !== null);
   // A workflow can own a current attempt without any agent session. Fresh
   // leases protect that work until completion or ordinary crash recovery.

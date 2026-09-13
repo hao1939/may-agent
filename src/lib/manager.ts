@@ -55,6 +55,7 @@ import {
   loadActiveSessionMetas,
   listActiveSessionIds,
   markSessionActive,
+  readActiveSessionProcessId,
   markSessionInactive,
   RegistryStore,
   sessionDir,
@@ -1346,7 +1347,9 @@ export class SubagentManager {
       startedAt: number;
       status: string;
     }>;
-    const staleSessions = staleCandidates.slice(0, 1000);
+    const staleSessions = staleCandidates
+      .slice(0, 1000)
+      .filter((session) => readActiveSessionProcessId(this._persistDir, session.sessionId) === null);
     const workflowRuns = db
       .prepare(
         `SELECT COUNT(*) AS total,
@@ -1388,6 +1391,7 @@ export class SubagentManager {
     const health = this.health();
     const audit = await this.auditHealth();
     const discrepancies = audit.staleSessions.map((s: any) => `Stale session ${s.sessionId} (${s.agent})`);
+    if (audit.staleSessionsTruncated) discrepancies.push("Session health scan incomplete; more candidates remain");
     return {
       healthy: discrepancies.length === 0,
       discrepancies,

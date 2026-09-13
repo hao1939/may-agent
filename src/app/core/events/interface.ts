@@ -161,6 +161,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       const sessionId = requiredTarget(input, "sessionId");
       requiredText(input.data.message, "session.steer.requested data.message");
       if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
+      options.validateSessionControl?.(input.type, sessionId);
     },
   },
   "session.cancel.requested": {
@@ -169,9 +170,16 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       const sessionId = requiredTarget(input, "sessionId");
       optionalTextField(input.data, "reason", "session.cancel.requested data.reason");
       if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
+      options.validateSessionControl?.(input.type, sessionId);
     },
   },
-  "session.cancel_all.requested": { delivery: "required", validate: validateOptionalReason },
+  "session.cancel_all.requested": {
+    delivery: "required",
+    validate: (input, options) => {
+      validateOptionalReason(input);
+      options.validateSessionControl?.(input.type);
+    },
+  },
   "runtime.reload.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.restart.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.shutdown.requested": { delivery: "required", validate: validateOptionalReason },
@@ -259,6 +267,8 @@ export type CreateEventInterfaceOptions = {
   hasApp(appId: string): boolean;
   hasAgent(agent: string): boolean;
   hasSession(sessionId: string): boolean;
+  /** Composition verifies that the selected execution controller owns the target. */
+  validateSessionControl?(type: string, sessionId?: string): void;
   /** Composition selects the conversational App; its input must use durable admission. */
   conversationAppId?: string;
 };

@@ -22,7 +22,7 @@ async function loadHealth() {
         <div class="health-sub">${data.successRate}% success rate</div>
       </div>
       <div class="health-card">
-        <div class="health-label">Active Agents</div>
+        <div class="health-label">Recently Seen Agents</div>
         <div class="health-value">${data.activeAgents}</div>
         <div class="health-sub">in last 2 hours</div>
       </div>

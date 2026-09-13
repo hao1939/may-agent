@@ -3,7 +3,12 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager, type SessionInfo } from "../../src/lib/manager.js";
-import { writeSessionMeta, type PersistedSession } from "../../src/lib/persistence.js";
+import {
+  markSessionActive,
+  markSessionInactive,
+  writeSessionMeta,
+  type PersistedSession,
+} from "../../src/lib/persistence.js";
 import { closeDb, insertWorkflowRun, upsertSession } from "../../src/lib/requests.js";
 import { fakeModel } from "../fixtures/model.js";
 
@@ -179,7 +184,7 @@ describe("auditHealth()", () => {
     expect(report.unevaluated.actionable).toBe(0);
   });
 
-  it("detects stale sessions (running on disk but not in memory)", async () => {
+  it("detects stale sessions without a live process owner", async () => {
     writeAuditSession(persistDir, "s_stale_0", {
       agent: "coder",
       task: "stuck task",
@@ -191,6 +196,20 @@ describe("auditHealth()", () => {
     expect(report.staleSessions).toHaveLength(1);
     expect(report.staleSessions[0].sessionId).toBe("s_stale_0");
     expect(report.staleSessions[0].agent).toBe("coder");
+  });
+
+  it("keeps healthy sessions in other managers out of stale-session diagnostics", async () => {
+    writeAuditSession(persistDir, "s_worker", {
+      agent: "coder",
+      task: "running elsewhere",
+      status: "running",
+      startedAt: Date.now(),
+    });
+    markSessionActive(persistDir, "s_worker");
+    expect((await manager.reconcileHealth()).healthy).toBe(true);
+    expect((await manager.auditHealth()).staleSessions).toEqual([]);
+    markSessionInactive(persistDir, "s_worker");
+    expect((await manager.reconcileHealth()).healthy).toBe(false);
   });
 
   it("counts workflow runs correctly", async () => {
@@ -251,6 +270,18 @@ describe("auditHealth()", () => {
 describe("reconcileHealth()", () => {
   beforeEach(() => {
     registerTestAgents(manager);
+  });
+
+  it("does not claim healthy when the bounded audit has unchecked candidates", async () => {
+    const audit = await manager.auditHealth();
+    const read = spyOn(manager, "auditHealth").mockResolvedValue({ ...audit, staleSessionsTruncated: true });
+    try {
+      const report = await manager.reconcileHealth();
+      expect(report.healthy).toBe(false);
+      expect(report.discrepancies).toEqual(["Session health scan incomplete; more candidates remain"]);
+    } finally {
+      read.mockRestore();
+    }
   });
 
   it("returns healthy: true when everything matches", async () => {

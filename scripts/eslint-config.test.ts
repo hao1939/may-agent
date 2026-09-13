@@ -71,6 +71,10 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     'import { getDb } from "../../../lib/requests.js"; void getDb;',
     'export { closeDb } from "../../../lib/requests";',
     'import { getDb as connection } from "../../../lib/db/connection.js"; void connection;',
+    'import type { DaemonStatus } from "../../../../packages/control/src/server.js"; export type Status = DaemonStatus;',
+    'export { attachHttpServer } from "../../http/server.js";',
+    'export { attachSocket } from "../../transport/socket";',
+    'import type { EventInput } from "@may-agent/control/events"; export type Input = EventInput;',
   ].join("\n");
   for (const filePath of [
     "src/app/core/tasks/controller.ts",
@@ -90,6 +94,9 @@ it("keeps capability implementations out of core, but allows wiring and boundary
       ["no-restricted-imports", 8],
       ["no-restricted-imports", 9],
       ["no-restricted-imports", 10],
+      ["no-restricted-imports", 12],
+      ["no-restricted-imports", 13],
+      ["no-restricted-imports", 14],
     ]);
   }
   for (const filePath of [

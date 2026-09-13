@@ -18,7 +18,7 @@ import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
 import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
 import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
-import { readExecutionStatus } from "../../../src/app/adapters/reporting/execution-status.js";
+import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
 import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
 import {
   createTaskAttemptProcessExecutor,

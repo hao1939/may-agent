@@ -3,8 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
-import { closeDb, getDb } from "../lib/requests.js";
-import { attachCommandRouter } from "./command-router.js";
+import { closeDb, getDb, upsertSession } from "../lib/requests.js";
+import { markSessionActive, RegistryStore, writeSessionMeta } from "../lib/persistence.js";
+import { attachCommandRouter, validateSessionControl } from "./command-router.js";
 import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 
 function fixture(
@@ -21,10 +22,12 @@ function fixture(
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
   const runs: Array<{ agent: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];
+  const resumed: string[] = [];
   const manager = {
+    registryStore: new RegistryStore(root),
     status: () => [{ sessionId: "s_chat", agent: "may", task: "chat", status: "idle", runtime: "1s" }],
     send: (sessionId: string, text: string, opts?: Record<string, unknown>) => sent.push({ sessionId, text, opts }),
-    resumeSession: () => undefined,
+    resumeSession: (sessionId: string) => resumed.push(sessionId),
     run: (agent: string, text: string, opts?: Record<string, unknown>) => {
       runs.push({ agent, text, opts });
       return typeof opts?.sessionId === "string" ? opts.sessionId : `s_new_${runs.length}`;
@@ -45,7 +48,7 @@ function fixture(
     restart: () => undefined,
     shutdown: () => undefined,
   });
-  return { root, bus, router, sent, runs, cancelled };
+  return { root, bus, router, sent, runs, cancelled, resumed, manager };
 }
 
 function cleanup(root: string, router: { close(): void }): void {
@@ -203,6 +206,81 @@ describe("command router", () => {
       f.bus.emit(event);
 
       expect(f.cancelled).toEqual(["s_chat"]);
+    } finally {
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("rejects controls and redelivery for Task-owned sessions, including completed attempts", () => {
+    const f = fixture();
+    try {
+      for (const status of ["running", "done"] as const) {
+        writeSessionMeta(f.root, "s_owned", {
+          agent: "worker",
+          task: "owned work",
+          status,
+          startedAt: 1,
+          taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" },
+        });
+        for (const type of ["session.cancel.requested", "session.steer.requested"] as const) {
+          const event = f.bus.emit({
+            type,
+            source: "fixture",
+            owner: "agent:worker",
+            target: { sessionId: "s_owned" },
+            data: type === "session.steer.requested" ? { message: "continue" } : {},
+          } as any);
+          f.bus.redeliverPersisted(event, Number(event[EVENT_ROW_ID]));
+          expect(() => validateSessionControl(f.manager as any, type, "s_owned")).toThrow("sample/work");
+          expect(
+            getDb(f.root).prepare("SELECT delivery_status FROM events WHERE id = ?").get(Number(event[EVENT_ROW_ID])),
+          ).toMatchObject({
+            delivery_status: "pending",
+          });
+        }
+      }
+      expect(f.cancelled).toEqual([]);
+      expect(f.resumed).toEqual([]);
+    } finally {
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("does not resume another manager's live session or partially cancel all sessions", () => {
+    const f = fixture();
+    try {
+      writeSessionMeta(f.root, "s_foreign", {
+        agent: "worker",
+        task: "standalone",
+        status: "running",
+        startedAt: 1,
+      });
+      // A second manager can be in the same process; the marker proves active
+      // ownership even though this manager's local map has no such session.
+      markSessionActive(f.root, "s_foreign");
+      f.manager.status = () => [{ sessionId: "s_chat", agent: "may", task: "chat", status: "running", runtime: "1s" }];
+      upsertSession(f.root, {
+        sessionId: "s_foreign",
+        agent: "worker",
+        task: "standalone",
+        status: "running",
+        startedAt: 1,
+      });
+      for (const type of ["session.steer.requested", "session.cancel.requested", "session.cancel_all.requested"]) {
+        const event = f.bus.emit({
+          type,
+          source: "fixture",
+          owner: "agent:worker",
+          target: { sessionId: "s_foreign" },
+          data: type === "session.steer.requested" ? { message: "continue" } : {},
+        } as any);
+        expect(
+          getDb(f.root).prepare("SELECT delivery_status FROM events WHERE id = ?").get(Number(event[EVENT_ROW_ID])),
+        ).toEqual({ delivery_status: "pending" });
+        expect(() => validateSessionControl(f.manager as any, type, "s_foreign")).toThrow("another manager");
+      }
+      expect(f.cancelled).toEqual([]);
+      expect(f.resumed).toEqual([]);
     } finally {
       cleanup(f.root, f.router);
     }

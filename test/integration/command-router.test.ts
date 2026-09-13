@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import type { SubagentManager } from "../../src/lib/index.js";
+import { RegistryStore } from "../../src/lib/persistence.js";
 
 const roots: string[] = [];
 
@@ -19,6 +20,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
   const emitted: AgentEvent[] = [];
   bus.subscribe((event) => emitted.push(event));
   const manager = {
+    registryStore: new RegistryStore(projectRoot),
     status: () => [],
     cancel: () => {},
     send: () => {},
