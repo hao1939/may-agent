@@ -4,8 +4,12 @@
 mental model and explicitly defers review during execution. Keep the shared
 contract; implement only demonstrated gaps. Deferred capabilities are not
 prerequisites for alignment or an automatic implementation backlog.
-**Implementation status:** Documentation and source assessment only. No runtime
-change, model experiment or deployment is claimed here.
+**Implementation status:** The two immediate repairs are implemented on the Host
+`fix/execution-feedback` branch: `014804da` forwards native activity and
+`8e744a18` reports worker execution, based on v3.0.1. Isolated CLI subprocesses
+and Task workers exercise the production paths. The local installation has not
+been changed by this experiment. Concurrent review and automatic fallback remain
+deferred.
 
 Source reviewed: Host v3.0.1 `6935b325` and release-derived candidate `db5e548c`,
 whose affected execution/routing files agree; App source `3ca8696a90`.
@@ -197,10 +201,91 @@ new fallback route or model-backed trial is required to complete the two repairs
 The design is aligned when each implemented path follows the common contract
 and states its limitations; complete source coverage is a separate product choice.
 
-## Validation scope
+## Implementation and PoC findings
 
-Documentation checks cover design integrity, proposal links, SDK/control
+The implementation keeps the existing paths and adds one shared execution read:
+
+- The native JSONL collector recognizes completed commands/tool results and
+  relevant turn/item boundaries. `run_cli_agent` forwards a bounded update through
+  its existing tool callback. The manager refreshes stored activity without
+  incrementing the parent tool-call count. Raw logs, reasoning and token deltas
+  do not count. Updates occur at most once per second, only when a recognized
+  native event arrives; there is no timer that invents activity.
+- Public socket status reads current sessions from SQLite and verifies their
+  existing process markers. Task-bound sessions must match the current attempt
+  and generation. Historical session directories are not scanned.
+- The same read also checks current, running, unexpired Task claims. This covers
+  workflows with no agent session. Socket status adds `activeWork` separately
+  from its existing `activeAgents` list; an idle or synthetic ready chat is not
+  active work. Maintenance uses this field, or the same shared read when the
+  socket is unavailable. Existing array-returning socket callbacks still work.
+- Database read failures produce an unavailable-status error. The maintenance
+  probe records a failed observation without treating it as idle or leaking an
+  unhandled rejection. A failure-path test caught and corrected the socket error
+  field: clients read `message`, not `error`.
+
+The real subprocess fixture runs for 3.4 seconds against a two-second silence
+deadline. Both Codex and Claude protocol fixtures complete with three to four
+forwarded updates, stored activity spanning more than two seconds, one parent
+tool operation and one final result. The scripted agent makes exactly two model
+steps: requesting the tool and consuming its result. No network model is used.
+The token-only fixture still expires. A separate case keeps emitting recognized
+activity and still reaches the explicit CLI deadline; progress is not an
+extension of that budget. Existing cancellation/process-drain tests remain the
+owner of process cleanup behavior.
+
+A real Conversation Task worker is checked while its local fixture provider is
+handling a request. The public socket reports exactly that child session and
+maintenance reports active work. Completion removes it from status. A later
+turn after reopening storage passes the same checks without duplicating the
+Task. Two measured status requests took approximately 5.2 ms and 1.2 ms; these
+small-fixture observations are not a production load benchmark.
+
+A real workflow worker with no agent session reports active work until exact
+cancellation. Parent-loss recovery clears its active claim. Additional reader
+tests cover multiple current sessions, terminal and ended sessions, dead or
+missing markers, stale generations/attempts, expired leases and unavailable
+storage. The existing worker tests also verify exact feedback delivery and
+cancellation without duplicate Events.
+
+The useful distinction is now explicit: **activity**, **current execution** and
+**goal progress** are different facts. A live process may be stuck, and a fresh
+workflow claim can briefly remain after a crash until ordinary recovery or
+lease expiry. Status reports/protects that claim; it cannot prove the workflow
+process is alive. This accepted limit avoids another process registry. The
+five-minute silence policy can still interrupt a legitimately quiet command.
+
+No schema migration, App change, observer rewrite, new daemon or review model
+call is needed. Keep direct tool returns direct and use Events for asynchronous
+feedback. Revisit timeout policy or concurrent review only when their concrete
+value justifies a separate change.
+
+## Reproduction and validation scope
+
+From the Host checkout:
+
+```sh
+bun test src/lib/cli-progress.test.ts src/lib/cli-agent.test.ts src/lib/session-observation-timeout.test.ts
+bun test src/app/adapters/reporting/execution-status.test.ts packages/control/src/control-socket.test.ts src/app/modes/maintenance.test.ts src/app/task-worker-integration.test.ts
+bun test/integration/fixtures/task-interaction-scenario.ts conversation
+bun run ci
+```
+
+The first two commands exercise the owning contracts. The third prints timing
+samples through the public socket while actual worker processes run. The final
+command is the full Host gate, including browser checks. These portable fixtures
+use temporary state and a deterministic local provider; they do not require
+credentials or an existing installation. They prove the repaired execution
+boundaries, not live provider behavior or long-running production stability.
+
+At Host `8e744a18`, `bun run ci` passed: 2,993 tests, zero failures and 13,252
+assertions in 150.78 seconds for the test phase. The three existing skips cover
+installation-specific agent catalog checks; browser tests executed and passed.
+Host/SDK type checks, the canonical App-boundary check and lint error gate passed.
+No image build, release, deployment or external provider experiment was run.
+
+`bun run check:may-design` passed against that Host source. These checks cover
+design integrity, proposal links, SDK/control
 examples, seeded Task admission/replay, Condition/dependency result admission
-and canonical App integrity. No runtime behavior or model judgment is changed
-or validated by this refinement. Historical investigation evidence was reviewed,
-not rerun. Existing unrelated design drafts remain untouched.
+and canonical App integrity. Historical live investigation evidence was
+reviewed, not rerun. Existing unrelated design drafts remain untouched.
