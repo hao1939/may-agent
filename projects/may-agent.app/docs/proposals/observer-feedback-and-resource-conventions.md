@@ -12,10 +12,10 @@ already implements the publication-aware snapshot support described below.
 The reviewed Scout source still uses its file cache; provider discovery and
 end-to-end adoption remain separate work. The earlier status and baseline below
 record the original proposal, not the present Host implementation.
-[Execution feedback and review](execution-feedback-and-review.md) now owns the
-shared execution/observer feedback refinement, running-helper review, unavailable
-owner handling and their value/cost assessment. Keep the provider-specific work
-here; do not recreate the implemented Host capability.
+[One execution feedback model](execution-feedback-and-review.md) owns the
+shared contract and immediate CLI progress/status gaps. Review during execution
+and automatic fallback are deferred; provider work here does not depend on them.
+Do not recreate the implemented Host capability.
 
 ## Outcome and stopping point
 
