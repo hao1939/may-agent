@@ -1,7 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
-import { randomUUID } from "node:crypto";
-import type { AppEvent, AppObserver, ObserverContext } from "@may-agent/sdk";
+import type {
+  AppEvent,
+  AppObserver,
+  AppObserverResult,
+  ObserverContext,
+} from "@may-agent/sdk";
 import {
   inspectXhsCredential,
   type XhsCredentialStatus,
@@ -9,26 +11,7 @@ import {
 
 type XhsCredentialWatcherState = {
   state?: XhsCredentialStatus["state"];
-  observedAt?: string;
-  probeId?: string;
 };
-
-function readState(path: string): XhsCredentialWatcherState {
-  if (!existsSync(path)) return {};
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf8"));
-    return parsed && typeof parsed === "object"
-      ? (parsed as XhsCredentialWatcherState)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeState(path: string, state: XhsCredentialWatcherState): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
-}
 
 export function xhsCredentialEvents(
   status: XhsCredentialStatus,
@@ -53,18 +36,17 @@ export function xhsCredentialEvents(
 export async function observeXhsCredential(
   ctx: ObserverContext,
   inspect = inspectXhsCredential,
-): Promise<AppEvent<Record<string, unknown>>[]> {
-  const statePath = `${ctx.workspace.appRoot}/.state/watchers/xhs-credential.json`;
-  const previous = readState(statePath);
-  const probeId = randomUUID();
-  // Use the existing cache: a reloaded bundle has its own module variables.
-  // An abandoned marker is harmless; the next scan replaces it without retry.
-  writeState(statePath, { ...previous, probeId });
+): Promise<AppObserverResult> {
+  const previous = ctx.previousObservation as
+    | XhsCredentialWatcherState
+    | undefined;
   const status = await inspect(ctx.workspace.appRoot);
-  if (readState(statePath).probeId !== probeId) return [];
-  const observedAt = new Date().toISOString();
-  writeState(statePath, { state: status.state, observedAt });
-  return xhsCredentialEvents(status, previous);
+  // The Host advances this memory only after publishing the returned facts,
+  // and discards results from replaced observer generations.
+  return {
+    events: xhsCredentialEvents(status, previous),
+    nextObservation: { state: status.state },
+  };
 }
 
 export const xhsCredentialObserver: AppObserver = {
