@@ -60,6 +60,20 @@ route. Agents do not register a second watch for work the system already owns.
 Conventions still require a source adapter: arbitrary shell commands cannot
 automatically expose every external resource they create.
 
+Delegation does not require the parent to stop all work. Ending an attempt is
+appropriate when useful independent work is exhausted or its bound is reached.
+A retained dependency may coexist with a running attempt. Keep lifecycle,
+execution and outstanding results separate as described in
+[System Model](system-model.md#execution-and-outstanding-results).
+
+The recipient's name does not select a lifecycle. An agent can perform a
+bounded helper call or execute a durable Task. A provider operation such as a
+pipeline already owns its external execution; its caller Task owns interpreting
+the result. Such an operation needs a durable reference and supported feedback
+route before the parent releases execution, but not an automatic wrapper Task
+or new agent. A call-scoped subprocess instead returns directly and is cleaned
+up with that call. Ending the attempt must respect that distinction.
+
 Events notify the owner that something deserves attention. The handler rereads
 current state, judges what remains necessary and uses the same bounded Task
 execution path. A periodic check does the same after a missed notification.

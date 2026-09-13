@@ -44,7 +44,7 @@ defines the shared vocabulary.
 | Event or schedule        | Signal that something changed or should be reconsidered                |
 | Metric                   | Measurement that may need judgment; never a decision by itself         |
 | Task resource            | Durable desired and observed App work state                            |
-| Condition                | Exact external fact required before a task can continue                |
+| Condition                | Exact external fact required for dependent work; other work may proceed |
 | Agent                    | Named profile for one bounded reasoning/action attempt                  |
 | Workflow                 | App-owned reusable bounded procedure                                   |
 | Session/workflow attempt | Bounded execution that produces evidence                               |
@@ -81,12 +81,11 @@ workflow needs-agent    -> selected agent judges the exception once
 workflow unavailable    -> attention until the binding is repaired
 ```
 
-When that agent judgment changes the desired work, the attempt may return one
-`update-task` change for the task currently being reconciled. The update must
-change the task generation. That result completes only the current attempt:
-the task remains live and the controller immediately reconciles its new
-generation through the resolved workflow. It is not task completion and does
-not bypass the workflow's final acceptance verifier.
+The worker chooses useful actions within its assignment. If desired scope or
+execution policy must change, it returns the facts and recommendation to the
+assigning owner, who uses fenced Task controls. A worker cannot rewrite its own
+assignment to declare progress. An authorized spec revision changes generation;
+ordinary continuation does not require a spec edit or bypass acceptance.
 
 The task, not one workflow run, owns the durable reconciliation loop:
 
@@ -96,14 +95,17 @@ same task
   -> agent judges and performs the next in-scope move
   -> workflow verifies the result
   -> local failure feeds the next bounded repair iteration
-  -> exact external wait ends this run with a Condition
-  -> the observed fact wakes the same task and workflow again
+  -> preserve external waits while doing useful independent work
+  -> when no such work remains, end this run with an exact wait
+  -> relevant input or an observed fact wakes the same task again
   -> accepted proof converges the task
 ```
 
 A workflow run is a bounded iteration of this loop. It may perform several
-immediate repair-and-verify steps, but it does not remain alive across a
-pipeline, pull request, timer, human reply, or other durable wait.
+immediate repair-and-verify steps while an external result is pending. It does
+not remain alive solely to wait for a pipeline, pull request, timer or human
+reply. See [execution and outstanding results](../2a-design/system-model.md#execution-and-outstanding-results)
+for scheduling, capacity and current implementation limits.
 
 Expected domain difficulty is not `needs-agent`, `attention`, or escalation.
 The workflow should use its selected agent to handle merge conflicts, failed
@@ -136,8 +138,10 @@ watchers observe providers, metrics measure health, and Conditions represent
 exact waits. A relevant observation wakes work later.
 
 Task phases are `pending`, `running`, `waiting`, `attention`, and `converged`.
-An achieve task leaves the live graph with a receipt when accepted. A maintain
-task remains live and sleeps after convergence until a real wake arrives.
+They summarize scheduling, not every outstanding obligation. A running Task
+can retain Conditions. Accepted outcomes leave the Task open for later input;
+its assigning owner closes it explicitly. Retired achieve/maintain labels do
+not select different lifecycles. Project posture remains a separate App view.
 
 ## Choosing the mechanism
 

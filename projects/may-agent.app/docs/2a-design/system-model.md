@@ -83,6 +83,51 @@ Shared execution is implemented. Removing the retained `achieve`/`maintain`
 SDK vocabulary is separate from that execution change and does not imply
 another Task controller.
 
+## Execution and outstanding results
+
+Keep three questions separate: is the Task still open, is an attempt executing,
+and which results or external facts remain outstanding? Existing Task closure,
+attempt/claim and Condition/input links answer them. The scheduling phase is
+one summary of eligibility; it need not become several simultaneous phases.
+
+A Task can execute useful work while retaining outstanding dependencies. New
+relevant input can start a pass without satisfying an older wait. The agent
+chooses what can progress within scope and budget; code preserves the other
+waits and delivers their results. Answering that new input does not fulfill an
+older ask whose required result is still pending.
+
+When a result is still needed and no useful independent work remains, end the
+attempt with a durable wait.
+Release its execution capacity while the Task stays open. A matching result,
+other relevant input or a declared review checkpoint can wake it later. Ending
+an attempt is neither closing the Task nor abandoning the Request.
+
+| Current facts | Human-facing explanation |
+| --- | --- |
+| An attempt is running; results remain outstanding | Working on the review; also awaiting pipeline 42. |
+| No attempt is running; an external result is needed | Waiting for pipeline 42; no parent execution is running. |
+| No attempt is running; useful work is ready | Queued to continue the review. |
+| Current inputs are handled; no results remain outstanding | Up to date; available for later input. |
+| Progress needs an owner's decision | Needs attention: explain the decision and what can still proceed. |
+
+Idle is only an execution observation. It cannot establish that work is complete
+or that a wait is sensible. Likewise, waiting for a worker's answer does not
+prove that worker is currently running. Read its current status when making
+that claim, and keep a missing/unknown result distinguishable from completion.
+
+The same agent profile can serve several Tasks. One Task waiting does not make
+that agent globally unavailable. Within one Task, preserve one current attempt;
+outstanding dependencies do not authorize a second competing parent attempt.
+
+**Implementation limit:** current Task state already retains waits during a
+later running attempt. The canonical typed dependency path submits new work
+when the parent returns `waiting`; it does not yet express immediate parent
+continuation after that handoff without another wake. Human Task detail also
+hides its ordinary wait list during running execution. The
+[clarification review](../archive/reviews/ownership-boundary-review-20260913.md#clarification-review-execution-and-pending-results)
+records the evidence and scoped changes; this model does not claim those gaps
+are already fixed.
+
 ## A turn or a Task?
 
 Here “Task” means delegated work visible to the user; the common underlying
@@ -136,7 +181,7 @@ The same flow has ordinary branches:
 | What happens | What follows |
 | --- | --- |
 | The attempt can fix a failed check | Work/check/repair continues inside its existing budget; after it returns, later work needs another attempt |
-| Work needs an external fact or decision | Record the exact wait, release execution capacity, and reconsider on relevant input or a due review |
+| Part of the work needs an external fact or decision | Preserve its return route; continue useful independent work within budget. End the attempt with a durable wait when nothing else can progress |
 | Execution fails | Preserve evidence and contain the failure; use bounded retry when justified, otherwise expose the decision the App needs to make |
 | The original goal is no longer worthwhile or possible | The App seeks or applies an authorized scope/stop decision; inability to finish is never reported as success |
 | The human cancels a Task | Preserve its evidence and reject late effects/results under the cancellation fences |

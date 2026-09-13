@@ -79,6 +79,58 @@ work are distinct facts in existing records. They are not a new notification
 state machine. Status and human interfaces read the same accepted evidence;
 human updates emphasize useful results, decisions and attention needs.
 
+## Delegation and useful parent work
+
+An outstanding result and a scheduling wait are different facts. The parent
+should continue useful independent work within its authorized scope and budget;
+when nothing can progress, it ends its attempt and retains the exact wait.
+Its Task and accepted asks stay open. See the
+[owning model](../2a-design/system-model.md#execution-and-outstanding-results).
+
+Current Task storage already permits running execution with retained Conditions.
+Relevant input and selected dependency reports can wake that execution without
+satisfying every wait. The source does not need another waiting flag, an agent
+availability registry or simultaneous Task phases to represent this.
+
+There is a narrower capability gap: `TaskReconcileResult.dependencies` is accepted
+only with `state: waiting`, and submission occurs after the executor returns.
+Without other input, the parent then waits. This supports durable handoff and
+later concurrent work, but does not express "submit this child and immediately
+continue my own independent preparation." Neither a completion claim nor an
+`incomplete` failure should be used to manufacture that continuation.
+
+For a demonstrated consumer, prefer an explicit accepted continuation result
+at the existing attempt boundary: admit dependencies with their exact return
+links, retain progress and the original unfinished input, release the attempt,
+and make the same Task eligible through its ordinary queue. This would use the
+existing pending phase, capacity limits and fences. It would not answer the
+input, increment failure backoff, renew the finished attempt's budget, or start
+a second parent attempt. An owner would still judge continued value and cost.
+This is a proposed extension, not an implemented SDK result or a reason to
+automatically requeue every waiting Task. Its exact schema and settlement need
+a focused PoC before adoption.
+
+The PoC must show a child admitted once, useful parent work in a later attempt
+before the child's answer, one current parent attempt, and normal capacity
+release. Retain the original unanswered input, progress and exact dependency
+identity across restart; the next pass must see the saved progress rather than
+blindly repeat its submission. Child failure, missed delivery and owner Stop
+must retain their existing meanings. A plain waiting result without new input
+must stay asleep until its result or declared review is due.
+
+That bounded handoff is simpler to evaluate first than adding Task submission
+as a mid-call effect. If a real latency need later warrants the latter, it must
+use existing admission, idempotency and recovery rather than a second job API.
+Do not create fake self-events, short review timers or an artificial child Task
+just to keep a parent runnable.
+
+Before replacing a durable `agents.fork` consumer, prove its replacement keeps
+the useful concurrency, caller feedback and cancellation scope. Preserve direct
+bounded calls. Provider-owned asynchronous operations need stable operation
+identity and feedback, not automatic conversion into Tasks. The
+[clarification review](../archive/reviews/ownership-boundary-review-20260913.md#clarification-review-execution-and-pending-results)
+records the narrower recommendation and the current human-read defect.
+
 ## Periodic checks provide another delivery opportunity
 
 Reuse existing observer scans, pending admission recovery and Task/Condition

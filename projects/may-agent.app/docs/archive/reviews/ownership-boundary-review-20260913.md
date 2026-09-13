@@ -39,7 +39,8 @@ not demonstrate a duplicate live worker or actual process termination.
 | First | Escalation resolution bypasses Task ownership when resuming sessions | Route Task-bound resolution through the exact owning App/Task; validate supported standalone controls. Host composition/session adapter. | Prevents execution outside the Task. Small initial guard; caller migration needs focused tests. |
 | First | The `agents` tool has a separate cancellation path | Apply execution-ownership checks at this entry point; preserve exact parent-owned helper cancellation. Never turn a rejected control into a raw process kill. Tool adapter/composition. | Makes all controls obey the same contract. Small to medium, including detached-session cases. |
 | First | Scout remembers a transition before publication succeeds | Use existing observer `previousObservation` / `nextObservation`; remove duplicate discovery cache. Scout adapter. | Restores the periodic safety net. Small, no new Host service. |
-| Next | Independent session jobs coexist with durable Tasks | Inventory `agents.fork` consumers; move durable assignments to typed Task dependencies. Retain bounded direct calls and explicitly supported standalone chat. | Removes an alternate work lifecycle. Medium consumer cleanup. |
+| First, small read fix | Running detail hides waits; ready work can still look parked | Read retained waits alongside current execution and eligibility. Human Task read adapter. | Shows useful work and pending results together; no schema change. See clarification evidence below. |
+| Next | Independent session jobs coexist with durable Tasks | Inventory `agents.fork` consumers; move durable assignments only after proving replacement concurrency and feedback. Retain bounded calls and provider-owned async operations. | Removes an alternate work lifecycle; current result-only delegation is not a complete replacement for every concurrency need. |
 | Next | Executors contain inconsistent progress/timeout policy | Document explicit execution limits separately from observations; make uncertain strategy an owner decision at a supported boundary. | Clearer behavior and fewer false interventions. Policy change needs evidence; concurrent review is additional work. |
 | Next | Name-based privilege remains in generic tools | Supply narrow trusted installation/tool capabilities; keep existing protections until replacements pass. | Clarifies supervisor scope. Medium, security-sensitive migration. |
 | As needed | Hung observers have no generic recovery | Bound source I/O; expose an unresolved adapter for intervention. Add a shared cancellation primitive only if a consumer needs it. | Avoids overlapping abandoned operations; a generic timeout alone cannot stop arbitrary promises. |
@@ -139,6 +140,9 @@ their callers. Move independent ongoing assignments to existing typed Task
 dependencies, then retire their separate resume policy. Do not wrap every helper
 call in a Task or recreate legacy retry timers inside a new framework. Verify
 caller result delivery, parent cancellation, restart and exact same-Task reuse.
+The clarification below qualifies this migration: current result-only delegation
+parks the parent absent another wake. Preserve useful parent work before removing
+an existing asynchronous consumer.
 
 ## 5. Silence and error counts still influence strategy
 
@@ -255,6 +259,94 @@ cosmetic file moves that leave ownership unchanged.
 - **Reporting:** workflow health reports read historical facts without owning
   work. The corrected dashboard label says Recently Seen Agents. Keep historical
   reporting distinct from current execution.
+
+## Clarification review: execution and pending results
+
+The clarified contract separates open responsibility, current execution and
+outstanding results. A Task may run while a dependency remains unresolved. One
+scheduling phase is sufficient; do not introduce an `executing-and-waiting`
+state or make an agent profile globally waiting. The owning
+[System Model](../../2a-design/system-model.md#execution-and-outstanding-results)
+now describes this explicitly.
+
+Revisited Host `6fdc03d8` without changing its source. The findings are:
+
+| Capability | Current evidence | Assessment |
+| --- | --- | --- |
+| Release execution while preserving a wait | `deferAppTask`, `app-task-reconciler.ts:3660`, finishes the attempt and clears its current claim while retaining Conditions/input links. | Fits. A durable wait is not a suspended model call. |
+| Run with unresolved waits | Claiming checks fresh input independently of open Conditions (`app-task-reconciler.ts:2644`). A real claim retained the open Condition during phase `running`. | Fits. No parallel parent attempt is required. |
+| Answer new input while older work remains | `completeAppTask` removes satisfied Conditions and retains unresolved ones; the resulting phase can still be waiting (`app-task-reconciler.ts:3639`). | Fits. A particular input's answer does not erase other obligations. |
+| Resume after feedback or missed delivery | Existing dependency/input correlation and Condition recovery; chain tests include discussion, lost notification and reopen. | Fits the tested routes; not a promise for arbitrary async tools. |
+| Start a new child and continue the parent immediately | SDK admits new dependencies only on `waiting`; `attempt-runner.ts:711` submits them after executor return. A quiet parent then has no continuation wake. | Expressiveness gap. Later work on fresh input is supported; automatic immediate continuation is not. |
+| Display execution alongside outstanding results | `HumanTaskService.getTask`, `human-task-service.ts:1031`, computes `waitingOn` only for phase waiting. | Reproduced presentation gap. Running detail loses the normal wait list although diagnostics retain it. |
+| Distinguish parked work from eligible continuation | `human-task-service.ts:225` only projects ready converged rows to pending. After fresh input, the fixture had phase waiting and indexed ready 1; its public status still said waiting. | Reproduced presentation gap. Read current eligibility alongside waits; do not treat a retained waiting phase as proof no work can run. |
+| Treat an awaited coding helper as detached work | `run-cli-agent.ts:100` explicitly waits for its terminal result; cancellation applies to that call. | Unsupported by contract. Keep it bounded; progress updates do not make it durable delegation. |
+
+### New isolated evidence
+
+Using a temporary resource store, the production claim/settlement functions and
+`HumanTaskService`, the probe:
+
+1. Admitted a Task and returned one pipeline Condition. The attempt ended,
+   `currentAttemptId` cleared and a passive claim returned waiting.
+2. Admitted fresh review input. Before claim, the index said ready 1 but the
+   public status still said waiting. Then claimed the same Task. Its phase was running,
+   its original Condition remained, and the public view named the current
+   attempt. `waitingOn` was absent while diagnostic Conditions numbered one.
+3. Accepted the review result. The unresolved pipeline Condition remained and
+   the ordinary wait list reappeared. Passive inspection did not start new work.
+4. Called real SDK admission with new dependencies. Waiting was accepted;
+   converged returned `dependencies are valid only for waiting`; incomplete
+   returned `incomplete cannot include actions, Conditions, or dependencies`.
+
+This uses actual Task transitions and read projection, not manually changing a
+phase to invent an impossible state. No executor/model or external pipeline ran.
+Temporary state was removed. To reproduce, build `appTaskTestContext` with one
+root group; use `observeAppTaskIntent`, claim, `deferAppTask`, then
+`recordAppTaskTrigger` and claim again. Compare `HumanTaskService.getTask` and
+the resource's `conditionIds`, then call `completeAppTask` for the new input.
+
+Nine existing focused tests passed, zero failed, with 93 assertions:
+
+```sh
+bun test src/app/core/tasks/app-task-runtime.test.ts src/app/core/tasks/app-task-reconciler.test.ts --test-name-pattern 'schedules unexpected exact-task input|keeps passive checks asleep|adds distinct work for the same App|follows A -> B -> C -> B -> A|keeps later Condition events pending|keeps the source Task runnable when its dependency'
+```
+
+They cover two independent waits, input arriving during execution, additive
+same-App work across restart, rejected dependency admission, and exact caller
+chains with discussion, blocker reports, missed delivery, reopen and owner
+cancellation. The runner filtered 306 unrelated tests. This is a targeted
+recheck, not a new full-CI or live-uptime claim.
+
+### Revised recommendation
+
+Keep the original control and publication fixes. Add the small human-read fix:
+show bounded outstanding waits for an open running/pending Task using existing
+state, and distinguish genuinely eligible work from a parked wait. Preserve
+explicit static dependency gates; a trigger alone does not establish eligibility.
+Do not relabel every Task with Conditions as parked. Verify running, parked,
+queued and closed views and preserve truthful unavailable-source behavior.
+
+Narrow the session-job migration: durable assignments belong to Tasks, bounded
+helpers remain direct, and provider-owned async operations keep their native
+identity. The words agent and worker do not determine their lifecycle.
+Prove useful parent concurrency before removing the old path. The preferred
+[continuation PoC](../../proposals/execution-feedback-and-review.md#delegation-and-useful-parent-work)
+would retain dependencies and make the same parent Task runnable at an ordinary
+attempt boundary. No new Task phase, scheduler, mandatory supervisor or
+mid-helper model review is needed. This extension remains unimplemented.
+
+The doc review also corrected three misleading formulations: a Condition does
+not block all unrelated work, an external dependency need not end a run that
+has useful independent work, and old achieve/maintain labels do not determine
+Task closure. The stale suggestion that a worker updates its own assignment was
+replaced with the assigning-owner boundary. Existing unrelated draft edits in
+the Task resource-engine document were preserved.
+
+The clarification documentation passed `bun run check:may-design`: zero design
+errors or warnings, with SDK/control examples, Task admission/replay, Condition
+and dependency result admission, and canonical App integrity passing. This
+turn changes documentation only; all new implementation findings remain open.
 
 ## Validation and next change
 

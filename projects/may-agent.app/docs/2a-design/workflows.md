@@ -239,10 +239,13 @@ available now, the existing deadline/budget permits it, and there is a credible
 next step. Repeated failure without useful progress calls for reconsideration.
 Local iterations do not create new Task attempts or reset their limits.
 
-An external dependency, exhausted bound or need for a scope decision ends the
-run with truthful evidence. Cancellation or lost ownership stops execution; it
-is not a quality problem the workflow can repair around. The Task retains the
-commitment, and normal reconciliation can arrange later authorized work.
+An external dependency ends the run when no useful independent work remains.
+Otherwise continue authorized work within the existing bound while retaining
+the dependency. An exhausted bound or a scope decision needed for all remaining
+work also ends the run with truthful evidence. Cancellation or lost ownership
+stops execution; it is not a quality problem the workflow can repair around.
+The Task retains the commitment, and normal reconciliation can arrange later
+authorized work.
 
 Put ordinary quality checks inside `execute()` before returning. When an App
 also declares a final `verify`, reuse the same check helpers where appropriate
@@ -316,6 +319,20 @@ The next pass receives current durable state through its typed request or
 reconciliation context. It never depends on workflow-local variables, an open
 session, module memory, or source-session resume.
 
+In the current typed dependency path, returning the dependency ends the parent
+pass before the Host submits it. It is not a mid-pass background-start tool.
+Several independent dependencies can be returned together; their execution is
+subject to ordinary capacity. A later pass can work while those results remain
+pending. Immediate parent continuation after submission needs an explicit
+supported continuation path; do not fake it with a failed result or a polling
+timer. See the [feedback proposal](../proposals/execution-feedback-and-review.md#delegation-and-useful-parent-work).
+
+An asynchronous TypeScript function or subprocess is not automatically a
+durable operation. Awaited helpers remain within the current attempt and its
+budget. A provider-owned asynchronous operation can outlive the attempt when
+its stable identity and observation route are retained. This does not require
+turning each pipeline or pull request into a separate worker Task.
+
 ### A wait reason is not an exclusive event filter
 
 Waiting releases execution capacity; it does not suspend the Task's ownership
@@ -330,7 +347,8 @@ broadcast or invalid input must not wake every Task.
 Receiving or claiming that input does not cancel, satisfy, replace, or reset
 the outstanding waits and their review deadlines. Only accepted reconciliation
 can retire a wait after establishing that it is satisfied, obsolete, or explicitly
-cancelled. Keep still-valid waits in the next waiting result. A Task can therefore
+cancelled. The Host retains unchanged accepted waits; the next result need not
+redeclare them to keep their identities. A Task can therefore
 wake to handle an unexpected review finding while retaining both a pipeline
 wait and a separate external decision wait; no new subscription registry or
 work lifecycle is needed.

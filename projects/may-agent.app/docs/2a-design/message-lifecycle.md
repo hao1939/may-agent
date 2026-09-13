@@ -276,6 +276,13 @@ open when its promised outcome is still outstanding. It retains exact Task
 links without keeping the frontend execution waiting. May remains available
 for the next turn while the Task runs.
 
+Handoff allows the turn to end; it does not require abandoning useful independent
+work within its budget. A later turn can answer another question while older
+results remain outstanding. Preserve each ask and return link separately:
+answering the new question does not fulfill the earlier Request. See
+[execution and outstanding results](system-model.md#execution-and-outstanding-results)
+for the common contract and the limits of current Task dependency submission.
+
 ### Authorization for background work
 
 Approval concerns the work, not whether it runs in the current turn or in the
