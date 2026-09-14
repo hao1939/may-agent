@@ -1054,7 +1054,7 @@ describe("App inbox runtime", () => {
       createTaskAdmissionWorker: () => ({
         async dispatch(command) {
           workerAdmissions.push(command.routeId);
-          return { taskIds: [command.routeId], supersededSessionIds: [] };
+          return { taskIds: [command.routeId] };
         },
         close() {},
       }),
@@ -1096,7 +1096,7 @@ describe("App inbox runtime", () => {
         dispatch: () => {
           workerCalls += 1;
           return new Promise((resolve) => {
-            release = () => resolve({ taskIds: ["child"], supersededSessionIds: [] });
+            release = () => resolve({ taskIds: ["child"] });
           });
         },
         close: () => release(),

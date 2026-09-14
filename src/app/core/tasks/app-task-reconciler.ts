@@ -95,9 +95,8 @@ export type AppTaskObservationResult =
       taskId: string;
       generation: number;
       changed: boolean;
-      supersededSessionIds?: string[];
     }
-  | { kind: "completed"; taskId: string; generation: number; supersededSessionIds?: string[] };
+  | { kind: "completed"; taskId: string; generation: number };
 
 export type AppTaskSessionAssociation = {
   status: "recorded" | "superseded" | "missing";

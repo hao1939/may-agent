@@ -296,20 +296,6 @@ function runtimeTaskAttempt(input: {
   };
 }
 
-export function interruptSupersededObservationSessions(
-  opts: AppTaskRuntimeOptions,
-  observation: { taskId: string; generation: number; supersededSessionIds?: string[] },
-): void {
-  for (const sessionId of observation.supersededSessionIds ?? []) {
-    interruptSupersededAgentSession(
-      opts,
-      sessionId,
-      `Task ${observation.taskId} advanced to generation ${observation.generation}; the previous reconciliation session is obsolete`,
-      observation.taskId,
-    );
-  }
-}
-
 /**
  * Give every agent/CLI executor the same fenced Task surface. Runtime owns
  * attempt lifetime and lease renewal; adapters only translate TaskAttempt to
