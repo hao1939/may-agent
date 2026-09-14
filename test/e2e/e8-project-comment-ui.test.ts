@@ -8,9 +8,10 @@
  *      (`routeTo('/projects/' + 'platform')`) — not a full path.
  *   4. Clicking the row navigates to `/projects/platform` and resolves
  *      `_projectDetailPath` to `projects/platform`.
- *   5. Typing a comment + clicking the submit button POSTs to
- *      `/api/projects/comment`, the success banner appears.
- *   6. The receipt records the comment without changing project execution.
+ *   5. Historical Markdown stays readable; comments without an admitted App
+ *      route are rejected visibly and the user's text is preserved.
+ *   6. An ordinary App's message handler accepts a comment through HTTP
+ *      and runs a Task. Repeating the same submission reuses its receipt.
  *   7. The shipped chat renderer handles Markdown/raw streaming, knowledge
  *      links and escaped fallback without another browser/daemon startup.
  *
@@ -26,9 +27,12 @@
  *   - Long-running workflow-iteration completion (E2/E3 cover the worker side).
  */
 
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { getEvent, publishEvent } from "../../packages/control/src/client.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 import { upsertSession } from "../../src/lib/db/sessions.js";
 import { closeDb } from "../../src/lib/db/connection.js";
@@ -75,23 +79,101 @@ if (!probe.ok) console.warn(`[E8] skipped: ${probe.reason}`);
 
 describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () => {
   let sb: Sandbox;
+  const retainedDiscussion = "# Retained discussion\n\nKeep the previous owner's decision visible.\n";
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
+      fixtureProjects: ["input.app", "history.app"],
+      fixtureWorkflows: { may: ["e2e-noop-workflow"] },
       cronJson: { may: [] },
       includePlatformUi: true,
       daemonArgs: ["--cron", "--socket", "--web"],
     });
     await sb.daemonReady;
+    writeFileSync(join(sb.projectsRoot, "platform", "discussion.md"), retainedDiscussion);
     if (!sb.waitForWeb) throw new Error("sandbox web port not allocated");
     await sb.waitForWeb(15000);
   }, 60_000);
 
-  afterAll(async () => {
+  afterEach(async () => {
     if (sb) closeDb(sb.stateDir);
     if (sb) await sb.close();
   });
+
+  test("retained comments can be retried after their App gains a work route", async () => {
+    if (!probe.ok) throw new Error(probe.reason);
+    const browser = await probe.mod.launch({
+      executablePath: probe.chromePath,
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${sb.webPort}/projects/history.app`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#project-comment");
+      await page.type("#project-comment", "Keep this request until the App can handle it");
+      const firstResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const rejected = await firstResponse;
+      expect(rejected.status()).toBe(503);
+      const rejection = await rejected.json();
+      expect(rejection).toMatchObject({ ok: false, triggered: false });
+      expect(rejection.error).toContain("does not accept this input");
+      expect(rejection.eventId).toBeUndefined();
+      const firstKey = JSON.parse(rejected.request().postData()!).idempotencyKey;
+      await page.waitForFunction(() => !(document.getElementById("project-comment") as HTMLInputElement)?.disabled);
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(
+        "Keep this request until the App can handle it",
+      );
+      // Editing is a new submission; retrying the unchanged text keeps its key.
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).dataset.idempotencyKey)).toBe(firstKey);
+      await page.type("#project-comment", " with the updated requirements");
+      const revisedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const revised = await revisedResponse;
+      expect(revised.status()).toBe(503);
+      const revisedSubmission = JSON.parse(revised.request().postData()!);
+      expect(revisedSubmission.idempotencyKey).not.toBe(firstKey);
+      await page.waitForFunction(() => !(document.getElementById("project-comment") as HTMLInputElement)?.disabled);
+
+      // Install a real route through the daemon's ordinary reload path.
+      const route = readFileSync(join(sb.projectsRoot, "input.app", "app.js"), "utf8").replaceAll(
+        '"input"',
+        '"history"',
+      );
+      writeFileSync(join(sb.projectsRoot, "history.app", "app.js"), route);
+      const reload = await publishEvent(sb.socketPath, { type: "runtime.reload.requested", data: {} });
+      const operation = await pollUntil(
+        async () => {
+          const event = await getEvent(sb.socketPath, reload.eventId);
+          return event.links.find(
+            (link) => link.kind === "operation" && ["succeeded", "failed"].includes(link.state ?? ""),
+          );
+        },
+        { timeoutMs: 15_000, description: "App route reload" },
+      );
+      expect(operation.state).toBe("succeeded");
+
+      const nextResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const accepted = await nextResponse;
+      expect(accepted.status(), JSON.stringify(await accepted.json()) + "\n" + sb.getLogs()).toBe(202);
+      expect(JSON.parse(accepted.request().postData()!)).toEqual(revisedSubmission);
+      await page.waitForFunction(() => (document.getElementById("project-comment") as HTMLInputElement)?.value === "");
+      const db = openSandboxDb(sb.dbPath);
+      try {
+        await pollUntil(
+          () => db.prepare("SELECT task_id FROM app_tasks WHERE app_id = 'history' AND task_id = 'work/input'").get(),
+          { timeoutMs: 15_000, description: "retried comment Task" },
+        );
+      } finally {
+        db.close();
+      }
+    } finally {
+      await browser.close();
+    }
+  }, 30_000);
 
   test("served UI submits a comment and renders chat Markdown/raw streaming safely", async () => {
     if (!probe.ok) throw new Error(probe.reason);
@@ -202,24 +284,73 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       });
       expect(resolvedPath).toBe("projects/platform");
 
-      // 5. Submit a comment
-      const statusBefore = statusOf(readFileSync(PROJECT_FILE, "utf-8"));
-      expect(statusBefore).toBe("waiting");
+      // 5. A legacy project is history, not an alternative work dispatcher.
+      const projectBefore = readFileSync(PROJECT_FILE, "utf-8");
+      const discussionBefore = readFileSync(DISC_FILE, "utf-8");
+      expect(statusOf(projectBefore)).toBe("waiting");
+      await page.click('button[onclick="switchProjectTab(this,\'discussion\')"]');
+      await page.waitForFunction(
+        () => {
+          const content = document.getElementById("project-tab-content");
+          return content?.dataset.projectTab === "discussion"
+            && content.textContent?.includes("Keep the previous owner's decision visible.");
+        },
+        { timeout: 5000 },
+      );
+      expect(await page.$eval("#project-tab-content", (el) => el.textContent)).toContain("Retained discussion");
+      expect(discussionBefore).toBe(retainedDiscussion);
 
       const stamp = "e8-" + new Date().toISOString();
       const commentText = "ui e2e: " + stamp;
       await page.waitForSelector("#project-comment", { timeout: 5000 });
+      expect(await page.$eval("#project-comment", (el) => el.getAttribute("placeholder")))
+        .not.toContain("auto-resumes");
       await page.type("#project-comment", commentText);
-      const submitFound = await page.evaluate(() => {
-        const btns = Array.from(document.querySelectorAll("button"));
-        const b = btns.find((x) => /addProjectComment/.test(x.getAttribute("onclick") ?? ""));
-        if (b) {
-          (b as HTMLButtonElement).click();
-          return true;
-        }
-        return false;
-      });
-      expect(submitFound).toBe(true);
+      const rejectedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const rejected = await rejectedResponse;
+      expect(rejected.status()).toBe(503);
+      expect(await rejected.json()).toMatchObject({ ok: false, triggered: false });
+      await page.waitForFunction(() => /Failed:.*is not loaded/.test(
+        document.getElementById("project-comment-status")?.textContent ?? ""), { timeout: 5000 });
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(commentText);
+      expect(readFileSync(PROJECT_FILE, "utf-8")).toBe(projectBefore);
+      expect(readFileSync(DISC_FILE, "utf-8")).toBe(discussionBefore);
+
+      // A loaded App's observation is not an admission of the user's work.
+      await page.goto(`${base}/projects/history.app`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(
+        () => {
+          try { return _projectDetailPath === "projects/history.app" && !!document.getElementById("project-comment"); }
+          catch { return false; }
+        },
+        { timeout: 8000 },
+      );
+      await page.type("#project-comment", commentText);
+      const unownedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const unowned = await unownedResponse;
+      expect(unowned.status()).toBe(503);
+      expect(await unowned.json()).toMatchObject({ ok: false, triggered: false });
+      await page.waitForFunction(
+        () => /Failed:.*does not accept this input/.test(document.getElementById("project-comment-status")?.textContent ?? ""),
+        { timeout: 5000 },
+      );
+      expect(await page.$eval("#project-comment", (el) => (el as HTMLInputElement).value)).toBe(commentText);
+
+      // 6. A comment is an ordinary message to the selected App.
+      await page.goto(`${base}/projects/input.app`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => {
+        try { return _projectDetailPath === "projects/input.app" && !!document.getElementById("project-comment"); }
+        catch { return false; }
+      }, { timeout: 8000 });
+      await page.type("#project-comment", commentText);
+      const acceptedResponse = page.waitForResponse((res) => res.url().endsWith("/api/projects/comment"));
+      await page.click('button[onclick="addProjectComment()"]');
+      const accepted = await acceptedResponse;
+      expect(accepted.status()).toBe(202);
+      const receipt = await accepted.json();
+      expect(receipt).toMatchObject({ ok: true, projectId: "input", eventType: "app.input.requested" });
 
       // Success banner shows
       await page.waitForFunction(
@@ -228,19 +359,38 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
           return (
             el &&
             (el as HTMLElement).style.display !== "none" &&
-            /Comment recorded/.test(el.textContent ?? "") && /event \d+/.test(el.textContent ?? "")
+            /Comment accepted/.test(el.textContent ?? "") && /event \d+/.test(el.textContent ?? "")
           );
         },
         { timeout: 10_000 },
       );
 
-      // 6. Recording a comment does not authorize changes to project execution.
-      const discAfter = readFileSync(DISC_FILE, "utf-8");
-      expect(discAfter).toBe("# discussion\n\n");
-
-      // The owner reacts through normal App input, independently of this UI receipt.
-      const projAfter = readFileSync(PROJECT_FILE, "utf-8");
-      expect(statusOf(projAfter)).toBe("waiting");
+      const replay = await fetch(`${base}/api/projects/comment`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: accepted.request().postData(),
+      });
+      expect(replay.status).toBe(202);
+      expect((await replay.json()).eventId).toBe(receipt.eventId);
+      const db = openSandboxDb(sb.dbPath);
+      try {
+        const store = AppTaskResourceStore.activeFromDb(db, "input")!;
+        await pollUntil(() => store.readTask("work/input")?.status.phase === "converged", {
+          timeoutMs: 15_000, intervalMs: 100, description: "browser comment Task result",
+        });
+        expect(store.readTask("work/input")).toMatchObject({
+          metadata: { generation: 1 }, spec: { outcome: commentText },
+        });
+        const inputs = queryEvents(db, { types: ["app.input.requested"] });
+        expect(inputs).toHaveLength(1);
+        expect(inputs[0].id).toBe(receipt.eventId);
+        expect(JSON.parse(inputs[0].data!)).toMatchObject({
+          input: { kind: "message", data: { message: commentText } },
+        });
+        expect(queryEvents(db, { types: ["project.comment.created"] })).toEqual([]);
+        expect(db.prepare("SELECT task_id FROM app_tasks WHERE app_id = ?").all("history")).toEqual([]);
+        expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
+        expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
+      } finally { db.close(); }
 
       // Shipped chat.js, in the same real browser: no copied renderer or DOM.
       // The page is interactive before its async Markdown dependency arrives.

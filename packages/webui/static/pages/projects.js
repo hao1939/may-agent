@@ -234,7 +234,7 @@ async function showProjectDetail(path, initialTab) {
 
   // ── Comment input ──
   html += `<div style="margin:0 0 12px;display:flex;gap:8px;align-items:center">`;
-  html += `<input id="project-comment" placeholder="Add a comment (auto-resumes blocked/waiting projects)..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px" onkeydown="if(event.key==='Enter')addProjectComment()">`;
+  html += `<input id="project-comment" placeholder="Send a comment to this project's App..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px" oninput="delete this.dataset.idempotencyKey" onkeydown="if(event.key==='Enter')addProjectComment()">`;
   html += `<button onclick="addProjectComment()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">Comment</button>`;
   html += `</div>`;
   html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
@@ -663,7 +663,7 @@ async function addProjectComment() {
     input.value = '';
     delete input.dataset.idempotencyKey;
     if (data.eventId) {
-      statusEl.innerHTML = `✅ Comment recorded · <a href="/events/${encodeURIComponent(data.eventId)}">event ${esc(data.eventId)}</a> — owner handling is tracked separately`;
+      statusEl.innerHTML = `✅ Comment accepted · <a href="/events/${encodeURIComponent(data.eventId)}">event ${esc(data.eventId)}</a> — the App will handle it asynchronously`;
       statusEl.style.color = 'var(--green)';
     } else if (data.triggered) {
       statusEl.textContent = '⚠️ Comment event sent, but no durable receipt was returned';

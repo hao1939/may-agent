@@ -1,0 +1,6 @@
+{
+  "root_task_id": "history",
+  "groups": {
+    "history": { "id": "history", "parent_id": null, "agent": "may", "children": [] }
+  }
+}

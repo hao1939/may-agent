@@ -1,128 +1,96 @@
-/** A legacy project comment is recorded evidence; only an owning App may change work state. */
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+/**
+ * E2 — A declared App subscription owns a project comment end-to-end.
+ * The real daemon admits a Task and runs an isolated workflow (no model).
+ * Retained Markdown is history, not an alternative dispatch or status store.
+ * E8 covers the browser/HTTP journey through ordinary App message input.
+ * Explicit event subscribers remain supported independently of that UI route.
+ */
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  openSandboxDb,
-  pollUntil,
-  queryEvents,
-  socketEmit,
-} from "./lib/live-daemon.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { openSandboxDb, pollUntil, queryEvents, socketEmit } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
-
-function eventPayload(row: { data: string | null }): Record<string, unknown> {
-  return JSON.parse(row.data ?? "{}") as Record<string, unknown>;
-}
 
 describe("E2: project comment roundtrip", () => {
   let sb: Sandbox;
-  const projectId = "e2e-comment-sandbox";
+  const legacyPath = "projects/e2e-comment-sandbox";
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
-      fixtureProjects: ["e2e-comment-sandbox"],
+      fixtureProjects: ["e2e-comment-sandbox", "comment.app"],
+      fixtureWorkflows: { may: ["e2e-noop-workflow"] },
       cronJson: { may: [] },
+      daemonArgs: ["--socket"],
     });
     await sb.daemonReady;
   }, 60_000);
 
-  afterAll(async () => {
+  afterEach(async () => {
     if (sb) await sb.close();
   });
 
-  test(
-    "comment is recorded without changing project state or selecting a worker",
-    async () => {
-      const projectFile = join(sb.projectsRoot, projectId, "project.md");
-      const discFile = join(sb.projectsRoot, projectId, "discussion.md");
-      const commentText = `e2e comment ${Date.now()}`;
+  test("a declared subscription owns the comment without legacy Markdown dispatch", async () => {
+    const projectFile = join(sb.root, legacyPath, "project.md");
+    const before = readFileSync(projectFile, "utf8");
+    const comment = "Review the retained project";
+    const data = { project: "comment", projectPath: legacyPath, comment, author: "e2e" };
+    // Project history can be referenced without becoming the execution owner.
+    const published = await socketEmit(sb.socketPath, "publish", {
+      event: {
+        type: "project.comment.created",
+        target: { appId: "comment" },
+        idempotencyKey: "comment-1",
+        data,
+      },
+    });
+    expect(published).toMatchObject({ type: "ok" });
+    const db = openSandboxDb(sb.dbPath);
+    try {
+      const store = AppTaskResourceStore.activeFromDb(db, "comment")!;
+      const attempt = await pollUntil(
+        () => {
+          const id = store.readTask("work/comment")?.status.observedAttemptId;
+          const result = id ? store.readAttempt(id) : null;
+          return result?.acceptedResult?.state === "converged" ? result : null;
+        },
+        { timeoutMs: 15_000, intervalMs: 100, description: "App accepts the comment workflow result" },
+      );
+      expect(attempt).toMatchObject({ taskId: "work/comment", taskGeneration: 1, state: "completed" });
+      expect(store.readTask("work/comment")?.spec.outcome).toBe(comment);
+      expect(store.isCancelled("work/comment")).toBe(false);
+      expect(store.readReceipt("work/comment")).toBeNull();
+      const events = queryEvents(db, { types: ["project.comment.created"] });
+      expect(events).toHaveLength(1);
+      expect(JSON.parse(events[0].data!)).toEqual({ ...data, appId: "comment", idempotencyKey: "comment-1" });
+      expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
+      expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
+      expect(readFileSync(projectFile, "utf8")).toBe(before);
+      expect(existsSync(join(sb.root, legacyPath, "discussion.md"))).toBe(false);
+    } catch (error) {
+      console.error(sb.getLogs().slice(-6000));
+      throw error;
+    } finally {
+      db.close();
+    }
+  }, 30_000);
 
-      // Sanity: fixture project loaded with status=waiting and no discussion yet.
-      const beforeBody = readFileSync(projectFile, "utf-8");
-      expect(beforeBody).toMatch(/status:\s*waiting/);
-      expect(existsSync(discFile)).toBe(false);
-
-      const t0 = Date.now();
-
-      // Send the same socket event the HTTP endpoint sends.
-      const resp = (await socketEmit(sb.socketPath, "project.comment.created", {
+  test("rejects flat dot-named socket events before persistence", async () => {
+    await expect(
+      socketEmit(sb.socketPath, "project.comment.created", {
         source: "e2e-test",
         owner: "agent:may",
-        data: {
-          projectPath: `projects/${projectId}`,
-          comment: commentText,
-          author: "e2e",
-        },
-      })) as { type?: string };
-      expect(resp.type).toBe("ok");
-
-      expect(existsSync(discFile)).toBe(false);
-      expect(readFileSync(projectFile, "utf-8")).toBe(beforeBody);
-
-      // ── DB assertions ────────────────────────────────────────────────
-      const db = openSandboxDb(sb.dbPath);
-      try {
-        const result = await pollUntil(
-          () => {
-            const created = queryEvents(db, {
-              types: ["project.comment.created"],
-              since: t0,
-              limit: 5,
-            });
-            const nudges = queryEvents(db, {
-              types: ["project.nudge"],
-              since: t0,
-              limit: 5,
-            });
-            if (created.length >= 1) return { created, nudges };
-            return null;
-          },
-          { timeoutMs: 5_000, intervalMs: 200, description: "comment.created event" },
-        );
-
-        expect(result.created.length).toBeGreaterThanOrEqual(1);
-        expect(result.nudges).toEqual([]);
-
-        const createdRow = result.created[0];
-        expect(createdRow.source).toBe("control-socket");
-        expect(createdRow.owner).toBe("agent:may");
-        expect(eventPayload(createdRow)).toEqual({
-          projectPath: `projects/${projectId}`,
-          comment: commentText,
-          author: "e2e",
-        });
-
-      } finally {
-        db.close();
-      }
-    },
-    30_000,
-  );
-
-  test(
-    "rejects flat dot-named socket events before persistence",
-    async () => {
-      const t0 = Date.now();
-      await expect(
-        socketEmit(sb.socketPath, "project.comment.created", {
-          source: "e2e-test",
-          owner: "agent:may",
-          projectPath: `projects/${projectId}`,
-          comment: `flat comment ${Date.now()}`,
-          author: "e2e",
-        }),
-      ).rejects.toThrow("requires object field 'data'");
-
-      const db = openSandboxDb(sb.dbPath);
-      try {
-        const flatRows = queryEvents(db, { types: ["project.comment.created"], since: t0, limit: 5 })
-          .filter((row) => (row.data ?? "").includes("flat comment"));
-        expect(flatRows).toEqual([]);
-      } finally {
-        db.close();
-      }
-    },
-    10_000,
-  );
+        projectPath: legacyPath,
+        comment: "flat comment",
+        author: "e2e",
+      }),
+    ).rejects.toThrow("requires object field 'data'");
+    const db = openSandboxDb(sb.dbPath);
+    try {
+      expect(queryEvents(db, { types: ["project.comment.created"] })).toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
 });
