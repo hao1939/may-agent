@@ -452,7 +452,16 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const skillName = options.skill ?? parsedSkill.skill;
   const task = parsedSkill.skill ? parsedSkill.task : options.task;
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);
-  const activation = skillName ? invokeCatalogSkill(options.definition.skillCatalog, skillName, task) : undefined;
+  // Preparation changes model context only. Keep the accepted task for receipts,
+  // and apply skill instructions afterwards so an adapter cannot discard them.
+  const contextTask =
+    !options.persistentChat && options.definition.contextPreparation
+      ? options.definition.contextPreparation(Object.freeze({ task }))
+      : task;
+  if (typeof contextTask !== "string" || (task.trim() && !contextTask.trim())) {
+    throw new Error("contextPreparation must return a non-empty task string");
+  }
+  const activation = skillName ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask) : undefined;
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
   const requireFinish = options.requireFinish === true || outputSchema !== undefined;
   const normalizedOptions = { ...options, outputSchema };
@@ -502,7 +511,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
     definition: options.definition,
     sessionId: options.sessionId,
     task,
-    prompt: activation?.prompt ?? task,
+    prompt: activation?.prompt ?? contextTask,
     requireFinish,
     outputSchema,
     activatedSkill: activation?.skill,

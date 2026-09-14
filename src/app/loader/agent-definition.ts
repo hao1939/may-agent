@@ -5,6 +5,8 @@ import { discoverAgentSkills } from "../../lib/skills.js";
 import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
 import type { AgentConfig } from "./agent-config.js";
 import type { AgentDirectory } from "./agent-discovery.js";
+import { importRuntimeModule } from "../../lib/runtime-import.js";
+import type { AgentContextPreparer } from "@may-agent/sdk";
 
 export type AgentDefinitionOptions = {
   config: AgentConfig;
@@ -20,6 +22,14 @@ export type AgentDefinitionOptions = {
 /** Build the agent-visible definition shared by direct, Gym, and hosted runs. */
 export async function buildAgentDefinition(options: AgentDefinitionOptions): Promise<SubagentDefinition> {
   const { config, source } = options;
+  let contextPreparation: AgentContextPreparer | undefined;
+  if (config.contextPreparation !== undefined) {
+    const module = await importRuntimeModule<{ default?: unknown }>(resolve(source.dir, config.contextPreparation));
+    if (typeof module.default !== "function") {
+      throw new Error("contextPreparation must default-export a function");
+    }
+    contextPreparation = module.default as AgentContextPreparer;
+  }
   const knowledgeDir = join(source.dir, "knowledge");
   const workspace = join(source.dir, "workspace");
   const appLocal =
@@ -47,6 +57,7 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     apiKey: options.model.apiKey,
     memoryLimit: config.memoryLimit,
     compaction: config.compaction,
+    contextPreparation,
     contextFiles: config.context_files?.map((file) => resolve(source.dir, file)),
     skillCatalog,
   };

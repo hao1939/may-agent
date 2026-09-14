@@ -53,6 +53,45 @@ function makeRuntime(): AgentRegistryRuntime {
 }
 
 describe("agent registry loader", () => {
+  it("loads the configured context adapter through ordinary definition preparation", async () => {
+    const root = tempRoot();
+    try {
+      const agentsRoot = join(root, "agents");
+      const agentDir = join(agentsRoot, "worker");
+      mkdirSync(agentDir, { recursive: true });
+      const config = JSON.parse(makeAgentJson("worker"));
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ ...config, contextPreparation: "./context.ts" }));
+      writeFileSync(join(agentDir, "context.ts"), 'export default ({ task }) => `Current: ${task}`;');
+      const opts = makeOpts(root, agentsRoot, join(root, "projects"));
+      const prepared = await prepareAgents(opts, makeRuntime());
+      expect(prepared.definitions[0].contextPreparation?.({ task: "revision two" })).toBe("Current: revision two");
+      expect(opts.manager.agentNames()).toEqual([]);
+      // Removing the option selects the existing full brief for the next generation.
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify(config));
+      expect((await prepareAgents(opts, makeRuntime())).definitions[0].contextPreparation).toBeUndefined();
+      // Earlier definitions keep their captured implementation.
+      expect(prepared.definitions[0].contextPreparation?.({ task: "retry" })).toBe("Current: retry");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([false, "", "./missing.ts", "./invalid.ts"])("rejects an invalid context adapter without publishing: %s", async (contextPreparation) => {
+    const root = tempRoot();
+    try {
+      const agentsRoot = join(root, "agents");
+      const agentDir = join(agentsRoot, "worker");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ ...JSON.parse(makeAgentJson("worker")), contextPreparation }));
+      writeFileSync(join(agentDir, "invalid.ts"), "export default {}; ");
+      const opts = makeOpts(root, agentsRoot, join(root, "projects"));
+      await expect(prepareAgents(opts, makeRuntime())).rejects.toThrow();
+      expect(opts.manager.agentNames()).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not read invalid local agents of a disabled App from a source release", async () => {
     const root = tempRoot();
     try {

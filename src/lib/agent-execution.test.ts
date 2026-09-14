@@ -151,6 +151,52 @@ describe("GitHub Copilot IDE token recovery", () => {
 });
 
 describe("shared agent execution preparation", () => {
+  test("replaces only the task brief, retaining current execution controls and original input", () => {
+    const options = {
+      definition: {
+        name: "worker", description: "fixture", domain: "test", systemPrompt: "Current authority",
+        model: streamTestModel, tools: [tool("read"), tool("write"), tool("finish")],
+      },
+      projectRoot: tmpdir(), sessionId: "new-invocation", task: "Current requirements and full evidence",
+      toolPolicy: "readonly" as const, outputSchema: Type.Object({ revision: Type.String() }),
+    };
+    const baseline = prepareAgentExecution(options);
+    const candidate = prepareAgentExecution({ ...options, definition: { ...options.definition,
+      contextPreparation: (input) => {
+        expect(Object.isFrozen(input)).toBe(true);
+        expect(Object.keys(input)).toEqual(["task"]);
+        return "Current requirements and evidence references";
+      },
+    } });
+    expect(baseline.prompt).toBe(options.task);
+    expect(candidate.prompt).toBe("Current requirements and evidence references");
+    expect(candidate.task).toBe(options.task);
+    expect(candidate.systemPrompt).toBe(baseline.systemPrompt);
+    expect(candidate.tools.map((tool) => tool.name)).toEqual(baseline.tools.map((tool) => tool.name));
+    expect(candidate.tools.map((tool) => tool.name)).not.toContain("write");
+    expect(candidate.outputSchema).toEqual(baseline.outputSchema);
+    expect(candidate.runner.sessionId).toBe("new-invocation");
+    const chat = prepareAgentExecution({ ...options, outputSchema: undefined, persistentChat: true,
+      definition: { ...options.definition, contextPreparation: () => { throw new Error("Not a bounded brief"); } } });
+    expect(chat.prompt).toBe(options.task);
+  });
+
+  test.each([undefined, null, "", "   ", {}, Promise.resolve("async")])("rejects a malformed preparation result %#", (result) => {
+    expect(() => prepareAgentExecution({
+      definition: { name: "worker", description: "fixture", domain: "test", model: streamTestModel,
+        tools: [], contextPreparation: (() => result) as any },
+      projectRoot: tmpdir(), sessionId: "invalid-context", task: "Required work",
+    })).toThrow("contextPreparation must return");
+  });
+
+  test("preserves preparation failures instead of silently running a different brief", () => {
+    expect(() => prepareAgentExecution({
+      definition: { name: "worker", description: "fixture", domain: "test", model: streamTestModel, tools: [],
+        contextPreparation: () => { throw new Error("Required evidence unavailable"); } },
+      projectRoot: tmpdir(), sessionId: "failed-context", task: "Required work",
+    })).toThrow("Required evidence unavailable");
+  });
+
   test("prepares convention prompts and tools without a manager or database", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-preparation-"));
     roots.push(root);
@@ -452,6 +498,16 @@ describe("shared agent execution preparation", () => {
     expect(prepared.activatedSkill).toBeUndefined();
     expect(prepared.prompt).not.toContain("Freeze a baseline and candidate before broad rollout.");
     expect(prepared.prompt).toContain("Roll out this prompt to every agent.");
+    const explicit = prepareAgentExecution({
+      definition: { ...prepared.definition, contextPreparation: ({ task }) => {
+        expect(task).toBe("Review the current revision");
+        return "Current brief with selected evidence";
+      } },
+      projectRoot: "/tmp", sessionId: "prepared-skill", task: "$proof-first Review the current revision",
+    });
+    expect(explicit.prompt).toContain(skill.content);
+    expect(explicit.prompt).toContain("Current brief with selected evidence");
+    expect(explicit.task).toBe("Review the current revision");
   });
 
   test("adapts the supplied finish capability for structured workflow results", () => {
