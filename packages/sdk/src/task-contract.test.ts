@@ -109,7 +109,7 @@ describe("project task handler contract", () => {
     expect(Check(taskAgentResultSchema, result)).toBe(false);
     expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
       ok: false,
-      error: "actions[0].kind must be one of update-task, unblock-task; delegate new work through dependencies",
+      error: "actions[0].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies",
     });
   });
 
@@ -242,7 +242,7 @@ describe("project task handler contract", () => {
       actions: [{ kind: "create-task", id: "child", outcome: "Measure", acceptance: ["Measured"] }] };
     expect(Check(taskAgentResultSchema, output)).toBeFalse();
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({ ok: false,
-      error: "actions[0].kind must be one of update-task, unblock-task; delegate new work through dependencies" });
+      error: "actions[0].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies" });
   });
 
   it("accepts the established human identity for an accountable timed wait", () => {
@@ -265,238 +265,21 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(result, workflowOptions).ok).toBeTrue();
   });
 
-  it("accepts canonical agent selection and normalizes it for retained Host state", () => {
-    const canonicalOutput = {
-      state: "converged" as const,
-      summary: "Selected a specialist",
-      facts: [] as string[],
-      actions: [
-        {
-          kind: "update-task" as const,
-          taskId: "work/specialist",
-          expectedGeneration: 1,
-          outcome: "Run specialist work",
-          acceptance: ["Specialist work completes"],
-          agent: "specialist",
-        },
-      ],
-    };
-    expect(Check(taskAgentResultSchema, canonicalOutput)).toBe(true);
-    expect(
-      Check(taskAgentResultSchema, {
-        ...canonicalOutput,
-        actions: [{ ...canonicalOutput.actions[0], owner: "may-agent" }],
-      }),
-    ).toBe(false);
-
-    const admitted = admitTaskReconcileResult(
-      canonicalOutput,
-      workflowOptions,
-    );
-
-    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({ owner: "specialist" });
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "converged",
-          summary: "Ambiguous selection",
-          facts: [],
-          actions: [
-            {
-              kind: "update-task",
-              taskId: "work/ambiguous",
-              expectedGeneration: 1,
-              outcome: "Do work",
-              acceptance: ["Work completes"],
-              agent: "one",
-              owner: "two",
-            },
-          ],
-        },
-        workflowOptions,
-      ),
-    ).toEqual({ ok: false, error: "actions[0].agent conflicts with legacy owner" });
-  });
-
-  it("preserves domain input and dependencies", () => {
-    const admitted = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Declared standing work",
-        facts: [],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: "runtime/monitor",
-            expectedGeneration: 1,
-            outcome: "Keep the signal observed.",
-            acceptance: ["The latest signal is represented."],
-            input: { signal: "pipeline" },
-            dependsOn: ["bootstrap"],
-          },
-        ],
-      },
-      workflowOptions,
-    );
-
-    expect(admitted.ok && admitted.result.actions?.[0]).toMatchObject({
-      input: { signal: "pipeline" },
-      dependsOn: ["bootstrap"],
-    });
-  });
-
-  it("supports explicit workflow binding repair", () => {
-    const admitted = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Removed a stale workflow binding",
-        facts: ["workflow:no-longer-registered"],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: "work/stale",
-            expectedGeneration: 3,
-            workflow: null,
-            agent: "scout",
-          },
-        ],
-      },
-      workflowOptions,
-    );
-
-    expect(admitted.ok && admitted.result.actions?.[0]).toEqual({
-      kind: "update-task",
-      taskId: "work/stale",
-      expectedGeneration: 3,
-      workflow: null,
-      owner: "scout",
-    });
-  });
-
-  it("normalizes a canonical agent removal and rejects conflicting update aliases", () => {
-    const removed = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Use the inherited App agent",
-        facts: [],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: "work/stale-agent",
-            expectedGeneration: 4,
-            agent: null,
-          },
-        ],
-      },
-      workflowOptions,
-    );
-    expect(removed.ok && removed.result.actions?.[0]).toEqual({
-      kind: "update-task",
-      taskId: "work/stale-agent",
-      expectedGeneration: 4,
-      owner: null,
-    });
-
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "converged",
-          summary: "Ambiguous update",
-          facts: [],
-          actions: [
-            {
-              kind: "update-task",
-              taskId: "work/ambiguous",
-              expectedGeneration: 2,
-              agent: null,
-              owner: "specialist",
-            },
-          ],
-        },
-        workflowOptions,
-      ),
-    ).toEqual({ ok: false, error: "actions[0].agent conflicts with legacy owner" });
-  });
-
-  it("admits one executor selection and rejects ambiguous workflow binding", () => {
-    const selected = admitTaskReconcileResult(
-      {
-        state: "converged",
-        summary: "Delegated one bounded implementation",
-        facts: [],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: "work/review",
-            expectedGeneration: 1,
-            outcome: "Implement the bounded change.",
-            acceptance: ["The change is verified."],
-            executor: "reviewer",
-          },
-        ],
-      },
-      workflowOptions,
-    );
-    expect(selected.ok && selected.result.actions?.[0]).toMatchObject({ executor: "reviewer" });
-
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "converged",
-          summary: "Ambiguous delegation",
-          facts: [],
-          actions: [
-            {
-              kind: "update-task",
-              taskId: "work/ambiguous",
-              expectedGeneration: 1,
-              outcome: "Do work.",
-              acceptance: ["Done."],
-              workflow: "implementation",
-              executor: "claude",
-            },
-          ],
-        },
-        workflowOptions,
-      ),
-    ).toEqual({ ok: false, error: "actions[0] cannot configure both workflow and executor" });
-
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "converged",
-          summary: "Invalid executor",
-          facts: [],
-          actions: [
-            {
-              kind: "update-task",
-              taskId: "work/invalid-executor",
-              expectedGeneration: 1,
-              outcome: "Do work.",
-              acceptance: ["Done."],
-              executor: "Bad Name",
-            },
-          ],
-        },
-        workflowOptions,
-      ),
-    ).toEqual({
-      ok: false,
-      error: "actions[0].executor must be a lowercase name of at most 64 characters or null when present",
-    });
-  });
-
-  it.each(["achieve", "maintain"])("rejects retired mode %s in Task update actions", (mode) => {
+  it.each([
+    { outcome: "Corrected work", input: { source: "beta" } },
+    { agent: "other" },
+    { owner: "other", workflow: null },
+    { executor: "worker" },
+    { priority: "P1" },
+  ])("rejects raw assignment updates at both result boundaries: %j", (change) => {
     const output = {
-      state: "converged",
-      summary: "Revise the assignment",
-      facts: [],
-      actions: [{ kind: "update-task", taskId: "work/child", expectedGeneration: 1, mode }],
+      state: "converged", summary: "Proposed correction", facts: ["scope:corrected"],
+      actions: [{ kind: "update-task", taskId: "child", expectedGeneration: 1, ...change }],
     };
-    expect(Check(taskAgentResultSchema, output)).toBeFalse();
+    expect(Check(taskAgentResultSchema, output)).toBe(false);
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
       ok: false,
-      error: "actions[0].mode is retired; all Tasks use one lifecycle",
+      error: "actions[0].update-task is retired; use tasks update or TaskAttempt.reviseTask before returning a result",
     });
   });
 
@@ -509,10 +292,10 @@ describe("project task handler contract", () => {
           facts: ["task:work/stale"],
           actions: [
             {
-              kind: "update-task",
+              kind: "unblock-task",
               taskId: "work/stale",
               expectedRevision: 3,
-              outcome: "This legacy action must not be admitted.",
+              reason: "This legacy action must not be admitted.",
             },
           ],
         },
@@ -565,11 +348,10 @@ describe("project task handler contract", () => {
         facts: ["proof"],
         actions: [
           {
-            kind: "update-task",
+            kind: "unblock-task",
             taskId: "work/exact",
             expectedGeneration: 1,
-            outcome: "Do exact work",
-            acceptance: ["Exact work is done"],
+            reason: "Reconsider the wait",
             unexpected: true,
           },
         ],

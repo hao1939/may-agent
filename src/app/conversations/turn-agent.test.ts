@@ -191,6 +191,38 @@ describe("conversational attempt contract", () => {
     ).toBe(false);
   });
 
+  it("an aborted Conversation execution cannot use its still-current Request capability", async () => {
+    const controller = new AbortController();
+    let writes = 0;
+    const { definition } = await attempt(request, may, {
+      signal: controller.signal,
+      sessionStarted() {},
+      taskBinding: { appId: may.id, taskId: "conversation", generation: 1, attemptId: "attempt" },
+      updateRequest(change) {
+        writes++;
+        return {
+          id: change.id,
+          revision: change.expectedRevision + 1,
+          scope: change.scope,
+          status: "open",
+          taskRefs: [],
+        };
+      },
+    });
+    const tool = definition.tools.find((tool) => tool.name === "conversation_request")!;
+    expect(Check(tool.parameters, { id: "ask", expectedRevision: 0, scope: "Compare", disposition: "fulfilled" })).toBe(
+      false,
+    );
+    expect(Check(tool.parameters, { id: "ask", expectedRevision: 0, scope: "Compare", conversationId: "other" })).toBe(
+      false,
+    );
+    controller.abort(new Error("Execution was stopped"));
+    await expect(tool.execute("late", { id: "ask", expectedRevision: 0, scope: "Compare" })).rejects.toThrow(
+      "Execution was stopped",
+    );
+    expect(writes).toBe(0);
+  });
+
   it("offers one handoff schema, using the public Conversation contract", async () => {
     const { prompt, options } = await attempt();
     const schema = options.outputSchema!;
@@ -339,6 +371,7 @@ describe("conversational attempt contract", () => {
             "bash",
             "finish",
             "conversation_context",
+            "conversation_request",
           ]);
           expect(prepared.runner.beforeToolCall).toBeFunction();
           const steps = [

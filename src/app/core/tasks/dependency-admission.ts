@@ -5,7 +5,12 @@ import { Check } from "typebox/value";
 import { getDb } from "../../../lib/db/connection.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../events/bus.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
-import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "../state/app-inbox-store.js";
+import {
+  createAppInboxItem,
+  getAppInboxItem,
+  listOpenAppInboxItemsByIdempotencyPrefix,
+} from "../state/app-inbox-store.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   matchesAppTaskCondition,
@@ -196,6 +201,21 @@ export function admitTaskAppDependencies(input: {
       .slice(0, 24);
     const requestId = `appdep_${identity}`;
     const idempotencyKey = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:${dependency.id}:${identity}`;
+    // The row is admission authority; the event only wakes ordinary admission.
+    // Persist provenance from the live claim, never reconstruct it from event text.
+    const config = appTaskConfig(input.descriptor);
+    stateTransaction(config.resourceStore.db, () => {
+      assertAppTaskEffectFresh(config, input.claim, input.acceptedLiveEventIds);
+      createAppInboxItem(config.resourceStore.db, {
+        id: requestId,
+        appId: dependency.appId,
+        targetTaskId: dependency.taskId,
+        source: { kind: "app", id: input.descriptor.id },
+        input: dependency.input,
+        creator: { appId: input.descriptor.id, taskId: input.claim.taskId },
+        idempotencyKey,
+      });
+    });
     const requested = input.opts.bus.emit({
       type: "app.input.requested",
       source: `app-task:${input.descriptor.id}`,

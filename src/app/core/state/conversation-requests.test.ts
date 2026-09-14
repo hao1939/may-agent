@@ -23,6 +23,7 @@ import {
   readConversationTopic,
 } from "./conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "./conversation-requests.js";
+import { reviseAppTask } from "../tasks/task-revision.js";
 import {
   admitConversationTaskInput,
   admitConversationTaskChange,
@@ -55,10 +56,19 @@ const owner = defineApp({
   agent: "owner",
   inputSchema: Type.Object({}),
   tasks: {},
-  task: () => ({
-    kind: "desired",
-    intent: { id: "work", parentId: "project", outcome: "Find facts", acceptance: ["Verified"] },
-  }),
+  task: ({ input }) => {
+    const source = (input.data as { source?: string }).source;
+    return {
+      kind: "desired",
+      intent: {
+        id: "work",
+        parentId: "project",
+        outcome: source ? `Find facts using source ${source}` : "Find facts",
+        acceptance: source ? [`Verify facts from ${source}`] : ["Verified"],
+        ...(source ? { input: { source } } : {}),
+      },
+    };
+  },
 });
 const answer: ConversationTurnResult = {
   summary: "Answer",
@@ -161,6 +171,98 @@ function fixture() {
   };
 }
 
+test("missed worker feedback uses ordinary recovery, creator correction and the same worker reconciliation", async () => {
+  const f = fixture();
+  await f.turn({ ...handoff, requestUpdates: [ask] });
+  const originalRequest = readConversationRequest(f.db, app.id, "chat", ask.id)!;
+  const worker = f.context(owner.id);
+  const claim = claimObservedAppTask(worker, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
+  if (claim.kind !== "claimed") throw new Error("Expected worker claim");
+  reportAppTaskFailure(worker, claim, { summary: "Source alpha is unavailable; use the authorized source beta",
+    result: { proposedCorrection: "Use source beta" }, facts: ["source:alpha-unavailable"] });
+  // No notification delivery. Existing discovery reads the saved ordinary result after restart.
+  f.reopen();
+  const changes = listPendingConversationTaskChanges(f.db, app.id);
+  const change = changes.find((item) => item.taskId === "work")!;
+  expect(change.attemptId).toBe(claim.attemptId);
+  const feedback = admitConversationTaskChange(f.context(), f.context(owner.id), change);
+  expect(feedback.item?.source.kind).toBe("system");
+  const review = await f.prepare(async ({ inputContext, execution }) => {
+    expect(inputContext.input).toMatchObject({
+      kind: "task-outcome",
+      data: { outcome: { result: { proposedCorrection: "Use source beta" } } },
+    });
+    reviseAppTask({
+      source: f.context(),
+      target: f.context(owner.id),
+      app: owner,
+      actor: execution.taskBinding,
+      change: {
+        appId: owner.id,
+        taskId: "work",
+        expectedGeneration: 1,
+        input: { kind: "work", data: { source: "beta" } },
+      },
+    });
+    return {
+      summary: "Use the authorized alternative",
+      response: "I switched the measurement to source beta.",
+      topic: { kind: "existing", id: change.topicId },
+    };
+  }, false);
+  expect(f.context(owner.id).resourceStore.readTask("work")?.spec.input).toEqual({ source: "beta" });
+  review.settle();
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(originalRequest);
+  f.reopen();
+  const next = claimObservedAppTask(f.context(owner.id), { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
+  if (next.kind !== "claimed") throw new Error("Expected revised worker claim");
+  expect(next).toMatchObject({ taskId: claim.taskId, generation: 2,
+    intent: { outcome: "Find facts using source beta", acceptance: ["Verify facts from beta"] } });
+  expect(completeAppTask(f.context(owner.id), claim, { summary: "Late old result" }).status).toBe("stale");
+  completeAppTask(f.context(owner.id), next, { summary: "Verified beta facts", facts: ["source:beta"] });
+  const returned = listPendingConversationTaskChanges(f.db, app.id).find((item) => item.attemptId === next.attemptId)!;
+  expect(returned).toBeDefined();
+  admitConversationTaskChange(f.context(), f.context(owner.id), returned);
+  const acceptance = await f.prepare({ ...answer, topic: { kind: "existing", id: returned.topicId },
+    requestUpdates: [{ id: ask.id, expectedRevision: originalRequest.revision, disposition: "fulfilled", reason: "Verified beta facts satisfy the comparison" }] }, false);
+  acceptance.settle();
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)?.status).toBe("closed");
+  expect(f.context(owner.id).resourceStore.readTask("work")?.metadata.creator).toEqual({ appId: app.id, taskId: f.taskId });
+});
+
+test("Request spec and fulfillment share a stable creator, with stale and foreign decisions rejected", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [ask] });
+  const creator = { appId: app.id, taskId: f.taskId };
+  const before = readConversationRequest(f.db, app.id, "chat", ask.id)!;
+  expect(before).toMatchObject({ revision: 1, scope: ask.scope, status: "open" });
+  const update = { appId: app.id, conversationId: "chat", now: Date.now(), updateKey: "foreign",
+    updates: [{ ...ask, expectedRevision: 1, scope: "Discard part of the ask" }] };
+  expect(() => applyConversationRequestUpdates(f.db, { ...update, actor: { appId: app.id, taskId: "sibling" } }))
+    .toThrow("recorded creator");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(before);
+  await f.turn({ ...answer, requestUpdates: [{ ...ask, expectedRevision: 1, scope: "Compare three options" }] });
+  f.reopen();
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 2,
+    scope: "Compare three options",
+    status: "open",
+  });
+  expect(() =>
+    applyConversationRequestUpdates(f.db, {
+      ...update,
+      messageId: "old-answer",
+      actor: creator,
+      updates: [{ id: ask.id, expectedRevision: 1, disposition: "fulfilled", reason: "Old requirements met" }],
+    }),
+  ).toThrow("revision changed");
+  await f.turn({ ...answer, requestUpdates: [{ id: ask.id, expectedRevision: 2, disposition: "fulfilled", reason: "All three compared" }] });
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    scope: "Compare three options",
+    status: "closed",
+  });
+});
+
 test("a discussion-only ask closes with its answer through one stable execution Task", async () => {
   const f = fixture();
   await f.turn({ ...answer, requestUpdates: [{ ...ask, disposition: "fulfilled", reason: "Both options compared" }] });
@@ -240,6 +342,196 @@ test("failed reply rolls back Request closure; restart redoes the retained input
   expect(calls).toBe(2);
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)?.closure?.messageId).toBe("result:turn-2");
   expect(getAppInboxItem(f.db, "turn-2")?.status).toBe("done");
+});
+
+test("an immediate correction survives failed reply and reopen; closure still commits with its answer", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [{ ...ask, disposition: "unfulfilled", reason: "Source unavailable" }] });
+  const decision: ConversationTurnResult = {
+    ...answer,
+    response: "You corrected the source; I compared the corrected options including costs.",
+    requestUpdates: [
+      {
+        id: ask.id,
+        expectedRevision: 2,
+        disposition: "fulfilled",
+        reason: "Comparison verified",
+      },
+    ],
+  };
+  const turn = await f.prepare(async ({ execution }) => {
+    const change = { id: ask.id, expectedRevision: 1, scope: "Compare corrected options including costs" };
+    const saved = execution.updateRequest!(change, "correct-source");
+    expect(saved).toMatchObject({ revision: 2, scope: change.scope, status: "open" });
+    expect(saved.closure).toBeUndefined();
+    expect(execution.updateRequest!(change, "correct-source")).toEqual(saved);
+    expect(() => execution.updateRequest!({ ...change, scope: "Stale" }, "other-call")).toThrow("revision changed");
+    return decision;
+  });
+  f.db.exec(`CREATE TRIGGER reject_correction BEFORE UPDATE ON app_inbox_items WHEN NEW.result IS NOT NULL
+    BEGIN SELECT RAISE(ABORT, 'fixture reply failure'); END;`);
+  expect(turn.settle).toThrow("fixture reply failure");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 2,
+    scope: "Compare corrected options including costs",
+    status: "open",
+  });
+  f.db.exec("DROP TRIGGER reject_correction");
+  f.reopen();
+  expect(turn.settle().status).toBe("applied");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 3,
+    scope: "Compare corrected options including costs",
+    closure: { disposition: "fulfilled" },
+  });
+  expect(readAppConversationResource(f.db, app.id, "chat").messages.at(-1)?.text).toBe(decision.response);
+});
+
+test("closure omits scope; new asks require scope and correction cannot bypass revision", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [ask] });
+  await f.turn({
+    ...answer,
+    requestUpdates: [{ id: ask.id, expectedRevision: 1, disposition: "fulfilled", reason: "Compared" }],
+  });
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+    revision: 2,
+    scope: ask.scope,
+    status: "closed",
+  });
+  expect(readAppConversationResource(f.db, app.id, "chat").requests).toEqual([
+    expect.objectContaining({ id: ask.id, revision: 2, status: "closed" }),
+  ]);
+  const apply = (updates: AppConversationRequestUpdate[], updateKey = "test") =>
+    applyConversationRequestUpdates(f.db, {
+      appId: app.id,
+      conversationId: "chat",
+      messageId: "test-response",
+      now: Date.now(),
+      updates,
+      updateKey,
+    });
+  expect(() => apply([{ id: "missing", expectedRevision: 0, disposition: "open" }])).toThrow("requires a scope");
+  expect(() =>
+    apply([
+      {
+        ...ask,
+        expectedRevision: 1,
+        scope: "Changed",
+        disposition: "fulfilled",
+        reason: "Done",
+      },
+    ]),
+  ).toThrow("revision changed");
+  expect(() =>
+    apply([
+      {
+        ...ask,
+        expectedRevision: 2,
+        scope: "Narrower",
+        disposition: "fulfilled",
+        reason: "Done",
+      },
+    ]),
+  ).toThrow("closure changes scope");
+  const correction: AppConversationRequestUpdate = {
+    ...ask,
+    expectedRevision: 2,
+    scope: "Corrected",
+    disposition: "open",
+  };
+  apply([correction], "correct");
+  apply([correction], "correct");
+  const close: AppConversationRequestUpdate = {
+    id: ask.id,
+    expectedRevision: 3,
+    disposition: "fulfilled",
+    reason: "Same outcome",
+  };
+  apply([close], "close-without-scope");
+  apply([close], "close-without-scope");
+  expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 4, scope: "Corrected" });
+});
+
+test.each(["stop", "failure", "completion"] as const)(
+  "saved requirements survive %s; the old executor cannot update them",
+  async (end) => {
+    const f = fixture();
+    let update!: NonNullable<Parameters<AppInputResolver>[0]["execution"]["updateRequest"]>;
+    const turn = await f.prepare(async ({ execution }) => {
+      update = execution.updateRequest!;
+      update({ id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept");
+      return answer;
+    });
+    if (end === "stop") turn.stop();
+    else if (end === "failure") failAppTaskAttempt(f.context(), turn.claim, "Helper failed");
+    else turn.settle();
+    expect(() => update({ id: ask.id, expectedRevision: 1, scope: "Late change" }, "late")).toThrow();
+    f.reopen();
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({
+      revision: 1,
+      scope: ask.scope,
+      status: "open",
+    });
+  },
+);
+
+test("new input fences an old requirement save until the same Conversation reviews it", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [ask] });
+  const turn = await f.prepare(async ({ execution }) => {
+    admitConversationTaskInput(f.context(), {
+      id: "newer-correction",
+      appId: app.id,
+      conversationId: "chat",
+      conversationSequence: 3,
+      source: { kind: "human", id: "newer-correction" },
+      input: { kind: "message", data: { text: "Include costs as well" } },
+      intent: conversationTaskIntent(f.context()),
+    });
+    expect(() => execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Old interpretation" }, "old"))
+      .toThrow("newer Task facts are pending");
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 1, scope: ask.scope });
+    return answer;
+  });
+  turn.settle();
+  f.reopen();
+  const next = await f.prepare(async ({ inputContext, execution }) => {
+    expect(inputContext.inputs?.some(({ id }) => id === "newer-correction")).toBe(true);
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Compare both options including costs" }, "reviewed"))
+      .toMatchObject({ revision: 2, scope: "Compare both options including costs" });
+    return answer;
+  }, false);
+  expect(next.claim.taskId).toBe(turn.claim.taskId);
+  expect(next.settle().status).toBe("applied");
+});
+
+test("the immediate update is scoped to the claimed Conversation and a failed write leaves its revision intact", async () => {
+  const f = fixture();
+  applyConversationRequestUpdates(f.db, {
+    appId: app.id,
+    conversationId: "other",
+    updates: [ask],
+    updateKey: "foreign",
+    now: Date.now(),
+  });
+  const foreign = readConversationRequest(f.db, app.id, "other", ask.id);
+  const turn = await f.prepare(async ({ execution }) => {
+    expect(() =>
+      execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Cross-Conversation change" }, "foreign"),
+    ).toThrow("revision changed");
+    f.db.exec(`CREATE TRIGGER reject_request BEFORE INSERT ON conversation_requests
+      BEGIN SELECT RAISE(ABORT, 'fixture request write failure'); END;`);
+    expect(() => execution.updateRequest!({ id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept")).toThrow(
+      "fixture request write failure",
+    );
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toBeNull();
+    f.db.exec("DROP TRIGGER reject_request");
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 0, scope: ask.scope! }, "accept").revision).toBe(1);
+    return answer;
+  });
+  turn.settle();
+  expect(readConversationRequest(f.db, app.id, "other", ask.id)).toEqual(foreign);
 });
 
 test("Task links accumulate without duplicates; overflow and unknown links roll back the update batch", () => {

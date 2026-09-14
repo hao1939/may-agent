@@ -99,18 +99,64 @@ whether the assignment should continue.
 
 New work is requested through `TaskReconcileResult.dependencies`: the destination
 App validates `input` and chooses its Task specification and executor. Workers
-cannot return raw `create-task` actions. `update-task` and `unblock-task` target
-existing assignments and require their current generation. `admitTaskAppDependencies()`
-in `app-task-runtime.ts` publishes delegated input; `app-task-inputs.ts` resumes
-the caller's exact saved input when feedback arrives through its retained wait.
+cannot return raw `create-task` or `update-task` actions. `unblock-task` reconsiders
+an existing wait using its current generation and creator authority.
+`admitTaskAppDependencies()` in `dependency-admission.ts` saves and notifies delegated
+input; `app-task-inputs.ts` resumes the caller's exact saved input when feedback
+arrives through its retained wait.
 
-Parent links organize work and scope reads/actions. They neither wait for nor
-subscribe to child outcomes. Typed dependencies return exact input answers;
+Parent links organize work and scope reads; creator metadata controls changes.
+They neither wait for nor subscribe to child outcomes. Typed dependencies return exact input answers;
 Conditions await facts. `dependsOn` remains a static execution gate, not a return
 link. Workflow reconciliation receives the same saved waits as registered
 executors.
 
-Before adopting this breaking change, retire saved implicit waits offline using
+Owner and worker are roles in each assignment, not agent types. The same agent
+may execute assigned work and own work it delegates. Requirements belong to
+the assigning owner; the worker chooses execution within those requirements.
+Delegating further repeats the same dependency/feedback contract with no
+depth-specific handler. Parents review and combine evidence; child success
+does not fulfill a parent assignment. Internal steps need no separate Task.
+The creator revises same-App and cross-App work through `tasks update` or
+`TaskAttempt.reviseTask`, supplying the exact Task, observed generation and complete
+App input. `task-revision.ts` uses the destination App's normal mapper, cleans up
+old execution, then saves new requirements and unfinished caller links atomically
+through input admission. Failed cleanup accepts no revision. Low-level policy
+changes cannot advance a generation while a caller has an unanswered input;
+use the creator revision capability or finish that input first. Ordinary feedback
+and changing a conversational Request alone do not revise Task requirements.
+
+Creator identity is immutable Host metadata, `{ appId, taskId? }`, recorded at
+creation. App-created work has an App creator; delegated work has its calling
+Task as creator. A reference, parent link or executor name grants no authority.
+The SDK exposes creator on exact Task reads; agents never supply it in updates.
+Only unfinished answers belonging to that creator follow a revision. Original
+inputs and accepted answers remain unchanged. Revision after an earlier answer
+does not open another wait; request another answer through ordinary dependencies.
+
+Cleanup runs before the short write transaction, which rechecks both Tasks.
+A live external execution owner, execution without session cleanup, or another
+caller's unanswered input returns a refusal for the creator to judge. There is
+no automatic ownership transfer or special rescue loop. Unchanged mapped intent
+does not interrupt execution.
+
+### Adopting creator revisions
+
+Release matching Host and SDK together. Replace executable `update-task` results
+with the `tasks` tool's `update` action or `TaskAttempt.reviseTask` before returning
+the result. Update App guidance and typecheck its workflows against that SDK.
+The responsible App's `task` mapper must accept the complete revised input and
+return desired intent; Host preserves the exact Task ID and parent.
+
+The schema adds nullable `creator_json` to the existing inbox table. New Task
+resources save creator in metadata. Historical Tasks without provenance remain
+readable but require explicit offline initialization before requirement changes;
+do not infer authority from parent links, executor names or input source text.
+Accepted historical results remain readable. Uncommitted old output containing
+retired actions is rejected and reviewed again through ordinary recovery.
+This source change neither migrates installed Apps nor certifies a live rollout.
+
+For installations predating typed dependencies, retire saved implicit waits offline using
 `migrateTaskCoordination()` in `core/state` (also included by `migrateOpenTaskState`).
 It replays original unfinished inputs for one review without inventing answers
 from current child status. Missing input aborts conversion; accepted answers and

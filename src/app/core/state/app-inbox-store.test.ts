@@ -50,6 +50,23 @@ describe("App inbox store", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("preserves trusted creator on notification replay and rejects replacement provenance", () => {
+    const input = {
+      id: "delegated-input",
+      appId: "worker",
+      source: { kind: "app" as const, id: "creator" },
+      input: { kind: "review", data: {} },
+      idempotencyKey: "delegation-1",
+    };
+    const creator = { appId: "creator", taskId: "parent" };
+    createAppInboxItem(db, { ...input, creator });
+    expect(createAppInboxItem(db, input).item.creator).toEqual(creator);
+    expect(() => createAppInboxItem(db, { ...input, creator: { appId: "creator", taskId: "unrelated" } })).toThrow(
+      "reused with different input",
+    );
+    expect(getAppInboxItem(db, input.id)?.creator).toEqual(creator);
+  });
+
   it("rejects an idempotency key reused with different App input", () => {
     createAppInboxItem(db, {
       appId: "may",

@@ -1,12 +1,27 @@
 import { Type } from "@earendil-works/pi-ai";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage, TaskView } from "@may-agent/sdk";
+import type {
+  AppInput,
+  TaskListOptions,
+  TaskOutcomePage,
+  TaskOutcomeProjection,
+  TaskPage,
+  TaskView,
+} from "@may-agent/sdk";
 import type { EventBus } from "./core/events/bus.js";
 
 const parameters = Type.Object(
   {
-    action: Type.Union([Type.Literal("list"), Type.Literal("outcomes"), Type.Literal("get"), Type.Literal("publish")]),
-    taskId: Type.Optional(Type.String({ minLength: 1, description: "Exact Task id; required for get and outcomes" })),
+    action: Type.Union([
+      Type.Literal("list"),
+      Type.Literal("outcomes"),
+      Type.Literal("get"),
+      Type.Literal("publish"),
+      Type.Literal("update"),
+    ]),
+    taskId: Type.Optional(
+      Type.String({ minLength: 1, description: "Exact Task id; required for get, outcomes and update" }),
+    ),
     localKey: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
     eventType: Type.Optional(Type.String({ minLength: 3 })),
     data: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
@@ -33,12 +48,18 @@ const parameters = Type.Object(
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
     includeDone: Type.Optional(Type.Boolean()),
+    expectedGeneration: Type.Optional(Type.Integer({ minimum: 1 })),
+    input: Type.Optional(
+      Type.Object({ kind: Type.String({ minLength: 1 }), data: Type.Unknown() }, { additionalProperties: false }),
+    ),
   },
   { additionalProperties: false },
 );
 
 type Params = {
-  action: "list" | "outcomes" | "get" | "publish";
+  action: "list" | "outcomes" | "get" | "publish" | "update";
+  expectedGeneration?: number;
+  input?: AppInput;
   taskId?: string;
   localKey?: string;
   eventType?: string;
@@ -85,7 +106,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List Tasks owned by the current App, get one exact Task (optionally in target.appId), read the outcome containing an owned task, or publish a fenced fact from the current Task attempt. Publishing never mutates Task state.",
+      "List or get Tasks, publish facts, or update an assignment you created. For update, read the exact Task first and supply its expectedGeneration and complete revised input from the responsible App's input contract. Code checks creator authority, saves requirements and wakes the worker. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -93,6 +114,24 @@ export function createAppTaskReadTool(options: {
       const appId = (scope?.appId ?? options.appId?.())?.trim();
       if (!appId) return result({ error: "No current App Task scope" });
       try {
+        if (params.action === "update") {
+          if (!scope?.taskId || !scope.generation || !scope.attemptId)
+            return result({ error: "No current fenced Task attempt" });
+          if (!params.taskId || !params.expectedGeneration || !params.input)
+            return result({ error: "update requires taskId, expectedGeneration and the complete App input" });
+          return result(
+            (await import("./core/tasks/app-task-runtime.js")).reviseLoadedAppTask({
+              bus: options.bus,
+              binding: { appId, taskId: scope.taskId, generation: scope.generation, attemptId: scope.attemptId },
+              change: {
+                appId: params.target?.appId?.trim().replace(/\.app$/, "") || appId,
+                taskId: params.taskId.trim(),
+                expectedGeneration: params.expectedGeneration,
+                input: params.input,
+              },
+            }),
+          );
+        }
         if (params.action === "publish") {
           const taskId = scope?.taskId?.trim();
           const localKey = params.localKey?.trim();

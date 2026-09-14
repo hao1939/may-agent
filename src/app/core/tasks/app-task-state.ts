@@ -1,4 +1,4 @@
-import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
+import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
@@ -46,6 +46,8 @@ export type AppTaskWorkspace = {
 export type AppTaskResource = {
   metadata: {
     id: string;
+    /** Absent only on historical resources; no worker gains authority from missing provenance. */
+    creator?: ResourceCreator;
     generation: number;
     resourceVersion: number;
   };
@@ -134,6 +136,8 @@ export type AppTaskAttempt = {
   finishedAt?: string;
   summary?: string;
   failureReason?: string;
+  /** Retained separately from acceptance so recovery can reuse execution evidence. */
+  unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
@@ -154,7 +158,7 @@ export type AppTaskCancellation = {
   reason: string;
   summary: string;
   cancelledAt: string;
-  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" };
+  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" } | { kind: "creator"; creator: ResourceCreator };
   response?: string;
   result?: Record<string, unknown>;
   facts?: string[];

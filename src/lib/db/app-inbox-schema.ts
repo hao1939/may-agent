@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   reply_to_source_id  TEXT,
   source_kind         TEXT NOT NULL,
   source_id           TEXT NOT NULL,
+  creator_json        TEXT,
   input_kind          TEXT NOT NULL,
   input_data          TEXT NOT NULL,
   status              TEXT NOT NULL DEFAULT 'pending',

@@ -1,4 +1,5 @@
 import { storedResultFacts } from "./result-facts.js";
+import { isDeepStrictEqual } from "node:util";
 import { taskViewPhaseSql } from "./task-view-phase.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { stateTransaction as transaction } from "../../../lib/db/transaction.js";
@@ -1334,6 +1335,9 @@ export class AppTaskResourceStore {
       }
       for (const { resource } of mutation.tasks ?? []) {
         const previous = this.readTask(resource.metadata.id);
+        if (previous && !isDeepStrictEqual(previous.metadata.creator, resource.metadata.creator)) {
+          throw new Error("Task creator is immutable");
+        }
         // Offline receipt import may restore an already closed child beneath a
         // closed parent. It adds history, never new executable responsibility.
         const restoredClosure =

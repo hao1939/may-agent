@@ -93,6 +93,7 @@ function resourceTaskDetail(
 ): TaskDetail {
   return {
     ...resourceTaskView(resource, phase, closed),
+    ...(resource.metadata.creator ? { creator: structuredClone(resource.metadata.creator) } : {}),
     parentId: resource.spec.parentId,
 
     acceptance: [...resource.spec.acceptance],
