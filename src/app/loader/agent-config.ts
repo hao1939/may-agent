@@ -13,6 +13,8 @@ export interface AgentConfig {
   memoryLimit?: number;
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
+  /** @experimental Agent-local synchronous preparer module. Omit for the full brief. */
+  contextPreparation?: string;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };
   /** @deprecated Volatile context should be injected at session time, not in system prompt. */
@@ -36,6 +38,13 @@ export function validateAgentConfig(
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const name = config.name || "<unnamed>";
+
+  if (
+    config.contextPreparation !== undefined &&
+    (typeof config.contextPreparation !== "string" || !config.contextPreparation.trim())
+  ) {
+    errors.push({ agent: name, field: "contextPreparation", message: "Expected a non-empty module path" });
+  }
 
   for (const field of REQUIRED_FIELDS) {
     if (!config[field]) {

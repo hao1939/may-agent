@@ -2,6 +2,7 @@ import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./persistence.js";
 import type { SkillCatalog } from "./skills.js";
+import type { AgentContextPreparer } from "@may-agent/sdk";
 
 /**
  * Model with an optional apiKey attached at runtime.
@@ -57,6 +58,9 @@ export interface SubagentDefinition {
 
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
+
+  /** Optional context adapter captured with this immutable definition generation. */
+  contextPreparation?: AgentContextPreparer;
 
   /**
    * @deprecated Volatile files should be injected as session context, not system prompt.

@@ -111,3 +111,4 @@ export type {
   WorkflowGuardEvent,
   WorkflowGuardStepResult,
 } from "./workflow-guard.js";
+export type { AgentContextPreparer } from "./agent-context.js";

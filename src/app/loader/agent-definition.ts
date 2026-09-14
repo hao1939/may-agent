@@ -1,10 +1,12 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { discoverAgentSkills } from "../../lib/skills.js";
 import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
 import type { AgentConfig } from "./agent-config.js";
 import type { AgentDirectory } from "./agent-discovery.js";
+import { importRuntimeModule } from "../../lib/runtime-import.js";
+import type { AgentContextPreparer } from "@may-agent/sdk";
 
 export type AgentDefinitionOptions = {
   config: AgentConfig;
@@ -17,9 +19,30 @@ export type AgentDefinitionOptions = {
   appLocal?: boolean;
 };
 
+function inside(root: string, path: string): boolean {
+  const rel = relative(root, path);
+  return rel === "" || (!isAbsolute(rel) && rel !== ".." && !rel.startsWith(`..${sep}`));
+}
+
 /** Build the agent-visible definition shared by direct, Gym, and hosted runs. */
 export async function buildAgentDefinition(options: AgentDefinitionOptions): Promise<SubagentDefinition> {
   const { config, source } = options;
+  let contextPreparation: AgentContextPreparer | undefined;
+  if (config.contextPreparation !== undefined) {
+    const entrypoint = resolve(source.dir, config.contextPreparation);
+    if (
+      isAbsolute(config.contextPreparation) ||
+      !inside(source.dir, entrypoint) ||
+      !inside(realpathSync(source.dir), realpathSync(entrypoint))
+    ) {
+      throw new Error("contextPreparation must stay inside the agent directory (relative path, no escaping symlinks)");
+    }
+    const module = await importRuntimeModule<{ default?: unknown }>(entrypoint);
+    if (typeof module.default !== "function") {
+      throw new Error("contextPreparation must default-export a function");
+    }
+    contextPreparation = module.default as AgentContextPreparer;
+  }
   const knowledgeDir = join(source.dir, "knowledge");
   const workspace = join(source.dir, "workspace");
   const appLocal =
@@ -47,6 +70,7 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     apiKey: options.model.apiKey,
     memoryLimit: config.memoryLimit,
     compaction: config.compaction,
+    contextPreparation,
     contextFiles: config.context_files?.map((file) => resolve(source.dir, file)),
     skillCatalog,
   };
