@@ -88,10 +88,10 @@ export type StartAppInboxRuntimeOptions = {
     dispatch(
       command: AppEventAdmissionCommand,
       event: AgentEvent,
-    ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
+    ): Promise<{ taskIds: string[] }>;
     close(): void;
   };
-  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[]; supersededSessionIds: string[] }) => void;
+  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[] }) => void;
   hasTaskTarget?: (input: { appId: string; taskId: string }) => boolean;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
   /** One event-type-first Condition lookup across all loaded Task Apps. */
@@ -463,7 +463,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         if (command.kind === "task" && taskAdmissionWorker) {
           const worker = taskAdmissionWorker;
-          let admitted: { taskIds: string[]; supersededSessionIds: string[] };
+          let admitted: { taskIds: string[] };
           try {
             admitted = await worker.dispatch(command, event);
           } catch (error) {

@@ -57,6 +57,27 @@ answers and selected reports, then replays them and retained external Events
 through the same Condition transition. Feedback survives a missed notification;
 no extra delivery queue is needed.
 
+### One admission and reconciliation model
+
+Admission validates and saves the input or change, including its responsible
+route when handling is required, before returning a receipt. Handling runs
+separately: the worker reads current requirements and facts, acts and reports.
+A failed handler leaves accepted work available for the same recovery path.
+A receipt confirms acceptance; the saved result establishes what was handled.
+
+Adapters translate source-specific information at the boundary. For example,
+`lib/escalation-feedback.ts` resolves saved provenance to an exact Task address;
+the existing event transaction saves its wake and ordinary Task recovery handles
+it. Resolution labels never choose a session to restart. Unknown ownership is
+recorded as unresolved and needs intervention; no supervisor is inferred.
+
+A direct setter can finish its small edit during admission. Metric setters
+validate the exact resource and save SQL state with the event in one transaction;
+later reactions remain asynchronous. A passive notification alone does not
+promise work. Project comments retain recorded evidence; requiring an App work
+admission at the comment interface is separate from this lifecycle. Direct
+synchronous helpers and explicit fenced controls keep their existing contracts.
+
 `project.task.reconciled` and `app.task.cancelled` also notify result readers.
 Composition refreshes exact input feedback and linked Conversation observations
 from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`
@@ -119,26 +140,29 @@ depth-specific handler. Parents review and combine evidence; child success
 does not fulfill a parent assignment. Internal steps need no separate Task.
 The creator revises same-App and cross-App work through `tasks update` or
 `TaskAttempt.reviseTask`, supplying the exact Task, observed generation and complete
-App input. `task-revision.ts` uses the destination App's normal mapper, cleans up
-old execution, then saves new requirements and unfinished caller links atomically
-through input admission. Failed cleanup accepts no revision. Low-level policy
-changes cannot advance a generation while a caller has an unanswered input;
-use the creator revision capability or finish that input first. Ordinary feedback
-and changing a conversational Request alone do not revise Task requirements.
+App input. `task-revision.ts` uses the destination App's normal mapper and saves
+requirements through existing input admission. ACK means saved, not handled.
+The save preserves current execution, observed status, failure pacing, waits,
+pending events and original input-answer links. It requires no session cleanup
+and does not wait for another caller's answer. Status progress cannot conflict
+with a spec write; concurrent spec changes still require a fresh read.
 
 Creator identity is immutable Host metadata, `{ appId, taskId? }`, recorded at
 creation. App-created work has an App creator; delegated work has its calling
 Task as creator. A reference, parent link or executor name grants no authority.
 The SDK exposes creator on exact Task reads; agents never supply it in updates.
-Only unfinished answers belonging to that creator follow a revision. Original
-inputs and accepted answers remain unchanged. Revision after an earlier answer
-does not open another wait; request another answer through ordinary dependencies.
+Only considered, unanswered input can acquire a result link. Its original
+admission and previously accepted answers remain immutable across spec updates.
+Revision after an earlier answer does not open another wait; request another
+answer through ordinary dependencies.
 
-Cleanup runs before the short write transaction, which rechecks both Tasks.
-A live external execution owner, execution without session cleanup, or another
-caller's unanswered input returns a refusal for the creator to judge. There is
-no automatic ownership transfer or special rescue loop. Unchanged mapped intent
-does not interrupt execution.
+Current execution is identified by the exact attempt, independently of the
+latest spec generation. Its lease, session, failure and explicit Stop remain
+valid execution facts. Effects, workspace adoption and accepted results still
+require the current spec. A stale result releases only that attempt, preserves
+its input and lets ordinary reconciliation read the new requirements. Existing
+indexed recovery covers lost queue notifications and restart. No second queue,
+revision controller or compulsory same-session adoption protocol is needed.
 
 ### Adopting creator revisions
 

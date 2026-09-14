@@ -305,8 +305,7 @@ export async function runAppRuntime(opts: {
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     createTaskAdmissionWorker: () =>
       createTaskAdmissionProcess({ definitionSource: workerDefinitionSource() ?? undefined }),
-    wakeAdmittedTasks: ({ appId, taskIds, supersededSessionIds }) =>
-      appTasks.wake({ appId, taskIds, supersededSessionIds }),
+    wakeAdmittedTasks: appTasks.wake,
     hasTaskTarget: ({ appId, taskId }) => appTasks.has({ appId, taskId }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),

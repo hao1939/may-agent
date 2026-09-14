@@ -214,6 +214,7 @@ test("missed worker feedback uses ordinary recovery, creator correction and the 
   review.settle();
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(originalRequest);
   f.reopen();
+  setSystemTime(f.context(owner.id).resourceStore.readTask("work")!.status.executionRetryAt! + 1);
   const next = claimObservedAppTask(f.context(owner.id), { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
   if (next.kind !== "claimed") throw new Error("Expected revised worker claim");
   expect(next).toMatchObject({ taskId: claim.taskId, generation: 2,

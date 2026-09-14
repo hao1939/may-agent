@@ -47,14 +47,12 @@ import {
   repairUnadmittedAppDependencyWaits,
   retryFailedAppTask,
   type AppTaskAttemptRecovery,
-  type AppTaskObservationResult,
 } from "./app-task-reconciler.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
-  interruptSupersededObservationSessions,
 } from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
@@ -252,7 +250,6 @@ function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
 type AppTaskAdmissionResult = {
   delivery?: DeliveryResult;
   taskIds: string[];
-  supersededSessionIds: string[];
 };
 
 function admitResolvedAppTaskEvent(input: Parameters<typeof applyResolvedAppTaskEvent>[0]): AppTaskAdmissionResult {
@@ -268,7 +265,6 @@ function applyResolvedAppTaskEvent(input: {
   intent: AppTaskIntent | null;
   targetedTaskId?: string;
   conditionTaskIds?: string[];
-  interruptSuperseded?(observation: AppTaskObservationResult): void;
 }): AppTaskAdmissionResult {
   const { descriptor, controller, event, intent } = input;
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
@@ -305,26 +301,23 @@ function applyResolvedAppTaskEvent(input: {
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted"),
         taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
       };
     }
     if (triggerResult.kind === "duplicate") {
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "targeted task event already received"),
         taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
       };
     }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
-    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
   }
-  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
   if (duplicateIntent) {
     return {
       delivery: appTaskDelivery(descriptor, intent.id, "resolved task event already received"),
       taskIds: [...wokenTaskIds],
-      supersededSessionIds: [],
     };
   }
   const observation = observeAppTaskIntent(config, {
@@ -332,7 +325,6 @@ function applyResolvedAppTaskEvent(input: {
     appAgent: descriptor.agent,
     trigger: event,
   });
-  input.interruptSuperseded?.(observation);
   if (observation.kind === "observed") wokenTaskIds.add(observation.taskId);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
@@ -342,7 +334,6 @@ function applyResolvedAppTaskEvent(input: {
   return {
     delivery: appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted"),
     taskIds: [...wokenTaskIds],
-    supersededSessionIds: observation.supersededSessionIds ?? [],
   };
 }
 
@@ -363,8 +354,7 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     throw new Error(`Canonical App ${input.appId} task capability is not loaded`);
   }
   const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
-  const opts = appRouterOptionsByBus.get(input.bus);
-  if (!opts || (!controller && !descriptor.reconciliationPaused)) {
+  if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
   }
   return admitResolvedAppTaskEvent({
@@ -374,7 +364,6 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     intent: input.intent,
     targetedTaskId: input.targetedTaskId,
     conditionTaskIds: input.conditionTaskIds,
-    interruptSuperseded: (observation) => interruptSupersededObservationSessions(opts, observation),
   }).delivery;
 }
 
@@ -401,28 +390,17 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
   });
 }
 
-/** Prepare only canonical Task state needed by the admission worker. */
 /** Wake already-admitted Task identities without repeating their mutation. */
 export function wakeLoadedAppTasks(input: {
   bus: EventBus;
   appId: string;
   taskIds: string[];
-  supersededSessionIds?: string[];
 }): void {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
   if (!descriptor || !controller) return;
   const config = appTaskConfig(descriptor);
-  const opts = appRouterOptionsByBus.get(input.bus);
-  const admittedTaskId = input.taskIds.at(-1);
-  if (opts && admittedTaskId) {
-    interruptSupersededObservationSessions(opts, {
-      taskId: admittedTaskId,
-      generation: descriptor.resourceStore.readTask(admittedTaskId)?.metadata.generation ?? 1,
-      supersededSessionIds: input.supersededSessionIds,
-    });
-  }
   for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
     enqueueAppTask(controller, config, taskId, { promote: true });
   }
@@ -839,14 +817,10 @@ export function attachLoadedAppTask(input: {
   if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`App ${descriptor.id} task reconciliation is not active`);
   }
-  const loaderOptions = appRouterOptionsByBus.get(input.bus);
-  if (!loaderOptions) throw new Error(`App ${descriptor.id} task runtime is not attached`);
-
   const config = appTaskConfig(descriptor);
   const humanRequested = input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true;
 
   const observation = admitTaskInput(config, input);
-  interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       lane: humanRequested ? "human" : "normal",
@@ -988,10 +962,6 @@ export function reviseLoadedAppTask(input: {
     app,
     actor: input.binding,
     change: input.change,
-    interrupt: (ids) => {
-      for (const id of ids)
-        interruptSupersededAgentSession(opts, id, "Creator revised the assignment", input.change.taskId);
-    },
   });
   if (revised.kind === "observed" && revised.changed)
     input.bus.emit({

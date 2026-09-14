@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
@@ -37,14 +37,6 @@ function harness(overrides: Partial<SubagentManager> = {}) {
     shutdown: () => {},
   });
   return { projectRoot, bus, emitted, router, manager };
-}
-
-async function waitForFile(path: string, timeoutMs = 1_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (!existsSync(path)) {
-    if (Date.now() >= deadline) throw new Error(`Timed out waiting for ${path}`);
-    await Bun.sleep(5);
-  }
 }
 
 describe("command router integration", () => {
@@ -132,26 +124,4 @@ describe("command router integration", () => {
     h.router.close();
   });
 
-  it("applies legacy project comments at the filesystem adapter", async () => {
-    const h = harness();
-    const projectPath = "projects/demo";
-    const projectDir = join(h.projectRoot, projectPath);
-    mkdirSync(projectDir, { recursive: true });
-    writeFileSync(
-      join(projectDir, "project.md"),
-      ["---", "id: demo", "owner: tech-lead", "status: waiting", "---", "", "# Demo"].join("\n"),
-    );
-
-    h.bus.emit({
-      type: "project.comment.created",
-      source: "test",
-      owner: "agent:tech-lead",
-      data: { projectPath, comment: "please continue", author: "hao" },
-    });
-    const discussionPath = join(projectDir, "discussion.md");
-    await waitForFile(discussionPath);
-    expect(readFileSync(discussionPath, "utf8")).toContain("please continue");
-    expect(readFileSync(join(projectDir, "project.md"), "utf8")).toContain("status: active");
-    h.router.close();
-  });
 });

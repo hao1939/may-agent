@@ -470,6 +470,8 @@ it("applies owner revision during cooldown and fences retry plus late failure on
   failAppTaskAttempt(f.config, first, "Provider unavailable");
   const oldDue = f.config.resourceStore.nextDueAt()!;
   observeAppTaskIntent(f.config, { intent: { ...f.intent, outcome: "Read the cheaper replacement measurement" }, appAgent: "owner" });
+  expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBe(oldDue);
+  setSystemTime(oldDue + 1);
   const revised = f.claim();
   expect(revised.generation).toBeGreaterThan(first.generation);
   expect(revised.previousAttempt).toMatchObject({

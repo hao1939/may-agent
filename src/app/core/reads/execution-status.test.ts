@@ -48,11 +48,12 @@ function fixture() {
 }
 
 test("reports each live current session once and rejects stale bindings and markers", () => {
-  const { root, session } = fixture();
+  const { root, db, session } = fixture();
   session("one");
   session("two");
   session("superseded", { taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "old" } });
   session("wrong-attempt", { taskBinding: { appId: "sample", taskId: "work", generation: 2, attemptId: "old" } });
+  session("wrong-generation", { taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "current" } });
   session("missing-task", { taskBinding: { appId: "sample", taskId: "missing", generation: 2, attemptId: "current" } });
   session("terminal", { status: "done" });
   session("ended", { endedAt: 1 });
@@ -60,6 +61,7 @@ test("reports each live current session once and rejects stale bindings and mark
   markSessionInactive(root, "inactive");
   session("dead");
   writeFileSync(join(sessionDir(root, "dead"), "[ACTIVE]"), JSON.stringify({ pid: 2147483647 }));
+  db.prepare("UPDATE app_tasks SET generation = 3").run();
   const status = readExecutionStatus(root);
   expect(status.activeWork).toBe(true);
   expect(status.sessions.map((item) => item.sessionId)).toEqual(["one", "two"]);
@@ -71,7 +73,7 @@ test("workflow claims protect work only while current, running and unexpired", (
   expect(readExecutionStatus(root)).toEqual({ sessions: [], activeWork: true });
   expect(readExecutionStatus(root, Date.now() + 120_000).activeWork).toBe(false);
   db.prepare("UPDATE app_task_attempts SET task_generation = 1").run();
-  expect(readExecutionStatus(root).activeWork).toBe(false);
+  expect(readExecutionStatus(root).activeWork).toBe(true);
   db.prepare("UPDATE app_task_attempts SET task_generation = 2, state = 'completed'").run();
   expect(readExecutionStatus(root).activeWork).toBe(false);
   db.prepare("UPDATE app_task_attempts SET state = 'running'").run();

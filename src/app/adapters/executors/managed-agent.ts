@@ -19,9 +19,6 @@ import {
   rejectConvergedDirectAgentResidue,
 } from "./agent-workspace.js";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const v of values) if (typeof v === "string" && v.trim()) return v.trim();
   return null;
@@ -69,18 +66,6 @@ function taskAttemptRole(
   return { agent, instructions };
 }
 
-export const DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION =
-  "When a New Event contains an App request with a supplied dependency observation, treat that exact read-only observation (kind, id, status, summary, facts, response, and result when present) as complete authority for the dependency in this attempt. Decide from it or preserve the responsible App and exact Task boundary; do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task. This restriction is request-scoped and does not weaken supported diagnostics when no dependency observation was supplied.";
-
-export function hasSuppliedDependencyObservation(events: { items?: readonly unknown[] }): boolean {
-  return (events.items ?? []).some((item) => {
-    if (!isRecord(item) || !isRecord(item.event)) return false;
-    const event = item.event;
-    if (event.type !== "app.task.requested" || !isRecord(event.data) || !isRecord(event.data.request)) return false;
-    return isRecord(event.data.request.dependency) && Object.keys(event.data.request.dependency).length > 0;
-  });
-}
-
 /** Compact agent rules; the finish tool schema enforces field-level detail. */
 export function appTaskAgentProtocol(appId: string): string {
   return [
@@ -101,7 +86,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Keep facts concise and include the artifact/session paths needed to inspect the result. Code handles persistence, scheduling and result return; do not poll merely to keep follow-through alive.",
     "A Condition records a wait for a known fact; requestedAction does not contact its owner or perform that action. reviewAfterMs schedules reconsideration, not a notification or repair.",
     "Treat feedback as input: preferences, corrections, or claims to verify. Address the human's concern using this Task's goal, observed facts and Open Waits. Existing obligations remain; create different work only for a changed goal.",
-    DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
+    "Treat supplied observations as evidence. Use scoped Task tools when current facts or creator-authorized changes are needed; keep exact App and Task identity.",
   ].join("\n");
 }
 
@@ -181,7 +166,7 @@ async function executeTaskAgent(
     trace,
     requireFinish: true,
     outputSchema: appTaskAgentResultSchema,
-    toolPolicy: hasSuppliedDependencyObservation(reconciliationEvents) ? ("full-no-tasks" as const) : ("full" as const),
+    toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,
   };

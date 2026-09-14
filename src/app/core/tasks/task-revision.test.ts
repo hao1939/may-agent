@@ -4,8 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
 import { closeDb, getDb } from "../../../lib/requests.js";
-import { openDatabase } from "../../../lib/db.js";
-import { inStateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { createAppInboxItem, getAppInboxItem } from "../state/app-inbox-store.js";
@@ -19,13 +17,15 @@ import {
   readAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskAttemptSession,
+  renewAppTaskAttemptLease,
+  releaseStaleAppTaskResult,
+  assertAppTaskEffectFresh,
+  recoverableAppTaskAttempts,
+  releaseInterruptedAppTaskAttempt,
+  stopAppTaskAttempt,
   recordAppTaskTrigger,
 } from "./app-task-reconciler.js";
 import { reviseAppTask } from "./task-revision.js";
-import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
-import { EventBus } from "../events/bus.js";
-import { SubagentManager } from "../../../lib/manager.js";
-import { writeSessionMeta } from "../../../lib/persistence.js";
 
 const roots: string[] = [];
 afterEach(() =>
@@ -110,8 +110,8 @@ function fixture() {
     expectedGeneration: 1,
     input: { kind: "measure", data: { source: "beta" } },
   };
-  const revise = (interrupt?: (sessions: string[]) => void) =>
-    reviseAppTask({ source: context("creator"), target: context("worker"), app: worker, actor, change, interrupt });
+  const revise = () =>
+    reviseAppTask({ source: context("creator"), target: context("worker"), app: worker, actor, change });
   return {
     root,
     context,
@@ -134,8 +134,9 @@ test("one revision changes actual input and App-selected execution, survives cal
   const f = fixture();
   const old = f.claim("worker", "child");
   recordAppTaskAttemptSession(f.context("worker"), old, "old-session");
-  expect(f.revise(() => {}).generation).toBe(2);
+  expect(f.revise().generation).toBe(2);
   expect(completeAppTask(f.context("worker"), old, { summary: "Obsolete alpha" }).status).toBe("stale");
+  expect(releaseStaleAppTaskResult(f.context("worker"), old).status).toBe("released");
   failAppTaskAttempt(f.context("creator"), f.parent, "Answer failed after the saved revision");
   f.reopen();
   const next = f.claim("worker", "child");
@@ -194,18 +195,14 @@ test("unfinished input follows the revised answer across reopen while an accepte
   expect(pending().input.data).toEqual({ source: "alpha" });
 });
 
-test("a creator cannot replace another caller's unfinished question", () => {
+test("requirements can change with another caller pending; exact input remains answerable", () => {
   const f = fixture();
   const foreign = awaitingInput(f, "foreign", "sibling");
-  expect(() => f.revise()).toThrow("Another caller still awaits");
-  expect(foreign().taskAdmissionKey).toBe("task:foreign");
-  expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(1);
-  const old = f.claim("worker", "child");
-  expect(completeAppTask(f.context("worker"), old, { summary: "Alpha", result: { source: "alpha" } }).status).toBe(
-    "applied",
-  );
   expect(f.revise().generation).toBe(2);
   expect(foreign().taskAdmissionKey).toBe("task:foreign");
+  const next = f.claim("worker", "child");
+  expect(completeAppTask(f.context("worker"), next, { summary: "Beta", result: { source: "beta" } }).status).toBe("applied");
+  expect(readAppTaskAdmissionOutcome(f.context("worker"), "child", foreign().taskAdmissionKey!)?.result).toEqual({ source: "beta" });
 });
 
 test.each(["answer", "wait"])(
@@ -301,63 +298,80 @@ test.each(["answer", "wait"])(
   },
 );
 
-test("an executor without session cleanup keeps its assignment until it finishes", () => {
+test.each([false, true])("spec save preserves running execution (session: %s), leases and effect fences", (session) => {
   const f = fixture();
+  const target = f.context("worker");
   const old = f.claim("worker", "child");
-  expect(() => f.revise()).toThrow("retry after it finishes");
-  expect(f.context("worker").resourceStore.readTask("child")?.status.currentAttemptId).toBe(old.attemptId);
-  expect(completeAppTask(f.context("worker"), old, { summary: "Alpha measured" }).status).toBe("applied");
+  if (session) recordAppTaskAttemptSession(target, old, "old-session");
+  const before = target.resourceStore.readTask("child")!;
   expect(f.revise().generation).toBe(2);
-  expect(f.claim("worker", "child").intent.input).toEqual({ source: "beta" });
+  expect(target.resourceStore.readTask("child")?.status).toEqual(before.status);
+  expect(target.resourceStore.readAttempt(old.attemptId)?.state).toBe("running");
+  expect(renewAppTaskAttemptLease(target, old)).toBe(true);
+  expect(recordAppTaskAttemptSession(target, old, "old-session")).toBe(true);
+  expect(claimObservedAppTask(target, { taskId: "child", appAgent: "worker", handler: "auto" }).kind).toBe("busy");
+  expect(() => assertAppTaskEffectFresh(target, old)).toThrow("stale");
+  expect(completeAppTask(target, old, { summary: "Old result" }).status).toBe("stale");
+  expect(releaseStaleAppTaskResult(target, old).status).toBe("released");
+  expect(f.claim("worker", "child").generation).toBe(2);
+  expect(releaseStaleAppTaskResult(target, old).status).toBe("superseded");
 });
 
-test("cleanup runs without the writer lock and replacement stays fenced until it succeeds", () => {
+test("status changes during mapping do not conflict with requirement writes", () => {
   const f = fixture();
   const old = f.claim("worker", "child");
-  recordAppTaskAttemptSession(f.context("worker"), old, "old-session");
-  const file = String(
-    f.db
-      .prepare("PRAGMA database_list")
-      .all()
-      .find((row) => row.name === "main")!.file,
-  );
-  const second = openDatabase(file);
-  second.exec("PRAGMA busy_timeout = 0");
-  let cleaned = false;
-  try {
-    f.revise((ids) => {
-      expect(ids).toEqual(["old-session"]);
-      expect(inStateTransaction(f.db)).toBe(false);
-      second.exec("BEGIN IMMEDIATE");
-      second.exec("ROLLBACK");
-      expect(
-        claimObservedAppTask(f.context("worker"), { taskId: "child", appAgent: "worker", handler: "auto" }).kind,
-      ).toBe("busy");
-      cleaned = true;
-    });
-    expect(cleaned).toBe(true);
-    expect(f.claim("worker", "child").generation).toBe(2);
-  } finally {
-    second.close();
-  }
+  const app = { ...worker, task: (...args: Parameters<NonNullable<typeof worker.task>>) => {
+    failAppTaskAttempt(f.context("worker"), old, "Worker failed during mapping");
+    return worker.task!(...args);
+  } };
+  expect(reviseAppTask({ source: f.context("creator"), target: f.context("worker"), app, actor: f.actor, change: f.change }).generation).toBe(2);
+  expect(f.context("worker").resourceStore.readTask("child")?.status.summary).toBe("Worker failed during mapping");
 });
 
-test("failed cleanup or stale reviewed generation cannot save a revision", () => {
+test("execution failure after a revision preserves both inputs", () => {
   const f = fixture();
   const old = f.claim("worker", "child");
-  recordAppTaskAttemptSession(f.context("worker"), old, "old-session");
-  const before = f.context("worker").resourceStore.readTask("child");
-  expect(() =>
-    f.revise(() => {
-      throw new Error("Unconfirmed cleanup");
-    }),
-  ).toThrow("Unconfirmed cleanup");
-  expect(f.context("worker").resourceStore.readTask("child")).toEqual(before);
-  f.revise(() => {});
-  expect(() => f.revise()).toThrow("requirements changed");
+  f.revise();
+  expect(failAppTaskAttempt(f.context("worker"), old, "Executor disconnected").status).toBe("retrying");
+  const task = f.context("worker").resourceStore.readTask("child")!;
+  expect(task.metadata.generation).toBe(2);
+  expect(task.status.currentAttemptId).toBeUndefined();
+  expect(task.status.observedGeneration).toBe(1);
+  expect(f.context("worker").resourceStore.readTrigger("child")?.events).toHaveLength(2);
 });
 
-test("creator, caller freshness and App input validation precede cleanup", () => {
+test("restart recovers an old execution into the latest spec without a revision notification", () => {
+  const f = fixture();
+  const old = f.claim("worker", "child");
+  f.revise();
+  // Simulate the departed runtime, retaining the exact attempt and accepted input.
+  f.db.prepare(`UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.runtimeId', 'departed')
+    WHERE app_id = 'worker' AND attempt_id = ?`).run(old.attemptId);
+  f.reopen();
+  const target = f.context("worker");
+  const recovery = recoverableAppTaskAttempts(target, Date.now(), true, ["child"]);
+  expect(recovery).toHaveLength(1);
+  expect(releaseInterruptedAppTaskAttempt(target, recovery[0], "Restart recovery").released).toBe(true);
+  const next = f.claim("worker", "child");
+  expect(next.generation).toBe(2);
+  expect(next.intent.input).toEqual({ source: "beta" });
+  expect(next.events).toHaveLength(2);
+  expect(completeAppTask(target, next, { summary: "Beta verified" }).status).toBe("applied");
+});
+
+test("explicit Stop still controls the exact running attempt after a spec update", () => {
+  const f = fixture();
+  const old = f.claim("worker", "child");
+  f.revise();
+  expect(stopAppTaskAttempt(f.context("worker"), { taskId: "child", attemptId: old.attemptId,
+    expectedGeneration: old.generation, reason: "Caller stopped this execution" }).changed).toBe(true);
+  const task = f.context("worker").resourceStore.readTask("child")!;
+  expect(task.metadata.generation).toBe(2);
+  expect(task.status.observedGeneration).toBe(1);
+  expect(task.status.currentAttemptId).toBeUndefined();
+});
+
+test("creator, caller freshness and App input validation protect requirements", () => {
   const f = fixture();
   const sibling = f.claim("creator", "sibling");
   const invoke = (actor = f.actor, change = f.change) =>
@@ -367,9 +381,6 @@ test("creator, caller freshness and App input validation precede cleanup", () =>
       app: worker,
       actor,
       change,
-      interrupt: () => {
-        throw new Error("Unexpected cleanup");
-      },
     });
   expect(() => invoke({ ...f.actor, taskId: "sibling", attemptId: sibling.attemptId })).toThrow("recorded creator");
   expect(() => invoke(f.actor, { ...f.change, input: { kind: "invented", data: { source: "beta" } } })).toThrow(
@@ -380,43 +391,15 @@ test("creator, caller freshness and App input validation precede cleanup", () =>
   expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(1);
 });
 
-test("production recovery refuses a live external owner and permits revision after it exits", () => {
+test("a concurrent spec change during mapping cannot be overwritten", () => {
   const f = fixture();
-  const old = f.claim("worker", "child");
-  recordAppTaskAttemptSession(f.context("worker"), old, "external-session");
-  const session = { agent: "worker", task: "Measure alpha", startedAt: Date.now() };
-  writeSessionMeta(f.root, "external-session", { ...session, status: "running", detached: true, pid: process.pid });
-  const recovery = createTaskSessionRecovery({
-    persistDir: f.root,
-    manager: new SubagentManager({ persistDir: f.root }),
-    bus: new EventBus(),
-  });
-  const revise = () =>
-    f.revise((ids) => ids.forEach((id) => recovery.interrupt(id, "Creator revised requirements", "child")));
-  expect(revise).toThrow("external owner is still live");
-  expect(f.context("worker").resourceStore.readTask("child")?.status.currentAttemptId).toBe(old.attemptId);
-  expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(1);
-  writeSessionMeta(f.root, "external-session", { ...session, status: "done" });
-  expect(revise().generation).toBe(2);
-});
-
-test("a concurrent target revision during cleanup cannot be overwritten", () => {
-  const f = fixture();
-  const old = f.claim("worker", "child");
-  recordAppTaskAttemptSession(f.context("worker"), old, "old-session");
-  expect(() =>
-    f.revise(() =>
-      reviseAppTask({
-        source: f.context("creator"), target: f.context("worker"), app: worker, actor: f.actor,
-        change: { ...f.change, input: { kind: "measure", data: { source: "gamma" } } },
-        interrupt: () => {},
-      }),
-    ),
-  ).toThrow("requirements changed");
-  expect(readAppTaskIntent(f.context("worker"), "child")).toMatchObject({
-    outcome: "Measure gamma",
-    input: { source: "gamma" },
-  });
+  const app = { ...worker, task: (...args: Parameters<NonNullable<typeof worker.task>>) => {
+    reviseAppTask({ source: f.context("creator"), target: f.context("worker"), app: worker, actor: f.actor,
+      change: { ...f.change, input: { kind: "measure", data: { source: "gamma" } } } });
+    return worker.task!(...args);
+  } };
+  expect(() => reviseAppTask({ source: f.context("creator"), target: f.context("worker"), app, actor: f.actor, change: f.change })).toThrow("requirements changed");
+  expect(readAppTaskIntent(f.context("worker"), "child")?.input).toEqual({ source: "gamma" });
 });
 
 test("the responsible App can change execution without changing creator requirements", () => {
@@ -458,20 +441,9 @@ test.each(["queued", "waiting"])(
       });
     const before = target.resourceStore.readTask("child");
     const repaired = { ...readAppTaskIntent(target, "child")!, executor: "replacement" };
-    expect(() => observeAppTaskIntent(target, { appAgent: "worker", intent: repaired })).toThrow(
-      "Task still owes a caller answer",
-    );
-    expect(target.resourceStore.readTask("child")).toEqual(before);
+    observeAppTaskIntent(target, { appAgent: "worker", intent: repaired });
+    expect(target.resourceStore.readTask("child")?.status).toEqual(before!.status);
     expect(pending().taskAdmissionKey).toBe("task:binding-repair");
-    // The App still selects execution; its creator preserves the unanswered input
-    // through the same revision capability used for requirement corrections.
-    reviseAppTask({
-      source: f.context("creator"),
-      target,
-      actor: f.actor,
-      app: { ...worker, task: () => ({ kind: "desired", intent: repaired }) },
-      change: { ...f.change, input: { kind: "measure", data: { source: "alpha" } } },
-    });
     f.reopen();
     const next = f.claim("worker", "child");
     expect(next).toMatchObject({ handler: "executor:replacement", intent: { input: { source: "alpha" } } });
@@ -492,9 +464,6 @@ test("unchanged input does not interrupt the current worker or advance its gener
     app: worker,
     actor: f.actor,
     change: { ...f.change, input: { kind: "measure", data: { source: "alpha" } } },
-    interrupt: () => {
-      throw new Error("Unexpected cleanup");
-    },
   });
   expect(result).toMatchObject({ generation: 1, changed: false });
   expect(f.context("worker").resourceStore.readTask("child")?.status.currentAttemptId).toBe(old.attemptId);

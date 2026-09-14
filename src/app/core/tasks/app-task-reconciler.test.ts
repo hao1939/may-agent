@@ -103,7 +103,7 @@ describe("durable execution backoff", () => {
     expect(claim().generation).toBe(first.generation);
   });
 
-  it("preserves newer input and refuses late failures after a spec change or cancellation", () => {
+  it("preserves newer input and accepts execution facts across revisions, but fences cancellation", () => {
     const { config, intent, claim } = setup();
     const first = claim();
     recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 10, data: {} });
@@ -112,8 +112,9 @@ describe("durable execution backoff", () => {
     const next = claim();
     expect(next.events.map((entry) => entry.event.eventId)).toContain(10);
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 2 } } });
-    expect(failAppTaskAttempt(config, next, "Late failure").status).toBe("superseded");
-    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures ?? 0).toBe(0);
+    expect(failAppTaskAttempt(config, next, "Late failure").status).toBe("retrying");
+    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(2);
+    advanceToTaskRetry(config, intent.id);
     const revised = claim();
     const resource = config.resourceStore.readTask(intent.id)!;
     cancelAppTask(config, {
@@ -164,7 +165,7 @@ describe("durable execution backoff", () => {
     },
   );
 
-  it("resets failure pacing for an accepted wait and an owner-revised execution spec", () => {
+  it("resets failure pacing for accepted progress, preserving it across spec saves", () => {
     const { config, intent, claim } = setup();
     failAppTaskAttempt(config, claim(), "Transient failure");
     advanceToTaskRetry(config, intent.id);
@@ -180,7 +181,8 @@ describe("durable execution backoff", () => {
       failAppTaskAttempt(config, claim(), "Repeated failure");
     }
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 3 } } });
-    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures ?? 0).toBe(0);
+    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(4);
+    advanceToTaskRetry(config, intent.id);
     expect(claim().generation).toBe(3);
   });
 
@@ -264,6 +266,7 @@ describe("worker failure facts and owner closure", () => {
       appAgent: "app-owner",
       intent: { ...intent, parentId: "parent", input: { revised: true } },
     });
+    advanceToTaskRetry(config, intent.id);
     const revised = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
     expect(revised.kind).toBe("claimed");
     expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(accepted);
@@ -2373,7 +2376,7 @@ describe("App task reconciler state", () => {
     },
   );
 
-  it("invalidates an old attempt when desired state changes generation", () => {
+  it("preserves execution but rejects its old result when requirements change", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("monitor"),
@@ -2390,16 +2393,15 @@ describe("App task reconciler state", () => {
     const changedTree = readTaskSnapshot(config);
     expect(changedTree.resources?.["pipeline-monitor"]).toMatchObject({
       metadata: { generation: 2, resourceVersion: 3 },
-      status: { phase: "pending" },
+      status: { phase: "running", currentAttemptId: first.attemptId },
     });
     expect(changedTree.attempts?.[first.attemptId]).toMatchObject({
-      state: "interrupted",
-      summary: "Task specification changed while the attempt was active",
+      state: "running",
     });
     expect(completeAppTask(config, first, { summary: "late generation one result" }).status).toBe("stale");
   });
 
-  it("detaches prior-generation Conditions and triggers when desired state changes", () => {
+  it("preserves prior-generation Conditions and triggers when requirements change", () => {
     const state = fixture();
     const { config } = state;
     const monitor = intent("monitor");
@@ -2439,11 +2441,11 @@ describe("App task reconciler state", () => {
     const changedTree = readTaskSnapshot(config);
     expect(changedTree.resources?.[monitor.id]).toMatchObject({
       metadata: { generation: 2 },
-      status: { phase: "pending" },
+      status: { phase: "waiting", observedGeneration: 1 },
     });
-    expect(changedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
-    expect(changedTree.conditions?.["prior-generation-run"]).toBeUndefined();
-    expect(changedTree.taskTriggers?.[monitor.id]).toBeUndefined();
+    expect(changedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual(["prior-generation-run"]);
+    expect(changedTree.conditions?.["prior-generation-run"]).toBeDefined();
+    expect(changedTree.taskTriggers?.[monitor.id]?.event.type).toBe("prior-generation.trigger");
     expect(listRunnableAppTaskIds(config)).toContain(monitor.id);
   });
 
@@ -2483,8 +2485,8 @@ describe("App task reconciler state", () => {
     });
     expect(claim).toMatchObject({ kind: "claimed", taskId: monitor.id, generation: 2 });
     const claimedTree = readTaskSnapshot(config);
-    expect(claimedTree.conditions?.["stale-run"]).toBeUndefined();
-    expect(claimedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
+    expect(claimedTree.conditions?.["stale-run"]).toBeDefined();
+    expect(claimedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual(["stale-run"]);
   });
 
   it("keeps an active generation when only containment, category, or priority changes", () => {
@@ -2529,7 +2531,7 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
     });
     expect(observed).toMatchObject({ kind: "observed", generation: 2, changed: true });
-    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toMatchObject({ state: "interrupted" });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toMatchObject({ state: "running" });
   });
 
   it("inherits agent selection, claims one attempt, and deduplicates concurrent wakes", () => {
@@ -3805,11 +3807,11 @@ describe("App task reconciler state", () => {
     ).toMatchObject({
       kind: "observed",
       generation: claim.generation + 1,
-      supersededSessionIds: ["nested-workflow-session"],
+      changed: true,
     });
     expect(
-      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "late-stale-session"),
-    ).toEqual({ status: "superseded", taskId: claim.taskId });
+      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "nested-workflow-session"),
+    ).toEqual({ status: "recorded", taskId: claim.taskId });
     expect(associateAppTaskSession(config, { taskId: "missing-task", generation: 1 }, "missing-session")).toEqual({
       status: "missing",
       taskId: "missing-task",

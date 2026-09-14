@@ -33,7 +33,7 @@ export function retainTaskInputWait(
     const admission = admissions?.[key];
     if (
       admission?.taskId === task.metadata.id &&
-      admission.taskGeneration === task.metadata.generation &&
+      admission.taskGeneration <= task.metadata.generation &&
       !admission.resultAttemptId
     ) {
       (task.status.inputWaits ??= {})[key] = structuredClone(wait);
@@ -60,8 +60,8 @@ export function continuedTaskInputKeys(
     }),
   );
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
-    wait.taskGeneration === task.metadata.generation &&
-    ((wait.conditions.length === 0 && events.length > 0) ||
+    (wait.taskGeneration < task.metadata.generation ||
+      (wait.conditions.length === 0 && events.length > 0) ||
       wait.conditions.some(({ id, generation }) => conditions.get(id) === generation))
       ? [key]
       : [],

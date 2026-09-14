@@ -3,12 +3,10 @@ import type { AppDefinition, TaskIntent, TaskRevision } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction, inStateTransaction } from "../../../lib/db/transaction.js";
 import { assertResourceCreator } from "../state/resource-creator.js";
-import { admitTaskInput, linkTaskInput } from "../state/inbox.js";
-import { listAppInboxItemsWaitingOnTask } from "../state/app-inbox-store.js";
+import { admitTaskInput } from "../state/inbox.js";
 import type { AppTaskContext } from "./app-task-store.js";
 import {
   hasPendingAppTaskFacts,
-  readAppTaskAdmissionOutcome,
   readAppTaskIntent,
   validateIntent,
 } from "./app-task-reconciler.js";
@@ -23,7 +21,6 @@ export function reviseAppTask(input: {
   app: Readonly<AppDefinition>;
   actor: TaskRevisionActor;
   change: TaskRevision;
-  interrupt?: (sessionIds: string[]) => void;
 }) {
   const { source, target, app, actor, change } = input;
   const db = source.resourceStore.db;
@@ -62,17 +59,9 @@ export function reviseAppTask(input: {
     return current;
   };
   const before = authorize();
-  const pendingInputs = () =>
-    listAppInboxItemsWaitingOnTask(db, change.appId, change.taskId).filter(
-      (item) => !item.taskAdmissionKey || !readAppTaskAdmissionOutcome(target, change.taskId, item.taskAdmissionKey),
-    );
-  const ownedInputs = () => {
-    const items = pendingInputs();
-    for (const item of items) {
-      if (!isDeepStrictEqual(item.creator, { appId: actor.appId, taskId: actor.taskId }))
-        throw new Error("Another caller still awaits this Task's current answer; retry after it finishes");
-    }
-    return items;
+  const recheck = () => {
+    if (!isDeepStrictEqual(authorize().spec, before.spec))
+      throw new Error("Task requirements changed while mapping input; read the current Task");
   };
   const attachment = app.task({
     id: change.taskId,
@@ -87,27 +76,13 @@ export function reviseAppTask(input: {
     parentId: before.spec.parentId,
   });
   validateIntent(intent);
-  if (authorize().metadata.resourceVersion !== before.metadata.resourceVersion)
-    throw new Error("Task changed while the App mapped its revised input");
+  recheck();
   if (isDeepStrictEqual(readAppTaskIntent(target, change.taskId), intent))
     return { kind: "observed" as const, taskId: change.taskId, generation: before.metadata.generation, changed: false };
-  ownedInputs();
-  const sessionId = before.status.currentAttemptId
-    ? target.resourceStore.readAttempt(before.status.currentAttemptId)?.sessionId
-    : undefined;
-  if (before.status.currentAttemptId && !sessionId)
-    throw new Error("The current execution has no session cleanup capability; retry after it finishes");
-  if (sessionId) {
-    if (!input.interrupt) throw new Error("Task revision requires execution cleanup");
-    input.interrupt([sessionId]);
-  }
   return stateTransaction(db, () => {
-    const current = authorize();
-    if (current.metadata.resourceVersion !== before.metadata.resourceVersion)
-      throw new Error("Task changed during revision preparation; read its current state");
-    const items = ownedInputs();
-    const key = `task-revision:${JSON.stringify([change.appId, change.taskId, change.expectedGeneration, before.metadata.resourceVersion])}`;
-    const result = admitTaskInput(target, {
+    recheck();
+    const key = `task-revision:${JSON.stringify([change.appId, change.taskId, change.expectedGeneration])}`;
+    return admitTaskInput(target, {
       appId: change.appId,
       creator: { appId: actor.appId, taskId: actor.taskId },
       creatorRevision: true,
@@ -115,9 +90,5 @@ export function reviseAppTask(input: {
       idempotencyKey: key,
       inputContext: { id: key, source: { kind: "app", id: actor.appId }, input: change.input },
     });
-    // Retain the caller's exact wait and old input evidence. Only its unfinished
-    // result link follows the new admission; accepted answers stay immutable.
-    for (const item of items) linkTaskInput(db, item.id, change.taskId, key);
-    return result;
   });
 }
