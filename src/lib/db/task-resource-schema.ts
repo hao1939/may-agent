@@ -181,6 +181,13 @@ function migrateTaskEventReceipts(db: SqliteDb): void {
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
   db.exec(APP_INBOX_SCHEMA);
+  if (
+    !db
+      .prepare("PRAGMA table_info(app_inbox_items)")
+      .all()
+      .some((column) => column.name === "creator_json")
+  )
+    db.exec("ALTER TABLE app_inbox_items ADD COLUMN creator_json TEXT");
   const needsConditionRouteBackfill = !db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_condition_routes'")
     .get();

@@ -1,6 +1,13 @@
 import type { AppResult } from "./app.js";
 import type { AppEvent } from "./event.js";
-import type { Condition, TaskExecutorName, TaskPriority, TaskReconcileResult } from "./task.js";
+import type {
+  Condition,
+  ResourceCreator,
+  TaskExecutorName,
+  TaskPriority,
+  TaskReconcileResult,
+  TaskRevision,
+} from "./task.js";
 import type { Static, TSchema } from "typebox";
 
 export type Logger = {
@@ -26,6 +33,8 @@ export type TaskView = {
 
 /** Exact desired Task detail returned only by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Immutable change authority; absent for historical records with no saved provenance. */
+  creator?: ResourceCreator;
   parentId: string;
 
   acceptance: string[];
@@ -386,6 +395,8 @@ export type TaskAttempt = {
   resultSchema: Record<string, unknown>;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
+  /** Save revised requirements through the same creator capability used by agent tools. */
+  reviseTask(change: TaskRevision): Promise<TaskDetail>;
   /**
    * Observe live feedback, approval, steering, or cancellation addressed to
    * this Task. `accept` only marks the event for atomic consumption if this

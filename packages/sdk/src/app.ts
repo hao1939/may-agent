@@ -242,7 +242,7 @@ export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "
 export type ConversationTopicDecision =
   { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };
 
-/** A narrow human-authorized operation on an exact Task already present in request context. */
+/** Exact cancellation; requirement revisions use the common tasks.update capability. */
 export type ConversationTaskControl = {
   kind: "cancel";
   appId: string;

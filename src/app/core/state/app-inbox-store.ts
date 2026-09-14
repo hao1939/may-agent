@@ -1,7 +1,14 @@
 import { storedResultFacts } from "./result-facts.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { AppConversationResource, AppInput, AppInputSource, AppResult, ConversationTurnResult } from "@may-agent/sdk";
+import type {
+  AppConversationResource,
+  AppInput,
+  AppInputSource,
+  AppResult,
+  ConversationTurnResult,
+  ResourceCreator,
+} from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
 import type { AppTaskAttempt } from "../tasks/app-task-state.js";
 import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
@@ -28,6 +35,8 @@ export type AppInboxTaskDependencyPage = {
 export type AppInboxItem = {
   id: string;
   appId: string;
+  /** Saved by trusted Task admission, never taken from event payloads. */
+  creator?: ResourceCreator;
   parentId?: string;
   /** Exact existing Task that this typed input continues. */
   targetTaskId?: string;
@@ -67,6 +76,7 @@ export type AppInboxItem = {
 export type CreateAppInboxItem = {
   id?: string;
   appId: string;
+  creator?: ResourceCreator;
   parentId?: string;
   targetTaskId?: string;
   topicId?: string;
@@ -140,6 +150,7 @@ function rowToItem(row: InboxRow): AppInboxItem {
   return {
     id: requiredText(row.id, "id"),
     appId: requiredText(row.app_id, "app_id"),
+    ...(row.creator_json ? { creator: parseJson<ResourceCreator>(row.creator_json, "creator_json") } : {}),
     parentId: optionalText(row.parent_id),
     targetTaskId: optionalText(row.target_task_id),
     topicId: optionalText(row.topic_id),
@@ -186,6 +197,10 @@ function validateCreate(input: CreateAppInboxItem): void {
   requiredText(input.appId, "appId");
   requiredText(input.source.id, "source.id");
   requiredText(input.input.kind, "input.kind");
+  if (input.creator) {
+    requiredText(input.creator.appId, "creator.appId");
+    if (input.creator.taskId !== undefined) requiredText(input.creator.taskId, "creator.taskId");
+  }
   if (input.targetTaskId !== undefined) requiredText(input.targetTaskId, "targetTaskId");
   if (input.topicId !== undefined) requiredText(input.topicId, "topicId");
   if (!(["human", "app", "system"] as const).includes(input.source.kind)) {
@@ -517,9 +532,9 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
     `INSERT OR IGNORE INTO app_inbox_items (
        id, app_id, parent_id, target_task_id, topic_id, conversation_id, conversation_seq,
        channel, channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id,
-       source_kind, source_id, input_kind, input_data, status,
+       source_kind, source_id, creator_json, input_kind, input_data, status,
        available_at, origin_event_id, idempotency_key, created_at, changed_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.appId,
@@ -535,6 +550,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
       input.replyToSourceId ?? null,
       input.source.kind,
       input.source.id,
+      input.creator ? JSON.stringify(input.creator) : null,
       input.input.kind,
       JSON.stringify(input.input.data),
       now,
@@ -568,6 +584,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
     item.topicId !== input.topicId ||
     item.source.kind !== input.source.kind ||
     item.source.id !== input.source.id ||
+    (input.creator !== undefined && !isDeepStrictEqual(item.creator, input.creator)) ||
     !isDeepStrictEqual(item.input, input.input)
   ) {
     throw new Error(`App inbox idempotency key ${input.idempotencyKey ?? id} was reused with different input`);
