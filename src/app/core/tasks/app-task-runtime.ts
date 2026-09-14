@@ -1,4 +1,10 @@
-import { type AppInputContext, type AppTaskAttachment, type TaskIntent as AppTaskIntent } from "@may-agent/sdk";
+import {
+  type AppInputContext,
+  type AppTaskAttachment,
+  type TaskIntent as AppTaskIntent,
+  type TaskRevision,
+} from "@may-agent/sdk";
+import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
 import { Check } from "typebox/value";
@@ -58,6 +64,7 @@ import type { AppTaskQueueOptions } from "./queue.js";
 import {
   appTaskConfig,
   configuredAppAgent,
+  configuredRegistryEntries,
   prepareAppTaskRuntimeDescriptors,
   syncProjectReadModel,
   type AppTaskRuntimeDescriptor,
@@ -949,6 +956,52 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
     },
     input.taskId,
   );
+}
+
+/** Common creator capability; App selection and delivery are ordinary runtime wiring. */
+export function reviseLoadedAppTask(input: {
+  bus: EventBus;
+  binding: TaskRevisionActor;
+  change: TaskRevision;
+}): TaskDetail {
+  const opts = appRouterOptionsByBus.get(input.bus);
+  const source = loadedAppTaskRuntimeDescriptor(input.bus, input.binding.appId);
+  if (!opts || !source) throw new Error("Task revision requires a loaded caller");
+  const loaded = loadedAppTaskRuntimeDescriptor(input.bus, input.change.appId);
+  const entry = configuredRegistryEntries(opts).find(({ definition }) => definition.id === input.change.appId);
+  const app = loaded?.app ?? entry?.definition;
+  const store = loaded?.resourceStore ?? AppTaskResourceStore.activeFromDb(source.resourceStore.db, input.change.appId);
+  if (!app?.tasks || !store || (!loaded && !entry))
+    throw new Error("Task revision requires an installed responsible App");
+  const target = loaded
+    ? appTaskConfig(loaded)
+    : appTaskContext({
+        appDir: entry!.appDir,
+        projectDir: entry!.appDir,
+        agent: configuredAppAgent(app, entry!.appDir),
+        maxConcurrent: app.tasks.maxConcurrent ?? 1,
+        resourceStore: store,
+      });
+  const revised = reviseAppTask({
+    source: appTaskConfig(source),
+    target,
+    app,
+    actor: input.binding,
+    change: input.change,
+    interrupt: (ids) => {
+      for (const id of ids)
+        interruptSupersededAgentSession(opts, id, "Creator revised the assignment", input.change.taskId);
+    },
+  });
+  if (revised.kind === "observed" && revised.changed)
+    input.bus.emit({
+      type: "app.task.ready",
+      source: "app-task-reconciler",
+      owner: `app:${input.change.appId}`,
+      target: { appId: input.change.appId, taskId: input.change.taskId },
+      data: { appId: input.change.appId, taskId: input.change.taskId },
+    });
+  return readRuntimeTaskView({ taskStateConfig: target }, input.change.taskId)!;
 }
 
 /** Publish one event from the currently fenced Task attempt used by an executor tool. */

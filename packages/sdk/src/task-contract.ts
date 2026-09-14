@@ -4,7 +4,6 @@ import type {
   Condition,
   TaskAction,
   TaskAppDependency,
-  TaskExecutorName,
   TaskReconcileResult,
   TaskVerificationResult,
 } from "./task.js";
@@ -13,11 +12,6 @@ export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 export const MAX_TASK_RESULT_BYTES = 16 * 1024;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
-const stringArraySchema = Type.Array(nonEmptyStringSchema);
-const taskPrioritySchema = Type.Union([Type.Literal("P0"), Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]);
-const TASK_EXECUTOR_PATTERN = "^[a-z][a-z0-9-]{0,63}$";
-const taskExecutorSchema = Type.String({ minLength: 1, maxLength: 64, pattern: TASK_EXECUTOR_PATTERN });
-const nullableStringSchema = Type.Union([nonEmptyStringSchema, Type.Null()]);
 const TYPED_CONDITION_SUBJECT_PATTERN = "^\\s*[A-Za-z][A-Za-z0-9_.-]*:[\\s\\S]*\\S\\s*$";
 const typedConditionSubjectPattern = new RegExp(TYPED_CONDITION_SUBJECT_PATTERN);
 const typedConditionSubjectSchema = Type.String({
@@ -36,36 +30,15 @@ const objectSchema = Type.Unsafe<Record<string, unknown>>({
   additionalProperties: true,
 });
 
-export const taskActionSchema = Type.Union([
-  Type.Object(
-    {
-      kind: Type.Literal("update-task"),
-      taskId: nonEmptyStringSchema,
-      expectedGeneration: Type.Integer({ minimum: 1 }),
-      parentId: Type.Optional(nonEmptyStringSchema),
-      outcome: Type.Optional(nonEmptyStringSchema),
-      outputs: Type.Optional(stringArraySchema),
-      acceptance: Type.Optional(Type.Array(nonEmptyStringSchema, { minItems: 1 })),
-      priority: Type.Optional(taskPrioritySchema),
-      agent: Type.Optional(nullableStringSchema),
-      workflow: Type.Optional(nullableStringSchema),
-      executor: Type.Optional(Type.Union([taskExecutorSchema, Type.Null()])),
-      input: Type.Optional(objectSchema),
-      dependsOn: Type.Optional(stringArraySchema),
-      category: Type.Optional(nullableStringSchema),
-    },
-    { additionalProperties: false },
-  ),
-  Type.Object(
-    {
-      kind: Type.Literal("unblock-task"),
-      taskId: nonEmptyStringSchema,
-      expectedGeneration: Type.Integer({ minimum: 1 }),
-      reason: nonEmptyStringSchema,
-    },
-    { additionalProperties: false },
-  ),
-]);
+export const taskActionSchema = Type.Object(
+  {
+    kind: Type.Literal("unblock-task"),
+    taskId: nonEmptyStringSchema,
+    expectedGeneration: Type.Integer({ minimum: 1 }),
+    reason: nonEmptyStringSchema,
+  },
+  { additionalProperties: false },
+);
 
 export const conditionSchema = Type.Object(
   {
@@ -189,121 +162,17 @@ function validGeneration(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 }
 
-function validPriority(value: unknown): value is "P0" | "P1" | "P2" | "P3" {
-  return value === "P0" || value === "P1" || value === "P2" || value === "P3";
-}
-
-function validExecutor(value: unknown): value is TaskExecutorName {
-  return typeof value === "string" && new RegExp(TASK_EXECUTOR_PATTERN).test(value);
-}
-
 function optionalString(value: Record<string, unknown>, key: string): { ok: true; value?: string } | { ok: false } {
   if (!(key in value)) return { ok: true };
   const normalized = normalizedString(value[key]);
   return normalized ? { ok: true, value: normalized } : { ok: false };
 }
 
-function nullableBinding(
-  value: Record<string, unknown>,
-  key: "agent" | "owner" | "workflow" | "category",
-): { ok: true; present: false } | { ok: true; present: true; value: string | null } | { ok: false } {
-  if (!(key in value)) return { ok: true, present: false };
-  if (value[key] === null) return { ok: true, present: true, value: null };
-  const normalized = normalizedString(value[key]);
-  return normalized ? { ok: true, present: true, value: normalized } : { ok: false };
-}
-
-function nullableAgentBinding(
-  value: Record<string, unknown>,
-): { ok: true; present: false } | { ok: true; present: true; value: string | null } | { ok: false; error: string } {
-  const agent = nullableBinding(value, "agent");
-  if (!agent.ok) return { ok: false, error: "agent must be a non-empty string or null when present" };
-  const owner = nullableBinding(value, "owner");
-  if (!owner.ok) return { ok: false, error: "legacy owner must be a non-empty string or null when present" };
-  if (agent.present && owner.present && agent.value !== owner.value) {
-    return { ok: false, error: "agent conflicts with legacy owner" };
-  }
-  if (agent.present) return agent;
-  return owner;
-}
-
-function normalizeUpdateTaskAction(value: Record<string, unknown>, index: number): TaskAction | string {
-  const taskId = normalizedString(value.taskId);
-  if (!taskId) return `actions[${index}].taskId must be a non-empty string`;
-  if (!validGeneration(value.expectedGeneration)) {
-    return `actions[${index}].expectedGeneration must be a positive integer`;
-  }
-  const action: Extract<TaskAction, { kind: "update-task" }> = {
-    kind: "update-task",
-    taskId,
-    expectedGeneration: value.expectedGeneration,
-  };
-  if ("parentId" in value) {
-    const parentId = normalizedString(value.parentId);
-    if (!parentId) return `actions[${index}].parentId must be a non-empty string when present`;
-    action.parentId = parentId;
-  }
-  if ("outcome" in value) {
-    const outcome = normalizedString(value.outcome);
-    if (!outcome) return `actions[${index}].outcome must be a non-empty string when present`;
-    action.outcome = outcome;
-  }
-  if ("mode" in value) {
-    return `actions[${index}].mode is retired; all Tasks use one lifecycle`;
-  }
-  if ("outputs" in value) {
-    const outputs = normalizedStringArray(value.outputs, true);
-    if (!outputs) return `actions[${index}].outputs must be a string array when present`;
-    action.outputs = outputs;
-  }
-  if ("acceptance" in value) {
-    const acceptance = normalizedStringArray(value.acceptance, false);
-    if (!acceptance) return `actions[${index}].acceptance must be a non-empty string array when present`;
-    action.acceptance = acceptance;
-  }
-  if ("priority" in value) {
-    if (!validPriority(value.priority)) return `actions[${index}].priority must be P0, P1, P2, or P3`;
-    action.priority = value.priority;
-  }
-  const agent = nullableAgentBinding(value);
-  if ("error" in agent) return `actions[${index}].${agent.error}`;
-  if (agent.present) action.owner = agent.value;
-  for (const key of ["workflow", "category"] as const) {
-    const binding = nullableBinding(value, key);
-    if (!binding.ok) return `actions[${index}].${key} must be a non-empty string or null when present`;
-    if (!binding.present) continue;
-    if (key === "workflow" && binding.value === "project") {
-      return `actions[${index}].workflow must name a real workflow or null`;
-    }
-    action[key] = binding.value;
-  }
-  if ("executor" in value) {
-    if (value.executor !== null && !validExecutor(value.executor)) {
-      return `actions[${index}].executor must be a lowercase name of at most 64 characters or null when present`;
-    }
-    action.executor = value.executor as TaskExecutorName | null;
-  }
-  if (action.workflow && action.executor) {
-    return `actions[${index}] cannot configure both workflow and executor`;
-  }
-  if ("input" in value) {
-    if (!isRecord(value.input)) return `actions[${index}].input must be an object when present`;
-    action.input = structuredClone(value.input);
-  }
-  if ("dependsOn" in value) {
-    const dependsOn = normalizedStringArray(value.dependsOn, true);
-    if (!dependsOn) return `actions[${index}].dependsOn must be a string array when present`;
-    action.dependsOn = dependsOn;
-  }
-  if (Object.keys(action).length === 3) return `actions[${index}] contains no change`;
-  return action;
-}
-
 function normalizeAction(value: unknown, index: number): TaskAction | string {
   if (!isRecord(value)) return `actions[${index}] must be an object`;
   switch (value.kind) {
     case "update-task":
-      return normalizeUpdateTaskAction(value, index);
+      return `actions[${index}].update-task is retired; use tasks update or TaskAttempt.reviseTask before returning a result`;
     case "unblock-task": {
       const taskId = normalizedString(value.taskId);
       if (!taskId) return `actions[${index}].taskId must be a non-empty string`;
@@ -315,7 +184,7 @@ function normalizeAction(value: unknown, index: number): TaskAction | string {
       return { kind: "unblock-task", taskId, expectedGeneration: value.expectedGeneration, reason };
     }
     default:
-      return `actions[${index}].kind must be one of update-task, unblock-task; delegate new work through dependencies`;
+      return `actions[${index}].kind must be unblock-task; revise requirements through tasks update and delegate new work through dependencies`;
   }
 }
 

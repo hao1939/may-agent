@@ -2,10 +2,13 @@ import {
   conversationRequestUpdatesSchema,
   type AppConversationRequest,
   type AppConversationRequestUpdate,
+  type ResourceCreator,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
+import { assertResourceCreator } from "./resource-creator.js";
+import { conversationTaskId } from "./conversation-identity.js";
 
 export class ConversationRequestConflict extends Error {}
 export type ConversationRequestChange = { id: string; expectedRevision: number; scope: string };
@@ -90,11 +93,15 @@ export function applyConversationRequestUpdates(
     updateKey: string;
     messageId?: string;
     now: number;
+    /** Trusted live Conversation context. Old internal callers supply the same scoped identity. */
+    actor?: ResourceCreator;
   },
 ): void {
   if (!Check(conversationRequestUpdatesSchema, input.updates)) throw new Error("Invalid accepted Request updates");
   const ids = new Set<string>();
   stateTransaction(db, () => {
+    const creator = { appId: input.appId, taskId: conversationTaskId(input.appId, input.conversationId) };
+    assertResourceCreator(creator, input.actor ?? creator);
     for (const update of input.updates) {
       if (ids.has(update.id)) throw new Error("Repeated accepted Request update");
       ids.add(update.id);

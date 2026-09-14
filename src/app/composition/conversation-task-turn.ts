@@ -17,6 +17,7 @@ import { boundedAppRequestConversation, prepareConversationInput } from "../conv
 import { readConversationTopic } from "../core/state/conversations.js";
 import type { AppInputResolver } from "../conversations/turn-agent.js";
 import { readConversationRequest } from "../core/state/conversation-requests.js";
+import { assertResourceCreator } from "../core/state/resource-creator.js";
 
 /** Prepare a judgment under the Task claim. The common runtime alone settles it. */
 export async function prepareConversationTaskTurn(input: {
@@ -92,8 +93,8 @@ export async function prepareConversationTaskTurn(input: {
     );
   const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
   for (const control of decision.taskControls ?? []) {
-    if (item.source.kind !== "human" || !decision.response?.trim() || decision.followUp)
-      throw new Error("Task controls require an explained direct human Turn without a follow-up handoff");
+    if (!decision.response?.trim() || decision.followUp)
+      throw new Error("Task controls require an explanation without a follow-up handoff");
     if (!knownTask(control.appId, control.taskId))
       throw new Error("Task control target is absent from Conversation context");
     if (control.appId === app.id && control.taskId === claim.taskId)
@@ -107,6 +108,9 @@ export async function prepareConversationTaskTurn(input: {
     const target = input.getTaskApp?.(control.appId);
     const task = target?.config.resourceStore.readTask(control.taskId);
     if (!target || !task) throw new Error("Task control requires an installed Task App and exact Task");
+    if (item.source.kind !== "human") {
+      assertResourceCreator(task.metadata.creator, { appId: app.id, taskId: claim.taskId });
+    }
     taskControls.push({
       config: target.config,
       taskId: control.taskId,

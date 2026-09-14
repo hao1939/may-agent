@@ -51,7 +51,8 @@ Final `requestUpdates` may omit `scope` to retain the stored ask. A new ask
 requires scope. Closure uses the current revision and commits with its reply;
 it cannot change an existing scope. Simple new asks may still be accepted and
 closed with one answer. No correct-and-close exception is needed. The App
-judges authority and fulfillment. The bounded Request list prefers
+judges human intent and fulfillment; code checks the stable Conversation creator
+and revision. The bounded Request list prefers
 open asks, then includes recent closed asks so a human can naturally correct one.
 
 When final result settlement fails, the attempt retains `unacceptedResult`
@@ -88,6 +89,15 @@ Console Esc and interface Stop buttons address an exact observed Turn. Task
 state records the stop before local execution is aborted, rejects late output,
 and preserves newer input and the accepted ask. Delegated Tasks continue.
 Closing the stable Task is a separate authorized owner action.
+
+For delegated requirement changes, the Conversation agent uses the common
+`tasks update` capability described in the [Task contract](../core/tasks/README.md#adopting-creator-revisions).
+It first saves any accepted human correction in the Request, then revises work
+it created through the responsible App's input contract. Saving the Request alone
+does not change a worker's assignment. Worker feedback uses the same loop; no
+correction-specific handler or mandatory human turn is required. Code enforces
+creator authority, while the agent judges whether the change is within the
+human's agreed scope. Existing direct human cancellation remains supported.
 
 Omitting this handler leaves its input visible and prevents execution through
 an old inbox owner; other Task handlers continue to work. The candidate refuses

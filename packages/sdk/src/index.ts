@@ -78,6 +78,8 @@ export type {
 export { conversationTurnResultSchema } from "./app.js";
 export type {
   Condition,
+  ResourceCreator,
+  TaskRevision,
   TaskAcceptanceBasis,
   TaskAction,
   TaskAppDependency,

@@ -40,10 +40,8 @@ import {
   type ConversationRequestChange,
 } from "./conversation-requests.js";
 
-/** Code assigns one execution identity per Conversation; agents never construct it. */
-export function conversationTaskId(appId: string, conversationId: string): string {
-  return `conversation_${createHash("sha256").update([appId, conversationId].join("\0")).digest("hex").slice(0, 24)}`;
-}
+import { conversationTaskId } from "./conversation-identity.js";
+export { conversationTaskId } from "./conversation-identity.js";
 
 /** Conventional execution intent, shared by admission and offline cutover. */
 export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent, "id"> {
@@ -259,6 +257,7 @@ export function updateConversationTaskRequest(
     assertAppTaskEffectFresh(config, claim);
     const item = readConversationTaskInputs(config, claim).at(-1)!;
     applyConversationRequestUpdates(config.resourceStore.db, {
+      actor: { appId: item.appId, taskId: claim.taskId },
       appId: item.appId,
       conversationId: item.conversationId!,
       topicId: item.topicId ?? undefined,
@@ -295,11 +294,11 @@ export function completeConversationTaskTurn(
   return stateTransaction(db, () => {
     const items = readConversationTaskInputs(config, claim);
     const item = items.at(-1)!;
-    if (decision.taskControls?.length && (item.source.kind !== "human" || decision.followUp))
-      throw new Error("Task controls require a direct human Turn without a follow-up handoff");
+    if (decision.taskControls?.length && decision.followUp)
+      throw new Error("Task controls cannot accompany a follow-up handoff");
     if (
       !decision.response?.trim() &&
-      (items.some((entry) => entry.source.kind === "human") || decision.followUp || decision.requestUpdates?.length)
+      (items.some((entry) => entry.source.kind === "human") || decision.followUp || decision.requestUpdates?.length || decision.taskControls?.length)
     )
       throw new Error("Conversation decision requires a reply");
     const accepted = completeAppTask(config, claim, {
@@ -340,6 +339,7 @@ export function completeConversationTaskTurn(
       facts: decision.facts,
     };
     applyConversationRequestUpdates(db, {
+      actor: { appId: item.appId, taskId: claim.taskId },
       appId: item.appId,
       conversationId,
       topicId,
@@ -362,6 +362,7 @@ export function completeConversationTaskTurn(
       cancelledTasks.push(
         cancelAppTask(prepared.config, {
           ...control,
+          ...(item.source.kind !== "human" ? { actor: { appId: item.appId, taskId: claim.taskId } } : {}),
           expectedGeneration: prepared.generation,
           expectedResourceVersion: prepared.resourceVersion,
           controlKey: `conversation-control:${claim.attemptId}:${index}`,
@@ -380,6 +381,7 @@ export function completeConversationTaskTurn(
         throw new Error("Conversation follow-up must serve an open accepted Request");
       const admitted = admitTaskInput(target, {
         appId: decision.followUp.appId,
+        creator: { appId: item.appId, taskId: claim.taskId },
         attachment,
         idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
         inputContext: { id: item.id, source: item.source, input: decision.followUp.input },

@@ -3,7 +3,6 @@ import {
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskIntent as AppTaskIntent,
-  type TaskAction,
   type TaskAttempt,
 } from "@may-agent/sdk";
 import { join } from "node:path";
@@ -35,7 +34,6 @@ import {
 import { ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
-  interruptSupersededActionSessions,
   interruptSupersededAgentSession,
   runRegisteredTaskExecutor,
   runTaskAgent,
@@ -119,15 +117,6 @@ export async function runTaskAttempt(input: {
   };
   let activeConfig: ReturnType<typeof appTaskConfig> | undefined;
   let activeClaim: AppTaskClaim | undefined;
-  let cleanupFailed = false;
-  const prepareSupersededSessions = (sessionIds: string[]) => {
-    try {
-      interruptSupersededActionSessions(opts, input.taskId, sessionIds);
-    } catch (error) {
-      cleanupFailed = true;
-      throw error;
-    }
-  };
 
   try {
     const config = appTaskConfig(descriptor);
@@ -621,14 +610,9 @@ export async function runTaskAttempt(input: {
                   actions: primaryHandlerResult.actions,
                   acceptanceBasis,
                   acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-                  prepareSupersededSessions,
                 }),
           );
-          const appliedDisposition = taskCompletionDisposition(
-            primary.taskId,
-            primaryHandlerResult.actions,
-            apply.taskContinues,
-          );
+          const appliedDisposition = apply.taskContinues ? "progress" : "converged";
           const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
           emitTaskReconciliationEvent(opts, descriptor, event, "project.task.reconciled", intent.id, {
             generation: primary.generation,
@@ -667,7 +651,6 @@ export async function runTaskAttempt(input: {
           }
           return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
         } catch (error) {
-          if (cleanupFailed) throw error;
           const stale = recoverStaleTaskActionResult(config, primary, error);
           if (stale) {
             const summary = error instanceof Error ? error.message : String(error);
@@ -761,7 +744,6 @@ export async function runTaskAttempt(input: {
             actions: primaryHandlerResult.actions,
             conditions: primaryHandlerResult.conditions,
             acceptedLiveEventIds: primaryResult.acceptedLiveEventIds,
-            prepareSupersededSessions,
           }),
         );
         const stale = apply.status === "stale" ? recoverStaleTaskResult(config, primary) : null;
@@ -790,7 +772,6 @@ export async function runTaskAttempt(input: {
             : [];
         return [...new Set([...(stale?.reconcileTaskIds ?? apply.reconcileTaskIds), ...recoveredTaskIds])];
       } catch (error) {
-        if (cleanupFailed) throw error;
         const stale = recoverStaleTaskActionResult(config, primary, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
@@ -890,12 +871,6 @@ export async function runTaskAttempt(input: {
     });
     return [intent.id];
   } catch (error) {
-    // Cleanup refusal is not a failed execution or rejected result. Preserve
-    // the original claim until recovery can drain execution and retry safely.
-    if (cleanupFailed) {
-      timing.outcome = "failed";
-      throw error;
-    }
     if (activeConfig && activeClaim) {
       const stale = recoverStaleTaskActionResult(activeConfig, activeClaim, error);
       if (stale) {
@@ -959,15 +934,6 @@ export async function runTaskAttempt(input: {
   } finally {
     input.reportTiming(timing);
   }
-}
-
-function taskCompletionDisposition(
-  taskId: string,
-  actions: TaskAction[],
-  taskContinues: boolean | undefined,
-): "converged" | "progress" | "revised" {
-  if (!taskContinues) return "converged";
-  return actions.some((action) => action.kind === "update-task" && action.taskId === taskId) ? "revised" : "progress";
 }
 
 function emitTaskReconciliationEvent(

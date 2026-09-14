@@ -29,6 +29,7 @@ import {
   admitConversationTaskInput,
   admitConversationTaskChange,
   completeConversationTaskTurn,
+  conversationTaskId,
   stopConversationTaskTurn,
   readConversationTaskInputs,
   listPendingConversationTaskChanges,
@@ -400,7 +401,7 @@ test("a system turn can stay quiet without hiding the accepted Task facts", asyn
   expect(f.store.listRecoveryCandidates().items).toEqual([]);
 });
 
-function cancellationFixture(source: "human" | "system" = "human") {
+function cancellationFixture(source: "human" | "system" = "human", createdHere = false) {
   const f = fixture();
   const worker = defineApp({ ...app, id: "worker", tasks: {} });
   const store = AppTaskResourceStore.fromDb(f.db, worker.id);
@@ -415,7 +416,8 @@ function cancellationFixture(source: "human" | "system" = "human") {
   );
   const config = appTaskContext({ ...f.context(), resourceStore: store });
   const intent = { id: "job", parentId: "root", outcome: "Measure the sample", acceptance: ["Return facts"] };
-  observeAppTaskIntent(config, { appAgent: worker.id, intent: { ...intent } });
+  observeAppTaskIntent(config, { appAgent: worker.id, intent: { ...intent },
+    ...(createdHere ? { creator: { appId: app.id, taskId: conversationTaskId(app.id, "chat") } } : {}) });
   createConversationTopic(f.db, {
     id: "work",
     appId: app.id,
@@ -509,9 +511,40 @@ test("a newer human input prevents the old Turn from applying cancellation", asy
   expect(getAppInboxItem(c.f.db, "first")?.status).not.toBe("done");
 });
 
-test("Conversation control preparation requires human authority and an exact contextual target", async () => {
+test("a creator can cancel its Task during a system review without another human turn", async () => {
+  const c = cancellationFixture("system", true);
+  const proposal = await c.prepare();
+  const result = completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, proposal);
+  expect(result.cancelledTasks?.[0]?.applied).toBe(true);
+  expect(c.store.readCancellation("job")?.kind).toBe("cancelled");
+  expect(c.store.readCancellation("job")?.decidedBy).toEqual({ kind: "creator",
+    creator: { appId: app.id, taskId: c.claim.taskId } });
+});
+
+test("final Conversation controls cannot revise requirements after execution", () => {
+  const c = cancellationFixture("system", true);
+  const decision = {
+    ...c.answer,
+    taskControls: [
+      {
+        kind: "update",
+        appId: c.worker.id,
+        taskId: "job",
+        reason: "Use the alternative sample",
+        outcome: "Measure sample beta",
+        acceptance: ["Return verified beta facts"],
+      },
+    ],
+  } as unknown as ConversationTurnResult;
+  const before = c.store.readTask("job");
+  expect(() => completeConversationTaskTurn(c.f.context(), c.claim, decision)).toThrow("Invalid Conversation decision");
+  expect(c.store.readTask("job")).toEqual(before);
+  expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeUndefined();
+});
+
+test("Conversation control requires creator or direct human authority and an exact contextual target", async () => {
   const system = cancellationFixture("system");
-  await expect(system.prepare()).rejects.toThrow("direct human Turn");
+  await expect(system.prepare()).rejects.toThrow("recorded creator");
   expect(system.store.isCancelled("job")).toBe(false);
   const human = cancellationFixture();
   await expect(
