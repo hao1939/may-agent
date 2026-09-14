@@ -57,6 +57,27 @@ answers and selected reports, then replays them and retained external Events
 through the same Condition transition. Feedback survives a missed notification;
 no extra delivery queue is needed.
 
+### One admission and reconciliation model
+
+Admission validates and saves the input or change, including its responsible
+route when handling is required, before returning a receipt. Handling runs
+separately: the worker reads current requirements and facts, acts and reports.
+A failed handler leaves accepted work available for the same recovery path.
+A receipt confirms acceptance; the saved result establishes what was handled.
+
+Adapters translate source-specific information at the boundary. For example,
+`lib/escalation-feedback.ts` resolves saved provenance to an exact Task address;
+the existing event transaction saves its wake and ordinary Task recovery handles
+it. Resolution labels never choose a session to restart. Unknown ownership is
+recorded as unresolved and needs intervention; no supervisor is inferred.
+
+A direct setter can finish its small edit during admission. Metric setters
+validate the exact resource and save SQL state with the event in one transaction;
+later reactions remain asynchronous. A passive notification alone does not
+promise work. Project comments retain recorded evidence; requiring an App work
+admission at the comment interface is separate from this lifecycle. Direct
+synchronous helpers and explicit fenced controls keep their existing contracts.
+
 `project.task.reconciled` and `app.task.cancelled` also notify result readers.
 Composition refreshes exact input feedback and linked Conversation observations
 from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`
@@ -87,7 +108,7 @@ This is not a general progress stream. Apps can still declare relevant event rou
 | `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained facts remains readable |
 
 Task attempt failures persist their retry deadline, backing off from 250 ms to
-15 minutes during prolonged failure. Fresh human input still permits one new
+one hour during prolonged failure. Fresh human input still permits one new
 attempt. Dispatch or storage errors before that write use `controller.ts`'s local
 timer (250 ms to 30 seconds). Neither path has a failure-count stop. These timers
 pace different work: a dispatch may only retry a storage operation; an attempt
@@ -99,18 +120,67 @@ whether the assignment should continue.
 
 New work is requested through `TaskReconcileResult.dependencies`: the destination
 App validates `input` and chooses its Task specification and executor. Workers
-cannot return raw `create-task` actions. `update-task` and `unblock-task` target
-existing assignments and require their current generation. `admitTaskAppDependencies()`
-in `app-task-runtime.ts` publishes delegated input; `app-task-inputs.ts` resumes
-the caller's exact saved input when feedback arrives through its retained wait.
+cannot return raw `create-task` or `update-task` actions. `unblock-task` reconsiders
+an existing wait using its current generation and creator authority.
+`admitTaskAppDependencies()` in `dependency-admission.ts` saves and notifies delegated
+input; `app-task-inputs.ts` resumes the caller's exact saved input when feedback
+arrives through its retained wait.
 
-Parent links organize work and scope reads/actions. They neither wait for nor
-subscribe to child outcomes. Typed dependencies return exact input answers;
+Parent links organize work and scope reads; creator metadata controls changes.
+They neither wait for nor subscribe to child outcomes. Typed dependencies return exact input answers;
 Conditions await facts. `dependsOn` remains a static execution gate, not a return
 link. Workflow reconciliation receives the same saved waits as registered
 executors.
 
-Before adopting this breaking change, retire saved implicit waits offline using
+Owner and worker are roles in each assignment, not agent types. The same agent
+may execute assigned work and own work it delegates. Requirements belong to
+the assigning owner; the worker chooses execution within those requirements.
+Delegating further repeats the same dependency/feedback contract with no
+depth-specific handler. Parents review and combine evidence; child success
+does not fulfill a parent assignment. Internal steps need no separate Task.
+The creator revises same-App and cross-App work through `tasks update` or
+`TaskAttempt.reviseTask`, supplying the exact Task, observed generation and complete
+App input. `task-revision.ts` uses the destination App's normal mapper and saves
+requirements through existing input admission. ACK means saved, not handled.
+The save preserves current execution, observed status, failure pacing, waits,
+pending events and original input-answer links. It requires no session cleanup
+and does not wait for another caller's answer. Status progress cannot conflict
+with a spec write; concurrent spec changes still require a fresh read.
+
+Creator identity is immutable Host metadata, `{ appId, taskId? }`, recorded at
+creation. App-created work has an App creator; delegated work has its calling
+Task as creator. A reference, parent link or executor name grants no authority.
+The SDK exposes creator on exact Task reads; agents never supply it in updates.
+Only considered, unanswered input can acquire a result link. Its original
+admission and previously accepted answers remain immutable across spec updates.
+Revision after an earlier answer does not open another wait; request another
+answer through ordinary dependencies.
+
+Current execution is identified by the exact attempt, independently of the
+latest spec generation. Its lease, session, failure and explicit Stop remain
+valid execution facts. Effects, workspace adoption and accepted results still
+require the current spec. A stale result releases only that attempt, preserves
+its input and lets ordinary reconciliation read the new requirements. Existing
+indexed recovery covers lost queue notifications and restart. No second queue,
+revision controller or compulsory same-session adoption protocol is needed.
+
+### Adopting creator revisions
+
+Release matching Host and SDK together. Replace executable `update-task` results
+with the `tasks` tool's `update` action or `TaskAttempt.reviseTask` before returning
+the result. Update App guidance and typecheck its workflows against that SDK.
+The responsible App's `task` mapper must accept the complete revised input and
+return desired intent; Host preserves the exact Task ID and parent.
+
+The schema adds nullable `creator_json` to the existing inbox table. New Task
+resources save creator in metadata. Historical Tasks without provenance remain
+readable but require explicit offline initialization before requirement changes;
+do not infer authority from parent links, executor names or input source text.
+Accepted historical results remain readable. Uncommitted old output containing
+retired actions is rejected and reviewed again through ordinary recovery.
+This source change neither migrates installed Apps nor certifies a live rollout.
+
+For installations predating typed dependencies, retire saved implicit waits offline using
 `migrateTaskCoordination()` in `core/state` (also included by `migrateOpenTaskState`).
 It replays original unfinished inputs for one review without inventing answers
 from current child status. Missing input aborts conversion; accepted answers and

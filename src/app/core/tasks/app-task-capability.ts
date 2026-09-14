@@ -70,7 +70,7 @@ export type AppTaskCapability = {
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string }): TaskDetail | null;
   has(input: { appId: string; taskId: string }): boolean;
-  wake(input: { appId: string; taskIds: string[]; supersededSessionIds?: string[] }): void;
+  wake(input: { appId: string; taskIds: string[] }): void;
   retry(input: {
     appId: string;
     taskId: string;
@@ -166,12 +166,11 @@ export function createAppTaskCapability(options: {
       }),
     get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
     has: ({ appId, taskId }) => hasLoadedAppTask({ bus: options.bus, appId, taskId }),
-    wake: ({ appId, taskIds, supersededSessionIds }) =>
+    wake: ({ appId, taskIds }) =>
       wakeLoadedAppTasks({
         bus: options.bus,
         appId,
         taskIds,
-        ...(supersededSessionIds ? { supersededSessionIds } : {}),
       }),
     retry: ({ appId, taskId, expectedGeneration, expectedResourceVersion, controlKey }) =>
       retryLoadedFailedAppTask({

@@ -11,6 +11,7 @@ import {
   type AppResult,
   type AppTaskAttachment,
   type EventSelector,
+  type ResourceCreator,
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -32,6 +33,7 @@ import {
  */
 export type AppTaskAttacher = (input: {
   appId: string;
+  creator?: ResourceCreator;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   inputContext: Readonly<AppInputContext>;
@@ -428,6 +430,7 @@ export class AppInboxHost {
         throw new Error(`App ${app.id} task resolver returned no Task attachment`);
       this.#attachTask({
         appId: app.id,
+        creator: item.creator,
         attachment,
         inputContext,
         inboxInputId: item.id,

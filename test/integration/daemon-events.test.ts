@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
@@ -6,19 +6,92 @@ import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
-  createMetricMutationSubscriber,
 } from "../../src/app/daemon-events.js";
-import { getDb, insertWorkflowRun } from "../../src/lib/requests.js";
-
-async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (!predicate()) {
-    if (Date.now() >= deadline) throw new Error("Timed out waiting for daemon event delivery");
-    await Bun.sleep(5);
-  }
-}
+import { closeDb, getDb, insertWorkflowRun } from "../../src/lib/requests.js";
+import { createEventInterface } from "../../src/app/core/events/interface.js";
 
 describe("daemon event subscribers", () => {
+  it("rejects metric edits for missing resources or a mismatched alert before acknowledging them", () => {
+    const root = mkdtempSync(join(tmpdir(), "metric-target-"));
+    try {
+      const db = getDb(root);
+      const bus = new EventBus();
+      attachEventPersistence({ bus, persistDir: root });
+      const events = createEventInterface({ bus, db, hasApp: () => false, hasAgent: () => false,
+        hasSession: () => false, acceptsAppInput: () => false });
+      db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', 10, 0), ('other', 5, 0)");
+      db.exec("INSERT INTO metric_alerts(id, metric_id, created_at) VALUES (7, 'health', 1)");
+      const edits = [
+        { type: "metric.threshold_changed", data: { metricId: "missing", to: 20 } },
+        { type: "metric.alert_resolved", data: { metricId: "health", alertId: 99 } },
+        { type: "metric.alert_resolved", data: { metricId: "other", alertId: 7 } },
+      ];
+      for (const edit of edits) {
+        expect(() => events.publish(edit, { source: "test" })).toThrow("not found");
+      }
+      expect(db.prepare("SELECT count(*) AS n FROM events WHERE event_type LIKE 'metric.%'").get()).toEqual({ n: 0 });
+      expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual({ resolved_at: null });
+      const resolve = () => events.publish({ type: "metric.alert_resolved",
+        data: { metricId: "health", alertId: 7 } }, { source: "test" });
+      resolve();
+      const first = db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get();
+      resolve();
+      expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual(first);
+    } finally { closeDb(root); rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("metric admission rolls back on storage failure; retry and replay retain the latest edit", () => {
+    const root = mkdtempSync(join(tmpdir(), "metric-admission-"));
+    try {
+      const db = getDb(root);
+      const bus = new EventBus();
+      attachEventPersistence({ bus, persistDir: root });
+      const events = createEventInterface({ bus, db, hasApp: () => false, hasAgent: () => false,
+        hasSession: () => false, acceptsAppInput: () => false });
+      db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', 10, 0)");
+      db.exec("CREATE TRIGGER refuse_metric BEFORE UPDATE ON metrics BEGIN SELECT RAISE(ABORT, 'write failed'); END");
+      const edit = (to: number) => events.publish({ type: "metric.threshold_changed", idempotencyKey: `edit-${to}`,
+        data: { metricId: "health", to } }, { source: "test" });
+      expect(() => edit(20)).toThrow("write failed");
+      expect(db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'metric.threshold_changed'").get()).toEqual({ n: 0 });
+      expect(db.prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 10 });
+      db.exec("DROP TRIGGER refuse_metric");
+      const first = edit(20);
+      edit(30);
+      expect(edit(20).eventId).toBe(first.eventId);
+      closeDb(root);
+      expect(getDb(root).prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 30 });
+    } finally { closeDb(root); rmSync(root, { recursive: true, force: true }); }
+  });
+  for (const kind of ["call", "job"] as const) {
+    it(`keeps errors and interruption as evidence for a ${kind}, without automatic intervention`, async () => {
+      const persistDir = mkdtempSync(join(tmpdir(), "daemon-stuck-ownership-"));
+      const bus = new EventBus();
+      const events: any[] = [];
+      try {
+        attachEventPersistence({ bus, persistDir });
+        let resumes = 0;
+        attachDaemonEventSubscribers({ bus, manager: { resumeSession: () => { resumes++; } } as any, persistDir, projectRoot: persistDir });
+        bus.subscribe(event => events.push(event));
+        bus.emit({ type: "session.start", data: { sessionId: "stuck", agent: "worker", kind } } as any);
+        for (let turn = 0; turn < 6; turn++) {
+          bus.emit({ type: "turn_end", sessionId: "stuck", agent: "worker", toolCalls: 1, errorCount: 1 } as any);
+        }
+        bus.emit({ type: "session.end", data: { sessionId: "stuck", agent: "worker", kind,
+          status: "interrupted", outcome: "interrupted", opCount: 6, summary: "Caller stopped" } } as any);
+        await new Promise<void>(resolve => setImmediate(resolve));
+        expect(events.filter(event => event.type === "turn_end")).toHaveLength(6);
+        expect(events.filter(event => event.type === "session.cancel.requested")).toEqual([]);
+        expect(events.filter(event => event.type === "escalation.created")).toEqual([]);
+        expect(resumes).toBe(0);
+
+      } finally {
+        closeDb(persistDir);
+        rmSync(persistDir, { recursive: true, force: true });
+      }
+    });
+  }
+
   it("projects metric mutations only from their durable canonical events", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-metric-events-"));
     const bus = new EventBus();
@@ -26,15 +99,17 @@ describe("daemon event subscribers", () => {
       const db = getDb(persistDir);
       db.run("INSERT INTO metrics (id, threshold, updated_at) VALUES (?, ?, ?)", ["metric.test", 1, 0]);
       db.run("INSERT INTO metric_alerts (id, metric_id, created_at) VALUES (?, ?, ?)", [7, "metric.test", 1]);
-      bus.subscribe(createMetricMutationSubscriber(persistDir));
+      attachEventPersistence({ bus, persistDir });
       bus.emit({
         type: "metric.threshold_changed",
+        source: "test",
         owner: "agent:may",
         timestamp: 123,
         data: { metricId: "metric.test", from: 1, to: 3 },
       });
       bus.emit({
         type: "metric.alert_resolved",
+        source: "test",
         owner: "agent:may",
         timestamp: 456,
         data: { metricId: "metric.test", alertId: 7 },
@@ -132,71 +207,6 @@ describe("daemon event subscribers", () => {
     }
   });
 
-  it("emits canonical escalation.created when auto-resume attempts are exhausted", async () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-resume-"));
-    const bus = new EventBus();
-    const events: any[] = [];
-    const manager = {
-      resumeSession: () => {
-        throw new Error("test: resume not wired");
-      },
-    };
-    const originalSetTimeout = globalThis.setTimeout;
-
-    try {
-      (globalThis as any).setTimeout = (fn: () => void) => {
-        fn();
-        return 0;
-      };
-      attachDaemonEventSubscribers({
-        bus,
-        manager: manager as any,
-        persistDir,
-        projectRoot: persistDir,
-      });
-      bus.subscribe((event) => events.push(event));
-
-      const interrupted = {
-        type: "session.end",
-        sessionId: "s_retry",
-        agent: "scout",
-        outcome: "interrupted",
-        summary: "interrupted",
-        durationMs: 10,
-        status: "interrupted",
-        error: "network reset",
-        task: "finish investigation",
-        opCount: 1,
-        turnCount: 3,
-      } as const;
-
-      bus.emit(interrupted);
-      bus.emit(interrupted);
-      bus.emit(interrupted);
-      await new Promise<void>((resolve) => setImmediate(resolve));
-
-      const escalation = events.find((event) => event.type === "escalation.created");
-      expect(escalation).toMatchObject({
-        type: "escalation.created",
-        source: "runtime:auto-resume",
-        owner: "agent:may",
-        urgency: "high",
-        data: expect.objectContaining({
-          sourceAgent: "scout",
-          sourceSessionId: "s_retry",
-          reason: expect.stringContaining("Interrupted 3x"),
-          severity: "P1",
-          dedupKey: "runtime:resume_exhausted:s_retry",
-          resume: expect.objectContaining({ kind: "session", sessionId: "s_retry" }),
-        }),
-      });
-      expect(events.some((event) => event.type === "message.created" && event.owner === "human:operator")).toBe(false);
-      expect(existsSync(join(persistDir, "escalations.jsonl"))).toBe(false);
-    } finally {
-      globalThis.setTimeout = originalSetTimeout;
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
 
   it("closes stale handler pairs on daemon startup after a restart", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-handler-restart-"));
@@ -373,72 +383,5 @@ describe("daemon event subscribers", () => {
     }
   });
 
-  it("emits canonical escalation.created when the circuit breaker terminates a stuck session", async () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-circuit-"));
-    const bus = new EventBus();
-    const events: any[] = [];
-    const manager = {
-      resumeSession: () => {
-        throw new Error("test: resume not wired");
-      },
-    };
 
-    try {
-      attachDaemonEventSubscribers({
-        bus,
-        manager: manager as any,
-        persistDir,
-        projectRoot: persistDir,
-      });
-      bus.subscribe((event) => events.push(event));
-
-      bus.emit({
-        type: "session.start",
-        source: "runtime",
-        owner: "agent:builder",
-        data: { sessionId: "s_stuck", agent: "builder", task: "fix build", trigger: "runtime", firedAt: Date.now() },
-      } as any);
-      for (let i = 0; i < 6; i++) {
-        bus.emit({
-          type: "turn_end",
-          sessionId: "s_stuck",
-          agent: "builder",
-          toolCalls: 1,
-          errorCount: 1,
-        } as any);
-      }
-
-      await waitFor(() => events.some((event) => event.type === "escalation.created"));
-
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: "session.cancel.requested",
-          source: "runtime:stuck-detector",
-          target: { sessionId: "s_stuck" },
-        }),
-      );
-      const escalation = events.find((event) => event.type === "escalation.created");
-      expect(escalation).toMatchObject({
-        type: "escalation.created",
-        source: "runtime:circuit-breaker",
-        owner: "agent:may",
-        urgency: "high",
-        data: expect.objectContaining({
-          sourceAgent: "builder",
-          sourceSessionId: "s_stuck",
-          reason: expect.stringContaining("Stuck: 6 consecutive error-only turns"),
-          requestedAction: expect.stringContaining("Investigate the root cause"),
-          severity: "P1",
-          dedupKey: "runtime:circuit_break:s_stuck",
-          resume: expect.objectContaining({ kind: "session", sessionId: "s_stuck" }),
-        }),
-      });
-      expect(escalation.data).not.toHaveProperty("owner");
-      expect(
-        events.some((event) => event.type === "message.created" && event.source === "system:circuit-breaker"),
-      ).toBe(false);
-    } finally {
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
 });

@@ -3,7 +3,16 @@ import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
-import { cancelAppTask, closeAppTask } from "./core/tasks/app-task-reconciler.js";
+import {
+  cancelAppTask,
+  closeAppTask,
+  observeAppTaskIntent,
+  claimObservedAppTask,
+  deferAppTask,
+  completeAppTask,
+  recordAppTaskTrigger,
+} from "./core/tasks/app-task-reconciler.js";
+import { appTaskTestContext } from "./core/tasks/app-task-test-support.js";
 import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
 import { listRuntimeTaskViews } from "./core/reads/app-read.js";
 import type { AppTaskContext } from "./core/tasks/app-task-store.js";
@@ -17,6 +26,85 @@ import {
 } from "./core/state/task-reference-index.js";
 
 const databases: SqliteDb[] = [];
+
+test("retains waits through a queued and running pass and respects static gates", () => {
+  const db = database();
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  const config = appTaskTestContext({
+    appDir: "/unused",
+    agent: "owner",
+    maxConcurrent: 1,
+    resourceStore: store,
+    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+  });
+  const service = new HumanTaskService(db, registry("sample"));
+  const view = () => service.getTask({ appId: "sample", taskId: "work" })!;
+  const claim = () => claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+  observeAppTaskIntent(config, {
+    appAgent: "owner",
+    intent: {
+      id: "work",
+      parentId: "root",
+      outcome: "Review while tests run",
+      acceptance: ["review and tests checked"],
+      agent: "owner",
+    },
+  });
+  const first = claim();
+  expect(first.kind).toBe("claimed");
+  if (first.kind !== "claimed") throw new Error("Expected claim");
+  deferAppTask(config, first, {
+    disposition: "waiting",
+    summary: "Tests pending",
+    facts: ["run:42"],
+    conditions: ["42", "43"].map((id) => ({
+      id,
+      type: "pipeline-run.state",
+      subject: `pipeline-run:${id}`,
+      expected: "completed",
+      owner: "app:ci",
+      reviewAfterMs: 60_000,
+    })),
+  });
+  expect(view().status).toBe("waiting");
+  expect(view().waitingOn).toHaveLength(2);
+  expect(claim().kind).toBe("waiting");
+  recordAppTaskTrigger(config, "work", { type: "sample.review", data: { text: "Prepare review" } });
+  expect(view().status).toBe("pending");
+  expect(store.readTaskForView("work")?.phase).toBe("pending");
+  expect(store.listTaskIds({ statuses: new Set(["pending"]), limit: 10 })).toEqual(["work"]);
+  expect(service.listTasks({ status: ["pending"] }).items.map((t) => t.taskId)).toEqual(["work"]);
+  expect(service.listTasks({ status: ["waiting"] }).items).toEqual([]);
+  const second = claim();
+  expect(second.kind).toBe("claimed");
+  if (second.kind !== "claimed") throw new Error("Expected continuation");
+  expect(view().status).toBe("running");
+  expect(view().waitingOn).toHaveLength(2);
+  completeAppTask(config, second, { summary: "Review prepared", facts: ["review:done"] });
+  expect(view().status).toBe("waiting");
+  expect(view().waitingOn).toHaveLength(2);
+
+  // A wake is not permission to bypass required Task generations.
+  const resource = store.readTask("work")!;
+  resource.spec.dependsOn = ["required"];
+  db.prepare("UPDATE app_tasks SET resource_json = ?, ready = 1 WHERE task_id = 'work'").run(JSON.stringify(resource));
+  expect(view().status).toBe("waiting");
+  expect(store.listTaskIds({ statuses: new Set(["pending"]), limit: 10 })).toEqual([]);
+  insertTask(db, { appId: "sample", taskId: "required", phase: "converged", updatedAt: 1 });
+  expect(view().status).toBe("pending");
+  db.prepare("UPDATE app_tasks SET observed_generation = 0 WHERE task_id = 'required'").run();
+  expect(view().status).toBe("waiting");
+  expect(store.readTaskForView("work")?.phase).toBe("waiting");
+  cancelAppTask(config, {
+    appId: "sample",
+    taskId: "work",
+    reason: "fixture complete",
+    expectedGeneration: resource.metadata.generation,
+    expectedResourceVersion: resource.metadata.resourceVersion,
+  });
+  expect(view().terminal).toBe(true);
+  expect(view().waitingOn).toBeUndefined();
+});
 
 test("exact diagnostics preserve bounded Conditions and dependency states without a whole-App read", () => {
   const db = database();

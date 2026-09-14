@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import {
   chmod as chmodAsync,
   lstat as lstatAsync,
@@ -12,8 +12,7 @@ import {
   symlink as symlinkAsync,
   writeFile as writeFileAsync,
 } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
-import type { TaskAttempt } from "@may-agent/sdk";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import type { AppTaskExecutionPaths } from "../../core/tasks/app-task-output-paths.js";
 import type { NormalizedTaskHandlerResult } from "../../core/tasks/result.js";
 type ResidueFileSnapshot =
@@ -159,92 +158,6 @@ export async function beginCanonicalAgentResidueGuard(
   } catch {
     return null;
   }
-}
-
-export type DeployReceipt = {
-  version: 1;
-  correlation: string;
-  project: string;
-  taskId: string;
-  artifactSha: string;
-  sourceCommit?: string;
-  phase: "requested" | "succeeded" | "failed" | "rolled_back";
-  requestedAt: string;
-  verification: string;
-  completedAt?: string;
-  loadedArtifactSha?: string;
-  health?: "healthy" | "unhealthy";
-  /** Retained only when reading older receipts. New receipts do not model event delivery. */
-  targetedWake?: boolean;
-  duplicateDeploy?: boolean;
-  failure?: string;
-};
-
-export function readDeployReceiptForTask(projectDir: string, taskId: string): DeployReceipt | null {
-  const receiptDir = join(projectDir, ".state", "deploy-receipts");
-  if (!existsSync(receiptDir)) return null;
-  const receipts: DeployReceipt[] = [];
-  for (const name of readdirSync(receiptDir)
-    .filter((entry) => entry.endsWith(".json"))
-    .sort()
-    .reverse()) {
-    try {
-      const receipt = JSON.parse(readFileSync(join(receiptDir, name), "utf8")) as Partial<DeployReceipt>;
-      if (
-        receipt.version === 1 &&
-        receipt.taskId === taskId &&
-        typeof receipt.correlation === "string" &&
-        typeof receipt.artifactSha === "string" &&
-        ["requested", "succeeded", "failed", "rolled_back"].includes(receipt.phase ?? "")
-      ) {
-        receipts.push(receipt as DeployReceipt);
-      }
-    } catch {
-      // A concurrent atomic rename or a legacy non-JSON artifact is not a receipt.
-    }
-  }
-  return receipts.sort((a, b) => b.requestedAt.localeCompare(a.requestedAt))[0] ?? null;
-}
-
-export function deployReceiptPrompt(projectDir: string, taskId: string): string[] {
-  const receipt = readDeployReceiptForTask(projectDir, taskId);
-  if (!receipt) {
-    return [
-      "## Restart-aware deploy receipt",
-      "No correlated deploy receipt exists for this task (legacy/absence branch). Do not blindly redeploy. Conservatively inspect the loaded artifact and runtime health; if deployment is still required, use a new correlation and deploy at most once.",
-    ];
-  }
-  const encoded = JSON.stringify(receipt, null, 2);
-  if (receipt.phase === "requested") {
-    return [
-      "## Restart-aware deploy receipt",
-      "A correlated deploy is already requested. Do not deploy again. Wait for the supervisor to settle it and perform only the receipt's remaining verification step after a targeted wake.",
-      "```json",
-      encoded,
-      "```",
-    ];
-  }
-  if (receipt.phase === "succeeded") {
-    return [
-      "## Restart-aware deploy receipt",
-      "The correlated deploy succeeded. Do not deploy again. Verify that loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false; then complete agent reconciliation.",
-      "```json",
-      encoded,
-      "```",
-    ];
-  }
-  return [
-    "## Restart-aware deploy receipt",
-    `The correlated deploy ended in terminal phase ${receipt.phase}. Do not redeploy this correlation; surface the failure or rollback disposition explicitly.`,
-    "```json",
-    encoded,
-    "```",
-  ];
-}
-
-/** Exact durable wake that tells Runtime a deployment receipt is relevant. */
-export function hasDeployReceiptWake(events: TaskAttempt["events"]): boolean {
-  return events.items.some(({ event }) => event.data?.reason === "restart-aware-deploy-receipt");
 }
 
 export async function planCanonicalAgentResidueCleanup(

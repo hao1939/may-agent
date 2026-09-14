@@ -1,5 +1,50 @@
 # Changelog
 
+## [4.0.0](https://github.com/hao1939/may-agent/compare/v3.0.1...v4.0.0) (2026-09-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **execution:** unify helper ownership and execution limits ([#186](https://github.com/hao1939/may-agent/issues/186))
+
+### Code Refactoring
+
+* **execution:** unify helper ownership and execution limits ([#186](https://github.com/hao1939/may-agent/issues/186)) ([91ed9ca](https://github.com/hao1939/may-agent/commit/91ed9ca6a0680786c2eea69c1ae5b767febe616e))
+
+## [3.0.1](https://github.com/hao1939/may-agent/compare/v3.0.0...v3.0.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **tasks:** back off prolonged execution failures to one hour ([#183](https://github.com/hao1939/may-agent/issues/183)) ([a473990](https://github.com/hao1939/may-agent/commit/a473990026436d43b1268eceff3038fad94e4aaa))
+* **tasks:** keep control commands out of task wake admission ([#182](https://github.com/hao1939/may-agent/issues/182)) ([54c72b6](https://github.com/hao1939/may-agent/commit/54c72b67031c7c8b1fce095438c2b91a7c20c5c5))
+
+## [3.0.0](https://github.com/hao1939/may-agent/compare/v2.0.0...v3.0.0) (2026-09-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** simplify Task contracts and runtime boundaries ([#168](https://github.com/hao1939/may-agent/issues/168))
+* **tasks:** replace implicit parent coordination with explicit returns ([#164](https://github.com/hao1939/may-agent/issues/164))
+
+### Features
+
+* **tasks:** return caller feedback while retaining durable waits ([#169](https://github.com/hao1939/may-agent/issues/169)) ([b1c7cbe](https://github.com/hao1939/may-agent/commit/b1c7cbef5a6efea5f494d2a44e4f9e861ab0dc59))
+
+
+### Bug Fixes
+
+* **recovery:** leave bounded call failures with their caller ([#178](https://github.com/hao1939/may-agent/issues/178)) ([7ee4aac](https://github.com/hao1939/may-agent/commit/7ee4aac642633753001199e30a1a5a057631f19f))
+* **scripts:** preserve truthful results and read-only inspection ([#172](https://github.com/hao1939/may-agent/issues/172)) ([f6a11d1](https://github.com/hao1939/may-agent/commit/f6a11d1c7d4dbbf9164fa99ba208b05670a6d6b4))
+* **tasks:** prevent duplicate wakes across workers and recovery ([#175](https://github.com/hao1939/may-agent/issues/175)) ([e38d286](https://github.com/hao1939/may-agent/commit/e38d2861f36803acaeadfaffe11b1efe3af749dd))
+* **tasks:** simplify workflow results and replay published facts ([#167](https://github.com/hao1939/may-agent/issues/167)) ([38a048d](https://github.com/hao1939/may-agent/commit/38a048da5c105bea91dc7163010d94483a60b747))
+
+
+### Code Refactoring
+
+* **core:** simplify Task contracts and runtime boundaries ([#168](https://github.com/hao1939/may-agent/issues/168)) ([c0cbb59](https://github.com/hao1939/may-agent/commit/c0cbb59e7245924e50ac0d2c6cd5a82232418964))
+* **tasks:** replace implicit parent coordination with explicit returns ([#164](https://github.com/hao1939/may-agent/issues/164)) ([8026aff](https://github.com/hao1939/may-agent/commit/8026aff97585edd7f728fa4ce360fdde71bc740a))
+
 ## [2.0.0](https://github.com/hao1939/may-agent/compare/v1.1.0...v2.0.0) (2026-09-12)
 
 

@@ -16,7 +16,7 @@ import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
 import { readAppConversationResource } from "./core/state/conversations.js";
 import { HostCapacity } from "./core/scheduling/host-capacity.js";
-import { attachCommandRouter } from "./command-router.js";
+import { attachCommandRouter, validateSessionControl } from "./command-router.js";
 import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
 import {
   attachDaemonEventSubscribers,
@@ -31,6 +31,7 @@ import {
 import { EventBus } from "./core/events/bus.js";
 import { createEventInterface, type EventInterface } from "./core/events/interface.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
+import { readExecutionStatus } from "./core/reads/execution-status.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
@@ -272,6 +273,7 @@ export async function runAppRuntime(opts: {
     hasApp: (appId) =>
       appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
     hasAgent: (agent) => manager.hasAgent(agent),
+    validateSessionControl: (type, sessionId) => validateSessionControl(manager, type, sessionId),
     hasSession: (sessionId) =>
       manager.getSessionSummary(sessionId).status !== "unknown" ||
       Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
@@ -303,8 +305,7 @@ export async function runAppRuntime(opts: {
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     createTaskAdmissionWorker: () =>
       createTaskAdmissionProcess({ definitionSource: workerDefinitionSource() ?? undefined }),
-    wakeAdmittedTasks: ({ appId, taskIds, supersededSessionIds }) =>
-      appTasks.wake({ appId, taskIds, supersededSessionIds }),
+    wakeAdmittedTasks: appTasks.wake,
     hasTaskTarget: ({ appId, taskId }) => appTasks.has({ appId, taskId }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),
@@ -453,6 +454,7 @@ export async function runAppRuntime(opts: {
   const commandRouter = attachCommandRouter({
     bus,
     manager,
+    projectRoot: opts.projectRoot,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,
@@ -495,7 +497,7 @@ export async function runAppRuntime(opts: {
     instanceLabel: opts.instanceLabel,
     interfaceAgent,
     events,
-    getStatus: () => manager.status(),
+    getStatus: () => readExecutionStatus(opts.persistDir),
     reportInfo: (message) => bus.emit({ type: "info", message }),
     admitAppInput,
     getAppConversation: (appId, conversationId, options) =>

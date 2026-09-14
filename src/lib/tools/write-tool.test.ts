@@ -99,6 +99,9 @@ describe("write tool shrink guard", () => {
 
     // Write should be BLOCKED
     expect(result.content[0].text).toContain("WRITE BLOCKED");
+    expect(result.content[0].text).toContain("report the blocked path and reason to your caller");
+    expect(result.content[0].text).not.toContain("message({");
+    expect(result.content[0].text).not.toContain("use bash");
     expect(result.content[0].text).toContain("20%");
     // Original file should be preserved
     expect(readFileSync(filePath, "utf-8")).toBe(existingContent);

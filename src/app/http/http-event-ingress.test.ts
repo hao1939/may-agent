@@ -90,16 +90,25 @@ describe("HTTP event ingress acknowledgement recovery", () => {
 
   it("returns the durable event when both transport acknowledgements time out", async () => {
     const keys: string[] = [];
-    const send = async () => {
+    const frames: Record<string, unknown>[] = [];
+    const send = async (_socketPath: unknown, frame: Record<string, unknown>) => {
+      frames.push(structuredClone(frame));
       throw new Error("Socket timeout");
     };
 
     const result = await sendDaemonFrameWithRetry(
       "/tmp/may.sock",
-      { type: "aks.finite-holder-migration.requested", data: { project: "alpha-project" } },
+      { type: "publish", event: {
+        type: "fixture.review", target: { appId: "sample" }, data: { message: "Review this" },
+      } },
       send,
-      (idempotencyKey) => {
+      (idempotencyKey, frame) => {
         keys.push(idempotencyKey);
+        expect(frames).toEqual([frame, frame]);
+        expect(frame).toEqual({ type: "publish", event: {
+          type: "fixture.review", target: { appId: "sample" },
+          data: { message: "Review this" }, idempotencyKey,
+        } });
         return 4936896;
       },
     );

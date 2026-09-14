@@ -1,13 +1,26 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import type { SubagentManager } from "../../src/lib/index.js";
+import { RegistryStore } from "../../src/lib/persistence.js";
+
+const roots: string[] = [];
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
 function harness(overrides: Partial<SubagentManager> = {}) {
+  const projectRoot = mkdtempSync(join(tmpdir(), "router-integration-"));
+  roots.push(projectRoot);
   const bus = new EventBus();
   const emitted: AgentEvent[] = [];
   bus.subscribe((event) => emitted.push(event));
   const manager = {
+    registryStore: new RegistryStore(projectRoot),
     status: () => [],
     cancel: () => {},
     send: () => {},
@@ -18,11 +31,12 @@ function harness(overrides: Partial<SubagentManager> = {}) {
   const router = attachCommandRouter({
     bus,
     manager,
+    projectRoot,
     reload: () => ({ ok: true, summary: "[reload] No changes" }),
     restart: () => {},
     shutdown: () => {},
   });
-  return { bus, emitted, router };
+  return { projectRoot, bus, emitted, router, manager };
 }
 
 describe("command router integration", () => {
@@ -60,6 +74,7 @@ describe("command router integration", () => {
       },
     } as Partial<SubagentManager>);
 
+    h.manager.registryStore.saveSession("s_cold", { agent: "may", task: "saved conversation", status: "done", startedAt: 1 });
     h.bus.emit({
       type: "session.steer.requested",
       source: "telegram",

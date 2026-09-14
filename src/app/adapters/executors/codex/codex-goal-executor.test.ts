@@ -215,9 +215,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 10,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
 
     const running = executor(attempt({ cwd: root, signal: controller.signal }));
@@ -272,9 +269,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile,
       createClient: () => clients.shift()!,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
 
     const first = await executor(attempt());
@@ -366,9 +360,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
 
     await expect(executor(attempt())).resolves.toMatchObject({
@@ -423,9 +414,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
     await expect(executor(attempt())).resolves.toMatchObject({
       state: "converged",
@@ -452,9 +440,6 @@ describe("codex-goal Task executor", () => {
       const executor = createCodexGoalExecutor({
         stateFile,
         createClient: () => clients.shift()!,
-        checkIntervalMs: 1,
-        softStaleAfterMs: 1_000,
-        hardStaleAfterMs: 2_000,
       });
 
       await expect(executor(attempt())).rejects.toThrow(`Codex stopped the current turn because it is ${limitStatus}`);
@@ -477,58 +462,49 @@ describe("codex-goal Task executor", () => {
     });
   }
 
-  it("nudges a quiet active turn without ending the Task attempt", async () => {
-    const root = fixtureRoot();
+  it("lets quiet useful work finish without steering", async () => {
     const client = new FakeClient("thread-quiet");
-    let clockReads = 0;
+    const original = client.waitForGoal.bind(client);
     client.waitForGoal = async () => {
-      await Bun.sleep(5);
-      return {
-        threadId: client.threadId,
-        turnId: "turn-1",
-        goal: { threadId: client.threadId, objective: "review", status: "complete" },
-      };
+      await Bun.sleep(40);
+      return original();
     };
     const executor = createCodexGoalExecutor({
-      stateFile: join(root, "bindings.json"),
+      stateFile: join(fixtureRoot(), "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 10,
-      hardStaleAfterMs: 50,
-      now: () => (clockReads++ < 4 ? 0 : 15),
+      turnTimeoutMs: 500,
     });
-
     await expect(executor(attempt())).resolves.toMatchObject({ state: "converged" });
-    expect(client.calls.filter((call) => call === "steer")).toHaveLength(1);
+    expect(client.calls).not.toContain("steer");
     expect(client.calls).not.toContain("interrupt");
   });
 
-  it("interrupts a silent turn and fails the execution so Runtime can retry the Task", async () => {
-    const root = fixtureRoot();
-    const stateFile = join(root, "bindings.json");
-    const client = new FakeClient("thread-stale");
-    let clockReads = 0;
-    client.waitForGoal = async () => new Promise<CodexGoalObservation>(() => undefined);
-    const executor = createCodexGoalExecutor({
-      stateFile,
-      createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 10,
-      hardStaleAfterMs: 20,
-      now: () => (clockReads++ < 4 ? 0 : 100),
-    });
-
-    await expect(executor(attempt())).rejects.toThrow("Codex stopped responding and its turn was interrupted");
-    expect(client.calls).toContain("interrupt");
-    expect(client.calls).toContain("terminal-turn");
-    expect(JSON.parse(readFileSync(stateFile, "utf8"))).toMatchObject({
-      bindings: {
-        [codexGoalExecutorInternals.bindingKey(attempt())]: {
-          threadId: "thread-stale",
-          staleInterrupts: 1,
-        },
-      },
-    });
+  it.each(["quiet", "active", "startup"])("ends %s work at the whole execution budget", async (mode) => {
+    const client = new FakeClient("thread-budget");
+    const pending = Promise.withResolvers<never>();
+    if (mode === "startup") client.initialize = () => pending.promise;
+    else client.waitForGoal = () => pending.promise;
+    client.stop = async () => {
+      client.calls.push("stop");
+      pending.reject(new Error("client stopped"));
+    };
+    const updates =
+      mode === "active"
+        ? setInterval(() => client.emit({ method: "turn/started", params: { turn: { id: "turn-1" } } }), 5)
+        : undefined;
+    try {
+      await expect(
+        createCodexGoalExecutor({
+          stateFile: join(fixtureRoot(), "bindings.json"),
+          createClient: () => client,
+          turnTimeoutMs: 40,
+        })(attempt()),
+      ).rejects.toThrow("execution timed out after 40ms");
+      expect(client.calls).toContain("stop");
+      expect(client.calls).not.toContain("steer");
+    } finally {
+      clearInterval(updates);
+    }
   });
 
   it("bridges authoritative Codex progress to passive Task-owned events", async () => {
@@ -569,9 +545,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
 
     await executor(
@@ -606,9 +579,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
 
     const result = await executor(
@@ -678,9 +648,6 @@ describe("codex-goal Task executor", () => {
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
-      checkIntervalMs: 1,
-      softStaleAfterMs: 1_000,
-      hardStaleAfterMs: 2_000,
     });
 
     await executor(

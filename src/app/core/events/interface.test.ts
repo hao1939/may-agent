@@ -84,6 +84,12 @@ describe("simple event interface", () => {
     },
   );
 
+  it("rejects an App address on direct chat even when it is not the Conversation App", () => {
+    const { events, db } = fixture();
+    expect(() => events.publish({ type: "chat.start.requested", target: { appId: "sample" },
+      data: { message: "Please work" } }, { source: "test" })).toThrow("app.input.requested");
+    expect(db.prepare("SELECT count(*) AS n FROM events").get()).toEqual({ n: 0 });
+  });
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {
@@ -93,7 +99,7 @@ describe("simple event interface", () => {
             { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
             { source: "fixture" },
           ),
-        ).toThrow("sample input must use app.input.requested");
+        ).toThrow("input must use app.input.requested");
       }
     }
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
@@ -430,8 +436,10 @@ describe("simple event interface", () => {
     expect(events.get(receipt.eventId)?.delivery.acceptedBy).toBeUndefined();
   });
 
-  it("validates the record-only events exposed by HTTP controls", () => {
-    const { events } = fixture();
+  it("validates HTTP control events and saves metric edits before returning receipts", () => {
+    const { events, db } = fixture();
+    db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', NULL, 0)");
+    db.exec("INSERT INTO metric_alerts(id, metric_id, created_at) VALUES (7, 'health', 1)");
     const inputs = [
       {
         type: "evaluation.session.requested",
@@ -448,6 +456,8 @@ describe("simple event interface", () => {
         delivery: "recorded",
       });
     }
+    expect(db.prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 2 });
+    expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual({ resolved_at: expect.any(Number) });
 
     expect(() =>
       events.publish(

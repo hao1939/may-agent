@@ -147,12 +147,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "chat.start.requested": {
     delivery: "required",
     validate: (input, options) => {
-      const agent = optionalText(input.data.agent) ?? optionalText(input.target?.appId);
+      if (input.target?.appId) throw new Error("App input must use app.input.requested");
+      const agent = optionalText(input.data.agent);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
       const appId = agent.replace(/\.app$/, "");
       if (appId === options.conversationAppId?.trim().replace(/\.app$/, ""))
         throw new Error(`${appId} input must use app.input.requested`);
-      if (!options.hasAgent(agent) && !options.hasApp(agent)) throw new Error(`Agent or App ${agent} is not loaded`);
+      if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },
   },
@@ -162,6 +163,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       const sessionId = requiredTarget(input, "sessionId");
       requiredText(input.data.message, "session.steer.requested data.message");
       if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
+      options.validateSessionControl?.(input.type, sessionId);
     },
   },
   "session.cancel.requested": {
@@ -170,9 +172,16 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       const sessionId = requiredTarget(input, "sessionId");
       optionalTextField(input.data, "reason", "session.cancel.requested data.reason");
       if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
+      options.validateSessionControl?.(input.type, sessionId);
     },
   },
-  "session.cancel_all.requested": { delivery: "required", validate: validateOptionalReason },
+  "session.cancel_all.requested": {
+    delivery: "required",
+    validate: (input, options) => {
+      validateOptionalReason(input);
+      options.validateSessionControl?.(input.type);
+    },
+  },
   "runtime.reload.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.restart.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.shutdown.requested": { delivery: "required", validate: validateOptionalReason },
@@ -260,6 +269,8 @@ export type CreateEventInterfaceOptions = {
   hasApp(appId: string): boolean;
   hasAgent(agent: string): boolean;
   hasSession(sessionId: string): boolean;
+  /** Composition verifies that the selected execution controller owns the target. */
+  validateSessionControl?(type: string, sessionId?: string): void;
   /** Composition selects the conversational App; its input must use durable admission. */
   conversationAppId?: string;
 };
@@ -375,11 +386,6 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
   switch (input.type) {
     case "app.input.requested": {
       data.source = context.inputSource ?? { kind: "system", id: source };
-      break;
-    }
-    case "chat.start.requested": {
-      const agent = optionalText(data.agent) ?? appId!;
-      data.agent = agent;
       break;
     }
   }

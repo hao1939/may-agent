@@ -121,6 +121,20 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       bus.fanoutPersisted({ type: "task.feedback", target: { ...target, taskId: "work/other" }, data: {} }, 42);
       bus.emit({ type: "task.feedback", target, data: { text: "not durable" } });
       bus.fanoutPersisted({ type: "task.feedback", target, data: { text: "correct scope" } }, 43);
+      // Match durable admission's project alias and whitespace rules across IPC.
+      for (const [index, normalizedTarget] of [
+        { appId: "", project: "sample.app", taskId: " work/one " },
+        { appId: " sample.app ", project: "other", taskId: " work/one " },
+        { project: " sample.app ", taskId: request.taskId },
+      ].entries())
+        bus.fanoutPersisted({ type: "task.feedback", target: normalizedTarget, data: {} }, 45 + index);
+      for (const wrongTarget of [
+        { appId: "other", project: "sample.app", taskId: request.taskId },
+        { appId: "", project: "sample.app", taskId: " work/other " },
+        { appId: "sample", taskId: " " },
+        { taskId: request.taskId },
+      ])
+        bus.fanoutPersisted({ type: "task.feedback", target: wrongTarget, data: {} }, 48);
       bus.fanoutPersisted({ type: "app.task.cancelled", target, data: { attemptId: "attempt-1" } }, 44);
     });
     const execute = createTaskAttemptProcessExecutor({
@@ -143,7 +157,13 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       `),
     });
     try {
-      await expect(execute(request)).resolves.toEqual(["task.feedback:43", "app.task.cancelled:44"]);
+      await expect(execute(request)).resolves.toEqual([
+        "task.feedback:43",
+        "task.feedback:45",
+        "task.feedback:46",
+        "task.feedback:47",
+        "app.task.cancelled:44",
+      ]);
     } finally {
       unsubscribe();
     }

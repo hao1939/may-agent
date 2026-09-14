@@ -1,3 +1,4 @@
+import { readTaskEventTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
@@ -87,10 +88,10 @@ export type StartAppInboxRuntimeOptions = {
     dispatch(
       command: AppEventAdmissionCommand,
       event: AgentEvent,
-    ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
+    ): Promise<{ taskIds: string[] }>;
     close(): void;
   };
-  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[]; supersededSessionIds: string[] }) => void;
+  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[] }) => void;
   hasTaskTarget?: (input: { appId: string; taskId: string }) => boolean;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
   /** One event-type-first Condition lookup across all loaded Task Apps. */
@@ -162,15 +163,9 @@ function eventIdentity(event: AgentEvent): string | undefined {
 }
 
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
-  const taskId = typeof event.target?.taskId === "string" ? event.target.taskId.trim() : "";
-  if (!taskId) return null;
   // Exact-task routing authority is entirely in the canonical envelope target.
   // App/project identities in data remain correlation and lifecycle facts.
-  const selectedAppId = [event.target?.appId, event.target?.project].find(
-    (value) => typeof value === "string" && value.trim(),
-  );
-  const appId = typeof selectedAppId === "string" ? selectedAppId.trim() : "";
-  return { appId: appId ? appId.replace(/\.app$/, "") : undefined, taskId };
+  return readTaskEventTarget(event.target);
 }
 
 function normalizedAgent(value: unknown): string | undefined {
@@ -468,7 +463,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         if (command.kind === "task" && taskAdmissionWorker) {
           const worker = taskAdmissionWorker;
-          let admitted: { taskIds: string[]; supersededSessionIds: string[] };
+          let admitted: { taskIds: string[] };
           try {
             admitted = await worker.dispatch(command, event);
           } catch (error) {
@@ -664,6 +659,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   const unsubscribe = options.bus.subscribeDurableRoute(
     (event): DeliveryResult | void => {
+      // Task controls have their own fenced writer and receipt. Their target
+      // identifies the resource to control, not fresh input for that Task.
+      if (event.type === "app.task.cancel.requested" || event.type === "app.task.retry.requested") return;
       const routeSnapshot = registrySnapshot;
       const routeGeneration = routeSnapshot.generation;
       const data = eventData(event);

@@ -75,6 +75,8 @@ describe("cross-edit-guard", () => {
       expect(r.message).toContain("optimizer");
       expect(r.message).toContain("bob");
       expect(r.message).toContain("AGENTS.md");
+      expect(r.message).toContain("report the blocked path and reason to your caller");
+      expect(r.message).not.toContain("message({");
     });
 
     it("blocks writing another agent's heartbeat.md", () => {

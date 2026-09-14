@@ -8,6 +8,7 @@ import { createWorkflowTool } from "../../lib/workflow-tool.js";
 import { createBackgroundExecTool } from "../../lib/background-exec.js";
 import { createScrapeTool } from "../../lib/scrape.js";
 import { createSystemStatusTool } from "../../lib/tools/system-status.js";
+import { readExecutionStatus } from "../core/reads/execution-status.js";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
@@ -72,11 +73,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         const denyConfig = config.delegateDeny;
         tools.push(
           manager.createAgentsTool({
-            getCallerSessionId: () => opts.getAgentSessionId(config.name),
+            getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerAgentName: () => config.name,
             callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
             agentsRoot: opts.agentsRoot,
-            bus: opts.bus,
           }),
         );
         break;
@@ -187,7 +187,11 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "system-status":
       case "system_status": {
-        tools.push(createSystemStatusTool(opts.persistDir, opts.agentsRoot, opts.sharedRoot));
+        tools.push(
+          createSystemStatusTool(opts.persistDir, opts.agentsRoot, opts.sharedRoot, () =>
+            readExecutionStatus(opts.persistDir),
+          ),
+        );
         break;
       }
 

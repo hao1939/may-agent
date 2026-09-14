@@ -51,7 +51,7 @@ export function readAppTaskReconciliationEvents(
     const generation = store.readTask(claim.taskId)?.metadata.generation;
     projected.continuedInputs = claim.continuedInputKeys.flatMap((key) => {
       const admission = admissions?.[key];
-      return admission?.taskId === claim.taskId && admission.taskGeneration === generation &&
+      return admission?.taskId === claim.taskId && generation !== undefined && admission.taskGeneration <= generation &&
         !admission.resultAttemptId && admission.inputEvent
         ? [{ observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) }] : [];
     });

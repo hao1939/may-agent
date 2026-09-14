@@ -1,10 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
-import { closeDb, getDb } from "../lib/requests.js";
-import { attachCommandRouter } from "./command-router.js";
+import { closeDb, getDb, upsertSession } from "../lib/requests.js";
+import { markSessionActive, RegistryStore, writeSessionMeta } from "../lib/persistence.js";
+import { attachCommandRouter, validateSessionControl } from "./command-router.js";
 import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 
 function fixture(
@@ -21,10 +22,12 @@ function fixture(
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
   const runs: Array<{ agent: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];
+  const resumed: string[] = [];
   const manager = {
+    registryStore: new RegistryStore(root),
     status: () => [{ sessionId: "s_chat", agent: "may", task: "chat", status: "idle", runtime: "1s" }],
     send: (sessionId: string, text: string, opts?: Record<string, unknown>) => sent.push({ sessionId, text, opts }),
-    resumeSession: () => undefined,
+    resumeSession: (sessionId: string) => resumed.push(sessionId),
     run: (agent: string, text: string, opts?: Record<string, unknown>) => {
       runs.push({ agent, text, opts });
       return typeof opts?.sessionId === "string" ? opts.sessionId : `s_new_${runs.length}`;
@@ -37,14 +40,16 @@ function fixture(
       status: runs.some((run) => run.opts?.sessionId === sessionId) ? "running" : "unknown",
     }),
   };
+  manager.registryStore.saveSession("s_chat", { agent: "may", task: "chat", status: "idle", startedAt: 1 });
   const router = attachCommandRouter({
     bus,
     manager: manager as any,
+    projectRoot: root,
     reload,
     restart: () => undefined,
     shutdown: () => undefined,
   });
-  return { root, bus, router, sent, runs, cancelled };
+  return { root, bus, router, sent, runs, cancelled, resumed, manager };
 }
 
 function cleanup(root: string, router: { close(): void }): void {
@@ -54,53 +59,21 @@ function cleanup(root: string, router: { close(): void }): void {
 }
 
 describe("command router", () => {
-  it.each([
-    { path: "projects/legacy", declared: false },
-    { path: "agents/sample/workspace/projects/legacy", declared: false },
-    { path: "projects/legacy", declared: true },
-  ])("leaves project policy to declared routes ($path, declared=$declared)", async ({ path, declared }) => {
+  it("a status question cannot reactivate a paused legacy project or start work", async () => {
     const f = fixture();
-    const projectDir = join(f.root, path);
-    const project = "---\nstatus: blocked\n---\n# Retained project\n";
-    const discussion = "# Retained discussion\n";
-    const observed: string[] = [];
-    const delivered = Promise.withResolvers<void>();
-    const unsubscribe = f.bus.subscribe((event) => { observed.push(event.type); });
-    const unsubscribeRoute = f.bus.subscribeDurableRoute((event) => {
-      if (declared && event.type === "project.comment.created") {
-        return { accepted: true, by: "app:sample", route: "direct", note: "declared App consumer" };
-      }
-    });
-    // A later passive listener provides a deterministic delivery barrier;
-    // no sleep guesses when the event has reached its observers.
-    const unsubscribeObserved = f.bus.listen(() => { delivered.resolve(); }, {
-      label: "comment-observed", types: ["project.comment.created"],
-    });
     try {
-      mkdirSync(projectDir, { recursive: true });
-      writeFileSync(join(projectDir, "project.md"), project);
-      writeFileSync(join(projectDir, "discussion.md"), discussion);
-      const event = f.bus.emit({ type: "project.comment.created", source: "test", owner: "app:sample",
-        data: { project: "sample", projectPath: path, comment: "Review the blocked work" } } as any);
-      await delivered.promise;
-
-      expect(readFileSync(join(projectDir, "project.md"), "utf8")).toBe(project);
-      expect(readFileSync(join(projectDir, "discussion.md"), "utf8")).toBe(discussion);
-      expect(observed).not.toContain("project.nudge");
+      const dir = join(f.root, "projects", "sample");
+      mkdirSync(dir, { recursive: true });
+      const original = "---\nstatus: paused\nowner: worker\n---\nSaved project\n";
+      writeFileSync(join(dir, "project.md"), original);
+      f.bus.emit({ type: "project.comment.created", source: "test", owner: "agent:worker",
+        data: { projectPath: "projects/sample", comment: "What is the status?" } } as never);
+      await new Promise<void>(resolve => setImmediate(resolve));
+      expect(readFileSync(join(dir, "project.md"), "utf8")).toBe(original);
+      expect(existsSync(join(dir, "discussion.md"))).toBe(false);
       expect(f.runs).toEqual([]);
-      const receipt = getDb(f.root).prepare("SELECT delivery_status, accepted_by, data FROM events WHERE id = ?")
-        .get(Number(event[EVENT_ROW_ID])) as { delivery_status: string; accepted_by: string; data: string };
-      expect(JSON.parse(receipt.data).comment).toBe("Review the blocked work");
-      if (declared) expect(receipt).toMatchObject({ delivery_status: "accepted", accepted_by: "app:sample" });
-      else expect(receipt.delivery_status).not.toBe("accepted");
-    } finally {
-      unsubscribeObserved();
-      unsubscribeRoute();
-      unsubscribe();
-      cleanup(f.root, f.router);
-    }
+    } finally { cleanup(f.root, f.router); }
   });
-
   it("accepts reload synchronously, shares in-flight redelivery and emits one correlated terminal result", async () => {
     const result = Promise.withResolvers<{ ok: boolean; summary: string }>();
     const started = Promise.withResolvers<void>();
@@ -249,6 +222,81 @@ describe("command router", () => {
       f.bus.emit(event);
 
       expect(f.cancelled).toEqual(["s_chat"]);
+    } finally {
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("rejects controls and redelivery for Task-owned sessions, including completed attempts", () => {
+    const f = fixture();
+    try {
+      for (const status of ["running", "done"] as const) {
+        writeSessionMeta(f.root, "s_owned", {
+          agent: "worker",
+          task: "owned work",
+          status,
+          startedAt: 1,
+          taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" },
+        });
+        for (const type of ["session.cancel.requested", "session.steer.requested"] as const) {
+          const event = f.bus.emit({
+            type,
+            source: "fixture",
+            owner: "agent:worker",
+            target: { sessionId: "s_owned" },
+            data: type === "session.steer.requested" ? { message: "continue" } : {},
+          } as any);
+          f.bus.redeliverPersisted(event, Number(event[EVENT_ROW_ID]));
+          expect(() => validateSessionControl(f.manager as any, type, "s_owned")).toThrow("sample/work");
+          expect(
+            getDb(f.root).prepare("SELECT delivery_status FROM events WHERE id = ?").get(Number(event[EVENT_ROW_ID])),
+          ).toMatchObject({
+            delivery_status: "pending",
+          });
+        }
+      }
+      expect(f.cancelled).toEqual([]);
+      expect(f.resumed).toEqual([]);
+    } finally {
+      cleanup(f.root, f.router);
+    }
+  });
+
+  it("does not resume another manager's live session or partially cancel all sessions", () => {
+    const f = fixture();
+    try {
+      writeSessionMeta(f.root, "s_foreign", {
+        agent: "worker",
+        task: "standalone",
+        status: "running",
+        startedAt: 1,
+      });
+      // A second manager can be in the same process; the marker proves active
+      // ownership even though this manager's local map has no such session.
+      markSessionActive(f.root, "s_foreign");
+      f.manager.status = () => [{ sessionId: "s_chat", agent: "may", task: "chat", status: "running", runtime: "1s" }];
+      upsertSession(f.root, {
+        sessionId: "s_foreign",
+        agent: "worker",
+        task: "standalone",
+        status: "running",
+        startedAt: 1,
+      });
+      for (const type of ["session.steer.requested", "session.cancel.requested", "session.cancel_all.requested"]) {
+        const event = f.bus.emit({
+          type,
+          source: "fixture",
+          owner: "agent:worker",
+          target: { sessionId: "s_foreign" },
+          data: type === "session.steer.requested" ? { message: "continue" } : {},
+        } as any);
+        expect(
+          getDb(f.root).prepare("SELECT delivery_status FROM events WHERE id = ?").get(Number(event[EVENT_ROW_ID])),
+        ).toEqual({ delivery_status: "pending" });
+        expect(() => validateSessionControl(f.manager as any, type, "s_foreign")).toThrow("another manager");
+      }
+      expect(f.cancelled).toEqual([]);
+      expect(f.resumed).toEqual([]);
     } finally {
       cleanup(f.root, f.router);
     }

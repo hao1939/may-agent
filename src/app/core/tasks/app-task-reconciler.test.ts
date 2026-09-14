@@ -103,7 +103,7 @@ describe("durable execution backoff", () => {
     expect(claim().generation).toBe(first.generation);
   });
 
-  it("preserves newer input and refuses late failures after a spec change or cancellation", () => {
+  it("preserves newer input and accepts execution facts across revisions, but fences cancellation", () => {
     const { config, intent, claim } = setup();
     const first = claim();
     recordAppTaskTrigger(config, intent.id, { type: "sample.feedback", eventId: 10, data: {} });
@@ -112,8 +112,9 @@ describe("durable execution backoff", () => {
     const next = claim();
     expect(next.events.map((entry) => entry.event.eventId)).toContain(10);
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 2 } } });
-    expect(failAppTaskAttempt(config, next, "Late failure").status).toBe("superseded");
-    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures ?? 0).toBe(0);
+    expect(failAppTaskAttempt(config, next, "Late failure").status).toBe("retrying");
+    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(2);
+    advanceToTaskRetry(config, intent.id);
     const revised = claim();
     const resource = config.resourceStore.readTask(intent.id)!;
     cancelAppTask(config, {
@@ -164,7 +165,7 @@ describe("durable execution backoff", () => {
     },
   );
 
-  it("resets failure pacing for an accepted wait and an owner-revised execution spec", () => {
+  it("resets failure pacing for accepted progress, preserving it across spec saves", () => {
     const { config, intent, claim } = setup();
     failAppTaskAttempt(config, claim(), "Transient failure");
     advanceToTaskRetry(config, intent.id);
@@ -180,7 +181,8 @@ describe("durable execution backoff", () => {
       failAppTaskAttempt(config, claim(), "Repeated failure");
     }
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 3 } } });
-    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures ?? 0).toBe(0);
+    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(4);
+    advanceToTaskRetry(config, intent.id);
     expect(claim().generation).toBe(3);
   });
 
@@ -264,6 +266,7 @@ describe("worker failure facts and owner closure", () => {
       appAgent: "app-owner",
       intent: { ...intent, parentId: "parent", input: { revised: true } },
     });
+    advanceToTaskRetry(config, intent.id);
     const revised = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
     expect(revised.kind).toBe("claimed");
     expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(accepted);
@@ -512,7 +515,7 @@ function trackAppTaskConditionEvent(config: AppTaskContext, event: Record<string
   return trackAppTaskConditionEventForTasks(config, event, matchingAppTaskConditionTaskIds(config, event));
 }
 
-function fixture(operationsOwner?: string) {
+function fixture(operationsOwner?: string, categorizedCreator = "pipeline-monitor") {
   const root = join(tmpdir(), `task-reconciler-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -538,6 +541,7 @@ function fixture(operationsOwner?: string) {
           "categorized-task": {
             metadata: {
               id: "categorized-task",
+              creator: { appId: "sample", taskId: categorizedCreator },
               generation: 1,
               resourceVersion: 1,
             },
@@ -569,6 +573,15 @@ function fixture(operationsOwner?: string) {
   });
   stores.push(config.resourceStore);
   return { root, appDir, config, store: config.resourceStore };
+}
+
+function waitCategorizedTask(config: AppTaskContext) {
+  const claim = claimObservedAppTask(config, { taskId: "categorized-task", appAgent: "app-owner", handler: "auto" });
+  if (claim.kind !== "claimed") throw new Error("Expected target claim");
+  deferAppTask(config, claim, {
+    disposition: "waiting", summary: "Await source evidence",
+    conditions: [{ id: "source", type: "source.ready", subject: "source:sample", expected: true }],
+  });
 }
 
 function mutateAttemptFixture(
@@ -647,12 +660,14 @@ function declareAndClaimTask(
     trigger?: Record<string, unknown>;
     isAgentRunnable?: (agent: string) => boolean;
     recoverSessionHandoff?: Parameters<typeof claimObservedAppTask>[1]["recoverSessionHandoff"];
+    creator?: Parameters<typeof observeAppTaskIntent>[1]["creator"];
   },
 ) {
   const observed = observeAppTaskIntent(config, {
     intent: input.intent,
     appAgent: input.appAgent,
     trigger: input.trigger,
+    creator: input.creator,
   });
   if (observed.kind === "completed") return observed;
   return claimObservedAppTask(config, {
@@ -1043,6 +1058,7 @@ describe("App task reconciler state", () => {
   it.each(["waiting", "converged"] as const)("keeps %s result and actions atomic across unaccepted input", (state) => {
     const fixtureState = fixture();
     const { config } = fixtureState;
+    waitCategorizedTask(config);
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
       appAgent: "app-owner",
@@ -1055,8 +1071,8 @@ describe("App task reconciler state", () => {
       eventId: 101,
       data: { state: "corrected" },
     });
-    const action = { kind: "update-task" as const, taskId: "categorized-task",
-      expectedGeneration: 1, outcome: "Act on the latest correction" };
+    const action = { kind: "unblock-task" as const, taskId: "categorized-task",
+      expectedGeneration: 1, reason: "Reconsider current facts" };
 
     const output = {
       summary: "Act on the older snapshot", facts: ["snapshot:old"],
@@ -1078,7 +1094,7 @@ describe("App task reconciler state", () => {
         actions: [action],
         acceptedLiveEventIds: [101],
       }),
-    ).toMatchObject({ status: "applied", actionsApplied: [`updated ${action.taskId}`] });
+    ).toMatchObject({ status: "applied", actionsApplied: [`unblocked ${action.taskId}`] });
   });
 
   it.each(["converged", "attention"] as const)("preserves open waits and %s findings for reevaluation", (state) => {
@@ -1136,6 +1152,7 @@ describe("App task reconciler state", () => {
 
   it.each(["waiting", "converged"] as const)("admits %s parent actions across a newer clock wake", (state) => {
     const { config } = fixture();
+    waitCategorizedTask(config);
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
       appAgent: "app-owner",
@@ -1150,13 +1167,13 @@ describe("App task reconciler state", () => {
       facts: ["inventory:current"],
       conditions: [{ id: "proof", type: "proof.ready", subject: "id:proof", expected: true,
         owner: "app:sample", reviewAfterMs: 60_000 }],
-      actions: [{ kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" }],
+      actions: [{ kind: "unblock-task" as const, taskId: "categorized-task", expectedGeneration: 1, reason: "Reconsider current facts" }],
     };
     const applied = state === "waiting"
       ? deferAppTask(config, claim, { ...result, disposition: "waiting" })
       : completeAppTask(config, claim, result);
-    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["updated categorized-task"] });
-    expect(config.resourceStore.readTask("categorized-task")?.metadata.generation).toBe(2);
+    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["unblocked categorized-task"] });
+    expect(config.resourceStore.readTask("categorized-task")?.metadata.generation).toBe(1);
     // Both results retain the latest wake for the next pass without discarding
     // an accepted child action or treating time alone as conflicting facts.
     expect(config.resourceStore.readTrigger(claim.taskId)?.events?.map((row) => row.event.eventId)).toEqual(
@@ -1313,7 +1330,7 @@ describe("App task reconciler state", () => {
           },
         ],
       }),
-    ).toThrow("assignment changes belong to its assigning owner");
+    ).toThrow("update-task is retired");
 
     expect(() =>
       completeAppTask(config, claim, {
@@ -1329,7 +1346,7 @@ describe("App task reconciler state", () => {
           { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
         ],
       }),
-    ).toThrow("assignment changes belong to its assigning owner");
+    ).toThrow("update-task is retired");
   });
 
   it("carries observed workspace lineage from the attempt into its accepted attempt", () => {
@@ -2359,7 +2376,7 @@ describe("App task reconciler state", () => {
     },
   );
 
-  it("invalidates an old attempt when desired state changes generation", () => {
+  it("preserves execution but rejects its old result when requirements change", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, {
       intent: intent("monitor"),
@@ -2376,16 +2393,15 @@ describe("App task reconciler state", () => {
     const changedTree = readTaskSnapshot(config);
     expect(changedTree.resources?.["pipeline-monitor"]).toMatchObject({
       metadata: { generation: 2, resourceVersion: 3 },
-      status: { phase: "pending" },
+      status: { phase: "running", currentAttemptId: first.attemptId },
     });
     expect(changedTree.attempts?.[first.attemptId]).toMatchObject({
-      state: "interrupted",
-      summary: "Task specification changed while the attempt was active",
+      state: "running",
     });
     expect(completeAppTask(config, first, { summary: "late generation one result" }).status).toBe("stale");
   });
 
-  it("detaches prior-generation Conditions and triggers when desired state changes", () => {
+  it("preserves prior-generation Conditions and triggers when requirements change", () => {
     const state = fixture();
     const { config } = state;
     const monitor = intent("monitor");
@@ -2425,11 +2441,11 @@ describe("App task reconciler state", () => {
     const changedTree = readTaskSnapshot(config);
     expect(changedTree.resources?.[monitor.id]).toMatchObject({
       metadata: { generation: 2 },
-      status: { phase: "pending" },
+      status: { phase: "waiting", observedGeneration: 1 },
     });
-    expect(changedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
-    expect(changedTree.conditions?.["prior-generation-run"]).toBeUndefined();
-    expect(changedTree.taskTriggers?.[monitor.id]).toBeUndefined();
+    expect(changedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual(["prior-generation-run"]);
+    expect(changedTree.conditions?.["prior-generation-run"]).toBeDefined();
+    expect(changedTree.taskTriggers?.[monitor.id]?.event.type).toBe("prior-generation.trigger");
     expect(listRunnableAppTaskIds(config)).toContain(monitor.id);
   });
 
@@ -2469,8 +2485,8 @@ describe("App task reconciler state", () => {
     });
     expect(claim).toMatchObject({ kind: "claimed", taskId: monitor.id, generation: 2 });
     const claimedTree = readTaskSnapshot(config);
-    expect(claimedTree.conditions?.["stale-run"]).toBeUndefined();
-    expect(claimedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual([]);
+    expect(claimedTree.conditions?.["stale-run"]).toBeDefined();
+    expect(claimedTree.resources?.[monitor.id]?.status.conditionIds ?? []).toEqual(["stale-run"]);
   });
 
   it("keeps an active generation when only containment, category, or priority changes", () => {
@@ -2515,7 +2531,7 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
     });
     expect(observed).toMatchObject({ kind: "observed", generation: 2, changed: true });
-    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toMatchObject({ state: "interrupted" });
+    expect(readTaskSnapshot(config).attempts?.[claim.attemptId]).toMatchObject({ state: "running" });
   });
 
   it("inherits agent selection, claims one attempt, and deduplicates concurrent wakes", () => {
@@ -3791,11 +3807,11 @@ describe("App task reconciler state", () => {
     ).toMatchObject({
       kind: "observed",
       generation: claim.generation + 1,
-      supersededSessionIds: ["nested-workflow-session"],
+      changed: true,
     });
     expect(
-      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "late-stale-session"),
-    ).toEqual({ status: "superseded", taskId: claim.taskId });
+      associateAppTaskSession(config, { taskId: claim.taskId, generation: claim.generation }, "nested-workflow-session"),
+    ).toEqual({ status: "recorded", taskId: claim.taskId });
     expect(associateAppTaskSession(config, { taskId: "missing-task", generation: 1 }, "missing-session")).toEqual({
       status: "missing",
       taskId: "missing-task",
@@ -4674,7 +4690,8 @@ describe("App task reconciler state", () => {
       acceptance: ["The wait has a typed condition"],
     } as const;
     observeAppTaskIntent(config, { intent: parentIntent, appAgent: "app-owner" });
-    observeAppTaskIntent(config, { intent: childIntent, appAgent: "app-owner" });
+    observeAppTaskIntent(config, { intent: childIntent, appAgent: "app-owner",
+      creator: { appId: "sample", taskId: "pipeline-monitor" } });
 
     const carrier = declareAndClaimTask(config, {
       intent: intent("monitor"),
@@ -4683,20 +4700,15 @@ describe("App task reconciler state", () => {
     });
     if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
 
-    expect(
-      completeAppTask(config, carrier, {
-        summary: "Collapsed stale parent",
-        facts: ["reparented useful wait before closing stale parent"],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: childIntent.id,
-            expectedGeneration: 1,
-            parentId: "operations",
-          },
-        ],
-      }),
-    ).toMatchObject({ status: "applied", actionsApplied: ["updated useful-wait"] });
+    observeAppTaskIntent(config, {
+      appAgent: "app-owner",
+      creator: { appId: "sample", taskId: carrier.taskId },
+      intent: { ...childIntent, parentId: "operations" },
+    });
+    expect(completeAppTask(config, carrier, {
+      summary: "Preserved useful child before retiring its former parent",
+      facts: ["reparenting:saved"],
+    }).status).toBe("applied");
 
     const parent = config.resourceStore.readTask(parentIntent.id)!;
     closeAppTask(config, {
@@ -4973,6 +4985,7 @@ describe("App task reconciler state", () => {
   it("applies handler actions atomically with reconciliation completion", () => {
     const state = fixture();
     const { config } = state;
+    waitCategorizedTask(config);
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
       appAgent: "app-owner",
@@ -4984,73 +4997,18 @@ describe("App task reconciler state", () => {
       summary: "owner proposed a bounded child",
       facts: ["owner packet reviewed"],
       actions: [
-        { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
+        { kind: "unblock-task" as const, taskId: "categorized-task", expectedGeneration: 1, reason: "Reconsider current facts" },
       ],
     });
 
-    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["updated categorized-task"],
-      dependentTaskIds: ["categorized-task"], supersededSessionIds: [] });
+    expect(applied).toMatchObject({ status: "applied", actionsApplied: ["unblocked categorized-task"],
+      dependentTaskIds: ["categorized-task"] });
     expect(config.resourceStore.readTask("categorized-task")).toMatchObject({
-      metadata: { generation: 2 }, spec: { outcome: "Updated by owner" }, status: { phase: "pending" } });
+      metadata: { generation: 1 }, spec: { outcome: "Categorized bounded work" }, status: { phase: "pending" } });
     expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.state).toBe("converged");
   });
 
-  it("applies the same fenced action rules to runtime-prefixed task identities", () => {
-    const { config } = fixture();
-    const parentClaim = declareAndClaimTask(config, {
-      intent: { ...intent("monitor"), id: "runtime/owner-review" },
-      appAgent: "app-owner",
-      handler: "agent:app-owner",
-    });
-    if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
 
-    expect(() =>
-      completeAppTask(config, parentClaim, {
-        summary: "Owner review revised its desired execution",
-        facts: ["review:current"],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: parentClaim.taskId,
-            expectedGeneration: parentClaim.generation,
-            outcome: "Keep the platform reviewed from current facts",
-          },
-        ],
-      }),
-    ).toThrow("assignment changes belong to its assigning owner");
-    expect(readTaskSnapshot(config).resources?.[parentClaim.taskId]?.metadata.generation).toBe(parentClaim.generation);
-    observeAppTaskIntent(config, {
-      intent: {
-        ...intent("monitor"),
-        id: parentClaim.taskId,
-        outcome: "Keep the platform reviewed from current facts",
-      },
-      appAgent: "app-owner",
-    });
-
-    const revised = readTaskSnapshot(config).resources?.["runtime/owner-review"];
-    expect(revised?.spec.outcome).toBe("Keep the platform reviewed from current facts");
-    expect(revised?.metadata.generation).toBe(parentClaim.generation + 1);
-
-    const nextClaim = claimObservedAppTask(config, {
-      taskId: "runtime/owner-review",
-      appAgent: "app-owner",
-      handler: "agent:app-owner",
-    });
-    if (nextClaim.kind !== "claimed") throw new Error("expected revised claim");
-    expect(
-      completeAppTask(config, nextClaim, {
-        summary: "Created one bounded follow-up",
-        facts: ["review:follow-up"],
-        actions: [
-          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
-        ],
-      }),
-    ).toMatchObject({
-      status: "applied",
-      actionsApplied: ["updated categorized-task"],
-    });
-  });
 
   it("requeues only the exact failed attention generation and retains immutable attempt facts", () => {
     const state = fixture();
@@ -5276,57 +5234,11 @@ describe("App task reconciler state", () => {
     ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
   });
 
-  it("rejects project as a fake workflow in owner updates", () => {
-    const { config } = fixture();
-    const claim = declareAndClaimTask(config, {
-      intent: intent("monitor"),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(() =>
-      completeAppTask(config, claim, {
-        summary: "owner proposed a bounded child",
-        facts: ["owner packet reviewed"],
-        actions: [
-          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, workflow: "project" },
-        ],
-      }),
-    ).toThrow("workflow must name a real workflow; omit workflow for agent-handled project work");
-    expect(readTaskSnapshot(config).resources?.["categorized-task"]?.metadata.generation).toBe(1);
-  });
 
-  it("updates task priority without overwriting its domain category", () => {
-    const { config } = fixture();
-    const claim = declareAndClaimTask(config, {
-      intent: intent("monitor"),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(
-      completeAppTask(config, claim, {
-        summary: "updated categorized task",
-        facts: ["task schema review"],
-        actions: [
-          {
-            kind: "update-task",
-            taskId: "categorized-task",
-            expectedGeneration: 1,
-            priority: "P1",
-          },
-        ],
-      }),
-    ).toMatchObject({ status: "applied" });
 
-    const task = readTaskSnapshot(config).resources?.["categorized-task"];
-    expect(task?.spec.priority).toBe("P1");
-    expect(task?.spec.category).toBe("domain");
-  });
-
-  it("repairs explicit agent and workflow bindings through an update action", () => {
+  it("lets the responsible App repair execution bindings without granting that authority to the creator", () => {
     const state = fixture();
     const { config } = state;
     const observed = observeAppTaskIntent(config, {
@@ -5350,7 +5262,7 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(
+    expect(() =>
       completeAppTask(config, claim, {
         summary: "repaired stale binding",
         facts: ["removed workflow is not registered"],
@@ -5364,7 +5276,12 @@ describe("App task reconciler state", () => {
           },
         ],
       }),
-    ).toMatchObject({ status: "applied" });
+    ).toThrow("update-task is retired");
+    expect(readTaskSnapshot(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation);
+
+    const repaired = { ...readAppTaskIntent(config, "categorized-task")!, owner: "scout" };
+    delete repaired.workflow;
+    observeAppTaskIntent(config, { appAgent: "app-owner", intent: repaired });
 
     expect(readAppTaskIntent(config, "categorized-task")).toMatchObject({
       owner: "scout",
@@ -5374,99 +5291,11 @@ describe("App task reconciler state", () => {
     expect(readTaskSnapshot(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation + 1);
   });
 
-  it.each(["complete", "wait"] as const)("prepares exact action sessions before a fenced %s commit", (mode) => {
-    const state = fixture();
-    const { config } = state;
-    const targetIntent: AppTaskIntent = {
-      id: "work/running-target",
-      parentId: "operations",
-      outcome: "Run the original target generation",
-      acceptance: ["The current target generation converges"],
-      workflow: "known-workflow",
-    };
-    const target = declareAndClaimTask(config, {
-      intent: targetIntent,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (target.kind !== "claimed") throw new Error("expected target claim");
-    expect(associateAppTaskSession(config, target, "running-target-session")).toEqual({
-      status: "recorded",
-      taskId: targetIntent.id,
-    });
 
-    const carrier = declareAndClaimTask(config, {
-      intent: intent("monitor"),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-    });
-    if (carrier.kind !== "claimed") throw new Error("expected carrier claim");
-
-    let prepared = 0;
-    let race = false;
-    const settle = (expectedGeneration = target.generation) => {
-      const result = {
-        summary: "Advanced the dependent target",
-        facts: ["the dependent target needs revised execution intent"],
-        actions: [
-          {
-            kind: "update-task" as const,
-            taskId: targetIntent.id,
-            expectedGeneration,
-            outcome: "Run the revised target generation",
-          },
-        ],
-        prepareSupersededSessions(ids: string[]) {
-          prepared++;
-          expect(ids).toEqual(["running-target-session"]);
-          expect(config.resourceStore.readTask(target.taskId)).toMatchObject({
-            metadata: { generation: target.generation },
-            status: { currentAttemptId: target.attemptId },
-          });
-          if (race)
-            mutateTaskResourceFixture(config, target.taskId, (resource) => {
-              resource.status.summary = "A concurrent observation must not be overwritten";
-            });
-        },
-      };
-      return mode === "complete"
-        ? completeAppTask(config, carrier, result)
-        : deferAppTask(config, carrier, {
-            ...result,
-            disposition: "waiting",
-            conditions: [
-              {
-                id: "proof",
-                type: "sample.proof.ready",
-                subject: "id:proof-1",
-                expected: "ready",
-              },
-            ],
-          });
-    };
-    expect(() => settle(target.generation + 1)).toThrow();
-    expect(prepared).toBe(0); // Invalid actions never interrupt a session.
-    race = true;
-    expect(() => settle()).toThrow("stale fence");
-    expect(config.resourceStore.readTask(target.taskId)?.metadata.generation).toBe(target.generation);
-    expect(config.resourceStore.readTask(carrier.taskId)?.status.currentAttemptId).toBe(carrier.attemptId);
-    race = false;
-    expect(settle()).toMatchObject({
-      status: "applied",
-      actionsApplied: [`updated ${targetIntent.id}`],
-      supersededSessionIds: ["running-target-session"],
-    });
-    expect(prepared).toBe(2);
-
-    const targetResource = readTaskSnapshot(config).resources?.[targetIntent.id];
-    expect(targetResource).toMatchObject({
-      metadata: { generation: target.generation + 1 },
-      status: { phase: "pending" },
-    });
-  });
 
   it("rejects an invalid action batch without partially applying earlier actions", () => {
     const { config } = fixture();
+    waitCategorizedTask(config);
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
       appAgent: "app-owner",
@@ -5479,12 +5308,12 @@ describe("App task reconciler state", () => {
         summary: "invalid batch",
         facts: ["batch validation test"],
         actions: [
-          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
+          { kind: "unblock-task" as const, taskId: "categorized-task", expectedGeneration: 1, reason: "Reconsider current facts" },
           {
-            kind: "update-task",
+            kind: "unblock-task",
             taskId: "missing-task",
             expectedGeneration: 1,
-            outcome: "invalid",
+            reason: "invalid",
           },
         ],
       }),
@@ -5494,26 +5323,7 @@ describe("App task reconciler state", () => {
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("running");
   });
 
-  it("rejects task actions that declare outputs outside app and domain roots", () => {
-    const { config } = fixture();
-    const claim = declareAndClaimTask(config, {
-      intent: intent("monitor"),
-      appAgent: "app-owner",
-      handler: "agent:branch-owner",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
 
-    expect(() =>
-      completeAppTask(config, claim, {
-        summary: "invalid output root",
-        facts: ["path boundary test"],
-        actions: [
-          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outputs: ["../../outside/result.txt"] },
-        ],
-      }),
-    ).toThrow("escapes the app/domain roots");
-    expect(readTaskSnapshot(config).resources?.["must-not-escape"]).toBeUndefined();
-  });
 
   it("replays an exact owner close without rewriting the accepted result or Task history", () => {
     const { config } = fixture();
@@ -5576,10 +5386,10 @@ describe("App task reconciler state", () => {
         facts: ["receipt inspection"],
         actions: [
           {
-            kind: "update-task",
+            kind: "unblock-task",
             taskId: "categorized-task",
             expectedGeneration: 1,
-            priority: "P1",
+            reason: "Reconsider",
           },
         ],
       }),
@@ -5594,6 +5404,7 @@ describe("App task reconciler state", () => {
   it("rejects mutation of an owner-closed Task", () => {
     const { config } = fixture();
     observeAppTaskIntent(config, {
+      creator: { appId: "sample", taskId: "pipeline-monitor" },
       appAgent: "app-owner",
       intent: { id: "categorized-task", ...config.resourceStore.readTask("categorized-task")!.spec, outputs: [] },
     });
@@ -5623,8 +5434,8 @@ describe("App task reconciler state", () => {
         summary: "attempted completed-task recreation",
         facts: ["receipt inspection"],
         actions: [
-          { kind: "update-task", taskId: "categorized-task",
-            expectedGeneration: target.metadata.generation, outcome: "Try to revive closed work" },
+          { kind: "unblock-task", taskId: "categorized-task",
+            expectedGeneration: target.metadata.generation, reason: "Reconsider" },
         ],
       }),
     ).toThrow("Handler action cannot mutate cancelled task categorized-task");
@@ -5649,7 +5460,7 @@ describe("App task reconciler state", () => {
         summary: "invalid runtime payload",
         facts: ["  "],
         actions: [
-          { kind: "update-task" as const, taskId: "categorized-task", expectedGeneration: 1, outcome: "Updated by owner" },
+          { kind: "unblock-task" as const, taskId: "categorized-task", expectedGeneration: 1, reason: "Reconsider" },
         ],
       }),
     ).toThrow("require non-empty facts");
@@ -5659,7 +5470,7 @@ describe("App task reconciler state", () => {
       completeAppTask(config, claim, {
         summary: "invalid runtime payload",
         facts: ["runtime validation test"],
-        actions: [{ kind: "update-task", taskId: "categorized-task" } as never],
+        actions: [{ kind: "unblock-task", taskId: "categorized-task" } as never],
       }),
     ).toThrow("requires a non-negative expectedGeneration");
     expect(readTaskSnapshot(config).resources?.["bad-shape"]).toBeUndefined();

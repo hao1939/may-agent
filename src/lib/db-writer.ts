@@ -7,6 +7,7 @@
  */
 
 import { createHash } from "node:crypto";
+import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import {
   EVENT_DEDUPLICATED,
   EVENT_INGRESS_SOURCE,
@@ -28,6 +29,8 @@ import { evaluationProjectionFromEventData, upsertEvaluationProjection } from ".
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
+import { escalationFeedbackTarget } from "./escalation-feedback.js";
+import { applyMetricMutation } from "./db/metric-mutation.js";
 import type { TaskBinding } from "./persistence.js";
 
 /** Keep coordination rows small; full large bodies live in event-bodies/. */
@@ -602,6 +605,27 @@ export class DbWriter {
         break;
       }
 
+      case "metric.threshold_changed":
+      case "metric.alert_resolved": {
+        const payload = eventPayload(event as unknown as Record<string, unknown>);
+        this.insertEventRow(event, payload, eventSource(event), eventOwner(event), undefined, undefined, () =>
+          applyMetricMutation(this.db, event.type, payload, event.timestamp ?? Date.now()));
+        break;
+      }
+
+      case "escalation.resolved":
+      case "escalation.dismissed": {
+        const payload = eventPayload(event as unknown as Record<string, unknown>);
+        const addressed = readTaskEventTarget((event as AgentEvent & { target?: unknown }).target);
+        const target = addressed?.appId ? addressed : escalationFeedbackTarget(this.db, payload);
+        // Unknown ownership remains explicit evidence for an operator. Never
+        // guess another agent or resurrect an execution from an owner label.
+        Object.assign(event, { ...(target ? { target } : {}),
+          data: { ...payload, feedbackRoute: target ? "task" : "unresolved" } });
+        this.insertEventRow(event, eventPayload(event), eventSource(event), eventOwner(event));
+        break;
+      }
+
       default:
         if (DURABLE_COMMAND_EVENTS.has(event.type) || event.type.startsWith("trigger.")) {
           const ev = event as any;
@@ -743,7 +767,8 @@ export class DbWriter {
           if (existing.delivery_status === "pending" || existing.delivery_status === "unhandled") {
             Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
           }
-          project?.();
+          // The mutation and event committed together. A retry returns that
+          // receipt; replaying the edit could overwrite newer accepted state.
           commit();
           return existingId;
         }
@@ -837,7 +862,8 @@ export class DbWriter {
         throw new Error(`Persisted event ${rowId} cannot expose its durable receipt`, { cause: error });
       }
       persistEventTrace(this.db, event, rowId, timestamp);
-      if (emissionFence) this.persistExactTaskWake(event, target, rowId, timestamp);
+      if (emissionFence || event.type === "escalation.resolved" || event.type === "escalation.dismissed")
+        this.persistExactTaskWake(event, target, rowId, timestamp);
       this.closePairForFollowup(payload, rowId, timestamp);
       this.closeConventionPairs(event.type, payload, rowId, timestamp);
       this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
@@ -861,9 +887,9 @@ export class DbWriter {
     eventId: number,
     observedAt: number,
   ): void {
-    const appId = String(target.appId ?? target.project ?? "").trim().replace(/\.app$/, "");
-    const taskId = String(target.taskId ?? "").trim();
-    if (!appId || !taskId) return;
+    const address = readTaskEventTarget(target);
+    if (!address?.appId) return;
+    const { appId, taskId } = address;
     const authority = this.db
       .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
       .get(appId) as { value?: string } | null;
@@ -900,10 +926,12 @@ export class DbWriter {
       event: canonical,
       observedAt: observedAtIso,
     };
-    this.db.prepare(
-      `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
+    this.db
+      .prepare(
+        `INSERT OR IGNORE INTO app_task_events(app_id, task_id, event_key, observed_at, event_json)
        VALUES (?, ?, ?, ?, ?)`,
-    ).run(appId, taskId, `event:${eventId}`, observedAt, JSON.stringify(canonical));
+      )
+      .run(appId, taskId, `event:${eventId}`, observedAt, "{}");
     this.db.prepare(
       `UPDATE app_tasks
        SET changed = 1, ready = 1, trigger_json = ?, updated_at = ?,

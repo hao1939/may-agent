@@ -222,7 +222,7 @@ describe("shared agent execution preparation", () => {
     expect(prepared.tools.find((candidate) => candidate.name === "checkpoint")?.executionMode).toBe("sequential");
   });
 
-  test("removes Host-private task inspection while preserving full task-executor tools", () => {
+  test.each(["full", "full-no-tasks"] as const)("respects the explicitly selected or saved Task tool policy: %s", (toolPolicy) => {
     const prepared = prepareAgentExecution({
       definition: {
         name: "sample",
@@ -235,11 +235,11 @@ describe("shared agent execution preparation", () => {
       projectRoot: "/tmp",
       sessionId: "supplied-dependency-observation",
       task: "judge the supplied observation",
-      toolPolicy: "full-no-tasks",
+      toolPolicy,
       createCheckpoint: () => tool("checkpoint"),
     });
 
-    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(["read", "finish", "checkpoint"]);
+    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(toolPolicy === "full" ? ["read", "tasks", "finish", "checkpoint"] : ["read", "finish", "checkpoint"]);
   });
 
   test("preserves one existing checkpoint without synthesizing a duplicate", () => {
@@ -633,8 +633,10 @@ describe("direct structured judgment execution", () => {
     expect(result.structuredResult).toBeUndefined();
   });
 
-  test("keeps timeout before any committed judgment interrupted", async () => {
+  test.each(["deadline", "caller"])("keeps %s stop before any committed judgment interrupted", async (cause) => {
     const prepared = prepare();
+    const controller = new AbortController();
+    const started = Promise.withResolvers<void>();
     prepared.runner.streamFn = (_model, _context, options) => {
       const stream = createAssistantMessageEventStream();
       const aborted = () => stream.push({
@@ -644,10 +646,14 @@ describe("direct structured judgment execution", () => {
       });
       if (options?.signal?.aborted) aborted();
       else options?.signal?.addEventListener("abort", aborted, { once: true });
+      started.resolve();
       return stream;
     };
 
-    const result = await executePreparedAgent(prepared, { timeoutMs: 10 });
+    const pending = executePreparedAgent(prepared, { timeoutMs: cause === "deadline" ? 50 : 5_000, signal: controller.signal });
+    await started.promise;
+    if (cause === "caller") controller.abort(new Error("caller stopped"));
+    const result = await pending;
 
     expect(result.status).toBe("interrupted");
     expect(result.structuredResult).toBeUndefined();

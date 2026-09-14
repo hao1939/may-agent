@@ -1,8 +1,15 @@
-import { type AppInputContext, type AppTaskAttachment, type TaskIntent as AppTaskIntent } from "@may-agent/sdk";
+import {
+  type AppInputContext,
+  type AppTaskAttachment,
+  type TaskIntent as AppTaskIntent,
+  type TaskRevision,
+} from "@may-agent/sdk";
+import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
 import { Check } from "typebox/value";
 import { getDb } from "../../../lib/db/connection.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
@@ -40,14 +47,12 @@ import {
   repairUnadmittedAppDependencyWaits,
   retryFailedAppTask,
   type AppTaskAttemptRecovery,
-  type AppTaskObservationResult,
 } from "./app-task-reconciler.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
-  interruptSupersededObservationSessions,
 } from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
@@ -57,6 +62,7 @@ import type { AppTaskQueueOptions } from "./queue.js";
 import {
   appTaskConfig,
   configuredAppAgent,
+  configuredRegistryEntries,
   prepareAppTaskRuntimeDescriptors,
   syncProjectReadModel,
   type AppTaskRuntimeDescriptor,
@@ -163,7 +169,10 @@ function flattenEvent(event: AgentEvent): Record<string, unknown> {
   };
 }
 
-/** Canonical durable Task event envelope plus its event-journal identity. */
+/**
+ * Convert the live EVENT_ROW_ID symbol to serializable eventId before admission.
+ * Receipt lookup and pending-input comparisons below use this stored envelope.
+ */
 function canonicalTaskEvent(event: AgentEvent): Record<string, unknown> {
   const canonical = canonicalAppEvent(event) as Record<string, unknown>;
   const envelope = event as unknown as Record<string, unknown>;
@@ -241,17 +250,21 @@ function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
 type AppTaskAdmissionResult = {
   delivery?: DeliveryResult;
   taskIds: string[];
-  supersededSessionIds: string[];
 };
 
-function admitResolvedAppTaskEvent(input: {
+function admitResolvedAppTaskEvent(input: Parameters<typeof applyResolvedAppTaskEvent>[0]): AppTaskAdmissionResult {
+  // Receipt lookup and all selected Task/Condition changes share one boundary
+  // with worker publication and claim on other database connections.
+  return stateTransaction(input.descriptor.resourceStore.db, () => applyResolvedAppTaskEvent(input));
+}
+
+function applyResolvedAppTaskEvent(input: {
   descriptor: AppTaskRuntimeDescriptor;
   controller?: AppTaskController;
   event: Record<string, unknown>;
   intent: AppTaskIntent | null;
   targetedTaskId?: string;
   conditionTaskIds?: string[];
-  interruptSuperseded?(observation: AppTaskObservationResult): void;
 }): AppTaskAdmissionResult {
   const { descriptor, controller, event, intent } = input;
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
@@ -259,6 +272,8 @@ function admitResolvedAppTaskEvent(input: {
   const selectedConditionTaskIds = [
     ...new Set((input.conditionTaskIds ?? []).map((taskId) => taskId.trim()).filter(Boolean)),
   ];
+  // Check before Condition admission, which can link this same first input.
+  const duplicateIntent = intent && config.resourceStore.hasTaskEvent(intent.id, event);
   const conditionWakes = trackAppTaskConditionEventForTasks(config, event, selectedConditionTaskIds);
   const wokenTaskIds = new Set(conditionWakes.map((wake) => wake.taskId));
   if (controller) {
@@ -286,20 +301,30 @@ function admitResolvedAppTaskEvent(input: {
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted"),
         taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
+      };
+    }
+    if (triggerResult.kind === "duplicate") {
+      return {
+        delivery: appTaskDelivery(descriptor, targetedTaskId, "targeted task event already received"),
+        taskIds: [...wokenTaskIds],
       };
     }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
-    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
   }
-  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
+  if (duplicateIntent) {
+    return {
+      delivery: appTaskDelivery(descriptor, intent.id, "resolved task event already received"),
+      taskIds: [...wokenTaskIds],
+    };
+  }
   const observation = observeAppTaskIntent(config, {
     intent,
     appAgent: descriptor.agent,
     trigger: event,
   });
-  input.interruptSuperseded?.(observation);
   if (observation.kind === "observed") wokenTaskIds.add(observation.taskId);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
@@ -309,7 +334,6 @@ function admitResolvedAppTaskEvent(input: {
   return {
     delivery: appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted"),
     taskIds: [...wokenTaskIds],
-    supersededSessionIds: observation.supersededSessionIds ?? [],
   };
 }
 
@@ -330,8 +354,7 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     throw new Error(`Canonical App ${input.appId} task capability is not loaded`);
   }
   const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
-  const opts = appRouterOptionsByBus.get(input.bus);
-  if (!opts || (!controller && !descriptor.reconciliationPaused)) {
+  if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
   }
   return admitResolvedAppTaskEvent({
@@ -341,7 +364,6 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     intent: input.intent,
     targetedTaskId: input.targetedTaskId,
     conditionTaskIds: input.conditionTaskIds,
-    interruptSuperseded: (observation) => interruptSupersededObservationSessions(opts, observation),
   }).delivery;
 }
 
@@ -368,28 +390,17 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
   });
 }
 
-/** Prepare only canonical Task state needed by the admission worker. */
 /** Wake already-admitted Task identities without repeating their mutation. */
 export function wakeLoadedAppTasks(input: {
   bus: EventBus;
   appId: string;
   taskIds: string[];
-  supersededSessionIds?: string[];
 }): void {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
   if (!descriptor || !controller) return;
   const config = appTaskConfig(descriptor);
-  const opts = appRouterOptionsByBus.get(input.bus);
-  const admittedTaskId = input.taskIds.at(-1);
-  if (opts && admittedTaskId) {
-    interruptSupersededObservationSessions(opts, {
-      taskId: admittedTaskId,
-      generation: descriptor.resourceStore.readTask(admittedTaskId)?.metadata.generation ?? 1,
-      supersededSessionIds: input.supersededSessionIds,
-    });
-  }
   for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
     enqueueAppTask(controller, config, taskId, { promote: true });
   }
@@ -806,14 +817,10 @@ export function attachLoadedAppTask(input: {
   if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`App ${descriptor.id} task reconciliation is not active`);
   }
-  const loaderOptions = appRouterOptionsByBus.get(input.bus);
-  if (!loaderOptions) throw new Error(`App ${descriptor.id} task runtime is not attached`);
-
   const config = appTaskConfig(descriptor);
   const humanRequested = input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true;
 
   const observation = admitTaskInput(config, input);
-  interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       lane: humanRequested ? "human" : "normal",
@@ -923,6 +930,48 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
     },
     input.taskId,
   );
+}
+
+/** Common creator capability; App selection and delivery are ordinary runtime wiring. */
+export function reviseLoadedAppTask(input: {
+  bus: EventBus;
+  binding: TaskRevisionActor;
+  change: TaskRevision;
+}): TaskDetail {
+  const opts = appRouterOptionsByBus.get(input.bus);
+  const source = loadedAppTaskRuntimeDescriptor(input.bus, input.binding.appId);
+  if (!opts || !source) throw new Error("Task revision requires a loaded caller");
+  const loaded = loadedAppTaskRuntimeDescriptor(input.bus, input.change.appId);
+  const entry = configuredRegistryEntries(opts).find(({ definition }) => definition.id === input.change.appId);
+  const app = loaded?.app ?? entry?.definition;
+  const store = loaded?.resourceStore ?? AppTaskResourceStore.activeFromDb(source.resourceStore.db, input.change.appId);
+  if (!app?.tasks || !store || (!loaded && !entry))
+    throw new Error("Task revision requires an installed responsible App");
+  const target = loaded
+    ? appTaskConfig(loaded)
+    : appTaskContext({
+        appDir: entry!.appDir,
+        projectDir: entry!.appDir,
+        agent: configuredAppAgent(app, entry!.appDir),
+        maxConcurrent: app.tasks.maxConcurrent ?? 1,
+        resourceStore: store,
+      });
+  const revised = reviseAppTask({
+    source: appTaskConfig(source),
+    target,
+    app,
+    actor: input.binding,
+    change: input.change,
+  });
+  if (revised.kind === "observed" && revised.changed)
+    input.bus.emit({
+      type: "app.task.ready",
+      source: "app-task-reconciler",
+      owner: `app:${input.change.appId}`,
+      target: { appId: input.change.appId, taskId: input.change.taskId },
+      data: { appId: input.change.appId, taskId: input.change.taskId },
+    });
+  return readRuntimeTaskView({ taskStateConfig: target }, input.change.taskId)!;
 }
 
 /** Publish one event from the currently fenced Task attempt used by an executor tool. */

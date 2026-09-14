@@ -13,7 +13,7 @@ afterEach(() => {
   }
 });
 
-test("input cancellation waits for execution settlement even when cancellation reporting fails", async () => {
+test("caller notification failure cancels and joins execution even when cancellation reporting fails", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-call-cancel-"));
   roots.push(root);
   const manager = new SubagentManager({ persistDir: root });
@@ -33,6 +33,7 @@ test("input cancellation waits for execution settlement even when cancellation r
       sessionStarted: (id) => {
         expect(id).toBe("exact-session");
         entered.resolve();
+        throw new Error("Caller notification failed");
       },
     })
     .catch((error) => {
@@ -41,12 +42,11 @@ test("input cancellation waits for execution settlement even when cancellation r
     });
   try {
     await entered.promise;
-    controller.abort(new Error("Ownership lost"));
     await Promise.resolve();
     expect(cancel).toHaveBeenCalledWith("exact-session");
     expect(finished).toBe(false);
     settled.resolve({ status: "interrupted" } as never);
-    expect((await result).message).toBe("Ownership lost");
+    expect((await result).message).toBe("Caller notification failed");
   } finally {
     settled.resolve({ status: "interrupted" } as never);
     run.mockRestore();

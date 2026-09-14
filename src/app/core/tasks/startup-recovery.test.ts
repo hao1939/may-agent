@@ -53,7 +53,7 @@ describe("Task startup session recovery", () => {
     });
   });
 
-  it("resumes an unbound typed owner-review workflow without losing its decision contract", () => {
+  it("preserves an unbound workflow contract without automatically restarting it", () => {
     const appDir = "/fixture/sample.app";
     const outputSchema = Type.Object({
       state: Type.Union([Type.Literal("converged"), Type.Literal("waiting")]),
@@ -68,7 +68,7 @@ describe("Task startup session recovery", () => {
       outputSchema,
     };
 
-    expect(shouldResumeStartupSession(persisted)).toEqual({ resume: true });
+    expect(shouldResumeStartupSession(persisted)).toEqual({ resume: false, reason: "Standalone execution requires an explicit caller to resume" });
     expect({ requireFinish: persisted.requireFinish, outputSchema: persisted.outputSchema }).toEqual({
       requireFinish: true,
       outputSchema,
@@ -120,13 +120,13 @@ describe("Task startup session recovery", () => {
         source: "workflow:runtime",
         kind: "call",
       }),
-    ).toEqual({ resume: true });
+    ).toEqual({ resume: false, reason: "Standalone execution requires an explicit caller to resume" });
   });
 
   it("does not create task state while checking an app without a task attachment", () => {
     const appDir = mkdtempSync(join(tmpdir(), "may-owner-only-app-"));
     try {
-      expect(shouldResumeStartupSession(session(appDir, "app-owner"))).toEqual({ resume: true });
+      expect(shouldResumeStartupSession(session(appDir, "app-owner"))).toEqual({ resume: false, reason: "Standalone execution requires an explicit caller to resume" });
       expect(existsSync(join(appDir, ".state", "tasks"))).toBe(false);
     } finally {
       rmSync(appDir, { recursive: true, force: true });

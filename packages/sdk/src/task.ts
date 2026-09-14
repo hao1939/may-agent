@@ -5,14 +5,20 @@ export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 /** Stable executor adapter name selected by durable Task intent. */
 export type TaskExecutorName = string;
 
+/** Stable creating context, assigned by the Host; never a session or execution selector. */
+export type ResourceCreator = { appId: string; taskId?: string };
+
+/** Revise an exact assignment using the responsible App's ordinary typed input. */
+export type TaskRevision = { appId: string; taskId: string; expectedGeneration: number; input: AppInput };
+
 /** Desired durable outcome handed to the task reconciler. */
 export type TaskIntent = {
   id: string;
-  /** Organizational/authority context only; no implicit wait or result subscription. */
+  /** Organization only; grants no change authority, wait or result subscription. */
   parentId: string;
   outcome: string;
   acceptance: string[];
-  /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
+  /** Managed executor. The App is responsible for achievement; creator controls requirements. */
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
@@ -57,33 +63,13 @@ export type TaskAppDependency = {
   input: AppInput;
 };
 
-/** Update existing Tasks through a fenced attempt. Assign new work through dependencies; workers cannot rewrite their own assignment. */
-export type TaskAction =
-  | {
-      kind: "update-task";
-      taskId: string;
-      expectedGeneration: number;
-      parentId?: string;
-      outcome?: string;
-      outputs?: string[];
-      acceptance?: string[];
-      priority?: TaskPriority;
-      /** Managed agent selected for bounded attempts. The App remains the durable Task owner. */
-      agent?: string | null;
-      /** @deprecated Use `agent`. */
-      owner?: string | null;
-      workflow?: string | null;
-      executor?: TaskExecutorName | null;
-      input?: Record<string, unknown>;
-      dependsOn?: string[];
-      category?: string | null;
-    }
-  | {
-      kind: "unblock-task";
-      taskId: string;
-      expectedGeneration: number;
-      reason: string;
-    };
+/** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
+export type TaskAction = {
+  kind: "unblock-task";
+  taskId: string;
+  expectedGeneration: number;
+  reason: string;
+};
 
 export type TaskReconcileResult = {
   summary: string;
@@ -100,6 +86,8 @@ export type TaskReconcileResult = {
     }
   | ({
       state: "waiting";
+      /** After submitting dependencies, queue another bounded pass for useful independent work. */
+      continue?: true;
       response?: never;
       result?: Record<string, unknown>;
       actions?: TaskAction[];

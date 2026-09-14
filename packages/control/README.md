@@ -24,6 +24,14 @@ observe the work's result. Reuse an idempotency key only for the same input.
 Reads of unknown event IDs fail. `waitForSocketEvent()` subscribes and waits
 for one matching notification; after reconnecting, read durable state again.
 
+The project comment box uses this ordinary App-input route with `kind: "message"`.
+The selected App must accept that input and declare a Task or Conversation
+handler. A matching schema or comment-event subscription alone is insufficient.
+Unsupported submissions fail visibly and retain the browser text. Apps that
+previously relied on the HTTP comment-event fallback must add message handling
+before adopting this change. Explicit event subscriptions and historical
+discussion reads remain available.
+
 ## Source map
 
 - `src/events.ts`: public input, receipt, observation, and persisted-view types.

@@ -1,5 +1,5 @@
 import type { SqliteDb } from "../../../lib/db.js";
-import type { AppInputContext, AppTaskAttachment, AppResult } from "@may-agent/sdk";
+import type { AppInputContext, AppTaskAttachment, AppResult, ResourceCreator } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { getAppInboxItem, type AppInboxItem } from "./app-inbox-store.js";
@@ -18,6 +18,10 @@ export type TaskInputAdmission = {
   idempotencyKey: string;
   inputContext: Readonly<AppInputContext>;
   authorize?: () => void;
+  /** Supplied by trusted composition, never by App input or a model payload. */
+  creator?: ResourceCreator;
+  /** Trusted creator revision maps App input and preserves unfinished caller links in the same transaction. */
+  creatorRevision?: true;
   inboxInputId?: string;
   now?: number;
   topicId?: string;
@@ -103,6 +107,8 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
   } else intent = input.attachment.intent;
   return observeAppTaskIntent(config, {
     intent,
+    creator: input.creator,
+    creatorRevision: input.creatorRevision,
     appAgent: config.agent,
     admissionKey: idempotencyKey,
     trigger: {

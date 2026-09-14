@@ -1,4 +1,4 @@
-import type { Condition, TaskAcceptanceBasis, TaskIntent } from "@may-agent/sdk";
+import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
@@ -46,6 +46,8 @@ export type AppTaskWorkspace = {
 export type AppTaskResource = {
   metadata: {
     id: string;
+    /** Absent only on historical resources; no worker gains authority from missing provenance. */
+    creator?: ResourceCreator;
     generation: number;
     resourceVersion: number;
   };
@@ -74,9 +76,9 @@ export type AppTaskResource = {
   };
 };
 
-/** Quick transient retry, then up to 15 minutes between failures; never abandon work. */
+/** Quick transient retry, then up to one hour between failures; never abandon work. */
 export function taskExecutionRetryDelay(failures: number): number {
-  return Math.min(15 * 60_000, 250 * 2 ** Math.min(12, Math.max(0, failures - 1)));
+  return Math.min(60 * 60_000, 250 * 2 ** Math.min(14, Math.max(0, failures - 1)));
 }
 
 export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {
@@ -117,6 +119,7 @@ export type AppTaskAttempt = {
   /** Accepted facts from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
     state: "converged" | "waiting" | "incomplete";
+    continue?: true;
     report?: true;
     summary: string;
     response?: string;
@@ -133,6 +136,8 @@ export type AppTaskAttempt = {
   finishedAt?: string;
   summary?: string;
   failureReason?: string;
+  /** Retained separately from acceptance so recovery can reuse execution evidence. */
+  unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
@@ -153,7 +158,7 @@ export type AppTaskCancellation = {
   reason: string;
   summary: string;
   cancelledAt: string;
-  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" };
+  decidedBy?: { kind: "human" } | { kind: "app"; agent: string; attemptId: string } | { kind: "app-policy" } | { kind: "creator"; creator: ResourceCreator };
   response?: string;
   result?: Record<string, unknown>;
   facts?: string[];

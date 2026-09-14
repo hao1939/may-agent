@@ -3,10 +3,13 @@ import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./core/events/bus.js";
 import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
+import { validateSessionControl } from "./adapters/executors/session-control.js";
+export { validateSessionControl } from "./adapters/executors/session-control.js";
 
 export interface CommandRouterOptions {
   bus: EventBus;
   manager: SubagentManager;
+  projectRoot: string;
   reload: () => RuntimeReloadResult | Promise<RuntimeReloadResult>;
   restart: () => void;
   shutdown: () => void;
@@ -36,6 +39,7 @@ function integerField(value: unknown, key: string): number | null {
   const next = value[key];
   return typeof next === "number" && Number.isInteger(next) ? next : null;
 }
+
 
 /** Normalize external input, apply deterministic controls, and admit semantic work to an App. */
 export function attachCommandRouter(options: CommandRouterOptions): CommandRouter {
@@ -93,6 +97,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const text = nonEmptyString(message);
     if (!id || !text) return false;
     try {
+      validateSessionControl(manager, "session.steer.requested", id);
       if (manager.status().some((session) => session.sessionId === id)) {
         manager.send(id, text, { trace: childEventTrace(event) });
       } else {
@@ -110,6 +115,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   }
 
   function handleChatStart(event: unknown): DeliveryResult | void {
+    if (isRecord(event) && isRecord(event.target) && event.target.appId)
+      throw new Error("App input must use app.input.requested");
     const data = eventData(event);
     const message = nonEmptyString(data.message);
     if (!message) return;
@@ -236,12 +243,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         const target: Record<string, unknown> = isRecord(event) && isRecord(event.target) ? event.target : {};
         const sessionId = nonEmptyString(target.sessionId);
         if (!sessionId) return;
+        validateSessionControl(manager, "session.cancel.requested", sessionId);
         manager.cancel(sessionId);
         return accepted("session-cancel");
       }
-      case "session.cancel_all.requested":
-        for (const session of manager.status()) if (session.status === "running") manager.cancel(session.sessionId);
+      case "session.cancel_all.requested": {
+        validateSessionControl(manager, "session.cancel_all.requested");
+        const local = manager.status().filter((session) => session.status === "running");
+        for (const session of local) manager.cancel(session.sessionId);
         return accepted("session-cancel-all");
+      }
       case "runtime.reload.requested":
         finishReload(event);
         return accepted("runtime-reload");

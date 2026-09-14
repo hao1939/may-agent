@@ -5,7 +5,12 @@ import { Check } from "typebox/value";
 import { getDb } from "../../../lib/db/connection.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../events/bus.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
-import { getAppInboxItem, listOpenAppInboxItemsByIdempotencyPrefix } from "../state/app-inbox-store.js";
+import {
+  createAppInboxItem,
+  getAppInboxItem,
+  listOpenAppInboxItemsByIdempotencyPrefix,
+} from "../state/app-inbox-store.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   matchesAppTaskCondition,
@@ -45,7 +50,11 @@ export function admitTaskAppDependencies(input: {
   });
   const matchedExisting = new Set<string>();
   const matches = new Map<string, (typeof existing)[number]>();
-  const requestLineagePrefix = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:`;
+  const requestLineagePrefix = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:`;
+  const belongsToCaller = (item: NonNullable<ReturnType<typeof getAppInboxItem>>) =>
+    item.creator
+      ? isDeepStrictEqual(item.creator, { appId: input.descriptor.id, taskId: input.claim.taskId })
+      : Boolean(item.idempotencyKey?.startsWith(`${requestLineagePrefix}${input.claim.generation}:`));
   const detachedOpenByApp = new Map<string, ReturnType<typeof listOpenAppInboxItemsByIdempotencyPrefix>>();
   const detachedOpenFor = (appId: string) => {
     const cached = detachedOpenByApp.get(appId);
@@ -57,8 +66,9 @@ export function admitTaskAppDependencies(input: {
           prefix: requestLineagePrefix,
         })
       : [];
-    detachedOpenByApp.set(appId, items);
-    return items;
+    const owned = items.filter(belongsToCaller);
+    detachedOpenByApp.set(appId, owned);
+    return owned;
   };
   const detachedMatch = (item: ReturnType<typeof detachedOpenFor>[number]) => ({
     requestId: item.id,
@@ -96,6 +106,7 @@ export function admitTaskAppDependencies(input: {
       detachedItem.source.kind === "app" &&
       detachedItem.source.id === input.descriptor.id &&
       detachedItem.idempotencyKey?.startsWith(requestLineagePrefix)
+      && belongsToCaller(detachedItem)
         ? [detachedMatch(detachedItem)]
         : [];
     const detachedByMeaning =
@@ -196,6 +207,21 @@ export function admitTaskAppDependencies(input: {
       .slice(0, 24);
     const requestId = `appdep_${identity}`;
     const idempotencyKey = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:${dependency.id}:${identity}`;
+    // The row is admission authority; the event only wakes ordinary admission.
+    // Persist provenance from the live claim, never reconstruct it from event text.
+    const config = appTaskConfig(input.descriptor);
+    stateTransaction(config.resourceStore.db, () => {
+      assertAppTaskEffectFresh(config, input.claim, input.acceptedLiveEventIds);
+      createAppInboxItem(config.resourceStore.db, {
+        id: requestId,
+        appId: dependency.appId,
+        targetTaskId: dependency.taskId,
+        source: { kind: "app", id: input.descriptor.id },
+        input: dependency.input,
+        creator: { appId: input.descriptor.id, taskId: input.claim.taskId },
+        idempotencyKey,
+      });
+    });
     const requested = input.opts.bus.emit({
       type: "app.input.requested",
       source: `app-task:${input.descriptor.id}`,
@@ -306,7 +332,7 @@ export function recoverTaskConditions(
   const db = getDb(opts.persistDir);
   const rows = db
     .prepare(
-      `SELECT event_type, source, timestamp, data
+      `SELECT id, event_type, source, timestamp, data
        FROM events
        WHERE (
          project_id = ?
@@ -323,6 +349,7 @@ export function recoverTaskConditions(
        LIMIT 2000`,
     )
     .all(descriptor.id, descriptor.id, descriptor.id, ...eventTypes) as Array<{
+    id: number;
     event_type?: unknown;
     source?: unknown;
     timestamp?: unknown;
@@ -337,6 +364,7 @@ export function recoverTaskConditions(
       if (!isRecord(parsed)) continue;
       const event: Record<string, unknown> = {
         ...parsed,
+        eventId: row.id,
         type: typeof row.event_type === "string" ? row.event_type : parsed.type,
         ...(typeof row.source === "string" && row.source.trim() ? { source: row.source } : {}),
         ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),

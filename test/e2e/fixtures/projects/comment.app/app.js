@@ -12,11 +12,11 @@ export default {
     },
   },
   workspace: { kind: "local", localPath: "." }, tasks: {},
-  subscriptions: ["project.comment.created", "project.approval.submitted"].map(type => ({
-    id: type,
-    event: { type, project: "comment" },
+  subscriptions: [{
+    id: "comment",
+    event: { type: "project.comment.created", project: "comment" },
     toInput(event) { return { kind: "owner-review", data: { message: event.data.comment } }; },
-  })),
+  }],
   task(input) {
     return { kind: "desired", intent: {
       id: "work/comment", parentId: "comment",

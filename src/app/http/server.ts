@@ -41,7 +41,6 @@ import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
 import type { EventInput } from "@may-agent/control/events";
-import { getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { eventDeliveryContract, findEventPublication, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 
 // ── Public API ────────────────────────────────────────────────────────
@@ -2681,67 +2680,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        const kind =
-          error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
-        // Some Apps deliberately accept project comments through a declared
-        // subscription instead of generic message input. A missing App or
-        // unavailable admission is not permission to fall back to a fact.
-        if (kind !== "definitive" || !message.includes("does not accept this input")) {
-          return json({ ok: false, triggered: false, error: message }, 503);
-        }
+        return json({ ok: false, triggered: false, error: message }, 503);
       }
-
-      const trigger = await sendDaemonFrame(
-        buildPublishFrame(
-          "project.comment.created",
-          {
-            projectPath: path,
-            project: projectId,
-            projectId,
-            comment,
-            author: "human",
-          },
-          { target: { appId: projectId }, idempotencyKey },
-        ),
-      );
-      if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
-
-      // A recorded fact (including an App observation) does not promise work.
-      // Check the frozen route, also when a lost socket ack was recovered by ID.
-      const plan = trigger.eventId ? getAppEventAdmissionPlan(_db(), trigger.eventId) : null;
-      if (
-        !plan ||
-        plan.status === "superseded" ||
-        !plan.commands.some((route) => route.appId === projectId && route.status !== "superseded")
-      ) {
-        return json(
-          {
-            ok: false,
-            triggered: false,
-            eventId: trigger.eventId,
-            // Only a settled observation with no work route is safe to submit
-            // afresh. Unknown delivery must retain its original identity.
-            retryWithNewKey: Boolean(
-              trigger.eventId &&
-              (!plan || plan.commands.length === 0) &&
-              _db().prepare("SELECT 1 FROM events WHERE id = ? AND delivery_status = 'accepted'").get(trigger.eventId),
-            ),
-            error: `App ${projectId} has no admitted route for project comments`,
-          },
-          503,
-        );
-      }
-
-      return json(
-        {
-          ok: true,
-          triggered: true,
-          eventType: "project.comment.created",
-          eventId: trigger.eventId,
-          projectId,
-        },
-        202,
-      );
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }

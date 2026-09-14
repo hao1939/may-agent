@@ -435,10 +435,24 @@ export function trackAppTaskConditionEventForTasks(
 ): AppTaskConditionWake[] {
   const allowed = new Set(taskIds);
   if (allowed.size === 0) return [];
-  // One Condition event changes only the selected Tasks and their Conditions.
-  // Loading their children and attempt history makes a wake proportional to
-  // the size of an unrelated Task subtree and can block the interface loop.
+  // Capture Task versions before checking receipts; a concurrent claim after
+  // this read invalidates the mutation instead of reintroducing consumed input.
   const tree = config.resourceStore.readTaskContext({ taskIds: allowed }, { includeHistory: false, childLimit: 0 });
+  for (const taskId of allowed) {
+    // A first delivery or a still-pending receipt remains eligible.
+    if (!config.resourceStore.hasTaskEvent(taskId, event)) continue;
+    // Worker publication links input before first relay/Condition matching.
+    const pending = tree.taskTriggers?.[taskId];
+    if ((pending?.events ?? (pending ? [{ event: pending.event }] : [])).some((entry) => sameEvent(entry.event, event)))
+      continue;
+    // Consuming a wake does not erase evidence for a newly declared wait.
+    // The current Condition must still need and match this observation.
+    const provesOpenCondition = tree.resources?.[taskId]?.status.conditionIds?.some((id) =>
+      matchesAppTaskCondition(tree.conditions?.[id], event),
+    );
+    if (!provesOpenCondition) allowed.delete(taskId);
+  }
+  if (allowed.size === 0) return [];
   const wakes = new Map<string, AppTaskConditionWake>();
   const changedConditionIds = new Set<string>();
   if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {

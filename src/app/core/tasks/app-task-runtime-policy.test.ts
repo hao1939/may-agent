@@ -1,37 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import {
   appTaskAgentProtocol,
-  DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
-  hasSuppliedDependencyObservation,
 } from "../../adapters/executors/managed-agent.js";
-import { hasDeployReceiptWake } from "../../adapters/executors/agent-workspace.js";
-
 import { mergeTaskConditions } from "./dependency-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 
 // Pure projection and protocol rules need neither a repository nor a database.
 describe("App Task agent prompt context", () => {
-  it("recognizes deploy context only from the exact typed receipt wake", () => {
-    const events = (reason: string) =>
-      ({
-        items: [
-          {
-            eventId: 1,
-            observedAt: "2026-08-25T00:00:00.000Z",
-            event: {
-              type: "runtime.deploy.observed",
-              data: { reason },
-            },
-          },
-        ],
-        throughEventId: 1,
-        truncated: false,
-      }) as any;
-
-    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(true);
-    expect(hasDeployReceiptWake(events("please inspect the restart-aware deploy receipt"))).toBe(false);
-  });
-
   it("keeps the schema-enforced bounded-agent protocol below four kilobytes", () => {
     const protocol = appTaskAgentProtocol("may");
 
@@ -44,47 +19,6 @@ describe("App Task agent prompt context", () => {
     expect(protocol).toContain("report:true");
     expect(protocol).toContain("omit for quiet waits");
     expect(protocol).toContain("Execution errors are facts, not accepted results");
-  });
-
-  it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {
-    expect(
-      hasSuppliedDependencyObservation({
-        items: [
-          {
-            event: {
-              type: "app.task.requested",
-              data: {
-                request: {
-                  dependency: {
-                    kind: "task",
-                    id: "runtime/platform-owner-review",
-                    status: "attention",
-                    summary: "Use this supplied state",
-                  },
-                },
-              },
-            },
-          },
-        ],
-      }),
-    ).toBeTrue();
-    expect(
-      hasSuppliedDependencyObservation({
-        items: [{ event: { type: "app.task.requested", data: { request: {} } } }],
-      }),
-    ).toBeFalse();
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("treat that exact read-only observation");
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "as complete authority for the dependency in this attempt",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "do not inspect Host-private task state, generated task-tree or Kanban projections",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("This restriction is request-scoped");
-    expect(appTaskAgentProtocol("fixture")).toContain(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION);
   });
 
   it("lets an App reject Conditions it cannot meaningfully observe", () => {

@@ -2,12 +2,16 @@ import {
   conversationRequestUpdatesSchema,
   type AppConversationRequest,
   type AppConversationRequestUpdate,
+  type ResourceCreator,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
+import { assertResourceCreator } from "./resource-creator.js";
+import { conversationTaskId } from "./conversation-identity.js";
 
 export class ConversationRequestConflict extends Error {}
+export type ConversationRequestChange = { id: string; expectedRevision: number; scope: string };
 type Row = {
   id: string;
   revision: number;
@@ -51,7 +55,7 @@ export function listConversationRequests(
     db
       .prepare(
         `SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ?
-    AND (status = 'open' ${topicId ? "OR topic_id = ?" : ""})
+    ${topicId ? "AND (status = 'open' OR topic_id = ?)" : ""}
     ${taskRef ? "AND EXISTS (SELECT 1 FROM json_each(task_refs) ref WHERE json_extract(ref.value, '$.appId') = ? AND json_extract(ref.value, '$.taskId') = ?)" : ""}
     ORDER BY (status = 'open') DESC, ${topicId ? "(topic_id = ?) DESC," : ""} updated_at DESC, id LIMIT 12`,
       )
@@ -78,7 +82,7 @@ export function pageOpenConversationRequests(
   ).all(appId, conversationId, afterId) as Array<{ id: string; revision: number; scopePreview: string; status: "open" }>;
 }
 
-/** The caller includes the explanation/result write in this same transaction. */
+/** Closure includes its explanation in this transaction; open updates can be saved before execution. */
 export function applyConversationRequestUpdates(
   db: SqliteDb,
   input: {
@@ -89,11 +93,15 @@ export function applyConversationRequestUpdates(
     updateKey: string;
     messageId?: string;
     now: number;
+    /** Trusted live Conversation context. Old internal callers supply the same scoped identity. */
+    actor?: ResourceCreator;
   },
 ): void {
   if (!Check(conversationRequestUpdatesSchema, input.updates)) throw new Error("Invalid accepted Request updates");
   const ids = new Set<string>();
   stateTransaction(db, () => {
+    const creator = { appId: input.appId, taskId: conversationTaskId(input.appId, input.conversationId) };
+    assertResourceCreator(creator, input.actor ?? creator);
     for (const update of input.updates) {
       if (ids.has(update.id)) throw new Error("Repeated accepted Request update");
       ids.add(update.id);
@@ -101,6 +109,8 @@ export function applyConversationRequestUpdates(
         .prepare("SELECT * FROM conversation_requests WHERE app_id = ? AND conversation_id = ? AND id = ?")
         .get(input.appId, input.conversationId, update.id) as Row | undefined;
       const current = row ? view(row) : null;
+      const scope = update.scope ?? current?.scope;
+      if (!scope?.trim()) throw new ConversationRequestConflict(`New Request ${update.id} requires a scope`);
       const closed = update.disposition !== "open";
       if (closed && (!update.reason?.trim() || !input.messageId))
         throw new Error("Request closure requires a reason and Conversation explanation");
@@ -115,14 +125,18 @@ export function applyConversationRequestUpdates(
       if (
         row?.update_key === input.updateKey &&
         current?.revision === update.expectedRevision + 1 &&
-        current.scope === update.scope &&
+        current.scope === scope &&
         JSON.stringify(current.closure) === JSON.stringify(closure) &&
         JSON.stringify(current.taskRefs) === JSON.stringify(refs)
       )
         continue;
-      if ((current?.revision ?? 0) !== update.expectedRevision || (closed && current && current.scope !== update.scope))
+      if ((current?.revision ?? 0) !== update.expectedRevision)
         throw new ConversationRequestConflict(
-          `Accepted Request ${update.id} changed; review its current scope and revision`,
+          `Accepted Request ${update.id} revision changed: expected ${update.expectedRevision}, current ${current?.revision ?? 0}; review its current scope and revision`,
+        );
+      if (closed && current && current.scope !== scope)
+        throw new ConversationRequestConflict(
+          `Request ${update.id} closure changes scope; save the authorized correction as open first, then close the returned revision without changing scope`,
         );
       for (const ref of refs) {
         const known = db
@@ -144,7 +158,7 @@ export function applyConversationRequestUpdates(
           input.conversationId,
           update.id,
           update.expectedRevision + 1,
-          update.scope,
+          scope,
           closed ? "closed" : "open",
           input.topicId ?? current?.topicId ?? null,
           JSON.stringify(refs),

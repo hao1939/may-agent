@@ -2,7 +2,8 @@
  * E2 — A declared App subscription owns a project comment end-to-end.
  * The real daemon admits a Task and runs an isolated workflow (no model).
  * Retained Markdown is history, not an alternative dispatch or status store.
- * E8 covers the browser/HTTP journey using the same ordinary App fixture.
+ * E8 covers the browser/HTTP journey through ordinary App message input.
+ * Explicit event subscribers remain supported independently of that UI route.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";

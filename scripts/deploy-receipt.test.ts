@@ -3,12 +3,7 @@ import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writ
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
-import {
-  deployReceiptPrompt,
-  hasDeployReceiptWake,
-  readDeployReceiptForTask,
-} from "../src/app/adapters/executors/agent-workspace.js";
-import { requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
+import { readDeployReceiptForTask, requestReceipt, settleReceipt, validateDeployTaskTarget } from "./deploy-receipt";
 import { appTaskTestContext } from "../src/app/core/tasks/app-task-test-support.js";
 import {
   cancelAppTask,
@@ -22,7 +17,7 @@ function fixture() {
   const projectDir = mkdtempSync(join(tmpdir(), "deploy-receipt-"));
   const receiptDir = join(projectDir, ".state", "deploy-receipts");
   mkdirSync(receiptDir, { recursive: true });
-  return { projectDir, path: join(receiptDir, "correlation-1.json") };
+  return { projectDir, receiptDir, path: join(receiptDir, "correlation-1.json") };
 }
 
 function taskDatabase(projectDir: string, appId: string, taskIds: string[]): string {
@@ -71,27 +66,6 @@ function taskDatabase(projectDir: string, appId: string, taskIds: string[]): str
 }
 
 describe("restart-aware deploy receipts", () => {
-  it("selects receipt context from an exact wake instead of Task wording", () => {
-    const events = (reason: string) => ({
-      items: [
-        {
-          eventId: 1,
-          observedAt: new Date(0).toISOString(),
-          event: {
-            type: "project.task.tick",
-            source: "may-agent-restarter",
-            data: { reason },
-          },
-        },
-      ],
-      throughEventId: 1,
-      truncated: false,
-    });
-
-    expect(hasDeployReceiptWake(events("restart-aware-deploy-receipt"))).toBe(true);
-    expect(hasDeployReceiptWake(events("ordinary-task-wake"))).toBe(false);
-  });
-
   it("rejects a stale exact-task wake before deployment", () => {
     const f = fixture();
     try {
@@ -166,27 +140,27 @@ describe("restart-aware deploy receipts", () => {
         sourceCommit: "deadbeef",
         phase: "requested",
         requestedAt: expect.any(String),
-        verification: expect.stringContaining("complete the owner task without redeploying"),
+        verification: expect.stringContaining("report the result to the owning Task without redeploying"),
       });
-      expect(deployReceiptPrompt(f.projectDir, "task-1").join("\n")).toContain("Do not deploy again");
+      expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toEqual(receipt);
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
   });
 
-  it("injects succeeded verification of SHA, health, and idempotency", () => {
+  it("exposes succeeded verification of SHA, health, and idempotency", () => {
     const f = fixture();
     try {
       requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123");
       settleReceipt(f.path, "succeeded", "abc123", "healthy");
-      const receipt = readDeployReceiptForTask(f.projectDir, "task-1");
+      const receipt = readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1");
       expect(receipt).toMatchObject({
         phase: "succeeded",
         loadedArtifactSha: "abc123",
         health: "healthy",
         duplicateDeploy: false,
       });
-      expect(deployReceiptPrompt(f.projectDir, "task-1").join("\n")).toContain("loadedArtifactSha equals artifactSha");
+      expect(receipt?.verification).toContain("loadedArtifactSha equals artifactSha");
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
@@ -222,9 +196,9 @@ describe("restart-aware deploy receipts", () => {
           phase === "rolled_back" ? "healthy" : "unhealthy",
           "health-check-failed",
         );
-        const prompt = deployReceiptPrompt(f.projectDir, "task-1").join("\n");
-        expect(prompt).toContain(`terminal phase ${phase}`);
-        expect(prompt).toContain("Do not redeploy this correlation");
+        expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toMatchObject({
+          phase, loadedArtifactSha: "oldsha", failure: "health-check-failed", duplicateDeploy: false,
+        });
       } finally {
         rmSync(f.projectDir, { recursive: true, force: true });
       }
@@ -243,11 +217,61 @@ describe("restart-aware deploy receipts", () => {
     }
   });
 
-  it("uses an explicit conservative no-redeploy branch for legacy absence", () => {
+  it("reports absence without treating it as permission to deploy", () => {
     const f = fixture();
     try {
-      expect(readDeployReceiptForTask(f.projectDir, "legacy-task")).toBeNull();
-      expect(deployReceiptPrompt(f.projectDir, "legacy-task").join("\n")).toContain("Do not blindly redeploy");
+      expect(readDeployReceiptForTask(f.receiptDir, "may-agent", "legacy-task")).toBeNull();
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it("reopens exact App/Task evidence through the read-only CLI after a lost wake", async () => {
+    const f = fixture();
+    try {
+      requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123");
+      settleReceipt(f.path, "succeeded", "abc123", "healthy");
+      const before = readFileSync(f.path, "utf8");
+      requestReceipt(join(f.projectDir, ".state/deploy-receipts/foreign.json"), "another-app", "task-1", "foreign", "wrong");
+      requestReceipt(join(f.projectDir, ".state/deploy-receipts/another-task.json"), "may-agent", "task-2", "other", "wrong");
+      const child = Bun.spawn({
+        cmd: [process.execPath, "scripts/deploy-receipt.ts", "read-task", f.receiptDir, "may-agent", "task-1"],
+        cwd: join(import.meta.dir, ".."), stdout: "pipe", stderr: "pipe", timeout: 5000,
+      });
+      const [code, stdout, stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
+      expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
+      expect(JSON.parse(stdout)).toEqual(JSON.parse(before));
+      expect(readFileSync(f.path, "utf8")).toBe(before);
+      expect(requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123")).toBe(false);
+      // Corruption is uncertainty, never an empty result that permits a retry.
+      writeFileSync(f.path, JSON.stringify({ ...JSON.parse(before), requestedAt: "invalid" }));
+      expect(() => readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toThrow("Invalid deployment receipt");
+    } finally {
+      rmSync(f.projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ["verification", undefined],
+    ["completedAt", undefined],
+    ["completedAt", "invalid"],
+    ["loadedArtifactSha", undefined],
+    ["health", undefined],
+    ["duplicateDeploy", undefined],
+    ["sourceCommit", 7],
+    ["failure", false],
+    ["health", "unknown"],
+    ["duplicateDeploy", "false"],
+  ])("rejects malformed terminal receipt field %s=%j", (field, value) => {
+    const f = fixture();
+    try {
+      requestReceipt(f.path, "may-agent", "task-1", "correlation-1", "abc123");
+      settleReceipt(f.path, "succeeded", "abc123", "healthy");
+      const invalid = { ...JSON.parse(readFileSync(f.path, "utf8")), [field as string]: value };
+      const saved = JSON.stringify(invalid);
+      writeFileSync(f.path, saved);
+      expect(() => readDeployReceiptForTask(f.receiptDir, "may-agent", "task-1")).toThrow("Invalid deployment receipt");
+      expect(readFileSync(f.path, "utf8")).toBe(saved);
     } finally {
       rmSync(f.projectDir, { recursive: true, force: true });
     }
