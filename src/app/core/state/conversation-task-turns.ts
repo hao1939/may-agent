@@ -5,6 +5,7 @@ import type { SqliteDb } from "../../../lib/db.js";
 import {
   conversationTurnResultSchema,
   type AppTaskAttachment,
+  type AppConversationRequest,
   type ConversationTurnResult,
   type TaskAcceptanceBasis,
   type TaskIntent,
@@ -32,7 +33,11 @@ import { createConversationTopic, readConversationTopic, listConversationTopicLi
 function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
   return `topic_${createHash("sha256").update([appId, conversationId, originMessageId].join("\0")).digest("hex").slice(0, 24)}`;
 }
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
+import {
+  applyConversationRequestUpdates,
+  readConversationRequest,
+  type ConversationRequestChange,
+} from "./conversation-requests.js";
 
 /** Code assigns one execution identity per Conversation; agents never construct it. */
 export function conversationTaskId(appId: string, conversationId: string): string {
@@ -240,6 +245,27 @@ export function readConversationTaskInputs(config: AppTaskContext, claim: AppTas
   // The final item supplies the Turn's current ask and reply destination.
   // Keep system facts before human input, including retained input from an earlier attempt.
   return items.sort((left, right) => Number(left.source.kind === "human") - Number(right.source.kind === "human"));
+}
+
+/** Save the owner's accepted requirements under the same live claim as its other effects. */
+export function updateConversationTaskRequest(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  change: ConversationRequestChange,
+  operationId: string,
+): AppConversationRequest {
+  return stateTransaction(config.resourceStore.db, () => {
+    const item = readConversationTaskInputs(config, claim).at(-1)!;
+    applyConversationRequestUpdates(config.resourceStore.db, {
+      appId: item.appId,
+      conversationId: item.conversationId!,
+      topicId: item.topicId ?? undefined,
+      updates: [{ id: change.id, expectedRevision: change.expectedRevision, scope: change.scope, disposition: "open" }],
+      updateKey: `request:${claim.attemptId}:${operationId}`,
+      now: Date.now(),
+    });
+    return readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, change.id)!;
+  });
 }
 
 /** Task outcome, Topic, Request decisions and reply share the Task's single fence. */

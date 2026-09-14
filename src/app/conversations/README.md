@@ -38,11 +38,18 @@ the input for normal Task retry. Rejected proposals do not publish a misleading
 reply. Previous-attempt facts let the App correct its decision after backoff,
 including after storage reopen; there is no extra conversational retry loop.
 
-Request updates may omit `scope` to retain the stored ask. A new ask requires
-scope; correcting and closing an existing ask together requires an explicit
-`correctionReason`. The App explains and judges the correction. The Host checks
-the observed revision and atomically commits scope, disposition and reply.
-Ordinary closure cannot silently change scope. The bounded Request list prefers
+`conversation_request` saves an accepted ask or authorized correction before
+work starts, returning the saved open Request and new revision. Composition
+supplies this narrow capability; core derives its App/Conversation from the
+claimed input and checks the claim in the write transaction. It reuses the
+Request store, cannot close asks or control Tasks, and rejects stale revisions.
+The correction survives later execution failure, Stop or rejected settlement.
+
+Final `requestUpdates` may omit `scope` to retain the stored ask. A new ask
+requires scope. Closure uses the current revision and commits with its reply;
+it cannot change an existing scope. Simple new asks may still be accepted and
+closed with one answer. No correct-and-close exception is needed. The App
+judges authority and fulfillment. The bounded Request list prefers
 open asks, then includes recent closed asks so a human can naturally correct one.
 
 When final result settlement fails, the attempt retains `unacceptedResult`

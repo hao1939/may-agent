@@ -85,6 +85,59 @@ function fixture() {
 }
 
 describe("common Task lifecycle source PoC", () => {
+  it("the same agent executes an assignment and revises its delegated assignment at each level", () => {
+    const f = fixture();
+    for (const [id, parentId] of [
+      ["child", "conversation"],
+      ["grandchild", "child"],
+    ])
+      observeAppTaskIntent(f.config, {
+        appAgent: "owner",
+        intent: {
+          id: id!,
+          parentId: parentId!,
+          outcome: "Measure the source",
+          acceptance: ["Return verified measurements"],
+        },
+      });
+    for (const [assigning, target] of [
+      ["conversation", "child"],
+      ["child", "grandchild"],
+    ]) {
+      const claim = f.claim(assigning);
+      const own = f.config.resourceStore.readTask(assigning!)!;
+      const child = f.config.resourceStore.readTask(target!)!;
+      completeAppTask(f.config, claim, {
+        summary: "Refined the delegated measurement",
+        facts: ["source:beta"],
+        actions: [
+          {
+            kind: "update-task",
+            taskId: target!,
+            expectedGeneration: child.metadata.generation,
+            outcome: "Measure corrected source beta",
+            acceptance: ["Return verified beta measurements"],
+          },
+        ],
+      });
+      expect(f.config.resourceStore.readTask(assigning!)?.spec).toEqual(own.spec);
+      expect(f.config.resourceStore.readTask(target!)?.metadata.generation).toBe(child.metadata.generation + 1);
+      f.reopen();
+    }
+    const worker = f.claim("grandchild");
+    expect(worker.generation).toBe(2);
+    expect(f.config.resourceStore.readTask("grandchild")?.spec.outcome).toBe("Measure corrected source beta");
+    expect(() =>
+      completeAppTask(f.config, worker, {
+        summary: "Drop missing proof",
+        facts: ["proof:missing"],
+        actions: [
+          { kind: "update-task", taskId: "grandchild", expectedGeneration: 2, acceptance: ["No proof required"] },
+        ],
+      }),
+    ).toThrow("assignment changes belong to its assigning owner");
+  });
+
   it("recovers 24 transient failures through the controller without an agent-generated unblock batch", async () => {
     const f = fixture();
     completeAppTask(f.config, f.claim(), { summary: "Fixture owner is quiet" });

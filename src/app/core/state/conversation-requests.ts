@@ -8,6 +8,7 @@ import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 
 export class ConversationRequestConflict extends Error {}
+export type ConversationRequestChange = { id: string; expectedRevision: number; scope: string };
 type Row = {
   id: string;
   revision: number;
@@ -78,7 +79,7 @@ export function pageOpenConversationRequests(
   ).all(appId, conversationId, afterId) as Array<{ id: string; revision: number; scopePreview: string; status: "open" }>;
 }
 
-/** The caller includes the explanation/result write in this same transaction. */
+/** Closure includes its explanation in this transaction; open updates can be saved before execution. */
 export function applyConversationRequestUpdates(
   db: SqliteDb,
   input: {
@@ -126,9 +127,9 @@ export function applyConversationRequestUpdates(
         throw new ConversationRequestConflict(
           `Accepted Request ${update.id} revision changed: expected ${update.expectedRevision}, current ${current?.revision ?? 0}; review its current scope and revision`,
         );
-      if (closed && current && current.scope !== scope && !update.correctionReason?.trim())
+      if (closed && current && current.scope !== scope)
         throw new ConversationRequestConflict(
-          `Request ${update.id} closure changes scope; omit scope to retain it, or supply correctionReason for an authorized correction`,
+          `Request ${update.id} closure changes scope; save the authorized correction as open first, then close the returned revision without changing scope`,
         );
       for (const ref of refs) {
         const known = db

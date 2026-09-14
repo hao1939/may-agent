@@ -110,6 +110,17 @@ Conditions await facts. `dependsOn` remains a static execution gate, not a retur
 link. Workflow reconciliation receives the same saved waits as registered
 executors.
 
+Owner and worker are roles in each assignment, not agent types. The same agent
+may execute assigned work and own work it delegates. Requirements belong to
+the assigning owner; the worker chooses execution within those requirements.
+Delegating further repeats the same dependency/feedback contract with no
+depth-specific handler. Parents review and combine evidence; child success
+does not fulfill a parent assignment. Internal steps need no separate Task.
+Cross-App refinement uses exact typed feedback; the destination App retains
+its Task specification authority. Existing `update-task` actions revise a
+same-App assignment by generation. Such a revision supersedes its old attempt;
+ordinary feedback does not. Changing a conversational Request alone does neither.
+
 Before adopting this breaking change, retire saved implicit waits offline using
 `migrateTaskCoordination()` in `core/state` (also included by `migrateOpenTaskState`).
 It replays original unfinished inputs for one review without inventing answers

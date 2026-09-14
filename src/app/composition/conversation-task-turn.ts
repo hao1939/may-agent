@@ -7,7 +7,11 @@ import {
 import { Check } from "typebox/value";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
-import { readConversationTaskInputs, type ConversationTaskProposal } from "../core/state/conversation-task-turns.js";
+import {
+  readConversationTaskInputs,
+  updateConversationTaskRequest,
+  type ConversationTaskProposal,
+} from "../core/state/conversation-task-turns.js";
 import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
 import { boundedAppRequestConversation, prepareConversationInput } from "../conversations/context.js";
 import { readConversationTopic } from "../core/state/conversations.js";
@@ -65,6 +69,10 @@ export async function prepareConversationTaskTurn(input: {
     execution: {
       signal,
       taskBinding: { appId: app.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+      updateRequest(change, operationId) {
+        signal.throwIfAborted();
+        return updateConversationTaskRequest(config, claim, change, operationId);
+      },
       sessionStarted(id) {
         if (!recordAppTaskAttemptSession(config, claim, id)) throw new Error("Conversation Task claim is stale");
       },

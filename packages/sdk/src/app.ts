@@ -166,8 +166,6 @@ export type AppConversationRequestUpdate = {
   expectedRevision: number;
   /** Required for a new ask. Omit to retain an existing Request's exact scope. */
   scope?: string;
-  /** Explain an authorized scope correction when correcting and closing together. */
-  correctionReason?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
   reason?: string;
   /** Add exact links; omitted/empty lists retain admitted work. At most 32 distinct links in total. */
@@ -180,7 +178,6 @@ export const conversationRequestUpdatesSchema = Type.Array(
       id: Type.String({ minLength: 1, maxLength: 200 }),
       expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
       scope: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
-      correctionReason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
       disposition: Type.Union([
         Type.Literal("open"),
         Type.Literal("fulfilled"),

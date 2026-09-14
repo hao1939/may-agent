@@ -4,6 +4,7 @@ import {
   type ConversationTurnResult,
   type AppDefinition,
   type AppInputContext,
+  type AppConversationRequest,
 } from "@may-agent/sdk";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "../../lib/index.js";
@@ -16,7 +17,11 @@ import {
   readAppConversationResource,
   readConversationTopic,
 } from "../core/state/conversations.js";
-import { pageOpenConversationRequests, readConversationRequest } from "../core/state/conversation-requests.js";
+import {
+  pageOpenConversationRequests,
+  readConversationRequest,
+  type ConversationRequestChange,
+} from "../core/state/conversation-requests.js";
 import { APP_TASK_RECOVERY_OWNER } from "../core/tasks/session-binding.js";
 
 import type { TaskBinding } from "../../lib/persistence.js";
@@ -24,10 +29,39 @@ import type { TaskBinding } from "../../lib/persistence.js";
 export type AppInputResolver = (input: {
   app: Readonly<AppDefinition>;
   inputContext: Readonly<AppInputContext>;
-  execution: { signal: AbortSignal; sessionStarted: (sessionId: string) => void; taskBinding: TaskBinding };
+  execution: {
+    signal: AbortSignal;
+    sessionStarted: (sessionId: string) => void;
+    taskBinding: TaskBinding;
+    updateRequest?: (change: ConversationRequestChange, operationId: string) => AppConversationRequest;
+  };
 }) => Promise<ConversationTurnResult>;
 
 const APP_REQUEST_AGENT_TIMEOUT_MS = 10 * 60_000;
+
+function conversationRequestTool(execution: Parameters<AppInputResolver>[0]["execution"]): AgentTool | null {
+  const update = execution.updateRequest;
+  if (!update) return null;
+  return {
+    name: "conversation_request",
+    label: "Update Request",
+    description:
+      "Save an accepted ask or authorized correction before work. Use the same id and observed revision, or revision 0 for a new ask. Returns the saved open Request and new revision. Reopens a closed ask. Scoped to this Conversation; does not start, cancel or close work.",
+    parameters: Type.Object(
+      {
+        id: Type.String({ minLength: 1, maxLength: 200 }),
+        expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
+        scope: Type.String({ minLength: 1, maxLength: 2000 }),
+      },
+      { additionalProperties: false },
+    ),
+    execute: async (operationId, raw) => {
+      execution.signal.throwIfAborted();
+      const saved = update(raw as ConversationRequestChange, operationId);
+      return { content: [{ type: "text", text: JSON.stringify(saved) }], details: undefined };
+    },
+  };
+}
 
 function conversationContextTool(db: SqliteDb, inputContext: Readonly<AppInputContext>): AgentTool | null {
   const conversation = inputContext.conversation;
@@ -112,7 +146,9 @@ function conversationInputPrompt(
     "The owning App reconciles its Task, and Runtime handles scheduling, retry, recovery, and stale mechanical state. May may send human feedback or a semantic challenge to the exact Task, but must not create replacement work merely to revive it or delegate Host repair when the same owner Task can continue.",
     "Resolve short confirmations, corrections, and pronouns against the visible Conversation, especially the immediately preceding proposal or question. Preserve constraints already established in the same Topic.",
     "An explicit reply anchors the human's meaning to that message, even after switching topics or following another Task. Do not substitute the latest focus for that anchor. If several actions remain plausible, ask which purpose they mean; a reply or navigation button is not blanket approval.",
-    "Track accepted human asks with requestUpdates. An input handling result is not fulfillment. Accept a new ask with a stable id, expectedRevision: 0 and scope. Use the supplied revision and same id for an existing ask; omit scope to retain its stored scope. A simple ask can be accepted and fulfilled in the same answer. A human correction can also be recorded and fulfilled together: supply the revised scope and correctionReason explaining the authorized change, then judge the corrected ask against the evidence. Explain the correction in your response. Never silently narrow an ask to match completed work. Do not close an ask merely because a Task was admitted, blocked or completed: explain fulfillment, withdrawal or unfulfilled disposition with a reason. Use an empty list when no ask changes. A followUp serving an accepted ask names its requestId; Runtime links the actual Task. Stopping a turn leaves the ask open but is not authority to restart that turn.",
+    "Work within the agreed requirements. An explicit human correction already authorizes the change; ask only when your proposed change exceeds existing authority. You remain responsible for reviewing work you delegate. Each agent can assign work and carry out assignments; the same rule applies each time. Internal steps need no separate Task.",
+    "Before work, use conversation_request to save a new accepted ask or changed requirements. Keep the same id for the same ask. Skip this call when the saved requirements already fit, or a simple new ask can be answered directly. Use the returned revision in your final decision; read current state after a conflict. Saved corrections survive failure or Stop.",
+    "Finish with requestUpdates for acceptance, Task links or closure. A simple ask can be accepted and fulfilled in the same answer. After a tool update, use its returned revision and omit scope to retain the saved requirements; closure cannot change existing scope. Do not repeat an already saved correction in the final decision. Explain material corrections in your response. Never silently narrow an ask to match completed work. Do not close an ask merely because a Task was admitted, blocked or completed: explain fulfillment, withdrawal or unfulfilled disposition with a reason. Use an empty list when no ask changes. A followUp serving an accepted ask names its requestId; Runtime links the actual Task. Stopping a turn leaves the ask open but is not authority to restart that turn.",
     "previousAttempt.unacceptedResult is a prior execution's proposed answer whose settlement failed. Its effects were not accepted, but tools may already have completed. Review that evidence, the rejection and current Request state before choosing further work. Repair the decision when the existing evidence suffices; a failed save is not authority to repeat successful tools. Reassess against any newer human input, and never treat the prior proposed fulfillment as accepted.",
     "If the human naturally refers to an older discussion that is absent from visible context, use conversation_context to find bounded candidates and read the likely exact Topic. Ask only when the remaining candidates would lead to materially different actions.",
     "Use a Topic only for related Conversation context and exact Task links. Select an existing Topic when continuing it, create a short plain-language Topic for a new durable interest or clarification, and use none for a self-contained answer.",
@@ -147,7 +183,9 @@ export function createConversationAgentResolver(options: {
     const registered = options.definitions ? options.definitions.get(agent) : options.manager.getAgentDefinition(agent);
     if (!registered) throw new Error(`Agent ${agent} is not registered`);
     const contextTool = conversationContextTool(options.db, inputContext);
-    const definition = contextTool ? { ...registered, tools: [...registered.tools, contextTool] } : registered;
+    const requestTool = conversationRequestTool(binding);
+    const tools = [contextTool, requestTool].filter((tool): tool is AgentTool => tool !== null);
+    const definition = { ...registered, tools: [...registered.tools, ...tools] };
     const execution = await options.manager.callAgentDefinition(
       definition,
       conversationInputPrompt(app, inputContext, options.registry),

@@ -191,6 +191,135 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
 }
 
 describe("caller feedback PoC", () => {
+  it("composes three assignments through the same executor and return contract across restart", async () => {
+    const f = fixture();
+    const persistDir = join(f.root, "state");
+    let bus = eventBus();
+    let host: AppInboxHost;
+    const calls: string[] = [];
+    const app = defineApp({
+      ...definition(),
+      task: ({ input }) => ({
+        kind: "desired",
+        intent: {
+          id: `work/${(input.data as { level: number }).level}`,
+          parentId: "operations",
+          outcome: "Review and combine delegated measurements",
+          acceptance: ["Return the measured value through each assigning caller"],
+          executor: "measure",
+        },
+      }),
+    });
+    const install = async () => {
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        appRegistrySnapshot: {
+          id: "assignment-roles",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: app }],
+        },
+        executors: {
+          measure: async (attempt) => {
+            calls.push(attempt.task.id);
+            const level = Number(attempt.task.id.split("/").at(-1));
+            const returned = attempt.events.items.find(
+              ({ event }) => event.type === "app.dependency.updated" && event.data.status === "done",
+            );
+            if (returned) {
+              const result = returned.event.data.result as { value: number; reviewedBy: number[] };
+              return {
+                state: "converged",
+                summary: "Reviewed the delegated measurement",
+                facts: ["measurement:7"],
+                result: { value: result.value, reviewedBy: [...result.reviewedBy, level] },
+              };
+            }
+            if (level === 2)
+              return {
+                state: "converged",
+                summary: "Measured value",
+                facts: ["measurement:7"],
+                result: { value: 7, reviewedBy: [2] },
+              };
+            return {
+              state: "waiting",
+              summary: "Requested independent measurement",
+              facts: [],
+              dependencies: [
+                { id: "measurement", appId: "sample", input: { kind: "measure", data: { level: level + 1 } } },
+              ],
+            };
+          },
+        },
+      });
+      host = new AppInboxHost({
+        db: getDb(persistDir),
+        apps: [app],
+        attachTask: (input) => admitTaskInput(loadedTaskConfig(f), input),
+        readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+        onRequestUpdated() {
+          throw new Error("Synthetic lost notification");
+        },
+      });
+      bus.subscribe((event) => {
+        if (event.type !== "app.input.requested") return;
+        host.admit({
+          id: String(event.data.requestId),
+          appId: "sample",
+          source: { kind: "app", id: "sample" },
+          input: event.data.input as { kind: string; data: unknown },
+          idempotencyKey: String(event.data.idempotencyKey),
+        });
+        return { accepted: true, by: "fixture", route: "direct" };
+      });
+    };
+    const run = (level: number) =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId: `work/${level}`,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    try {
+      await install();
+      host!.admit({
+        id: "original",
+        appId: "sample",
+        source: { kind: "human", id: "human" },
+        input: { kind: "measure", data: { level: 0 } },
+      });
+      await run(0);
+      await run(1);
+      await run(2);
+      expect(host!.get("original")?.result).toBeUndefined();
+      expect(loadedTaskConfig(f).resourceStore.readTask("work/1")?.status.phase).toBe("waiting");
+      host!.close();
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      await run(1);
+      expect(host!.get("original")?.result).toBeUndefined();
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      await run(0);
+      await host!.recoverTaskResults();
+      expect(host!.get("original")?.result?.result).toEqual({ value: 7, reviewedBy: [2, 1, 0] });
+      expect(calls).toEqual(["work/0", "work/1", "work/2", "work/1", "work/0"]);
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      await run(0);
+      expect(calls).toHaveLength(5);
+      for (let level = 0; level < 3; level++)
+        expect(loadedTaskConfig(f).resourceStore.isCancelled(`work/${level}`)).toBe(false);
+    } finally {
+      host!.close();
+    }
+  });
+
   it.each(["quiet", "incomplete-then-wait", "report-wait", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
     "returns exact feedback and recovers the original answer (%s)",
     async (scenario) => {

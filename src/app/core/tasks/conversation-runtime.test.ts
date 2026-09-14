@@ -253,12 +253,20 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
     let helperCalls = 0;
     const contexts: AppInputContext[] = [];
     const f = await fixture(
-      async (_definition, prompt) => {
+      async (definition, prompt) => {
         const context: AppInputContext = JSON.parse(
           prompt.match(/## Input and context\n```json\n([\s\S]*?)\n```/)![1]!,
         );
         contexts.push(context);
         if (contexts.length === 1) {
+          if (failure === "storage")
+            await definition.tools
+              .find((tool) => tool.name === "conversation_request")!
+              .execute("correct", {
+                id: "probe",
+                expectedRevision: 1,
+                scope: "Check corrected source",
+              });
           helperCalls++;
           return {
             status: "done",
@@ -270,11 +278,10 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
               requestUpdates: [
                 {
                   id: "probe",
-                  expectedRevision: 1,
+                  expectedRevision: failure === "storage" ? 2 : 1,
                   scope: "Check corrected source",
                   disposition: "fulfilled",
                   reason: "Verified",
-                  ...(failure === "storage" ? { correctionReason: "Human corrected source" } : {}),
                 },
               ],
             },
@@ -283,7 +290,9 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
         expect(context.previousAttempt?.unacceptedResult).toMatchObject({
           summary: "Corrected helper succeeded",
           facts: ["helper-receipt:completed:exit-0"],
-          settlementError: expect.stringContaining(failure === "storage" ? "fixture write failure" : "closure changes scope"),
+          settlementError: expect.stringContaining(
+            failure === "storage" ? "fixture write failure" : "closure changes scope",
+          ),
         });
         expect(context.previousAttempt?.acceptedResult).toBeUndefined();
         expect(context.previousAttempt?.failureReason).toBe(
@@ -296,7 +305,18 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
         if (failure === "new-correction") {
           expect(request.scope).toBe("Check corrected source and compare costs");
           expect(context.inputs!.some((input) => input.source.id === "new-input")).toBe(true);
-        } else expect(request.scope).toBe("Check original source");
+        } else expect(request.scope).toBe(failure === "storage" ? "Check corrected source" : "Check original source");
+        const saved =
+          failure !== "new-correction" && failure !== "storage"
+            ? await definition.tools
+                .find((tool) => tool.name === "conversation_request")!
+                .execute("repair", {
+                  id: request.id,
+                  expectedRevision: request.revision,
+                  scope: "Check corrected source",
+                })
+            : null;
+        const revision = saved ? request.revision + 1 : request.revision;
         return {
           status: "done",
           structuredResult: {
@@ -309,10 +329,7 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
             requestUpdates: [
               {
                 id: "probe",
-                expectedRevision: request.revision,
-                ...(failure === "new-correction"
-                  ? {}
-                  : { scope: "Check corrected source", correctionReason: "Human corrected source" }),
+                expectedRevision: revision,
                 disposition: failure === "new-correction" ? "open" : "fulfilled",
                 reason: "Reviewed existing execution evidence",
               },
@@ -356,7 +373,7 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
     expect(helperCalls).toBe(1);
     const attempts = f.store.readTaskContext({ taskIds: [admitted.taskId] }).attempts!;
     expect(Object.values(attempts).at(-1)?.unacceptedResult?.facts).toEqual(["helper-receipt:completed:exit-0"]);
-    expect(readConversationRequest(f.db, app.id, "primary", "probe")?.revision).toBe(1);
+    expect(readConversationRequest(f.db, app.id, "primary", "probe")?.revision).toBe(failure === "storage" ? 2 : 1);
     expect(getAppInboxItem(f.db, admitted.item.id)?.status).not.toBe("done");
     if (failure === "storage") f.db.exec("DROP TRIGGER reject_reply");
     const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
@@ -386,7 +403,7 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
     expect(helperCalls).toBe(1);
     expect(contexts).toHaveLength(failure === "provider-failure" ? 3 : 2);
     expect(readConversationRequest(f.db, app.id, "primary", "probe")).toMatchObject({
-      revision: failure === "new-correction" ? 3 : 2,
+      revision: 3,
       status: failure === "new-correction" ? "open" : "closed",
     });
     expect(getAppInboxItem(f.db, admitted.item.id)?.status).toBe("done");
