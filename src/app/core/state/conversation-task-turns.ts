@@ -14,6 +14,7 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   assertAppTaskClaimCurrent,
+  assertAppTaskEffectFresh,
   appTaskAttemptReport,
   cancelAppTask,
   completeAppTask,
@@ -255,6 +256,7 @@ export function updateConversationTaskRequest(
   operationId: string,
 ): AppConversationRequest {
   return stateTransaction(config.resourceStore.db, () => {
+    assertAppTaskEffectFresh(config, claim);
     const item = readConversationTaskInputs(config, claim).at(-1)!;
     applyConversationRequestUpdates(config.resourceStore.db, {
       appId: item.appId,

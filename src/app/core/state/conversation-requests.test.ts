@@ -374,6 +374,36 @@ test.each(["stop", "failure", "completion"] as const)(
   },
 );
 
+test("new input fences an old requirement save until the same Conversation reviews it", async () => {
+  const f = fixture();
+  await f.turn({ ...answer, requestUpdates: [ask] });
+  const turn = await f.prepare(async ({ execution }) => {
+    admitConversationTaskInput(f.context(), {
+      id: "newer-correction",
+      appId: app.id,
+      conversationId: "chat",
+      conversationSequence: 3,
+      source: { kind: "human", id: "newer-correction" },
+      input: { kind: "message", data: { text: "Include costs as well" } },
+      intent: conversationTaskIntent(f.context()),
+    });
+    expect(() => execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Old interpretation" }, "old"))
+      .toThrow("newer Task facts are pending");
+    expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toMatchObject({ revision: 1, scope: ask.scope });
+    return answer;
+  });
+  turn.settle();
+  f.reopen();
+  const next = await f.prepare(async ({ inputContext, execution }) => {
+    expect(inputContext.inputs?.some(({ id }) => id === "newer-correction")).toBe(true);
+    expect(execution.updateRequest!({ id: ask.id, expectedRevision: 1, scope: "Compare both options including costs" }, "reviewed"))
+      .toMatchObject({ revision: 2, scope: "Compare both options including costs" });
+    return answer;
+  }, false);
+  expect(next.claim.taskId).toBe(turn.claim.taskId);
+  expect(next.settle().status).toBe("applied");
+});
+
 test("the immediate update is scoped to the claimed Conversation and a failed write leaves its revision intact", async () => {
   const f = fixture();
   applyConversationRequestUpdates(f.db, {

@@ -22,6 +22,8 @@ import {
   recordAppTaskTrigger,
   readAppTaskAdmissionOutcome,
   reportAppTaskFailure,
+  recoverableAppTaskAttempts,
+  releaseInterruptedAppTaskAttempt,
 } from "./app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -85,6 +87,44 @@ function fixture() {
 }
 
 describe("common Task lifecycle source PoC", () => {
+  it("keeps rejected result evidence when a repair is interrupted and retires it after an accepted answer", () => {
+    const f = fixture();
+    const first = f.claim();
+    const evidence = {
+      attemptId: first.attemptId,
+      summary: "Measurement completed",
+      settlementError: "Reply write failed",
+      facts: ["measurement:verified"],
+    };
+    failAppTaskAttempt(f.config, first, "Reply write failed", { unacceptedResult: evidence });
+    f.advanceRetry();
+    const repair = f.claim();
+    expect(repair.previousAttempt?.unacceptedResult).toEqual(evidence);
+    f.reopen();
+    const store = f.config.resourceStore;
+    const resource = store.readTask(repair.taskId)!;
+    const attempt = store.readAttempt(repair.attemptId)!;
+    attempt.runtimeId = "stopped-runtime";
+    attempt.metadata.resourceVersion++;
+    store.commit({
+      fences: [{ taskId: repair.taskId, resourceVersion: resource.metadata.resourceVersion }],
+      attempts: [attempt],
+    });
+    const [recovery] = recoverableAppTaskAttempts(f.config, Date.now(), true, [repair.taskId]);
+    expect(recovery).toBeDefined();
+    expect(releaseInterruptedAppTaskAttempt(f.config, recovery!, "Runtime restarted").released).toBe(true);
+    setSystemTime(new Date(Date.now() + 1));
+    const resumed = f.claim();
+    expect(resumed.previousAttempt?.state).toBe("interrupted");
+    expect(resumed.previousAttempt?.unacceptedResult).toEqual(evidence);
+    completeAppTask(f.config, resumed, { summary: "Reviewed measurement", facts: evidence.facts });
+    recordAppTaskTrigger(f.config, resumed.taskId, { type: "conversation.message", eventId: 2, data: { text: "Next ask" } });
+    setSystemTime(new Date(Date.now() + 1));
+    const next = f.claim();
+    expect(next.previousAttempt?.acceptedResult?.summary).toBe("Reviewed measurement");
+    expect(next.previousAttempt?.unacceptedResult).toBeUndefined();
+  });
+
   it("the same agent executes an assignment and revises its delegated assignment at each level", () => {
     const f = fixture();
     for (const [id, parentId] of [

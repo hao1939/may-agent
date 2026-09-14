@@ -602,6 +602,7 @@ function finishAttempt(
     attempt.finishedAt = now;
     attempt.summary = summary;
     if (state === "completed") {
+      if (attempt.acceptedResult) delete attempt.unacceptedResult;
       resource.status.executionFailures = undefined;
       resource.status.executionRetryAt = undefined;
     }
@@ -2714,6 +2715,8 @@ export function claimObservedAppTask(
     runtimeId: reconcilerRuntimeId,
     state: "running",
     reason: missedCheckpointConditionIds.length > 0 ? "condition-review-checkpoint-missed" : (input.reason ?? "event"),
+    // Persist repair context with the claim so every interruption path retains it.
+    ...(priorFacts?.unacceptedResult ? { unacceptedResult: structuredClone(priorFacts.unacceptedResult) } : {}),
     ...(claimedEvents.length > 0 ? { events: structuredClone(claimedEvents) } : {}),
     ...(remainingEvents.length > 0 ? { eventsTruncated: true } : {}),
     ...(continuedInputKeys.length ? { continuedInputKeys } : {}),
@@ -2856,9 +2859,7 @@ export function failAppTaskAttempt(
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "failed", failure, now);
   attempt.failureReason = details.reason ?? "HandlerExecutionFailed";
-  // A provider failure during repair must not hide earlier completed work.
-  const unacceptedResult = details.unacceptedResult ?? claim.previousAttempt?.unacceptedResult;
-  if (unacceptedResult) attempt.unacceptedResult = structuredClone(unacceptedResult);
+  if (details.unacceptedResult) attempt.unacceptedResult = structuredClone(details.unacceptedResult);
   touchResource(resource, {
     phase: handoff ? "attention" : "pending",
     ...(handoff

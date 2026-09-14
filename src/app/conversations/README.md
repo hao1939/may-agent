@@ -44,6 +44,8 @@ supplies this narrow capability; core derives its App/Conversation from the
 claimed input and checks the claim in the write transaction. It reuses the
 Request store, cannot close asks or control Tasks, and rejects stale revisions.
 The correction survives later execution failure, Stop or rejected settlement.
+The same effect fence used by other Task actions rejects a save while newer
+input is unreviewed; the next ordinary turn considers that input before saving.
 
 Final `requestUpdates` may omit `scope` to retain the stored ask. A new ask
 requires scope. Closure uses the current revision and commits with its reply;
@@ -54,8 +56,10 @@ open asks, then includes recent closed asks so a human can naturally correct one
 
 When final result settlement fails, the attempt retains `unacceptedResult`
 separately from accepted state, including its originating attempt/session and
-the returned facts. Ordinary recovery brings that evidence forward, even when
-an intervening repair attempt fails. The Conversation adapter also reads the
+the returned facts. Each repair claim saves that evidence before execution, so
+ordinary failure, interruption and restart retain it. An accepted result retires
+it from future repair context; the original failed attempt remains in history.
+The Conversation adapter also reads the
 current Requests named by the rejected decision, including closed asks. The
 agent judges whether to repair its decision or perform more work; failed
 settlement never automatically replays the proposed effects or establishes
