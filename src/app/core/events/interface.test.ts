@@ -393,8 +393,10 @@ describe("simple event interface", () => {
     expect(events.get(receipt.eventId)?.delivery.acceptedBy).toBeUndefined();
   });
 
-  it("validates the record-only events exposed by HTTP controls", () => {
-    const { events } = fixture();
+  it("validates HTTP control events and saves metric edits before returning receipts", () => {
+    const { events, db } = fixture();
+    db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', NULL, 0)");
+    db.exec("INSERT INTO metric_alerts(id, metric_id, created_at) VALUES (7, 'health', 1)");
     const inputs = [
       {
         type: "evaluation.session.requested",
@@ -411,6 +413,8 @@ describe("simple event interface", () => {
         delivery: "recorded",
       });
     }
+    expect(db.prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 2 });
+    expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual({ resolved_at: expect.any(Number) });
 
     expect(() =>
       events.publish(

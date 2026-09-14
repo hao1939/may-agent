@@ -57,6 +57,27 @@ answers and selected reports, then replays them and retained external Events
 through the same Condition transition. Feedback survives a missed notification;
 no extra delivery queue is needed.
 
+### One admission and reconciliation model
+
+Admission validates and saves the input or change, including its responsible
+route when handling is required, before returning a receipt. Handling runs
+separately: the worker reads current requirements and facts, acts and reports.
+A failed handler leaves accepted work available for the same recovery path.
+A receipt confirms acceptance; the saved result establishes what was handled.
+
+Adapters translate source-specific information at the boundary. For example,
+`lib/escalation-feedback.ts` resolves saved provenance to an exact Task address;
+the existing event transaction saves its wake and ordinary Task recovery handles
+it. Resolution labels never choose a session to restart. Unknown ownership is
+recorded as unresolved and needs intervention; no supervisor is inferred.
+
+A direct setter can finish its small edit during admission. Metric setters
+validate the exact resource and save SQL state with the event in one transaction;
+later reactions remain asynchronous. A passive notification alone does not
+promise work. Project comments retain recorded evidence; requiring an App work
+admission at the comment interface is separate from this lifecycle. Direct
+synchronous helpers and explicit fenced controls keep their existing contracts.
+
 `project.task.reconciled` and `app.task.cancelled` also notify result readers.
 Composition refreshes exact input feedback and linked Conversation observations
 from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`

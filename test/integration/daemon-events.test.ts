@@ -11,6 +11,35 @@ import { closeDb, getDb, insertWorkflowRun } from "../../src/lib/requests.js";
 import { createEventInterface } from "../../src/app/core/events/interface.js";
 
 describe("daemon event subscribers", () => {
+  it("rejects metric edits for missing resources or a mismatched alert before acknowledging them", () => {
+    const root = mkdtempSync(join(tmpdir(), "metric-target-"));
+    try {
+      const db = getDb(root);
+      const bus = new EventBus();
+      attachEventPersistence({ bus, persistDir: root });
+      const events = createEventInterface({ bus, db, hasApp: () => false, hasAgent: () => false,
+        hasSession: () => false, acceptsAppInput: () => false });
+      db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', 10, 0), ('other', 5, 0)");
+      db.exec("INSERT INTO metric_alerts(id, metric_id, created_at) VALUES (7, 'health', 1)");
+      const edits = [
+        { type: "metric.threshold_changed", data: { metricId: "missing", to: 20 } },
+        { type: "metric.alert_resolved", data: { metricId: "health", alertId: 99 } },
+        { type: "metric.alert_resolved", data: { metricId: "other", alertId: 7 } },
+      ];
+      for (const edit of edits) {
+        expect(() => events.publish(edit, { source: "test" })).toThrow("not found");
+      }
+      expect(db.prepare("SELECT count(*) AS n FROM events WHERE event_type LIKE 'metric.%'").get()).toEqual({ n: 0 });
+      expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual({ resolved_at: null });
+      const resolve = () => events.publish({ type: "metric.alert_resolved",
+        data: { metricId: "health", alertId: 7 } }, { source: "test" });
+      resolve();
+      const first = db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get();
+      resolve();
+      expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual(first);
+    } finally { closeDb(root); rmSync(root, { recursive: true, force: true }); }
+  });
+
   it("metric admission rolls back on storage failure; retry and replay retain the latest edit", () => {
     const root = mkdtempSync(join(tmpdir(), "metric-admission-"));
     try {
