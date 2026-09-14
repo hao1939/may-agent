@@ -13,7 +13,7 @@ export interface AgentConfig {
   memoryLimit?: number;
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
-  /** Agent-relative module exporting a synchronous context preparer. Omit for the full brief. */
+  /** @experimental Agent-local synchronous preparer module. Omit for the full brief. */
   contextPreparation?: string;
   /** Block direct delegation to specific agents via agents tool. */
   delegateDeny?: { agents: string[]; hint: string };

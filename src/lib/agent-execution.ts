@@ -454,14 +454,19 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);
   // Preparation changes model context only. Keep the accepted task for receipts,
   // and apply skill instructions afterwards so an adapter cannot discard them.
-  const contextTask =
+  const contextTask: unknown =
     !options.persistentChat && options.definition.contextPreparation
-      ? options.definition.contextPreparation(Object.freeze({ task }))
+      ? options.definition.contextPreparation({ task })
       : task;
   if (typeof contextTask !== "string" || (task.trim() && !contextTask.trim())) {
+    // Reject async adapters under the synchronous contract, but consume their
+    // rejection so it cannot escape the caller's ordinary failure handling.
+    void Promise.resolve(contextTask).catch(() => {});
     throw new Error("contextPreparation must return a non-empty task string");
   }
-  const activation = skillName ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask) : undefined;
+  const activation = skillName
+    ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask)
+    : undefined;
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
   const requireFinish = options.requireFinish === true || outputSchema !== undefined;
   const normalizedOptions = { ...options, outputSchema };

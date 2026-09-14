@@ -1,7 +1,9 @@
 import { describe, expect, it, mock } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DefinitionSourceReleaseStore } from "../app-source-release.js";
+import { invalidateRuntimeModuleCache } from "../../lib/runtime-import.js";
 import {
   loadAgents,
   prepareAgents,
@@ -58,14 +60,30 @@ describe("agent registry loader", () => {
     try {
       const agentsRoot = join(root, "agents");
       const agentDir = join(agentsRoot, "worker");
-      mkdirSync(agentDir, { recursive: true });
+      mkdirSync(join(agentDir, "context"), { recursive: true });
       const config = JSON.parse(makeAgentJson("worker"));
-      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ ...config, contextPreparation: "./context.ts" }));
-      writeFileSync(join(agentDir, "context.ts"), 'export default ({ task }) => `Current: ${task}`;');
+      const modulePath = join(agentDir, "context", "prepare.ts");
+      writeFileSync(
+        join(agentDir, "agent.json"),
+        JSON.stringify({ ...config, contextPreparation: "./context/prepare.ts" }),
+      );
+      writeFileSync(modulePath, "export default ({ task }) => `Current: ${task}`;");
       const opts = makeOpts(root, agentsRoot, join(root, "projects"));
-      const prepared = await prepareAgents(opts, makeRuntime());
+      const release = new DefinitionSourceReleaseStore(root, opts.persistDir).stage();
+      const releasedOpts = {
+        ...opts,
+        agentsRoot: release.agentsRoot,
+        projectsRoot: release.projectsRoot,
+        sharedRoot: release.sharedRoot,
+      };
+      const prepared = await prepareAgents(releasedOpts, makeRuntime());
       expect(prepared.definitions[0].contextPreparation?.({ task: "revision two" })).toBe("Current: revision two");
       expect(opts.manager.agentNames()).toEqual([]);
+      // Reimport the same captured release after the editable source changes.
+      writeFileSync(modulePath, "export default ({ task }) => `Changed: ${task}`;");
+      invalidateRuntimeModuleCache();
+      const rebuilt = await prepareAgents(releasedOpts, makeRuntime());
+      expect(rebuilt.definitions[0].contextPreparation?.({ task: "retry" })).toBe("Current: retry");
       // Removing the option selects the existing full brief for the next generation.
       writeFileSync(join(agentDir, "agent.json"), JSON.stringify(config));
       expect((await prepareAgents(opts, makeRuntime())).definitions[0].contextPreparation).toBeUndefined();
@@ -76,21 +94,64 @@ describe("agent registry loader", () => {
     }
   });
 
-  it.each([false, "", "./missing.ts", "./invalid.ts"])("rejects an invalid context adapter without publishing: %s", async (contextPreparation) => {
-    const root = tempRoot();
-    try {
-      const agentsRoot = join(root, "agents");
-      const agentDir = join(agentsRoot, "worker");
-      mkdirSync(agentDir, { recursive: true });
-      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ ...JSON.parse(makeAgentJson("worker")), contextPreparation }));
-      writeFileSync(join(agentDir, "invalid.ts"), "export default {}; ");
-      const opts = makeOpts(root, agentsRoot, join(root, "projects"));
-      await expect(prepareAgents(opts, makeRuntime())).rejects.toThrow();
-      expect(opts.manager.agentNames()).toEqual([]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+  it.each([false, "", "./missing.ts", "./invalid.ts"])(
+    "rejects an invalid context adapter without publishing: %s",
+    async (contextPreparation) => {
+      const root = tempRoot();
+      try {
+        const agentsRoot = join(root, "agents");
+        const agentDir = join(agentsRoot, "worker");
+        mkdirSync(agentDir, { recursive: true });
+        writeFileSync(
+          join(agentDir, "agent.json"),
+          JSON.stringify({ ...JSON.parse(makeAgentJson("worker")), contextPreparation }),
+        );
+        writeFileSync(join(agentDir, "invalid.ts"), "export default {}; ");
+        const opts = makeOpts(root, agentsRoot, join(root, "projects"));
+        await expect(prepareAgents(opts, makeRuntime())).rejects.toThrow();
+        expect(opts.manager.agentNames()).toEqual([]);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each(["absolute", "parent", "symlink", "directory symlink"])(
+    "rejects a context entrypoint outside the agent directory: %s",
+    async (kind) => {
+      const root = tempRoot();
+      try {
+        const agentsRoot = join(root, "agents");
+        const agentDir = join(agentsRoot, "worker");
+        const outsideDir = join(agentsRoot, "worker-other");
+        mkdirSync(agentDir, { recursive: true });
+        mkdirSync(outsideDir);
+        const outside = join(outsideDir, "context.ts");
+        writeFileSync(outside, "export default ({ task }) => task;");
+        symlinkSync(outside, join(agentDir, "context.ts"));
+        symlinkSync(outsideDir, join(agentDir, "context"), "dir");
+        const contextPreparation =
+          kind === "absolute"
+            ? outside
+            : kind === "parent"
+              ? "../worker-other/context.ts"
+              : kind === "symlink"
+                ? "./context.ts"
+                : "./context/context.ts";
+        writeFileSync(
+          join(agentDir, "agent.json"),
+          JSON.stringify({ ...JSON.parse(makeAgentJson("worker")), contextPreparation }),
+        );
+        const opts = makeOpts(root, agentsRoot, join(root, "projects"));
+        await expect(prepareAgents(opts, makeRuntime())).rejects.toThrow(
+          "contextPreparation must stay inside the agent directory",
+        );
+        expect(opts.manager.agentNames()).toEqual([]);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("does not read invalid local agents of a disabled App from a source release", async () => {
     const root = tempRoot();
