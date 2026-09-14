@@ -12,7 +12,6 @@ import type { TaskWorkerDefinitionSource } from "./task-attempt-process.js";
 
 export type TaskAdmissionProcessResult = {
   taskIds: string[];
-  supersededSessionIds: string[];
 };
 
 type Request = { id: number; command: AppEventAdmissionCommand; event: AgentEvent; eventId?: number };
@@ -122,8 +121,7 @@ export function createTaskAdmissionProcess(
         if (!request) return;
         pending.delete(response.id);
         clearTimeout(request.timer);
-        if (response.ok)
-          request.resolve({ taskIds: response.taskIds, supersededSessionIds: response.supersededSessionIds });
+        if (response.ok) request.resolve({ taskIds: response.taskIds });
         else request.reject(new Error(response.error));
       });
       child.once("error", (error) => fail(error));
@@ -210,7 +208,6 @@ export async function runTaskAdmissionWorker(input: {
             id: request.id,
             ok: true,
             taskIds: result.taskIds,
-            supersededSessionIds: result.supersededSessionIds,
           };
         } catch (error) {
           const id = typeof request! === "object" && Number.isSafeInteger(request!.id) ? request!.id : 0;

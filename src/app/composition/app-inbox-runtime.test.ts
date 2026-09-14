@@ -1055,7 +1055,7 @@ describe("App inbox runtime", () => {
         activate() {},
         async dispatch(command) {
           workerAdmissions.push(command.routeId);
-          return { taskIds: [command.routeId], supersededSessionIds: [] };
+          return { taskIds: [command.routeId] };
         },
         close() {},
       }),
@@ -1098,7 +1098,7 @@ describe("App inbox runtime", () => {
         dispatch: () => {
           workerCalls += 1;
           return new Promise((resolve) => {
-            release = () => resolve({ taskIds: ["child"], supersededSessionIds: [] });
+            release = () => resolve({ taskIds: ["child"] });
           });
         },
         close: () => release(),
@@ -1160,7 +1160,7 @@ describe("App inbox runtime", () => {
           async dispatch(command) {
             dispatches.push({ worker, routeId: command.routeId });
             if (worker === 1) await releaseFirst.promise;
-            return { taskIds: [command.routeId], supersededSessionIds: [] };
+            return { taskIds: [command.routeId] };
           },
           close() {
             closedWorkers.push(worker);
@@ -1225,7 +1225,7 @@ describe("App inbox runtime", () => {
             activatedWorkers.push(worker);
           },
           async dispatch() {
-            return { taskIds: [], supersededSessionIds: [] };
+            return { taskIds: [] };
           },
           close() {
             closedWorkers.push(worker);

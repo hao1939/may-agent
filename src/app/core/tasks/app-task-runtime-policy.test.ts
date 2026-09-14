@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
   appTaskAgentProtocol,
-  DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION,
-  hasSuppliedDependencyObservation,
 } from "../../adapters/executors/managed-agent.js";
 import { mergeTaskConditions } from "./dependency-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
@@ -21,47 +19,6 @@ describe("App Task agent prompt context", () => {
     expect(protocol).toContain("report:true");
     expect(protocol).toContain("omit for quiet waits");
     expect(protocol).toContain("Execution errors are facts, not accepted results");
-  });
-
-  it("makes a supplied dependency observation complete authority without exposing Host-private refinement", () => {
-    expect(
-      hasSuppliedDependencyObservation({
-        items: [
-          {
-            event: {
-              type: "app.task.requested",
-              data: {
-                request: {
-                  dependency: {
-                    kind: "task",
-                    id: "runtime/platform-owner-review",
-                    status: "attention",
-                    summary: "Use this supplied state",
-                  },
-                },
-              },
-            },
-          },
-        ],
-      }),
-    ).toBeTrue();
-    expect(
-      hasSuppliedDependencyObservation({
-        items: [{ event: { type: "app.task.requested", data: { request: {} } } }],
-      }),
-    ).toBeFalse();
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("treat that exact read-only observation");
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "as complete authority for the dependency in this attempt",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "do not inspect Host-private task state, generated task-tree or Kanban projections",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain(
-      "do not inspect Host-private task state, generated task-tree or Kanban projections, or substitute a deeper or different task",
-    );
-    expect(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION).toContain("This restriction is request-scoped");
-    expect(appTaskAgentProtocol("fixture")).toContain(DEPENDENCY_OBSERVATION_AUTHORITY_INSTRUCTION);
   });
 
   it("lets an App reject Conditions it cannot meaningfully observe", () => {

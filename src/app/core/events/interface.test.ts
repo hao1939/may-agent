@@ -8,7 +8,7 @@ import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createRuntimeAppRead } from "../reads/app-read.js";
 import { childEventTrace, EVENT_ROW_ID, eventData, EventBus } from "./bus.js";
-import { createEventInterface } from "./interface.js";
+import { createEventInterface, findEventPublication } from "./interface.js";
 import { createAppEventAdmissionPlan, recordAppEventAdmissionCommandFailure } from "../state/app-event-admission-store.js";
 
 const roots: string[] = [];
@@ -41,6 +41,55 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it.each(["type", "scope", "ingress", "payload"])(
+    "publication confirmation cannot borrow another %s receipt",
+    (difference) => {
+      const { bus, db, events } = fixture();
+      const input = {
+        type: "fixture.comment",
+        target: { appId: "sample" },
+        idempotencyKey: "caller-key",
+        data: { projectId: "sample", comment: "Requested work" },
+      };
+      const context = { source: "control-socket", allowUnregisteredFact: true };
+      if (difference === "ingress") {
+        bus.emit({
+          type: input.type,
+          source: "internal",
+          owner: "app:sample",
+          target: input.target,
+          data: { ...input.data, appId: "sample", idempotencyKey: input.idempotencyKey },
+        } as any);
+      } else {
+        events.publish(
+          {
+            ...input,
+            ...(difference === "type" ? { type: "fixture.other" } : {}),
+            data: {
+              ...input.data,
+              ...(difference === "scope" ? { projectId: "other" } : {}),
+              ...(difference === "payload" ? { comment: "Previous work" } : {}),
+            },
+          },
+          context,
+        );
+      }
+      expect(findEventPublication(db, input, context)).toBeUndefined();
+      if (difference !== "payload") {
+        const receipt = events.publish(input, context);
+        expect(findEventPublication(db, input, context)).toBe(receipt.eventId);
+      } else {
+        expect(() => events.publish(input, context)).toThrow("Idempotency");
+      }
+    },
+  );
+
+  it("rejects an App address on direct chat even when it is not the Conversation App", () => {
+    const { events, db } = fixture();
+    expect(() => events.publish({ type: "chat.start.requested", target: { appId: "sample" },
+      data: { message: "Please work" } }, { source: "test" })).toThrow("app.input.requested");
+    expect(db.prepare("SELECT count(*) AS n FROM events").get()).toEqual({ n: 0 });
+  });
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {
@@ -50,7 +99,7 @@ describe("simple event interface", () => {
             { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
             { source: "fixture" },
           ),
-        ).toThrow("sample input must use app.input.requested");
+        ).toThrow("input must use app.input.requested");
       }
     }
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
@@ -387,8 +436,10 @@ describe("simple event interface", () => {
     expect(events.get(receipt.eventId)?.delivery.acceptedBy).toBeUndefined();
   });
 
-  it("validates the record-only events exposed by HTTP controls", () => {
-    const { events } = fixture();
+  it("validates HTTP control events and saves metric edits before returning receipts", () => {
+    const { events, db } = fixture();
+    db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', NULL, 0)");
+    db.exec("INSERT INTO metric_alerts(id, metric_id, created_at) VALUES (7, 'health', 1)");
     const inputs = [
       {
         type: "evaluation.session.requested",
@@ -405,6 +456,8 @@ describe("simple event interface", () => {
         delivery: "recorded",
       });
     }
+    expect(db.prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 2 });
+    expect(db.prepare("SELECT resolved_at FROM metric_alerts WHERE id = 7").get()).toEqual({ resolved_at: expect.any(Number) });
 
     expect(() =>
       events.publish(

@@ -1,4 +1,10 @@
-import { type AppInputContext, type AppTaskAttachment, type TaskIntent as AppTaskIntent } from "@may-agent/sdk";
+import {
+  type AppInputContext,
+  type AppTaskAttachment,
+  type TaskIntent as AppTaskIntent,
+  type TaskRevision,
+} from "@may-agent/sdk";
+import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 import type { TaskDetail, TaskListOptions, TaskOutcomePage, TaskOutcomeProjection, TaskPage } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
 import { Check } from "typebox/value";
@@ -41,14 +47,12 @@ import {
   repairUnadmittedAppDependencyWaits,
   retryFailedAppTask,
   type AppTaskAttemptRecovery,
-  type AppTaskObservationResult,
 } from "./app-task-reconciler.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
-  interruptSupersededObservationSessions,
 } from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
@@ -59,6 +63,7 @@ import {
   appTaskConfig,
   bindAppTaskRuntimeDescriptors,
   configuredAppAgent,
+  configuredRegistryEntries,
   prepareAppTaskRuntimeDefinitions,
   syncProjectReadModel,
   type AppTaskRuntimeDefinition,
@@ -257,7 +262,6 @@ function conditionSubjectCandidates(event: Record<string, unknown>): string[] {
 type AppTaskAdmissionResult = {
   delivery?: DeliveryResult;
   taskIds: string[];
-  supersededSessionIds: string[];
 };
 
 function admitResolvedAppTaskEvent(input: Parameters<typeof applyResolvedAppTaskEvent>[0]): AppTaskAdmissionResult {
@@ -273,7 +277,6 @@ function applyResolvedAppTaskEvent(input: {
   intent: AppTaskIntent | null;
   targetedTaskId?: string;
   conditionTaskIds?: string[];
-  interruptSuperseded?(observation: AppTaskObservationResult): void;
 }): AppTaskAdmissionResult {
   const { descriptor, controller, event, intent } = input;
   const targetedTaskId = input.targetedTaskId?.trim() ?? "";
@@ -310,26 +313,23 @@ function applyResolvedAppTaskEvent(input: {
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "existing targeted task wake accepted"),
         taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
       };
     }
     if (triggerResult.kind === "duplicate") {
       return {
         delivery: appTaskDelivery(descriptor, targetedTaskId, "targeted task event already received"),
         taskIds: [...wokenTaskIds],
-        supersededSessionIds: [],
       };
     }
     // An exact target is a reference to existing durable work, never creation
     // authority. Desired task creation is admitted only through App policy.
-    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+    return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
   }
-  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds], supersededSessionIds: [] };
+  if (!intent) return { delivery: conditionDelivery, taskIds: [...wokenTaskIds] };
   if (duplicateIntent) {
     return {
       delivery: appTaskDelivery(descriptor, intent.id, "resolved task event already received"),
       taskIds: [...wokenTaskIds],
-      supersededSessionIds: [],
     };
   }
   const observation = observeAppTaskIntent(config, {
@@ -337,7 +337,6 @@ function applyResolvedAppTaskEvent(input: {
     appAgent: descriptor.agent,
     trigger: event,
   });
-  input.interruptSuperseded?.(observation);
   if (observation.kind === "observed") wokenTaskIds.add(observation.taskId);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
@@ -347,7 +346,6 @@ function applyResolvedAppTaskEvent(input: {
   return {
     delivery: appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted"),
     taskIds: [...wokenTaskIds],
-    supersededSessionIds: observation.supersededSessionIds ?? [],
   };
 }
 
@@ -368,8 +366,7 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     throw new Error(`Canonical App ${input.appId} task capability is not loaded`);
   }
   const controller = appTaskControllersByBus.get(input.bus)?.get(descriptor.id);
-  const opts = appRouterOptionsByBus.get(input.bus);
-  if (!opts || (!controller && !descriptor.reconciliationPaused)) {
+  if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`Canonical App ${input.appId} task reconciliation is not active`);
   }
   return admitResolvedAppTaskEvent({
@@ -379,7 +376,6 @@ export function admitLoadedCanonicalAppTaskEvent(input: {
     intent: input.intent,
     targetedTaskId: input.targetedTaskId,
     conditionTaskIds: input.conditionTaskIds,
-    interruptSuperseded: (observation) => interruptSupersededObservationSessions(opts, observation),
   }).delivery;
 }
 
@@ -406,28 +402,17 @@ export function admitStandaloneCanonicalAppTaskEvent(input: {
   });
 }
 
-/** Prepare only canonical Task state needed by the admission worker. */
 /** Wake already-admitted Task identities without repeating their mutation. */
 export function wakeLoadedAppTasks(input: {
   bus: EventBus;
   appId: string;
   taskIds: string[];
-  supersededSessionIds?: string[];
 }): void {
   const appId = input.appId.trim().replace(/\.app$/, "");
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, appId);
   const controller = appTaskControllersByBus.get(input.bus)?.get(appId);
   if (!descriptor || !controller) return;
   const config = appTaskConfig(descriptor);
-  const opts = appRouterOptionsByBus.get(input.bus);
-  const admittedTaskId = input.taskIds.at(-1);
-  if (opts && admittedTaskId) {
-    interruptSupersededObservationSessions(opts, {
-      taskId: admittedTaskId,
-      generation: descriptor.resourceStore.readTask(admittedTaskId)?.metadata.generation ?? 1,
-      supersededSessionIds: input.supersededSessionIds,
-    });
-  }
   for (const taskId of new Set(input.taskIds.map((value) => value.trim()).filter(Boolean))) {
     enqueueAppTask(controller, config, taskId, { promote: true });
   }
@@ -558,6 +543,7 @@ function installConventionTaskControllers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
   identityRenames: ReadonlyMap<string, string> = new Map(),
+  activate = true,
 ): Map<string, AppTaskController> {
   if (opts.installControllers === false) {
     const previous = appTaskControllersByBus.get(opts.bus);
@@ -602,7 +588,7 @@ function installConventionTaskControllers(
       existingBinding.opts = opts;
       existingController.updateMaxConcurrent(descriptor.app.tasks?.maxConcurrent ?? 1);
       // Eligibility is read from current storage per Task, including while paused.
-      existingController.setEnabled(true);
+      existingController.setEnabled(activate);
       continue;
     }
 
@@ -667,6 +653,7 @@ function installConventionTaskControllers(
         });
       },
     });
+    if (!activate) controller.setEnabled(false);
     controllers.set(descriptor.id, controller);
     bindings.set(descriptor.id, binding);
     const config = appTaskConfig(descriptor);
@@ -679,7 +666,7 @@ function installConventionTaskControllers(
     });
     binding.recoveryScheduler = recoveryScheduler;
     recoverySchedulers.set(descriptor.id, recoveryScheduler);
-    recoveryScheduler.start();
+    if (activate) recoveryScheduler.start();
   }
 
   for (const [appId, controller] of controllers) {
@@ -856,14 +843,10 @@ export function attachLoadedAppTask(input: {
   if (!controller && !descriptor.reconciliationPaused) {
     throw new Error(`App ${descriptor.id} task reconciliation is not active`);
   }
-  const loaderOptions = appRouterOptionsByBus.get(input.bus);
-  if (!loaderOptions) throw new Error(`App ${descriptor.id} task runtime is not attached`);
-
   const config = appTaskConfig(descriptor);
   const humanRequested = input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true;
 
   const observation = admitTaskInput(config, input);
-  interruptSupersededObservationSessions(loaderOptions, observation);
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       lane: humanRequested ? "human" : "normal",
@@ -973,6 +956,48 @@ export function getLoadedAppTaskView(input: { bus: EventBus; appId: string; task
     },
     input.taskId,
   );
+}
+
+/** Common creator capability; App selection and delivery are ordinary runtime wiring. */
+export function reviseLoadedAppTask(input: {
+  bus: EventBus;
+  binding: TaskRevisionActor;
+  change: TaskRevision;
+}): TaskDetail {
+  const opts = appRouterOptionsByBus.get(input.bus);
+  const source = loadedAppTaskRuntimeDescriptor(input.bus, input.binding.appId);
+  if (!opts || !source) throw new Error("Task revision requires a loaded caller");
+  const loaded = loadedAppTaskRuntimeDescriptor(input.bus, input.change.appId);
+  const entry = configuredRegistryEntries(opts).find(({ definition }) => definition.id === input.change.appId);
+  const app = loaded?.app ?? entry?.definition;
+  const store = loaded?.resourceStore ?? AppTaskResourceStore.activeFromDb(source.resourceStore.db, input.change.appId);
+  if (!app?.tasks || !store || (!loaded && !entry))
+    throw new Error("Task revision requires an installed responsible App");
+  const target = loaded
+    ? appTaskConfig(loaded)
+    : appTaskContext({
+        appDir: entry!.appDir,
+        projectDir: entry!.appDir,
+        agent: configuredAppAgent(app, entry!.appDir),
+        maxConcurrent: app.tasks.maxConcurrent ?? 1,
+        resourceStore: store,
+      });
+  const revised = reviseAppTask({
+    source: appTaskConfig(source),
+    target,
+    app,
+    actor: input.binding,
+    change: input.change,
+  });
+  if (revised.kind === "observed" && revised.changed)
+    input.bus.emit({
+      type: "app.task.ready",
+      source: "app-task-reconciler",
+      owner: `app:${input.change.appId}`,
+      target: { appId: input.change.appId, taskId: input.change.taskId },
+      data: { appId: input.change.appId, taskId: input.change.taskId },
+    });
+  return readRuntimeTaskView({ taskStateConfig: target }, input.change.taskId)!;
 }
 
 /** Publish one event from the currently fenced Task attempt used by an executor tool. */
@@ -1118,7 +1143,7 @@ export async function recoverInstalledAppTasks(
     const run = Promise.resolve().then(async () => {
       await opts.executeRecovery!();
       if (!isDefinitionCurrent()) return;
-      for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
+      for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.start();
     });
     fence.runs.add(run);
     try {
@@ -1131,7 +1156,7 @@ export async function recoverInstalledAppTasks(
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
   const controllers = appTaskControllersByBus.get(bus) ?? new Map();
   recoverInterruptedAppTasks(opts, descriptors, controllers, true);
-  for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
+  for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.start();
 }
 
 function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskRuntimeDescriptor[]): void {
@@ -1259,21 +1284,15 @@ function commitAppTaskRuntimeDescriptors(
   prepared: AppTaskRuntimeDescriptor[],
   unavailableAgentAppIds: ReadonlySet<string>,
   identityRenames: ReadonlyMap<string, string>,
+  activate = true,
 ): { installed: AppTaskRuntimeDescriptor[]; controllers: Map<string, AppTaskController> } {
   const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
-    const { id } = descriptor;
-    if (unavailableAgentAppIds.has(id)) {
-      opts.bus.emit({
-        type: "info",
-        message: `[app-task] App ${id} agent "${descriptor.agent}" is unavailable; retained Tasks remain visible`,
-      });
-    }
     if (opts.syncReadModels !== false) syncProjectReadModel(opts, descriptor);
     installed.push(descriptor);
   }
 
-  const controllers = installConventionTaskControllers(opts, installed, identityRenames);
+  const controllers = installConventionTaskControllers(opts, installed, identityRenames, activate);
 
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
@@ -1368,9 +1387,9 @@ export async function prepareAppTaskRuntimeGeneration(
 /** Bind state and publish one prepared generation without yielding. */
 export function publishPreparedAppTaskRuntimeGeneration(
   generation: PreparedAppTaskRuntimeGeneration,
-  recovery: { includeFreshLeases?: boolean; deferRecovery?: boolean } = {},
+  recovery: { includeFreshLeases?: boolean; deferRecovery?: boolean; deferActivation?: boolean } = {},
   publication: { rollback?: () => void; finalize?: () => void } = {},
-): { installed: AppTaskRuntimeDescriptor[]; recover(): void } {
+): { installed: AppTaskRuntimeDescriptor[]; activate(): void; recover(): void } {
   const { opts } = generation;
   const prepared = bindAppTaskRuntimeDescriptors(opts, generation.definitions);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
@@ -1389,6 +1408,7 @@ export function publishPreparedAppTaskRuntimeGeneration(
       prepared,
       generation.unavailableAgentAppIds,
       generation.identityRenames,
+      false,
     );
     publication.finalize?.();
     generation.commitIdentityRenames();
@@ -1425,9 +1445,30 @@ export function publishPreparedAppTaskRuntimeGeneration(
     }
     throw error;
   }
+  let activated = false;
+  const activate = () => {
+    if (activated) return;
+    for (const descriptor of committed.installed) {
+      committed.controllers.get(descriptor.id)?.setEnabled(true);
+    }
+    activated = true;
+  };
   let recovered = false;
+  const unavailableReported = new Set<string>();
   const recover = () => {
     if (recovered) return;
+    activate();
+    const schedulers = appTaskRecoverySchedulersByBus.get(opts.bus);
+    for (const descriptor of committed.installed) {
+      schedulers?.get(descriptor.id)?.start();
+      if (generation.unavailableAgentAppIds.has(descriptor.id) && !unavailableReported.has(descriptor.id)) {
+        opts.bus.emit({
+          type: "info",
+          message: `[app-task] App ${descriptor.id} agent "${descriptor.agent}" is unavailable; retained Tasks remain visible`,
+        });
+        unavailableReported.add(descriptor.id);
+      }
+    }
     recoverInterruptedAppTasks(
       opts,
       committed.installed,
@@ -1436,8 +1477,9 @@ export function publishPreparedAppTaskRuntimeGeneration(
     );
     recovered = true;
   };
+  if (!recovery.deferActivation) activate();
   if (!recovery.deferRecovery) recover();
-  return { installed: committed.installed, recover };
+  return { installed: committed.installed, activate, recover };
 }
 
 export async function installAppTaskRuntimes(

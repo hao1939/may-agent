@@ -5,11 +5,9 @@ import {
   createDigestWriter,
   createLastSessionWriter,
 } from "../lib/session-subscribers.js";
-import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
-import { validateSessionControl } from "./adapters/executors/session-control.js";
 
 export function attachEventPersistence(opts: { bus: EventBus; persistDir: string }): void {
   const dbWriter = new DbWriter(opts.persistDir);
@@ -119,36 +117,6 @@ export function closeRestartedWorkflowPairs(opts: { bus: EventBus; persistDir: s
   return rows.length;
 }
 
-/** Apply state changes only after their canonical event has been persisted. */
-export function createMetricMutationSubscriber(persistDir: string) {
-  return (event: Parameters<EventBus["emit"]>[0]): void => {
-    if (event.type !== "metric.threshold_changed" && event.type !== "metric.alert_resolved") return;
-    const data = eventData(event) as Record<string, unknown>;
-    const db = getDb(persistDir);
-
-    if (event.type === "metric.threshold_changed") {
-      const metricId = typeof data.metricId === "string" ? data.metricId : "";
-      const threshold = data.to;
-      if (!metricId || typeof threshold !== "number" || !Number.isFinite(threshold)) return;
-      db.run("UPDATE metrics SET threshold = ?, updated_at = ? WHERE id = ?", [
-        threshold,
-        event.timestamp ?? Date.now(),
-        metricId,
-      ]);
-      return;
-    }
-
-    if (event.type === "metric.alert_resolved") {
-      const alertId = Number(data.alertId);
-      if (!Number.isInteger(alertId) || alertId <= 0) return;
-      db.run("UPDATE metric_alerts SET resolved_at = COALESCE(resolved_at, ?) WHERE id = ?", [
-        event.timestamp ?? Date.now(),
-        alertId,
-      ]);
-    }
-  };
-}
-
 export function attachDaemonEventSubscribers(opts: {
   bus: EventBus;
   manager: SubagentManager;
@@ -156,9 +124,8 @@ export function attachDaemonEventSubscribers(opts: {
   projectRoot: string;
   interfaceAgent?: string;
 }): void {
-  const { bus, manager, persistDir, projectRoot } = opts;
+  const { bus, persistDir, projectRoot } = opts;
   attachMetricSourceMeasurement({ bus, persistDir });
-  bus.subscribe(createMetricMutationSubscriber(persistDir), { label: "metric-mutation" });
   const restartedHandlerPairs = closeRestartedHandlerPairs({ bus, persistDir });
   if (restartedHandlerPairs > 0) {
     bus.emit({
@@ -181,15 +148,6 @@ export function attachDaemonEventSubscribers(opts: {
   bus.listen(createLastSessionWriter(projectRoot), {
     label: "last-session",
     types: ["session.end"],
-  });
-  const escalationLifecycle = createEscalationLifecycleSubscriber({
-    bus, manager, persistDir,
-    readSession: (id) => manager.registryStore.getSession(id),
-    validateSessionControl: (id) => validateSessionControl(manager, "session.steer.requested", id),
-  });
-  bus.listen((event) => void escalationLifecycle(event), {
-    label: "escalation-lifecycle",
-    types: ["escalation.resolved", "escalation.dismissed"],
   });
 
   bus.subscribe(

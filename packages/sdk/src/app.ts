@@ -164,7 +164,8 @@ export type AppConversationRequest = {
 export type AppConversationRequestUpdate = {
   id: string;
   expectedRevision: number;
-  scope: string;
+  /** Required for a new ask. Omit to retain an existing Request's exact scope. */
+  scope?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
   reason?: string;
   /** Add exact links; omitted/empty lists retain admitted work. At most 32 distinct links in total. */
@@ -176,7 +177,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
     {
       id: Type.String({ minLength: 1, maxLength: 200 }),
       expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
-      scope: Type.String({ minLength: 1, maxLength: 2000 }),
+      scope: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
       disposition: Type.Union([
         Type.Literal("open"),
         Type.Literal("fulfilled"),
@@ -241,7 +242,7 @@ export type AppTaskAttachment = { kind: "existing"; taskId: string } | { kind: "
 export type ConversationTopicDecision =
   { kind: "none" } | { kind: "new"; title: string } | { kind: "existing"; id: string };
 
-/** A narrow human-authorized operation on an exact Task already present in request context. */
+/** Exact cancellation; requirement revisions use the common tasks.update capability. */
 export type ConversationTaskControl = {
   kind: "cancel";
   appId: string;

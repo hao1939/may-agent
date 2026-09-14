@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -44,6 +44,7 @@ import {
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
   retryLoadedFailedAppTask,
+  wakeLoadedAppTasks,
 } from "./app-task-runtime.js";
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { admitTaskAppDependencies } from "./dependency-admission.js";
@@ -90,12 +91,14 @@ import {
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
+import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskTestContext as createTaskContext } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { HumanTaskService } from "../../human-task-service.js";
+import { stageAppIdentityMigration } from "../state/app-identity-migration.js";
 import {
   addSessionBashProcessGroup,
   readSessionBashProcessGroups,
@@ -253,7 +256,494 @@ it("drains and fences startup recovery across identity-rename commit and rollbac
   expect(recoveryCalls).toBe(3);
 });
 
+it("starts indexed recovery schedulers when deferred startup recovery runs", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const start = spyOn(AppTaskRecoveryScheduler.prototype, "start");
+  getDb(join(f.root, "state"), { existingSchemaOnly: false });
+  await installCoreTaskRuntimes(
+    {
+      ...options(f, bus),
+      executeRecovery: async () => {},
+      appRegistrySnapshot: {
+        id: "deferred-recovery-scheduler",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    },
+    { deferRecovery: true },
+  );
+
+  expect(start).not.toHaveBeenCalled();
+  await recoverInstalledAppTasks(bus);
+  expect(start).toHaveBeenCalledTimes(1);
+  start.mockRestore();
+});
+
+it("keeps renamed Task workers inactive until registry publication and identity commit succeed", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  const initial = definition();
+  const started: string[] = [];
+  getDb(persistDir, { existingSchemaOnly: false });
+  const runtimeOptions = {
+    ...options(f, bus),
+    executeAttempt: async ({ appId, taskId }: { appId: string; taskId: string }) => {
+      started.push(`${appId}:${taskId}`);
+      return [];
+    },
+    appRegistrySnapshot: {
+      id: "worker-activation-initial",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: initial }],
+    },
+  };
+  await installCoreTaskRuntimes(runtimeOptions);
+  const config = loadedTaskConfig(f, persistDir);
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: {
+      id: "work/after-rename",
+      parentId: "operations",
+      outcome: "Run only after the rename commits",
+      acceptance: ["The canonical worker runs"],
+    },
+  });
+
+  const renamed = defineApp({ ...initial, id: "sample-renamed", previousIds: ["sample"] });
+  let registryPublished = false;
+  const prepared = await prepareAppTaskRuntimeGeneration({
+    ...runtimeOptions,
+    afterCommit: () => {
+      registryPublished = true;
+    },
+    appRegistrySnapshot: {
+      id: "worker-activation-renamed",
+      generation: 2,
+      entries: [{ appDir: f.appDir, definition: renamed }],
+    },
+  });
+  await prepared.quiesceIdentityRenames();
+  const migration = stageAppIdentityMigration(getDb(persistDir), [renamed]);
+  const published = publishPreparedAppTaskRuntimeGeneration(
+    prepared,
+    { deferActivation: true, deferRecovery: true },
+    { rollback: () => migration?.rollback(), finalize: () => migration?.commit() },
+  );
+
+  expect(registryPublished).toBe(true);
+  expect(getDb(persistDir).prepare("SELECT app_id FROM app_tasks WHERE task_id = ?").get("work/after-rename")).toEqual({
+    app_id: "sample-renamed",
+  });
+  wakeLoadedAppTasks({ bus, appId: "sample-renamed", taskIds: ["work/after-rename"] });
+  await Bun.sleep(10);
+  expect(started).toEqual([]);
+
+  published.activate();
+  const deadline = performance.now() + 1_000;
+  while (started.length === 0 && performance.now() < deadline) await Bun.sleep(5);
+  expect(started).toEqual(["sample-renamed:work/after-rename"]);
+});
+
+it("rolls a rejected identity generation back without candidate worker, session, or event effects", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  const initial = definition();
+  const started: string[] = [];
+  const interrupted: string[] = [];
+  getDb(persistDir, { existingSchemaOnly: false });
+  const runtimeOptions = {
+    ...options(f, bus),
+    executeAttempt: async ({ appId, taskId }: { appId: string; taskId: string }) => {
+      started.push(`${appId}:${taskId}`);
+      return [];
+    },
+    sessions: {
+      handoff: () => undefined,
+      isLive: () => false,
+      lastActivityAt: () => null,
+      workflowInterrupted: () => false,
+      read: () => null,
+      interrupt: (sessionId: string) => interrupted.push(sessionId),
+    },
+    appRegistrySnapshot: {
+      id: "worker-rollback-initial",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: initial }],
+    },
+  };
+  await installCoreTaskRuntimes(runtimeOptions);
+  const config = loadedTaskConfig(f, persistDir);
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: {
+      id: "work/after-rollback",
+      parentId: "operations",
+      outcome: "Remain owned by the accepted App",
+      acceptance: ["The prior worker remains active"],
+    },
+  });
+
+  const renamed = defineApp({ ...initial, id: "sample-renamed", previousIds: ["sample"] });
+  const effects: string[] = [];
+  const unsubscribe = bus.subscribe((event) => effects.push(event.type));
+  const prepared = await prepareAppTaskRuntimeGeneration({
+    ...runtimeOptions,
+    agents: { prepare: async () => false } as TaskAgentRunner,
+    afterCommit: () => {
+      throw new Error("fixture rejects registry publication");
+    },
+    appRegistrySnapshot: {
+      id: "worker-rollback-renamed",
+      generation: 2,
+      entries: [{ appDir: f.appDir, definition: renamed }],
+    },
+  });
+  await prepared.quiesceIdentityRenames();
+  const migration = stageAppIdentityMigration(getDb(persistDir), [renamed]);
+  expect(() =>
+    publishPreparedAppTaskRuntimeGeneration(
+      prepared,
+      { deferActivation: true, deferRecovery: true },
+      { rollback: () => migration?.rollback(), finalize: () => migration?.commit() },
+    ),
+  ).toThrow("fixture rejects registry publication");
+  unsubscribe();
+
+  expect(effects).toEqual([]);
+  expect(interrupted).toEqual([]);
+  expect(started).toEqual([]);
+  expect(getDb(persistDir).prepare("SELECT app_id FROM app_tasks WHERE task_id = ?").get("work/after-rollback")).toEqual({
+    app_id: "sample",
+  });
+  wakeLoadedAppTasks({ bus, appId: "sample", taskIds: ["work/after-rollback"] });
+  const deadline = performance.now() + 1_000;
+  while (started.length === 0 && performance.now() < deadline) await Bun.sleep(5);
+  expect(started).toEqual(["sample:work/after-rollback"]);
+});
+
 describe("caller feedback PoC", () => {
+  it("recovers delegated creator after lost admission and revises across Apps from a caller-only runtime", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    const worker = defineApp({
+      id: "worker",
+      version: 1,
+      agent: "worker",
+      tasks: {},
+      inputSchema: Type.Object({ kind: Type.Literal("measure"), data: Type.Object({ source: Type.String() }) }),
+      task: ({ input }) => ({
+        kind: "desired",
+        intent: {
+          id: "measurement",
+          parentId: "root",
+          outcome: `Measure ${input.data.source}`,
+          acceptance: ["Verified measurement"],
+          input: input.data,
+        },
+      }),
+    });
+    const db = getDb(persistDir);
+    const workerDir = join(f.projectsRoot, "worker.app");
+    mkdirSync(workerDir, { recursive: true });
+    const target = appTaskContext({
+      appDir: workerDir,
+      projectDir: workerDir,
+      agent: "worker",
+      maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.fromDb(db, "worker"),
+    });
+    target.resourceStore.bootstrapSnapshot(
+      {
+        project: "worker",
+        project_lifecycle: "active",
+        root_task_id: "root",
+        groups: { root: { id: "root", parent_id: null } },
+      },
+      "fixture",
+    );
+    const opts = {
+      ...options(f, bus),
+      installControllers: false,
+      taskAppIds: ["sample"],
+      appRegistrySnapshot: {
+        id: "caller-only",
+        generation: 1,
+        entries: [
+          { appDir: f.appDir, definition: definition() },
+          { appDir: workerDir, definition: worker },
+        ],
+      },
+    };
+    const { installed } = await installCoreTaskRuntimes(opts);
+    expect(installed.map((app) => app.id)).toEqual(["sample"]);
+    const source = loadedTaskConfig(f);
+    observeAppTaskIntent(source, {
+      appAgent: "sample-owner",
+      intent: {
+        id: "parent",
+        parentId: "operations",
+        outcome: "Review measurements",
+        acceptance: ["Measurements checked"],
+      },
+    });
+    const claim = claimObservedAppTask(source, { taskId: "parent", appAgent: "sample-owner", handler: "auto" });
+    if (claim.kind !== "claimed") throw new Error("Expected creator claim");
+    // No subscriber or event writer accepts the notification. The saved admission
+    // still carries the exact creator and can be recovered without that event.
+    expect(() =>
+      admitTaskAppDependencies({
+        opts,
+        descriptor: installed[0]!,
+        claim,
+        dependencies: [{ id: "measurement", appId: "worker", input: { kind: "measure", data: { source: "alpha" } } }],
+      }),
+    ).toThrow("neither admitted nor durably published");
+    const host = new AppInboxHost({
+      db,
+      apps: [worker],
+      attachTask: (input) => admitTaskInput(target, input),
+      readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: workerDir }),
+      onRequestUpdated() {
+        throw new Error("Lost revised-answer notification");
+      },
+    });
+    try {
+      await host.recoverAdmissions();
+      expect(target.resourceStore.readTask("measurement")?.metadata.creator).toEqual({
+        appId: "sample",
+        taskId: "parent",
+      });
+      const tool = createAppTaskReadTool({
+        bus,
+        scope: () => ({
+          appId: "sample",
+          taskId: claim.taskId,
+          generation: claim.generation,
+          attemptId: claim.attemptId,
+        }),
+      });
+      const saved = await tool.execute("cross-app-correction", {
+        action: "update",
+        target: { appId: "worker" },
+        taskId: "measurement",
+        expectedGeneration: 1,
+        input: { kind: "measure", data: { source: "beta" } },
+      });
+      expect(JSON.parse((saved.content[0] as { text: string }).text)).toMatchObject({
+        id: "measurement",
+        generation: 2,
+        outcome: "Measure beta",
+        input: { source: "beta" },
+      });
+      expect(target.resourceStore.readTask("measurement")?.metadata.creator).toEqual({
+        appId: "sample",
+        taskId: "parent",
+      });
+      const originalInput = listAppInboxItems(db, { appId: "worker" })[0]!;
+      expect(originalInput.input.data).toEqual({ source: "alpha" });
+      await closeInstalledAppTaskRuntimes(bus);
+      await installCoreTaskRuntimes({ ...opts, taskAppIds: ["sample", "worker"] });
+      const next = claimObservedAppTask(target, { taskId: "measurement", appAgent: "worker", handler: "auto" });
+      if (next.kind !== "claimed") throw new Error("Expected revised worker");
+      expect(next.intent.input).toEqual({ source: "beta" });
+      expect(next.events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            event: expect.objectContaining({
+              data: expect.objectContaining({
+                request: expect.objectContaining({ input: { kind: "measure", data: { source: "beta" } } }),
+              }),
+            }),
+          }),
+        ]),
+      );
+      expect(completeAppTask(target, next, { summary: "Beta verified", result: { source: "beta" } }).status).toBe(
+        "applied",
+      );
+      await host.recoverTaskResults();
+      expect(host.get(originalInput.id)).toMatchObject({
+        status: "done",
+        result: { result: { source: "beta" } },
+        input: { data: { source: "alpha" } },
+      });
+    } finally {
+      host.close();
+    }
+  });
+
+  it("composes three assignments through the same executor and return contract across restart", async () => {
+    const f = fixture();
+    const persistDir = join(f.root, "state");
+    let bus = eventBus();
+    let host: AppInboxHost;
+    const calls: string[] = [];
+    const app = defineApp({
+      ...definition(),
+      task: ({ input }) => ({
+        kind: "desired",
+        intent: {
+          id: `work/${(input.data as { level: number }).level}`,
+          parentId: "operations",
+          outcome: String(
+            (input.data as { revision?: string }).revision ?? "Review and combine delegated measurements",
+          ),
+          acceptance: ["Return the measured value through each assigning caller"],
+          input: input.data as Record<string, unknown>,
+          executor: "measure",
+        },
+      }),
+    });
+    const install = async () => {
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        appRegistrySnapshot: {
+          id: "assignment-roles",
+          generation: 1,
+          entries: [{ appDir: f.appDir, definition: app }],
+        },
+        executors: {
+          measure: async (attempt) => {
+            calls.push(attempt.task.id);
+            const level = Number(attempt.task.id.split("/").at(-1));
+            const returned = attempt.events.items.find(
+              ({ event }) => event.type === "app.dependency.updated" && event.data.status === "done",
+            );
+            if (returned) {
+              const result = returned.event.data.result as { value: number; reviewedBy: number[] };
+              return {
+                state: "converged",
+                summary: "Reviewed the delegated measurement",
+                facts: ["measurement:7"],
+                result: { value: result.value, reviewedBy: [...result.reviewedBy, level] },
+              };
+            }
+            if (level === 2)
+              return {
+                state: "converged",
+                summary: "Measured value",
+                facts: ["measurement:7"],
+                result: { value: 7, reviewedBy: [2] },
+              };
+            return {
+              state: "waiting",
+              summary: "Requested independent measurement",
+              facts: [],
+              dependencies: [
+                { id: "measurement", appId: "sample", input: { kind: "measure", data: { level: level + 1 } } },
+              ],
+            };
+          },
+        },
+      });
+      host = new AppInboxHost({
+        db: getDb(persistDir),
+        apps: [app],
+        attachTask: (input) => admitTaskInput(loadedTaskConfig(f), input),
+        readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+        onRequestUpdated() {
+          throw new Error("Synthetic lost notification");
+        },
+      });
+      bus.subscribe((event) => {
+        if (event.type !== "app.input.requested") return;
+        host.admit({
+          id: String(event.data.requestId),
+          appId: "sample",
+          source: { kind: "app", id: "sample" },
+          input: event.data.input as { kind: string; data: unknown },
+          idempotencyKey: String(event.data.idempotencyKey),
+        });
+        return { accepted: true, by: "fixture", route: "direct" };
+      });
+    };
+    const run = (level: number) =>
+      reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId: `work/${level}`,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+    try {
+      await install();
+      host!.admit({
+        id: "original",
+        appId: "sample",
+        source: { kind: "human", id: "human" },
+        input: { kind: "measure", data: { level: 0 } },
+      });
+      await run(0);
+      await run(1);
+      await run(2);
+      expect(host!.get("original")?.result).toBeUndefined();
+      expect(loadedTaskConfig(f).resourceStore.readTask("work/1")?.status.phase).toBe("waiting");
+      host!.close();
+      await closeInstalledAppTaskRuntimes(bus);
+      closeDb(persistDir);
+      bus = eventBus();
+      await install();
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      await run(1);
+      expect(host!.get("original")?.result).toBeUndefined();
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      await run(0);
+      await host!.recoverTaskResults();
+      expect(host!.get("original")?.result?.result).toEqual({ value: 7, reviewedBy: [2, 1, 0] });
+      expect(calls).toEqual(["work/0", "work/1", "work/2", "work/1", "work/0"]);
+      await host!.recoverTaskResults();
+      await recoverInstalledAppTasks(bus);
+      await run(0);
+      expect(calls).toHaveLength(5);
+      const revisionConfig = loadedTaskConfig(f);
+      expect(revisionConfig.resourceStore.readTask("work/1")?.metadata.creator).toEqual({
+        appId: "sample",
+        taskId: "work/0",
+      });
+      expect(revisionConfig.resourceStore.readTask("work/2")?.metadata.creator).toEqual({
+        appId: "sample",
+        taskId: "work/1",
+      });
+      recordAppTaskTrigger(revisionConfig, "work/0", { type: "sample.refinement", source: "human", data: {} });
+      const reviewer = claimObservedAppTask(revisionConfig, {
+        taskId: "work/0",
+        appAgent: "sample-owner",
+        handler: "agent",
+      });
+      if (reviewer.kind !== "claimed") throw new Error("Expected caller review");
+      const tool = createAppTaskReadTool({
+        bus,
+        scope: () => ({
+          appId: "sample",
+          taskId: reviewer.taskId,
+          generation: reviewer.generation,
+          attemptId: reviewer.attemptId,
+        }),
+      });
+      const saved = await tool.execute("revise-child", {
+        action: "update",
+        taskId: "work/1",
+        expectedGeneration: 1,
+        input: { kind: "measure", data: { level: 1, revision: "Verify the additional measurement" } },
+      });
+      expect(JSON.parse((saved.content[0] as { text: string }).text)).toMatchObject({
+        id: "work/1",
+        generation: 2,
+        outcome: "Verify the additional measurement",
+        input: { level: 1, revision: "Verify the additional measurement" },
+      });
+      for (let level = 0; level < 3; level++)
+        expect(loadedTaskConfig(f).resourceStore.isCancelled(`work/${level}`)).toBe(false);
+    } finally {
+      host!.close();
+    }
+  });
+
   it.each(["quiet", "incomplete-then-wait", "report-wait", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(
     "returns exact feedback and recovers the original answer (%s)",
     async (scenario) => {
@@ -2653,11 +3143,12 @@ describe("canonical App task runtime", () => {
       appId: "evaluation",
       source: { kind: "app", id: "sample" },
       input: dependency,
-      now: 1,
     });
-    const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
+    const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, Date.now());
     if (!requestClaim) throw new Error("expected request claim");
-    expect(waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 })).toBe(true);
+    expect(waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: Date.now() })).toBe(
+      true,
+    );
 
     expect(
       admitTaskAppDependencies({
@@ -2677,7 +3168,7 @@ describe("canonical App task runtime", () => {
     ).toEqual(first);
   });
 
-  it("reattaches an exact live request from the same Task generation after recovery", () => {
+  it.each([false, true])("reattaches an exact live request after recovery (requirements revised: %s)", (revised) => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -2706,6 +3197,7 @@ describe("canonical App task runtime", () => {
     createAppInboxItem(db, {
       id: requestId,
       appId: "evaluation",
+      creator: { appId: "sample", taskId: claim.taskId },
       source: { kind: "app", id: "sample" },
       input: requestInput,
       idempotencyKey: `task-dependency:sample:${claim.taskId}:${claim.generation}:review:existing`,
@@ -2714,6 +3206,14 @@ describe("canonical App task runtime", () => {
     const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
     if (!requestClaim) throw new Error("expected request claim");
     expect(waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 })).toBe(true);
+    let activeClaim = claim;
+    if (revised) {
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...claim.intent, outcome: "Review the revised scope" } });
+      releaseStaleAppTaskResult(config, claim);
+      const next = claimObservedAppTask(config, { taskId: claim.taskId, appAgent: "sample-owner", handler: "agent:sample-owner" });
+      if (next.kind !== "claimed") throw new Error("Expected revised claim");
+      activeClaim = next;
+    }
     const emittedBeforeReuse = emitted.length;
 
     expect(
@@ -2727,7 +3227,7 @@ describe("canonical App task runtime", () => {
           app: definition(),
           reconciliationPaused: false,
         },
-        claim,
+        claim: activeClaim,
         existingConditions: [],
         dependencies: [
           {
@@ -3626,8 +4126,8 @@ describe("canonical App task runtime", () => {
         worker: async () => {
           calls++;
           return { state: "waiting", summary: "Recorded run 42", result: { runId: 42 },
-            ...(change === "action" ? { actions: [{ kind: "update-task" as const, taskId: "work/persistence-target",
-              expectedGeneration: 1, outcome: "Follow current intent" }] } : {}),
+            ...(change === "action" ? { actions: [{ kind: "unblock-task" as const, taskId: "work/persistence-target",
+              expectedGeneration: 1, reason: "Reconsider current facts" }] } : {}),
             facts: ["run:42"], conditions: [{ id: "run:42", type: "sample.run.done", subject: "run:42",
               expected: "done", owner: "app:sample", reviewAfterMs: 60_000 }] };
         },
@@ -3637,10 +4137,18 @@ describe("canonical App task runtime", () => {
     });
     const config = loadedTaskConfig(f);
     const taskId = "work/persistence-contention";
-    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    observeAppTaskIntent(config, { appAgent: "sample-owner", creator: { appId: "sample", taskId }, intent: {
       id: "work/persistence-target", parentId: "operations", outcome: "Original assignment",
       acceptance: ["Reviewed"], executor: "worker",
     } });
+    const target = config.resourceStore.readTask("work/persistence-target")!;
+    expect(config.resourceStore.commit({
+      fences: [{ taskId: target.metadata.id, resourceVersion: target.metadata.resourceVersion }],
+      tasks: [{ resource: {
+        ...target, metadata: { ...target.metadata, resourceVersion: target.metadata.resourceVersion + 1 },
+        status: { ...target.status, phase: "waiting" },
+      }, ready: false }],
+    })).toBe(true);
     const taskIntent = { id: taskId, parentId: "operations", outcome: "Retain completed work",
       acceptance: ["Current outcome"], agent: "sample-owner", executor: "worker" };
     observeAppTaskIntent(config, { appAgent: "sample-owner", intent: taskIntent });
@@ -4240,7 +4748,7 @@ describe("canonical App task runtime", () => {
       taskId: "work/post-claim-superseded",
       generation: 1,
       disposition: "stale",
-      staleRecovery: "superseded",
+      staleRecovery: "released",
     });
     expect(readAcceptedRuntimeAttempt(config, "work/post-claim-superseded")).toMatchObject({
       taskGeneration: 2,
@@ -5724,6 +6232,7 @@ describe("canonical App task runtime", () => {
     await run();
     expect(config.resourceStore.readTask(taskId)?.status.executionFailures).toBe(2);
     observe("invalid");
+    setSystemTime(config.resourceStore.readTask(taskId)!.status.executionRetryAt! + 1);
     await run();
     const invalid = config.resourceStore.readTask(taskId)!;
     expect(invalid.status.phase).toBe("pending");
@@ -5896,10 +6405,10 @@ describe("canonical App task runtime", () => {
                   result: { updatedTask: "work/existing-target" },
                   actions: [
                     {
-                      kind: "update-task" as const,
+                      kind: "unblock-task" as const,
                       taskId: "work/existing-target",
                       expectedGeneration: 1,
-                      outcome: "Must not be reported as applied",
+                      reason: "Must not be reported as applied",
                     },
                   ],
                 }
@@ -6958,9 +7467,10 @@ describe("canonical App task runtime", () => {
           entries: [{ appDir: f.appDir, definition: definition() }],
         },
       };
-      const observe = (id: string, workflow?: string) =>
+      const observe = (id: string, workflow?: string, creatorTaskId?: string) =>
         observeAppTaskIntent(config, {
           appAgent: "sample-owner",
+          ...(creatorTaskId ? { creator: { appId: "sample", taskId: creatorTaskId } } : {}),
           intent: {
             id,
             parentId: "operations",
@@ -7345,167 +7855,9 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readTrigger("readback")).toBeNull();
     });
 
-    it.each([
-      ["converged", "drain"],
-      ["waiting", "drain"],
-      ["converged", "live owner"],
-    ] as const)("retries uncommitted %s after failed %s cleanup and restart", async (state, failure) => {
-      const f = setup();
-      let drained = false;
-      const interrupts: string[] = [];
-      const sessions = createTaskSessionRecovery({
-        persistDir: f.base.persistDir,
-        bus: f.base.bus,
-        manager: { hasActiveSession: () => false } as never,
-        drainPersistedBashProcessGroups: (_root, id) => {
-          interrupts.push(id);
-          return drained;
-        },
-      });
-      await installCoreTaskRuntimes({ ...f.base, sessions });
-      f.observe("owner");
-      f.observe("other");
-      f.terminalResult.state = state;
-      f.terminalResult.actions = [
-        { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Use the revised proof"] },
-      ];
-      if (state === "waiting") {
-        delete f.terminalResult.response;
-        f.terminalResult.conditions = [
-          {
-            id: "proof-ready",
-            type: "sample.proof.ready",
-            subject: "id:proof-1",
-            expected: "ready",
-            owner: "app:sample",
-            reviewAfterMs: 60_000,
-          },
-        ];
-      }
-      const claim = { taskId: "owner", attemptId: "" };
-      const execute = f.base.agents.execute;
-      f.base.agents.execute = async (input) => {
-        claim.attemptId ||= input.attempt.attemptId;
-        input.sessionStarted("session-owner");
-        const result = await execute(input);
-        f.writeTerminalSession("session-owner");
-        return result;
-      };
-      const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
-      if (other.kind !== "claimed") throw new Error("expected other attempt");
-      expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
-      // A terminal marker is not proof that shell descendants exited.
-      writeSessionMeta(f.base.persistDir, "other-session", {
-        agent: "sample-owner",
-        task: "Old proof",
-        startedAt: Date.now(),
-        ...(failure === "live owner"
-          ? { status: "running" as const, detached: true, pid: process.pid }
-          : { status: "done" as const }),
-      });
-      const emitted: AgentEvent[] = [];
-      f.base.bus.subscribe((event) => emitted.push(event));
-      await expect(f.run(claim.taskId)).rejects.toThrow(
-        failure === "live owner" ? "external owner is still live" : "did not exit",
-      );
-      expect(f.config.resourceStore.readReceipt("owner")).toBeNull();
-      expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
-      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
-      expect(f.config.resourceStore.readTask("owner")?.status.executionFailures ?? 0).toBe(0);
-      expect(f.config.resourceStore.readTask("other")).toMatchObject({
-        metadata: { generation: 1 },
-        status: { phase: "running", currentAttemptId: other.attemptId },
-      });
-      expect(emitted.filter((event) => event.type.startsWith("app.dependency."))).toHaveLength(0);
 
-      // Restart retries the uncommitted attempt; normal settlement applies its effects.
-      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
-        attempt.runtimeId = "previous-runtime";
-        attempt.lease!.runtimeId = "previous-runtime";
-      });
-      await closeInstalledAppTaskRuntimes(f.base.bus);
-      closeDb(f.base.persistDir);
-      await installCoreTaskRuntimes({ ...f.base, sessions });
-      drained = true;
-      if (failure === "live owner") {
-        writeSessionMeta(f.base.persistDir, "other-session", {
-          agent: "sample-owner",
-          task: "Old proof",
-          status: "done",
-          startedAt: Date.now(),
-        });
-      }
-      await recoverInstalledAppTasks(f.base.bus);
-      await f.run("owner");
-      const store = AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!;
-      expect(interrupts).toEqual(
-        failure === "live owner"
-          ? ["session-owner", "other-session"]
-          : ["other-session", "session-owner", "other-session"],
-      );
-      expect(store.readAttempt(other.attemptId)?.state).toBe("interrupted");
-      expect(store.readTask("other")?.metadata.generation).toBe(2);
-      expect(store.readAttempt(claim.attemptId)?.state).toBe("interrupted");
-      expect(store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
-      expect(store.readAttempt(store.readTask("owner")!.status.observedAttemptId!)?.acceptedResult).toMatchObject({
-        state,
-        result: f.payload,
-      });
-      expect(store.isCancelled("owner")).toBe(false);
-      expect(emitted.filter((event) => event.type === "project.task.reconciled")).toContainEqual(
-        expect.objectContaining({ data: expect.objectContaining({ taskId: "owner", disposition: state }) }),
-      );
-      expect(emitted.filter((event) => event.type.startsWith("app.dependency."))).toHaveLength(0);
-      await recoverInstalledAppTasks(f.base.bus);
-      expect(interrupts).toHaveLength(failure === "live owner" ? 2 : 3);
-      expect(f.agentCalls()).toBe(2);
-    });
 
-    it.each(["converged", "waiting"] as const)(
-      "settles %s actions and interrupts the superseded session",
-      async (state) => {
-        const f = setup();
-        const interrupted: string[] = [];
-        await installCoreTaskRuntimes({
-          ...f.base,
-          sessions: {
-            ...f.base.sessions,
-            isLive: (id) => id === "other-session",
-            interrupt: (id) => {
-              expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(1);
-              interrupted.push(id);
-            },
-          },
-        });
-        f.observe("owner");
-        f.observe("other");
-        f.terminalResult.state = state;
-        f.terminalResult.actions = [
-          { kind: "update-task", taskId: "other", expectedGeneration: 1, acceptance: ["Use the revised proof"] },
-        ];
-        if (state === "waiting") {
-          delete f.terminalResult.response;
-          f.terminalResult.conditions = [
-            {
-              id: "proof-ready",
-              type: "sample.proof.ready",
-              subject: "id:proof-1",
-              expected: "ready",
-              owner: "app:sample",
-              reviewAfterMs: 60_000,
-            },
-          ];
-        }
-        const other = claimObservedAppTask(f.config, { taskId: "other", appAgent: "sample-owner", handler: "auto" });
-        if (other.kind !== "claimed") throw new Error("expected other attempt");
-        expect(recordAppTaskAttemptSession(f.config, other, "other-session")).toBeTrue();
-        expect(await f.run("owner")).toContain("other");
-        expect(interrupted).toEqual(["other-session"]);
-        expect(f.config.resourceStore.readAttempt(other.attemptId)?.state).toBe("interrupted");
-        expect(f.config.resourceStore.readTask("other")?.metadata.generation).toBe(2);
-        expect(f.agentCalls()).toBe(1);
-      },
-    );
+
 
     it.each(["startup", "busy"] as const)("accepts a replacement direct-agent result through %s", async (route) => {
       const f = setup();

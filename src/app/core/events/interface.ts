@@ -7,6 +7,7 @@ import type {
   EventView,
   PublicEvent,
 } from "@may-agent/control/events";
+import { findPersistedEventId } from "../../../lib/db-writer.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -146,12 +147,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "chat.start.requested": {
     delivery: "required",
     validate: (input, options) => {
-      const agent = optionalText(input.data.agent) ?? optionalText(input.target?.appId);
+      if (input.target?.appId) throw new Error("App input must use app.input.requested");
+      const agent = optionalText(input.data.agent);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
       const appId = agent.replace(/\.app$/, "");
       if (appId === options.conversationAppId?.trim().replace(/\.app$/, ""))
         throw new Error(`${appId} input must use app.input.requested`);
-      if (!options.hasAgent(agent) && !options.hasApp(agent)) throw new Error(`Agent or App ${agent} is not loaded`);
+      if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },
   },
@@ -386,11 +388,6 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
       data.source = context.inputSource ?? { kind: "system", id: source };
       break;
     }
-    case "chat.start.requested": {
-      const agent = optionalText(data.agent) ?? appId!;
-      data.agent = agent;
-      break;
-    }
   }
 
   const event = {
@@ -403,6 +400,11 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
   Object.defineProperty(event, EVENT_INGRESS_SOURCE, { value: source, configurable: true });
   Object.defineProperty(event, EVENT_INTERFACE_INPUT, { value: true, configurable: true });
   return event;
+}
+
+/** Confirm a publication without rerunning App routing or accepting a key-only receipt. */
+export function findEventPublication(db: SqliteDb, input: EventInput, context: EventPublisherContext): number | undefined {
+  return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
 }
 
 function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEvent {

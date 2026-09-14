@@ -1,0 +1,6 @@
+{
+  "root_task_id": "input",
+  "groups": {
+    "input": { "id": "input", "parent_id": null, "agent": "may", "children": [] }
+  }
+}

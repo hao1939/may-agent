@@ -38,6 +38,34 @@ the input for normal Task retry. Rejected proposals do not publish a misleading
 reply. Previous-attempt facts let the App correct its decision after backoff,
 including after storage reopen; there is no extra conversational retry loop.
 
+`conversation_request` saves an accepted ask or authorized correction before
+work starts, returning the saved open Request and new revision. Composition
+supplies this narrow capability; core derives its App/Conversation from the
+claimed input and checks the claim in the write transaction. It reuses the
+Request store, cannot close asks or control Tasks, and rejects stale revisions.
+The correction survives later execution failure, Stop or rejected settlement.
+The same effect fence used by other Task actions rejects a save while newer
+input is unreviewed; the next ordinary turn considers that input before saving.
+
+Final `requestUpdates` may omit `scope` to retain the stored ask. A new ask
+requires scope. Closure uses the current revision and commits with its reply;
+it cannot change an existing scope. Simple new asks may still be accepted and
+closed with one answer. No correct-and-close exception is needed. The App
+judges human intent and fulfillment; code checks the stable Conversation creator
+and revision. The bounded Request list prefers
+open asks, then includes recent closed asks so a human can naturally correct one.
+
+When final result settlement fails, the attempt retains `unacceptedResult`
+separately from accepted state, including its originating attempt/session and
+the returned facts. Each repair claim saves that evidence before execution, so
+ordinary failure, interruption and restart retain it. An accepted result retires
+it from future repair context; the original failed attempt remains in history.
+The Conversation adapter also reads the
+current Requests named by the rejected decision, including closed asks. The
+agent judges whether to repair its decision or perform more work; failed
+settlement never automatically replays the proposed effects or establishes
+fulfillment. This is evidence for review, not an exactly-once tool guarantee.
+
 A handoff links the responsible Task to the caller's Topic and, when declared,
 accepted Request. Linked answers, honest failure reports and owner closures
 return as durable input. Intermediate waits remain readable without executing
@@ -61,6 +89,15 @@ Console Esc and interface Stop buttons address an exact observed Turn. Task
 state records the stop before local execution is aborted, rejects late output,
 and preserves newer input and the accepted ask. Delegated Tasks continue.
 Closing the stable Task is a separate authorized owner action.
+
+For delegated requirement changes, the Conversation agent uses the common
+`tasks update` capability described in the [Task contract](../core/tasks/README.md#adopting-creator-revisions).
+It first saves any accepted human correction in the Request, then revises work
+it created through the responsible App's input contract. Saving the Request alone
+does not change a worker's assignment. Worker feedback uses the same loop; no
+correction-specific handler or mandatory human turn is required. Code enforces
+creator authority, while the agent judges whether the change is within the
+human's agreed scope. Existing direct human cancellation remains supported.
 
 Omitting this handler leaves its input visible and prevents execution through
 an old inbox owner; other Task handlers continue to work. The candidate refuses

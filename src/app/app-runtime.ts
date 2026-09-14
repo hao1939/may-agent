@@ -314,8 +314,7 @@ export async function runAppRuntime(opts: {
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     createTaskAdmissionWorker: () =>
       createTaskAdmissionProcess({ definitionSource: workerDefinitionSource() ?? undefined }),
-    wakeAdmittedTasks: ({ appId, taskIds, supersededSessionIds }) =>
-      appTasks.wake({ appId, taskIds, supersededSessionIds }),
+    wakeAdmittedTasks: appTasks.wake,
     hasTaskTarget: ({ appId, taskId }) => appTasks.has({ appId, taskId }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
     previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),
@@ -463,6 +462,7 @@ export async function runAppRuntime(opts: {
       if (!candidate) throw new Error("Runtime generation has no staged definition source");
       preparedSources.delete(agents);
       let taskApps = 0;
+      let activateTasks = () => {};
       let recoverTasks = () => {};
       const appIds = await appInboxRuntime!.reload(
         async ({ snapshot, commit }) => {
@@ -505,6 +505,7 @@ export async function runAppRuntime(opts: {
               finalize: () => identityMigration?.commit(),
             });
             taskApps = result.apps;
+            activateTasks = result.activate;
             recoverTasks = result.recover;
           } catch (error) {
             identityMigration?.rollback();
@@ -518,6 +519,9 @@ export async function runAppRuntime(opts: {
         },
         discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot, {}, candidate.appDirectories),
       );
+      // Registry publication and identity migration are authoritative before
+      // replacement controllers may claim work or start recovery workers.
+      activateTasks();
       scheduleTaskReloadRecovery(recoverTasks);
       refreshReporting();
       return { appIds, taskApps };

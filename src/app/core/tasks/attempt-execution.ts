@@ -233,6 +233,19 @@ function runtimeTaskAttempt(input: {
         const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
         return { eventId: events.publish(localKey, emitted as AppTaskEmission) };
       },
+      async reviseTask(change) {
+        if (closed) throw new Error("Task attempt is closed");
+        return (await import("./app-task-runtime.js")).reviseLoadedAppTask({
+          bus: opts.bus,
+          binding: {
+            appId: descriptor.id,
+            taskId: claim.taskId,
+            generation: claim.generation,
+            attemptId: claim.attemptId,
+          },
+          change,
+        });
+      },
       onEvent(listener) {
         if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
         // Each listener receives new input once; registering two listeners
@@ -281,35 +294,6 @@ function runtimeTaskAttempt(input: {
       for (const unsubscribe of [...subscriptions]) unsubscribe();
     },
   };
-}
-
-export function interruptSupersededObservationSessions(
-  opts: AppTaskRuntimeOptions,
-  observation: { taskId: string; generation: number; supersededSessionIds?: string[] },
-): void {
-  for (const sessionId of observation.supersededSessionIds ?? []) {
-    interruptSupersededAgentSession(
-      opts,
-      sessionId,
-      `Task ${observation.taskId} advanced to generation ${observation.generation}; the previous reconciliation session is obsolete`,
-      observation.taskId,
-    );
-  }
-}
-
-export function interruptSupersededActionSessions(
-  opts: AppTaskRuntimeOptions,
-  taskId: string,
-  sessionIds: string[],
-): void {
-  for (const sessionId of sessionIds) {
-    interruptSupersededAgentSession(
-      opts,
-      sessionId,
-      `Task ${taskId} applied a reconciliation action that superseded the session's task generation`,
-      taskId,
-    );
-  }
 }
 
 /**

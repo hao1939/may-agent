@@ -1,12 +1,23 @@
-import type { AppDefinition, AppTaskAttachment } from "@may-agent/sdk";
+import {
+  conversationTurnResultSchema,
+  type AppDefinition,
+  type AppTaskAttachment,
+  type ConversationTurnResult,
+} from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
-import { readConversationTaskInputs, type ConversationTaskProposal } from "../core/state/conversation-task-turns.js";
+import {
+  readConversationTaskInputs,
+  updateConversationTaskRequest,
+  type ConversationTaskProposal,
+} from "../core/state/conversation-task-turns.js";
 import { readInputContext, freezeInputContext, type AppDependencyReader } from "../core/inbox/input-context.js";
-import { prepareConversationInput } from "../conversations/context.js";
+import { boundedAppRequestConversation, prepareConversationInput } from "../conversations/context.js";
 import { readConversationTopic } from "../core/state/conversations.js";
 import type { AppInputResolver } from "../conversations/turn-agent.js";
+import { readConversationRequest } from "../core/state/conversation-requests.js";
+import { assertResourceCreator } from "../core/state/resource-creator.js";
 
 /** Prepare a judgment under the Task claim. The common runtime alone settles it. */
 export async function prepareConversationTaskTurn(input: {
@@ -31,12 +42,38 @@ export async function prepareConversationTaskTurn(input: {
   );
   inputContext.inputs = items.map(({ id, source, input }) => ({ id, source, input }));
   if (claim.previousAttempt) inputContext.previousAttempt = structuredClone(claim.previousAttempt);
+  // Bring the exact Requests involved in rejected settlement back into bounded
+  // context, including closed asks outside the ordinary context window.
+  const priorDecision = claim.previousAttempt?.unacceptedResult?.result?.conversation;
+  if (inputContext.conversation && Check(conversationTurnResultSchema, priorDecision)) {
+    const requests =
+      (priorDecision as ConversationTurnResult).requestUpdates?.flatMap(({ id }) => {
+        const request = readConversationRequest(config.resourceStore.db, app.id, item.conversationId!, id);
+        return request ? [request] : [];
+      }) ?? [];
+    inputContext.conversation = boundedAppRequestConversation(
+      {
+        ...inputContext.conversation,
+        requests: [
+          ...requests,
+          ...(inputContext.conversation.requests ?? []).filter(
+            (request) => !requests.some((prior) => prior.id === request.id),
+          ),
+        ],
+      },
+      item.id,
+    );
+  }
   const decision = await input.resolveConversationInput({
     app,
     inputContext: freezeInputContext(inputContext),
     execution: {
       signal,
       taskBinding: { appId: app.id, taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
+      updateRequest(change, operationId) {
+        signal.throwIfAborted();
+        return updateConversationTaskRequest(config, claim, change, operationId);
+      },
       sessionStarted(id) {
         if (!recordAppTaskAttemptSession(config, claim, id)) throw new Error("Conversation Task claim is stale");
       },
@@ -56,8 +93,8 @@ export async function prepareConversationTaskTurn(input: {
     );
   const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
   for (const control of decision.taskControls ?? []) {
-    if (item.source.kind !== "human" || !decision.response?.trim() || decision.followUp)
-      throw new Error("Task controls require an explained direct human Turn without a follow-up handoff");
+    if (!decision.response?.trim() || decision.followUp)
+      throw new Error("Task controls require an explanation without a follow-up handoff");
     if (!knownTask(control.appId, control.taskId))
       throw new Error("Task control target is absent from Conversation context");
     if (control.appId === app.id && control.taskId === claim.taskId)
@@ -71,6 +108,9 @@ export async function prepareConversationTaskTurn(input: {
     const target = input.getTaskApp?.(control.appId);
     const task = target?.config.resourceStore.readTask(control.taskId);
     if (!target || !task) throw new Error("Task control requires an installed Task App and exact Task");
+    if (item.source.kind !== "human") {
+      assertResourceCreator(task.metadata.creator, { appId: app.id, taskId: claim.taskId });
+    }
     taskControls.push({
       config: target.config,
       taskId: control.taskId,

@@ -40,7 +40,8 @@ import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "..
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
-import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
+import type { EventInput } from "@may-agent/control/events";
+import { eventDeliveryContract, findEventPublication, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -187,7 +188,7 @@ export async function sendDaemonFrameWithRetry(
   socketPath: string,
   frame: Record<string, unknown>,
   send: typeof sendDaemonEvent = sendDaemonEvent,
-  confirm?: (idempotencyKey: string) => number | undefined | Promise<number | undefined>,
+  confirm?: (idempotencyKey: string, frame: Record<string, unknown>) => number | undefined | Promise<number | undefined>,
 ): Promise<DaemonFrameResult> {
   const publishEvent =
     frame.type === "publish" && frame.event && typeof frame.event === "object" && !Array.isArray(frame.event)
@@ -228,7 +229,7 @@ export async function sendDaemonFrameWithRetry(
       const outcomeMayBeDurable = message === "Socket timeout" || message.includes("outcome unknown");
       if (timeoutMs === 2_000 && outcomeMayBeDurable) continue;
       if (outcomeMayBeDurable && confirm) {
-        const eventId = Number(await confirm(idempotencyKey));
+        const eventId = Number(await confirm(idempotencyKey, durableFrame));
         if (Number.isInteger(eventId) && eventId > 0) {
           return { ok: true, eventId };
         }
@@ -2647,37 +2648,26 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectContent = readFileSync(projectFile, "utf-8");
       const identity = parseProjectIdentity(path, projectContent);
       const projectId = projectEventTargetForPath(path, identity.projectId);
-      const { owner } = identity;
       const idempotencyKey = body.idempotencyKey?.trim() || `web-project-${randomUUID()}`;
+      const command = buildAppAdmissionCommand({ projectPath: path, projectId, comment, idempotencyKey });
       try {
-        const admitted = await sendAppInputWithRetry(
-          conventionSocketPath(),
-          buildAppAdmissionCommand({
-            projectPath: path,
-            projectId,
-            comment,
-            idempotencyKey,
-          }),
-          sendSocketCommand,
-          (key) => {
-            const row = _db()
-              .prepare(
-                `SELECT id, event_type as eventType
-                 FROM events
-                 WHERE event_type = 'app.input.requested'
-                   AND ingress_source = 'control-socket'
-                   AND owner = ?
-                   AND idempotency_key = ?
-                 ORDER BY id DESC
-                 LIMIT 1`,
-              )
-              .get(`app:${projectId}`, key) as { id?: unknown; eventType?: unknown } | undefined;
-            const eventId = Number(row?.id);
-            return Number.isInteger(eventId) && eventId > 0 && typeof row?.eventType === "string"
-              ? { eventId, eventType: row.eventType }
-              : undefined;
-          },
-        );
+        const admitted = await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) => {
+          const eventId = findEventPublication(
+            _db(),
+            {
+              type: "app.input.requested",
+              target: { appId: projectId },
+              idempotencyKey: key,
+              data: {
+                input: command.input,
+                conversationId: command.conversationId,
+                channel: command.channel,
+              },
+            },
+            { source: "control-socket", inputSource: { kind: "human", id: `web-ui:${key}` } },
+          );
+          return eventId ? { eventId, eventType: "app.input.requested" } : undefined;
+        });
         return json(
           {
             ok: true,
@@ -2690,44 +2680,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        const kind =
-          error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
-        const compatibilityRequired =
-          kind === "definitive" &&
-          (message.includes("is not loaded") ||
-            message.includes("does not accept this input") ||
-            message.includes("App input admission is unavailable"));
-        if (!compatibilityRequired) {
-          return json({ ok: false, triggered: false, error: message }, 503);
-        }
+        return json({ ok: false, triggered: false, error: message }, 503);
       }
-
-      const trigger = await sendDaemonFrame(
-        buildPublishFrame(
-          "project.comment.created",
-          {
-            projectPath: path,
-            project: projectId,
-            projectId,
-            comment,
-            author: "hao",
-            requestedOwner: owner,
-          },
-          { target: { appId: projectId }, idempotencyKey },
-        ),
-      );
-      if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
-
-      return json(
-        {
-          ok: true,
-          triggered: true,
-          eventType: "project.comment.created",
-          eventId: trigger.eventId,
-          projectId,
-        },
-        202,
-      );
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
@@ -3021,18 +2975,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function sendDaemonFrame(frame: Record<string, unknown>): Promise<DaemonFrameResult> {
     const socketPath = conventionSocketPath();
-    return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (idempotencyKey) => {
-      const row = _db()
-        .prepare(
-          `SELECT id
-           FROM events
-           WHERE idempotency_key = ?
-           ORDER BY id DESC
-           LIMIT 1`,
-        )
-        .get(idempotencyKey) as { id?: unknown } | undefined;
-      const eventId = Number(row?.id);
-      return Number.isInteger(eventId) && eventId > 0 ? eventId : undefined;
+    return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (_key, durableFrame) => {
+      if (durableFrame.type !== "publish") return undefined;
+      return findEventPublication(_db(), durableFrame.event as EventInput, { source: "control-socket" });
     });
   }
 

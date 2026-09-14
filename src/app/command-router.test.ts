@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
@@ -59,6 +59,21 @@ function cleanup(root: string, router: { close(): void }): void {
 }
 
 describe("command router", () => {
+  it("a status question cannot reactivate a paused legacy project or start work", async () => {
+    const f = fixture();
+    try {
+      const dir = join(f.root, "projects", "sample");
+      mkdirSync(dir, { recursive: true });
+      const original = "---\nstatus: paused\nowner: worker\n---\nSaved project\n";
+      writeFileSync(join(dir, "project.md"), original);
+      f.bus.emit({ type: "project.comment.created", source: "test", owner: "agent:worker",
+        data: { projectPath: "projects/sample", comment: "What is the status?" } } as never);
+      await new Promise<void>(resolve => setImmediate(resolve));
+      expect(readFileSync(join(dir, "project.md"), "utf8")).toBe(original);
+      expect(existsSync(join(dir, "discussion.md"))).toBe(false);
+      expect(f.runs).toEqual([]);
+    } finally { cleanup(f.root, f.router); }
+  });
   it("accepts reload synchronously, shares in-flight redelivery and emits one correlated terminal result", async () => {
     const result = Promise.withResolvers<{ ok: boolean; summary: string }>();
     const started = Promise.withResolvers<void>();

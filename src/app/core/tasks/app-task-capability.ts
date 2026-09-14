@@ -35,7 +35,7 @@ import {
 } from "./app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
-export type AppTaskGenerationResult = { apps: number; recover(): void };
+export type AppTaskGenerationResult = { apps: number; activate(): void; recover(): void };
 export type PreparedAppTaskGeneration = Readonly<{
   runtime: PreparedAppTaskRuntimeGeneration | null;
   quiesce(): Promise<void>;
@@ -76,7 +76,7 @@ export type AppTaskCapability = {
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string }): TaskDetail | null;
   has(input: { appId: string; taskId: string }): boolean;
-  wake(input: { appId: string; taskIds: string[]; supersededSessionIds?: string[] }): void;
+  wake(input: { appId: string; taskIds: string[] }): void;
   retry(input: {
     appId: string;
     taskId: string;
@@ -145,7 +145,7 @@ export function createAppTaskCapability(options: {
         try {
           publish();
           finalize?.();
-          return { apps: 0, recover() {} };
+          return { apps: 0, activate() {}, recover() {} };
         } catch (error) {
           rollback?.();
           throw error;
@@ -156,10 +156,10 @@ export function createAppTaskCapability(options: {
           ...prepared.runtime,
           opts: { ...prepared.runtime.opts, afterCommit: () => publish() },
         },
-        { deferRecovery: true },
+        { deferRecovery: true, deferActivation: true },
         { rollback, finalize },
       );
-      return { apps: result.installed.length, recover: result.recover };
+      return { apps: result.installed.length, activate: result.activate, recover: result.recover };
     },
     async readDependency({ appDir, dependency, admissionKey }) {
       const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
@@ -221,12 +221,11 @@ export function createAppTaskCapability(options: {
       }),
     get: ({ appId, taskId }) => getLoadedAppTaskView({ bus: options.bus, appId, taskId }),
     has: ({ appId, taskId }) => hasLoadedAppTask({ bus: options.bus, appId, taskId }),
-    wake: ({ appId, taskIds, supersededSessionIds }) =>
+    wake: ({ appId, taskIds }) =>
       wakeLoadedAppTasks({
         bus: options.bus,
         appId,
         taskIds,
-        ...(supersededSessionIds ? { supersededSessionIds } : {}),
       }),
     retry: ({ appId, taskId, expectedGeneration, expectedResourceVersion, controlKey }) =>
       retryLoadedFailedAppTask({

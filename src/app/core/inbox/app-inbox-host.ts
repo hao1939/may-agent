@@ -11,6 +11,7 @@ import {
   type AppResult,
   type AppTaskAttachment,
   type EventSelector,
+  type ResourceCreator,
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -32,6 +33,7 @@ import {
  */
 export type AppTaskAttacher = (input: {
   appId: string;
+  creator?: ResourceCreator;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
   inputContext: Readonly<AppInputContext>;
@@ -294,7 +296,13 @@ export class AppInboxHost {
   acceptsInput(appId: string, input: AppInput): boolean {
     const canonicalId = this.#canonicalId(appId);
     const app = canonicalId ? this.#apps.get(canonicalId) : undefined;
-    return Boolean(app && Check(app.inputSchema, input));
+    if (!app || !Check(app.inputSchema, input)) return false;
+    // A schema describes valid data; accepting work also requires a handler.
+    // A declared handler may fail temporarily: its durable input remains retryable.
+    return Boolean(
+      (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.kind))) ||
+      (app.tasks && app.task),
+    );
   }
 
   matchingAppIds(owner: string, input: AppInput): string[] {
@@ -445,6 +453,7 @@ export class AppInboxHost {
         throw new Error(`App ${app.id} task resolver returned no Task attachment`);
       this.#attachTask({
         appId: app.id,
+        creator: item.creator,
         attachment,
         inputContext,
         inboxInputId: item.id,

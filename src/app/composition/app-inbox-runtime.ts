@@ -67,10 +67,7 @@ export type AppInboxRuntime = {
 type TaskAdmissionWorker = {
   /** Start candidate initialization only after its registry generation commits. */
   activate(): void;
-  dispatch(
-    command: AppEventAdmissionCommand,
-    event: AgentEvent,
-  ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
+  dispatch(command: AppEventAdmissionCommand, event: AgentEvent): Promise<{ taskIds: string[] }>;
   close(): void;
 };
 
@@ -99,7 +96,7 @@ export type StartAppInboxRuntimeOptions = {
   }) => DeliveryResult | undefined;
   /** Persistent process boundary for canonical Task mutation after routing. */
   createTaskAdmissionWorker?: () => TaskAdmissionWorker;
-  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[]; supersededSessionIds: string[] }) => void;
+  wakeAdmittedTasks?: (input: { appId: string; taskIds: string[] }) => void;
   hasTaskTarget?: (input: { appId: string; taskId: string }) => boolean;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
   /** One event-type-first Condition lookup across all loaded Task Apps. */
@@ -470,7 +467,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         if (command.kind === "task" && taskAdmissionWorker) {
           const worker = taskAdmissionWorker;
-          let admitted: { taskIds: string[]; supersededSessionIds: string[] };
+          let admitted: { taskIds: string[] };
           try {
             admitted = await worker.dispatch(command, event);
           } catch (error) {
