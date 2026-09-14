@@ -10,8 +10,7 @@
  *      `_projectDetailPath` to `projects/platform`.
  *   5. Typing a comment + clicking the submit button POSTs to
  *      `/api/projects/comment`, the success banner appears.
- *   6. discussion.md is appended; project.md status flips from "waiting"
- *      to "active".
+ *   6. The receipt records the comment without changing project execution.
  *   7. The shipped chat renderer handles Markdown/raw streaming, knowledge
  *      links and escaped fallback without another browser/daemon startup.
  *
@@ -235,13 +234,13 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         { timeout: 10_000 },
       );
 
-      // 6. File state — discussion appended; status flipped to active.
+      // 6. Recording a comment does not authorize changes to project execution.
       const discAfter = readFileSync(DISC_FILE, "utf-8");
-      expect(discAfter).toContain(commentText);
+      expect(discAfter).toBe("# discussion\n\n");
 
-      // status flip is synchronous in the comment endpoint
+      // The owner reacts through normal App input, independently of this UI receipt.
       const projAfter = readFileSync(PROJECT_FILE, "utf-8");
-      expect(statusOf(projAfter)).toBe("active");
+      expect(statusOf(projAfter)).toBe("waiting");
 
       // Shipped chat.js, in the same real browser: no copied renderer or DOM.
       // The page is interactive before its async Markdown dependency arrives.

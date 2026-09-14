@@ -6,11 +6,34 @@ import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
-  createMetricMutationSubscriber,
 } from "../../src/app/daemon-events.js";
 import { closeDb, getDb, insertWorkflowRun } from "../../src/lib/requests.js";
+import { createEventInterface } from "../../src/app/core/events/interface.js";
 
 describe("daemon event subscribers", () => {
+  it("metric admission rolls back on storage failure; retry and replay retain the latest edit", () => {
+    const root = mkdtempSync(join(tmpdir(), "metric-admission-"));
+    try {
+      const db = getDb(root);
+      const bus = new EventBus();
+      attachEventPersistence({ bus, persistDir: root });
+      const events = createEventInterface({ bus, db, hasApp: () => false, hasAgent: () => false,
+        hasSession: () => false, acceptsAppInput: () => false });
+      db.exec("INSERT INTO metrics(id, threshold, updated_at) VALUES ('health', 10, 0)");
+      db.exec("CREATE TRIGGER refuse_metric BEFORE UPDATE ON metrics BEGIN SELECT RAISE(ABORT, 'write failed'); END");
+      const edit = (to: number) => events.publish({ type: "metric.threshold_changed", idempotencyKey: `edit-${to}`,
+        data: { metricId: "health", to } }, { source: "test" });
+      expect(() => edit(20)).toThrow("write failed");
+      expect(db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'metric.threshold_changed'").get()).toEqual({ n: 0 });
+      expect(db.prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 10 });
+      db.exec("DROP TRIGGER refuse_metric");
+      const first = edit(20);
+      edit(30);
+      expect(edit(20).eventId).toBe(first.eventId);
+      closeDb(root);
+      expect(getDb(root).prepare("SELECT threshold FROM metrics WHERE id = 'health'").get()).toEqual({ threshold: 30 });
+    } finally { closeDb(root); rmSync(root, { recursive: true, force: true }); }
+  });
   for (const kind of ["call", "job"] as const) {
     it(`keeps errors and interruption as evidence for a ${kind}, without automatic intervention`, async () => {
       const persistDir = mkdtempSync(join(tmpdir(), "daemon-stuck-ownership-"));
@@ -47,15 +70,17 @@ describe("daemon event subscribers", () => {
       const db = getDb(persistDir);
       db.run("INSERT INTO metrics (id, threshold, updated_at) VALUES (?, ?, ?)", ["metric.test", 1, 0]);
       db.run("INSERT INTO metric_alerts (id, metric_id, created_at) VALUES (?, ?, ?)", [7, "metric.test", 1]);
-      bus.subscribe(createMetricMutationSubscriber(persistDir));
+      attachEventPersistence({ bus, persistDir });
       bus.emit({
         type: "metric.threshold_changed",
+        source: "test",
         owner: "agent:may",
         timestamp: 123,
         data: { metricId: "metric.test", from: 1, to: 3 },
       });
       bus.emit({
         type: "metric.alert_resolved",
+        source: "test",
         owner: "agent:may",
         timestamp: 456,
         data: { metricId: "metric.test", alertId: 7 },

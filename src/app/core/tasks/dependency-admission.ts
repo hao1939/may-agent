@@ -50,7 +50,11 @@ export function admitTaskAppDependencies(input: {
   });
   const matchedExisting = new Set<string>();
   const matches = new Map<string, (typeof existing)[number]>();
-  const requestLineagePrefix = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:`;
+  const requestLineagePrefix = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:`;
+  const belongsToCaller = (item: NonNullable<ReturnType<typeof getAppInboxItem>>) =>
+    item.creator
+      ? isDeepStrictEqual(item.creator, { appId: input.descriptor.id, taskId: input.claim.taskId })
+      : Boolean(item.idempotencyKey?.startsWith(`${requestLineagePrefix}${input.claim.generation}:`));
   const detachedOpenByApp = new Map<string, ReturnType<typeof listOpenAppInboxItemsByIdempotencyPrefix>>();
   const detachedOpenFor = (appId: string) => {
     const cached = detachedOpenByApp.get(appId);
@@ -62,8 +66,9 @@ export function admitTaskAppDependencies(input: {
           prefix: requestLineagePrefix,
         })
       : [];
-    detachedOpenByApp.set(appId, items);
-    return items;
+    const owned = items.filter(belongsToCaller);
+    detachedOpenByApp.set(appId, owned);
+    return owned;
   };
   const detachedMatch = (item: ReturnType<typeof detachedOpenFor>[number]) => ({
     requestId: item.id,
@@ -101,6 +106,7 @@ export function admitTaskAppDependencies(input: {
       detachedItem.source.kind === "app" &&
       detachedItem.source.id === input.descriptor.id &&
       detachedItem.idempotencyKey?.startsWith(requestLineagePrefix)
+      && belongsToCaller(detachedItem)
         ? [detachedMatch(detachedItem)]
         : [];
     const detachedByMeaning =

@@ -41,6 +41,12 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it("rejects an App address on direct chat even when it is not the Conversation App", () => {
+    const { events, db } = fixture();
+    expect(() => events.publish({ type: "chat.start.requested", target: { appId: "sample" },
+      data: { message: "Please work" } }, { source: "test" })).toThrow("app.input.requested");
+    expect(db.prepare("SELECT count(*) AS n FROM events").get()).toEqual({ n: 0 });
+  });
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {
@@ -50,7 +56,7 @@ describe("simple event interface", () => {
             { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
             { source: "fixture" },
           ),
-        ).toThrow("sample input must use app.input.requested");
+        ).toThrow("input must use app.input.requested");
       }
     }
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });

@@ -2934,7 +2934,7 @@ describe("canonical App task runtime", () => {
     ).toEqual(first);
   });
 
-  it("reattaches an exact live request from the same Task generation after recovery", () => {
+  it.each([false, true])("reattaches an exact live request after recovery (requirements revised: %s)", (revised) => {
     const f = fixture();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
@@ -2963,6 +2963,7 @@ describe("canonical App task runtime", () => {
     createAppInboxItem(db, {
       id: requestId,
       appId: "evaluation",
+      creator: { appId: "sample", taskId: claim.taskId },
       source: { kind: "app", id: "sample" },
       input: requestInput,
       idempotencyKey: `task-dependency:sample:${claim.taskId}:${claim.generation}:review:existing`,
@@ -2971,6 +2972,14 @@ describe("canonical App task runtime", () => {
     const requestClaim = claimAppInboxItem(db, requestId, "test", 1_000, 2);
     if (!requestClaim) throw new Error("expected request claim");
     expect(waitAppInboxClaim(db, requestClaim, { kind: "task", id: "review/resolved" }, { now: 3 })).toBe(true);
+    let activeClaim = claim;
+    if (revised) {
+      observeAppTaskIntent(config, { appAgent: "sample-owner", intent: { ...claim.intent, outcome: "Review the revised scope" } });
+      releaseStaleAppTaskResult(config, claim);
+      const next = claimObservedAppTask(config, { taskId: claim.taskId, appAgent: "sample-owner", handler: "agent:sample-owner" });
+      if (next.kind !== "claimed") throw new Error("Expected revised claim");
+      activeClaim = next;
+    }
     const emittedBeforeReuse = emitted.length;
 
     expect(
@@ -2984,7 +2993,7 @@ describe("canonical App task runtime", () => {
           app: definition(),
           reconciliationPaused: false,
         },
-        claim,
+        claim: activeClaim,
         existingConditions: [],
         dependencies: [
           {
@@ -4505,7 +4514,7 @@ describe("canonical App task runtime", () => {
       taskId: "work/post-claim-superseded",
       generation: 1,
       disposition: "stale",
-      staleRecovery: "superseded",
+      staleRecovery: "released",
     });
     expect(readAcceptedRuntimeAttempt(config, "work/post-claim-superseded")).toMatchObject({
       taskGeneration: 2,
@@ -5989,6 +5998,7 @@ describe("canonical App task runtime", () => {
     await run();
     expect(config.resourceStore.readTask(taskId)?.status.executionFailures).toBe(2);
     observe("invalid");
+    setSystemTime(config.resourceStore.readTask(taskId)!.status.executionRetryAt! + 1);
     await run();
     const invalid = config.resourceStore.readTask(taskId)!;
     expect(invalid.status.phase).toBe("pending");

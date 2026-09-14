@@ -146,12 +146,13 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "chat.start.requested": {
     delivery: "required",
     validate: (input, options) => {
-      const agent = optionalText(input.data.agent) ?? optionalText(input.target?.appId);
+      if (input.target?.appId) throw new Error("App input must use app.input.requested");
+      const agent = optionalText(input.data.agent);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
       const appId = agent.replace(/\.app$/, "");
       if (appId === options.conversationAppId?.trim().replace(/\.app$/, ""))
         throw new Error(`${appId} input must use app.input.requested`);
-      if (!options.hasAgent(agent) && !options.hasApp(agent)) throw new Error(`Agent or App ${agent} is not loaded`);
+      if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },
   },
@@ -384,11 +385,6 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
   switch (input.type) {
     case "app.input.requested": {
       data.source = context.inputSource ?? { kind: "system", id: source };
-      break;
-    }
-    case "chat.start.requested": {
-      const agent = optionalText(data.agent) ?? appId!;
-      data.agent = agent;
       break;
     }
   }

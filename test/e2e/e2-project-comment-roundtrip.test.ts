@@ -1,26 +1,4 @@
-/**
- * E2 — Project comment roundtrip (intake portion)
- *
- * Lifted from scripts/e2e-platform-comment.mjs. The original drove a real
- * browser; this version drives the same daemon command path the HTTP endpoint
- * uses (socket emit of project.comment.created), without the UI dependency.
- * The UI is exercised separately by e8-project-comment-ui.test.ts.
- *
- * Validates documented behavior of:
- *   - user-guide.md § Events in Practice (comment flow)
- *   - command-router project.comment.created handling
- *
- * Asserts:
- *   1. comment is appended to discussion.md (created if missing)
- *   2. project.md status flips synchronously from waiting → active
- *   3. project.comment.created event lands in events table
- *   4. project.nudge event is emitted as a side effect
- *
- * Task reconciliation is covered by the controller, queue, Condition, and
- * app-loader integration suites rather than this legacy project.md harness.
- *
- * Runs by default; does not require LLM access.
- */
+/** A legacy project comment is recorded evidence; only an owning App may change work state. */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -44,7 +22,6 @@ describe("E2: project comment roundtrip", () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
       fixtureProjects: ["e2e-comment-sandbox"],
-      // No cron jobs needed; the comment flow runs synchronously in command-router.
       cronJson: { may: [] },
     });
     await sb.daemonReady;
@@ -55,7 +32,7 @@ describe("E2: project comment roundtrip", () => {
   });
 
   test(
-    "comment lands, status flips, events recorded",
+    "comment is recorded without changing project state or selecting a worker",
     async () => {
       const projectFile = join(sb.projectsRoot, projectId, "project.md");
       const discFile = join(sb.projectsRoot, projectId, "discussion.md");
@@ -80,20 +57,8 @@ describe("E2: project comment roundtrip", () => {
       })) as { type?: string };
       expect(resp.type).toBe("ok");
 
-      // ── Filesystem assertions (synchronous in command-router) ─────────
-      // Small wait for the event to be applied; should be near-instant.
-      await pollUntil(
-        () => existsSync(discFile) && /status:\s*active/.test(readFileSync(projectFile, "utf-8")),
-        { timeoutMs: 5_000, intervalMs: 100, description: "discussion.md + status flip" },
-      );
-
-      const discAfter = readFileSync(discFile, "utf-8");
-      expect(discAfter).toContain(commentText);
-      expect(discAfter).toContain("### e2e -"); // author + date heading
-
-      const projAfter = readFileSync(projectFile, "utf-8");
-      expect(projAfter).toMatch(/status:\s*active/);
-      expect(projAfter).not.toMatch(/status:\s*waiting/);
+      expect(existsSync(discFile)).toBe(false);
+      expect(readFileSync(projectFile, "utf-8")).toBe(beforeBody);
 
       // ── DB assertions ────────────────────────────────────────────────
       const db = openSandboxDb(sb.dbPath);
@@ -110,14 +75,14 @@ describe("E2: project comment roundtrip", () => {
               since: t0,
               limit: 5,
             });
-            if (created.length >= 1 && nudges.length >= 1) return { created, nudges };
+            if (created.length >= 1) return { created, nudges };
             return null;
           },
-          { timeoutMs: 5_000, intervalMs: 200, description: "comment.created + nudge events" },
+          { timeoutMs: 5_000, intervalMs: 200, description: "comment.created event" },
         );
 
         expect(result.created.length).toBeGreaterThanOrEqual(1);
-        expect(result.nudges.length).toBeGreaterThanOrEqual(1);
+        expect(result.nudges).toEqual([]);
 
         const createdRow = result.created[0];
         expect(createdRow.source).toBe("control-socket");
@@ -128,14 +93,6 @@ describe("E2: project comment roundtrip", () => {
           author: "e2e",
         });
 
-        const nudgeRow = result.nudges[0];
-        expect(nudgeRow.source).toBe("control-socket");
-        expect(nudgeRow.owner).toBe("agent:may");
-        expect(eventPayload(nudgeRow)).toEqual({
-          projectPath: `projects/${projectId}`,
-          comment: true,
-          commentText,
-        });
       } finally {
         db.close();
       }

@@ -988,10 +988,6 @@ export function reviseLoadedAppTask(input: {
     app,
     actor: input.binding,
     change: input.change,
-    interrupt: (ids) => {
-      for (const id of ids)
-        interruptSupersededAgentSession(opts, id, "Creator revised the assignment", input.change.taskId);
-    },
   });
   if (revised.kind === "observed" && revised.changed)
     input.bus.emit({
