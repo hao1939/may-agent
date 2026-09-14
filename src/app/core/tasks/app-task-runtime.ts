@@ -57,9 +57,11 @@ import type { TaskSessionRecovery } from "./execution.js";
 import type { AppTaskQueueOptions } from "./queue.js";
 import {
   appTaskConfig,
+  bindAppTaskRuntimeDescriptors,
   configuredAppAgent,
-  prepareAppTaskRuntimeDescriptors,
+  prepareAppTaskRuntimeDefinitions,
   syncProjectReadModel,
+  type AppTaskRuntimeDefinition,
   type AppTaskRuntimeDescriptor,
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -196,6 +198,8 @@ function loadedAppTaskRuntimeDescriptor(bus: EventBus, projectId: string): AppTa
 
 const appTaskControllersByBus = new WeakMap<EventBus, Map<string, AppTaskController>>();
 const appTaskRecoverySchedulersByBus = new WeakMap<EventBus, Map<string, AppTaskRecoveryScheduler>>();
+type AppTaskRecoveryFence = { pauseDepth: number; runs: Set<Promise<void>> };
+const appTaskRecoveryFencesByBus = new WeakMap<EventBus, AppTaskRecoveryFence>();
 type AppTaskControllerBinding = {
   descriptor: AppTaskRuntimeDescriptor;
   opts: AppTaskRuntimeOptions;
@@ -203,6 +207,14 @@ type AppTaskControllerBinding = {
 };
 const appTaskControllerBindingsByBus = new WeakMap<EventBus, Map<string, AppTaskControllerBinding>>();
 const APP_TASK_RECOVERY_SAFETY_INTERVAL_MS = 60_000;
+
+function appTaskRecoveryFence(bus: EventBus): AppTaskRecoveryFence {
+  const existing = appTaskRecoveryFencesByBus.get(bus);
+  if (existing) return existing;
+  const created = { pauseDepth: 0, runs: new Set<Promise<void>>() };
+  appTaskRecoveryFencesByBus.set(bus, created);
+  return created;
+}
 
 function appTaskDelivery(descriptor: AppTaskRuntimeDescriptor, taskId: string, note: string): DeliveryResult {
   return {
@@ -545,6 +557,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
 function installConventionTaskControllers(
   opts: AppTaskRuntimeOptions,
   descriptors: AppTaskRuntimeDescriptor[],
+  identityRenames: ReadonlyMap<string, string> = new Map(),
 ): Map<string, AppTaskController> {
   if (opts.installControllers === false) {
     const previous = appTaskControllersByBus.get(opts.bus);
@@ -563,6 +576,17 @@ function installConventionTaskControllers(
   const installedIds = new Set(descriptors.map((descriptor) => descriptor.id));
   for (const previous of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
     if (installedIds.has(previous.id)) continue;
+    const renamedId = identityRenames.get(previous.id);
+    if (renamedId && !AppTaskResourceStore.activeFromDb(previous.resourceStore.db, previous.id)) {
+      const renamed = descriptors.find((descriptor) => descriptor.id === renamedId);
+      if (renamed?.resourceStore.db === previous.resourceStore.db) continue;
+      if (AppTaskResourceStore.activeFromDb(previous.resourceStore.db, renamedId)?.hasUnfinishedTasks()) {
+        throw new Error(
+          `Cannot remove Task capability while renamed App ${previous.id} -> ${renamedId} has unfinished Tasks`,
+        );
+      }
+      continue;
+    }
     if (previous.resourceStore.hasUnfinishedTasks()) {
       throw new Error(`Cannot remove App ${previous.id} while it has unfinished Tasks`);
     }
@@ -1087,9 +1111,21 @@ export async function recoverInstalledAppTasks(
   const opts = appRouterOptionsByBus.get(bus);
   if (!opts) return;
   if (opts.executeRecovery) {
-    await opts.executeRecovery();
-    if (!isDefinitionCurrent()) return;
-    for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
+    const fence = appTaskRecoveryFence(bus);
+    if (fence.pauseDepth > 0) return;
+    // Register before yielding or starting a subprocess so identity-rename
+    // quiescence cannot miss a worker that still holds legacy authority.
+    const run = Promise.resolve().then(async () => {
+      await opts.executeRecovery!();
+      if (!isDefinitionCurrent()) return;
+      for (const scheduler of appTaskRecoverySchedulersByBus.get(bus)?.values() ?? []) scheduler.recover();
+    });
+    fence.runs.add(run);
+    try {
+      await run;
+    } finally {
+      fence.runs.delete(run);
+    }
     return;
   }
   const descriptors = appRouterDescriptorsByBus.get(bus) ?? [];
@@ -1218,18 +1254,16 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
   );
 }
 
-async function commitAppTaskRuntimeDescriptors(
+function commitAppTaskRuntimeDescriptors(
   opts: AppTaskRuntimeOptions,
   prepared: AppTaskRuntimeDescriptor[],
-  recovery: { includeFreshLeases: boolean; deferred: boolean },
-): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
+  unavailableAgentAppIds: ReadonlySet<string>,
+  identityRenames: ReadonlyMap<string, string>,
+): { installed: AppTaskRuntimeDescriptor[]; controllers: Map<string, AppTaskController> } {
   const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
     const { id } = descriptor;
-    if (
-      opts.agents &&
-      !(await opts.agents.prepare({ source: opts, appDir: descriptor.appDir, agent: descriptor.agent }))
-    ) {
+    if (unavailableAgentAppIds.has(id)) {
       opts.bus.emit({
         type: "info",
         message: `[app-task] App ${id} agent "${descriptor.agent}" is unavailable; retained Tasks remain visible`,
@@ -1239,7 +1273,7 @@ async function commitAppTaskRuntimeDescriptors(
     installed.push(descriptor);
   }
 
-  const controllers = installConventionTaskControllers(opts, installed);
+  const controllers = installConventionTaskControllers(opts, installed, identityRenames);
 
   if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
@@ -1253,23 +1287,98 @@ async function commitAppTaskRuntimeDescriptors(
     const binding = appTaskControllerBindingsByBus.get(opts.bus)?.get(descriptor.id);
     if (binding) binding.opts = execution;
   }
-  if (!recovery.deferred) {
-    recoverInterruptedAppTasks(opts, installed, controllers, recovery.includeFreshLeases);
-  }
-
-  return { installed };
+  return { installed, controllers };
 }
 
-export async function installAppTaskRuntimes(
+export type PreparedAppTaskRuntimeGeneration = Readonly<{
+  opts: AppTaskRuntimeOptions;
+  definitions: readonly AppTaskRuntimeDefinition[];
+  unavailableAgentAppIds: ReadonlySet<string>;
+  identityRenames: ReadonlyMap<string, string>;
+  quiesceIdentityRenames(): Promise<void>;
+  commitIdentityRenames(): void;
+  resumePreviousControllers(): void;
+}>;
+
+/** Finish all yielding definition/agent work before the synchronous publication turn. */
+export async function prepareAppTaskRuntimeGeneration(
   opts: AppTaskRuntimeOptions,
+): Promise<PreparedAppTaskRuntimeGeneration> {
+  const definitions = prepareAppTaskRuntimeDefinitions(opts);
+  const identityRenames = new Map<string, string>();
+  for (const { definition } of opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? []) {
+    for (const previousId of definition.previousIds ?? []) identityRenames.set(previousId, definition.id);
+  }
+  const unavailableAgentAppIds = new Set<string>();
+  for (const definition of definitions) {
+    if (
+      opts.agents &&
+      !(await opts.agents.prepare({ source: opts, appDir: definition.appDir, agent: definition.agent }))
+    ) {
+      unavailableAgentAppIds.add(definition.id);
+    }
+  }
+  const quiescedControllers: AppTaskController[] = [];
+  let releaseRecoveryFence: (() => void) | undefined;
+  let quiescence: Promise<void> | undefined;
+  const quiesceIdentityRenames = (): Promise<void> => {
+    if (quiescence) return quiescence;
+    const recoveryFence = appTaskRecoveryFence(opts.bus);
+    if (identityRenames.size > 0) {
+      recoveryFence.pauseDepth += 1;
+      let released = false;
+      releaseRecoveryFence = () => {
+        if (released) return;
+        released = true;
+        recoveryFence.pauseDepth -= 1;
+      };
+    }
+    const controllers = appTaskControllersByBus.get(opts.bus);
+    for (const previousId of identityRenames.keys()) {
+      const controller = controllers?.get(previousId);
+      if (!controller || quiescedControllers.includes(controller)) continue;
+      controller.setEnabled(false);
+      quiescedControllers.push(controller);
+    }
+    quiescence = Promise.all([
+      ...quiescedControllers.map((controller) => controller.whenIdle()),
+      ...(releaseRecoveryFence ? [Promise.allSettled([...recoveryFence.runs]).then(() => undefined)] : []),
+    ]).then(() => undefined);
+    return quiescence;
+  };
+  let resumed = false;
+  return Object.freeze({
+    opts,
+    definitions,
+    unavailableAgentAppIds,
+    identityRenames,
+    quiesceIdentityRenames,
+    commitIdentityRenames() {
+      releaseRecoveryFence?.();
+    },
+    resumePreviousControllers() {
+      releaseRecoveryFence?.();
+      if (resumed) return;
+      resumed = true;
+      for (const controller of quiescedControllers) controller.setEnabled(true);
+    },
+  });
+}
+
+/** Bind state and publish one prepared generation without yielding. */
+export function publishPreparedAppTaskRuntimeGeneration(
+  generation: PreparedAppTaskRuntimeGeneration,
   recovery: { includeFreshLeases?: boolean; deferRecovery?: boolean } = {},
-): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
-  const prepared = await prepareAppTaskRuntimeDescriptors(opts);
+  publication: { rollback?: () => void; finalize?: () => void } = {},
+): { installed: AppTaskRuntimeDescriptor[]; recover(): void } {
+  const { opts } = generation;
+  const prepared = bindAppTaskRuntimeDescriptors(opts, generation.definitions);
   const previous = [...(appRouterDescriptorsByBus.get(opts.bus) ?? [])];
   const previousOptions = appRouterOptionsByBus.get(opts.bus);
   let published = false;
+  let committed: { installed: AppTaskRuntimeDescriptor[]; controllers: Map<string, AppTaskController> };
   try {
-    return await commitAppTaskRuntimeDescriptors(
+    committed = commitAppTaskRuntimeDescriptors(
       {
         ...opts,
         afterCommit: (result) => {
@@ -1278,22 +1387,33 @@ export async function installAppTaskRuntimes(
         },
       },
       prepared,
-      {
-        includeFreshLeases: recovery.includeFreshLeases === true,
-        deferred: recovery.deferRecovery === true,
-      },
+      generation.unavailableAgentAppIds,
+      generation.identityRenames,
     );
+    publication.finalize?.();
+    generation.commitIdentityRenames();
   } catch (error) {
-    // Once publication succeeded, recovery errors must not roll the visible
-    // generation backward. Normal indexed recovery will retry the work.
-    if (published) throw error;
+    // Only publication and SQL finalization are rollback-capable. Recovery runs
+    // outside this block, after the accepted generation is authoritative.
+    if (published && !publication.rollback) {
+      generation.commitIdentityRenames();
+      throw error;
+    }
+    try {
+      publication.rollback?.();
+    } catch {
+      // Preserve the publication error; restoration below reports its own failure.
+    }
     try {
       // Restore the accepted adapters and source roots with their descriptors.
-      // A rejected candidate cannot supply the options for the old generation.
-      await commitAppTaskRuntimeDescriptors({ ...(previousOptions ?? opts), afterCommit: undefined }, previous, {
-        includeFreshLeases: false,
-        deferred: false,
-      });
+      // Their agents were prepared when that generation was accepted.
+      commitAppTaskRuntimeDescriptors(
+        { ...(previousOptions ?? opts), afterCommit: undefined },
+        previous,
+        new Set(),
+        new Map(),
+      );
+      generation.resumePreviousControllers();
       // No accepted runtime existed: leave the process-scoped listener inert
       // and prevent later recovery from using the rejected candidate's options.
       if (!previousOptions) appRouterOptionsByBus.delete(opts.bus);
@@ -1305,6 +1425,27 @@ export async function installAppTaskRuntimes(
     }
     throw error;
   }
+  let recovered = false;
+  const recover = () => {
+    if (recovered) return;
+    recoverInterruptedAppTasks(
+      opts,
+      committed.installed,
+      committed.controllers,
+      recovery.includeFreshLeases === true,
+    );
+    recovered = true;
+  };
+  if (!recovery.deferRecovery) recover();
+  return { installed: committed.installed, recover };
+}
+
+export async function installAppTaskRuntimes(
+  opts: AppTaskRuntimeOptions,
+  recovery: { includeFreshLeases?: boolean; deferRecovery?: boolean } = {},
+): Promise<{ installed: AppTaskRuntimeDescriptor[] }> {
+  const result = publishPreparedAppTaskRuntimeGeneration(await prepareAppTaskRuntimeGeneration(opts), recovery);
+  return { installed: result.installed };
 }
 /** Wire optional timing publication around the one claimed attempt path. */
 function reconcileTask(input: Omit<Parameters<typeof runTaskAttempt>[0], "reportTiming">): Promise<string[]> {

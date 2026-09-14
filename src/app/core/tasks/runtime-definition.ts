@@ -25,6 +25,8 @@ export interface AppTaskRuntimeDescriptor {
   resourceStore: AppTaskResourceStore;
 }
 
+export type AppTaskRuntimeDefinition = Omit<AppTaskRuntimeDescriptor, "reconciliationPaused" | "resourceStore">;
+
 type ProjectReadModel = {
   id: string;
   path: string;
@@ -99,12 +101,16 @@ export function syncProjectReadModel(
   );
 }
 
-function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
-  const { app, id } = descriptor;
+function validateAppTaskRuntimeDefinition(definition: AppTaskRuntimeDefinition): void {
+  const { app, id } = definition;
   const concurrency = app.tasks?.maxConcurrent ?? 1;
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
   }
+}
+
+function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
+  validateAppTaskRuntimeDefinition(descriptor);
   descriptor.resourceStore.assertCompletionReceiptsImported();
 }
 
@@ -154,14 +160,13 @@ function discoverAppTaskResourceStore(
   return bootstrapped;
 }
 
-export async function prepareAppTaskRuntimeDescriptors(opts: {
+export function prepareAppTaskRuntimeDefinitions(opts: {
   projectsRoot: string;
-  persistDir?: string;
   taskAppIds?: readonly string[];
   appRegistry?: AppRegistry;
   appRegistrySnapshot?: AppRegistrySnapshot;
-}): Promise<AppTaskRuntimeDescriptor[]> {
-  const descriptors: AppTaskRuntimeDescriptor[] = [];
+}): AppTaskRuntimeDefinition[] {
+  const definitions: AppTaskRuntimeDefinition[] = [];
   const ids = new Set<string>();
   const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;
   const entries = opts.appRegistrySnapshot?.entries ?? opts.appRegistry?.snapshot().entries ?? [];
@@ -171,22 +176,48 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
     if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
-    const resourceStore = discoverAppTaskResourceStore(opts.persistDir, app, appDir);
-    const descriptor: AppTaskRuntimeDescriptor = {
+    const definition: AppTaskRuntimeDefinition = {
       id,
       appDir,
       projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
       agent: configuredAppAgent(app, appDir),
       app,
+    };
+    validateAppTaskRuntimeDefinition(definition);
+    definitions.push(definition);
+  }
+  return definitions;
+}
+
+/** Bind a prepared definition plan to canonical state during synchronous publication. */
+export function bindAppTaskRuntimeDescriptors(
+  opts: Pick<AppTaskRuntimeOptions, "persistDir">,
+  definitions: readonly AppTaskRuntimeDefinition[],
+): AppTaskRuntimeDescriptor[] {
+  const descriptors: AppTaskRuntimeDescriptor[] = [];
+  for (const definition of definitions) {
+    const resourceStore = discoverAppTaskResourceStore(opts.persistDir, definition.app, definition.appDir);
+    const descriptor: AppTaskRuntimeDescriptor = {
+      ...definition,
       reconciliationPaused: false,
       resourceStore,
     };
     descriptor.reconciliationPaused = resourceStore.projectLifecycle() === "paused";
     validatePreparedAppTaskRuntime(descriptor);
-    resourceStore.setConfiguredMaxConcurrent(app.tasks?.maxConcurrent ?? 1);
+    resourceStore.setConfiguredMaxConcurrent(definition.app.tasks?.maxConcurrent ?? 1);
     descriptors.push(descriptor);
   }
   return descriptors;
+}
+
+export async function prepareAppTaskRuntimeDescriptors(opts: {
+  projectsRoot: string;
+  persistDir?: string;
+  taskAppIds?: readonly string[];
+  appRegistry?: AppRegistry;
+  appRegistrySnapshot?: AppRegistrySnapshot;
+}): Promise<AppTaskRuntimeDescriptor[]> {
+  return bindAppTaskRuntimeDescriptors(opts, prepareAppTaskRuntimeDefinitions(opts));
 }
 
 export function standaloneAppTaskAdmissionDescriptors(input: {

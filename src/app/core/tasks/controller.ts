@@ -65,6 +65,7 @@ export class AppTaskController {
   private waitingCapacityLane?: AppTaskLane;
   private waitingCapacityForeground?: boolean;
   private cancelCapacityWait?: () => void;
+  private readonly idleWaiters = new Set<() => void>();
   private readonly drainWaiters = new Set<() => void>();
   private scheduling = { backgroundPaused: false, foregroundTaskIds: new Set<string>() as ReadonlySet<string> };
 
@@ -126,6 +127,7 @@ export class AppTaskController {
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
       this.waitingCapacityForeground = undefined;
+      this.resolveIdleWaiters();
       return;
     }
     this.schedulePump();
@@ -149,6 +151,12 @@ export class AppTaskController {
   whenDrained(): Promise<void> {
     if (this.isDrained()) return Promise.resolve();
     return new Promise((resolve) => this.drainWaiters.add(resolve));
+  }
+
+  /** Resolves when work already executing has finished; queued work is retained. */
+  whenIdle(): Promise<void> {
+    if (this.queue.snapshot().running.length === 0) return Promise.resolve();
+    return new Promise((resolve) => this.idleWaiters.add(resolve));
   }
 
   snapshot(): ReturnType<AppTaskQueue["snapshot"]> {
@@ -248,6 +256,7 @@ export class AppTaskController {
       .finally(() => {
         this.queue.complete(taskId);
         capacityRelease?.();
+        this.resolveIdleWaiters();
         this.resolveDrainWaiters();
         this.schedulePump();
       });
@@ -302,5 +311,11 @@ export class AppTaskController {
     if (!this.isDrained()) return;
     for (const resolve of this.drainWaiters) resolve();
     this.drainWaiters.clear();
+  }
+
+  private resolveIdleWaiters(): void {
+    if (this.queue.snapshot().running.length > 0) return;
+    for (const resolve of this.idleWaiters) resolve();
+    this.idleWaiters.clear();
   }
 }

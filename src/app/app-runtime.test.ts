@@ -17,6 +17,7 @@ describe("app runtime startup", () => {
     "overlapping-reloads",
     "overlapping-preparation",
     "worker-publication",
+    "identity-reload",
   ])(
     "observes startup and explicit reload through real runtime (%s)",
     async (mode) => {

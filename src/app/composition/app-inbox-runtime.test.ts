@@ -1052,6 +1052,7 @@ describe("App inbox runtime", () => {
         return { accepted: true, by: "unexpected-local-task", route: "direct" };
       },
       createTaskAdmissionWorker: () => ({
+        activate() {},
         async dispatch(command) {
           workerAdmissions.push(command.routeId);
           return { taskIds: [command.routeId], supersededSessionIds: [] };
@@ -1093,6 +1094,7 @@ describe("App inbox runtime", () => {
       previewTaskEventRoutes: ({ event }) =>
         event.type === "sample.changed" ? [{ appId: "evaluation", taskIds: ["child"] }] : [],
       createTaskAdmissionWorker: () => ({
+        activate() {},
         dispatch: () => {
           workerCalls += 1;
           return new Promise((resolve) => {
@@ -1115,6 +1117,229 @@ describe("App inbox runtime", () => {
     expect(getAppEventAdmissionPlan(db, 2)?.status).toBe("completed");
     release();
     await waitUntil(() => getAppEventAdmissionPlan(db, 1)?.status === "completed");
+  });
+
+  it("drains Task admission before reload publication and replaces the worker after commit", async () => {
+    const appPath = join(root, "evaluation.app", "app.js");
+    writeFileSync(
+      appPath,
+      readFileSync(appPath, "utf8").replace(
+        "tasks: {},",
+        `tasks: {
+          subscriptions: ["worker.changed"],
+          resolve(event) {
+            return {
+              id: "worker/" + event.data.value,
+              parentId: "evaluation",
+              outcome: "Handle " + event.data.value,
+              acceptance: ["Handled"],
+            };
+          }
+        },`,
+      ),
+    );
+    const bus = persistentBus();
+    const releaseFirst = Promise.withResolvers<void>();
+    const dispatches: Array<{ worker: number; routeId: string }> = [];
+    const closedWorkers: number[] = [];
+    const activatedWorkers: number[] = [];
+    let workerGeneration = 0;
+    let publicationEntered = false;
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      admitTaskEvent: () => ({ accepted: true, by: "test-task", route: "direct" }),
+      previewTaskEventRoutes: () => [],
+      createTaskAdmissionWorker: () => {
+        const worker = ++workerGeneration;
+        return {
+          activate() {
+            activatedWorkers.push(worker);
+          },
+          async dispatch(command) {
+            dispatches.push({ worker, routeId: command.routeId });
+            if (worker === 1) await releaseFirst.promise;
+            return { taskIds: [command.routeId], supersededSessionIds: [] };
+          },
+          close() {
+            closedWorkers.push(worker);
+          },
+        };
+      },
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "worker.changed",
+      source: "test",
+      owner: "app:evaluation",
+      data: { project: "evaluation", value: "before-reload" },
+    });
+    await waitUntil(() => dispatches.length === 1);
+
+    const reload = runtime.reload(async ({ commit }) => {
+      expect(activatedWorkers).toEqual([1]);
+      publicationEntered = true;
+      commit();
+      expect(activatedWorkers).toEqual([1]);
+    });
+    bus.emit({
+      type: "worker.changed",
+      source: "test",
+      owner: "app:evaluation",
+      data: { project: "evaluation", value: "during-reload" },
+    });
+    expect(publicationEntered).toBe(false);
+    expect(closedWorkers).toEqual([]);
+
+    releaseFirst.resolve();
+    await reload;
+    expect(publicationEntered).toBe(true);
+    expect(workerGeneration).toBe(2);
+    expect(activatedWorkers).toEqual([1, 2]);
+    expect(closedWorkers).toEqual([1]);
+    await waitUntil(() => getAppEventAdmissionPlan(db, 2)?.status === "completed");
+    expect(dispatches).toEqual([
+      { worker: 1, routeId: "worker/before-reload" },
+      { worker: 2, routeId: "worker/during-reload" },
+    ]);
+  });
+
+  it("prepares the replacement admission worker before committing the registry generation", async () => {
+    const registry = await loadedRegistry(root);
+    const closedWorkers: number[] = [];
+    const activatedWorkers: number[] = [];
+    let workerGeneration = 0;
+    let rejectReplacement = true;
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      bus: persistentBus(),
+      previewTaskEventRoutes: () => [],
+      createTaskAdmissionWorker: () => {
+        const worker = ++workerGeneration;
+        if (worker > 1 && rejectReplacement) throw new Error("replacement worker unavailable");
+        return {
+          activate() {
+            activatedWorkers.push(worker);
+          },
+          async dispatch() {
+            return { taskIds: [], supersededSessionIds: [] };
+          },
+          close() {
+            closedWorkers.push(worker);
+          },
+        };
+      },
+      scanIntervalMs: 10_000,
+    });
+    const accepted = registry.snapshot();
+
+    await expect(runtime.reload()).rejects.toThrow("replacement worker unavailable");
+    expect(registry.snapshot()).toBe(accepted);
+    expect(closedWorkers).toEqual([]);
+    expect(activatedWorkers).toEqual([1]);
+
+    rejectReplacement = false;
+    await expect(
+      runtime.reload(async ({ commit }) => {
+        commit();
+        throw new Error("fixture rejects candidate after publication");
+      }),
+    ).rejects.toThrow("fixture rejects candidate after publication");
+    expect(registry.snapshot()).toBe(accepted);
+    expect(closedWorkers).toEqual([3]);
+    expect(activatedWorkers).toEqual([1]);
+
+    await runtime.reload();
+    expect(registry.snapshot().generation).toBe(accepted.generation + 1);
+    expect(closedWorkers).toEqual([3, 1]);
+    expect(activatedWorkers).toEqual([1, 4]);
+  });
+
+  it("retains a committed registry generation when its recovery read fails", async () => {
+    const registry = await loadedRegistry(root);
+    const bus = persistentBus();
+    const failures: AgentEvent[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "handler.failed") failures.push(event);
+    });
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      bus,
+      previewTaskEventRoutes: () => [],
+      scanIntervalMs: 10_000,
+    });
+    db.exec("DROP TABLE app_event_admission_plans");
+
+    await expect(runtime.reload()).resolves.toEqual(["evaluation"]);
+    expect(registry.snapshot().generation).toBe(2);
+    expect(runtime.host.hasApp("evaluation")).toBe(true);
+    expect(failures).toContainEqual(
+      expect.objectContaining({
+        type: "handler.failed",
+        source: "app-inbox",
+        data: expect.objectContaining({
+          stage: "admission-recovery",
+          disposition: "recovery-pending",
+        }),
+      }),
+    );
+  });
+
+  it("schedules a fresh forced admission recovery after the prior slice rejects", async () => {
+    const eventId = Number(
+      db
+        .prepare(
+          `INSERT INTO events (event_type, source, owner, project_id, task_id, data, timestamp, delivery_status)
+           VALUES ('project.task.tick', 'fixture', 'app:evaluation', 'evaluation', 'waiting-task', ?, ?, 'accepted')`,
+        )
+        .run(JSON.stringify({ project: "evaluation" }), Date.now()).lastInsertRowid,
+    );
+    const registry = await loadedRegistry(root);
+    const snapshot = registry.snapshot();
+    createAppEventAdmissionPlan(db, {
+      eventId,
+      registrySnapshotId: snapshot.id,
+      registryGeneration: snapshot.generation,
+      routes: [
+        {
+          appId: "evaluation",
+          kind: "exact-task",
+          routeId: "waiting-task",
+          targetedTaskId: "waiting-task",
+          conditionTaskIds: [],
+        },
+      ],
+    });
+    let rejectRecovery = true;
+    let attempts = 0;
+    runtime = await startAppInboxRuntime({
+      registry,
+      db,
+      bus: persistentBus(),
+      admitTaskEvent: () => {
+        attempts += 1;
+        if (rejectRecovery) throw new Error("fixture rejects recovery slice");
+        return { accepted: true, by: "test-task", route: "direct" };
+      },
+      previewTaskEventRoutes: () => [],
+      scanIntervalMs: 10_000,
+      deferStart: true,
+    });
+
+    await runtime.start();
+    await runtime.reload();
+    const rejectedAttempts = attempts;
+    expect(rejectedAttempts).toBeGreaterThan(0);
+    expect(getAppEventAdmissionPlan(db, eventId)?.status).toBe("pending");
+
+    rejectRecovery = false;
+    await runtime.reload();
+    expect(attempts).toBe(rejectedAttempts + 1);
+    expect(getAppEventAdmissionPlan(db, eventId)?.status).toBe("completed");
   });
 
   it("keeps failed asynchronous admission durable and retries it through bounded recovery", async () => {

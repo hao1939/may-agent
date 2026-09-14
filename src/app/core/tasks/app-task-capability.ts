@@ -18,23 +18,29 @@ import {
   attachLoadedAppTask,
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
-  installAppTaskRuntimes,
   getLoadedAppTaskView,
   hasLoadedAppTask,
   listLoadedAppTaskOutcomeViews,
   listLoadedAppTaskViews,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
+  prepareAppTaskRuntimeGeneration,
+  publishPreparedAppTaskRuntimeGeneration,
   readLoadedAppTaskView,
   readLoadedAppTaskInputResult,
   retryLoadedFailedAppTask,
   stopLoadedConversationTurn,
   wakeLoadedAppTasks,
-
+  type PreparedAppTaskRuntimeGeneration,
 } from "./app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
-export type AppTaskGenerationResult = { apps: number };
+export type AppTaskGenerationResult = { apps: number; recover(): void };
+export type PreparedAppTaskGeneration = Readonly<{
+  runtime: PreparedAppTaskRuntimeGeneration | null;
+  quiesce(): Promise<void>;
+  rollback(): void;
+}>;
 
 export type AppTaskCapability = {
   close(): Promise<void>;
@@ -86,11 +92,16 @@ export type AppTaskCapability = {
     reason: string;
     controlKey?: string;
   }): ReturnType<typeof cancelLoadedAppTask>;
-  publishGeneration(input: {
+  prepareGeneration(input: {
     snapshot: AppRegistrySnapshot;
     definitionSource: Pick<AppTaskRuntimeOptions, "projectsRoot" | "agentsRoot" | "sharedRoot">;
+  }): Promise<PreparedAppTaskGeneration>;
+  publishGeneration(input: {
+    prepared: PreparedAppTaskGeneration;
     publish: () => void;
-  }): Promise<AppTaskGenerationResult>;
+    rollback?: () => void;
+    finalize?: () => void;
+  }): AppTaskGenerationResult;
 };
 
 /**
@@ -114,35 +125,79 @@ export function createAppTaskCapability(options: {
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEventRoutes: (input) => previewLoadedCanonicalAppTaskEventRoutes({ ...input, bus: options.bus }),
-    async publishGeneration({ snapshot, definitionSource, publish }) {
+    async prepareGeneration({ snapshot, definitionSource }) {
       if (!options.runtime) {
-        publish();
-        return { apps: 0 };
+        return Object.freeze({ runtime: null, async quiesce() {}, rollback() {} });
       }
-      const result = await installAppTaskRuntimes({
+      const runtime = await prepareAppTaskRuntimeGeneration({
         ...options.runtime,
         ...definitionSource,
         appRegistrySnapshot: snapshot,
-        afterCommit: () => publish(),
       });
-      return { apps: result.installed.length };
+      return Object.freeze({
+        runtime,
+        quiesce: () => runtime.quiesceIdentityRenames(),
+        rollback: () => runtime.resumePreviousControllers(),
+      });
+    },
+    publishGeneration({ prepared, publish, rollback, finalize }) {
+      if (!prepared.runtime) {
+        try {
+          publish();
+          finalize?.();
+          return { apps: 0, recover() {} };
+        } catch (error) {
+          rollback?.();
+          throw error;
+        }
+      }
+      const result = publishPreparedAppTaskRuntimeGeneration(
+        {
+          ...prepared.runtime,
+          opts: { ...prepared.runtime.opts, afterCommit: () => publish() },
+        },
+        { deferRecovery: true },
+        { rollback, finalize },
+      );
+      return { apps: result.installed.length, recover: result.recover };
     },
     async readDependency({ appDir, dependency, admissionKey }) {
       const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
       if (admissionKey) {
-        const accepted = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey });
-        if (accepted) return {
-          kind: "task", id: dependency.id, status: accepted.state === "converged" ? "done" : "attention",
-          ...(task?.closed ? { closed: true } : {}),
-          summary: accepted.summary, response: accepted.response, result: accepted.result, facts: accepted.facts,
-        };
+        const accepted = readLoadedAppTaskInputResult({
+          bus: options.bus,
+          appDir,
+          taskId: dependency.id,
+          admissionKey,
+        });
+        if (accepted)
+          return {
+            kind: "task",
+            id: dependency.id,
+            status: accepted.state === "converged" ? "done" : "attention",
+            ...(task?.closed ? { closed: true } : {}),
+            summary: accepted.summary,
+            response: accepted.response,
+            result: accepted.result,
+            facts: accepted.facts,
+          };
         // A later cycle or an unrelated retained wait cannot answer this input.
-        const report = readLoadedAppTaskInputResult({ bus: options.bus, appDir, taskId: dependency.id, admissionKey, kind: "report" });
-        return { kind: "task", id: dependency.id,
+        const report = readLoadedAppTaskInputResult({
+          bus: options.bus,
+          appDir,
+          taskId: dependency.id,
+          admissionKey,
+          kind: "report",
+        });
+        return {
+          kind: "task",
+          id: dependency.id,
           ...(report && !task?.closed ? { report } : {}),
           ...(task?.closed ? { closed: true } : {}),
           status: task?.closed ? "attention" : "pending",
-          summary: task?.closed ? "The Task closed without an accepted outcome for this input" : "This input has no accepted outcome yet",
+          summary: task?.closed
+            ? "The Task closed without an accepted outcome for this input"
+            : "This input has no accepted outcome yet",
         };
       }
       return task

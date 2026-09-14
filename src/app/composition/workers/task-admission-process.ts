@@ -34,26 +34,14 @@ export function createTaskAdmissionProcess(
     definitionSource?: TaskWorkerDefinitionSource;
   } = {},
 ): {
+  activate(): void;
   dispatch(command: AppEventAdmissionCommand, event: AgentEvent): Promise<TaskAdmissionProcessResult>;
   close(): void;
 } {
   const timeoutMs = input.timeoutMs ?? 30_000;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error("Invalid Task admission worker timeout");
   const target = invocation();
-  const child = spawn(
-    target.command,
-    [
-      ...target.args,
-      "--task-admission-worker",
-      ...(input.definitionSource ? ["--task-worker-source", JSON.stringify(input.definitionSource)] : []),
-    ],
-    {
-      cwd: process.cwd(),
-      env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
-      stdio: ["ignore", "inherit", "inherit", "ipc"],
-      serialization: "json",
-    },
-  );
+  let child: ReturnType<typeof spawn> | undefined;
   let nextId = 1;
   let closed = false;
   let ready = false;
@@ -74,10 +62,10 @@ export function createTaskAdmissionProcess(
       request.reject(error);
     }
     pending.clear();
-    if (child.connected) child.disconnect();
-    if (child.exitCode === null && child.signalCode === null) {
+    if (child?.connected) child.disconnect();
+    if (child && child.exitCode === null && child.signalCode === null) {
       child.kill("SIGTERM");
-      killTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+      killTimer = setTimeout(() => child?.kill("SIGKILL"), 5_000);
       killTimer.unref();
     }
   };
@@ -87,6 +75,10 @@ export function createTaskAdmissionProcess(
     input.onExit?.(error);
   };
   const send = (request: Request) => {
+    if (!child) {
+      fail(new Error("Task admission worker is not activated"));
+      return;
+    }
     try {
       child.send(request, (error: Error | null) => {
         if (error) fail(new Error(`Task admission worker is unavailable: ${error.message}`));
@@ -95,36 +87,54 @@ export function createTaskAdmissionProcess(
       fail(new Error(`Task admission worker is unavailable: ${String(error)}`));
     }
   };
-  child.on("message", (message) => {
-    if (closed) return;
-    if (message && typeof message === "object" && "ready" in message && message.ready === true) {
-      if (ready) return;
-      ready = true;
-      for (const { request } of pending.values()) send(request);
-      return;
-    }
-    if (!message || typeof message !== "object" || !Number.isSafeInteger((message as Response).id)) {
-      fail(new Error("Invalid Task admission worker response"));
-      return;
-    }
-    const response = message as Response;
-    const request = pending.get(response.id);
-    if (!request) return;
-    pending.delete(response.id);
-    clearTimeout(request.timer);
-    if (response.ok)
-      request.resolve({ taskIds: response.taskIds, supersededSessionIds: response.supersededSessionIds });
-    else request.reject(new Error(response.error));
-  });
-  child.once("error", (error) => fail(error));
-  child.once("disconnect", () => fail(new Error("Task admission worker is unavailable")));
-  child.once("exit", (code, signal) => {
-    clearTimeout(killTimer);
-    fail(new Error(`Task admission worker exited with ${signal ? `signal ${signal}` : `code ${code}`}`));
-  });
   return {
+    activate() {
+      if (closed) throw new Error("Task admission worker is closed");
+      if (child) return;
+      child = spawn(
+        target.command,
+        [
+          ...target.args,
+          "--task-admission-worker",
+          ...(input.definitionSource ? ["--task-worker-source", JSON.stringify(input.definitionSource)] : []),
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+          stdio: ["ignore", "inherit", "inherit", "ipc"],
+          serialization: "json",
+        },
+      );
+      child.on("message", (message) => {
+        if (closed) return;
+        if (message && typeof message === "object" && "ready" in message && message.ready === true) {
+          if (ready) return;
+          ready = true;
+          for (const { request } of pending.values()) send(request);
+          return;
+        }
+        if (!message || typeof message !== "object" || !Number.isSafeInteger((message as Response).id)) {
+          fail(new Error("Invalid Task admission worker response"));
+          return;
+        }
+        const response = message as Response;
+        const request = pending.get(response.id);
+        if (!request) return;
+        pending.delete(response.id);
+        clearTimeout(request.timer);
+        if (response.ok)
+          request.resolve({ taskIds: response.taskIds, supersededSessionIds: response.supersededSessionIds });
+        else request.reject(new Error(response.error));
+      });
+      child.once("error", (error) => fail(error));
+      child.once("disconnect", () => fail(new Error("Task admission worker is unavailable")));
+      child.once("exit", (code, signal) => {
+        clearTimeout(killTimer);
+        fail(new Error(`Task admission worker exited with ${signal ? `signal ${signal}` : `code ${code}`}`));
+      });
+    },
     dispatch(command, event) {
-      if (closed || !child.connected) return Promise.reject(new Error("Task admission worker is unavailable"));
+      if (closed || !child?.connected) return Promise.reject(new Error("Task admission worker is unavailable"));
       const id = nextId++;
       return new Promise((resolveRequest, reject) => {
         // Symbol properties do not survive JSON IPC. Preserve the durable

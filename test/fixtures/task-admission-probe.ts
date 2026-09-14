@@ -53,7 +53,7 @@ writeFileSync(
   tasks: { subscriptions: ["sample.changed"], maxConcurrent: 1, resolve() { return null; } }
 };\n`,
 );
-getDb(persistDir);
+getDb(persistDir, { existingSchemaOnly: false });
 const release =
   scenario === "pinned-selection" ? new DefinitionSourceReleaseStore(root, persistDir).ensureCurrent() : undefined;
 if (release) {
@@ -67,6 +67,12 @@ const worker = createTaskAdmissionProcess({
   timeoutMs: scenario.endsWith("timeout") ? 500 : 5_000,
   ...(release ? { definitionSource: { ...release, appDirectories: ["sample.app"] } } : {}),
 });
+assert.equal(
+  Number(getDb(persistDir).prepare("SELECT COUNT(*) AS count FROM app_tasks").get()?.count),
+  0,
+  "an unactivated admission worker must not bootstrap Task state",
+);
+worker.activate();
 const command: AppEventAdmissionCommand = {
   appId: "sample",
   kind: "task",

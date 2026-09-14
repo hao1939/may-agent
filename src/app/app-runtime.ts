@@ -15,8 +15,9 @@ import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./ap
 import { createRuntimeAppRead } from "./core/reads/app-read.js";
 import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
 import { readAppConversationResource } from "./core/state/conversations.js";
-import { migrateAppIdentities } from "./core/state/app-identity-migration.js";
+import { migrateAppIdentities, stageAppIdentityMigration } from "./core/state/app-identity-migration.js";
 import { HostCapacity } from "./core/scheduling/host-capacity.js";
+import { OwnedTimer } from "./core/scheduling/timer.js";
 import { attachCommandRouter, validateSessionControl } from "./command-router.js";
 import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
 import {
@@ -257,7 +258,7 @@ export async function runAppRuntime(opts: {
   attachTaskControlEventRoute(bus, {
     retryTask: ({ appId, taskId, generation, resourceVersion, controlKey }) =>
       appTasks.retry({
-        appId,
+        appId: appRegistry.canonicalId(appId) ?? appId,
         taskId,
         expectedGeneration: generation,
         expectedResourceVersion: resourceVersion,
@@ -265,7 +266,7 @@ export async function runAppRuntime(opts: {
       }),
     cancelTask: ({ appId, taskId, generation, resourceVersion, reason, controlKey }) =>
       appTasks.cancel({
-        appId,
+        appId: appRegistry.canonicalId(appId) ?? appId,
         taskId,
         reason,
         expectedGeneration: generation,
@@ -366,6 +367,50 @@ export async function runAppRuntime(opts: {
     Awaited<ReturnType<typeof prepareAgentGeneration>>,
     DefinitionSourceRelease & { appDirectories: string[] }
   >();
+  const taskReloadRecoveryTimer = new OwnedTimer("app-runtime:reload-task-recovery");
+  let activeTaskReloadRecovery: (() => void) | undefined;
+  let taskReloadRecoveryDelayMs = 1_000;
+  const reportTaskReloadRecoveryFailure = (error: unknown): void => {
+    try {
+      bus.emit({
+        type: "handler.failed",
+        source: "runtime:restart-recovery",
+        owner: "runtime",
+        data: {
+          handler: "app-task-recovery",
+          agent: "runtime",
+          error: error instanceof Error ? error.message : String(error),
+          stage: "task-recovery",
+          disposition: "recovery-pending",
+          durationMs: 0,
+        },
+      });
+    } catch (reportError) {
+      console.error(`[app-runtime] Task recovery failed: ${String(error)}; reporting failed: ${String(reportError)}`);
+    }
+  };
+  const runTaskReloadRecovery = (recover: () => void): void => {
+    if (activeTaskReloadRecovery !== recover) return;
+    try {
+      recover();
+      if (activeTaskReloadRecovery === recover) {
+        activeTaskReloadRecovery = undefined;
+        taskReloadRecoveryTimer.cancel();
+      }
+    } catch (error) {
+      reportTaskReloadRecoveryFailure(error);
+      if (activeTaskReloadRecovery !== recover) return;
+      const delayMs = taskReloadRecoveryDelayMs;
+      taskReloadRecoveryDelayMs = Math.min(taskReloadRecoveryDelayMs * 2, 60_000);
+      taskReloadRecoveryTimer.after(delayMs, () => runTaskReloadRecovery(recover));
+    }
+  };
+  const scheduleTaskReloadRecovery = (recover: () => void): void => {
+    taskReloadRecoveryTimer.cancel();
+    activeTaskReloadRecovery = recover;
+    taskReloadRecoveryDelayMs = 1_000;
+    runTaskReloadRecovery(recover);
+  };
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
     bus,
@@ -380,6 +425,8 @@ export async function runAppRuntime(opts: {
       activeRL = null;
     },
     beforeShutdown: () => {
+      activeTaskReloadRecovery = undefined;
+      taskReloadRecoveryTimer.close();
       void appTasks.close();
       appInboxRuntime?.close();
     },
@@ -416,19 +463,31 @@ export async function runAppRuntime(opts: {
       if (!candidate) throw new Error("Runtime generation has no staged definition source");
       preparedSources.delete(agents);
       let taskApps = 0;
+      let recoverTasks = () => {};
       const appIds = await appInboxRuntime!.reload(
         async ({ snapshot, commit }) => {
           // Capture and restore while holding the registry transaction. A queued
           // reload must restore its committed predecessor, not its staging source.
           const previous = acceptedWorkerSource;
+          const preparedTasks = await appTasks.prepareGeneration({
+            snapshot,
+            definitionSource: {
+              projectsRoot: candidate.projectsRoot,
+              agentsRoot: candidate.agentsRoot,
+              sharedRoot: candidate.sharedRoot,
+            },
+          });
+          let identityMigration: ReturnType<typeof stageAppIdentityMigration> = null;
           try {
-            const result = await appTasks.publishGeneration({
-              snapshot,
-              definitionSource: {
-                projectsRoot: candidate.projectsRoot,
-                agentsRoot: candidate.agentsRoot,
-                sharedRoot: candidate.sharedRoot,
-              },
+            await preparedTasks.quiesce();
+            // No transaction may cross the yielding preparation above. Migration,
+            // runtime/source publication, and SQL commit form one synchronous turn.
+            identityMigration = stageAppIdentityMigration(
+              getDb(opts.persistDir),
+              snapshot.entries.map((entry) => entry.definition),
+            );
+            const result = appTasks.publishGeneration({
+              prepared: preparedTasks,
               publish: () => {
                 appSources.activate(candidate);
                 acceptedWorkerSource = candidate;
@@ -442,9 +501,14 @@ export async function runAppRuntime(opts: {
                   throw error;
                 }
               },
+              rollback: () => identityMigration?.rollback(),
+              finalize: () => identityMigration?.commit(),
             });
             taskApps = result.apps;
+            recoverTasks = result.recover;
           } catch (error) {
+            identityMigration?.rollback();
+            preparedTasks.rollback();
             acceptedWorkerSource = previous;
             if (appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
               appSources.activate(previous);
@@ -454,6 +518,7 @@ export async function runAppRuntime(opts: {
         },
         discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot, {}, candidate.appDirectories),
       );
+      scheduleTaskReloadRecovery(recoverTasks);
       refreshReporting();
       return { appIds, taskApps };
     },

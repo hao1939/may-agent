@@ -43,7 +43,10 @@ import {
   type AppEventAdmissionPlan,
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
-import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
+import {
+  createAppObserverRuntime,
+  type AppObserverRuntime,
+} from "../adapters/producers/app-observer-runtime.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -59,6 +62,16 @@ export type AppInboxRuntime = {
   close(): void;
   scanNow(): void;
   reload(prepare?: AppRegistryReloadPreparation, discover?: AppDefinitionSource): Promise<string[]>;
+};
+
+type TaskAdmissionWorker = {
+  /** Start candidate initialization only after its registry generation commits. */
+  activate(): void;
+  dispatch(
+    command: AppEventAdmissionCommand,
+    event: AgentEvent,
+  ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
+  close(): void;
 };
 
 // The Event turn persists a small admission plan. Canonical Task mutation runs
@@ -85,13 +98,7 @@ export type StartAppInboxRuntimeOptions = {
     conditionTaskIds?: string[];
   }) => DeliveryResult | undefined;
   /** Persistent process boundary for canonical Task mutation after routing. */
-  createTaskAdmissionWorker?: () => {
-    dispatch(
-      command: AppEventAdmissionCommand,
-      event: AgentEvent,
-    ): Promise<{ taskIds: string[]; supersededSessionIds: string[] }>;
-    close(): void;
-  };
+  createTaskAdmissionWorker?: () => TaskAdmissionWorker;
   wakeAdmittedTasks?: (input: { appId: string; taskIds: string[]; supersededSessionIds: string[] }) => void;
   hasTaskTarget?: (input: { appId: string; taskId: string }) => boolean;
   previewTaskEvent?: (input: { appId: string; appDir: string; event: AgentEvent; targetedTaskId?: string }) => string[];
@@ -410,7 +417,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (closed || !started) return;
     const currentTime = now();
     if (currentTime >= nextInputRecoveryAt) void recoverInputs();
-    recoverAdmissionPlans();
+    void recoverAdmissionPlans().catch((error) => reportRuntimeFailure("admission-recovery", error));
   };
 
   const scanNow = () => {
@@ -475,6 +482,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             ) {
               worker.close();
               taskAdmissionWorker = options.createTaskAdmissionWorker?.();
+              taskAdmissionWorker?.activate();
             }
             throw error;
           }
@@ -512,18 +520,40 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const pendingAdmissionEvents = new Map<number, AgentEvent>();
   let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
   let admissionDispatching = false;
+  let admissionDispatchPaused = false;
+  let admissionDispatchPauseDepth = 0;
+  const admissionDispatchIdleWaiters = new Set<() => void>();
+
+  const pauseAdmissionDispatch = async (): Promise<void> => {
+    admissionDispatchPauseDepth += 1;
+    admissionDispatchPaused = true;
+    if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
+    admissionDispatchHandle = null;
+    if (!admissionDispatching) return;
+    await new Promise<void>((resolve) => admissionDispatchIdleWaiters.add(resolve));
+  };
+
+  const resumeAdmissionDispatch = (): void => {
+    if (closed) return;
+    admissionDispatchPauseDepth = Math.max(0, admissionDispatchPauseDepth - 1);
+    if (admissionDispatchPauseDepth > 0) return;
+    admissionDispatchPaused = false;
+    if (pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
+      admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
+    }
+  };
 
   const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
     if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
     pendingAdmissionEvents.set(plan.eventId, event);
-    if (!admissionDispatchHandle) {
+    if (!admissionDispatchPaused && !admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
     }
   };
 
   async function dispatchNextAdmissionCommand(): Promise<void> {
     admissionDispatchHandle = null;
-    if (closed || admissionDispatching) return;
+    if (closed || admissionDispatchPaused || admissionDispatching) return;
     const next = pendingAdmissionEvents.entries().next().value as [number, AgentEvent] | undefined;
     if (!next) return;
     const [eventId, event] = next;
@@ -559,9 +589,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // cannot schedule the same plan twice.
       pendingAdmissionEvents.delete(eventId);
       admissionDispatching = false;
+      for (const resolve of admissionDispatchIdleWaiters) resolve();
+      admissionDispatchIdleWaiters.clear();
     }
     if (reschedule) scheduleAdmissionDispatch(reschedule, event);
-    if (pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
+    if (!admissionDispatchPaused && pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
     }
   }
@@ -615,9 +647,25 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   let nextAdmissionRecoveryAt = 0;
   let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
-  const recoverAdmissionPlans = (force = false): void => {
+  let admissionRecoverySlice: Promise<void> | null = null;
+  let forcedAdmissionRecovery: Promise<void> | null = null;
+  let settleAdmissionRecovery: ((error?: unknown) => void) | null = null;
+  const recoverAdmissionPlans = (force = false): Promise<void> => {
+    if (closed) return Promise.resolve();
     const currentTime = now();
-    if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
+    if (admissionRecoverySlice) {
+      if (!force) return admissionRecoverySlice;
+      if (!forcedAdmissionRecovery) {
+        const forced = admissionRecoverySlice.then(() => recoverAdmissionPlans(true));
+        forcedAdmissionRecovery = forced;
+        const clearForcedRecovery = () => {
+          if (forcedAdmissionRecovery === forced) forcedAdmissionRecovery = null;
+        };
+        void forced.then(clearForcedRecovery, clearForcedRecovery);
+      }
+      return forcedAdmissionRecovery;
+    }
+    if (!force && currentTime < nextAdmissionRecoveryAt) return Promise.resolve();
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
     // Freeze this bounded recovery slice before yielding. Otherwise the
     // zero-delay callback can accidentally capture and immediately retry a
@@ -626,35 +674,62 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
+    const settled = Promise.withResolvers<void>();
+    admissionRecoverySlice = settled.promise;
+    const finish = (error?: unknown): void => {
+      if (admissionRecoverySlice !== settled.promise) return;
+      admissionRecoveryHandle = null;
+      admissionRecoverySlice = null;
+      settleAdmissionRecovery = null;
+      if (error === undefined) settled.resolve();
+      else settled.reject(error);
+    };
+    settleAdmissionRecovery = finish;
     admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
-      if (closed) return;
+      if (closed) {
+        finish();
+        return;
+      }
       let index = 0;
       const recoverNext = (): void => {
         admissionRecoveryHandle = null;
-        if (closed) return;
+        if (closed) {
+          finish();
+          return;
+        }
         const plan = plans[index++];
-        if (!plan) return;
-        const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
-        if (!event) {
-          for (const command of plan.commands) {
-            if (command.status !== "pending") continue;
-            recordAppEventAdmissionCommandFailure(options.db, {
-              eventId: plan.eventId,
-              appId: command.appId,
-              error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
-              now: now(),
-            });
+        if (!plan) {
+          finish();
+          return;
+        }
+        try {
+          const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
+          if (!event) {
+            for (const command of plan.commands) {
+              if (command.status !== "pending") continue;
+              recordAppEventAdmissionCommandFailure(options.db, {
+                eventId: plan.eventId,
+                appId: command.appId,
+                error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+                now: now(),
+              });
+            }
+          } else {
+            // EventBus re-runs only idempotent durable routes and records delivery
+            // acceptance on the original row; ordinary subscribers never replay.
+            options.bus.redeliverPersisted(event, plan.eventId);
           }
-        } else {
-          // EventBus re-runs only idempotent durable routes and records delivery
-          // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, plan.eventId);
+        } catch (error) {
+          finish(error);
+          return;
         }
         if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
+        else finish();
       };
       recoverNext();
     }, 0);
+    return admissionRecoverySlice;
   };
 
   const unsubscribe = options.bus.subscribeDurableRoute(
@@ -1111,7 +1186,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       // Recovery is scheduled behind admission. It must not delay the caller
       // that opens the human interface or activates this message handler.
       void recoverInputs();
-      recoverAdmissionPlans(true);
+      void recoverAdmissionPlans(true).catch((error) => reportRuntimeFailure("admission-recovery", error));
       timer.every(scanIntervalMs, scanFromTimer);
       initialRecovery.after(0, scanFromTimer);
       scheduleProducer.start(scanIntervalMs);
@@ -1121,52 +1196,101 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     },
     scanNow,
     async reload(prepare, discover) {
-      await options.registry.reload(async (snapshot) => {
-        const previousLoaded = loaded;
-        const previousSnapshot = registrySnapshot;
-        if (
-          snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
-          !options.observerContext
-        ) {
-          throw new Error("Canonical App observers require an observer context factory");
-        }
-        let committed = false;
-        let restoreSchedules = () => {};
-        const commit = () => {
-          if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
-          committed = true;
-          const entries = snapshot.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
-          host.replaceApps(entries.map((entry) => entry.definition));
-          loaded = entries;
-          registrySnapshot = snapshot;
-          appDirById = new Map(entries.map((entry) => [entry.definition.id, entry.appDir]));
-          replaceRouteIndexes(entries);
-          observerRuntime.replace(entries);
-          restoreSchedules = scheduleProducer.replace(entries);
-        };
+      let admissionPaused = false;
+      let preparedTaskAdmissionWorker: TaskAdmissionWorker | undefined;
+      let observerPublication: ReturnType<AppObserverRuntime["prepare"]> | undefined;
+      try {
+        await options.registry.reload(async (snapshot) => {
+          await pauseAdmissionDispatch();
+          admissionPaused = true;
+          const previousLoaded = loaded;
+          const previousSnapshot = registrySnapshot;
+          if (
+            snapshot.entries.some((entry) => (entry.definition.observers?.length ?? 0) > 0) &&
+            !options.observerContext
+          ) {
+            throw new Error("Canonical App observers require an observer context factory");
+          }
+          let committed = false;
+          let restoreSchedules = () => {};
+          const commit = () => {
+            if (committed) throw new Error(`App registry generation ${snapshot.generation} was committed twice`);
+            // Construction can fail synchronously (for example, invalid worker
+            // invocation). Do that before publishing any in-process consumer.
+            preparedTaskAdmissionWorker = options.createTaskAdmissionWorker?.();
+            const entries = snapshot.entries.map((entry) => ({ appDir: entry.appDir, definition: entry.definition }));
+            observerPublication = observerRuntime.prepare(entries);
+            committed = true;
+            host.replaceApps(entries.map((entry) => entry.definition));
+            loaded = entries;
+            registrySnapshot = snapshot;
+            appDirById = new Map(entries.map((entry) => [entry.definition.id, entry.appDir]));
+            replaceRouteIndexes(entries);
+            observerPublication.commit();
+            restoreSchedules = scheduleProducer.replace(entries);
+          };
+          try {
+            if (prepare) await prepare({ snapshot, commit });
+            else commit();
+            if (!committed) throw new Error(`App registry generation ${snapshot.generation} was not committed`);
+          } catch (error) {
+            if (committed) {
+              host.replaceApps(previousLoaded.map((entry) => entry.definition));
+              loaded = previousLoaded;
+              registrySnapshot = previousSnapshot;
+              appDirById = new Map(previousLoaded.map((entry) => [entry.definition.id, entry.appDir]));
+              replaceRouteIndexes(previousLoaded);
+              observerPublication?.rollback();
+              observerPublication = undefined;
+              restoreSchedules();
+            }
+            preparedTaskAdmissionWorker?.close();
+            preparedTaskAdmissionWorker = undefined;
+            throw error;
+          }
+        }, discover);
+        observerPublication?.finalize();
+        observerPublication = undefined;
+        const previousTaskAdmissionWorker = taskAdmissionWorker;
+        taskAdmissionWorker = preparedTaskAdmissionWorker;
+        preparedTaskAdmissionWorker = undefined;
         try {
-          if (prepare) await prepare({ snapshot, commit });
-          else commit();
-          if (!committed) throw new Error(`App registry generation ${snapshot.generation} was not committed`);
+          taskAdmissionWorker?.activate();
         } catch (error) {
-          if (committed) {
-            host.replaceApps(previousLoaded.map((entry) => entry.definition));
-            loaded = previousLoaded;
-            registrySnapshot = previousSnapshot;
-            appDirById = new Map(previousLoaded.map((entry) => [entry.definition.id, entry.appDir]));
-            replaceRouteIndexes(previousLoaded);
-            observerRuntime.replace(previousLoaded);
-            restoreSchedules();
+          taskAdmissionWorker?.close();
+          taskAdmissionWorker = undefined;
+          try {
+            previousTaskAdmissionWorker?.close();
+          } catch (retirementError) {
+            reportRuntimeFailure("task-admission-worker-retirement", retirementError);
           }
           throw error;
         }
-      }, discover);
-      taskAdmissionWorker?.close();
-      taskAdmissionWorker = options.createTaskAdmissionWorker?.();
+        try {
+          previousTaskAdmissionWorker?.close();
+        } catch (error) {
+          reportRuntimeFailure("task-admission-worker-retirement", error);
+        }
+      } catch (error) {
+        observerPublication?.rollback();
+        observerPublication = undefined;
+        throw error;
+      } finally {
+        preparedTaskAdmissionWorker?.close();
+        if (admissionPaused) resumeAdmissionDispatch();
+      }
       // App definitions may have made a previously unavailable frozen route
       // admissible. Retry one bounded slice immediately after the reload.
-      recoverAdmissionPlans(true);
-      scanNow();
+      try {
+        await recoverAdmissionPlans(true);
+      } catch (error) {
+        reportRuntimeFailure("admission-recovery", error);
+      }
+      try {
+        scanNow();
+      } catch (error) {
+        reportRuntimeFailure("reload-scan", error);
+      }
       return host.appIds();
     },
     close() {
@@ -1177,6 +1301,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       initialRecovery.close();
       if (admissionRecoveryHandle) clearTimeout(admissionRecoveryHandle);
       admissionRecoveryHandle = null;
+      settleAdmissionRecovery?.();
       if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
       admissionDispatchHandle = null;
       pendingAdmissionEvents.clear();
@@ -1190,6 +1315,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       unsubscribe();
     },
   };
+  try {
+    taskAdmissionWorker?.activate();
+  } catch (error) {
+    taskAdmissionWorker?.close();
+    taskAdmissionWorker = undefined;
+    runtime.close();
+    throw error;
+  }
   if (!options.deferStart) await runtime.start();
   return runtime;
 }

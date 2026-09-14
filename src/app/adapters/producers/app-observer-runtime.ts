@@ -21,10 +21,17 @@ type ObserverState = {
 
 export type AppObserverRuntime = {
   start(intervalMs: number): void;
+  prepare(entries: readonly Readonly<LoadedAppDefinition>[]): AppObserverPublication;
   replace(entries: readonly Readonly<LoadedAppDefinition>[]): void;
   scanNow(): void;
   close(): void;
 };
+
+export type AppObserverPublication = Readonly<{
+  commit(): void;
+  rollback(): void;
+  finalize(): void;
+}>;
 
 function observerFingerprint(observer: AppObserver): string {
   return `${observer.intervalMs}:${observer.run.toString()}`;
@@ -110,7 +117,8 @@ export function createAppObserverRuntime(options: {
   const initial = new OwnedTimer("app-observers:initial");
   let states = new Map<string, ObserverState>();
 
-  const replace = (entries: readonly Readonly<LoadedAppDefinition>[]): void => {
+  const prepare = (entries: readonly Readonly<LoadedAppDefinition>[]): AppObserverPublication => {
+    const previousStates = states;
     const next = new Map<string, ObserverState>();
     const currentTime = now();
     for (const entry of entries) {
@@ -127,6 +135,10 @@ export function createAppObserverRuntime(options: {
             previous?.fingerprint === fingerprint
               ? previous.lastSlot
               : Math.floor(currentTime / observer.intervalMs) - 1,
+          // A replacement generation deliberately forgets the prior observation.
+          // Its first scan must publish from the newly accepted definition,
+          // while an old in-flight result remains fenced to its prior state.
+          observation: undefined,
           // An in-flight attempt belongs to the replaced state object. The new
           // generation must be independently runnable while the old result is
           // fenced and discarded.
@@ -134,7 +146,36 @@ export function createAppObserverRuntime(options: {
         });
       }
     }
-    states = next;
+    let committed = false;
+    let finalized = false;
+    return Object.freeze({
+      commit() {
+        if (finalized || committed) throw new Error("App observer publication is already settled");
+        if (states !== previousStates) throw new Error("App observer publication was superseded before commit");
+        states = next;
+        committed = true;
+      },
+      rollback() {
+        if (finalized) return;
+        if (committed) {
+          if (states !== next) throw new Error("App observer publication was superseded before rollback");
+          // Restore the exact objects so an old in-flight run can still publish
+          // and advance the observation it started from.
+          states = previousStates;
+        }
+        finalized = true;
+      },
+      finalize() {
+        if (!committed) throw new Error("App observer publication was not committed");
+        finalized = true;
+      },
+    });
+  };
+
+  const replace = (entries: readonly Readonly<LoadedAppDefinition>[]): void => {
+    const publication = prepare(entries);
+    publication.commit();
+    publication.finalize();
   };
 
   const run = async (key: string, state: ObserverState, slot: number): Promise<void> => {
@@ -204,6 +245,7 @@ export function createAppObserverRuntime(options: {
       cadence.every(intervalMs, () => runtime.scanNow());
       initial.after(0, () => runtime.scanNow());
     },
+    prepare,
     replace,
     scanNow() {
       if (closed) return;

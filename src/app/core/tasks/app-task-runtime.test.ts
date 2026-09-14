@@ -35,8 +35,10 @@ import {
   cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes as installCoreTaskRuntimes,
+  prepareAppTaskRuntimeGeneration,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
+  publishPreparedAppTaskRuntimeGeneration,
   readLoadedAppTaskView,
   readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
@@ -189,6 +191,67 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+it("drains and fences startup recovery across identity-rename commit and rollback", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const initial = definition();
+  const recoveryStarted = Promise.withResolvers<void>();
+  const releaseRecovery = Promise.withResolvers<void>();
+  let recoveryCalls = 0;
+  getDb(join(f.root, "state"), { existingSchemaOnly: false });
+  const runtimeOptions = {
+    ...options(f, bus),
+    installControllers: false,
+    appRegistrySnapshot: {
+      id: "recovery-fence-initial",
+      generation: 1,
+      entries: [{ appDir: f.appDir, definition: initial }],
+    },
+    executeRecovery: async () => {
+      recoveryCalls += 1;
+      if (recoveryCalls === 1) {
+        recoveryStarted.resolve();
+        await releaseRecovery.promise;
+      }
+    },
+  };
+  await installCoreTaskRuntimes(runtimeOptions);
+
+  const inFlightRecovery = recoverInstalledAppTasks(bus);
+  await recoveryStarted.promise;
+  const renamed = defineApp({ ...initial, id: "sample-renamed", previousIds: ["sample"] });
+  const prepareRename = () =>
+    prepareAppTaskRuntimeGeneration({
+      ...runtimeOptions,
+      appRegistrySnapshot: {
+        id: "recovery-fence-renamed",
+        generation: 2,
+        entries: [{ appDir: f.appDir, definition: renamed }],
+      },
+    });
+
+  const rolledBack = await prepareRename();
+  let quiesced = false;
+  const quiescence = rolledBack.quiesceIdentityRenames().then(() => {
+    quiesced = true;
+  });
+  await Promise.resolve();
+  expect(quiesced).toBe(false);
+  await recoverInstalledAppTasks(bus);
+  expect(recoveryCalls).toBe(1);
+  releaseRecovery.resolve();
+  await Promise.all([inFlightRecovery, quiescence]);
+  rolledBack.resumePreviousControllers();
+  await recoverInstalledAppTasks(bus);
+  expect(recoveryCalls).toBe(2);
+
+  const committed = await prepareRename();
+  await committed.quiesceIdentityRenames();
+  publishPreparedAppTaskRuntimeGeneration(committed);
+  await recoverInstalledAppTasks(bus);
+  expect(recoveryCalls).toBe(3);
+});
 
 describe("caller feedback PoC", () => {
   it.each(["quiet", "incomplete-then-wait", "report-wait", "throw", "invalid", "throw-then-wait", "throw-then-report-retry"] as const)(

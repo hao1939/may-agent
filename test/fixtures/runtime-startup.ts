@@ -8,7 +8,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fakeModel } from "./model.js";
-import { closeAllDbs } from "../../src/lib/requests.js";
+import { closeAllDbs, getDb } from "../../src/lib/requests.js";
 import { parseAppArgs } from "../../src/app/app-args.js";
 import * as daemon from "../../src/app/daemon.js";
 import * as inbox from "../../src/app/composition/app-inbox-runtime.js";
@@ -22,6 +22,8 @@ import * as agentLoader from "../../src/app/agent-loader.js";
 import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../src/app/adapters/discovery/app-definitions.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { AppTaskController } from "../../src/app/core/tasks/controller.js";
 import {
   attachLoadedAppTask,
   readLoadedAppTaskInputResult,
@@ -45,19 +47,26 @@ const startupJob = mode === "startup-job";
 const activationFailure = mode === "activation-failure";
 const reportingFailure = mode === "reporting-failure";
 const workerPublication = mode === "worker-publication";
-let publicationPause: {
-  entered: ReturnType<typeof Promise.withResolvers<void>>;
-  release: ReturnType<typeof Promise.withResolvers<void>>;
-  reject: boolean;
-} | undefined;
+const identityReload = mode === "identity-reload";
+const legacyAppId = "scout-knowledge-lib";
+const canonicalAppId = "scout-lib";
+const startupAppId = identityReload ? legacyAppId : "fixture";
+let publicationPause:
+  | {
+      entered: ReturnType<typeof Promise.withResolvers<void>>;
+      release: ReturnType<typeof Promise.withResolvers<void>>;
+      reject: boolean;
+    }
+  | undefined;
 let dispatchedSource: taskWorkers.TaskWorkerDefinitionSource | undefined;
-const taskExecution = activationFailure || reportingFailure || noInterfaces;
+const taskExecution = activationFailure || reportingFailure || noInterfaces || identityReload;
 let reportingCalls = 0;
 const agentNames = activationFailure ? ["may", "aux"] : ["may"];
 const order: string[] = [];
 let runtime: inbox.AppInboxRuntime | undefined;
 let registry: Parameters<typeof inbox.startAppInboxRuntime>[0]["registry"] | undefined;
 let socket: interfaces.InterfaceRuntime | undefined;
+let interfaceOptions: interfaces.InterfaceStartupOptions | undefined;
 let lifecycle: ReturnType<typeof daemon.createDaemonLifecycle> | undefined;
 let stopTasks: (() => void) | undefined;
 let sharedCapacity: Parameters<typeof daemon.prepareDaemonAgents>[0]["hostCapacity"];
@@ -65,6 +74,8 @@ let preparedOptions: Parameters<typeof daemon.prepareDaemonAgents>[0];
 let failActivation = false;
 const partiallyAttached: HostMaintenance[] = [];
 let attemptFinished = Promise.withResolvers<void>();
+let cleanupIdentityGate = () => {};
+let cleanupIdentityRecovery = () => {};
 Object.defineProperty(process.stdin, "isTTY", { value: tty });
 process.env.MAY_HOST_MAX_CONCURRENT = "2";
 process.env.MAY_DAEMON_QUIET = "1";
@@ -76,15 +87,15 @@ if (workerPublication) {
       const capability = actualTaskCapability.createAppTaskCapability(options);
       return {
         ...capability,
-        publishGeneration: async (input: Parameters<typeof capability.publishGeneration>[0]) => {
-          const result = await capability.publishGeneration(input);
-          // Hold the actual Runtime apply callback open after its synchronous
-          // publication, before AppRegistry.current advances. No copied reload logic.
+        prepareGeneration: async (input: Parameters<typeof capability.prepareGeneration>[0]) => {
+          const result = await capability.prepareGeneration(input);
+          // Hold yielding worker preparation before the synchronous publication
+          // turn. A rejected preparation must never expose its source pair.
           const pause = publicationPause;
           if (pause) {
             pause.entered.resolve();
             await pause.release.promise;
-            if (pause.reject) throw new Error("fixture rejects published generation");
+            if (pause.reject) throw new Error("fixture rejects prepared generation");
           }
           return result;
         },
@@ -232,7 +243,8 @@ mock.module("../../src/app/composition/app-inbox-runtime.js", () => ({
 mock.module("../../src/app/interface-startup.js", () => ({
   ...actualInterfaces,
   startInterfaceRuntime: async (options: interfaces.InterfaceStartupOptions) => {
-    assert.ok(runtime?.host.hasApp("fixture"));
+    interfaceOptions = options;
+    assert.ok(runtime?.host.hasApp(startupAppId));
     assert.deepEqual(
       order.filter((step) => step !== "console"),
       ["routes", ...(noInterfaces ? [] : ["telegram"])],
@@ -293,13 +305,15 @@ try {
 export const name = "reload-probe";
 export const description = "Complete fixture work without a model.";
 export async function execute(ctx) {
+  globalThis.__mayReloadProbeStarted?.();
+  await globalThis.__mayReloadProbeWait?.();
   return ctx.done("fixture result", { state: "converged", summary: "Task processing remains active", facts: ["fixture"] });
 }`,
     );
   }
   const appPath = join(root, "projects/fixture.app/app.js");
-  const appSource = (description: string) => `export default {
-    id: "fixture", version: 1, agent: "may", description: ${JSON.stringify(description)},
+  const appSource = (description: string, appId = startupAppId, previousIds: string[] = []) => `export default {
+    id: ${JSON.stringify(appId)}, ${previousIds.length > 0 ? `previousIds: ${JSON.stringify(previousIds)}, ` : ""}version: 1, agent: "may", description: ${JSON.stringify(description)},
     inputSchema: { type: "object" }
     ${taskExecution ? ', workspace: { kind: "local", localPath: "." }, tasks: {}' : ""}
   };`;
@@ -361,22 +375,222 @@ export async function execute(ctx) {
 
   // The caller's actual reload callback, not a source-string assertion. The
   // registry/task transaction's rejection and rollback matrix lives with it.
-  writeFileSync(appPath, appSource("after"));
+  let legacyTaskId: string | undefined;
+  let inFlightTaskId: string | undefined;
+  let quiescenceEntered: ReturnType<typeof Promise.withResolvers<void>> | undefined;
+  let releaseInFlight: ReturnType<typeof Promise.withResolvers<void>> | undefined;
+  if (identityReload) {
+    const { bus } = preparedOptions!;
+    legacyTaskId = "work/legacy";
+    attemptFinished = Promise.withResolvers<void>();
+    const profiled = Promise.withResolvers<void>();
+    const detach = bus.subscribe((event) => {
+      if (
+        event.type === "project.task.reconcile.profiled" &&
+        (event.data as { taskId?: string }).taskId === legacyTaskId
+      ) {
+        profiled.resolve();
+      }
+    });
+    attachLoadedAppTask({
+      bus,
+      appDir: join(root, "projects/fixture.app"),
+      appId: legacyAppId,
+      idempotencyKey: legacyTaskId,
+      inputContext: {
+        id: legacyTaskId,
+        source: { kind: "human", id: "fixture" },
+        input: { kind: "probe", data: {} },
+      },
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: legacyTaskId,
+          parentId: "fixture",
+          workflow: "reload-probe",
+          outcome: "Verify App identity migration during reload",
+          acceptance: ["Legacy Task remains readable under the canonical App id"],
+        },
+      },
+    });
+    await Promise.all([attemptFinished.promise, profiled.promise]);
+    detach();
+    assert.ok(interfaceOptions!.getAppTask?.(legacyAppId, legacyTaskId));
+
+    const originalActivate = DefinitionSourceReleaseStore.prototype.activate;
+    const rejectedPublication = spyOn(DefinitionSourceReleaseStore.prototype, "activate").mockImplementation(
+      function (source) {
+        const result = originalActivate.call(this, source);
+        if (readFileSync(join(source.projectsRoot, "fixture.app/app.js"), "utf8").includes("rejected identity")) {
+          throw new Error("fixture rejects renamed source publication");
+        }
+        return result;
+      },
+    );
+    try {
+      const beforeRename = registry!.snapshot();
+      writeFileSync(appPath, appSource("rejected identity", canonicalAppId, [legacyAppId]));
+      const rejected = await lifecycle!.handleReload();
+      assert.equal(rejected.ok, false);
+      assert.match(rejected.summary, /fixture rejects renamed source publication/);
+      assert.equal(registry!.snapshot(), beforeRename);
+      assert.ok(interfaceOptions!.getAppTask?.(legacyAppId, legacyTaskId));
+      assert.throws(
+        () => interfaceOptions!.getAppTask?.(canonicalAppId, legacyTaskId!),
+        /App scout-lib has no loaded Task runtime/,
+      );
+      assert.deepEqual(
+        getDb(join(root, "state")).prepare("SELECT app_id, task_id FROM app_tasks WHERE task_id = ?").all(legacyTaskId),
+        [{ app_id: legacyAppId, task_id: legacyTaskId }],
+        "a rejected generation must roll the identity migration back",
+      );
+    } finally {
+      rejectedPublication.mockRestore();
+    }
+
+    inFlightTaskId = "work/in-flight";
+    const workflowStarted = Promise.withResolvers<void>();
+    releaseInFlight = Promise.withResolvers<void>();
+    const fixtureGlobal = globalThis as typeof globalThis & {
+      __mayReloadProbeStarted?: () => void;
+      __mayReloadProbeWait?: () => Promise<void>;
+    };
+    fixtureGlobal.__mayReloadProbeStarted = () => workflowStarted.resolve();
+    fixtureGlobal.__mayReloadProbeWait = () => releaseInFlight!.promise;
+    quiescenceEntered = Promise.withResolvers<void>();
+    const originalWhenIdle = AppTaskController.prototype.whenIdle;
+    const quiescence = spyOn(AppTaskController.prototype, "whenIdle").mockImplementation(function () {
+      quiescenceEntered!.resolve();
+      return originalWhenIdle.call(this);
+    });
+    cleanupIdentityGate = () => {
+      releaseInFlight?.resolve();
+      delete fixtureGlobal.__mayReloadProbeStarted;
+      delete fixtureGlobal.__mayReloadProbeWait;
+      quiescence.mockRestore();
+    };
+    attachLoadedAppTask({
+      bus,
+      appDir: join(root, "projects/fixture.app"),
+      appId: legacyAppId,
+      idempotencyKey: inFlightTaskId,
+      inputContext: {
+        id: inFlightTaskId,
+        source: { kind: "human", id: "fixture" },
+        input: { kind: "probe", data: {} },
+      },
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: inFlightTaskId,
+          parentId: "fixture",
+          workflow: "reload-probe",
+          outcome: "Finish work admitted before the App rename",
+          acceptance: ["The in-flight result is accepted under the canonical App identity"],
+        },
+      },
+    });
+    await workflowStarted.promise;
+
+    let recoveryQueries = 0;
+    const originalListTaskIdsByPhase = AppTaskResourceStore.prototype.listTaskIdsByPhase;
+    const rejectedRecovery = spyOn(AppTaskResourceStore.prototype, "listTaskIdsByPhase").mockImplementation(
+      function (phases, limit) {
+        const result = originalListTaskIdsByPhase.call(this, phases, limit);
+        if (this.appId === canonicalAppId && ++recoveryQueries === 1) {
+          bus.emit({
+            type: "fixture.task.recovery.side-effect",
+            source: "fixture",
+            owner: "runtime",
+            data: { appId: canonicalAppId },
+          });
+        } else if (this.appId === canonicalAppId && recoveryQueries === 2) {
+          throw new Error("fixture rejects renamed task recovery after side effect");
+        }
+        return result;
+      },
+    );
+    cleanupIdentityRecovery = () => rejectedRecovery.mockRestore();
+  }
+  writeFileSync(appPath, identityReload ? appSource("after", canonicalAppId, [legacyAppId]) : appSource("after"));
   assert.equal(registry!.entries()[0]?.definition.description, "before");
-  assert.equal((await lifecycle!.handleReload()).ok, true);
+  const firstReloadPromise = lifecycle!.handleReload();
+  if (identityReload) {
+    await quiescenceEntered!.promise;
+    assert.equal(registry!.entries()[0]?.definition.id, legacyAppId, "rename waits for the old attempt to finish");
+    assert.deepEqual(
+      getDb(join(root, "state")).prepare("SELECT app_id, task_id FROM app_tasks WHERE task_id = ?").all(inFlightTaskId),
+      [{ app_id: legacyAppId, task_id: inFlightTaskId }],
+      "identity migration must not run while an old-ID attempt is active",
+    );
+    releaseInFlight!.resolve();
+  }
+  const firstReload = await firstReloadPromise;
+  cleanupIdentityGate();
+  cleanupIdentityGate = () => {};
+  assert.equal(firstReload.ok, true, firstReload.summary);
   assert.equal(
     subscription.mock.calls.length,
     agentNames.length * 2,
-    "one activation at startup and one for the committed reload",
+    "activation includes startup and the committed reload",
   );
   assert.equal(registry!.entries()[0]?.definition.description, "after");
-  assert.ok(runtime!.host.hasApp("fixture"));
+  assert.ok(runtime!.host.hasApp(identityReload ? canonicalAppId : "fixture"));
+  if (identityReload) {
+    const canonicalTask = interfaceOptions!.getAppTask?.(canonicalAppId, legacyTaskId!);
+    assert.ok(canonicalTask, "the migrated Task must be readable under the canonical App id");
+    assert.deepEqual(
+      interfaceOptions!.getAppTask?.(legacyAppId, legacyTaskId!),
+      canonicalTask,
+      "the previous App id remains a read alias for the canonical Task",
+    );
+    assert.equal(registry!.canonicalId(legacyAppId), canonicalAppId);
+    assert.equal(
+      registry!.entries().some((entry) => entry.definition.id === legacyAppId),
+      false,
+    );
+    assert.deepEqual(
+      getDb(join(root, "state")).prepare("SELECT app_id, task_id FROM app_tasks WHERE task_id = ?").all(legacyTaskId),
+      [{ app_id: canonicalAppId, task_id: legacyTaskId }],
+      "persistence must contain one canonical Task, not a second legacy resource",
+    );
+    const recoveryEvents = getDb(join(root, "state"))
+      .prepare(
+        "SELECT event_type, data FROM events WHERE event_type IN ('fixture.task.recovery.side-effect', 'handler.failed') ORDER BY id",
+      )
+      .all() as Array<{ event_type: string; data: string }>;
+    assert.ok(
+      recoveryEvents.some(({ event_type }) => event_type === "fixture.task.recovery.side-effect"),
+      "the recovery side effect remains committed when later recovery work fails",
+    );
+    const recoveryFailure = recoveryEvents.find(({ event_type, data }) => {
+      if (event_type !== "handler.failed") return false;
+      const failure = JSON.parse(data) as { stage?: string; disposition?: string };
+      return failure.stage === "task-recovery" && failure.disposition === "recovery-pending";
+    });
+    assert.ok(recoveryFailure, "post-commit recovery failure must emit a recovery-pending diagnostic");
+    assert.match(JSON.parse(recoveryFailure.data).error, /fixture rejects renamed task recovery after side effect/);
+    assert.equal(
+      readLoadedAppTaskInputResult({
+        bus: preparedOptions!.bus,
+        appDir: join(root, "projects/fixture.app"),
+        taskId: inFlightTaskId!,
+        admissionKey: inFlightTaskId!,
+      })?.state,
+      "converged",
+      "the attempt that began under the old id must finish before migration and remain accepted",
+    );
+  }
   const accepted = registry!.snapshot();
   writeFileSync(appPath, "export default { invalid: true };");
   assert.equal((await lifecycle!.handleReload()).ok, false);
-  assert.equal(subscription.mock.calls.length, agentNames.length * 2, "rejected definitions must not activate");
+  assert.equal(
+    subscription.mock.calls.length,
+    agentNames.length * 2,
+    "rejected definitions must not activate",
+  );
   assert.equal(registry!.snapshot(), accepted);
-  assert.ok(runtime!.host.hasApp("fixture"));
+  assert.ok(runtime!.host.hasApp(identityReload ? canonicalAppId : "fixture"));
   if (mode === "overlapping-reloads" || mode === "overlapping-preparation") {
     const entered = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
@@ -469,6 +683,7 @@ export async function execute(ctx) {
         ? spyOn(DefinitionSourceReleaseStore.prototype, "stage").mockReturnValue(previousSource)
         : undefined;
       const before = registry!.snapshot();
+      const beforeProbe = await probe();
       publicationPause = { entered: Promise.withResolvers<void>(), release: Promise.withResolvers<void>(), reject };
       const reload = lifecycle!.handleReload();
       try {
@@ -476,7 +691,7 @@ export async function execute(ctx) {
         assert.equal(registry!.snapshot(), before, "dispatch occurs before the public registry advances");
         // Changing the live marker after preparation cannot change this selection.
         rmSync(join(excludedDir, ".disabled"));
-        assert.deepEqual(await probe(), reject ? ["fixture"] : ["enabled", "fixture"]);
+        assert.deepEqual(await probe(), beforeProbe, "preparation cannot expose the candidate worker source");
         assert.equal(
           dispatchedSource!.projectsRoot,
           new DefinitionSourceReleaseStore(root, join(root, "state")).current()!.projectsRoot,
@@ -490,18 +705,22 @@ export async function execute(ctx) {
       publicationPause = undefined;
       assert.equal(result.ok, !reject);
       if (reject) {
-        assert.match(result.summary, /fixture rejects published generation/);
+        assert.match(result.summary, /fixture rejects prepared generation/);
         assert.equal(registry!.snapshot(), before);
         assert.equal(new DefinitionSourceReleaseStore(root, join(root, "state")).current()!.id, previousSource.id);
       }
       assert.deepEqual(await probe(), ["enabled", "fixture"], "workers use the complete accepted or restored pair");
     }
   }
-  if (taskExecution) {
+  if (taskExecution && !identityReload) {
     const { bus, manager } = preparedOptions!;
-    const acceptedState = (taskId: string) => readLoadedAppTaskInputResult({
-      bus, appDir: join(root, "projects/fixture.app"), taskId, admissionKey: taskId,
-    })?.state;
+    const acceptedState = (taskId: string) =>
+      readLoadedAppTaskInputResult({
+        bus,
+        appDir: join(root, "projects/fixture.app"),
+        taskId,
+        admissionKey: taskId,
+      })?.state;
     const runTask = async (taskId: string) => {
       attemptFinished = Promise.withResolvers<void>();
       const profiled = Promise.withResolvers<void>();
@@ -587,6 +806,8 @@ export async function execute(ctx) {
   }
   console.log("startup-contract-ok");
 } finally {
+  cleanupIdentityGate();
+  cleanupIdentityRecovery();
   subscription.mockRestore();
   for (const cron of getAgentMaintenance().values()) cron.close();
   retirement.mockRestore();

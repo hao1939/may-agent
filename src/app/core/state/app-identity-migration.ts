@@ -1,5 +1,6 @@
 import type { AppDefinition } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
+import { stageStateTransaction } from "../../../lib/db/transaction.js";
 import { indexTaskReference } from "./task-reference-index.js";
 
 const APP_ID_TABLES = [
@@ -172,8 +173,7 @@ export function stageAppIdentityMigration(
   );
   if (renames.length === 0) return null;
 
-  db.exec("BEGIN IMMEDIATE");
-  let active = true;
+  const transaction = stageStateTransaction(db);
   try {
     db.exec("PRAGMA defer_foreign_keys = ON");
     for (const { oldId, canonicalId } of renames) {
@@ -188,7 +188,7 @@ export function stageAppIdentityMigration(
     }
   } catch (error) {
     try {
-      db.exec("ROLLBACK");
+      transaction.rollback();
     } catch {
       // Preserve the migration error.
     }
@@ -196,14 +196,10 @@ export function stageAppIdentityMigration(
   }
   return Object.freeze({
     commit() {
-      if (!active) throw new Error("App identity migration transaction is already closed");
-      db.exec("COMMIT");
-      active = false;
+      transaction.commit();
     },
     rollback() {
-      if (!active) return;
-      db.exec("ROLLBACK");
-      active = false;
+      transaction.rollback();
     },
   });
 }
