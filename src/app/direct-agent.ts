@@ -267,6 +267,18 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
         }
       },
     });
+    try {
+      writeFileSync(
+        join(sessionPath, "usage.json"),
+        JSON.stringify({ sessionId, outcome: result.status, durationMs: result.durationMs, ...result.usage }, null, 2) + "\n",
+      );
+    } catch (error) {
+      try {
+        options.onNotice?.(`Could not save usage measurements: ${String(error)}`);
+      } catch {
+        /* optional evidence */
+      }
+    }
     return {
       ...result,
       sessionId,

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -11,6 +11,9 @@ import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { readSessionMeta } from "../../src/lib/persistence.js";
 import { fakeModel } from "../fixtures/model.js";
 import concise from "../fixtures/concise-review-context.js";
+import { getDb, closeDb } from "../../src/lib/db/connection.js";
+import { contextUsageQuery, readContextUsage } from "../../src/app/adapters/reporting/context-usage.js";
+import { usageReply } from "../fixtures/execution-usage.js";
 
 test("configured preparation uses ordinary workflow execution across corrections and fresh managers", async () => {
   const root = mkdtempSync(join(tmpdir(), "context-workflow-"));
@@ -82,6 +85,29 @@ export async function execute(ctx) {
               ...config,
               streamFn: (_model, context) => {
                 prompts++;
+                if (prompts === 2) {
+                  const stream = createAssistantMessageEventStream();
+                  stream.push({
+                    type: "done",
+                    reason: "toolUse",
+                    message: usageReply({
+                      stopReason: "toolUse",
+                      content: [
+                        {
+                          type: "toolCall",
+                          name: "finish",
+                          id: "finish-corrective",
+                          arguments: {
+                            status: "success",
+                            summary: `${packet.revision}: ${packet.findings.join(", ") || "clear"}`,
+                            verification_facts: ["Read the supplied fixture."],
+                          },
+                        },
+                      ],
+                    }),
+                  });
+                  return stream;
+                }
                 const last = context.messages.at(-1)!;
                 const text =
                   typeof last.content === "string"
@@ -93,36 +119,11 @@ export async function execute(ctx) {
                   delete (expected.log as Partial<typeof expected.log>).content;
                 expect(supplied).toEqual(expected);
                 if (!supplied.log.content) expect(readFileSync(supplied.log.ref, "utf8")).toBe(packet.log.content);
-                const message: AssistantMessage = {
-                  role: "assistant",
-                  content: [
-                    {
-                      type: "toolCall",
-                      name: "finish",
-                      id: `finish-${prompts}`,
-                      arguments: {
-                        status: "success",
-                        summary: `${supplied.revision}: ${supplied.findings.join(", ") || "clear"}`,
-                        verification_facts: ["The supplied fixture contains the current revision and findings."],
-                      },
-                    },
-                  ],
-                  api: "openai-responses",
-                  provider: "fixture",
-                  model: "fixture",
-                  stopReason: "toolUse",
-                  timestamp: Date.now(),
-                  usage: {
-                    input: 0,
-                    output: 0,
-                    cacheRead: 0,
-                    cacheWrite: 0,
-                    totalTokens: 0,
-                    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-                  },
-                };
+                // The second model call returns the required finish. Metrics
+                // must include this corrective work, not just the initial brief.
+                const message = usageReply({ content: [{ type: "text", text: "Reviewed the current fixture." }] });
                 const stream = createAssistantMessageEventStream();
-                stream.push({ type: "done", reason: "toolUse", message });
+                stream.push({ type: "done", reason: "stop", message });
                 return stream;
               },
             }),
@@ -134,16 +135,102 @@ export async function execute(ctx) {
           type: "done",
           summary: `${packet.revision}: ${packet.findings.join(", ") || "clear"}`,
         });
-        expect(prompts).toBe(1);
+        expect(prompts).toBe(2);
         if (result.type !== "done") throw new Error("Expected a completed fixture workflow");
         const output = result.output as { id: string };
         expect(sessionIds.has(output.id)).toBe(false);
         sessionIds.add(output.id);
         expect(readSessionMeta(persistDir, output.id)?.task).toBe(original);
+        const observations = readContextUsage(getDb(persistDir), contextUsageQuery(new URLSearchParams()));
+        const observation = observations.runs.find((row) => row.sessionId === output.id)!;
+        expect(observation).toMatchObject({
+          outcome: "done",
+          preparer: variant === "full" ? "full" : "context.ts",
+          usage: { totals: { replies: 2, input: 20, cacheRead: 200, cacheWrite: 40, output: 10 }, toolCalls: 1 },
+        });
+        expect(observation.usage.preparation.taskBytes).toBe(Buffer.byteLength(original));
+        if (variant === "concise") expect(observation.entryHash).toMatch(/^[a-f0-9]{64}$/);
       }
     }
     expect(sessionIds.size).toBe(8);
   } finally {
+    closeDb(join(root, "state", "full"));
+    closeDb(join(root, "state", "concise"));
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("new invocations keep their own usage across reused sessions and preparation failures are visible", async () => {
+  const root = mkdtempSync(join(tmpdir(), "context-usage-manager-"));
+  try {
+    const makeManager = () =>
+      new SubagentManager({
+        projectRoot: root,
+        persistDir: root,
+        agentRunFactory: (config) =>
+          createAgentRun({
+            ...config,
+            streamFn: () => {
+              const stream = createAssistantMessageEventStream();
+              stream.push({
+                type: "done",
+                reason: "stop",
+                message: usageReply({ content: [{ type: "text", text: "done" }] }),
+              });
+              return stream;
+            },
+          }),
+      });
+    const definition = {
+      name: "worker",
+      description: "Fixture",
+      domain: "test",
+      tools: [],
+      model: fakeModel(),
+      systemPrompt: "Fixture",
+    };
+    for (let i = 0; i < 2; i++) {
+      const manager = makeManager();
+      manager.register(definition);
+      const id = manager.run("worker", "Continue", {
+        sessionId: "reused",
+        resumeMessages: [
+          usageReply({
+            usage: { ...usageReply().usage, input: 999999 },
+            content: [{ type: "text", text: "Past work" }],
+          }),
+        ],
+      });
+      expect((await manager.waitFor(id)).status).toBe("done");
+      // Reading a completed result performs no new execution or accounting.
+      expect((await manager.waitFor(id)).status).toBe("done");
+    }
+    const manager = makeManager();
+    manager.register({
+      ...definition,
+      contextPreparation: () => {
+        throw new Error("bad preparation");
+      },
+    });
+    expect(() => manager.run("worker", "New work")).toThrow("bad preparation");
+    const result = readContextUsage(getDb(root), contextUsageQuery(new URLSearchParams()));
+    expect(result.invocations).toBe(3);
+    expect(result.groups.find((group) => group.outcome === "done")).toMatchObject({
+      invocations: 2,
+      input: 20,
+      measuredReplies: 2,
+      cacheRead: 200,
+      meanInput: 10,
+    });
+    expect(result.groups.find((group) => group.outcome === "preparation-error")).toMatchObject({
+      invocations: 1,
+      preparer: "unidentified",
+      replies: 0,
+      meanInput: null,
+      meanPromptBytes: null,
+    });
+  } finally {
+    closeDb(root);
     rmSync(root, { recursive: true, force: true });
   }
 });

@@ -16,6 +16,27 @@ CREATE TABLE IF NOT EXISTS notification_messages (
 
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
+CREATE TABLE IF NOT EXISTS execution_usage (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  app_id TEXT,
+  agent TEXT NOT NULL,
+  workflow_run_id TEXT,
+  task_id TEXT,
+  attempt_id TEXT,
+  configured_model TEXT NOT NULL,
+  preparer TEXT NOT NULL,
+  entry_hash TEXT,
+  models TEXT NOT NULL,
+  started_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  outcome TEXT,
+  duration_ms REAL,
+  data TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_execution_usage_started ON execution_usage(started_at);
+CREATE INDEX IF NOT EXISTS idx_execution_usage_session ON execution_usage(session_id);
+
 CREATE TABLE IF NOT EXISTS sessions (
   sessionId       TEXT PRIMARY KEY,
   agent           TEXT NOT NULL,

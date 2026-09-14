@@ -9,6 +9,9 @@ import { insertWorkflowRun } from "../../src/lib/db/workflows.js";
 import { stateTransaction } from "../../src/lib/db/transaction.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
 import { createMetricService } from "../../src/lib/metrics.js";
+import { saveExecutionUsage } from "../../src/lib/db/execution-usage.js";
+import { createExecutionUsage } from "../../src/lib/execution-usage.js";
+import { preparationFixture, observeReply, usageReply } from "../fixtures/execution-usage.js";
 
 const chrome = [
   process.env.CHROME_PATH,
@@ -36,6 +39,13 @@ describe("served workflow and metric health pages", () => {
       recursive: true,
     });
     const db = getDb(root);
+    for (const preparer of ["full", `brief.ts ${markup}`]) {
+      const usage = createExecutionUsage({ ...preparationFixture, preparer,
+        entryHash: preparer === "full" ? null : "synthetic-entry-hash" });
+      observeReply(usage, usageReply());
+      saveExecutionUsage(db, { id: preparer, sessionId: "step-upload", appId: "research", agent: "worker",
+        workflowRunId: "wr_7", configuredModel: "fixture/model-a", startedAt: now - 10000 }, usage.snapshot(), "done", now - 9000);
+    }
     ["done", "done", "done", "done", "done", "done", "error", "error", "blocked", "interrupted", "error"].forEach(
       (status, i) => {
         insertWorkflowRun(root, {
@@ -155,6 +165,12 @@ describe("served workflow and metric health pages", () => {
     });
     expect(report.runs.map((r: { runId: string }) => r.runId)).toEqual(["wr_7", "wr_6"]);
     const data = await read("/api/metrics");
+    const usage = await read("/api/context-usage");
+    expect(usage.invocations).toBe(2);
+    expect(usage.groups[0]).toMatchObject({ meanInput: 10, meanCacheRead: 100, meanCacheWrite: 20, meanOutput: 5 });
+    expect((await read("/api/context-usage?preparer=full")).invocations).toBe(1);
+    expect((await read("/api/context-usage?agent=missing")).groups).toEqual([]);
+    await read("/api/context-usage?days=91", 400);
     expect(data.metrics.find((m: { id: string }) => m.id === "workflow.error-count-24h")).toMatchObject({
       current: 3,
       freshness: "stale",
@@ -515,6 +531,29 @@ describe("served workflow and metric health pages", () => {
         expect(actualWindow.get("start")).toBe(expectedWindow.get("start"));
         expect(actualWindow.get("end")).toBe(expectedWindow.get("end"));
         expect(await page.$eval("#metrics-workflows", (el) => el.textContent)).toContain("60.0% successful execution");
+        await page.waitForSelector("#metrics-context [data-context-comparison]");
+        const contextText = await page.$eval("#metrics-context", (el) => el.textContent || "");
+        expect(contextText).toContain("130");
+        expect(contextText).toContain("100 cache read");
+        expect(contextText).toContain("20 cache write");
+        expect(contextText).toContain("$0.0400");
+        expect(contextText).toContain("not an invoice");
+        expect(contextText).toContain(markup);
+        expect(await page.$("#metrics-context img")).toBeNull();
+        await page.click('#metrics-context a[href*="preparer=full"]');
+        await page.waitForFunction(() => document.querySelector("#metrics-context")?.textContent?.includes("1 recorded invocations"));
+        expect(await page.$$eval("[data-context-comparison] tbody tr", rows => rows.length)).toBe(1);
+        await page.$$eval('#metrics-context form input:not([type="hidden"])', inputs => {
+          for (const input of inputs) (input as HTMLInputElement).value = '';
+        });
+        await page.click('#metrics-context form button');
+        await page.waitForFunction(() => document.querySelector("#metrics-context")?.textContent?.includes("2 recorded invocations"));
+        expect(new URL(page.url()).searchParams.has('agent')).toBe(false);
+        expect(await page.$$eval("[data-context-comparison] tbody tr", rows => rows.length)).toBe(2);
+        await page.goto(base + '/metrics?agent=missing', { waitUntil: "domcontentloaded" });
+        await page.waitForFunction(() => document.querySelector("#metrics-context")?.textContent?.includes("No context usage observations"));
+        await page.goto(selected, { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
         stateTransaction(db, () => {
           for (let i = 21; i < 500; i++) alert.run(now + i);
         });
