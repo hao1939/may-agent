@@ -187,8 +187,6 @@ export async function execute(ctx: WorkflowContext) {
       const response = await ctx.agents.call(agent, prompt, {
         schema,
         tools: readonly ? "readonly" : "full",
-        timeoutMs: 180_000,
-        operationAllowance: 40,
       });
       ctx.signal.throwIfAborted();
       if (response.status !== "done" || !Check(schema, response.output)) {

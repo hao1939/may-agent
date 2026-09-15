@@ -151,8 +151,11 @@ Keep the current loop small. Its result is a local candidate, not a fulfilled
 request for remote CI, a merged PR or deployment. Cached verification assumes
 an unchanged local toolchain and ignored dependencies; a new input can request
 rechecking when the environment changes. Large repositories and long builds
-were not tested: subprocesses have a 120-second/2-MB bound, agent calls a
-180-second/40-operation allowance, and one invocation has three repair rounds.
+were not tested: subprocesses have a 120-second/2-MB bound and one invocation
+has three repair rounds. The original agent-call caps were 180 seconds and
+40 operations; the local integration trial exhausted the time limit during
+report authoring. Agent calls now inherit the Host's remaining workflow
+allowance and cancellation instead of those additional overrides.
 Failed or exhausted attempts return ordinary incomplete feedback. Larger work
 should first be split into suitable outcomes or use existing async capabilities.
 

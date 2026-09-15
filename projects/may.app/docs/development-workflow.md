@@ -39,6 +39,12 @@ event handler, database table, timer, queue, workflow checkpoint service or
 agent heartbeat. An exhausted local repair allowance returns an incomplete
 attempt; the same Task remains responsible under ordinary backoff.
 
+Agent calls inherit the Host's remaining workflow execution allowance and
+cancellation. There is no additional per-step timer or operation cap in this
+workflow. The initial parser PoC's three-minute/40-operation caps interrupted
+substantive report authoring in the local integration trial. Removing those
+overrides keeps the existing bounded execution path and ordinary recovery.
+
 Profiles use internal names `may-bob` and `may-tech-lead` to avoid collisions
 with the existing Host Operations profiles. They live under `may.app`. The
 workflow selects them through its bounded SDK calls. May can submit an ordinary
