@@ -6,6 +6,7 @@ import {
   type AppObserverResult,
   type ObserverSnapshot,
 } from "@may-agent/sdk";
+import { createTestObserverContext } from "@may-agent/sdk/testing";
 import { EVENT_ROW_ID, EventBus } from "../../core/events/bus.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 
@@ -27,7 +28,7 @@ describe("canonical App observers", () => {
     const runtime = createAppObserverRuntime({
       bus,
       now: () => currentTime,
-      context: () => ({ read: {} as never, log: {} as never, workspace: { appRoot: "/app", projectRoot: "/project" } }),
+      context: () => createTestObserverContext({ workspace: { appRoot: "/app", projectRoot: "/project" } }),
     });
     runtime.replace([
       entry({
@@ -70,9 +71,7 @@ describe("canonical App observers", () => {
     bus.subscribe((event) => events.push(event as unknown as Record<string, unknown>));
     const runtime = createAppObserverRuntime({
       bus,
-      context: () => ({
-        read: {} as never,
-        log: {} as never,
+      context: () => createTestObserverContext({
         workspace: { appRoot: "/apps/evaluation.app", projectRoot: "/projects/evaluation" },
       }),
       now: () => currentTime,
@@ -125,9 +124,7 @@ describe("canonical App observers", () => {
     bus.subscribe((event) => events.push(event.type));
     const runtime = createAppObserverRuntime({
       bus,
-      context: () => ({
-        read: {} as never,
-        log: {} as never,
+      context: () => createTestObserverContext({
         workspace: { appRoot: "/apps/evaluation.app", projectRoot: "/projects/evaluation" },
       }),
       now: () => 1,
@@ -189,9 +186,7 @@ describe("publication-coupled observation memory", () => {
     const runtime = createAppObserverRuntime({
       bus,
       now: () => now,
-      context: () => ({
-        read: {} as never,
-        log: {} as never,
+      context: () => createTestObserverContext({
         workspace: { appRoot: "/apps/sample.app", projectRoot: "/projects/sample" },
       }),
     });

@@ -32,3 +32,8 @@ storage. Host deployment and App adoption are separate operations.
 
 Generic status keeps session and evaluation evidence. Named learning-process
 reports belong to their App; a particular Coach or Gym is not required.
+
+## Observer health read
+
+Ordinary App observers can read the optional [Host health snapshot](host-health.md).
+It exposes bounded facts and coverage limits, not SQL, verdicts or recovery controls.
