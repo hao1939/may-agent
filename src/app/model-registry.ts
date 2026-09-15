@@ -1,10 +1,12 @@
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import type { ModelWithApiKey } from "../lib/types.js";
 
-// These are limits verified for May's configured model endpoint, not upstream
-// catalog capabilities. Keep them explicit so a catalog refresh cannot
-// silently delay compaction past the endpoint's context window.
+// Operational context caps for May's configured endpoint. Existing routes use
+// verified limits; the GPT-6 trial starts with a conservative 400k cap, not a
+// claim that its endpoint's full context window has been tested. Keep caps
+// explicit so catalog changes cannot silently delay compaction.
 const ENDPOINT_CONTEXT_WINDOWS = {
+  "gpt-6-astra": 400_000,
   "claude-opus-4-6": 72_000,
   "gpt-5.4": 400_000,
   "gpt-5.5": 400_000,
@@ -34,6 +36,12 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
   };
 
   const registry: ModelRegistry = {
+    "gpt-6-astra": {
+      ...getBuiltinModel("github-copilot", "gpt-6-astra"),
+      contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-6-astra"],
+      baseUrl,
+      apiKey,
+    },
     "claude-opus-4-6": {
       ...getBuiltinModel("anthropic", "claude-opus-4-6"),
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-4-6"],
