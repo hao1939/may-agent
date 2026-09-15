@@ -61,6 +61,8 @@ export interface SubagentDefinition {
 
   /** Optional context adapter captured with this immutable definition generation. */
   contextPreparation?: AgentContextPreparer;
+  /** Loader-captured entrypoint identity; not an App-supplied metric label. */
+  contextPreparationSource?: { path: string; entryHash: string };
 
   /**
    * @deprecated Volatile files should be injected as session context, not system prompt.

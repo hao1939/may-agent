@@ -36,6 +36,7 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
+import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
 import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
@@ -3600,6 +3601,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
+      if (url.pathname === "/api/context-usage") {
+        let query: ReturnType<typeof contextUsageQuery>;
+        try { query = contextUsageQuery(url.searchParams); }
+        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400); }
+        return json(readContextUsage(_db(), query));
+      }
       if (url.pathname === "/api/workflow-health") {
         let query: ReturnType<typeof workflowHealthQuery>;
         try { query = workflowHealthQuery(url.searchParams); }

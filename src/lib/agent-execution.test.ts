@@ -19,6 +19,7 @@ import {
 } from "./agent-execution.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
+import { usageReply } from "../../test/fixtures/execution-usage.js";
 
 const roots: string[] = [];
 
@@ -741,6 +742,29 @@ describe("direct structured judgment execution", () => {
     expect(result.finishResult?.status).toBe("failure");
     expect(result.structuredResult).toEqual(judgment);
     expect(calls).toBe(1);
+  });
+
+  test("direct execution returns usage for all corrective replies and excludes inherited messages", async () => {
+    const prepared = prepare(false);
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      const stream = createAssistantMessageEventStream();
+      const message = usageReply({ content: [{ type: "text", text: "Prose without finish" }] });
+      if (++calls === 2) {
+        message.stopReason = "toolUse";
+        message.content = [{ type: "toolCall", id: "usage-finish", name: "finish", arguments: {
+          status: "success", summary: "Finished", verification_facts: ["Fixture checked"],
+        } }];
+      }
+      stream.push({ type: "done", reason: message.stopReason === "toolUse" ? "toolUse" : "stop", message });
+      return stream;
+    };
+    const result = await executePreparedAgent(prepared, { initialMessages: [usageReply({
+      content: [{ type: "text", text: "Past work" }], usage: { ...usageReply().usage, input: 999999 },
+    })] });
+    expect(result.status).toBe("done");
+    expect(calls).toBe(2);
+    expect(result.usage).toMatchObject({ totals: { replies: 2, input: 20, cacheRead: 200, cacheWrite: 40, output: 10 }, toolCalls: 1 });
   });
 
   test.each([

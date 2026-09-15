@@ -13,24 +13,26 @@ function normalizeUsage(usage) {
   const input = u.input ?? u.inputTokens ?? u.promptTokens ?? u.prompt_tokens ?? null;
   const output = u.output ?? u.outputTokens ?? u.completionTokens ?? u.completion_tokens ?? null;
   const cacheRead = u.cacheRead ?? u.cache_read ?? u.cacheReadTokens ?? null;
-  const total = u.totalTokens ?? u.total_tokens ?? ((input != null || output != null) ? Number(input || 0) + Number(output || 0) : null);
+  const cacheWrite = u.cacheWrite ?? u.cache_write ?? u.cacheWriteTokens ?? null;
+  const total = u.totalTokens ?? u.total_tokens ?? ((input != null || output != null) ? Number(input || 0) + Number(output || 0) + Number(cacheRead || 0) + Number(cacheWrite || 0) : null);
   const cost = u.cost?.total ?? u.costTotal ?? u.cost_usd ?? u.totalCost ?? null;
-  return { input, output, cacheRead, total, cost };
+  return { input, output, cacheRead, cacheWrite, total, cost };
 }
 
 function usageLabel(usage) {
   const u = normalizeUsage(usage);
   if (u.input == null && u.output == null && u.total == null) return '';
   const parts = [];
-  if (u.input != null || u.output != null) parts.push(`${u.input || 0} in / ${u.output || 0} out`);
-  if (u.cacheRead) parts.push(`${u.cacheRead} cached`);
+  if (u.input != null || u.output != null) parts.push(`${u.input || 0} uncached in / ${u.output || 0} out`);
+  if (u.cacheRead) parts.push(`${u.cacheRead} cache read`);
+  if (u.cacheWrite) parts.push(`${u.cacheWrite} cache write`);
   if (u.total != null) parts.push(`${u.total} total`);
   return parts.join(' | ');
 }
 
 function costLabel(usage) {
   const cost = normalizeUsage(usage).cost;
-  return cost != null ? `$${Number(cost).toFixed(4)}` : '';
+  return cost != null ? `Est. $${Number(cost).toFixed(4)}` : '';
 }
 
 function buildSessionFlow(messages) {
