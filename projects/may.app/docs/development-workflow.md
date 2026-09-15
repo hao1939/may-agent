@@ -43,8 +43,7 @@ attempt; the same Task remains responsible under ordinary backoff.
 
 The process is one reconciliation loop: read the latest requirements, check
 the work so far, and decide what to do next. Execute that step and save the
-result.
-Feedback, failed checks and recovery all lead to another iteration. The
+result. Feedback, failed checks and recovery all lead to another iteration. The
 current workflow allows three rounds in one execution; that bounds the
 invocation, not the number of iterations available to the Task. Matching
 evidence lets later invocations skip completed work.
@@ -60,8 +59,8 @@ edit, test and adjust until ready, or return a design concern or requirement
 question through its structured result. The workflow passes that decision to
 the responsible agent and continues from the result. Local iteration adds no
 Task, scheduler or independent work authority. May maintains the accepted
-requirement as the Task creator;
-Bob judges design and acceptance; tech-lead judges implementation choices.
+requirement as the Task creator; Bob judges design and acceptance; tech-lead
+judges implementation choices.
 
 Agent calls inherit the Host's remaining workflow execution allowance and
 cancellation. There is no additional per-step timer or operation cap in this
@@ -144,18 +143,36 @@ invocation obtains Bob's design judgment before implementation resumes. Bob
 can retain a suitable approach. Failed verification under an unchanged
 specification leaves the design valid, so code returns directly to tech-lead.
 Both follow from the current work and requirements; neither needs a separate
-event handler.
-The PoC conservatively resets saved evidence for any newly delivered input,
-so asynchronous notifications can cause extra assessment. More selective
-reuse is an optional optimization; external-operation continuation is outside
-this trial.
+event handler. The PoC conservatively resets saved evidence for any newly
+delivered input, so asynchronous notifications can cause extra assessment.
+More selective reuse is an optional optimization; external-operation
+continuation is outside this trial.
 
-Before and after agent calls, and around verification, the workflow checks the
-current specification. A detected change preserves work and returns incomplete
-for the next iteration. It does not inject updates into an ongoing coding call
-or check between each tool call. Runtime settlement fences remain responsible
-for concurrent acceptance. These reads do not lock files, provider calls or
-specification updates, or prevent the creator's write.
+At a checkpoint, code compares the requirement used for the work with the
+current Task requirement. The existing generation and requirement checksum
+provide that check; ordinary progress updates do not change the requirement.
+Tech-lead does not need to receive a notification, poll through a tool or ask
+another model whether something changed. If the requirement is unchanged,
+execution continues. If it changed, the execution preserves work and returns
+incomplete. The same Task's next iteration reads the latest state, and the
+workflow selects the next step under the App's rules.
+
+The current checkpoints are before and after the whole agent call, and around
+verification. Tech-lead can keep coding and testing within its call; it may
+continue using old instructions until the call returns or execution ends.
+Preserving work means retaining files and available progress. It does not
+require committing unfinished code or capturing every internal step.
+
+Checkpoint placement is a responsiveness choice within the same reconciliation
+model. Keep the current boundaries as the simple default. Checking between
+coding iterations could detect updates sooner, at the cost of more execution
+integration. Measure call duration and work spent on superseded requirements
+before adding finer checkpoints. Faster notification can be an optimization;
+reading the current requirement remains the basis for deciding whether to yield.
+
+Runtime settlement fences remain responsible for concurrent acceptance. These
+checks do not lock files, provider calls or specification updates, or prevent
+the creator's write.
 
 An interrupted attempt may leave a commit or dirty edit without an accepted
 workflow record. The next invocation inspects the same worktree and asks
