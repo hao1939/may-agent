@@ -582,7 +582,7 @@ export async function runTaskAttempt(input: {
           hasPendingAppTaskFacts(config, primary, primaryResult.acceptedLiveEventIds) ? "waiting" : "accepted",
         );
         if (!finalized.ok) {
-          // A retained dirty/unintegrated workspace needs inspection, not an
+          // A dirty workspace or failed cleanup needs inspection, not an
           // identical replay of the handler's already rejected completion.
           primaryResult.handlerBlocked = true;
           primaryHandlerResult.state = "error";

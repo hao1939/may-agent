@@ -6138,7 +6138,7 @@ describe("canonical App task runtime", () => {
     { state: "waiting", committed: false, actions: true },
     { state: "incomplete", committed: false },
     { state: "incomplete", committed: true },
-  ] as const)("retains workspace after rejection or stop ($state, committed=$committed)", async (scenario) => {
+  ] as const)("preserves workspace and respects the accepted outcome ($state, committed=$committed)", async (scenario) => {
     const f = fixture();
     const bus = eventBus();
     const git = (cwd: string, ...args: string[]) =>
@@ -6208,7 +6208,7 @@ describe("canonical App task runtime", () => {
         id: taskId,
         parentId: "operations",
         outcome: "Preserve unfinished work",
-        acceptance: ["Preserve the workspace and pace retries until integration succeeds"],
+        acceptance: ["Preserve local work; a committed candidate is sufficient without integration"],
         agent: "sample-owner",
         executor: "residue",
       },
@@ -6222,10 +6222,25 @@ describe("canonical App task runtime", () => {
       });
     setSystemTime(new Date());
     await run();
+    if (scenario.state === "converged" && scenario.committed) {
+      const accepted = acceptedTaskAttempt(config, taskId)!;
+      expect(accepted).toMatchObject({
+        taskGeneration: 1,
+        acceptedResult: { state: "converged", summary: "Claimed handler outcome" },
+        workspace: { disposition: "active" },
+      });
+      expect(readFileSync(join(accepted.workspace!.path, "retained.txt"), "utf8")).toBe("unfinished source\n");
+      expect(existsSync(join(f.appDir, "retained.txt"))).toBe(false);
+      for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
+      await run();
+      expect(calls).toBe(1);
+      expect(config.resourceStore.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain(taskId);
+      return;
+    }
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
       status: "pending",
       summary: expect.stringContaining(
-        scenario.state === "incomplete" ? "Outcome not achieved" : scenario.committed ? "not integrated" : "dirty",
+        scenario.state === "incomplete" ? "Outcome not achieved" : "dirty",
       ),
       facts: expect.arrayContaining(["provider:facts"]),
     });
@@ -6243,16 +6258,13 @@ describe("canonical App task runtime", () => {
           ? { state: "completed", acceptedResult: expect.objectContaining({ state: "incomplete" }) }
           : { state: "failed", failureReason: "handler-blocked" }),
         workspace: expect.objectContaining({
-          disposition: scenario.committed && scenario.state !== "incomplete" ? "branch-retained" : "retained-for-recovery",
+          disposition: "retained-for-recovery",
         }),
       }),
     ]);
     const retained = Object.values(tree.attempts ?? {})[0]!.workspace!;
     expect(config.resourceStore.readCancellation(taskId)).toBeNull();
-    if (retained.disposition === "branch-retained") {
-      expect(existsSync(retained.path)).toBe(false);
-      expect((await git(f.appDir, "show", `${retained.branch}:retained.txt`)).stdout).toBe("unfinished source\n");
-    } else expect(readFileSync(join(retained.path, "retained.txt"), "utf8")).toBe("unfinished source\n");
+    expect(readFileSync(join(retained.path, "retained.txt"), "utf8")).toBe("unfinished source\n");
     if (scenario.state === "incomplete")
       expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.facts).toEqual(
         expect.arrayContaining(["provider:facts", retained.path]),

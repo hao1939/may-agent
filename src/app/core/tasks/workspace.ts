@@ -22,6 +22,7 @@ export type TaskWorkspaces = {
     refreshRemote?: boolean;
     previous?: AppTaskWorkspace;
   }): Promise<PreparedTaskWorkspace>;
+  /** Preserve accepted local deliverables; integration requirements belong to App acceptance. */
   finalize(
     prepared: PreparedTaskWorkspace,
     outcome: "accepted" | "waiting" | "failed",
