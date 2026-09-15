@@ -89,6 +89,11 @@ a shared primary checkout, keeps unfinished edits, and checks clean committed
 source before verification and review. Passing checks and review are bound to
 the exact commit and merge-base. A changed or dirty candidate cannot reuse
 those receipts. Workflow code does not allocate, merge, push or clean worktrees.
+The Host must preserve a clean unmerged deliverable when accepting this local
+outcome. Integration is an App requirement only when the assignment asks for
+it; workspace cleanup cannot impose a merge or remove the report's checkout.
+The local report trial exposed that older Host cleanup incorrectly rejected
+such results. It requires the accompanying workspace finalization correction.
 Evidence reuse assumes the local toolchain and ignored dependencies remain
 unchanged. It does not fingerprint the environment or certify external systems;
 a new input requests fresh verification when those assumptions change.
