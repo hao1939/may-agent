@@ -6,10 +6,12 @@ import {
   type AppTaskAttachment,
   type AppTaskInput,
 } from "@may-agent/sdk";
+import { developmentInputSchema, readDevelopmentInput } from "./development.js";
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 
 const mayInputSchema = Type.Union([
+  developmentInputSchema,
   Type.Object(
     {
       kind: Type.Literal("goal"),
@@ -65,6 +67,22 @@ const mayInputSchema = Type.Union([
 export function taskForMayInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
+  if (admitted.input.kind === "development") {
+    const input = readDevelopmentInput(admitted.input);
+    return {
+      kind: "desired",
+      intent: {
+        id: `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        parentId: "may",
+        outcome: input.data.outcome,
+        acceptance: input.data.acceptance,
+        agent: "may-tech-lead",
+        workflow: "develop-change",
+        input,
+        priority: "P1",
+      },
+    };
+  }
   if (admitted.input.kind !== "goal") {
     throw new Error(
       `Unsupported durable May input kind: ${admitted.input.kind}`,

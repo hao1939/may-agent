@@ -56,3 +56,8 @@ update. Later useful findings can be reported without reopening a fulfilled ask.
 The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unification.md)
 owns the lifecycle and its evidence. Host deployment and runtime operations
 remain with the Host Operations App (`app:may-agent`).
+
+An opt-in [development workflow PoC](docs/development-workflow.md) explores
+code-driven implementation and review with Bob (GPT-6) and tech-lead (GPT-5.6).
+Its source, model-registry and workspace prerequisites require validation
+before activation; it is not a claim that the live App runs this workflow.
