@@ -1,5 +1,26 @@
 # Changelog
 
+## [5.0.0](https://github.com/hao1939/may-agent/compare/v4.0.0...v5.0.0) (2026-09-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **web:** route project comments through normal App input ([#176](https://github.com/hao1939/may-agent/issues/176))
+* **runtime:** decouple admission from execution ([#191](https://github.com/hao1939/may-agent/issues/191))
+* **tasks:** unify requirement corrections under creator authority ([#188](https://github.com/hao1939/may-agent/issues/188))
+
+### Features
+
+* **execution:** add experimental configured context preparation ([#192](https://github.com/hao1939/may-agent/issues/192)) ([83a2743](https://github.com/hao1939/may-agent/commit/83a27430794abf49a5ebb3f14a58af387bb8cccb))
+* **metrics:** compare context preparation usage and outcomes ([#193](https://github.com/hao1939/may-agent/issues/193)) ([45d6bd2](https://github.com/hao1939/may-agent/commit/45d6bd2e751174d5f6355bbbc62041c163fb2b3e))
+
+
+### Bug Fixes
+
+* **runtime:** decouple admission from execution ([#191](https://github.com/hao1939/may-agent/issues/191)) ([efb98b5](https://github.com/hao1939/may-agent/commit/efb98b5b32ac2212273d822a882deae659f0fd36))
+* **tasks:** unify requirement corrections under creator authority ([#188](https://github.com/hao1939/may-agent/issues/188)) ([708a9db](https://github.com/hao1939/may-agent/commit/708a9dbdfedc4b8ce4d7bedceb28ee7ceab5f197))
+* **web:** route project comments through normal App input ([#176](https://github.com/hao1939/may-agent/issues/176)) ([bf001b4](https://github.com/hao1939/may-agent/commit/bf001b48ad169e828c1713d959a5a524c2d198c6))
+
 ## [4.0.0](https://github.com/hao1939/may-agent/compare/v3.0.1...v4.0.0) (2026-09-13)
 
 
