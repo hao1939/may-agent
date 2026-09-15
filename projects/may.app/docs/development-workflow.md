@@ -1,6 +1,8 @@
 # Development workflow: judgment and execution
 
-Status: opt-in source PoC. No live App activation or deployment is implied.
+Status: opt-in PoC with a completed local integration trial, recorded in the
+[PoC review](development-workflow-poc.md). This document does not authorize a
+default rollout or certify the current live installation.
 
 ## Sufficient first outcome
 
@@ -38,6 +40,28 @@ Task state, feedback, recovery and closure. The graph adds no core phases,
 event handler, database table, timer, queue, workflow checkpoint service or
 agent heartbeat. An exhausted local repair allowance returns an incomplete
 attempt; the same Task remains responsible under ordinary backoff.
+
+The process is one reconciliation loop: read the latest requirements, check
+the work so far, and decide what to do next. Execute that step and save the
+result.
+Feedback, failed checks and recovery all lead to another iteration. The
+current workflow allows three rounds in one execution; that bounds the
+invocation, not the number of iterations available to the Task. Matching
+evidence lets later invocations skip completed work.
+
+Agents make judgments; the workflow runs the steps and checks. Bob assesses
+the design before tech-lead implements it. Code runs verification, and Bob
+reviews the result before completion. The workflow reuses completed work while
+it still applies to the latest requirements and code. These are the App's
+development rules, implemented by the existing workflow.
+
+An agent can iterate locally within its assigned step. Tech-lead can inspect,
+edit, test and adjust until ready, or return a design concern or requirement
+question through its structured result. The workflow passes that decision to
+the responsible agent and continues from the result. Local iteration adds no
+Task, scheduler or independent work authority. May maintains the accepted
+requirement as the Task creator;
+Bob judges design and acceptance; tech-lead judges implementation choices.
 
 Agent calls inherit the Host's remaining workflow execution allowance and
 cancellation. There is no additional per-step timer or operation cap in this
@@ -110,12 +134,28 @@ authoritative. Matching accepted verification/review evidence can produce a
 quiet result without model calls. New input causes fresh judgment; this PoC
 accepts inexpensive extra review instead of classifying every event type.
 
-Creator changes remain independent of execution. Before and after agent calls,
-and before verification, the workflow checks the current specification. If it
-changed, the attempt preserves work and returns incomplete; the next invocation
-reconciles the new specification. This does not block or intercept the creator's
-write. Runtime settlement fences remain responsible for concurrent acceptance.
-The reads do not form a lock over files, provider calls or specification updates.
+Events prompt reconciliation; the current specification and evidence determine
+the next step. An input event alone does not authorize a new requirement. May
+interprets the human request and uses its creator authority to update the
+specification. The accepted write is independent of the worker's execution.
+
+A changed specification makes the saved evidence outdated, so the next
+invocation obtains Bob's design judgment before implementation resumes. Bob
+can retain a suitable approach. Failed verification under an unchanged
+specification leaves the design valid, so code returns directly to tech-lead.
+Both follow from the current work and requirements; neither needs a separate
+event handler.
+The PoC conservatively resets saved evidence for any newly delivered input,
+so asynchronous notifications can cause extra assessment. More selective
+reuse is an optional optimization; external-operation continuation is outside
+this trial.
+
+Before and after agent calls, and around verification, the workflow checks the
+current specification. A detected change preserves work and returns incomplete
+for the next iteration. It does not inject updates into an ongoing coding call
+or check between each tool call. Runtime settlement fences remain responsible
+for concurrent acceptance. These reads do not lock files, provider calls or
+specification updates, or prevent the creator's write.
 
 An interrupted attempt may leave a commit or dirty edit without an accepted
 workflow record. The next invocation inspects the same worktree and asks
@@ -148,13 +188,13 @@ May retains the same Request/Task link for follow-up and uses the existing
 creator update capability for corrections. Ordinary `goal` input still selects
 May; only explicit `development` input selects `develop-change`.
 
-Source needs the current bounded workflow SDK, including `ctx.signal`, exact
-Task reads, structured agent calls and task workspaces. The running v4 image
-is older than the reviewed SDK source used by this PoC. GPT-6 is advertised by
-the configured endpoint, but the current installed Host registry lacks that
-entry; the small companion Host change registers the exact model. Definitions,
-SDK and Host must be validated together before activation. Their source names
-do not prove an installed or functioning model route.
+Source needs the bounded workflow SDK, including `ctx.signal`, exact Task
+reads, structured agent calls and task workspaces. The local integration trial
+used a v4-based image with companion changes for GPT-6 registration, App-local
+helper loading and preservation of clean local deliverables. See the PoC
+review for the tested versions and remaining limits. Definitions, SDK and Host
+must be validated together before activation; their source names do not prove
+an installed or functioning model route.
 
 May explicitly declares its existing App directory as a Git workspace on `main`;
 the Host requires this declaration before allocating a Task worktree. The
