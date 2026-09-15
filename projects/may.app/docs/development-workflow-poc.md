@@ -96,8 +96,12 @@ part of this experiment.
 An additional isolated check used the normal Host agent loader with the
 companion model registry. It discovered `may-bob` and `may-tech-lead`, selected
 the exact requested models, and assembled the expected tools. The loader
-also provides its standard scoped, read-only `tasks` tool. The direct model
-harness omitted that optional read tool; it did not omit a write permission.
+also provides its standard scoped `tasks` tool. A later source inspection for
+the local pilot found that it includes fact publication and creator-authorized
+updates, even in the current read-only allowlist. The direct model harness
+omitted that capability, so its lack of Task side effects does not prove the
+same property for a normally loaded profile. File/shell restrictions and Task
+authority must be assessed separately during activation.
 
 Setup failures were kept distinct from product failures:
 
@@ -106,8 +110,10 @@ Setup failures were kept distinct from product failures:
 - Sparse checkout initially omitted an existing Host-role instruction file
   needed by an existing App test. Restoring that fixture path fixed the test.
 - The loader probe initially expected only configured preset tools and missed
-  the automatic read-only Task tool. The assertion and documentation were
-  corrected; no new tool policy or Host workaround was added.
+  the automatic Task tool. The assertion was corrected. The description was
+  later corrected again after inspecting its mutation actions; a passing tool
+  name list alone had not proved a read-only boundary. No new Host workaround
+  was added.
 
 ## Source and reproduction
 

@@ -48,11 +48,14 @@ cross-App helper exception, or Host Operations activation.
 Bob uses GPT-6 Astra with read-only tools plus the structured finish capability.
 Tech-lead uses GPT-5.6 Sol with file/shell tools plus finish. Neither profile
 has agent delegation, CLI-worker, message, workflow-recursion or cron tools.
-The standard loader also supplies its existing scoped, read-only Task tool;
-this does not allow either profile to assign Tasks or change requirements.
+The standard loader also supplies its scoped `tasks` capability. That tool
+includes reads, fact publication and creator-authorized updates; its name in
+the current read-only allowlist does not make every action read-only. These
+profiles are instructed to return judgments without using Task mutations.
 Tech-lead's shell remains trusted code execution, not a filesystem/network
-sandbox. The workflow's acceptance checks and Bob's read-only tool policy are
-mechanical guarantees; prompts restricting arbitrary shell effects are not.
+sandbox. The workflow mechanically checks candidate acceptance and removes
+Bob's file/shell write tools. Shared Task effects still rely on their ordinary
+authority checks and the assignment; prompts restricting effects are not a sandbox.
 
 ## Decision contracts and enforcement
 
