@@ -1,6 +1,6 @@
 import { readTaskEventTarget } from "../../core/events/task-target.js";
 import { spawn, type ChildProcess } from "node:child_process";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { SubagentManager } from "../../../lib/index.js";
 import { closeAllDbs, getDb } from "../../../lib/requests.js";
 import { AppRegistry } from "../../core/apps/registry.js";
@@ -13,11 +13,11 @@ import {
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
-
 } from "../../core/tasks/app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
 import { attachEventPersistence } from "../../daemon-events.js";
 import { prepareDaemonAgents } from "../../daemon-agents.js";
+import { listConfiguredAgentNames } from "../../loader/agent-discovery.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { EventBus, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
 import { HostCapacity } from "../../core/scheduling/host-capacity.js";
@@ -486,8 +486,9 @@ async function runTaskWorker(input: {
   await registry.reload();
   const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
   const task = input.task;
-  // Attempts load only their selected agents. Recovery needs the whole active
-  // catalog: retained Tasks can select or inherit a non-default agent.
+  // Workflows may call any helper declared by their App. Load those profiles
+  // from the same pinned source, plus the default and selected executor.
+  // Recovery needs the whole active catalog for retained Tasks.
   const agentNames = task
     ? registry
         .snapshot()
@@ -499,7 +500,11 @@ async function runTaskWorker(input: {
             "",
           );
           const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
-          if (!resourceStore) return [agent];
+          const names = [
+            agent,
+            ...listConfiguredAgentNames(resolve(activeSource.projectsRoot, basename(appDir), "agents")),
+          ];
+          if (!resourceStore) return names;
           const selected = readAppTaskAgent(
             appTaskContext({
               appDir,
@@ -510,7 +515,7 @@ async function runTaskWorker(input: {
             }),
             task.taskId,
           );
-          return selected && selected !== agent ? [agent, selected] : [agent];
+          return selected ? [...names, selected] : names;
         })
     : undefined;
   const hostCapacity = new HostCapacity(1);

@@ -17,6 +17,7 @@ describe("real Task worker boundary", () => {
     ["restoredAgent", "uses a restored non-default agent on the same Task after backoff"],
     ["recoveryLeavesHandlerJudgmentToAttempt", "recovery preserves input while the next attempt checks current code"],
     ["pinnedSource", "pins workflow and shared definitions across reload"],
+    ["appLocalHelper", "calls an App-local helper from the pinned catalog without loading unrelated agents"],
     ["rejectedDisable", "keeps accepted Apps in recovery and attempts after rejected disable reload"],
     ["inheritedAgent", "runs an inherited non-default agent"],
     ["liveControl", "receives feedback and cancels without duplicate Events"],
