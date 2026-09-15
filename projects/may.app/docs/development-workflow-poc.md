@@ -1,15 +1,17 @@
 # Development workflow PoC review
 
-Date: 2026-09-15. Disposition: retain the opt-in experiment for review; do not
-activate it in the running May App yet.
+Date: 2026-09-15. Disposition: retain the opt-in experiment. The initial isolated
+trial was followed by a separately authorized local May integration trial,
+recorded below; this is not a default rollout or a public release.
 
 ## Finding
 
 The [design](development-workflow.md) works for a small local coding outcome.
 An App workflow can enforce verification and review while agents judge the
 design, implementation and requirement changes. It needs no additional Task
-controller or workflow recovery service. The useful next step is an isolated
-May-to-Task integration pilot, not more stages or a general workflow framework.
+controller or workflow recovery service. The initial harness left the actual
+May-to-Task integration unproven; the later local trial below covers that path
+without adding stages or a general workflow framework.
 
 This is evidence of feasibility, not evidence that two profiles outperform one
 agent. Bob designs and reviews; review is separate from implementation, but
@@ -145,7 +147,64 @@ The harness stays on this explicit experiment branch. It should be removed
 when the isolated integration pilot replaces it, unless a recurring consumer
 justifies retaining it. No permanent generic PoC service is proposed.
 
-## Remaining scope and next pilot
+## Local May integration trial
+
+The human subsequently requested a trial in the existing local container:
+evaluate the focused-session-continuation proposal, produce a report, and do
+not implement the proposal before approval. May admitted one ordinary Task
+through `develop-change`. Its implementation stage authored only the report;
+Bob designed the assessment and reviewed the committed result.
+
+This exposed four integration gaps that the isolated parser harness missed:
+
+| Gap | Smallest correction |
+| --- | --- |
+| May had not declared a Git workspace, so Runtime rejected worktree preparation | Declare its existing workspace through the ordinary App contract |
+| The Task worker loaded only the default and selected executor; Bob was unregistered | Load the selected App's local profiles from the same pinned definitions |
+| The parser's three-minute helper cap interrupted substantial report authoring | Inherit the Host's remaining bounded workflow allowance and cancellation |
+| Git cleanup required integration before accepting a local deliverable | Preserve the clean unmerged checkout; let App acceptance decide whether merging is required |
+
+The same Task and requirement generation were retained throughout. Bob's first
+design took 93.1 seconds. The first tech-lead call exhausted its 180-second
+limit without producing the report. Ordinary incomplete feedback retained the
+design; after the allowance correction, the next attempt reused it without
+another design call. Tech-lead then committed the report in 212.1 seconds.
+Bob reviewed it in 63.5 seconds and returned pass with no unresolved findings,
+bound to report commit `33a52b2ed78eebc402bf74fe74ef1b815dd5d4d6`.
+
+The cleanup defect caused repeated cheap attempts to recreate the checkout
+and reuse the completed evidence, with no new model calls. After the Host
+correction, the same Task accepted that result and kept the report readable.
+No merge, new Task, replacement controller, or manual database edit was needed.
+May then read the whole report, returned its findings to the same Conversation
+and Topic, and closed the original Request as fulfilled. The Task is up to date,
+with no new implementation Task. Evaluation completion is distinct from
+approval of any proposal action.
+The report retains the literal `Implementation status: NOT APPROVED`; none of
+the proposal's implementation or performance experiments ran in this trial.
+
+Supporting local source revisions:
+
+- App workspace: `1ca0a3bf06747cbd6a1fe07036598c1203156e69`.
+- App execution allowance: `52f08267c560cf73a93f5fff7788970f85591e72`.
+- Host helper catalog: `febc68c11beef2b42f96acb6a194a922ed377b21`.
+- Host deliverable preservation: `a76c27dd385d87273f5271c25ece48b07d77f291`.
+
+The App passed type/format checks and 23 tests with 100 assertions. The final
+Host passed full CI: 3,064 tests, three installation-only skips, no failures,
+and 13,643 assertions. Its compiled local image passed readiness, UI and CLI
+protocol smoke checks before idle-point deployment. One earlier full run
+failed inside Bun's output-stream initialization (`epoll_ctl`/`EEXIST`) while
+importing browser tests. The affected browser file passed separately and the
+unchanged-source full rerun passed; the intermittent runner failure remains
+recorded, not a claimed product fix.
+
+This trial demonstrates real May admission, worker profile loading, Task
+worktree allocation, bounded failure recovery, independent review and retained
+local deliverables. It does not compare one agent against two, establish token
+savings, certify a tool sandbox, or validate remote CI, PRs or deployment work.
+
+## Remaining scope
 
 Keep the current loop small. Its result is a local candidate, not a fulfilled
 request for remote CI, a merged PR or deployment. Cached verification assumes
@@ -159,10 +218,8 @@ allowance and cancellation instead of those additional overrides.
 Failed or exhausted attempts return ordinary incomplete feedback. Larger work
 should first be split into suitable outcomes or use existing async capabilities.
 
-The next isolated pilot should accept a plain-language request through May,
-create one development Task through the ordinary App route, confirm its actual
-project worktree, deliver a correction while it runs, interrupt one attempt,
-and check that its result returns to the same Request. This closes the untested
-boundaries: routing, scheduling, workspace allocation, creator authority and
-notification recovery. Use the existing Host mechanisms for each boundary;
+The local trial covered May admission, workspace allocation, timeout/restart
+recovery, and the return to the same Request. A human correction during active
+development, broader project changes, and comparative value remain separate
+future trials. Use existing Host mechanisms for any authorized follow-up;
 add no workflow-specific event handling or recovery path.
