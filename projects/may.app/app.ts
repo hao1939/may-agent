@@ -149,6 +149,7 @@ export default defineApp({
   id: "may",
   version: 1,
   agent: "may",
+  workspace: { kind: "git", localPath: ".", branch: "main" },
   description:
     "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required.",
   inputSchema: mayInputSchema,

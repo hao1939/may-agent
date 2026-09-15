@@ -145,7 +145,9 @@ entry; the small companion Host change registers the exact model. Definitions,
 SDK and Host must be validated together before activation. Their source names
 do not prove an installed or functioning model route.
 
-May's App workspace currently determines the source repository for Task
+May explicitly declares its existing App directory as a Git workspace on `main`;
+the Host requires this declaration before allocating a Task worktree. The
+App workspace determines the source repository for Task
 worktrees. Arbitrary repository selection is outside this trial. A temporary
 fixture supplies its repository explicitly to the real workflow runner. A
 future actual-project trial must confirm the App workspace and Task worktree

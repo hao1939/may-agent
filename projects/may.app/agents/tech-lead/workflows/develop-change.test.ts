@@ -193,6 +193,11 @@ describe("development workflow using real Git and verification", () => {
       },
     });
     expect(app.tasks?.maxConcurrent).toBe(4);
+    expect(app.workspace).toEqual({
+      kind: "git",
+      localPath: ".",
+      branch: "main",
+    });
   });
 
   test("design → direct implementation → real checks → read-only review, then quiet replay", async () => {
