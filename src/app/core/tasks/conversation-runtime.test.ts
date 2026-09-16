@@ -1,5 +1,5 @@
 import { afterEach, expect, setSystemTime, test } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp, type AppInputContext, type ConversationTurnResult, type TaskAttempt } from "@may-agent/sdk";
@@ -247,7 +247,7 @@ test("Conversation admission survives reopen and runs without an ingress wake", 
   expect(Object.keys(readTaskSnapshot(f.context()).resources!)).toEqual([admitted.taskId]);
 });
 
-test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
+test.each(["scope", "storage", "new-correction", "provider-failure", "legacy-handoff"] as const)(
   "settlement recovery retains completed work and current Request after reopen (%s)",
   async (failure) => {
     let helperCalls = 0;
@@ -375,6 +375,16 @@ test.each(["scope", "storage", "new-correction", "provider-failure"] as const)(
     expect(Object.values(attempts).at(-1)?.unacceptedResult?.facts).toEqual(["helper-receipt:completed:exit-0"]);
     expect(readConversationRequest(f.db, app.id, "primary", "probe")?.revision).toBe(failure === "storage" ? 2 : 1);
     expect(getAppInboxItem(f.db, admitted.item.id)?.status).not.toBe("done");
+    if (failure === "legacy-handoff") {
+      // Simulate a retained proposal written before redundant handoff fields
+      // were removed. Scope recovery must not validate old effects for execution.
+      f.db.prepare(`UPDATE app_task_attempts SET attempt_json = json_set(attempt_json,
+        '$.unacceptedResult.result.conversation.followUp', json(?))
+        WHERE app_id = ? AND task_id = ?`).run(JSON.stringify({
+          appId: "old-worker", outcome: "Historical assignment", acceptance: ["Historical proof"],
+          input: { kind: "goal", data: {} },
+        }), app.id, admitted.taskId);
+    }
     if (failure === "storage") f.db.exec("DROP TRIGGER reject_reply");
     const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
     await f.reopen();
@@ -628,8 +638,6 @@ const delegated: ConversationTurnResult = {
     appId: background.id,
     input: { kind: "measure", data: {} },
     requestId: "measurement",
-    outcome: "Get the sample measurement",
-    acceptance: ["Measurement obtained"],
   },
 };
 function withBackground(root: string, appDir: string, conversation = app): Partial<AppTaskRuntimeOptions> {
@@ -2170,8 +2178,6 @@ test("the Conversation delegates and steers same-App work through the Task runti
           followUp: {
             appId: app.id,
             ...(next ? { task: { appId: app.id, taskId: "goal/review" } } : {}),
-            outcome: next ? "Include recovery in the review" : "Review the design",
-            acceptance: ["Return facts-backed findings"],
             input: { kind: "goal", data: { outcome: next ? "Include recovery" : "Review the design" } },
           },
         },
@@ -2415,8 +2421,6 @@ test("a selected old Topic steers its exact Task even outside the bounded prompt
         followUp: {
           appId: app.id,
           task: { appId: app.id, taskId: olderReview.id },
-          outcome: "Include the new facts",
-          acceptance: ["Review the new facts"],
           input: { kind: "goal", data: { message: "Include the latest sample" } },
         },
       },
@@ -2479,8 +2483,6 @@ test.each(["handoff", "control"] as const)(
                 followUp: {
                   appId: app.id,
                   task: { appId: app.id, taskId: olderReview.id },
-                  outcome: "Continue the review",
-                  acceptance: ["Review the facts"],
                   input: { kind: "goal", data: {} },
                 },
               }),
@@ -2530,8 +2532,6 @@ test("closed Task reuse retains the caller input for a corrected attempt after r
         followUp: {
           appId: app.id,
           ...(calls === 1 ? { task: { appId: app.id, taskId: olderReview.id } } : {}),
-          outcome: "Review the current facts",
-          acceptance: ["Return supported findings"],
           input: { kind: "goal", data: {} },
         },
       },
@@ -2586,4 +2586,70 @@ test("closed Task reuse retains the caller input for a corrected attempt after r
   expect(f.store.readTask("work/new-review")).not.toBeNull();
   expect(f.store.readCancellation(olderReview.id)).toEqual(closure);
   expect(f.store.isCancelled(admitted.taskId)).toBe(false);
+});
+
+
+test("invalid handoff is repairable after reopen and only complete referenced input creates the worker assignment", async () => {
+  let calls = 0;
+  let mapped = 0;
+  let documentPath = "";
+  const assignment = {
+    outcome: "Review the required design",
+    acceptance: ["Explain the failure mode and retain the required constraints"],
+    constraints: ["Do not change the source document"],
+    context: [{ purpose: "Governing requirements", required: true, path: "", version: "v1" }],
+  };
+  const worker = defineApp({
+    ...background,
+    inputSchema: Type.Object({
+      kind: Type.Literal("review"),
+      data: Type.Object({ outcome: Type.String(), acceptance: Type.Array(Type.String(), { minItems: 1 }) },
+        { additionalProperties: true }),
+    }),
+    task: (request) => {
+      mapped++;
+      expect(request.input).toEqual({ kind: "review", data: assignment });
+      const data = request.input.data as typeof assignment;
+      return { kind: "desired", intent: {
+        id: "review", parentId: "root", agent: "reviewer",
+        outcome: data.outcome, acceptance: data.acceptance, input: request.input,
+      } };
+    },
+  });
+  const f = await fixture(async (_definition, prompt) => {
+    calls++;
+    if (calls === 2) expect(prompt).toContain(`Invalid follow-up input for App ${worker.id}`);
+    return { status: "done", structuredResult: {
+      summary: "Review assigned", response: "I will review the referenced design.",
+      topic: { kind: "new", title: "Design" },
+      followUp: { appId: worker.id, input: { kind: "review", data: calls === 1 ? {} : assignment } },
+    } };
+  }, (root, appDir) => {
+    documentPath = join(root, "required-design.md");
+    writeFileSync(documentPath, "# v1\n" + "Supporting evidence.\n".repeat(12_000) + "Required: preserve source identity.\n");
+    assignment.context[0]!.path = documentPath;
+    const setup = withBackground(root, appDir);
+    return { ...setup, installControllers: false, appRegistrySnapshot: {
+      ...setup.appRegistrySnapshot!, entries: setup.appRegistrySnapshot!.entries.map(entry =>
+        entry.definition.id === worker.id ? { ...entry, definition: worker } : entry),
+    } };
+  });
+  const admitted = f.admit("review-request", "Review the design using the required context");
+  await f.run(admitted.taskId);
+  expect(mapped).toBe(0);
+  expect(AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask("review")).toBeNull();
+  expect(getAppInboxItem(f.db, "review-request")?.status).not.toBe("done");
+  const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
+  await f.reopen();
+  setSystemTime(new Date(due));
+  await f.run(admitted.taskId);
+  expect(calls).toBe(2);
+  expect(mapped).toBe(1);
+  expect(getAppInboxItem(f.db, "review-request")?.status).toBe("done");
+  await f.reopen();
+  const saved = AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask("review")!;
+  expect(saved.spec).toMatchObject({ outcome: assignment.outcome, acceptance: assignment.acceptance,
+    input: { kind: "review", data: assignment } });
+  expect(JSON.stringify(saved.spec.input).length).toBeLessThan(1_000);
+  expect(readFileSync(documentPath, "utf8")).toContain("Required: preserve source identity.");
 });

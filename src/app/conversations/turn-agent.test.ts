@@ -239,13 +239,20 @@ describe("conversational attempt contract", () => {
       toolPolicy: "app-agent-full",
       recoveryOwner: "app-task-reconciler",
     });
+    expect(Check(schema, {
+      ...answer,
+      followUp: {
+        appId: "owner",
+        outcome: "This ignored outer assignment must be rejected",
+        acceptance: ["Do not silently drop requirements"],
+        input: { kind: "work", data: {} },
+      },
+    })).toBe(false);
     // Schema narrowing must retain ordinary feedback and cancellation contracts.
     expect(
       Check(schema, {
         ...answer,
         followUp: {
-          outcome: "Review",
-          acceptance: ["Verified"],
           appId: "owner",
           input: { kind: "work", data: {} },
           task: { appId: "owner", taskId: "work-1" },

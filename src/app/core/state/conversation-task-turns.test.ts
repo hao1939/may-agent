@@ -340,8 +340,6 @@ test("follow-up admission rolls back with the explanation, Request and Task resu
     followUp: {
       requestId: "comparison",
       appId: app.id,
-      outcome: "Get facts",
-      acceptance: ["Measure"],
       input: { kind: "message", data: { text: "Get facts" } },
     },
   };
@@ -624,8 +622,6 @@ test("the common controller returns a delegated answer to the real Conversation 
                   followUp: {
                     requestId: "measurement",
                     appId: app.id,
-                    outcome: "Measure the sample",
-                    acceptance: ["Return a measured value"],
                     input: { kind: "message", data: { text: "Measure the sample" } },
                   },
                 };
@@ -793,8 +789,6 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
         followUp: {
           appId: "worker",
           requestId: "comparison",
-          outcome: "Collect facts",
-          acceptance: ["Measure"],
           input: { kind: "measure", data: {} },
         },
       },

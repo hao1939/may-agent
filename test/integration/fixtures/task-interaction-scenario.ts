@@ -403,8 +403,6 @@ async function delegation(nested = false) {
                 appId: "sample",
                 input: { kind: "measure", data: {} },
                 requestId: "measurement",
-                outcome: "Get the sample measurement",
-                acceptance: ["Return the measured value"],
               },
             };
           if (humanTurns === 2) {
