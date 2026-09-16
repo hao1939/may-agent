@@ -18,7 +18,9 @@ Scout selection and review of the returned record. Active guidance belongs to
 [assessment procedure](../../scout-knowledge-lib.app/design/scout-knowledge-library-process.md#requested-source-assessments)
 and [archive layout](../../scout-knowledge-lib.app/design/scout-knowledge-library-layout.md#requested-assessment-records).
 Its manifest now rejects empty exploration and incomplete goals. A specific
-paper uses `goal`; `explore` means a supported feed scan.
+paper originally used `goal`; the deployed procedural refinement below uses
+`assess-source` for a bounded source assessment. `goal` remains broader research,
+and `explore` means a supported feed scan.
 
 ## Real-source experiment
 
@@ -367,3 +369,94 @@ May still needs to judge whether the supplied evidence fits the actual question.
 Artifact navigation, notification prioritization and durable preference learning
 remain separate work. User authorization was refined to local merge only; no
 remote PR or push is required for this iteration.
+
+
+## Repository-page iteration and partial-result preservation
+
+The next user-supplied test source was https://github.com/cordiverse/cordis.
+The existing local instance, enabled Apps, schedules and real library were reused.
+These inputs entered through ordinary conversation socket admission; this was not
+another full Console UI test. No Cordis PR was changed. The user confirmed that
+the URL was a May/Scout input and had previously accepted local merging.
+
+### Failure observed before refinement
+
+A bare URL in a fresh Conversation caused May to promise a concrete architecture,
+core-abstractions and maturity assessment. The single-page reader could only
+supply the short README and repository landing page. Scout honestly returned a
+structured partial draft with the missing implementation/documentation evidence,
+but the workflow discarded it because the agent finish status was `partial`.
+The caller received a generic incomplete-attempt message without that draft,
+its precise gap or an archive path, and left the existing Task to retry.
+Seven Scout calls returned partial drafts without saving an assessment.
+
+An experimenter-supplied ordinary-language correction narrowed the outcome to
+what the page establishes, its useful takeaway and unknowns. May revised the
+same Request and updated the same Scout Task to generation 2. One corrected
+assessment completed and was saved; the Request closed at revision 5. This
+shows the correction path working, but it required intervention and is not
+counted as an autonomous baseline success.
+
+The old HTML extractor also removed the targets behind the page's “arXiv” and
+primer link labels. Independently checking plain-text input exposed another
+mechanical loss: HTML parsing could remove TypeScript generics and literal tags.
+
+### Small changes at the existing owners
+
+- May keeps a bare link's first-look scope consistent across its acknowledgement,
+  Request and worker acceptance. Explicit deeper requirements remain binding;
+  multi-source research or implementation inspection uses the existing `goal`.
+- Scout preserves a valid structured partial draft, its reported evidence gap and
+  source coverage, while returning incomplete. A partial finish cannot converge
+  even when its draft's completion flag disagrees. Missing drafts remain failures.
+- HTML extraction retains HTTP(S) link targets relative to the retrieved page URL,
+  without following them. Plain text/Markdown preserve literal code. The existing
+  source/time/size bounds, one assessment call and verified save are retained.
+- The common partial-output principle belongs in `may-agent.app`'s workflow design.
+  May owns scope and caller follow-up policy; Scout owns extraction and records.
+  No Host code, admission service, source crawler or new lifecycle was added.
+
+The actual first failed model output was replayed through the candidate workflow
+with its recorded source packet. It produced a saved partial note containing the
+original draft and precise evidence gap, and returned `incomplete`. This replay
+made no new model call and used a temporary library, separate from the live trial.
+
+### Fresh conversation after activation
+
+Executable App source: `e371b6a7e5da42154e2499c417023aae21637b64`.
+The committed definitions were staged and validated through the existing release
+store, activated while the daemon was idle, then checked for readiness. The Host
+binary remained `3a8893ba11d196706b70812d4a93423f8c892207`; unrelated edits and
+disabled Apps were preserved.
+
+Only the bare Cordis URL was supplied in Conversation `may:cordis-fresh-20260916`.
+It had no inherited discussion or selected Topic; the earlier source note existed
+and was available for reuse. No corrective scope was supplied in this run.
+
+- May replied after **18.454 seconds**: “I’ll assess what Cordis is, its main ideas,
+  likely usefulness, and important limitations, then save a note for later.”
+- The accepted Request and `assess-source` assignment stayed at landing-page depth.
+- One Scout call used only `finish`; retrieval and archive writes remained code-owned.
+- The final response arrived after **60.094 seconds**, through May → Scout → May.
+  May read the saved assessment and fulfilled the Request at revision 3.
+- The latest assessment reused
+  `knowledge/findings/2026-09-16-source-assessment-67188e0c48a0.md`, with earlier
+  evidence retained below it. Across both live runs, one note was added and no
+  pre-existing knowledge note changed.
+- All **11,104 extracted characters** were supplied, including the paper and
+  primer URLs. Prompt-to-record comparison matched the exact coverage metadata
+  and excerpt hash. Link presence does not imply linked-content access.
+
+The response explained the project's stated composability focus, unstable-API
+warning and unfinished documentation, and disclosed that the paper, primer and
+implementation were not reviewed. This is a useful first look with limited depth;
+it is not evidence that May understands the programming model or can assess
+production readiness from this page. Model consistency and deeper adaptive
+research remain separate from the proven extraction/save mechanics.
+
+Validation on frozen executable source: **374 Scout tests passed**, zero failures,
+including 17 source-assessment checks. Typecheck, syntax build, changed-code
+formatting, common design integrity, SDK/control examples and App-boundary checks
+passed. Local evidence is retained at
+`/home/hao/workspace-archive/may-cordis-20260916/`, including inputs, results,
+traces, coverage comparisons, partial-output replay, activation and check logs.
