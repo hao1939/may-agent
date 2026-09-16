@@ -1,8 +1,9 @@
 # May intent, correction, and daily learning
 
-Status: proposed; isolated PoC only. No production behavior or preferences have
-been changed. See [the trial](../poc/intent-learning/README.md) for reproduction
-and the evidence boundary.
+Status: research handoff and archive policy implemented as a source candidate;
+production activation remains separate. Preference projection and Gym intake
+remain proposed. See [the original PoC](../poc/intent-learning/README.md) and
+[the real-source iteration](research-handoff-iteration-20260916.md).
 
 ## Desired behavior
 
@@ -56,18 +57,12 @@ analysis, constraints, archive requirement, and what the returned result must
 prove. May acknowledges the understood outcome briefly and keeps its Request
 open while Scout works.
 
-A correction has two distinct durable effects:
-
-1. Revise the same Request using its observed revision, preserving unchanged
-   requirements and its exact Task references.
-2. Admit updated input to that same Scout Task through the existing followUp
-   route. Include the complete current requirement and correction provenance.
-
-The existing followUp-to-existing-Task path admits new input; it does not itself
-rewrite the worker's original Task spec. The worker must consider those inputs
-when assessing its current outcome. An authorized spec change, when needed,
-uses the creator's existing control. Do not claim that feedback admission is
-an immediate interruption or a rewritten spec.
+Assignment authority, retrievable context, admission, Task reuse and caller
+clarification belong to the common
+[App contract](../../may-agent.app/docs/2a-design/agent-app.md#assignment-authority-and-context).
+May follows that contract: revise the same accepted Request, then use `tasks get`
+and creator-authorized `tasks update` with complete current App input for a changed
+worker assignment. A repeated handoff is not a Task specification update.
 
 Code preserves the accepted correction during running, waiting, and recovery.
 An old result cannot satisfy the corrected Request merely because it finished.
@@ -83,26 +78,19 @@ for unrelated consequential actions.
 
 ## Research records and curated knowledge
 
-Every completed user-requested research assessment has a durable record, even
-when it changes no canonical topic note. The record includes source identity,
-observation time, what content was available, claims and evidence, uncertainty,
-the user's question, relationships to existing knowledge, and disposition.
+May requests and checks a saved assessment for an ordinary shared research link,
+including in a fresh conversation without Scout context. It delegates the exact
+URL through Scout's `goal`, not a standing feed `explore` Task. Source coverage,
+substantive findings, limitations and the returned saved path are acceptance
+criteria. May reads the cited record before fulfilling the Request. A one-time
+no-save instruction overrides this default.
 
-Use Scout's existing findings layout for those records. Search by source identity
-before creating one; revisit the existing record when the source or question
-changes, preserving earlier assessment evidence. Normal version history can
-retain revisions. The PoC's local history files are fixture evidence, not a new
-production library layout.
-
-Source acquisition failure leaves a visible access record and an unfinished
-full-reading assignment. An explicitly requested abstract assessment can finish
-with honest abstract coverage. The archive cannot prove that unavailable full
-text was read. A new canonical knowledge claim is optional and requires Scout's
-judgment; the research record is mandatory unless the human makes an exception.
-
-Checks should confirm the source actually read, honest coverage, existing output,
-read-back and references. They do not prove semantic quality. Test that separately
-with evidence-sensitive cases and human review of substantive conclusions.
+Scout owns the [assessment procedure](../../scout-knowledge-lib.app/design/scout-knowledge-library-process.md#requested-source-assessments)
+and [record placement](../../scout-knowledge-lib.app/design/scout-knowledge-library-layout.md#requested-assessment-records).
+Records remain mandatory when curated knowledge does not change; May does not
+duplicate Scout's archive. Access failure is a visible limitation and leaves
+any required unread material unfinished. A completed record cannot by itself
+prove source coverage or semantic quality.
 
 ## Daily learning: apply, remember, improve
 

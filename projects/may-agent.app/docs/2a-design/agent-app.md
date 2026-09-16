@@ -21,8 +21,9 @@ The accepted [one-lifecycle target](task-resource-engine.md#one-lifecycle-baseli
 uses a stable Task for Conversation execution too. Tasks record outcomes and
 remain available until an authorized owner closes them; ordinary Apps can close
 after accepting the requested result by convention. The controller need not
-classify finite and maintained responsibilities. Implementation is pending:
-declarations and `requests` behavior below describe the current SDK, not new APIs.
+classify finite and maintained responsibilities. Conversation execution and
+ordinary App work use this shared Task controller; `conversation` selects the
+bounded agent turn capability.
 
 ## Choosing the stored record
 
@@ -97,7 +98,7 @@ typed input -> TaskIntent -> task <--- durable event
 - Queue coalescing happens only after the latest desired intent and trigger are
   persisted.
 - A simple durable Task can converge in its first attempt. Bounded
-  conversational input can finish directly under `requests` policy instead.
+  conversational input can finish directly under `conversation` policy instead.
 
 ## Package layout
 
@@ -198,6 +199,63 @@ Task-based input it calls `task(request)` with `{ id, source, input }`. The
 callback returns `{ kind: "existing", taskId }` or `{ kind: "desired", intent }`.
 The domain payload is `request.input`; a request mapping cannot return `null`.
 
+### Assignment authority and context
+
+Each fact has one authority. The conversational Request records what the caller
+owes the human. The worker Task specification records its assigned outcome and
+acceptance. Source documents, messages and results supply evidence; they do not
+silently revise either obligation.
+
+The destination App input is the single executable handoff: its pure mapper
+creates the Task specification, and creator-authorized `tasks update` supplies a
+complete revised input when requirements change. Conversation `followUp` carries
+`appId`, `input`, optional `requestId`, and optional exact `task` identity. There
+is no second outer outcome/constraints/acceptance payload for the Host to merge.
+Reusing an exact Task admits context; it does not rewrite that Task's assignment.
+Before creating related work or handling a correction, read the contextual
+Task with `tasks get`. Reuse it when the outcome and execution method fit; revise
+its assignment through the creator when needed. A converged result does not
+close the Task. A later correction to its artifact can continue that Task while
+a fulfilled human Request retains its historical closure.
+
+Complete input does not mean copying all context. An App may accept a short
+brief and retrievable references in its own schema. Each reference identifies
+its purpose, retrieval location, and whether it is required reading. Pin a
+reviewed version/section when acceptance depends on it; an intentional current
+state read can request the latest version. Keep material requirements explicit
+or in clearly governing references, preserve those references through revision,
+and ensure the worker can retrieve them with its available tools and authority.
+A private caller context or optional summary cannot carry an unstated requirement.
+The Host retains the supplied references; it does not become a document store
+or fetch arbitrary source content during admission.
+
+### Admission and clarification
+
+Admission checks shape, declared target and mechanical authority. App schemas
+must reject inputs they cannot interpret rather than silently choosing unrelated
+work. Shape validity does not prove semantic sufficiency. There is no separate
+model admission service: the ordinary agent attempt reads available required
+context, checks whether the assignment is actionable, and does justified work.
+
+If material information is missing, the worker returns the exact gap, what it
+checked, useful partial work and the smallest clarification needed to its
+assigning owner through the existing result/feedback route. The caller repairs
+from its own context and authority first, asking the human only for a remaining
+material choice or fact. Corrections use the same Request and creator-authorized
+Task update paths; they do not create a parallel clarification lifecycle.
+
+`incomplete` reports unfinished work and owner help needed; the Task remains
+open under paced recovery. `waiting` requires an actual dependency or known fact
+with a return route. A Condition's `requestedAction` records the desired action;
+it does not notify someone. A waiting update uses the existing caller report
+route. These result rules apply to ordinary Tasks and conversational callers.
+
+The source candidate removes redundant Conversation handoff fields and shares
+this guidance across both agent entrypoints. Old unaccepted decisions remain
+execution evidence; they are not replayed as new executable handoffs. Deployment
+and the real-source trial are recorded in May's
+[iteration evidence](../../../may.app/docs/research-handoff-iteration-20260916.md).
+
 `tasks.resolve(event)` is a separate pure callback for declared fact
 subscriptions. It returns `TaskIntent | null`. It can decide a fact creates no
 work; it does not replace addressed-input validation. Neither callback performs
@@ -209,7 +267,7 @@ caller correlation before returning; request-to-Task coordination runs
 asynchronously. The request then links to the responsible Task and completes
 from its accepted result. See [Events](events.md) for exact admission guarantees.
 
-An App may declare `requests: { mode: "agent", inputKinds: [...] }` for bounded
+An App may declare `conversation: { mode: "agent", inputKinds: [...] }` for bounded
 conversational input. That turn can finish authorized work directly or admit
 durable intent. Other input kinds use normal Task mapping. May's policy is owned
 by [Message Lifecycle](message-lifecycle.md). This is not a second durable work

@@ -118,8 +118,6 @@ test.skipIf(!host)(
         followUp: {
           requestId: "paper",
           appId: scout.id,
-          outcome: "Read and archive the paper",
-          acceptance: ["Archived assessment"],
           input: {
             kind: "goal",
             data: {
@@ -155,7 +153,6 @@ test.skipIf(!host)(
         followUp: {
           ...initial.followUp!,
           task: { appId: scout.id, taskId },
-          outcome: updated,
           input: {
             kind: "goal",
             data: {

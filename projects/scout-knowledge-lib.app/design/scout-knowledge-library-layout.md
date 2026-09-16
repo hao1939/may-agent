@@ -50,6 +50,22 @@ Finding dates must reflect the real observation date and must not be later than
 the current date. Source identity belongs in the finding content and evidence;
 it does not require a source-specific directory.
 
+## Requested assessment records
+
+Keep a requested paper/post assessment in an existing source-and-question record
+when it fits; otherwise use `knowledge/findings/YYYY-MM-DD-<topic>.md`. No separate
+archive service or new directory tree is needed. A source record may link to a
+canonical note; optional integration into that note does not replace the record
+of what was assessed and why. Retain earlier assessment evidence when revisiting,
+using normal file history and explicit dated coverage changes where needed.
+
+Include the question, stable source URL/ID and reviewed version, observation
+date, actual reading coverage, key claims and supporting evidence, limitations,
+relevance, related library links, and disposition (new knowledge, already covered,
+out of scope, or access blocked). Verify the file and its references before
+returning its path. A no-change revisit can return an existing verified record;
+a caller's explicit no-save instruction permits returning without an archive.
+
 ## Document Roles
 
 Canonical and companion topic notes hold reusable current knowledge. Findings

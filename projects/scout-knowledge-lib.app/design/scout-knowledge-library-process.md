@@ -49,6 +49,31 @@ finished, and humans can quickly understand what the library contains. Scout
 must remain directly runnable without this task/event attachment; the app adds
 autonomy, durable reconciliation, observation, and recovery.
 
+## Requested source assessments
+
+A specific paper, post or research question uses a bounded `goal` input with
+nonempty outcome and acceptance, plus constraints and retrievable context when
+needed. This is independent of scheduled discovery. `explore` requires one
+supported source and maps to its standing feed workflow; it does not represent
+an exact-link request. Invalid inputs fail admission instead of falling back to
+an unrelated general research Task.
+
+Scout reads the exact assigned source and governing references, searches for an
+existing assessment by stable identity and question, and saves the assessment
+using the [existing findings layout](scout-knowledge-library-layout.md#requested-assessment-records).
+This includes already-covered and out-of-scope results. Curated topic edits and
+digest highlights depend on useful new knowledge; preserving the requested
+assessment does not. An explicit no-save instruction is the exception.
+
+The active procedure is in [Scout's instructions](../agents/scout/AGENTS.md#requested-source-assessments).
+It records actual source coverage, evidence, uncertainty and disposition,
+verifies the saved file by reading it back, and returns the exact path. A blocked
+source yields an access record and unfinished required research, not invented
+coverage. Clarification and repair follow the
+[common App contract](../../may-agent.app/docs/2a-design/agent-app.md#admission-and-clarification).
+These candidate rules require model-backed behavior evidence as well as schema
+checks; see the [real-source iteration](../../may.app/docs/research-handoff-iteration-20260916.md).
+
 ## Ownership And Workflows
 
 The app has one accountable owner: `scout`.

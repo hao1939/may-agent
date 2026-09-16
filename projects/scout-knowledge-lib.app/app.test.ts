@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { Check } from "typebox/value";
 import { matchesEventSelector } from "@may-agent/sdk";
 import app, {
   evaluationOwnerRequestedInput,
@@ -44,6 +45,69 @@ describe("Scout task reconciliation", () => {
       }),
     ).toThrow("outcome and acceptance");
   });
+  it("rejects incomplete goals and malformed scans at admission and mapping", () => {
+    for (const data of [
+      {},
+      { source: "unknown" },
+      { source: "arxiv", url: "https://example.org/paper" },
+    ]) {
+      expect(Check(app.inputSchema, { kind: "explore", data })).toBe(false);
+    }
+    for (const data of [
+      {},
+      { outcome: "Read", acceptance: [] },
+      { outcome: "  ", acceptance: ["Saved"] },
+    ]) {
+      expect(Check(app.inputSchema, { kind: "goal", data })).toBe(false);
+    }
+    for (const data of [{}, { source: "unknown" }]) {
+      expect(() =>
+        taskForScoutInput({
+          id: "bad-scan",
+          source: { kind: "app", id: "may" },
+          input: { kind: "explore", data },
+        }),
+      ).toThrow("Scout explore requires source");
+    }
+    expect(Check(app.inputSchema, { kind: "digest", data: {} })).toBe(true);
+    expect(app.actions?.["explore-now"]?.toInput({})).toEqual({
+      kind: "explore",
+      data: { source: "arxiv" },
+    });
+    const input = {
+      kind: "goal",
+      data: {
+        outcome: "Assess the exact source and save the result",
+        acceptance: ["Read source and return the verified assessment path"],
+        constraints: ["Archive even when no new knowledge"],
+        context: [
+          {
+            required: true,
+            purpose: "Source",
+            url: "https://example.org/paper",
+            version: "v2",
+          },
+        ],
+      },
+    };
+    expect(Check(app.inputSchema, input)).toBe(true);
+    expect(
+      taskForScoutInput({
+        id: "paper",
+        source: { kind: "app", id: "may" },
+        input,
+      }),
+    ).toMatchObject({
+      kind: "desired",
+      intent: {
+        agent: "scout",
+        input,
+        outcome: input.data.outcome,
+        acceptance: input.data.acceptance,
+      },
+    });
+  });
+
   it("makes source guidance discoverable from Scout's active instructions", async () => {
     const agentRoot = new URL("./agents/scout/", import.meta.url);
     const identity = await Bun.file(new URL("AGENTS.md", agentRoot)).text();

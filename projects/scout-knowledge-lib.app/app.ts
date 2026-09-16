@@ -171,19 +171,52 @@ function scoutMetricInput(
   };
 }
 
-const scoutInputSchema = Type.Object(
-  {
-    kind: Type.Union([
-      Type.Literal("owner-review"),
-      Type.Literal("library-health"),
-      Type.Literal("explore"),
-      Type.Literal("digest"),
-      Type.Literal("goal"),
-    ]),
-    data: Type.Record(Type.String(), Type.Unknown()),
-  },
-  { additionalProperties: false },
-);
+const nonBlankText = Type.String({ minLength: 1, pattern: "\\S" });
+const scoutInputSchema = Type.Union([
+  Type.Object(
+    {
+      kind: Type.Literal("goal"),
+      data: Type.Object(
+        {
+          outcome: nonBlankText,
+          acceptance: Type.Array(nonBlankText, { minItems: 1 }),
+          constraints: Type.Optional(Type.Array(nonBlankText)),
+        },
+        { additionalProperties: true },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("explore"),
+      data: Type.Object(
+        {
+          source: Type.Union([
+            Type.Literal("arxiv"),
+            Type.Literal("hn"),
+            Type.Literal("xhs"),
+            Type.Literal("github"),
+            Type.Literal("reddit"),
+          ]),
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Union([
+        Type.Literal("owner-review"),
+        Type.Literal("library-health"),
+        Type.Literal("digest"),
+      ]),
+      data: Type.Record(Type.String(), Type.Unknown()),
+    },
+    { additionalProperties: false },
+  ),
+]);
 
 function scoutInput(kind: AppInput["kind"], data: unknown): AppInput {
   return { kind, data: eventParams(data) };
@@ -317,20 +350,14 @@ export function taskForScoutInput(
       },
     };
   }
-  const intent = intentForScoutInput(admitted.input) ?? {
-    id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
-    parentId: "library-operations",
-    outcome: `Interpret and handle admitted Scout input ${admitted.input.kind}.`,
-    acceptance: [
-      "Scout returns an evidence-backed result; if the assignment needs changing, report the evidence and ask its owner to refine it.",
-    ],
-    agent: "scout",
-    input: {
-      kind: admitted.input.kind,
-      data: eventParams(admitted.input.data),
-    },
-    priority: "P1" as const,
-  };
+  const intent = intentForScoutInput(admitted.input);
+  if (!intent) {
+    throw new Error(
+      admitted.input.kind === "explore"
+        ? "Scout explore requires source: arxiv, hn, xhs, github or reddit; use goal with outcome and acceptance for an exact source assessment"
+        : `Unsupported Scout input: ${admitted.input.kind}`,
+    );
+  }
   return { kind: "desired", intent };
 }
 
@@ -339,7 +366,7 @@ export default defineApp({
   version: 1,
   agent: "scout",
   description:
-    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
+    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests. Use goal (outcome, acceptance, optional constraints and context references) for a specific paper, post or question; it reads and archives the assessment even without new topic knowledge. Use explore (source: arxiv|hn|xhs|github|reddit) only for a standing feed scan.",
   workspace: {
     kind: "local",
     localPath: "../scout-knowledge-lib",
