@@ -13,7 +13,7 @@ import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import app, { taskForScoutInput } from "../../../app";
-import { executeSourceAssessment } from "./scout-assess-source";
+import { execute, executeSourceAssessment } from "./scout-assess-source";
 import { assessmentRecord, saveAssessment } from "./lib/assessment-archive";
 import {
   coverageEvidence,
@@ -108,6 +108,7 @@ const success = (output = draft) => ({
 });
 
 it("admits a source operation and binds its code procedure without changing generic goals", () => {
+  expect(typeof execute).toBe("function");
   expect(Check(app.inputSchema, input)).toBe(true);
   expect(
     Check(app.inputSchema, {

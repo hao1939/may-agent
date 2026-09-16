@@ -171,9 +171,6 @@ ${JSON.stringify(packet)}
   }
 }
 
-export default async function scoutAssessSource(
-  _task: string,
-  ctx: WorkflowContext,
-) {
+export async function execute(ctx: WorkflowContext) {
   return executeSourceAssessment(ctx);
 }
