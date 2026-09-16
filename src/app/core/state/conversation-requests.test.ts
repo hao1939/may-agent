@@ -87,8 +87,6 @@ const handoff: ConversationTurnResult = {
   followUp: {
     requestId: ask.id,
     appId: owner.id,
-    outcome: "Find facts",
-    acceptance: ["Verified"],
     input: { kind: "work", data: {} },
   },
 };

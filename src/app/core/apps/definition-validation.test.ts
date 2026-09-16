@@ -1,8 +1,53 @@
 import { describe, expect, it } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
-import { validateAppDefinition } from "./definition-validation.js";
+import { assertValidAppInput, validateAppDefinition } from "./definition-validation.js";
 
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
+
+describe("App input validation", () => {
+  const definition = defineApp({
+    id: "research",
+    version: 1,
+    agent: "researcher",
+    inputSchema: Type.Union([
+      Type.Object({ kind: Type.Literal("scan"), data: Type.Object({ source: Type.String() }) }),
+      Type.Object({
+        kind: Type.Literal("inspect"),
+        data: Type.Object({ url: Type.String() }, { additionalProperties: false }),
+      }),
+      Type.Object({ kind: Type.Literal("status"), data: Type.Object({}, { additionalProperties: false }) }),
+    ]),
+  });
+
+  it("reports the selected input's field, not another variant's discriminator", () => {
+    expect(() => assertValidAppInput(definition, { kind: "inspect", data: {} })).toThrow(
+      "Invalid input for App research at /data: must have required properties url",
+    );
+    expect(() =>
+      assertValidAppInput(definition, {
+        kind: "inspect",
+        data: { url: "https://example.org/paper", ignoredRequirement: "archive" },
+      }),
+    ).toThrow("Invalid input for App research at /data/ignoredRequirement");
+    expect(() => assertValidAppInput(definition, { kind: "unknown", data: {} })).toThrow(
+      "Invalid input for App research",
+    );
+  });
+
+  it("allows fixed operations and enforces the whole schema before selecting diagnostics", () => {
+    const input = { kind: "status", data: {} };
+    expect(() => assertValidAppInput(definition, input)).not.toThrow();
+    expect(() =>
+      assertValidAppInput(
+        {
+          ...definition,
+          inputSchema: { ...definition.inputSchema, not: Type.Object({ kind: Type.Literal("status") }) },
+        },
+        input,
+      ),
+    ).toThrow("Invalid input for App research");
+  });
+});
 
 describe("canonical App definition validation", () => {
   it("accepts one complete canonical declaration", () => {
