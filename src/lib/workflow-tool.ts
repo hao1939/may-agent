@@ -73,6 +73,7 @@ import type {
   AgentCallOptions,
   ExecutionResult as AppExecutionResult,
   TaskReconciliationContext,
+  TaskAttempt,
   WorkflowContext as AppWorkflowContext,
 } from "@may-agent/sdk/app";
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
@@ -677,6 +678,7 @@ export interface RunWorkflowDirectOpts {
   recoveryOwner?: string;
   /** Fenced event capability for a resource-backed Task attempt. */
   taskEmitter?: AppTaskEvents;
+  reviseTask?: TaskAttempt["reviseTask"];
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
@@ -718,6 +720,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     taskBinding: opts.taskBinding,
     recoveryOwner: opts.recoveryOwner,
     taskEmitter: opts.taskEmitter,
+    reviseTask: opts.reviseTask,
     onEvent: opts.onEvent,
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
@@ -799,6 +802,7 @@ export interface WorkflowToolOptions {
   read?: AppRead;
   /** Fenced App-authored event capability for a resource-backed Task attempt. */
   taskEmitter?: AppTaskEvents;
+  reviseTask?: TaskAttempt["reviseTask"];
   /** Resolved app/domain paths supplied by the Host. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input for a system-dispatched top-level workflow. */
@@ -1486,6 +1490,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 projectRoot: opts.executionPaths.projectDir,
                 root: opts.executionPaths.workspaceDir,
                 output: opts.executionPaths.workspaceDir,
+              },
+            }
+          : {}),
+        ...(opts.taskBinding && opts.reviseTask
+          ? {
+              reviseTask: (change: Parameters<TaskAttempt["reviseTask"]>[0]) => {
+                assertExecutionActive();
+                return trackStep(opts.reviseTask!(change));
               },
             }
           : {}),
