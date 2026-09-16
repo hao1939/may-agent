@@ -13,6 +13,7 @@ import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
 import { prepareAgentExecution } from "./agent-execution.js";
+import { observeExecutionUsage } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
 import type { TSchema } from "@earendil-works/pi-ai";
 import {
@@ -165,6 +166,7 @@ export type CallAgentOptions = Pick<
 };
 
 interface ActiveSession {
+  usage?: ReturnType<typeof observeExecutionUsage>;
   sessionId: string;
   agent: AgentRun;
   agentName: string;
@@ -587,7 +589,19 @@ export class SubagentManager {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
     }
 
+    const usage = persistentChat
+      ? undefined
+      : observeExecutionUsage(this._persistDir, {
+          sessionId,
+          agent: def.name,
+          appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
+          workflowRunId: opts?.workflowRunId,
+          taskId: opts?.taskBinding?.taskId,
+          attemptId: opts?.taskBinding?.attemptId,
+          configuredModel: `${def.model.provider}/${def.model.id}`,
+        }, (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`));
     const prepared = prepareAgentExecution({
+      onPreparation: usage?.preparation,
       definition: def,
       projectRoot: this._projectRoot,
       sessionId,
@@ -665,6 +679,7 @@ export class SubagentManager {
     // Create the same prepared model/tool loop used by direct callers. The
     // durable manager only adds persistence and system-event adapters around it.
     const agent = this._agentRunFactory(prepared.runner);
+    if (usage) agent.subscribe(usage.observe);
 
     // JSONL persistence
     agent.subscribe((event) => {
@@ -674,6 +689,7 @@ export class SubagentManager {
     });
 
     const session: ActiveSession = {
+      usage,
       sessionId,
       agent,
       agentName: def.name,
@@ -1823,6 +1839,7 @@ export class SubagentManager {
         return result;
       },
       (error) => {
+        session.usage?.finish("error");
         this._sessions.delete(session.sessionId);
         markSessionInactive(this._persistDir, session.sessionId);
         this.results.delete(session.sessionId);
@@ -2001,6 +2018,7 @@ export class SubagentManager {
                 "done";
     const lastText = finishParams?.summary ?? assistantText ?? "";
     const durationMs = Date.now() - startedAt;
+    session.usage?.finish(status);
     this._registry.updateSessionStatus(sessionId, status, errorText);
     updateSessionDb(this._persistDir, sessionId, {
       status,

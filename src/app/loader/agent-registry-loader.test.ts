@@ -78,12 +78,18 @@ describe("agent registry loader", () => {
       };
       const prepared = await prepareAgents(releasedOpts, makeRuntime());
       expect(prepared.definitions[0].contextPreparation?.({ task: "revision two" })).toBe("Current: revision two");
+      expect(prepared.definitions[0].contextPreparationSource).toMatchObject({ path: "context/prepare.ts" });
+      expect(prepared.definitions[0].contextPreparationSource?.entryHash).toMatch(/^[a-f0-9]{64}$/);
       expect(opts.manager.agentNames()).toEqual([]);
       // Reimport the same captured release after the editable source changes.
       writeFileSync(modulePath, "export default ({ task }) => `Changed: ${task}`;");
       invalidateRuntimeModuleCache();
       const rebuilt = await prepareAgents(releasedOpts, makeRuntime());
       expect(rebuilt.definitions[0].contextPreparation?.({ task: "retry" })).toBe("Current: retry");
+      expect(rebuilt.definitions[0].contextPreparationSource).toEqual(prepared.definitions[0].contextPreparationSource);
+      const changed = await prepareAgents(opts, makeRuntime());
+      expect(changed.definitions[0].contextPreparation?.({ task: "retry" })).toBe("Changed: retry");
+      expect(changed.definitions[0].contextPreparationSource?.entryHash).not.toBe(prepared.definitions[0].contextPreparationSource?.entryHash);
       // Removing the option selects the existing full brief for the next generation.
       writeFileSync(join(agentDir, "agent.json"), JSON.stringify(config));
       expect((await prepareAgents(opts, makeRuntime())).definitions[0].contextPreparation).toBeUndefined();

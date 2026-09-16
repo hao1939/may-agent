@@ -1,10 +1,10 @@
 import {
-  conversationTurnResultSchema,
+  conversationRequestUpdatesSchema,
   type AppDefinition,
   type AppTaskAttachment,
   type ConversationTurnResult,
 } from "@may-agent/sdk";
-import { Check } from "typebox/value";
+import { Check, Errors } from "typebox/value";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import {
@@ -45,9 +45,14 @@ export async function prepareConversationTaskTurn(input: {
   // Bring the exact Requests involved in rejected settlement back into bounded
   // context, including closed asks outside the ordinary context window.
   const priorDecision = claim.previousAttempt?.unacceptedResult?.result?.conversation;
-  if (inputContext.conversation && Check(conversationTurnResultSchema, priorDecision)) {
+  // Historical proposed results are evidence, not executable decisions. Validate
+  // only the references being read so an older handoff shape cannot hide scope.
+  const priorUpdates = priorDecision && typeof priorDecision === "object" && !Array.isArray(priorDecision)
+    ? (priorDecision as Record<string, unknown>).requestUpdates
+    : undefined;
+  if (inputContext.conversation && Check(conversationRequestUpdatesSchema, priorUpdates)) {
     const requests =
-      (priorDecision as ConversationTurnResult).requestUpdates?.flatMap(({ id }) => {
+      (priorUpdates as NonNullable<ConversationTurnResult["requestUpdates"]>).flatMap(({ id }) => {
         const request = readConversationRequest(config.resourceStore.db, app.id, item.conversationId!, id);
         return request ? [request] : [];
       }) ?? [];
@@ -124,7 +129,10 @@ export async function prepareConversationTaskTurn(input: {
     const target = input.getTaskApp?.(desired.appId);
     if (!target?.app.task || !target.app.tasks || target.app.id !== desired.appId)
       throw new Error("Conversation follow-up requires an installed Task App");
-    if (!Check(target.app.inputSchema, desired.input)) throw new Error("Invalid follow-up App input");
+    if (!Check(target.app.inputSchema, desired.input)) {
+      const first = [...Errors(target.app.inputSchema, desired.input)][0];
+      throw new Error(`Invalid follow-up input for App ${target.app.id}: ${first?.message ?? "schema mismatch"}`);
+    }
     if (desired.task) {
       if (desired.task.appId !== target.app.id || !knownTask(desired.task.appId, desired.task.taskId))
         throw new Error("Follow-up Task is absent from Conversation context");

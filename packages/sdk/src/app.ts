@@ -254,14 +254,11 @@ export type ConversationTaskControl = {
 export type ConversationDelegation = {
   /** Exact accepted ask served by this handoff, when tracking an ask. */
   requestId?: string;
-  outcome: string;
-  constraints?: string[];
-  acceptance: string[];
   /** App selected from the installed catalog; use the current App only when it is the best owner. */
   appId: string;
-  /** Typed input accepted by that App. */
+  /** Complete assignment accepted by that App, inline or through retrievable governing references. */
   input: AppInput;
-  /** Continue this exact unfinished Task when the conversation already resolved it. */
+  /** Reuse this exact open Task when its assignment fits; new input does not revise its specification. */
   task?: { appId: string; taskId: string };
 };
 
@@ -298,10 +295,7 @@ export const conversationTurnResultSchema = Type.Object(
     followUp: Type.Optional(
       Type.Object(
         {
-          outcome: nonEmptyStringSchema,
           requestId: Type.Optional(nonEmptyStringSchema),
-          constraints: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
-          acceptance: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
           appId: nonEmptyStringSchema,
           input: Type.Object({ kind: nonEmptyStringSchema, data: Type.Unknown() }, { additionalProperties: false }),
           task: Type.Optional(

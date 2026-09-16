@@ -1,5 +1,6 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { discoverAgentSkills } from "../../lib/skills.js";
 import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
@@ -28,6 +29,7 @@ function inside(root: string, path: string): boolean {
 export async function buildAgentDefinition(options: AgentDefinitionOptions): Promise<SubagentDefinition> {
   const { config, source } = options;
   let contextPreparation: AgentContextPreparer | undefined;
+  let contextPreparationSource: SubagentDefinition["contextPreparationSource"];
   if (config.contextPreparation !== undefined) {
     const entrypoint = resolve(source.dir, config.contextPreparation);
     if (
@@ -37,11 +39,16 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     ) {
       throw new Error("contextPreparation must stay inside the agent directory (relative path, no escaping symlinks)");
     }
-    const module = await importRuntimeModule<{ default?: unknown }>(entrypoint);
+    const entryHash = createHash("sha256").update(readFileSync(entrypoint)).digest("hex");
+    const module = await importRuntimeModule<{ default?: unknown }>(entrypoint, { entryContentHash: entryHash });
     if (typeof module.default !== "function") {
       throw new Error("contextPreparation must default-export a function");
     }
     contextPreparation = module.default as AgentContextPreparer;
+    contextPreparationSource = {
+      path: relative(source.dir, entrypoint).split(sep).join("/"),
+      entryHash,
+    };
   }
   const knowledgeDir = join(source.dir, "knowledge");
   const workspace = join(source.dir, "workspace");
@@ -71,6 +78,7 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     memoryLimit: config.memoryLimit,
     compaction: config.compaction,
     contextPreparation,
+    contextPreparationSource,
     contextFiles: config.context_files?.map((file) => resolve(source.dir, file)),
     skillCatalog,
   };

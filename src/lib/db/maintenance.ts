@@ -243,6 +243,15 @@ export function runDbMaintenancePass(
      )`,
     [now - 30 * DAY_MS, batchSize],
   );
+  remove(
+    "execution_usage",
+    `DELETE FROM execution_usage WHERE id IN (
+       SELECT id FROM execution_usage
+       WHERE started_at < ? AND updated_at < ?
+       ORDER BY started_at LIMIT ?
+     )`,
+    [now - 30 * DAY_MS, now - 30 * DAY_MS, batchSize],
+  );
 
   let checkpoint: DbMaintenanceResult["checkpoint"] = "failed";
   try {

@@ -144,21 +144,79 @@ function renderWorkflowComparison(data) {
     ${workflowRunTable(data)}${data.next ? `<a href="${esc(workflowHealthLink(data, { ...data.next, outcome: q.get('outcome') }))}">Next runs</a>` : ''}`;
 }
 
+function usageNumber(value) {
+  return Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—';
+}
+
+function contextUsageLink(data, changes = {}) {
+  return '/metrics?' + new URLSearchParams({ start: data.window.start, end: data.window.end, ...data.identity, ...changes });
+}
+
+function applyContextFilters(event) {
+  event.preventDefault();
+  const params = new URLSearchParams();
+  for (const [key, value] of new FormData(event.currentTarget)) if (value) params.set(key, value);
+  routeTo('/metrics?' + params);
+}
+
+function renderContextUsage(data) {
+  return `<h2>Context preparation</h2>
+    <p>Compare the same work with different preparers. Each sample is one bounded agent invocation, including later replies and corrective calls. Outcomes and actual model combinations stay separate. A completed execution does not prove the answer is correct.</p>
+    <form class="health-actions" onsubmit="applyContextFilters(event)">
+      <input type="hidden" name="start" value="${data.window.start}"><input type="hidden" name="end" value="${data.window.end}">
+      <label>App <input name="appId" value="${esc(data.identity.appId || '')}" placeholder="All Apps"></label>
+      <label>Agent <input name="agent" value="${esc(data.identity.agent || '')}" placeholder="All agents"></label>
+      <label>Preparer <input name="preparer" value="${esc(data.identity.preparer || '')}" placeholder="All preparers"></label><button>Apply</button>
+      <a href="/metrics?days=1">Last 24 hours</a> · <a href="/metrics?days=7">Last 7 days</a>
+    </form>
+    <p class="health-note">${esc(healthTime(data.window.start))} – ${esc(healthTime(data.window.end))}: ${data.invocations} recorded invocations started in this window. Workflow filters below apply only to workflows.</p>
+    <p class="health-note">Means use finished invocations with usage on every observed reply. Missing or all-zero usage is unknown. Unfinished means no final measurement was saved, not necessarily still running. Historical sessions, persistent chat turns, provider-hidden retries, and external CLI usage are not covered. Direct runs save a local usage artifact and are not imported here.</p>
+    ${data.groups.length ? `<div class="health-scroll"><table class="health-table" data-context-comparison><thead><tr><th>Preparer / agent / App / model</th><th>Outcome</th><th>Samples with complete usage</th><th>Mean input tokens</th><th>Mean output tokens</th><th>Mean replies / tools</th><th>Mean elapsed</th><th>Mean estimated cost</th></tr></thead><tbody>
+      ${data.groups.map(g => `<tr><td><a href="${esc(contextUsageLink(data, { appId: g.appId || '', agent: g.agent, preparer: g.preparer, entryHash: g.entryHash || '', models: JSON.stringify(g.models) }))}">${esc(g.preparer)}</a>
+        <div class="health-note">${esc(g.entryHash ? g.entryHash.slice(0, 12) : g.preparer === 'full' ? 'Default full brief' : 'Version unknown')} · ${esc(g.agent)} · ${esc(g.appId || 'No App binding')}</div>
+        <div class="health-note">${esc(g.models.length ? g.models.map(m => m.join('/')).join(', ') : 'No model replies')}<br>Configured: ${esc(g.configuredModel)}</div></td>
+        <td>${esc(g.outcome)}</td><td>${g.measuredInvocations}/${g.invocations}<div class="health-note">${g.measuredReplies}/${g.replies} replies measured</div></td>
+        <td>${usageNumber(g.meanInputExposure)}<div class="health-note">${usageNumber(g.meanInput)} uncached<br>${usageNumber(g.meanCacheRead)} cache read<br>${usageNumber(g.meanCacheWrite)} cache write</div></td>
+        <td>${usageNumber(g.meanOutput)}</td><td>${usageNumber(g.meanReplies)} / ${usageNumber(g.meanToolCalls)}</td><td>${esc(healthDuration(g.meanDurationMs))}</td>
+        <td>${g.meanEstimatedCost === null ? '—' : '$' + Number(g.meanEstimatedCost).toFixed(4)}<div class="health-note">${g.pricedInvocations}/${g.measuredInvocations} samples priced</div></td></tr>`).join('')}
+      </tbody></table></div>` : '<p>No context usage observations in this selection. Older sessions have unknown preparer identity and are not treated as full-context samples.</p>'}
+    ${data.groupsTruncated ? '<p class="health-warning">Showing the first 100 groups. Narrow the filters; the invocation count includes all matching observations.</p>' : ''}
+    <p class="health-note">Cost is an SDK estimate from model metadata, not an invoice; zero pricing is not proof of free usage. The version hash covers the preparer entry file only, not imported dependencies. Compare matched workloads and review the results before choosing a preparer.</p>
+    <details><summary>Measurements and recent invocation evidence</summary>
+      <p>Observed token subtotals below include partial runs; they must not be mistaken for complete spend. Brief sizes are UTF-8 bytes, not model token counts; they omit system instructions and tool schemas. Preparation time covers local prompt/tool setup.</p>
+      <div class="health-scroll"><table class="health-table"><thead><tr><th>Preparer / outcome</th><th>Observed input / output tokens</th><th>Mean brief bytes: original → prepared</th><th>Mean preparation</th></tr></thead><tbody>
+      ${data.groups.map(g => `<tr><td>${esc(g.preparer)} · ${esc(g.outcome)}</td><td>${g.measuredReplies ? usageNumber(g.inputExposure) + ' / ' + usageNumber(g.output) : 'Unknown'}</td><td>${usageNumber(g.meanTaskBytes)} → ${usageNumber(g.meanPromptBytes)}</td><td>${esc(healthDuration(g.meanPreparationMs))}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="health-note">The existing maintenance pass retires usage records after 30 days without updates. Session and workflow evidence may be retired earlier.</p>
+      <ul>${data.runs.map(r => `<li>${r.outcome === 'preparation-error' ? `${esc(r.agent)} · Preparation failed before session execution` : r.sessionAvailable ? `<a href="/sessions/${encodeURIComponent(r.sessionId)}">${esc(r.agent)} · ${esc(r.sessionId)}</a>` : `${esc(r.agent)} · ${esc(r.sessionId)} · Session evidence unavailable`} · ${esc(r.preparer)} · ${esc(r.outcome || 'unfinished')} · ${esc(healthTime(r.startedAt))}${r.workflowAvailable ? ` · <a href="${esc(workflowRunLink(r.workflowRunId))}">Workflow evidence</a>` : ''}</li>`).join('')}</ul>
+      ${data.runsTruncated ? '<p>Newest 50 matching invocations shown. Narrow the App, agent or preparer selection.</p>' : ''}
+    </details>`;
+}
+
 async function loadMetricsTab() {
   const generation = ++metricsLoadGeneration;
   const el = document.getElementById('metrics-by-owner');
   const workflows = document.getElementById('metrics-workflows');
+  const context = document.getElementById('metrics-context');
   const detail = document.getElementById('metrics-recent');
   document.getElementById('metrics-alerts').textContent = '';
   el.innerHTML = '<p>Loading measurements…</p>';
   workflows.innerHTML = '';
+  context.innerHTML = '';
   detail.innerHTML = '';
   const id = currentRouteParams.id;
   // Independent surfaces: an unavailable metric collector cannot hide run facts.
   if (!id) {
     workflows.innerHTML = '<p>Loading workflow facts…</p>';
     const query = new URLSearchParams(location.search);
+    if (!query.has('end')) query.set('end', Date.now());
     query.set('runs', 'true');
+    context.innerHTML = '<p>Loading context usage…</p>';
+    void readHealthJson('/api/context-usage?' + query).then(data => {
+      if (generation === metricsLoadGeneration && currentTab === 'metrics') context.innerHTML = renderContextUsage(data);
+    }).catch(error => {
+      if (generation === metricsLoadGeneration) context.innerHTML = `<p class="health-warning">Context usage read failed: ${esc(error.message)}</p>`;
+    });
     void readHealthJson('/api/workflow-health?' + query).then(data => {
       if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
       query.set('start', data.window.start); query.set('end', data.window.end); query.delete('days');

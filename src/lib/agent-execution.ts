@@ -46,6 +46,7 @@ import {
 import { runWithAgentSessionContext } from "./agent-session-context.js";
 import type { ToolPolicy } from "./session-policy.js";
 import { ExecutionScope } from "./execution-scope.js";
+import { createExecutionUsage, type ExecutionUsage, type PreparationMeasurement } from "./execution-usage.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -183,6 +184,7 @@ const boundedStreamSimple: typeof streamSimple = withGithubCopilotIdeTokenRecove
 );
 
 export type PreparedAgentExecution = {
+  preparation: PreparationMeasurement;
   definition: SubagentDefinition;
   sessionId: string;
   task: string;
@@ -197,6 +199,8 @@ export type PreparedAgentExecution = {
 };
 
 export type AgentPreparationOptions = {
+  /** Passive evidence; failures in this observer cannot change execution. */
+  onPreparation?: (measurement: PreparationMeasurement) => void;
   definition: SubagentDefinition;
   projectRoot: string;
   sessionId: string;
@@ -243,6 +247,7 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
 }
 
 export type DirectAgentExecutionResult = {
+  usage: ExecutionUsage;
   status: "done" | "error" | "interrupted";
   messages: AgentMessage[];
   lastAssistantText: string | null;
@@ -446,6 +451,38 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
  * the returned runner configuration.
  */
 export function prepareAgentExecution(options: AgentPreparationOptions): PreparedAgentExecution {
+  const started = performance.now();
+  const source = options.definition.contextPreparationSource;
+  const measurement: PreparationMeasurement = {
+    preparer: options.persistentChat
+      ? "not-applicable"
+      : options.definition.contextPreparation
+        ? source?.path ?? "unidentified"
+        : "full",
+    entryHash: !options.persistentChat && options.definition.contextPreparation ? source?.entryHash ?? null : null,
+    durationMs: 0,
+    taskBytes: Buffer.byteLength(options.task),
+    promptBytes: null,
+    systemBytes: null,
+    failed: true,
+  };
+  try {
+    const prepared = prepareExecution(options);
+    measurement.promptBytes = Buffer.byteLength(prepared.prompt);
+    measurement.systemBytes = Buffer.byteLength(prepared.systemPrompt);
+    measurement.failed = false;
+    return { ...prepared, preparation: measurement };
+  } finally {
+    measurement.durationMs = performance.now() - started;
+    try {
+      options.onPreparation?.({ ...measurement });
+    } catch {
+      /* observation cannot reject work */
+    }
+  }
+}
+
+function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentExecution, "preparation"> {
   const definition = definitionForExecution(options);
   options = { ...options, definition, projectRoot: options.executionRoot ?? options.projectRoot };
   const parsedSkill = parseExplicitSkill(options.task);
@@ -545,6 +582,8 @@ export async function executePreparedAgent(
 ): Promise<DirectAgentExecutionResult> {
   const startedAt = Date.now();
   const agent = createAgentRun(prepared.runner);
+  const usage = createExecutionUsage(prepared.preparation);
+  const unsubscribeUsage = agent.subscribe(usage.observe);
   if (options.initialMessages) agent.state.messages = [...options.initialMessages] as any;
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
   let boundedFinishRequested = false;
@@ -643,6 +682,7 @@ export async function executePreparedAgent(
         : String(cause);
   } finally {
     scope.close();
+    unsubscribeUsage();
     if (typeof unsubscribe === "function") unsubscribe();
     if (typeof unsubscribeBoundedFinish === "function") unsubscribeBoundedFinish();
   }
@@ -673,6 +713,7 @@ export async function executePreparedAgent(
 
   return {
     status,
+    usage: usage.snapshot(),
     messages,
     lastAssistantText: assistantText,
     ...(error ? { error } : {}),
