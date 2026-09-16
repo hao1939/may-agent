@@ -211,6 +211,11 @@ creates the Task specification, and creator-authorized `tasks update` supplies a
 complete revised input when requirements change. Conversation `followUp` carries
 `appId`, `input`, optional `requestId`, and optional exact `task` identity. There
 is no second outer outcome/constraints/acceptance payload for the Host to merge.
+The App's declared operation can supply fixed meaning: an input such as
+`{ kind: "status", data: {} }` can be complete when the App defines its outcome
+and acceptance. This does not require every App to accept generic `outcome`,
+`constraints`, or `acceptance` fields. After admission the Task specification
+is the assignment authority; additional input is evidence under that assignment.
 Reusing an exact Task admits context; it does not rewrite that Task's assignment.
 Before creating related work or handling a correction, read the contextual
 Task with `tasks get`. Reuse it when the outcome and execution method fit; revise
@@ -236,6 +241,9 @@ must reject inputs they cannot interpret rather than silently choosing unrelated
 work. Shape validity does not prove semantic sufficiency. There is no separate
 model admission service: the ordinary agent attempt reads available required
 context, checks whether the assignment is actionable, and does justified work.
+Addressed input and conversational handoffs use the same schema check. A rejected
+input identifies the App and invalid field; for a literal-kind union, diagnostics
+prefer the selected kind's branch. Validation still checks the complete schema.
 
 If material information is missing, the worker returns the exact gap, what it
 checked, useful partial work and the smallest clarification needed to its

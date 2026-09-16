@@ -108,6 +108,30 @@ describe("Scout task reconciliation", () => {
     });
   });
 
+  it("preserves addressed owner review without turning unknown facts into work", () => {
+    const input = {
+      kind: "owner-review",
+      data: {
+        reason: "new-library-concern",
+        message: "Assess the duplicate source records",
+      },
+    };
+    expect(Check(app.inputSchema, input)).toBe(true);
+    expect(
+      taskForScoutInput({
+        id: "review",
+        source: { kind: "app", id: "may" },
+        input,
+      }),
+    ).toMatchObject({
+      kind: "desired",
+      intent: { id: "input/review", agent: "scout", input },
+    });
+    expect(
+      resolveScoutTask({ type: "project.owner.requested", data: input.data }),
+    ).toBeNull();
+  });
+
   it("makes source guidance discoverable from Scout's active instructions", async () => {
     const agentRoot = new URL("./agents/scout/", import.meta.url);
     const identity = await Bun.file(new URL("AGENTS.md", agentRoot)).text();

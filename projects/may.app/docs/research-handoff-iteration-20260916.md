@@ -135,3 +135,43 @@ pair. New Conversation decisions must use the new SDK shape; historical proposed
 results remain evidence. Do not merge or activate mismatched halves. Production
 activation is a separate Host Operations App task using the documented release
 procedure, with in-flight work and rollback considered at that boundary.
+
+## Design review before integration
+
+The sufficient outcome is a useful source assessment that survives the turn,
+with corrections carried to its existing owner and less human repetition. The
+common [review rule](../../may-agent.app/docs/1-principles/core-principles.md#review-rule)
+and [philosophy](../../may-agent.app/docs/1-principles/design-philosophy.md#how-to-decide-a-tradeoff)
+support removing the ignored outer assignment fields and using existing App
+input, Task revision, feedback, and findings records. A separate intent router,
+semantic-admission service, clarification lifecycle, or archive service does not
+provide demonstrated value for this case.
+
+Review found and repaired three gaps in the candidate:
+
+- Common guidance could imply that every App must accept generic goal fields.
+  The contract now makes fixed App semantics explicit: a declared status operation
+  can be complete with empty data. The accepted Task specification remains the
+  assignment authority; later context does not silently revise it.
+- Schema errors for a union could report the first, unrelated input kind. The
+  Host now shares one input validator for direct admission and conversational
+  handoff. It checks the full schema and uses a matching literal-kind branch only
+  to explain a rejection. It does not judge semantic sufficiency.
+- Removing Scout's generic fallback also rejected existing addressed owner-review
+  requests outside the known maintenance reasons. That ordinary-agent path is
+  preserved. Malformed scans are still rejected, and unknown observed facts still
+  cannot create work.
+
+Verification focuses on the changed contracts: selected-kind error feedback and
+repair after restart, fixed-operation input, whole-schema rejection, preserved
+maintenance input, and the existing Task/Request correction cases. The large
+reference test proves that input and its retrievable path survive storage reopen;
+it does not establish that a model read or correctly interpreted the document.
+The earlier real-source trials retain their exact revision and behavioral limits.
+No additional model trial or production activation is claimed by this review.
+
+The archive obligation remains May/Scout policy with an explicit no-save override.
+Judging relevance, adequate source coverage, and whether an existing Task fits
+remains agent work. One source trial and one corrected continuation are useful
+initial evidence, not a guarantee of reliable daily learning. Preference projection
+and Gym intake remain outside this implementation.

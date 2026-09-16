@@ -351,6 +351,24 @@ export function taskForScoutInput(
     };
   }
   const intent = intentForScoutInput(admitted.input);
+  // Addressed owner requests can carry new concerns outside the scheduled
+  // maintenance reasons. Preserve their existing ordinary-agent review path.
+  if (!intent && admitted.input.kind === "owner-review") {
+    return {
+      kind: "desired",
+      intent: {
+        id: `input/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+        parentId: "library-operations",
+        outcome: "Interpret and handle admitted Scout input owner-review.",
+        acceptance: [
+          "Scout returns an evidence-backed result; if the assignment needs changing, report the evidence and ask its owner to refine it.",
+        ],
+        agent: "scout",
+        input: admitted.input,
+        priority: "P1",
+      },
+    };
+  }
   if (!intent) {
     throw new Error(
       admitted.input.kind === "explore"

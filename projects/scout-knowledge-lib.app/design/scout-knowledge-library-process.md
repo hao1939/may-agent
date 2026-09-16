@@ -55,8 +55,10 @@ A specific paper, post or research question uses a bounded `goal` input with
 nonempty outcome and acceptance, plus constraints and retrievable context when
 needed. This is independent of scheduled discovery. `explore` requires one
 supported source and maps to its standing feed workflow; it does not represent
-an exact-link request. Invalid inputs fail admission instead of falling back to
-an unrelated general research Task.
+an exact-link request. Malformed scans fail admission instead of falling back to
+an unrelated general research Task. Addressed `owner-review` input keeps its
+existing ordinary-agent path for concerns outside the known maintenance reasons;
+unknown observed facts still do not create work.
 
 Scout reads the exact assigned source and governing references, searches for an
 existing assessment by stable identity and question, and saves the assessment
