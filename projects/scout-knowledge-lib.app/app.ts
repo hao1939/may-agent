@@ -7,6 +7,7 @@ import {
   type AppTaskInput,
   type TaskIntent,
 } from "@may-agent/sdk";
+import { sourceAssessmentInputSchema } from "./agents/scout/workflows/scout-assess-source.js";
 import { xhsCredentialObserver } from "./watchers/xhs-credential.js";
 
 const projectId = "scout-knowledge-lib";
@@ -174,6 +175,10 @@ function scoutMetricInput(
 const nonBlankText = Type.String({ minLength: 1, pattern: "\\S" });
 const scoutInputSchema = Type.Union([
   Type.Object(
+    { kind: Type.Literal("assess-source"), data: sourceAssessmentInputSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
     {
       kind: Type.Literal("goal"),
       data: Type.Object(
@@ -322,7 +327,10 @@ function intentForScoutInput(input: AppInput): TaskIntent | null {
 export function taskForScoutInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
-  if (admitted.input.kind === "goal") {
+  if (
+    admitted.input.kind === "goal" ||
+    admitted.input.kind === "assess-source"
+  ) {
     const data = eventParams(admitted.input.data);
     if (
       typeof data.outcome !== "string" ||
@@ -340,7 +348,10 @@ export function taskForScoutInput(
         outcome: data.outcome.trim(),
         acceptance: data.acceptance as string[],
         agent: "scout",
-        input: { kind: "goal", data },
+        input: { kind: admitted.input.kind, data },
+        ...(admitted.input.kind === "assess-source"
+          ? { workflow: "scout-assess-source" }
+          : {}),
         outputs: [
           `${projectDir}/knowledge`,
           `${projectDir}/reports`,
@@ -384,7 +395,7 @@ export default defineApp({
   version: 1,
   agent: "scout",
   description:
-    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests. Use goal (outcome, acceptance, optional constraints and context references) for a specific paper, post or question; it reads and archives the assessment even without new topic knowledge. Use explore (source: arxiv|hn|xhs|github|reddit) only for a standing feed scan.",
+    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests. Use assess-source (sourceUrl, outcome, acceptance, archive boolean, optional constraints/context references) for an exact paper or post: code fetches it, records supplied coverage, and saves the assessment when archive=true. Use goal for broader research questions or library work. Use explore (source: arxiv|hn|xhs|github|reddit) only for a standing feed scan.",
   workspace: {
     kind: "local",
     localPath: "../scout-knowledge-lib",

@@ -57,7 +57,12 @@ when it fits; otherwise use `knowledge/findings/YYYY-MM-DD-<topic>.md`. No separ
 archive service or new directory tree is needed. A source record may link to a
 canonical note; optional integration into that note does not replace the record
 of what was assessed and why. Retain earlier assessment evidence when revisiting,
-using normal file history and explicit dated coverage changes where needed.
+using explicit dated assessment entries in the same record. The procedural
+source assessment selects an existing unambiguous source record, or uses
+`YYYY-MM-DD-source-assessment-<source-hash>.md` with a readable paper/post title.
+Its code-generated source-access section records retrieval and supplied-text
+evidence independently of the model’s analysis; the latest assessment entry
+addresses the latest question.
 
 Include the question, stable source URL/ID and reviewed version, observation
 date, actual reading coverage, key claims and supporting evidence, limitations,

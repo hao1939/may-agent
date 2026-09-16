@@ -51,30 +51,40 @@ autonomy, durable reconciliation, observation, and recovery.
 
 ## Requested source assessments
 
-A specific paper, post or research question uses a bounded `goal` input with
-nonempty outcome and acceptance, plus constraints and retrievable context when
-needed. This is independent of scheduled discovery. `explore` requires one
-supported source and maps to its standing feed workflow; it does not represent
-an exact-link request. Malformed scans fail admission instead of falling back to
-an unrelated general research Task. Addressed `owner-review` input keeps its
-existing ordinary-agent path for concerns outside the known maintenance reasons;
-unknown observed facts still do not create work.
+An exact paper or post uses `assess-source` with `sourceUrl`, outcome, acceptance,
+explicit `archive`, and optional constraints or governing references. Its pure
+Task mapper selects `scout-assess-source`. General research questions and library
+work retain `goal`; supported standing feed scans retain `explore`. The App
+catalog advertises these contracts. No URL keyword routing is added to the Host.
 
-Scout reads the exact assigned source and governing references, searches for an
-existing assessment by stable identity and question, and saves the assessment
-using the [existing findings layout](scout-knowledge-library-layout.md#requested-assessment-records).
-This includes already-covered and out-of-scope results. Curated topic edits and
-digest highlights depend on useful new knowledge; preserving the requested
-assessment does not. An explicit no-save instruction is the exception.
+The bounded workflow fetches the exact source (arXiv abstract/HTML links resolve
+to the same paper's PDF), extracts text, and supplies up to 60,000 characters:
+all text when it fits, otherwise the first 45,000 and last 15,000 characters.
+It records retrieval URL/time, byte hash, total text/page counts and supplied
+page/character spans with excerpt hashes. This supports text assessments of
+PDFs and readable HTML/text posts; it does not cover images, OCR, paywalls or
+JavaScript-rendered article bodies. An access/extraction failure is recorded and
+returned incomplete. HTTP retrieval is bounded to 45 seconds/25 MiB; extraction
+to 30 seconds. PDF extraction requires Python 3 and the pinned `pypdf` dependency
+in `agents/scout/tools/requirements-source.txt`, installed during provisioning.
 
-The active procedure is in [Scout's instructions](../agents/scout/AGENTS.md#requested-source-assessments).
-It records actual source coverage, evidence, uncertainty and disposition,
-verifies the saved file by reading it back, and returns the exact path. A blocked
-source yields an access record and unfinished required research, not invented
-coverage. Clarification and repair follow the
-[common App contract](../../may-agent.app/docs/2a-design/agent-app.md#admission-and-clarification).
-These candidate rules require model-backed behavior evidence as well as schema
-checks; see the [real-source iteration](../../may.app/docs/research-handoff-iteration-20260916.md).
+One read-only Scout call returns title, summary, assessment and whether the
+assigned question is complete. The code owns saving, source identity and coverage;
+the model owns interpretation and must distinguish author claims from checked
+conclusions. Material supplied is not proof of full reading or proof verification.
+Missing evidence for a deeper requested review is an incomplete result, while a
+useful overview can complete with disclosed limits. The default workflow does
+not automatically edit curated topics or append a digest.
+
+The workflow finds an existing source record in `knowledge/findings`, or creates
+one flat dated source-assessment record. It appends a dated question/assessment
+and code-generated source evidence, retaining previous assessments. It compares
+with the pre-analysis content before saving and verifies the exact saved bytes.
+A save failure cannot return convergence. Multiple matching source records need
+owner resolution rather than an arbitrary overwrite. `archive: false` performs
+analysis without creating an archive. Broad semantic quality remains the worker
+and caller's judgment; no additional evaluator or semantic admission service is
+introduced. The same existing Task update path carries corrections.
 
 ## Ownership And Workflows
 

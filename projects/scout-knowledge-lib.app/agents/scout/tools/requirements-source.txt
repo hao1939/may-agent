@@ -1,0 +1,2 @@
+# Source-assessment workflow PDF extractor. Install when provisioning the App.
+pypdf==6.19.0

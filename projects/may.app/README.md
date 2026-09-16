@@ -62,9 +62,13 @@ code-driven implementation and review with Bob (GPT-6) and tech-lead (GPT-5.6).
 Its source, model-registry and workspace prerequisites require validation
 before activation; it is not a claim that the live App runs this workflow.
 
-The proposed [intent and daily-learning extension](docs/intent-and-daily-learning.md)
+The [intent and daily-learning design](docs/intent-and-daily-learning.md)
 uses the same Conversation and Task contracts for automatic research-link
-handling, corrections, and scoped explicit preferences. Its
+handling, corrections, and scoped explicit preferences. Its original
 [isolated PoC](poc/intent-learning/README.md) exercises real Host admission and
 model judgment with synthetic sources. It does not change the live May agent,
 Scout library, preferences, or Gym policy.
+
+The current source-assessment iteration makes May’s inferred outcome visible and
+uses Scout’s code-owned source reader and archive procedure. See the linked
+design for the boundary between deployed research handling and proposed learning.

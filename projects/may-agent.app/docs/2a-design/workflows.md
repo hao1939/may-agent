@@ -33,6 +33,22 @@ owns only one bounded execution attempt.
 A workflow may ask an agent to apply a skill. The workflow controls sequence;
 the skill guides judgment inside one step. Neither owns the enclosing App/task.
 
+### Procedural evidence and agent judgment
+
+For a stable domain procedure, the owning App can fetch bounded source material,
+call its agent with observation tools, and persist the returned analysis through
+code before reporting success. The existing workflow and Task result contracts
+are sufficient; an optional helper is not enforcement when completion can bypass
+it. Code records mechanically observed facts such as supplied text spans and a
+successful file save. Those facts do not prove comprehension, research quality,
+or fulfillment of the caller’s question. The worker and assigning owner retain
+those judgments. Keep domain formats and source selection inside the App.
+
+A conversational acknowledgement explains the accepted outcome; it is not a
+second work specification. Existing Request revisions and Task updates preserve
+corrections. App policy owns the wording and when a separate acknowledgement is
+useful. No extra interpretation service or confirmation lifecycle is required.
+
 ## Location and ownership
 
 Canonical workflows live under the agent that owns the experience:

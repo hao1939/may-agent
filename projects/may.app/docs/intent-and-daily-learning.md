@@ -1,7 +1,7 @@
 # May intent, correction, and daily learning
 
-Status: research handoff and archive policy implemented as a source candidate;
-production activation remains separate. Preference projection and Gym intake
+Status: research handoff and archive policy deployed in the preceding iteration.
+The source-assessment procedure and intent-echo refinement are the current candidate. Preference projection and Gym intake
 remain proposed. See [the original PoC](../poc/intent-learning/README.md) and
 [the real-source iteration](research-handoff-iteration-20260916.md).
 
@@ -52,10 +52,19 @@ evidence, corrects scope, asks a question, withdraws an ask, or establishes a
 future preference. These are judgments, not a rigid classifier output or URL
 domain router.
 
-For a research link, the complete Scout goal carries the exact URL, desired
-analysis, constraints, archive requirement, and what the returned result must
-prove. May acknowledges the understood outcome briefly and keeps its Request
-open while Scout works.
+For a paper or post, May uses Scout's typed `assess-source` operation. Its input
+carries `sourceUrl`, outcome, acceptance, explicit `archive`, and any constraints
+or governing references. May echoes the intended outcome in one short sentence
+in its first response, including whether it will save a note, then proceeds with
+authorized work. The echo and delegation reflect the same accepted Request.
+A correction gets a brief revised interpretation; immediately answerable
+questions need no ritual acknowledgement. The Request stays open while Scout works.
+
+A bare link asks for a useful bounded assessment with disclosed coverage. It
+does not impose full-paper reading or proof verification. May leads the return
+with useful meaning, then significant limitations and source/saved-record
+references. Reading a saved note is necessary for review, but its prose is not
+independent evidence that the claimed research occurred.
 
 Assignment authority, retrievable context, admission, Task reuse and caller
 clarification belong to the common
@@ -80,7 +89,9 @@ for unrelated consequential actions.
 
 May requests and checks a saved assessment for an ordinary shared research link,
 including in a fresh conversation without Scout context. It delegates the exact
-URL through Scout's `goal`, not a standing feed `explore` Task. Source coverage,
+URL through Scout's `assess-source`, which binds its procedural workflow.
+Scout's `goal` remains available for broader research and library work;
+`explore` retains its standing-feed meaning. Source coverage,
 substantive findings, limitations and the returned saved path are acceptance
 criteria. May reads the cited record before fulfilling the Request. A one-time
 no-save instruction overrides this default.
@@ -89,8 +100,17 @@ Scout owns the [assessment procedure](../../scout-knowledge-lib.app/design/scout
 and [record placement](../../scout-knowledge-lib.app/design/scout-knowledge-library-layout.md#requested-assessment-records).
 Records remain mandatory when curated knowledge does not change; May does not
 duplicate Scout's archive. Access failure is a visible limitation and leaves
-any required unread material unfinished. A completed record cannot by itself
-prove source coverage or semantic quality.
+any required unread material unfinished. The source workflow fetches/extracts with time and size bounds, supplies a bounded
+text packet to one read-only assessment call, and saves the returned analysis
+with code-generated coverage evidence. May uses that evidence for material
+supplied, without interpreting it as proof of reading or comprehension. A save
+failure leaves the research unfinished. Source-specific records retain earlier
+assessment entries on correction; May reads the latest entry against current scope.
+
+This iteration adds no preference projection, artifact UI service, new classifier,
+or Host lifecycle. Those capabilities remain separate work. Portable tests cover
+mechanics; a real local conversation must still demonstrate useful interpretation,
+calibrated claims, automatic return, and ordinary-language correction.
 
 ## Daily learning: apply, remember, improve
 

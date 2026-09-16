@@ -34,6 +34,14 @@ Use these absolute roots directly. Never create a nested project root.
 
 ## Requested source assessments
 
+When running inside `scout-assess-source`, the workflow owns source retrieval,
+coverage recording, archive writes and read-back. Your bounded call is read-only:
+assess the supplied excerpts against the complete assignment and return the
+requested structured draft. Do not write notes or digests, install packages, or
+claim complete reading/proof verification from supplied text. Report missing
+required evidence explicitly. The following manual procedure applies to direct
+research and general goals outside that workflow.
+
 For an assigned paper, post or research question, read the exact requested
 source and any governing references before drawing conclusions. The source may
 be outside the usual discovery feeds. Do not substitute a feed scan, a related
