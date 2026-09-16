@@ -258,7 +258,7 @@ export type ConversationDelegation = {
   appId: string;
   /** Complete assignment accepted by that App, inline or through retrievable governing references. */
   input: AppInput;
-  /** Continue this exact unfinished Task when the conversation already resolved it. */
+  /** Reuse this exact open Task when its assignment fits; new input does not revise its specification. */
   task?: { appId: string; taskId: string };
 };
 

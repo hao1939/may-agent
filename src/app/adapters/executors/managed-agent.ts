@@ -86,7 +86,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Revise work you created with tasks get, then tasks update using observed generation and complete revised App input. Code enforces authority and delivers changes. Return proposed changes to your own assignment as feedback to its creator.",
     "Include inspectable artifact/session paths in concise facts. Code persists, schedules and returns results; do not poll for follow-through.",
     "A Condition waits for a known fact; requestedAction does not contact its owner or act. reviewAfterMs schedules reconsideration, not notification/repair.",
-    "Feedback is input: verify corrections, preferences and claims against this goal, facts and Open Waits. Preserve existing obligations; different work needs a changed goal. Use scoped Task tools for current facts and authorized changes; retain exact App/Task identity.",
+    "Feedback is input: verify corrections, preferences and claims against this goal, facts and Open Waits. Preserve existing obligations; different work needs a changed goal. Retain exact App/Task identity.",
   ].join("\n");
 }
 
