@@ -256,7 +256,7 @@ export type ConversationDelegation = {
   requestId?: string;
   /** App selected from the installed catalog; use the current App only when it is the best owner. */
   appId: string;
-  /** Complete assignment accepted by that App, inline or through retrievable governing references. */
+  /** Complete handoff under the App's contract, including its fixed semantics and any governing references. */
   input: AppInput;
   /** Reuse this exact open Task when its assignment fits; new input does not revise its specification. */
   task?: { appId: string; taskId: string };

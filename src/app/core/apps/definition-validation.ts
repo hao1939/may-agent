@@ -1,5 +1,5 @@
 import type { AppDefinition, AppInput, EventSelector, TSchema } from "@may-agent/sdk";
-import { Check } from "typebox/value";
+import { Check, Errors } from "typebox/value";
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -267,4 +267,25 @@ export function validateAppDefinition(definition: unknown): string[] {
 export function assertValidAppDefinition(definition: unknown): asserts definition is AppDefinition {
   const errors = validateAppDefinition(definition);
   if (errors.length > 0) throw new Error(errors.join("; "));
+}
+
+/** One shape check for addressed input and conversational handoffs; Apps own meaning. */
+export function assertValidAppInput(app: Readonly<AppDefinition>, input: AppInput): void {
+  const inputKind = input.kind;
+  if (Check(app.inputSchema, input)) return;
+  // Narrow diagnostics only, after checking the complete schema. Another input
+  // kind's first error cannot explain how to repair this assignment.
+  const schema = record(app.inputSchema);
+  const variants = schema?.anyOf ?? schema?.oneOf;
+  const matching = Array.isArray(variants)
+    ? variants.filter((variant) => {
+        const kind = record(record(record(variant)?.properties)?.kind);
+        return kind?.const === inputKind;
+      })
+    : [];
+  const diagnosticSchema = matching.length === 1 ? (matching[0] as TSchema) : app.inputSchema;
+  const first = [...Errors(diagnosticSchema, input)][0];
+  throw new Error(
+    `Invalid input for App ${app.id} at ${first?.instancePath || "/"}: ${first?.message ?? "schema mismatch"}`,
+  );
 }
