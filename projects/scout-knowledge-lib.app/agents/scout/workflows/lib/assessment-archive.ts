@@ -78,10 +78,11 @@ export function saveAssessment(
       throw new Error(
         "Assessment changed during research; retry from current evidence",
       );
-    const prefix =
-      current ||
-      `# ${title.replace(/[\r\n]/g, " ")}\n\nSource identity: ${sourceIdentity(source)}\n`;
-    const next = `${prefix}\n\n${entry.trim()}\n`;
+    const header = `# ${title.replace(/[\r\n]/g, " ")}\n\nSource identity: ${sourceIdentity(source)}\n`;
+    const history = current
+      ? `\n<details>\n<summary>Earlier assessments</summary>\n\n${current.trim()}\n\n</details>\n`
+      : "";
+    const next = `${header}\n${entry.trim()}\n${history}`;
     writeFileSync(temporary, next, { flag: "wx" });
     renameSync(temporary, record.path);
     if (readFileSync(record.path, "utf8") !== next)

@@ -77,8 +77,9 @@ useful overview can complete with disclosed limits. The default workflow does
 not automatically edit curated topics or append a digest.
 
 The workflow finds an existing source record in `knowledge/findings`, or creates
-one flat dated source-assessment record. It appends a dated question/assessment
-and code-generated source evidence, retaining previous assessments. It compares
+one flat dated source-assessment record. It presents the latest dated question/assessment first, retaining earlier
+entries under an expandable history,
+with code-generated source evidence. It compares
 with the pre-analysis content before saving and verifies the exact saved bytes.
 A save failure cannot return convergence. The workflow observes the existing
 attempt cancellation signal before accepting a late model result or saving;

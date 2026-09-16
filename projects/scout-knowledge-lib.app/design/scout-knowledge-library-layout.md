@@ -57,7 +57,8 @@ when it fits; otherwise use `knowledge/findings/YYYY-MM-DD-<topic>.md`. No separ
 archive service or new directory tree is needed. A source record may link to a
 canonical note; optional integration into that note does not replace the record
 of what was assessed and why. Retain earlier assessment evidence when revisiting,
-using explicit dated assessment entries in the same record. The procedural
+using explicit dated assessment entries in the same record, newest first and
+earlier entries in expandable history. The procedural
 source assessment selects an existing unambiguous source record, or uses
 `YYYY-MM-DD-source-assessment-<source-hash>.md` with a readable paper/post title.
 Its code-generated source-access section records retrieval and supplied-text

@@ -207,7 +207,10 @@ it("a changed question reuses the source record and retains previous evidence", 
   expect(result.output).toHaveProperty("state", "converged");
   const second = assessmentRecord(root, sourceUrl);
   expect(second.path).toBe(first.path);
-  expect(second.previous).toContain(first.previous);
+  expect(second.previous).toContain(first.previous.trim());
+  expect(second.previous.indexOf("Corrected assessment")).toBeLessThan(
+    second.previous.indexOf("Earlier assessments"),
+  );
   expect(second.previous).toContain("Corrected assessment");
   expect(readdirSync(join(root, "knowledge/findings"))).toHaveLength(1);
 });
