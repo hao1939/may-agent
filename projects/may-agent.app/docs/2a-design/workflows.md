@@ -44,6 +44,12 @@ successful file save. Those facts do not prove comprehension, research quality,
 or fulfillment of the caller’s question. The worker and assigning owner retain
 those judgments. Keep domain formats and source selection inside the App.
 
+A completed agent call can carry a valid structured draft with a partial outcome.
+When the App requires an artifact, preserve that useful draft and its missing
+requirements without reporting the assignment fulfilled. A missing or invalid
+draft is a different failure. The assigning owner uses the returned gap to judge
+whether different evidence, a revised procedure or human input is needed.
+
 A conversational acknowledgement explains the accepted outcome; it is not a
 second work specification. Existing Request revisions and Task updates preserve
 corrections. App policy owns the wording and when a separate acknowledgement is

@@ -51,7 +51,7 @@ autonomy, durable reconciliation, observation, and recovery.
 
 ## Requested source assessments
 
-An exact paper or post uses `assess-source` with `sourceUrl`, outcome, acceptance,
+A bounded assessment of an exact source page or paper uses `assess-source` with `sourceUrl`, outcome, acceptance,
 explicit `archive`, and optional constraints or governing references. Its pure
 Task mapper selects `scout-assess-source`. General research questions and library
 work retain `goal`; supported standing feed scans retain `explore`. The App
@@ -61,7 +61,10 @@ The bounded workflow fetches the exact source (arXiv abstract/HTML links resolve
 to the same paper's PDF), extracts text, and supplies up to 60,000 characters:
 all text when it fits, otherwise the first 45,000 and last 15,000 characters.
 It records retrieval URL/time, byte hash, total text/page counts and supplied
-page/character spans with excerpt hashes. This supports text assessments of
+page/character spans with excerpt hashes. HTML extraction retains HTTP(S) link
+targets, resolving relative references against the retrieved URL; those links are
+not followed. Plain text and Markdown retain literal code instead of passing
+through an HTML parser. This supports text assessments of
 PDFs and readable HTML/text posts; it does not cover images, OCR, paywalls or
 JavaScript-rendered article bodies. An access/extraction failure is recorded and
 returned incomplete. HTTP retrieval is bounded to 45 seconds/25 MiB; extraction
@@ -73,7 +76,12 @@ assigned question is complete. The code owns saving, source identity and coverag
 the model owns interpretation and must distinguish author claims from checked
 conclusions. Material supplied is not proof of full reading or proof verification.
 Missing evidence for a deeper requested review is an incomplete result, while a
-useful overview can complete with disclosed limits. The default workflow does
+useful overview can complete with disclosed limits. A valid structured draft from
+a partial agent finish is saved and returned incomplete even if the draft's own
+completion flag disagrees. The saved note and caller response retain the reported
+evidence gap. A call without a valid draft cannot create an assessment. A landing
+page does not establish the contents of linked papers, documentation or code;
+uninspected material is unknown rather than evidence of a defect. The default workflow does
 not automatically edit curated topics or append a digest.
 
 The workflow finds an existing source record in `knowledge/findings`, or creates

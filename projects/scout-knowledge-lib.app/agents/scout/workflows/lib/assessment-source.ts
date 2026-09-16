@@ -39,36 +39,54 @@ export function sourceIdentity(value: string): string {
 const extractScript = `
 import sys, json, io
 from html.parser import HTMLParser
+from urllib.parse import urljoin, urlsplit
 data = sys.stdin.buffer.read()
 if data.startswith(b'%PDF-'):
     from pypdf import PdfReader
     reader = PdfReader(io.BytesIO(data))
     if len(reader.pages) > 1000: raise ValueError('PDF exceeds 1000 pages')
     pages = [page.extract_text() or '' for page in reader.pages]
-else:
+elif sys.argv[1] in ('text/html', 'application/xhtml+xml') or (
+    not sys.argv[1] and data.lstrip().lower().startswith((b'<!doctype html', b'<html'))
+):
     class Text(HTMLParser):
         def __init__(self):
-            super().__init__(); self.parts = []; self.hidden = 0
+            super().__init__(); self.parts = []; self.hidden = 0; self.links = []
         def handle_starttag(self, tag, attrs):
             if tag in ('script', 'style', 'noscript'): self.hidden += 1
+            if tag == 'a' and not self.hidden:
+                href = dict(attrs).get('href') or ''
+                try:
+                    target = urljoin(sys.argv[2], href)
+                    parsed = urlsplit(target)
+                    allowed = href and not href.startswith('#') and parsed.scheme in ('http', 'https') and parsed.hostname and not parsed.username and not parsed.password
+                except ValueError:
+                    allowed = False
+                self.links.append(target if allowed else '')
         def handle_endtag(self, tag):
             if tag in ('script', 'style', 'noscript'): self.hidden = max(0, self.hidden - 1)
+            if tag == 'a' and not self.hidden and self.links:
+                target = self.links.pop()
+                if target: self.parts.append('(' + target + ')')
         def handle_data(self, text):
             if not self.hidden and text.strip(): self.parts.append(text.strip())
     text = data.decode('utf-8', errors='replace')
     parser = Text(); parser.feed(text)
     pages = ['\\n'.join(parser.parts)]
+else:
+    pages = [data.decode('utf-8', errors='replace')]
 print(json.dumps(pages))
 `;
 
 export function extractSource(
   bytes: Uint8Array,
   signal?: AbortSignal,
+  document: { mediaType?: string; url?: string } = {},
 ): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const child = execFile(
       "python3",
-      ["-c", extractScript],
+      ["-c", extractScript, document.mediaType ?? "", document.url ?? ""],
       { timeout: 30_000, maxBuffer: 12 * 1024 * 1024, signal },
       (error, stdout) => {
         if (error)
@@ -142,7 +160,14 @@ export async function readSource(
     chunks.push(chunk);
   }
   const bytes = Buffer.concat(chunks);
-  const pages = await extractSource(bytes, signal);
+  const pages = await extractSource(bytes, signal, {
+    mediaType: response.headers
+      .get("content-type")
+      ?.split(";")[0]
+      .trim()
+      .toLowerCase(),
+    url: response.url,
+  });
   if (!pages.some((page) => page.trim()))
     throw new Error("Source has no extractable text (OCR may be needed)");
   return {

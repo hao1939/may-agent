@@ -8,7 +8,8 @@ remain proposed. See [the original PoC](../poc/intent-learning/README.md) and
 
 ## Desired behavior
 
-A human can share a paper or substantive article in ordinary conversation.
+A human can share a paper, substantive article, documentation or repository link
+in ordinary conversation.
 May understands the likely outcome, asks Scout to research and archive an
 assessment, and returns what matters with its source and saved record. App
 selection and a prescribed prompt are unnecessary. Surrounding intent remains
@@ -53,7 +54,8 @@ evidence, corrects scope, asks a question, withdraws an ask, or establishes a
 future preference. These are judgments, not a rigid classifier output or URL
 domain router.
 
-For a paper or post, May uses Scout's typed `assess-source` operation. Its input
+For a bounded assessment of an exact source page or paper, May uses Scout's
+typed `assess-source` operation. Its input
 carries `sourceUrl`, outcome, acceptance, explicit `archive`, and any constraints
 or governing references. May echoes the intended outcome in one short sentence
 in its first response, including whether it will save a note, then proceeds with
@@ -62,7 +64,13 @@ A correction gets a brief revised interpretation; immediately answerable
 questions need no ritual acknowledgement. The Request stays open while Scout works.
 
 A bare link asks for a useful bounded assessment with disclosed coverage. It
-does not impose full-paper reading or proof verification. May leads the return
+does not impose full-paper reading or proof verification. The Request and worker
+acceptance must stay at that same depth. For a repository landing page, explain
+what the page establishes, its useful takeaway and what remains unknown. Do not
+silently add architecture explanation, implementation inspection, test verification
+or a production-readiness verdict as acceptance requirements. Explicit requests
+for that deeper work remain binding; use Scout's `goal` when several sources or
+code inspection are needed. May leads the return
 with useful meaning, then significant limitations and source/saved-record
 references. Reading a saved note is necessary for review, but its prose is not
 independent evidence that the claimed research occurred.
@@ -107,6 +115,10 @@ with code-generated coverage evidence. May uses that evidence for material
 supplied, without interpreting it as proof of reading or comprehension. A save
 failure leaves the research unfinished. Source-specific records retain earlier
 assessment entries on correction; May reads the latest entry against current scope.
+A valid partial draft is saved with its evidence gap and returned incomplete.
+If the gap requires different evidence or a different procedure, May revises the
+existing assignment rather than expecting another identical source read to resolve
+it. This does not permit silently dropping an explicit human requirement.
 
 This iteration adds no preference projection, artifact UI service, new classifier,
 or Host lifecycle. Those capabilities remain separate work. Portable tests cover

@@ -294,6 +294,47 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
   );
 });
 
+it.each([false, true])(
+  "preserves a partial finish draft without convergence even when draft.complete=%s",
+  async (complete) => {
+    const root = temporary();
+    const ctx = context(root, (async () => ({
+      ...success({ ...draft, complete }),
+      facts: {
+        status: "partial",
+        next_steps: "Implementation and test results were not inspected.",
+      },
+    })) as WorkflowContext["agents"]["call"]);
+    const result = await executeSourceAssessment(ctx, async () => packet);
+    const record = assessmentRecord(root, sourceUrl);
+    expect(result.output).toHaveProperty("state", "incomplete");
+    expect(result.output).toHaveProperty(
+      "response",
+      expect.stringContaining(record.path),
+    );
+    expect(record.previous).toContain(draft.assessment);
+    expect(record.previous).toContain("Assessment incomplete.");
+    expect(record.previous).toContain(
+      "Implementation and test results were not inspected.",
+    );
+    expect(record.previous).toContain("Supplied 10 of 100");
+  },
+);
+
+it("a completed call without a draft cannot produce an assessment", async () => {
+  const root = temporary();
+  const ctx = context(root, (async () => ({
+    id: "s_no_draft",
+    kind: "agent",
+    status: "done",
+    summary: "No usable draft",
+    facts: { status: "partial" },
+  })) as WorkflowContext["agents"]["call"]);
+  const result = await executeSourceAssessment(ctx, async () => packet);
+  expect(result.output).toHaveProperty("state", "incomplete");
+  expect(readdirSync(join(root, "knowledge/findings"))).toEqual([]);
+});
+
 it("reads a real HTTP post, excludes scripts, and reports retrieval failure", async () => {
   const server = Bun.serve({
     port: 0,
@@ -301,6 +342,7 @@ it("reads a real HTTP post, excludes scripts, and reports retrieval failure", as
       new URL(req.url).pathname === "/post"
         ? new Response(
             "<html><body><h1>Post</h1><p>Actual evidence.</p><script>Not content</script></body></html>",
+            { headers: { "content-type": "text/html; charset=utf-8" } },
           )
         : new Response("missing", { status: 404 }),
   });
@@ -331,4 +373,55 @@ it("a save failure never produces a successful result or a claimed saved path", 
     "facts",
     expect.not.arrayContaining([`output:${record.path}`]),
   );
+});
+
+it("retains source links using the retrieved page URL without following them", async () => {
+  const requests: string[] = [];
+  const server = Bun.serve({
+    port: 0,
+    fetch: (req) => {
+      const path = new URL(req.url).pathname;
+      requests.push(path);
+      if (path === "/start")
+        return Response.redirect(new URL("/repo/", req.url));
+      return new Response(
+        '<html><body><a href="../paper?v=2">Paper</a><a href="https://docs.example.org/primer">Documentation</a><a href="javascript:evil()">Bad link</a><script>Not evidence</script></body></html>',
+        {
+          headers: { "content-type": "text/html" },
+        },
+      );
+    },
+  });
+  try {
+    const packet = await readSource(`http://127.0.0.1:${server.port}/start`);
+    const text = packet.excerpts.map((s) => s.text).join("");
+    expect(text).toContain(
+      `Paper\n(http://127.0.0.1:${server.port}/paper?v=2)`,
+    );
+    expect(text).toContain("Documentation\n(https://docs.example.org/primer)");
+    expect(text).not.toContain("javascript:");
+    expect(text).not.toContain("Not evidence");
+    expect(requests).toEqual(["/start", "/repo/"]);
+  } finally {
+    server.stop(true);
+  }
+});
+
+it("preserves plain-text code and Markdown instead of treating them as HTML", async () => {
+  const source =
+    "function identity<T>(value: T): T { return value; }\nSee [guide](https://example.org/guide).\nLiteral <script> remains text.";
+  const server = Bun.serve({
+    port: 0,
+    fetch: () =>
+      new Response(source, { headers: { "content-type": "text/plain" } }),
+  });
+  try {
+    const packet = await readSource(
+      `http://127.0.0.1:${server.port}/source.ts`,
+    );
+    expect(packet.excerpts.map((s) => s.text).join("")).toBe(source);
+    expect(packet.totalCharacters).toBe(source.length);
+  } finally {
+    server.stop(true);
+  }
 });

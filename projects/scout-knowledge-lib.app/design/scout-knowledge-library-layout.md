@@ -63,7 +63,10 @@ source assessment selects an existing unambiguous source record, or uses
 `YYYY-MM-DD-source-assessment-<source-hash>.md` with a readable paper/post title.
 Its code-generated source-access section records retrieval and supplied-text
 evidence independently of the model’s analysis; the latest assessment entry
-addresses the latest question.
+addresses the latest question. A valid partial draft remains a saved assessment
+with an explicit incomplete status and the reported evidence gap; saving it does
+not establish fulfillment. Link targets retained from HTML identify references,
+not additional sources that were fetched or assessed.
 
 Include the question, stable source URL/ID and reviewed version, observation
 date, actual reading coverage, key claims and supporting evidence, limitations,

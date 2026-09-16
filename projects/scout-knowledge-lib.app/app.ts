@@ -395,7 +395,7 @@ export default defineApp({
   version: 1,
   agent: "scout",
   description:
-    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests. Use assess-source (sourceUrl, outcome, acceptance, archive boolean, optional constraints/context references) for an exact paper or post: code fetches it, records supplied coverage, and saves the assessment when archive=true. Use goal for broader research questions or library work. Use explore (source: arxiv|hn|xhs|github|reddit) only for a standing feed scan.",
+    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests. Use assess-source (sourceUrl, outcome, acceptance, archive boolean, optional constraints/context references) for a bounded assessment of an exact source page or paper: code fetches it, records supplied coverage, and saves the assessment when archive=true. Use goal for broader research questions or library work. Use explore (source: arxiv|hn|xhs|github|reddit) only for a standing feed scan.",
   workspace: {
     kind: "local",
     localPath: "../scout-knowledge-lib",
