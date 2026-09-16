@@ -1,7 +1,8 @@
 # May intent, correction, and daily learning
 
 Status: research handoff and archive policy deployed in the preceding iteration.
-The source-assessment procedure and intent-echo refinement are the current candidate. Preference projection and Gym intake
+The source-assessment procedure and intent-echo refinement are implemented,
+validated and active on the local instance. Preference projection and Gym intake
 remain proposed. See [the original PoC](../poc/intent-learning/README.md) and
 [the real-source iteration](research-handoff-iteration-20260916.md).
 

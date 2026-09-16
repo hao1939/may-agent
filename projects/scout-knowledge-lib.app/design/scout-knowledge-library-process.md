@@ -77,16 +77,16 @@ useful overview can complete with disclosed limits. The default workflow does
 not automatically edit curated topics or append a digest.
 
 The workflow finds an existing source record in `knowledge/findings`, or creates
-one flat dated source-assessment record. It presents the latest dated question/assessment first, retaining earlier
-entries under an expandable history,
-with code-generated source evidence. It compares
-with the pre-analysis content before saving and verifies the exact saved bytes.
+one flat dated source-assessment record. It presents the latest dated assessment
+first, with code-generated source evidence, and retains earlier entries under
+expandable history. It compares with the pre-analysis content before saving and
+verifies the exact saved bytes.
 A save failure cannot return convergence. The workflow observes the existing
 attempt cancellation signal before accepting a late model result or saving;
 fetch and extraction share that signal. The synchronous compare-and-replace
 rejects changes observed during research, but does not claim a filesystem
-transaction with independent external writers. Multiple matching source records need
-owner resolution rather than an arbitrary overwrite. `archive: false` performs
+transaction with independent external writers. Multiple matching source records
+need owner resolution rather than an arbitrary overwrite. `archive: false` performs
 analysis without creating an archive. Broad semantic quality remains the worker
 and caller's judgment; no additional evaluator or semantic admission service is
 introduced. The same existing Task update path carries corrections.

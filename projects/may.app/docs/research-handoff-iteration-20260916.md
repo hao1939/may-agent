@@ -261,3 +261,109 @@ sections/pages actually read and compare coverage claims against that record.
 This fits the existing assignment, result evidence, and caller review boundaries;
 it does not require another semantic-admission or archive service. No such further
 implementation or autonomous preference learning is claimed here.
+
+
+## Source procedure and user-experience iteration
+
+The next iteration used https://arxiv.org/pdf/2508.10874, *SSRL: Self-Search
+Reinforcement Learning*, arXiv:2508.10874v1. The source was a readable 39-page
+PDF. It tested the narrower design: May echoes its understood outcome, Scout's
+code prepares source evidence and saves the result, and one read-only model call
+provides the analysis. The Host implementation and execution lifecycle did not
+change. Shared guidance belongs to [Workflows](../../may-agent.app/docs/2a-design/workflows.md#procedural-evidence-and-agent-judgment);
+May's wording/default effort belongs to [intent policy](intent-and-daily-learning.md),
+and extraction/archive behavior belongs to Scout's
+[source-assessment procedure](../../scout-knowledge-lib.app/design/scout-knowledge-library-process.md#requested-source-assessments).
+
+Implementation began at App commit `13bf319f31`; the final executable App source
+is `5852fb2712`. The running Host remains `3a8893ba`. Only App definitions were
+activated on the same local instance through a staged committed source release;
+its App/agent imports, workflow discovery, service readiness and source identity
+were checked. Python 3 and the pinned pypdf 6.19.0 dependency were already present
+in the container. No agent installed packages or edited archive files.
+
+### Actual interaction and repairs
+
+The first bare link was entered through the unmodified May Console in the
+existing primary Conversation. May replied: “I’ll assess the paper’s main ideas,
+evidence, and limitations, then save a source-grounded note for later reference.”
+It selected `assess-source` with the correct URL and explicit archiving.
+
+This first attempt exposed a real integration failure: the workflow exported a
+default function instead of the required named `execute`. It therefore did not
+start research. May disclosed the blocker and kept the Request and Task. Commit
+`876585b241` fixed the export; the fixture and release check now cover that entry
+point and actual workflow discovery. After activation, the same Task recovered
+without resubmitting the URL or replacing it with a feed scan. The initial run's
+latency includes this repair and must not be presented as normal research latency.
+An unrelated scheduled digest also appeared in the primary Console; notification
+prioritization remains outside this change.
+
+While Scout was working, an operator supplied this ordinary-language test
+correction through Console, without Task IDs, source offsets or file paths:
+“For this paper, focus on what it means for May's daily learning, especially what
+it doesn't demonstrate. Keep the saved note concise.” May stated the revised
+understanding, revised the same Request, and used `tasks get`/`tasks update` to
+advance the existing Scout Task from generation 1 to 2. Its final reply addressed
+the corrected question; the Request closed at revision 6. The first assessment
+remains historical evidence in the same note. No obsolete assessment was delivered
+as fulfillment of the corrected ask.
+
+Review found the updated note was still too long and placed after the earlier
+entry. The final refinement requests 300–500 words, limits the draft to 6,000
+characters, and presents the latest assessment before expandable earlier history.
+Attempt cancellation is also propagated to retrieval/extraction and checked before
+saving a late result. Its deterministic regression aborts after a model returns
+and verifies that no assessment file is written; it is not a claim of atomic
+filesystem cancellation or transactions with independent writers.
+
+### Fresh Conversation on the final source
+
+The same bare URL was then admitted into a fresh Conversation on the existing
+instance through the socket. This follow-up validates behavior without inherited
+May discussion, while the preceding trial supplies actual Console evidence.
+Only the URL was supplied, with no selected Topic or custom research instruction.
+
+- May echoed assessment and preservation in 19.107 seconds.
+- It selected the typed source procedure; one Scout model call supplied the
+  analysis, with observation tools only. The observed Scout calls used `finish`
+  and no filesystem-writing or package-installation tools.
+- Code reused the same source assessment and put a roughly 465-word latest entry
+  first (including title, question and source metadata). Earlier entries survived.
+- May read the saved assessment and returned useful findings, limitations, the
+  source and the same saved path. The Request closed at revision 3.
+- Final response arrived 64.591 seconds after admission. These timings describe
+  this run, not a comparative performance benchmark or latency guarantee.
+
+Across the three Scout calls, each actual model prompt contained 60,000 of
+124,710 extracted characters from portions of 20 of 39 pages. An independent
+trace-to-record check matched every saved retrieval identity, byte hash, supplied
+span and excerpt hash to the actual prompt packet. All three checks passed. The
+reply explicitly described partial coverage; neither the workflow nor May claimed
+proof verification, experiment reproduction or complete-paper review.
+
+The result distinguishes author-reported QA gains and model-dependent sim-to-real
+transfer from evidence of May learning reliably each day. One source assessment
+was added, and no pre-existing library note changed. Its path is
+`knowledge/findings/2026-09-16-source-assessment-59968e7b4159.md`.
+
+### Verification and remaining limits
+
+Scout's frozen-source suite: 369 passed, zero failed. This includes actual PDF
+extraction from a synthetic fixture, a local HTTP post, source failure, no-save,
+record reuse, concurrent-edit detection, partial analysis, save failure and late
+cancellation. Scout typecheck, syntax bundle and formatting of changed code pass.
+May's 30 ordinary tests passed; the separately enabled Host-backed correction and
+storage-reopen test also passed. Common design integrity, checked SDK/control
+examples and canonical App-boundary checks passed. Earlier test attempts exposed
+an SDK fixture mismatch, missing local PDF dependency configuration and an edit
+made during a suite run; these were corrected before the frozen-source pass.
+
+This is promising evidence for the bounded assessment experience, not a guarantee
+of correct interpretation or research truth. Text extraction does not cover PDF
+figures, OCR, paywalls or JavaScript-rendered bodies. The excerpts omit middle
+sections of long papers; questions requiring those sections remain unfinished.
+May still needs to judge whether the supplied evidence fits the actual question.
+Artifact navigation, notification prioritization and durable preference learning
+remain separate work. User authorization was refined to local merge only; no
+remote PR or push is required for this iteration.
