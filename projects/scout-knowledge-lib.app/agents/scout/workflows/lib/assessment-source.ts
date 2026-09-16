@@ -61,12 +61,15 @@ else:
 print(json.dumps(pages))
 `;
 
-export function extractSource(bytes: Uint8Array): Promise<string[]> {
+export function extractSource(
+  bytes: Uint8Array,
+  signal?: AbortSignal,
+): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const child = execFile(
       "python3",
       ["-c", extractScript],
-      { timeout: 30_000, maxBuffer: 12 * 1024 * 1024 },
+      { timeout: 30_000, maxBuffer: 12 * 1024 * 1024, signal },
       (error, stdout) => {
         if (error)
           return reject(
@@ -109,7 +112,10 @@ export function selectExcerpts(
   });
 }
 
-export async function readSource(requestedUrl: string): Promise<SourcePacket> {
+export async function readSource(
+  requestedUrl: string,
+  signal?: AbortSignal,
+): Promise<SourcePacket> {
   const identity = sourceIdentity(requestedUrl);
   const url = new URL(requestedUrl);
   // Resolve arXiv's abstract/HTML view to this paper's PDF, retaining its version.
@@ -119,7 +125,10 @@ export async function readSource(requestedUrl: string): Promise<SourcePacket> {
     url.search = "";
   }
   const response = await fetch(url, {
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.any([
+      AbortSignal.timeout(45_000),
+      ...(signal ? [signal] : []),
+    ]),
     headers: { "User-Agent": "Scout-source-assessment/1.0" },
   });
   if (!response.ok)
@@ -133,7 +142,7 @@ export async function readSource(requestedUrl: string): Promise<SourcePacket> {
     chunks.push(chunk);
   }
   const bytes = Buffer.concat(chunks);
-  const pages = await extractSource(bytes);
+  const pages = await extractSource(bytes, signal);
   if (!pages.some((page) => page.trim()))
     throw new Error("Source has no extractable text (OCR may be needed)");
   return {

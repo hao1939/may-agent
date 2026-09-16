@@ -228,6 +228,20 @@ it("no-save performs the assessment without creating archive files", async () =>
   );
 });
 
+it("an aborted attempt cannot save a late model result", async () => {
+  const root = temporary();
+  const controller = new AbortController();
+  const ctx = context(root, (async () => {
+    controller.abort(new Error("Assignment changed"));
+    return success();
+  }) as WorkflowContext["agents"]["call"]);
+  ctx.signal = controller.signal;
+  await expect(
+    executeSourceAssessment(ctx, async () => packet),
+  ).rejects.toThrow("Assignment changed");
+  expect(readdirSync(join(root, "knowledge/findings"))).toEqual([]);
+});
+
 it("source failure records access limits and leaves research incomplete without a model call", async () => {
   const root = temporary();
   const ctx = context(root, (async () => {

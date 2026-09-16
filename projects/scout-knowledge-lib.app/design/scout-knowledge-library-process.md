@@ -80,7 +80,11 @@ The workflow finds an existing source record in `knowledge/findings`, or creates
 one flat dated source-assessment record. It appends a dated question/assessment
 and code-generated source evidence, retaining previous assessments. It compares
 with the pre-analysis content before saving and verifies the exact saved bytes.
-A save failure cannot return convergence. Multiple matching source records need
+A save failure cannot return convergence. The workflow observes the existing
+attempt cancellation signal before accepting a late model result or saving;
+fetch and extraction share that signal. The synchronous compare-and-replace
+rejects changes observed during research, but does not claim a filesystem
+transaction with independent external writers. Multiple matching source records need
 owner resolution rather than an arbitrary overwrite. `archive: false` performs
 analysis without creating an archive. Broad semantic quality remains the worker
 and caller's judgment; no additional evaluator or semantic admission service is

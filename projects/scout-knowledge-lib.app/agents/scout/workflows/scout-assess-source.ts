@@ -41,7 +41,10 @@ const draftSchema = Type.Object(
 
 export async function executeSourceAssessment(
   ctx: WorkflowContext,
-  read: (url: string) => Promise<SourcePacket> = readSource,
+  read: (
+    url: string,
+    signal?: AbortSignal,
+  ) => Promise<SourcePacket> = readSource,
 ) {
   const raw = ctx.reconciliation?.input as
     | { kind?: string; data?: unknown }
@@ -71,6 +74,7 @@ export async function executeSourceAssessment(
           } satisfies TaskReconcileResult),
     );
   try {
+    ctx.signal.throwIfAborted();
     if (
       raw?.kind !== "assess-source" ||
       !input ||
@@ -87,8 +91,9 @@ export async function executeSourceAssessment(
       record = assessmentRecord(ctx.workspace.projectRoot, input.sourceUrl);
     let packet: SourcePacket;
     try {
-      packet = await read(input.sourceUrl);
+      packet = await read(input.sourceUrl, ctx.signal);
     } catch (error) {
+      ctx.signal.throwIfAborted();
       const reason = error instanceof Error ? error.message : String(error);
       const summary = `Source assessment unfinished: ${reason}`;
       const path = record
@@ -104,6 +109,7 @@ export async function executeSourceAssessment(
         ...(path ? [`output:${path}`] : []),
       ]);
     }
+    ctx.signal.throwIfAborted();
     const coverage = coverageSummary(packet);
     const result = await ctx.agents.call(
       "scout",
@@ -139,6 +145,7 @@ ${JSON.stringify(packet)}
         operationAllowance: 12,
       },
     );
+    ctx.signal.throwIfAborted();
     if (
       result.status !== "done" ||
       !result.output ||
@@ -166,6 +173,7 @@ ${JSON.stringify(packet)}
       `${draft.summary}\n\n${coverage}\n\n${path ? `Saved assessment: ${path}` : "No assessment was archived, as requested."}`,
     );
   } catch (error) {
+    ctx.signal.throwIfAborted();
     const summary = `Source assessment unfinished: ${error instanceof Error ? error.message : String(error)}`;
     return finish("incomplete", summary, [summary]);
   }
