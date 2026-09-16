@@ -1,6 +1,7 @@
 # Research handoff iteration — September 16, 2026
 
-Status: implemented and exercised in isolation. No production activation.
+Status: implemented, reviewed, merged, and deployed to the existing local instance.
+The initial isolated experiments and the later deployed trial are distinguished below.
 Preference learning remains at the earlier PoC boundary.
 
 ## Contract ownership
@@ -175,3 +176,88 @@ Judging relevance, adequate source coverage, and whether an existing Task fits
 remains agent work. One source trial and one corrected continuation are useful
 initial evidence, not a guarantee of reliable daily learning. Preference projection
 and Gym intake remain outside this implementation.
+
+## Deployed local-instance trial after review
+
+The human explicitly requested reuse of the existing local instance and deployment
+of the latest fix. Host PR #194 merged as
+`dd548cabe2bf88ba427de2d29fdde3e94b7050c5`. The deployed Host is
+`3a8893ba11d196706b70812d4a93423f8c892207`, which includes that merge and preserves
+the three installation changes for Astra, pinned workflow helpers, and accepted
+local workspace outputs. Its tree is identical to the already-tested candidate
+`0194cc02`; the deployment build's 63 control/ingress tests passed. The companion
+App definition source is `47bccf7a3fbd4660115dcdf7533f1140dc4e96e6`.
+
+The correlated deployment receipt reported success, matching built and loaded
+artifact hashes, healthy services, and no duplicate deployment. The control socket
+and HTTP readiness passed. May and Scout remained the only enabled Apps; all
+disabled markers and unrelated workspace edits were preserved. No work was active
+at either restart, and no production database was reset or repaired.
+
+Normal App reload rejected unrelated tracked design-document edits in the shared
+checkout and retained the old generation. To activate only committed source, the
+operator used `DefinitionSourceReleaseStore.stage()` from the clean companion
+worktree, validated the compiled App imports and complete agent generation against
+the deployed SDK, then stopped the idle daemon, activated that prepared release,
+and restarted with a guarded rollback path. Readiness and the admission worker's
+source identity confirmed the new generation. This was an explicit deployment
+operation; it did not change reload policy or commit another owner's edits.
+
+The bare URL was admitted into a fresh Conversation on that running instance.
+The live library contained no assessment matching this paper before submission.
+Schedules, observers, real agent context, and normal execution remained enabled.
+No trial-specific instructions or answers were supplied with the URL.
+
+The first run took 203.727 seconds across three sessions, May → Scout → May:
+
+- May inferred a specific paper assessment and archive obligation without asking
+  for clarification. Its first handoff used one complete Scout `goal` input,
+  carrying the URL, outcome, acceptance, constraints, and reading-coverage policy.
+- Scout fetched the exact arXiv source, extracted the 92-page PDF, created one
+  assessment, read it back, and added a linked digest highlight. No curated topic
+  note changed and no unrelated feed scan was created.
+- May read the saved assessment and retrieved the Scout Task before closing its
+  Request. Normal result delivery completed without operator intervention.
+- **Coverage verification failed.** Scout's note and May's reply claimed all
+  92 pages, including proofs, had been reviewed. The trace records extraction,
+  head/search output, and only four bounded reads of the extracted text: offsets
+  100/320, 2688/680, 3290/570, and 3850/80 (offset/limit). These cover selected
+  introductory, implementation, case-study, discussion, and concluding material;
+  they do not substantiate continuous review of the intervening formal development.
+  May accepted Scout's coverage assertion rather than checking its basis.
+
+The archived file is
+`knowledge/findings/2026-09-16-spatiotemporal-composability-context-paradigm.md`.
+The substantive discussion correctly distinguishes dependent-before-provider
+teardown, reversible context state versus external effects, unchecked inverse and
+commutativity obligations, and observational adoption versus controlled evaluation.
+Those useful findings do not justify the broader claim of proof review.
+
+The operator preserved the original answer, note, Task state, and trace, then
+submitted an explicit review correction in the same Topic. This follow-up is
+separate from the unassisted bare-link result. May read the existing Request and
+Task, reopened that Request, and used `followUp.task` to continue the same Scout
+Task. The correction fits the existing assessment and honest-coverage acceptance;
+it did not require a new Task or a specification generation change. Scout changed
+the same note to **partial extracted-text review**, stated that the complete paper
+and proofs had not been reviewed, and qualified unsupported strength-of-evidence
+claims. The local evidence retains the original overclaim as well as the repair.
+May read the corrected file before closing the reopened
+Request at revision 6. Both runs completed through the normal return path, with
+six sessions in total and one Scout Task at generation 1 throughout. The corrected
+reply explicitly describes partial coverage; no code or prompt changed between
+the bare-link run and this operator-supplied correction.
+
+The container also lacked a PDF reader and Python package installer. Scout
+recovered by installing the reader in its user environment, but that cost extra
+steps and created an unmanaged runtime dependency. A pinned PDF-reading capability
+in the installation would make this recurring task more predictable.
+
+This trial supports autonomous routing, complete handoff, durable archival,
+automatic return, and reuse for a correction. It does **not** establish reliable
+coverage verification: a saved note and its author's completion assertion are not
+independent evidence. The next improvement should give the caller concrete source
+sections/pages actually read and compare coverage claims against that record.
+This fits the existing assignment, result evidence, and caller review boundaries;
+it does not require another semantic-admission or archive service. No such further
+implementation or autonomous preference learning is claimed here.
