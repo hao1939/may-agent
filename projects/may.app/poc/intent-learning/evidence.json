@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "kind": "isolated-synthetic-poc",
+  "date": "2026-09-16",
+  "offlineTests": {
+    "passed": 15,
+    "failed": 0
+  },
+  "fullAppCheck": {
+    "status": "not-green",
+    "existingDevelopmentWorkflowFailures": 15,
+    "reproducedOnUnchangedMain": true
+  },
+  "limits": [
+    "Synthetic sources and fixture tools",
+    "Explicit result return admission; no automatic delivery trial",
+    "Storage reopen, not OS crash",
+    "Scoped explicit preference transfer, not Gym promotion",
+    "Costs are registry estimates, not invoices"
+  ],
+  "runs": [
+    {
+      "name": "main-flow",
+      "status": "passed",
+      "model": "gpt-5.6-sol",
+      "provenance": {
+        "startedAt": "2026-09-16T10:38:13.830Z",
+        "hostSourceCommit": "b19fca526de3b96309d502021bda1984c8d5935c",
+        "candidateHashes": {
+          "./host-fixture.ts": "73b243667b3179512de1a7cb8cf2100a21a7821bc09bc4ef75f226c6ed77a73d",
+          "./memory.ts": "5897b68baf63d09f4f65253aeb6d5d78fba3208d8f4e99e378e3b4ddd905f610",
+          "./archive.ts": "9c6a77c641954d0de12523c3845c79bf5524bfa1d591ba40b2f49fe98b004789",
+          "./may-policy.md": "be101a726cfe2cd2c1eb039b944b13f5403431fe8afb221719bdbc89e1b87ce1",
+          "./run.ts": "2741220cb5bac7e886f0a62f3729278af914fd8e74d92a69bddd4af0f5ce329f",
+          "./transfer.ts": "2d126a783402b174b7c61ac9028a1420edcf3982b7763075d99337addb27f3ef",
+          "../../app.ts": "9d8010d56ffba56eda803aa76336536ae2e502db30b70ea1523507bf63ad6b24",
+          "../../../scout-knowledge-lib.app/app.ts": "e9133449a1126f722e4392ec71ee6c5b3ca1eac84a7cbe6a1e82d8098941f975",
+          "../../../../agents/may/AGENTS.md": "f0cdcf4ce9b8996042443cc99e1623df80206808c8ab905cab7c48e20911e62c"
+        }
+      },
+      "checks": [
+        {
+          "name": "bare paper outside Scout context delegates research and archive",
+          "passed": true
+        },
+        {
+          "name": "one-time correction keeps Task and Request identity without permanent memory",
+          "passed": true
+        },
+        {
+          "name": "corrected Request survives storage reopen",
+          "passed": true
+        },
+        {
+          "name": "Scout saves verified evidence with the confounding limitation",
+          "passed": true
+        },
+        {
+          "name": "May returns the archived result and fulfills the latest Request",
+          "passed": true
+        },
+        {
+          "name": "preference remains unapplied before post-commit projection",
+          "passed": true
+        },
+        {
+          "name": "accepted preference recovers after reopen and replays exactly once",
+          "passed": true
+        },
+        {
+          "name": "fresh conversation uses the saved paper preference",
+          "passed": true
+        },
+        {
+          "name": "abstract-only access is archived honestly",
+          "passed": true
+        },
+        {
+          "name": "one-time no-save exception does not erase the standing preference",
+          "passed": true
+        },
+        {
+          "name": "a translation request containing a link stays a translation",
+          "passed": true
+        },
+        {
+          "name": "a paper URL inside a log does not trigger research",
+          "passed": true
+        },
+        {
+          "name": "instructions inside source content do not rewrite preferences",
+          "passed": true
+        },
+        {
+          "name": "acknowledgment creates no preference",
+          "passed": true
+        },
+        {
+          "name": "explicit forgetting removes the rule",
+          "passed": true
+        }
+      ],
+      "modelInvocations": 13,
+      "providerSteps": 24,
+      "reportedModels": ["gpt-5.6-sol"],
+      "elapsedSeconds": 180.09,
+      "estimatedCostUsd": 0.408596,
+      "examples": [
+        {
+          "id": "result-1",
+          "response": "The assessment is complete and archived at `<trial>/scout-knowledge-lib/knowledge/findings/2026-09-16-425b2ff7f813.md`.\n\nMain takeaway: the experiments **do not establish that retrieval caused the improvement**.\n\n- Success increased from **58% to 71%**, but the treatment changed both retrieval and the answer format.\n- Because there was no ablation separating those changes, the evidence supports only the **combined intervention**, not retrieval specifically.\n- Confidence is further limited by reuse of the same 120-task set, no confidence intervals or held-out evaluation, and unavailable code and per-task outcomes.\n- Production generalization and cost were not measured.\n\nSo the observed gain is real within the reported setup, but the paper’s retrieval-specific conclusion overreaches what its design can support.",
+          "assignment": null
+        }
+      ],
+      "archives": [
+        "# Evaluating Retrieval Across Domains — abstract-only assessment\n\nSynthetic PoC research; not a real-world source assessment.\nSource: https://research.example.test/new-evaluation\nSource SHA-256: 44900671cad7b2d448527ea99ca4835f916ab1b3cbda7d35cb796024fb301218\nRead at: 2026-09-16T10:40:17.380Z\nCoverage: abstract\n\n## Assessment\nExperimental evidence first: the accessible abstract states, “The abstract claims retrieval improves results across five domains.” This is a reported cross-domain result, but the accessible material does not provide enough experimental detail to independently assess its strength: “It supplies no sample size, confidence intervals, baseline details, or method section.” Accordingly, the abstract is directionally consistent with the paper’s conclusion that retrieval improves results, but it does not demonstrate the magnitude, uncertainty, comparator, design, or causal basis needed to substantiate that conclusion. Access is explicitly abstract-only: “Only the abstract is available in this fixture; the full paper is inaccessible.” No related topic notes were supplied, so no external contextual connections are asserted.\n\n### The accessible abstract reports that retrieval improves results across five domains.\n> The abstract claims retrieval improves results across five domains.\n\nThis is the central reported finding and is evidence only at the level of an abstract assertion. It supports the paper’s conclusion directionally, but the available text does not report effect sizes or domain-specific results.\n\n### The accessible source omits sample size, confidence intervals, baseline details, and a method section.\n> It supplies\nno sample size, confidence intervals, baseline details, or method section.\n\nThese omissions prevent evaluation of statistical precision, comparison conditions, study design, replication details, and whether the reported improvement warrants causal attribution. No missing values or procedures are inferred.\n\n### Only the abstract is accessible; the full paper is unavailable.\n> Only the abstract is available in this fixture; the full paper is inaccessible.\n\nThis assessment is limited to abstract coverage and does not represent a full-text review.\n\n## Limitations\n- Only abstract-level access was available; the source states, “Only the abstract is available in this fixture; the full paper is inaccessible.”\n- Critical evaluation details are absent; the source states, “It supplies\nno sample size, confidence intervals, baseline details, or method section.”\n- The phrase “retrieval improves results” reports an improvement, but without methods or comparator details the assessment cannot determine whether this is a causal effect rather than an observed association or benchmark difference.\n- No sample sizes, confidence intervals, baselines, methods, effect magnitudes, domain identities, or domain-level results are inferred.\n\n## Connections\n\nDisposition: Archive as an abstract-only, limited-support assessment. The reported five-domain improvement is consistent with the paper’s conclusion, but the accessible abstract alone is insufficient to evaluate robustness or causal attribution; full text would be required for a stronger assessment.\n",
+        "# Synthetic research fixture assessment: Memory Retrieval and Agent Success\n\nSynthetic PoC research; not a real-world source assessment.\nSource: https://papers.example.test/controlled-memory\nSource SHA-256: 2b3d517422e10acc09940a757d9ff47c3a3b49136b1362ff0d6317bce4db3043\nRead at: 2026-09-16T10:39:09.388Z\nCoverage: full_text\n\n## Assessment\nThis synthetic research fixture reports that agent success rose from 58% to 71% on 120 synthetic tasks when a no-retrieval/free-text baseline was replaced by a treatment that jointly added retrieval and a structured answer format. The comparison supports an observed association between the bundled treatment and higher success on this task set, but it does not identify retrieval as the cause because answer formatting changed simultaneously and no format ablation was run. Experimental validity is further limited by three repetitions on the same 120-task set, no confidence interval, no held-out set, unavailable code and raw per-task outcomes, and no measurement of production generalization or cost. Accordingly, the authors’ retrieval-specific causal attribution is stronger than the reported design supports.\n\n### The document is explicitly a synthetic research fixture rather than a real published paper.\n> SYNTHETIC RESEARCH FIXTURE, not a published paper.\n\nThis label governs how the source should be represented; it should not be treated as real-world published research.\n\n### The principal reported finding is an increase in success from 58% to 71%.\n> Results: Success increased from 58% to 71%.\n\nThis is the reported outcome difference. It is an observation from the comparison, not by itself evidence that retrieval alone caused the increase.\n\n### The evaluation used 120 synthetic tasks and the same base model.\n> Methods: We evaluated 120 synthetic tasks with the same base model.\n\nHolding the base model constant removes one possible source of variation, but it does not resolve the simultaneous retrieval-and-format intervention.\n\n### The baseline and treatment differ on both retrieval and output format.\n> The baseline\nused no retrieval and a free-text answer format. The treatment added retrieval\nand a structured answer format.\n\nBecause retrieval and structured formatting changed together, the experiment tests a bundled intervention. It cannot isolate a retrieval-specific effect.\n\n### The study did not perform an ablation of the format change.\n> We did not ablate the format change.\n\nWithout retrieval-only, format-only, or factorial comparison arms, there is no direct estimate separating retrieval from formatting.\n\n### The same task set was reused for three repetitions.\n> Three repetitions used the same\ntask set.\n\nRepeated runs can show run-to-run behavior on those tasks, but reuse does not supply independent task-set replication or evidence of generalization to new tasks.\n\n### No confidence interval and no held-out task set were reported.\n> No confidence interval or held-out task set was reported.\n\nThe source therefore gives no reported interval estimate for uncertainty and no held-out evaluation for assessing performance on an unseen task set.\n\n### The authors attribute the improvement to retrieval.\n> Conclusion: The authors attribute the improvement to retrieval.\n\nThis is the source’s causal conclusion, but the design described in the source does not isolate retrieval from the concurrent format change.\n\n### The source itself identifies the format change as a confound and rejects a retrieval-alone causal inference.\n> Limitations: The simultaneous format change is a confound. The result cannot\nestablish that retrieval alone caused the gain.\n\nThis directly limits the strength of support for the conclusion: the evidence supports a gain for the combined treatment, not a causal effect of retrieval alone.\n\n### Production generalization and cost were not measured.\n> Production generalization and\ncost were not measured.\n\nThe fixture supplies no evidence that the result transfers to production settings and no basis for evaluating computational or operational tradeoffs.\n\n### Code and raw per-task outcomes are unavailable.\n> Code and raw per-task outcomes are unavailable.\n\nIndependent reproduction and task-level error, variance, and sensitivity analyses cannot be performed from the supplied materials.\n\n### The abstract cautiously states that retrieval appears to improve task completion.\n> Abstract: A retrieval system appears to improve agent task completion.\n\nThe word “appears” preserves some uncertainty, but the experiment only supports an association with the combined retrieval-plus-structured-format treatment.\n\n## Limitations\n- Structured-format confound: retrieval and answer format changed simultaneously, so the observed 58%-to-71% difference belongs to a bundled intervention.\n- No ablation: the source states that it did not ablate the format change, leaving retrieval-only and formatting-only effects unidentified.\n- Repeated use of the same 120-task set: three repetitions do not constitute evaluation on independently sampled or unseen tasks.\n- No confidence interval: the reported percentages are not accompanied by interval uncertainty.\n- No held-out set: generalization to unseen synthetic tasks was not tested.\n- Unavailable code and raw per-task outcomes: reproduction and granular outcome analysis are not possible from the source.\n- No production-generalization measurement: the synthetic-task result does not establish production performance.\n- No cost measurement: the evaluation does not quantify the resource or operational cost of adding retrieval.\n\n## Connections\n- Retrieval-augmented agents: this design evaluates retrieval only as part of a bundle with structured output, so it is informative about the bundle but not the retrieval component in isolation.\n- Controlled experiments and causal inference: keeping the base model fixed is a control, but causal identification still fails when two treatment dimensions—retrieval and format—change at once.\n- Ablation studies: a retrieval-only arm, a structured-format-only arm, and a combined arm would separate component effects; the source explicitly says, “We did not ablate the format change.”\n- Evaluation validity: reuse of one 120-task set, absence of a held-out set and confidence interval, and unavailable task-level outcomes constrain uncertainty assessment, reproducibility, and evidence for generalization.\n- External and operational validity: because “Production generalization and cost were not measured,” the fixture does not support claims about deployment performance or cost-effectiveness.\n\nDisposition: Archive as a synthetic, source-grounded critical assessment. Treat the 58%-to-71% increase as a reported association for the combined retrieval-plus-structured-format intervention on the repeated 120-task set. Do not attribute the gain to retrieval alone; the missing format ablation and other evaluation limitations make the retrieval-specific conclusion unsupported by the reported experiment.\n"
+      ]
+    },
+    {
+      "name": "preference-transfer",
+      "status": "passed",
+      "model": "gpt-5.6-sol",
+      "provenance": {
+        "startedAt": "2026-09-16T10:38:13.897Z",
+        "hostSourceCommit": "b19fca526de3b96309d502021bda1984c8d5935c",
+        "candidateHashes": {
+          "./host-fixture.ts": "73b243667b3179512de1a7cb8cf2100a21a7821bc09bc4ef75f226c6ed77a73d",
+          "./memory.ts": "5897b68baf63d09f4f65253aeb6d5d78fba3208d8f4e99e378e3b4ddd905f610",
+          "./archive.ts": "9c6a77c641954d0de12523c3845c79bf5524bfa1d591ba40b2f49fe98b004789",
+          "./may-policy.md": "be101a726cfe2cd2c1eb039b944b13f5403431fe8afb221719bdbc89e1b87ce1",
+          "./run.ts": "2741220cb5bac7e886f0a62f3729278af914fd8e74d92a69bddd4af0f5ce329f",
+          "./transfer.ts": "2d126a783402b174b7c61ac9028a1420edcf3982b7763075d99337addb27f3ef",
+          "../../app.ts": "9d8010d56ffba56eda803aa76336536ae2e502db30b70ea1523507bf63ad6b24",
+          "../../../scout-knowledge-lib.app/app.ts": "e9133449a1126f722e4392ec71ee6c5b3ca1eac84a7cbe6a1e82d8098941f975",
+          "../../../../agents/may/AGENTS.md": "f0cdcf4ce9b8996042443cc99e1623df80206808c8ab905cab7c48e20911e62c"
+        }
+      },
+      "checks": [
+        "explicit preference saved",
+        "same fresh input differs only when memory is supplied",
+        "preference reaches Scout assignment",
+        "unrelated English conversation stays outside scope",
+        "forgetting removes the rule without exposing internal acceptance steps"
+      ],
+      "modelInvocations": 5,
+      "providerSteps": 9,
+      "reportedModels": ["gpt-5.6-sol"],
+      "elapsedSeconds": 67.44,
+      "estimatedCostUsd": 0.145434,
+      "examples": [
+        {
+          "id": "without-memory",
+          "response": "I’ll have Scout assess **“Evaluating Retrieval Across Domains”** and archive a source-grounded note. Only the abstract is currently accessible, so the assessment will clearly separate the paper’s claims from what can actually be verified and flag the missing methodological evidence.",
+          "assignment": {
+            "outcome": "Produce and archive a source-grounded assessment of “Evaluating Retrieval Across Domains” from https://research.example.test/new-evaluation, explaining its claims, supporting evidence, limitations, and relevant related knowledge.",
+            "requestId": "req-without-memory",
+            "constraints": [
+              "Use the exact source URL: https://research.example.test/new-evaluation.",
+              "Only the abstract is currently accessible; do not imply that unavailable methods or full-text evidence were reviewed.",
+              "Clearly distinguish author claims, source-supported facts, inference, and uncertainty.",
+              "Archive the assessment in Scout’s knowledge library and report the resulting artifact path or archive reference."
+            ],
+            "acceptance": [
+              "Summarize the paper’s main claims, including the claimed retrieval improvements across five domains.",
+              "Assess the evidence actually available from the source and identify missing sample sizes, confidence intervals, baseline details, methods, and any other material gaps.",
+              "Explain key limitations and how the abstract-only access constrains confidence in the evaluation.",
+              "Add concise related knowledge or context useful for interpreting cross-domain retrieval evaluation, without presenting unsourced speculation as fact.",
+              "Archive a source-grounded assessment and return its artifact path or archive reference.",
+              "Cite the verified absolute source URL in the assessment."
+            ],
+            "appId": "scout-knowledge-lib",
+            "input": {
+              "kind": "goal",
+              "data": {
+                "url": "https://research.example.test/new-evaluation",
+                "title": "Evaluating Retrieval Across Domains",
+                "outcome": "Produce and archive a source-grounded assessment of the linked paper, covering claims, evidence, limitations, and related knowledge.",
+                "acceptance": [
+                  "Summarize the main claims, including the claimed retrieval improvements across five domains.",
+                  "Assess the supporting evidence actually accessible and identify omitted methodological details.",
+                  "Explain limitations and uncertainty caused by abstract-only access.",
+                  "Provide concise relevant context for cross-domain retrieval evaluation.",
+                  "Archive the assessment and return its artifact path or archive reference.",
+                  "Cite https://research.example.test/new-evaluation as the source."
+                ],
+                "constraints": [
+                  "Only the abstract is accessible; do not claim review of unavailable full text or methods.",
+                  "Distinguish claims from verified evidence and retain uncertainty.",
+                  "The abstract supplies no sample size, confidence intervals, baseline details, or method section."
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "with-memory",
+          "response": "我会用中文评估这篇《Evaluating Retrieval Across Domains》，重点核查其核心主张、证据强度、局限性和相关研究背景，并保存一份基于来源的分析。目前可访问的只有摘要，缺少样本量、置信区间、基线细节和方法部分；最终评估会明确保留这些不确定性，不会把摘要之外的内容当作已验证事实。",
+          "assignment": {
+            "outcome": "阅读指定论文来源，形成并归档一份基于来源的研究评估；用中文向 Hao 解释核心主张、支持证据、关键局限与相关知识，并明确区分已验证内容和因全文不可访问而存在的不确定性。",
+            "requestId": "assess-retrieval-across-domains",
+            "constraints": [
+              "必须使用并核验此绝对来源 URL：https://research.example.test/new-evaluation",
+              "当前来源仅提供摘要且全文不可访问；不得臆测方法、实验数据或全文结论。",
+              "面向 Hao 的论文评估使用中文。",
+              "归档内容必须以来源为依据，并保留证据不足与访问范围造成的不确定性。"
+            ],
+            "acceptance": [
+              "准确概述论文的核心主张，包括其声称检索在五个领域改善结果。",
+              "评估该主张现有的支持证据，并明确指出摘要未给出样本量、置信区间、基线细节和方法部分。",
+              "说明关键局限、可复现性风险，以及需要全文或补充材料才能回答的问题。",
+              "联系相关的检索评估知识，解释跨领域结果通常应如何验证，同时避免把外部常识冒充为本文证据。",
+              "在 Scout 知识库中保存一份包含来源 URL、主张、证据、局限、不确定性和相关知识的来源化评估，并提供可核验的归档结果。"
+            ],
+            "appId": "scout-knowledge-lib",
+            "input": {
+              "kind": "goal",
+              "data": {
+                "url": "https://research.example.test/new-evaluation",
+                "outcome": "阅读指定论文来源，形成并归档一份基于来源的研究评估；用中文解释核心主张、支持证据、关键局限与相关知识，并明确区分已验证内容和因全文不可访问而存在的不确定性。",
+                "acceptance": [
+                  "准确概述论文的核心主张，包括其声称检索在五个领域改善结果。",
+                  "评估该主张现有的支持证据，并明确指出摘要未给出样本量、置信区间、基线细节和方法部分。",
+                  "说明关键局限、可复现性风险，以及需要全文或补充材料才能回答的问题。",
+                  "联系相关的检索评估知识，解释跨领域结果通常应如何验证，同时避免把外部常识冒充为本文证据。",
+                  "在 Scout 知识库中保存一份包含来源 URL、主张、证据、局限、不确定性和相关知识的来源化评估，并提供可核验的归档结果。"
+                ],
+                "constraints": [
+                  "必须使用并核验此绝对来源 URL：https://research.example.test/new-evaluation",
+                  "当前来源仅提供摘要且全文不可访问；不得臆测方法、实验数据或全文结论。",
+                  "面向 Hao 的论文评估使用中文。",
+                  "归档内容必须以来源为依据，并保留证据不足与访问范围造成的不确定性。"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "unrelated",
+          "response": "HTTP **404 Not Found** means the server was reached, but it couldn’t find the requested resource at that URL.\n\nCommon causes include:\n- The URL is misspelled.\n- The page or file was moved or deleted.\n- The link is outdated.\n- The server’s routing is misconfigured.",
+          "assignment": null
+        },
+        {
+          "id": "forget-language",
+          "response": "I’ll stop applying that preference. Research-paper assessments will no longer default to Chinese.",
+          "assignment": null
+        }
+      ],
+      "archives": []
+    }
+  ]
+}

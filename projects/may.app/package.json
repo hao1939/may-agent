@@ -7,9 +7,11 @@
     "bundle": "rm -rf .state/bundle && bun build ./app.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
     "check": "bun run typecheck && bun run format:check && bun run test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "bun test ./app.test.ts ./agents --timeout 30000",
-    "format": "bun x prettier --write app.ts app.test.ts development.ts agents poc/run.ts package.json project.json tsconfig.json",
-    "format:check": "bun x prettier --check app.ts app.test.ts development.ts agents poc/run.ts package.json project.json tsconfig.json"
+    "test": "bun test ./app.test.ts ./agents ./poc/intent-learning --timeout 30000",
+    "poc:intent": "bun poc/intent-learning/run.ts",
+    "poc:intent-transfer": "bun poc/intent-learning/transfer.ts",
+    "format": "bun x prettier --write app.ts app.test.ts development.ts agents poc/run.ts poc/intent-learning package.json project.json tsconfig.json",
+    "format:check": "bun x prettier --check app.ts app.test.ts development.ts agents poc/run.ts poc/intent-learning package.json project.json tsconfig.json"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/bundle/sdk-current"
