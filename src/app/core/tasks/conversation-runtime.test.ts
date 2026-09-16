@@ -2601,39 +2601,70 @@ test("invalid handoff is repairable after reopen and only complete referenced in
   };
   const worker = defineApp({
     ...background,
-    inputSchema: Type.Object({
-      kind: Type.Literal("review"),
-      data: Type.Object({ outcome: Type.String(), acceptance: Type.Array(Type.String(), { minItems: 1 }) },
-        { additionalProperties: true }),
-    }),
+    inputSchema: Type.Union([
+      Type.Object({ kind: Type.Literal("ping"), data: Type.Object({}) }),
+      Type.Object({
+        kind: Type.Literal("review"),
+        data: Type.Object(
+          { outcome: Type.String(), acceptance: Type.Array(Type.String(), { minItems: 1 }) },
+          { additionalProperties: true },
+        ),
+      }),
+    ]),
     task: (request) => {
       mapped++;
       expect(request.input).toEqual({ kind: "review", data: assignment });
       const data = request.input.data as typeof assignment;
-      return { kind: "desired", intent: {
-        id: "review", parentId: "root", agent: "reviewer",
-        outcome: data.outcome, acceptance: data.acceptance, input: request.input,
-      } };
+      return {
+        kind: "desired",
+        intent: {
+          id: "review",
+          parentId: "root",
+          agent: "reviewer",
+          outcome: data.outcome,
+          acceptance: data.acceptance,
+          input: request.input,
+        },
+      };
     },
   });
-  const f = await fixture(async (_definition, prompt) => {
-    calls++;
-    if (calls === 2) expect(prompt).toContain(`Invalid follow-up input for App ${worker.id}`);
-    return { status: "done", structuredResult: {
-      summary: "Review assigned", response: "I will review the referenced design.",
-      topic: { kind: "new", title: "Design" },
-      followUp: { appId: worker.id, input: { kind: "review", data: calls === 1 ? {} : assignment } },
-    } };
-  }, (root, appDir) => {
-    documentPath = join(root, "required-design.md");
-    writeFileSync(documentPath, "# v1\n" + "Supporting evidence.\n".repeat(12_000) + "Required: preserve source identity.\n");
-    assignment.context[0]!.path = documentPath;
-    const setup = withBackground(root, appDir);
-    return { ...setup, installControllers: false, appRegistrySnapshot: {
-      ...setup.appRegistrySnapshot!, entries: setup.appRegistrySnapshot!.entries.map(entry =>
-        entry.definition.id === worker.id ? { ...entry, definition: worker } : entry),
-    } };
-  });
+  const f = await fixture(
+    async (_definition, prompt) => {
+      calls++;
+      if (calls === 2)
+        expect(prompt).toContain(
+          `Invalid input for App ${worker.id} at /data: must have required properties outcome, acceptance`,
+        );
+      return {
+        status: "done",
+        structuredResult: {
+          summary: "Review assigned",
+          response: "I will review the referenced design.",
+          topic: { kind: "new", title: "Design" },
+          followUp: { appId: worker.id, input: { kind: "review", data: calls === 1 ? {} : assignment } },
+        },
+      };
+    },
+    (root, appDir) => {
+      documentPath = join(root, "required-design.md");
+      writeFileSync(
+        documentPath,
+        "# v1\n" + "Supporting evidence.\n".repeat(12_000) + "Required: preserve source identity.\n",
+      );
+      assignment.context[0]!.path = documentPath;
+      const setup = withBackground(root, appDir);
+      return {
+        ...setup,
+        installControllers: false,
+        appRegistrySnapshot: {
+          ...setup.appRegistrySnapshot!,
+          entries: setup.appRegistrySnapshot!.entries.map((entry) =>
+            entry.definition.id === worker.id ? { ...entry, definition: worker } : entry,
+          ),
+        },
+      };
+    },
+  );
   const admitted = f.admit("review-request", "Review the design using the required context");
   await f.run(admitted.taskId);
   expect(mapped).toBe(0);
@@ -2648,8 +2679,11 @@ test("invalid handoff is repairable after reopen and only complete referenced in
   expect(getAppInboxItem(f.db, "review-request")?.status).toBe("done");
   await f.reopen();
   const saved = AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask("review")!;
-  expect(saved.spec).toMatchObject({ outcome: assignment.outcome, acceptance: assignment.acceptance,
-    input: { kind: "review", data: assignment } });
+  expect(saved.spec).toMatchObject({
+    outcome: assignment.outcome,
+    acceptance: assignment.acceptance,
+    input: { kind: "review", data: assignment },
+  });
   expect(JSON.stringify(saved.spec.input).length).toBeLessThan(1_000);
   expect(readFileSync(documentPath, "utf8")).toContain("Required: preserve source identity.");
 });

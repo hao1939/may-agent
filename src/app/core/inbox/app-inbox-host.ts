@@ -15,7 +15,7 @@ import {
 } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
-import { assertValidAppDefinition } from "../apps/definition-validation.js";
+import { assertValidAppDefinition, assertValidAppInput } from "../apps/definition-validation.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
@@ -129,13 +129,6 @@ function validateAppDefinition(app: AppDefinition): RegisteredApp {
   return app;
 }
 
-function validateInput(app: RegisteredApp, input: AppInput): void {
-  if (!Check(app.inputSchema, input)) {
-    const first = [...Errors(app.inputSchema, input)][0];
-    throw new Error(`Invalid input for App ${app.id}: ${first?.message ?? "schema mismatch"}`);
-  }
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -201,7 +194,7 @@ export class AppInboxHost {
       throw new Error(`Invalid input for ${normalized}.${actionId}: ${first?.message ?? "schema mismatch"}`);
     }
     const input = action.toInput(params as never);
-    validateInput(app, input);
+    assertValidAppInput(app, input);
     return input;
   }
 
@@ -313,7 +306,7 @@ export class AppInboxHost {
       if (!matchesEventSelector(subscription.event, event)) continue;
       const input = subscription.toInput(event);
       if (input === null) continue;
-      validateInput(app, input);
+      assertValidAppInput(app, input);
       matches.push({ appId: app.id, subscriptionId: subscription.id, input });
     }
     return matches;
@@ -332,7 +325,7 @@ export class AppInboxHost {
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
     if (this.#closed) throw new Error("App input admission is closed");
     const app = this.#requiredApp(input.appId);
-    validateInput(app, input.input);
+    assertValidAppInput(app, input.input);
     const conversationInput = Boolean(
       app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
     );
@@ -421,7 +414,7 @@ export class AppInboxHost {
       }
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
-      validateInput(app, item.input);
+      assertValidAppInput(app, item.input);
       const inputContext = readInputContext(this.#db, item);
       const attachment = item.targetTaskId
         ? { kind: "existing" as const, taskId: item.targetTaskId }

@@ -4,7 +4,8 @@ import {
   type AppTaskAttachment,
   type ConversationTurnResult,
 } from "@may-agent/sdk";
-import { Check, Errors } from "typebox/value";
+import { Check } from "typebox/value";
+import { assertValidAppInput } from "../core/apps/definition-validation.js";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import {
@@ -129,10 +130,7 @@ export async function prepareConversationTaskTurn(input: {
     const target = input.getTaskApp?.(desired.appId);
     if (!target?.app.task || !target.app.tasks || target.app.id !== desired.appId)
       throw new Error("Conversation follow-up requires an installed Task App");
-    if (!Check(target.app.inputSchema, desired.input)) {
-      const first = [...Errors(target.app.inputSchema, desired.input)][0];
-      throw new Error(`Invalid follow-up input for App ${target.app.id}: ${first?.message ?? "schema mismatch"}`);
-    }
+    assertValidAppInput(target.app, desired.input);
     if (desired.task) {
       if (desired.task.appId !== target.app.id || !knownTask(desired.task.appId, desired.task.taskId))
         throw new Error("Follow-up Task is absent from Conversation context");
