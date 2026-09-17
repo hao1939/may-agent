@@ -232,14 +232,6 @@ passing both `input` and `task` is an error. Nested workflows use
 App's private workflow catalog. Adding a workflow normally changes only its
 owning agent's files and guidance.
 
-Agent-selected and Task-bound workflows receive the same exact Host-supplied
-Task binding, reconciliation snapshot, scoped reads, event publication,
-workspace and pinned agent definitions. The runtime resolves the current caller
-by session identity, never by the latest session with the same agent name.
-Invocation cannot broaden a caller's tool policy or execution deadline.
-The workflow returns execution evidence to its caller; only the owning Task's
-accepted settlement changes Task state or consumes input.
-
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
 
@@ -257,7 +249,8 @@ Each call has two distinct inputs:
   App/Task/generation/attempt, Task entry, scoped reads, feedback source, working
   paths, effective capabilities, cancellation and remaining execution allowance.
   The Host supplies these from the live execution. An input path or agent name
-  cannot establish them or broaden access.
+  cannot establish them or broaden access. Resolve the exact current caller
+  session, never the latest session sharing an agent name.
 - **Assigned contribution:** the requested outcome, constraints, relevant
   references and expected evidence. The caller supplies ordinary task text or
   private workflow parameters. There is no public schema per scenario and no
@@ -287,12 +280,6 @@ entry; it does not overwrite the shared brief for each specialist or introduce
 a separate handoff registry. References identify evidence, not permission or
 acceptance. Returned execution IDs must identify the actual execution, never
 the caller substituted for a child that did not start.
-
-The common boundary normalizes terminal results as described below. Code
-preserves identity, scope, delivery, result evidence and cleanup. Agents and
-App-authored procedures decide relevance, sufficiency, bounded repair and which
-method to try next. Failed operations should leave enough evidence to continue
-useful authorized work without requiring the human to reconstruct the handoff.
 
 The [Task context proposal](../proposals/task-context-discovery-20260917.md#uniform-handoff-refinement)
 records the current implementation slice and remaining gaps.
@@ -611,18 +598,27 @@ terminal vocabulary. Callers use the normalized `status`, `summary`, `output`
 and `facts` to assess the contribution. Raw agent `lastAssistantText`,
 `structuredResult` and `finishResult` payload aliases are replaced by these
 shared fields; do not add more copies of large payloads for compatibility.
-Session completion and a nested finish
-claim are execution evidence; they are not competing Task completion signals.
 An explicit partial agent result is `blocked` with its partial output retained,
-not `done`. Prose-only calls may return a summary when no structured result was
-requested; this does not manufacture verified domain data.
+not `done`. Both optional `output` and `facts` survive every authored terminal
+status and nested workflow boundary. A workflow may return an error or
+interrupted contribution with useful evidence; actual caller cancellation and
+failed persistence still follow the execution fences and failure path. Retain
+both fields in the existing bounded run artifact, including explicit unavailable
+markers when evidence exceeds retention limits. Prose-only calls may return a
+summary when no structured result was requested; this does not manufacture
+verified domain data.
 
 Invocation/setup failure can occur before a child exists, and cancelled scopes
 or infrastructure failures may throw. Do not fabricate a terminal execution ID
 to make those paths look like completed calls. Existing control errors or thrown
 failures describe the failed operation; available diagnostic references remain
 discoverable. The shared contract does not require every tool response or
-exception to be an `ExecutionResult`.
+exception to be an `ExecutionResult`. The system-facing workflow adapter keeps
+its failure contract: when a terminal result is available, its typed exception
+carries the normalized `execution` and includes the run reference in its message.
+The Task adapter retains that reference while preserving `state: error` and the
+existing recovery path. Evidence preservation must not turn failure into an
+accepted result or require a new Task lifecycle.
 
 When later workflow code requires structured agent output, the workflow owns a
 TypeBox or equivalent schema and validates `result.output` before use. A prose

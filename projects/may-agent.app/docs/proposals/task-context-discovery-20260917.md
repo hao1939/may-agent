@@ -1,6 +1,6 @@
 # Task context discovery and agent-directed work
 
-**Status:** Implemented candidate; five main local trials completed, not merged.
+**Status:** Implemented candidate; discovery and handoff local trials completed, not merged.
 **Contract owners:** [Workspace convention](../2a-design/workflows.md#task-entry-and-discovery)
 and [one handoff contract](../2a-design/workflows.md#one-handoff-contract).
 
@@ -108,8 +108,9 @@ Record unsuccessful iterations and polish only demonstrated gaps.
 
 ## Uniform handoff refinement
 
-**Host candidate:** `32a8ece5`, extending the shared-execution branch.
-
+**Host candidates:** `32a8ece5` for the initial handoff trial; `bb2b9c00`
+for the first evidence-preservation repair; `4bdd5384` for the system/Task
+boundary repair. They extend the shared-execution branch.
 
 The same bounded-contribution contract applies in all four agent/workflow call
 directions. Keep one shared Task entry and a separate assignment on each
@@ -159,6 +160,67 @@ This slice does not finish explicit input-incorporation bookkeeping or historica
 input pagination. Those remain the adjacent work below. It also does not promise
 that arbitrary authored JavaScript can be preempted, require exact mid-call crash
 recovery, or turn diagnostic row projections into a second acceptance authority.
+
+### Live review and evidence-preservation polish
+
+On Host `32a8ece5`, May selected May-Bob for a bounded independent source review.
+An unavailable skill argument was rejected before a helper started; May retried
+without the argument and continued. The live owner and helper shared one Task
+entry. A same-Task clarification reached Bob during the review and May after
+her awaited call. May inspected Bob's evidence, and a subsequent attempt on the
+same Task reused the retained review to explicitly incorporate the clarification.
+Both requests settled; no replacement Task was needed.
+
+The clarification distinguished a completed narrow review from an unfinished
+contribution. Both May and Bob applied it correctly. The local review was a
+read-only source assessment, not a claim to complete the overall redesign.
+Their attempt to run selected tests in the immutable source archive could not
+load missing dependencies; they disclosed that failure. Host CI was run separately
+in the actual development checkout and passed 3,092 tests with three installation
+skips. The reviewer did not claim that those were its own test results.
+
+Bob found a real pre-existing result-loss problem: authored workflow normalization
+retained only done output or blocked facts. May independently checked that finding.
+The follow-up repair carries output and facts independently of terminal status
+through normalization, nested calls and model tool results, then retains both in
+the existing bounded workflow-run artifact. An authored error/interrupted result
+remains terminal evidence, while actual cancellation and thrown infrastructure
+failures retain the existing fences. No new result registry or repair workflow is
+introduced. The initial eight regressions exercised all four statuses through
+model-tool and nested calls and verified retained evidence after reopening storage.
+
+May's focused same-Task follow-up confirmed that repair and identified another
+loss at `runWorkflowDirect`, which still converted error/interrupted results
+to plain exceptions. The final repair preserves the normalized execution on a
+typed failure and retains its run reference through the Task adapter while
+keeping Task failure/recovery semantics. The regression matrix now covers all
+four statuses through model, nested and system entrypoints (12 cases); two
+additional Task-adapter cases verify failed work retains its evidence reference
+and does not become accepted completion. This is a shared error carrier and
+an existing artifact reference, not another retry or handoff lifecycle.
+
+The first full handoff check also exposed the JSON-assignment compatibility issue
+and fixtures coupled to exact prompt text or the older tool response shape. The
+candidate moved Host guidance to system context, preserved caller JSON, and
+updated the affected contract tests and nested-invocation examples. Superseded
+checks and unsuccessful local operations are retained alongside successful ones;
+they are not counted as passing evaluations.
+
+Final Host `4bdd5384` passed `bun run ci`: 3,106 tests, three installation-only
+skips, no failures and 14,054 assertions. Common design checks passed. The same
+local instance was activated successfully on the exact candidate. May's final
+focused same-Task check inspected the typed failure, Task consumer and expanded
+regressions, distinguished supplied CI from its own source inspection, and found
+no remaining concrete issue in that repair. It reused the prior review without
+another specialist call. The initial review, clarification and both repair
+follow-ups settled on their original Task. Independent file comparison confirmed
+that all three reviewed source archives retained their original tracked contents.
+
+Local evidence is under `.state/review-pilots/may-handoff-20260917/`,
+including exact source snapshots, admission records, selected tool observations,
+retained Task results and local activation records. Observations omit model
+reasoning. Explicit incorporation bookkeeping remains the separate gap below;
+the extra same-Task attempt in this trial is consistent with that limitation.
 
 ## Adjacent work and priorities
 
