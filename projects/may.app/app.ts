@@ -44,24 +44,6 @@ const mayInputSchema = Type.Union([
     },
     { additionalProperties: false },
   ),
-  Type.Object(
-    {
-      kind: Type.Literal("human-decision"),
-      data: Type.Object(
-        {
-          message: Type.String({ minLength: 1 }),
-          dedupeKey: Type.String({ minLength: 1 }),
-          sourceSessionId: Type.Optional(Type.String({ minLength: 1 })),
-          targetAppId: Type.Optional(Type.String({ minLength: 1 })),
-          verdict: Type.Optional(Type.String({ minLength: 1 })),
-          requestedHumanAction: Type.Optional(Type.String({ minLength: 1 })),
-          evidence: Type.Optional(Type.Array(Type.String())),
-        },
-        { additionalProperties: true },
-      ),
-    },
-    { additionalProperties: false },
-  ),
 ]);
 
 export function taskForMayInput(
@@ -135,12 +117,15 @@ export function evaluationHumanDecisionInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput {
   const data = record(event.data);
+  const message = requiredText(data, "message", event.type);
+  requiredText(data, "dedupeKey", event.type);
   return {
-    kind: "human-decision",
+    kind: "message",
     data: {
-      ...data,
-      message: requiredText(data, "message", event.type),
-      dedupeKey: requiredText(data, "dedupeKey", event.type),
+      message,
+      // Preserve the original fact and its correlation data. An escalation
+      // requests judgment; it is not a human decision or new authority.
+      context: { event: structuredClone(event) },
     },
   };
 }
@@ -155,7 +140,7 @@ export default defineApp({
   inputSchema: mayInputSchema,
   conversation: {
     mode: "agent",
-    inputKinds: ["message", "human-decision"],
+    inputKinds: ["message"],
     conversationId: "may:primary",
   },
   schedules: [

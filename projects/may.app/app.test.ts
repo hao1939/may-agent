@@ -31,7 +31,7 @@ describe("canonical May conversation App", () => {
       agent: "may",
       conversation: {
         mode: "agent",
-        inputKinds: ["message", "human-decision"],
+        inputKinds: ["message"],
         conversationId: "may:primary",
       },
     });
@@ -123,15 +123,32 @@ describe("canonical May conversation App", () => {
     ).toBeTrue();
   });
 
-  test("translates Evaluation decisions without losing their dedupe lineage", () => {
+  test("normalizes Evaluation escalations into messages with original correlation context", () => {
     const subscription = app.subscriptions?.[0];
     if (!subscription)
       throw new Error("missing Evaluation decision subscription");
-    const event = decisionEvent();
+    const event = decisionEvent({
+      source: "app:evaluation",
+      owner: "app:evaluation",
+      localKey: "human-decision:session-1",
+    });
     expect(matchesEventSelector(subscription.event, event)).toBeTrue();
     const input = evaluationHumanDecisionInput(event);
-    expect(input).toEqual({ kind: "human-decision", data: event.data });
+    expect(input).toEqual({
+      kind: "message",
+      data: {
+        message: event.data.message,
+        context: { event },
+      },
+    });
     expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(app.conversation?.inputKinds).toContain(input.kind);
+    const saved = JSON.parse(JSON.stringify(input));
+    expect(saved.data.context.event.data).toEqual(event.data);
+    event.data.dedupeKey = "changed-after-normalization";
+    expect((input.data as any).context.event.data.dedupeKey).toBe(
+      "evaluation:session-1:rollout",
+    );
   });
 
   test("does not claim a decision addressed to another project", () => {
@@ -152,5 +169,10 @@ describe("canonical May conversation App", () => {
         decisionEvent({ data: { dedupeKey: "evaluation:broken" } }),
       ),
     ).toThrow("requires non-empty message");
+    expect(() =>
+      evaluationHumanDecisionInput(
+        decisionEvent({ data: { message: "A decision is needed" } }),
+      ),
+    ).toThrow("requires non-empty dedupeKey");
   });
 });

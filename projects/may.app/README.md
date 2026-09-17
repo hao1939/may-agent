@@ -26,6 +26,14 @@ the latest scope, explains the outcome and closes the Request when appropriate.
 A Task remains available after accepting an outcome; its assigning App, parent
 agent or human decides whether to revise or close the assignment.
 
+Evaluation escalations use the ordinary `message` input. The subscription
+validates the message and correlation key, then retains the original event in
+`data.context.event`, including its source, target, local key, dedupe key and
+available session/report references. This is a request for judgment, not a human
+decision or approval. Runtime retains the original delivery identity; the App
+does not create another correlation or work lifecycle. New producers can supply
+structured message context without adding a new conversational input kind.
+
 Messages retain the discussion. Topics group related messages and reference
 exact Tasks. Neither owns execution or copies Task state. Later human feedback
 and linked Task outcomes enter the same input loop. A worker's failure report
