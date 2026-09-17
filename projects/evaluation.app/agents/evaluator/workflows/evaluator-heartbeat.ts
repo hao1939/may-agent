@@ -1,10 +1,7 @@
-import { createHash } from "node:crypto";
 import {
   admitTaskReconcileResult,
   taskAgentResultSchema,
-  type Condition,
   type ExecutionResult,
-  type TaskAction,
   type TaskReconcileResult,
   type TaskReconciliationContext,
   type WorkflowContext,
@@ -13,301 +10,71 @@ import { taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "evaluator-heartbeat";
 export const description =
-  "Review evaluation.app's bounded reconciliation state and propose typed child-task changes.";
+  "Review evaluation.app's bounded task frontier without creating a private work tree.";
 
-type OwnerReviewInput = {
-  scope?: string;
-};
-
+type OwnerReviewInput = { scope?: string; reason?: string };
 type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
-function truncate(value: unknown, max = 600): string {
-  const text = String(value ?? "");
-  return text.length > max ? `${text.slice(0, max)}...` : text;
-}
-
-function fallbackResult(summary: string, evidence: string[]): AgentResult {
-  return {
-    state: "converged",
-    summary,
-    evidence: evidence.slice(0, 32),
-    actions: [],
-  };
-}
-
-function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
-  }
-  if (value !== null && typeof value === "object") {
-    const object = value as Record<string, unknown>;
-    return `{${Object.keys(object)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonicalJson(object[key])}`)
-      .join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "null";
-}
-
-function conditionSpecification(condition: Condition): string {
-  const { id: _id, ...specification } = condition;
-  return canonicalJson(specification);
-}
-
-function stableConditionId(condition: Condition): string {
-  const digest = createHash("sha256")
-    .update(conditionSpecification(condition))
-    .digest("hex")
-    .slice(0, 24);
-  return `${condition.id}:spec-${digest}`;
-}
-
-function preserveConditionIdentities(
-  result: AgentResult,
-  reconciliation: TaskReconciliationContext<OwnerReviewInput>,
-): AgentResult {
-  if (!result.conditions?.length) return result;
-
-  const existingById = new Map<string, Set<string>>();
-  for (const child of [
-    ...reconciliation.children.live,
-    ...reconciliation.children.completed,
-  ]) {
-    for (const condition of child.conditions) {
-      const specifications =
-        existingById.get(condition.id) ?? new Set<string>();
-      specifications.add(conditionSpecification(condition));
-      existingById.set(condition.id, specifications);
-    }
-  }
-
-  const remapped: string[] = [];
-  const conditions = result.conditions.map((condition) => {
-    const existing = existingById.get(condition.id);
-    if (
-      !existing ||
-      [...existing].every(
-        (specification) => specification === conditionSpecification(condition),
-      )
-    ) {
-      return condition;
-    }
-    const id = stableConditionId(condition);
-    remapped.push(`condition-identity-remapped:${condition.id}->${id}`);
-    return { ...condition, id };
-  });
-
-  return remapped.length === 0
-    ? result
-    : {
-        ...result,
-        conditions,
-        evidence: [...result.evidence, ...remapped].slice(0, 32),
-      };
-}
-
-function allowedExistingTarget(
-  action: Exclude<TaskAction, { kind: "create-task" }>,
-  reconciliation: TaskReconciliationContext<OwnerReviewInput>,
-): string | null {
-  if (action.taskId.startsWith("runtime/")) {
-    return `${action.kind} cannot mutate reconciler-owned task ${action.taskId}`;
-  }
-  const target = reconciliation.children.live.find(
-    (child) => child.taskId === action.taskId,
-  );
-  if (!target) {
-    return `${action.kind} ${action.taskId} does not target a live direct child`;
-  }
-  if (action.expectedGeneration !== target.generation) {
-    return `${action.kind} ${action.taskId} expected generation ${action.expectedGeneration} but current generation is ${target.generation}`;
-  }
-  if (
-    (action.kind === "update-task" || action.kind === "unblock-task") &&
-    target.status !== "waiting" &&
-    target.status !== "attention"
-  ) {
-    return `${action.kind} ${action.taskId} requires waiting or attention, not ${target.status}`;
-  }
-  return null;
-}
-
-function actionRejection(
-  action: TaskAction,
-  reconciliation: TaskReconciliationContext<OwnerReviewInput>,
-): string | null {
-  if (action.kind === "create-task") {
-    if (action.id.startsWith("runtime/")) {
-      return `create-task cannot create reconciler-owned task ${action.id}`;
-    }
-    if (action.parentId !== reconciliation.taskId) {
-      return `create-task ${action.id} must remain under ${reconciliation.taskId}`;
-    }
-    return null;
-  }
-  return allowedExistingTarget(action, reconciliation);
+function fallbackResult(summary: string, facts: string[]): AgentResult {
+  return { state: "converged", summary, facts: facts.slice(0, 32), actions: [] };
 }
 
 export function normalizeAgentResult(
   output: unknown,
   reconciliation: TaskReconciliationContext<OwnerReviewInput>,
 ): AgentResult {
-  const admission = admitTaskReconcileResult(output, {
-    allowNeedsAgent: false,
-    defaultParentId: reconciliation.taskId,
-    rootParentAliases: ["evaluation", "evaluation.app"],
-  });
+  const admission = admitTaskReconcileResult(output, { allowNeedsAgent: false });
   if (admission.ok === false) {
     return fallbackResult(
       `Owner review returned an invalid structured result; preserving current desired state. ${admission.error}`,
-      [`owner-result-rejected:${truncate(admission.error, 400)}`],
+      [`owner-result-rejected:${admission.error.slice(0, 400)}`],
     );
   }
-
-  const admitted = preserveConditionIdentities(
-    admission.result as AgentResult,
-    reconciliation,
+  const result = admission.result as AgentResult;
+  const live = new Map(reconciliation.children.live.map((child) => [child.taskId, child]));
+  const actions = (result.actions ?? []).filter((action) => {
+    const target = live.get(action.taskId);
+    return !action.taskId.startsWith("runtime/") && Boolean(target) &&
+      target?.generation === action.expectedGeneration &&
+      (target.status === "waiting" || target.status === "attention");
+  });
+  if (actions.length === (result.actions ?? []).length) return result;
+  return fallbackResult(
+    `Filtered ${(result.actions ?? []).length - actions.length} stale or out-of-scope unblock action(s); ${result.summary}`,
+    [...result.facts, "owner-actions:filtered"],
   );
-  if (
-    admitted.state === "waiting" &&
-    (!admitted.conditions || admitted.conditions.length === 0)
-  ) {
-    return fallbackResult(
-      `Owner review returned waiting without an exact Condition; preserving current desired state. ${admitted.summary}`,
-      [
-        ...admitted.evidence,
-        "owner-result-rejected:waiting requires at least one exact Condition",
-      ],
-    );
-  }
-  const rejected = (admitted.actions ?? [])
-    .map((action) => ({
-      action,
-      reason: actionRejection(action, reconciliation),
-    }))
-    .filter(
-      (entry): entry is { action: TaskAction; reason: string } =>
-        entry.reason !== null,
-    );
-  if (rejected.length === 0) return admitted;
-
-  const rejectedActions = new Set(rejected.map((entry) => entry.action));
-  return {
-    ...admitted,
-    summary: `Filtered ${rejected.length} out-of-scope or stale child-task action(s); ${admitted.summary}`,
-    evidence: [
-      ...admitted.evidence,
-      ...rejected.map((entry) => `filtered-action:${entry.reason}`),
-    ].slice(0, 32),
-    actions: (admitted.actions ?? []).filter(
-      (action) => !rejectedActions.has(action),
-    ),
-  };
 }
 
-function ownerPacket(
-  input: OwnerReviewInput,
-  reconciliation: TaskReconciliationContext<OwnerReviewInput>,
-): Record<string, unknown> {
-  const latestEvent = reconciliation.events.items.at(-1)?.event ?? null;
-  return {
-    appId: reconciliation.appId,
-    taskId: reconciliation.taskId,
-    generation: reconciliation.generation,
-    resourceVersion: reconciliation.resourceVersion,
-    agent: reconciliation.agent,
-    mode: reconciliation.mode,
-    outcome: reconciliation.outcome,
-    acceptance: reconciliation.acceptance,
-    input,
-    latestEvent,
-    children: reconciliation.children,
-  };
-}
-
-function ownerPrompt(packet: Record<string, unknown>): string {
+function ownerPrompt(input: OwnerReviewInput, reconciliation: TaskReconciliationContext<OwnerReviewInput>): string {
   return [
-    "You are the accountable owner of evaluation.app.",
-    "Review only the supplied reconciliation facts and return one structured task result.",
-    "Do not query global task state, inspect runtime SQL, edit files, send messages, or dispatch work.",
-    "Create child work only for evaluation.app's own audit-system responsibility.",
-    "Findings about another project belong in that project's owner-facing delivery path, not evaluator remediation tasks.",
-    "Existing child mutations must use the exact supplied generation.",
-    "Never create or mutate task IDs beginning with runtime/.",
-    "Use waiting only with exact Conditions. Every Condition subject must use the canonical typed-subject form <type>:<id> (for example task:child-id, session:s_123, event:5011463, or project:evaluation); an unprefixed subject is invalid.",
-    "If desired state is already represented, return converged with no actions.",
-    "Finish with result matching this JSON schema:",
-    JSON.stringify(taskAgentResultSchema),
-    "Reconciliation packet:",
-    JSON.stringify(packet, null, 2),
+    "You own evaluation.app reliability, not the work of evaluated Apps.",
+    "Use only this bounded packet. Do not query global state, create work, edit files, or evaluate Evaluation's own quality.",
+    "Return a justified no-op unless one supplied waiting child can safely be unblocked.",
+    "Unknown or missing evidence is a visible gap, never healthy coverage or a target failure.",
+    "Use facts (not evidence) in the current Task result contract.",
+    `Schema: ${JSON.stringify(taskAgentResultSchema)}`,
+    `Packet: ${JSON.stringify({ appId: reconciliation.appId, taskId: reconciliation.taskId, generation: reconciliation.generation, resourceVersion: reconciliation.resourceVersion, outcome: reconciliation.outcome, acceptance: reconciliation.acceptance, input, latestEvent: reconciliation.events.items.at(-1)?.event ?? null, children: reconciliation.children, taskSnapshot: reconciliation.taskSnapshot })}`,
   ].join("\n\n");
 }
 
-export async function execute(
-  ctx: WorkflowContext<OwnerReviewInput>,
-): Promise<ExecutionResult> {
+export async function execute(ctx: WorkflowContext<OwnerReviewInput>): Promise<ExecutionResult> {
   const reconciliation = ctx.reconciliation;
-  if (!reconciliation) {
-    return ctx.blocked(
-      "evaluator-heartbeat requires canonical task reconciliation context",
-    );
-  }
-
-  const triggerType = reconciliation.events.items.at(-1)?.event.type ?? null;
+  if (!reconciliation) return ctx.blocked("evaluator-heartbeat requires canonical reconciliation context");
   await ctx.events.emit({
     type: "evaluation.owner_review_started",
     localKey: taskEmissionKey(ctx, "owner-review-started"),
-    data: {
-      taskId: reconciliation.taskId,
-      generation: reconciliation.generation,
-      triggerType,
-    },
+    data: { taskId: reconciliation.taskId, generation: reconciliation.generation },
     target: { appId: "evaluation" },
   });
-
-  const execution = await ctx.agents.call(
-    reconciliation.agent,
-    ownerPrompt(ownerPacket(ctx.input, reconciliation)),
-    { schema: taskAgentResultSchema },
-  );
-
-  let agentResult: AgentResult;
-  if (execution.status !== "done") {
-    agentResult = fallbackResult(
-      `Owner review execution ${execution.id} ended ${execution.status}; preserving current desired state for the next exact wake.`,
-      [
-        `execution:${execution.id}`,
-        `execution-status:${execution.status}`,
-        `execution-summary:${truncate(execution.summary)}`,
-      ],
-    );
-    await ctx.events.emit({
-      type: "evaluation.owner_review_failed",
-      localKey: taskEmissionKey(ctx, "owner-review-failed"),
-      data: {
-        taskId: reconciliation.taskId,
-        generation: reconciliation.generation,
-        triggerType,
-        failure: "agent-execution-not-done",
-      },
-      target: { appId: "evaluation" },
-    });
-  } else {
-    agentResult = normalizeAgentResult(execution.output, reconciliation);
-  }
-
+  const execution = await ctx.agents.call(reconciliation.agent, ownerPrompt(ctx.input, reconciliation), { schema: taskAgentResultSchema });
+  const result = execution.status === "done"
+    ? normalizeAgentResult(execution.output, reconciliation)
+    : fallbackResult(`Owner review execution ${execution.id} ended ${execution.status}; preserving current desired state.`, [`execution:${execution.id}`, `execution-status:${execution.status}`]);
   await ctx.events.emit({
-    type: "evaluation.owner_reviewed",
+    type: execution.status === "done" ? "evaluation.owner_reviewed" : "evaluation.owner_review_failed",
     localKey: taskEmissionKey(ctx, "owner-reviewed"),
-    data: {
-      taskId: reconciliation.taskId,
-      generation: reconciliation.generation,
-      triggerType,
-      state: agentResult.state,
-      proposedActions: agentResult.actions ?? [],
-    },
+    data: { taskId: reconciliation.taskId, generation: reconciliation.generation, state: result.state },
     target: { appId: "evaluation" },
   });
-
-  return ctx.done(agentResult.summary, agentResult);
+  return ctx.done(result.summary, result);
 }

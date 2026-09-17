@@ -97,7 +97,7 @@ export const MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY = `WITH counts AS (
     AND event_type IN ('evaluation.routed', 'evaluation.reviewed')
 )
 SELECT CASE
-         WHEN routed = 0 THEN 1
+         WHEN routed = 0 THEN 0
          ELSE ROUND(1.0 * MIN(reviewed, routed) / routed, 4)
        END AS value,
        routed AS sampleSize
@@ -119,7 +119,7 @@ export const TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY = `WITH counts AS (
     AND event_type IN ('evaluation.routed', 'evaluation.triage_closed')
 )
 SELECT CASE
-         WHEN routed = 0 THEN 1
+         WHEN routed = 0 THEN 0
          ELSE ROUND(1.0 * MIN(closed, routed) / routed, 4)
        END AS value,
        routed AS sampleSize
@@ -158,7 +158,7 @@ export const PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY = `WITH counts AS (
     AND json_extract(data, '$.reason') = 'evaluation-project-health-feedback'
 )
 SELECT CASE
-         WHEN total = 0 THEN 1
+         WHEN total = 0 THEN 0
          ELSE ROUND(1.0 * delivered / total, 4)
        END AS value,
        total AS sampleSize
@@ -224,7 +224,7 @@ export const FAILED_TRIAGE_RATE_3H_SOURCE_QUERY = `WITH bounds AS (
   FROM failed_rows
 )
 SELECT CASE
-         WHEN counts.failed < 5 THEN 1
+         WHEN counts.failed = 0 THEN 0
          ELSE ROUND(1.0 * counts.triaged / counts.failed, 4)
        END AS value,
        counts.failed AS sampleSize,
@@ -279,7 +279,7 @@ export const AFTERMATH_COVERAGE_SOURCE_QUERY = `WITH bounds AS (
   LEFT JOIN evaluations e ON e.sessionId = x.sessionId
 )
 SELECT CASE
-         WHEN counts.eligible = 0 THEN 1.0
+         WHEN counts.eligible = 0 THEN 0.0
          ELSE ROUND(1.0 * counts.evaluated / counts.eligible, 4)
        END AS value,
        counts.eligible AS sampleSize,
@@ -315,12 +315,52 @@ const evaluationFeedbackSchema = Type.Object(
   { additionalProperties: true },
 );
 
-export const watchedProjectTargets = [
-  { targetProject: "may-agent.app" },
-  { targetProject: "scout-knowledge-lib.app" },
-  { targetProject: "gym.app" },
-  { targetProject: "evaluation.app" },
-] as const;
+// Legacy exports remain readable for old tooling, but production selection is
+// deliberately not a fixed allow-list. The owner review discovers loaded Apps
+// through the normal catalog/control surface and creates ordinary App handoffs.
+export const watchedProjectTargets: ReadonlyArray<{ targetProject: string }> = [];
+
+const EVALUATION_APP_IDS = new Set(["evaluation", "evaluation.app"]);
+const EVALUATION_AGENT_IDS = new Set(["evaluator", "judge"]);
+
+function canonicalAppId(value: unknown): string {
+  return stringValue(value).toLowerCase().replace(/\.app$/, "");
+}
+
+export function isEvaluationOwnedReference(value: unknown): boolean {
+  const normalized = canonicalAppId(value);
+  return EVALUATION_APP_IDS.has(normalized) || EVALUATION_AGENT_IDS.has(normalized);
+}
+
+/**
+ * Cheap ingress guard only. Workflows must repeat the ownership check after
+ * resolving canonical Task/session lineage; an absent hint is unknown, never
+ * proof that the work belongs to another App.
+ */
+export function isExplicitlyEvaluationOwned(
+  data: Record<string, unknown>,
+  event?: AppEvent<Record<string, unknown>>,
+): boolean {
+  const target = record(data.target);
+  return [
+    data.appId,
+    data.app_id,
+    data.ownerAppId,
+    data.owner_app_id,
+    data.sourceAppId,
+    data.source_app_id,
+    data.project,
+    data.projectId,
+    data.targetProject,
+    data.agent,
+    data.owner,
+    target.appId,
+    target.project,
+    event?.target?.appId,
+    event?.target?.project,
+    event?.owner,
+  ].some(isEvaluationOwnedReference);
+}
 
 const evaluationInputSchema = Type.Union([
   Type.Object(
@@ -436,19 +476,9 @@ function safeTaskIdPart(value: unknown): string {
   return `${normalized.slice(0, 107) || "id"}-${digest}`;
 }
 
-export function validateEvaluationTaskAction(
-  action: TaskAction,
-): string | null {
-  const taskId = action.kind === "create-task" ? action.id : action.taskId;
-  if (taskId.startsWith("runtime/")) {
-    return `${action.kind} cannot mutate reconciler-owned task ${taskId}`;
-  }
-  if (
-    action.kind === "create-task" &&
-    action.parentId !== "runtime/owner-review" &&
-    !action.parentId.startsWith("input/")
-  ) {
-    return `create-task ${taskId} must remain under its open-ended Evaluation task`;
+export function validateEvaluationTaskAction(action: TaskAction): string | null {
+  if (action.taskId.startsWith("runtime/")) {
+    return `${action.kind} cannot mutate reconciler-owned task ${action.taskId}`;
   }
   return null;
 }
@@ -463,20 +493,17 @@ function eventSessionId(event: AppEvent<Record<string, unknown>>): string {
   );
 }
 
-function projectTarget(value: unknown): (typeof watchedProjectTargets)[number] {
+function projectTarget(value: unknown): { targetProject: string } | null {
   const requested = stringValue(value);
-  return (
-    watchedProjectTargets.find(
-      (target) =>
-        target.targetProject === requested ||
-        target.targetProject.replace(/\.app$/, "") === requested,
-    ) ?? watchedProjectTargets[0]
-  );
+  if (!requested || isEvaluationOwnedReference(requested)) return null;
+  const normalized = requested.endsWith(".app") ? requested : `${requested}.app`;
+  return { targetProject: normalized };
 }
 
-function projectReviewInput(value: unknown): AppInput {
+function projectReviewInput(value: unknown): AppInput | null {
   const data = record(value);
   const target = projectTarget(data.targetProject ?? data.target);
+  if (!target) return null;
   return {
     kind: "project-review",
     data: {
@@ -554,7 +581,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
   switch (input.kind) {
     case "evaluate-session": {
       const sessionId = stringValue(data.sessionId);
-      if (!sessionId) return null;
+      if (!sessionId || isExplicitlyEvaluationOwned(data)) return null;
       const supersedeExisting = data.supersedeExisting === true;
       const correctionId = stringValue(data.correctionId);
       if (supersedeExisting && !correctionId) return null;
@@ -568,11 +595,13 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "A durable evaluation record or structured skip is linked to the exact source session.",
           "Any required review emits its structured outcome, while a review-process failure remains visible as evaluation.review_failed.",
         ],
-        mode: "achieve",
         agent: "evaluator",
         workflow: "evaluator-aftermath",
         input: {
           sessionId,
+          ...(stringValue(data.subjectAppId ?? data.appId)
+            ? { subjectAppId: stringValue(data.subjectAppId ?? data.appId) }
+            : {}),
           ...(supersedeExisting ? { supersedeExisting, correctionId } : {}),
         },
         priority: "P1",
@@ -580,7 +609,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     }
     case "deep-eval": {
       const sessionId = stringValue(data.sessionId);
-      if (!sessionId) return null;
+      if (!sessionId || isExplicitlyEvaluationOwned(data)) return null;
       return {
         id: `runtime/deep-eval/${safeTaskIdPart(sessionId)}`,
         parentId: "session-audit",
@@ -588,7 +617,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         acceptance: [
           "The deep evaluator returns a workflow-traced judgment linked to the exact requested session.",
         ],
-        mode: "achieve",
         workflow: "evaluator-deep-eval",
         input: { sessionId },
         priority: "P1",
@@ -604,13 +632,13 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "At most one eligible recent session receives a workflow-traced deep evaluation.",
           "If no candidate exists, the reconciliation records that observation without duplicate work.",
         ],
-        mode: "maintain",
         workflow: "evaluator-deep-eval",
         input: { scope: "deep-evaluation-candidates" },
         priority: "P2",
       };
     case "project-review": {
       const target = projectTarget(data.targetProject ?? data.target);
+      if (!target) return null;
       return {
         id: `runtime/project-audit/${safeTaskIdPart(target.targetProject)}`,
         parentId: "project-app-audit",
@@ -620,7 +648,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Material changes or a due baseline produce an owner-facing report; unchanged scheduled samples remain no-op.",
           "New actionable findings are deduplicated and routed to the target owner.",
         ],
-        mode: "maintain",
         workflow: "project-health-evaluator",
         input: { ...target },
         priority: "P1",
@@ -629,7 +656,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "codex-goal-trial": {
       const target = projectTarget(data.targetProject);
       const focus = stringValue(data.focus);
-      if (!focus) return null;
+      if (!target || !focus) return null;
       const trialKey = createHash("sha256")
         .update(`${target.targetProject}\u0000${focus}`)
         .digest("hex")
@@ -643,7 +670,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Every material claim cites an exact current file, command result, or durable observation.",
           "No file, Task, external system, or repository state is changed.",
         ],
-        mode: "achieve",
         agent: "evaluator",
         executor: evaluationExecutor,
         input: { ...target, focus, trial: true, readOnly: true },
@@ -654,7 +680,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "workflow-trial": {
       const target = projectTarget(data.targetProject);
       const focus = stringValue(data.focus);
-      if (!focus) return null;
+      if (!target || !focus) return null;
       const trialKey = createHash("sha256")
         .update(`${target.targetProject}\u0000${focus}`)
         .digest("hex")
@@ -668,7 +694,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Every material claim cites an exact current file, command result, or durable observation.",
           "No file, Task, external system, or repository state is changed.",
         ],
-        mode: "achieve",
         workflow: "executor-trial",
         input: { ...target, focus, trial: true, readOnly: true },
         priority: "P2",
@@ -678,7 +703,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "feedback-record": {
       const evaluation = record(data.evaluation);
       const agent = stringValue(evaluation.agent);
-      if (!agent) return null;
+      if (!agent || isEvaluationOwnedReference(agent)) return null;
       const feedbackKey = safeTaskIdPart(agent);
       return {
         id: `runtime/evaluation-feedback/${feedbackKey}`,
@@ -688,7 +713,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "The latest evaluation issues are projected to the matching agent feedback file.",
           "An issue-free latest evaluation removes stale generated feedback.",
         ],
-        mode: "maintain",
         workflow: "evaluation-feedback-projection",
         input: {
           evaluation,
@@ -708,7 +732,6 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "The owner returns revision-checked typed actions or a justified no-op with evidence.",
           "The owner does not take remediation ownership for findings about target projects.",
         ],
-        mode: "maintain",
         agent: "evaluator",
         executor: evaluationExecutor,
         input: { scope: "evaluation.app" },
@@ -736,7 +759,6 @@ export function taskForEvaluationInput(
       acceptance: [
         "The evaluator returns an evidence-backed result and a caller response when one is owed.",
       ],
-      mode: "achieve",
       agent: "evaluator",
       executor: evaluationExecutor,
       input: {
@@ -763,27 +785,28 @@ export function taskInputForEvent(
       const data = eventData(event);
       const agent = stringValue(data.agent);
       const sessionId = eventSessionId(event);
-      const status = stringValue(data.status ?? data.outcome);
-      const workflowRunId = stringValue(data.workflowRunId);
-      const routineWorkflowSession =
-        status === "done" && agent !== "may" && Boolean(workflowRunId);
       const awaitingSameSessionAutoResume = shouldDeferResumableInterruption(
         event.source,
         data,
       );
-      return agent === "evaluator" ||
-        agent === "judge" ||
+      return isEvaluationOwnedReference(agent) ||
+        isExplicitlyEvaluationOwned(data, event) ||
         !sessionId ||
-        routineWorkflowSession ||
         awaitingSameSessionAutoResume
         ? null
         : {
             kind: "evaluate-session",
-            data: { sessionId },
+            data: {
+              sessionId,
+              ...(stringValue(data.appId ?? data.ownerAppId ?? event.target?.appId)
+                ? { subjectAppId: stringValue(data.appId ?? data.ownerAppId ?? event.target?.appId) }
+                : {}),
+            },
           };
     }
     case "evaluation.session.requested": {
       const sessionId = eventSessionId(event);
+      if (isExplicitlyEvaluationOwned(eventData(event))) return null;
       return sessionId
         ? {
             kind: "evaluate-session",
@@ -793,6 +816,7 @@ export function taskInputForEvent(
     }
     case "evaluation.deep.requested": {
       const sessionId = eventSessionId(event);
+      if (isExplicitlyEvaluationOwned(eventData(event))) return null;
       return sessionId
         ? { kind: "deep-eval", data: { ...eventData(event), sessionId } }
         : null;
@@ -804,11 +828,10 @@ export function taskInputForEvent(
     case "evaluation.tick":
       return eventInput("owner-review", event);
     case "evaluation.review_failed":
-      return projectReviewInput({
-        targetProject: "evaluation.app",
-        reason: "review-failed",
-        reviewFailure: eventData(event),
-      });
+      return {
+        kind: "owner-review",
+        data: { reason: "review-failed", reviewFailure: eventData(event) },
+      };
     case "metric.breach":
     case "metric.recovered":
       if (event.type === "metric.breach" && eventData(event).repeat === true)
@@ -1099,24 +1122,9 @@ const baseApp = defineApp({
         target: { appId: projectId, project: projectId },
       },
     },
-    {
-      id: "deep-evaluation-scan",
-      intervalMs: 1_800_000,
-      event: {
-        type: "evaluation.deep.scan",
-        data: { reason: "scheduled" },
-        target: { appId: projectId, project: projectId },
-      },
-    },
-    ...watchedProjectTargets.map((target) => ({
-      id: `project-health-loop-${target.targetProject}`,
-      intervalMs: 7_200_000,
-      event: {
-        type: "evaluation.project.review.requested",
-        data: { ...target, reason: "scheduled" },
-        target: { appId: projectId, project: projectId },
-      },
-    })),
+    // Automatic semantic sampling is intentionally off for initial rollout.
+    // Explicit App reviews and the daily owner reliability check remain usable;
+    // canary selection is enabled only after report/read-back calibration.
   ],
   actions: {
     "evaluate-session": {
@@ -1207,7 +1215,6 @@ const baseApp = defineApp({
   },
   tasks: {
     subscriptions: [
-      "session.end",
       { type: "evaluation.session.requested", project: projectId },
       { type: "evaluation.deep.requested", project: projectId },
       { type: "evaluation.deep.scan", project: projectId },
@@ -1221,11 +1228,9 @@ const baseApp = defineApp({
     ],
     resolve: taskIntentForEvent,
     validateAction: validateEvaluationTaskAction,
-    // Aftermath production must keep pace with bursty direct-session traffic.
-    // The previous cap of five allowed old backlog work to consume roughly
-    // half of the available lanes while fresh eligible sessions aged out of
-    // the three-hour coverage window.
-    maxConcurrent: 16,
+    // Initial rollout is deliberately serialized. Automatic semantic sampling
+    // is disabled above; explicit trials cannot create a review storm.
+    maxConcurrent: 1,
   },
 });
 const app = { ...baseApp, metrics: evaluationMetricDefinitions };

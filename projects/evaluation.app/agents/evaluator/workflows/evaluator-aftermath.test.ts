@@ -630,12 +630,12 @@ describe("canonical evaluator aftermath", () => {
         {
           sourceSessionId: "s_1787349848905_805",
           requestedHumanAction: "none",
-          artifactAndVerificationContext: firstFinding.evidence,
+          artifactAndVerificationContext: firstFinding.facts,
         },
         {
           sourceSessionId: "s_changed",
           requestedHumanAction: "approve",
-          artifactAndVerificationContext: changedFinding.evidence,
+          artifactAndVerificationContext: changedFinding.facts,
           humanDeliveredAt: expect.any(String),
         },
       ],

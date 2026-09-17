@@ -366,7 +366,7 @@ them, and acknowledge relevant feedback in your plan.
 }
 
 function reconciled(summary: string, evidence: string[]): TaskReconcileResult {
-  return { state: "converged", summary, evidence, actions: [] };
+  return { state: "converged", summary, facts: evidence, actions: [] };
 }
 
 function evaluationVerificationEvidence(

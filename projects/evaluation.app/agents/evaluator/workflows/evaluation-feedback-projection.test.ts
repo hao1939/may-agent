@@ -61,7 +61,7 @@ describe("evaluation feedback projection", () => {
       output: {
         state: "converged",
         actions: [],
-        evidence: [
+        facts: [
           "evaluated-session:s_latest",
           "feedback-updated:sample",
           "feedback-verified:sample",
@@ -115,7 +115,7 @@ describe("evaluation feedback projection", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: [
+        facts: [
           "evaluated-session:s_1787394743684_6",
           "feedback-updated:sample",
           "feedback-verified:sample",
@@ -156,7 +156,7 @@ describe("evaluation feedback projection", () => {
       output: {
         state: "converged",
         actions: [],
-        evidence: [
+        facts: [
           "evaluated-session:s_1787389211258_10",
           "feedback-removed:gym",
           "feedback-verified:gym",
@@ -168,7 +168,7 @@ describe("evaluation feedback projection", () => {
     await expect(execute(ctx)).resolves.toMatchObject({
       output: {
         actions: [],
-        evidence: [
+        facts: [
           "evaluated-session:s_1787389211258_10",
           "feedback-verified:gym",
         ],
@@ -212,7 +212,7 @@ describe("evaluation feedback projection", () => {
     await expect(execute(ctx)).resolves.toMatchObject({
       output: {
         state: "converged",
-        evidence: [
+        facts: [
           "evaluated-session:s_clean",
           "feedback-removed:sample",
           "feedback-verified:sample",
@@ -311,7 +311,7 @@ describe("evaluation feedback projection", () => {
     await expect(execute(ctx)).resolves.toMatchObject({
       status: "done",
       output: {
-        evidence: [
+        facts: [
           "evaluated-session:s_1787406177203_0",
           "feedback-updated:app-ops",
           "feedback-verified:app-ops",
@@ -330,7 +330,7 @@ describe("evaluation feedback projection", () => {
     await expect(execute(ctx)).resolves.toMatchObject({
       status: "done",
       output: {
-        evidence: [
+        facts: [
           "evaluated-session:s_1787406177203_0",
           "feedback-verified:app-ops",
         ],
@@ -366,7 +366,7 @@ describe("evaluation feedback projection", () => {
       project("s_changed", "new verification", 200),
     ).resolves.toMatchObject({
       output: {
-        evidence: [
+        facts: [
           "evaluated-session:s_changed",
           "feedback-updated:sample",
           "feedback-verified:sample",
@@ -434,7 +434,7 @@ describe("evaluation feedback projection", () => {
         "Delivered evaluation s_1787414952089_3 to aks-explorer's responsible project owner; remediation remains unresolved.",
       output: {
         state: "converged",
-        evidence: [
+        facts: [
           "evaluated-session:s_1787414952089_3",
           "feedback-updated:aks-explorer",
           "feedback-verified:aks-explorer",
@@ -454,7 +454,7 @@ describe("evaluation feedback projection", () => {
       status: "done",
       summary: expect.stringContaining("exact replay made no mutation"),
       output: {
-        evidence: [
+        facts: [
           "evaluated-session:s_1787414952089_3",
           "feedback-verified:aks-explorer",
         ],
@@ -494,7 +494,7 @@ describe("evaluation feedback projection", () => {
       output: {
         state: "converged",
         actions: [],
-        evidence: [
+        facts: [
           "evaluated-session:s_1787409721879_11",
           "feedback-target:missing:aks-explorer",
           "feedback-target-verified:aks-explorer",

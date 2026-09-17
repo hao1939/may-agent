@@ -69,7 +69,7 @@ describe("canonical evaluation App", () => {
       id: "evaluation",
       version: 1,
       agent: "evaluator",
-      tasks: { maxConcurrent: 16 },
+      tasks: { maxConcurrent: 1 },
     });
     expect(app).not.toHaveProperty("inbox");
     expect(app.task).toBe(taskForEvaluationInput);
@@ -126,7 +126,6 @@ describe("canonical evaluation App", () => {
       id: expect.stringMatching(
         /^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/,
       ),
-      mode: "achieve",
       agent: "evaluator",
       executor: "codex-goal",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
@@ -153,7 +152,6 @@ describe("canonical evaluation App", () => {
       id: expect.stringMatching(
         /^runtime\/workflow-trial\/may-agent\.app\/[a-f0-9]{12}$/,
       ),
-      mode: "achieve",
       workflow: "executor-trial",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
     });
@@ -177,15 +175,14 @@ describe("canonical evaluation App", () => {
       kind: "desired",
       intent: {
         id: "input/request-1",
-        mode: "achieve",
-        agent: "evaluator",
+          agent: "evaluator",
         executor: "codex-goal",
       },
     });
   });
 
   test("declares Evaluation metrics with deterministic App-owned sources", () => {
-    expect(app.tasks?.maxConcurrent).toBe(16);
+    expect(app.tasks?.maxConcurrent).toBe(1);
     expect(app.metrics).toHaveLength(11);
     expect(app.metrics).toEqual(
       expect.arrayContaining([
@@ -371,7 +368,7 @@ describe("evaluation metrics", () => {
       measuredAt: number;
       note: string;
     };
-    expect(sample.value).toBe(1);
+    expect(sample.value).toBe(0);
     expect(sample.sampleSize).toBe(2);
     expect(sample.measuredAt).toBeGreaterThanOrEqual(Date.now() - 2_000);
     expect(sample.measuredAt).toBeLessThanOrEqual(Date.now());
@@ -566,7 +563,7 @@ describe("evaluation metrics", () => {
     db.run("DELETE FROM events");
     expect(
       db.query(MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY).get(),
-    ).toMatchObject({ value: 1, sampleSize: 0 });
+    ).toMatchObject({ value: 0, sampleSize: 0 });
   });
 
   test("measures triage closures against only needs-triage routes", () => {
@@ -708,7 +705,7 @@ describe("evaluation metrics", () => {
     db.run("DELETE FROM events");
     expect(
       db.query(PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY).get(),
-    ).toMatchObject({ value: 1, sampleSize: 0 });
+    ).toMatchObject({ value: 0, sampleSize: 0 });
     expect(
       db.query(PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY).get(),
     ).toMatchObject({ value: 0, sampleSize: 0 });
@@ -838,7 +835,6 @@ describe("evaluation fact admission", () => {
       ),
     ).toMatchObject({
       id: "runtime/session-aftermath/s_exact_contract",
-      mode: "achieve",
       workflow: "evaluator-aftermath",
       input: { sessionId: "s_exact_contract" },
     });
@@ -852,7 +848,6 @@ describe("evaluation fact admission", () => {
       ),
     ).toMatchObject({
       id: expect.stringMatching(/^runtime\/session-aftermath\//),
-      mode: "achieve",
       workflow: "evaluator-aftermath",
       input: { sessionId: "s/eval:42" },
     });
@@ -1059,11 +1054,8 @@ describe("evaluation fact admission", () => {
         }),
       ),
     ).toMatchObject({
-      kind: "project-review",
-      data: {
-        targetProject: "evaluation.app",
-        reason: "review-failed",
-      },
+      kind: "owner-review",
+      data: { reason: "review-failed" },
     });
   });
 });
@@ -1093,7 +1085,6 @@ describe("evaluation task policy", () => {
     ).toMatchObject({
       id: "runtime/owner-review",
       parentId: "evaluator-reliability",
-      mode: "maintain",
       agent: "evaluator",
       executor: "codex-goal",
     });
@@ -1113,7 +1104,6 @@ describe("evaluation task policy", () => {
     ).toMatchObject({
       id: "runtime/evaluation-feedback/may",
       parentId: "finding-delivery",
-      mode: "maintain",
       workflow: "evaluation-feedback-projection",
       input: { evaluation, feedbackKey: "may" },
     });
@@ -1124,7 +1114,6 @@ describe("evaluation task policy", () => {
       }),
     ).toMatchObject({
       id: "runtime/owner-review",
-      mode: "maintain",
       executor: "codex-goal",
     });
   });
@@ -1154,7 +1143,6 @@ describe("evaluation task policy", () => {
     expect(shallow).toEqual(deep);
     expect(shallow).toMatchObject({
       id: "runtime/evaluation-feedback/app-ops-bae9bad818b6",
-      mode: "maintain",
       workflow: "evaluation-feedback-projection",
       input: {
         evaluation,
@@ -1177,13 +1165,12 @@ describe("evaluation task policy", () => {
       }),
     ).toMatchObject({
       id: "runtime/project-audit/gym.app",
-      mode: "maintain",
       workflow: "project-health-evaluator",
       input: {
         targetProject: "gym.app",
       },
     });
-    expect(app.schedules).toContainEqual(
+    expect(app.schedules).not.toContainEqual(
       expect.objectContaining({ id: "project-health-loop-gym.app" }),
     );
   });
@@ -1248,8 +1235,7 @@ describe("evaluation task policy", () => {
         id: "review-evaluator-routing",
         parentId: "runtime/owner-review",
         outcome: "Review evaluator routing",
-        mode: "achieve",
-        outputs: [],
+          outputs: [],
         acceptance: ["Routing evidence is current"],
         priority: "P1",
       }),
@@ -1268,8 +1254,7 @@ describe("evaluation task policy", () => {
         id: "target-remediation",
         parentId: "project-app-audit",
         outcome: "Repair another App",
-        mode: "achieve",
-        outputs: [],
+          outputs: [],
         acceptance: ["Target changed"],
         priority: "P1",
       }),

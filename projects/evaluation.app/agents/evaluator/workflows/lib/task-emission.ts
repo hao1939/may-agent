@@ -55,7 +55,7 @@ export function taskEmissionKey(
   logicalKey: string,
 ): string {
   const reconciliation = ctx.reconciliation;
-  return reconciliation?.mode === "maintain"
+  return reconciliation?.events?.items.length
     ? `${reconciliationCycleKey(reconciliation)}:${logicalKey}`
     : logicalKey;
 }

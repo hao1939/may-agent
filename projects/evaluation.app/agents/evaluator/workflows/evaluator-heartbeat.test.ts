@@ -113,7 +113,7 @@ describe("evaluator heartbeat", () => {
           output: {
             state: "converged",
             summary: "Existing desired state covers the signal.",
-            evidence: ["metric.breach inspected"],
+            facts: ["metric.breach inspected"],
             actions: [],
           },
         };
@@ -144,7 +144,7 @@ describe("evaluator heartbeat", () => {
       {
         state: "waiting",
         summary: "Wait for the aftermath session.",
-        evidence: ["aggregate review"],
+        facts: ["aggregate review"],
         conditions: [
           {
             id: "aftermath-finished",
@@ -158,7 +158,7 @@ describe("evaluator heartbeat", () => {
     );
 
     expect(prior).toMatchObject({ state: "converged", actions: [] });
-    expect(prior.evidence).toContain(
+    expect(prior.facts).toContain(
       "owner-result-rejected:conditions[0].subject must be a typed subject",
     );
 
@@ -166,7 +166,7 @@ describe("evaluator heartbeat", () => {
       {
         state: "waiting",
         summary: "Wait for the aftermath session.",
-        evidence: ["aggregate review"],
+        facts: ["aggregate review"],
         conditions: [
           {
             id: "aftermath-finished",
@@ -199,7 +199,7 @@ describe("evaluator heartbeat", () => {
       ],
       actions: [],
     });
-    expect(corrected.evidence.join("\n")).toContain(
+    expect(corrected.facts.join("\n")).toContain(
       "cannot mutate reconciler-owned task runtime/session-aftermath/s_123",
     );
     expect(
@@ -214,7 +214,7 @@ describe("evaluator heartbeat", () => {
     const unchanged = {
       state: "waiting" as const,
       summary: "Wait for the shared dependency.",
-      evidence: ["dependency remains open"],
+      facts: ["dependency remains open"],
       conditions: [
         {
           id: "app-request:appdep_shared",
@@ -231,7 +231,7 @@ describe("evaluator heartbeat", () => {
 
     expect(first.conditions?.[0]?.id).toBe("app-request:appdep_shared");
     expect(repeated.conditions?.[0]?.id).toBe(first.conditions?.[0]?.id);
-    expect(first.evidence).not.toContainEqual(
+    expect(first.facts).not.toContainEqual(
       expect.stringContaining("condition-identity-remapped:"),
     );
   });
@@ -240,7 +240,7 @@ describe("evaluator heartbeat", () => {
     const changed = {
       state: "waiting" as const,
       summary: "Wait for a different dependency outcome.",
-      evidence: ["dependency specification changed"],
+      facts: ["dependency specification changed"],
       conditions: [
         {
           id: "app-request:appdep_shared",
@@ -259,7 +259,7 @@ describe("evaluator heartbeat", () => {
     expect(changedId).toStartWith("app-request:appdep_shared:spec-");
     expect(changedId).not.toBe("app-request:appdep_shared");
     expect(repeated.conditions?.[0]?.id).toBe(changedId);
-    expect(first.evidence).toContain(
+    expect(first.facts).toContain(
       `condition-identity-remapped:app-request:appdep_shared->${changedId}`,
     );
   });
@@ -278,7 +278,7 @@ describe("evaluator heartbeat", () => {
         kind: "agent",
         status: "done",
         summary: "invalid",
-        output: { state: "waiting", summary: "wait", evidence: [] },
+        output: { state: "waiting", summary: "wait", facts: [] },
       }),
       emit: async (event) => {
         events.push(
@@ -319,7 +319,7 @@ describe("evaluator heartbeat", () => {
       {
         state: "converged",
         summary: "Reviewed child state.",
-        evidence: ["bounded packet"],
+        facts: ["bounded packet"],
         actions: [
           {
             kind: "update-task",
@@ -367,10 +367,10 @@ describe("evaluator heartbeat", () => {
       }),
     ]);
     expect(result.summary).toContain("Filtered 2");
-    expect(result.evidence.join("\n")).toContain(
+    expect(result.facts.join("\n")).toContain(
       "requires waiting or attention, not pending",
     );
-    expect(result.evidence.join("\n")).toContain(
+    expect(result.facts.join("\n")).toContain(
       "cannot mutate reconciler-owned task runtime/deep-eval-scan",
     );
   });

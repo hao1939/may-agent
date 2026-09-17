@@ -716,7 +716,7 @@ function reconciled(
   summary: string,
   evidence: string[] = [],
 ): TaskReconcileResult {
-  return { state: "converged", summary, evidence, actions: [] };
+  return { state: "converged", summary, facts: evidence, actions: [] };
 }
 
 export function projectHealthOwnerFeedbackEvent(

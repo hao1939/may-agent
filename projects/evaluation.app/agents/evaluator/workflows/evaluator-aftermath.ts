@@ -33,9 +33,14 @@ const HUMAN_ACTIONS = new Set([
 
 export type AftermathInput = {
   sessionId?: string;
+  subjectAppId?: string;
   supersedeExisting?: boolean;
   correctionId?: string;
 };
+
+function isEvaluationApp(value: unknown): boolean {
+  return text(value, 124).toLowerCase().replace(/\.app$/, "") === "evaluation";
+}
 
 /**
  * The first watchdog interruption is not the terminal session lifecycle: the
@@ -510,30 +515,17 @@ export function skippedEvaluationFact(
   now = Date.now(),
 ) {
   return {
-    type: "evaluation.recorded",
+    type: "evaluation.review_skipped",
     owner: "agent:evaluator",
     data: {
       source: name,
-      evaluation: {
-        sessionId: outcome.sessionId,
-        agent: outcome.agent,
-        quality: 0,
-        efficiency: 0,
-        productiveCalls: 0,
-        wastedCalls: 0,
-        verdict: "skipped",
-        issues: [outcome.reason],
-        lane: "routine_ok",
-        reason: outcome.reason,
-        signals: [],
-        overall: {
-          aftermathVersion: AFTERMATH_VERSION,
-          evaluationExecutionId: executionId,
-          structuredSkip: true,
-          skipReason: outcome.reason,
-        },
-        createdAt: now,
-      },
+      disposition: "insufficient-evidence",
+      sessionId: outcome.sessionId,
+      agent: outcome.agent,
+      reason: outcome.reason,
+      aftermathVersion: AFTERMATH_VERSION,
+      evaluationExecutionId: executionId,
+      createdAt: now,
     },
     target: {
       appId: "evaluation",
@@ -587,7 +579,7 @@ function reconciled(
   summary: string,
   evidence: string[] = [],
 ): TaskReconcileResult {
-  return { state: "converged", summary, evidence, actions: [] };
+  return { state: "converged", summary, facts: evidence, actions: [] };
 }
 
 async function reviewFailed(
@@ -627,6 +619,13 @@ export async function execute(
   const requestedSessionId = sessionId(ctx.input?.sessionId);
   if (!requestedSessionId) {
     return ctx.blocked("evaluator-aftermath requires an exact sessionId");
+  }
+  if (isEvaluationApp(ctx.input?.subjectAppId)) {
+    const summary = `Excluded Evaluation-owned session ${requestedSessionId} before model execution.`;
+    return ctx.done(summary, reconciled(summary, [
+      `excluded-session:${requestedSessionId}`,
+      "excluded-owner:evaluation",
+    ]));
   }
 
   const execution = await ctx.agents.call(
