@@ -106,6 +106,13 @@ Scout maintains this knowledge-library project:
 - Durable library: ${projectDir}/knowledge
 - Working digest: ${appDir}/agents/scout/workspace/digest/today.md
 - External shared corpus: /app/shared/knowledge
+- Final canonical library root (link destination only): ${beforePublication.canonicalProjectRoot}
+
+Edit durable content only in the supplied domain workspace candidate. Use the
+final canonical root for links from the working digest or other workspaces,
+and relative links within library notes. Return candidate output paths for
+verification. The workflow commits accepted bytes and returns canonical paths;
+do not run Git publication or edit the canonical library in this call.
 
 Your job in this workflow is not a freeform heartbeat. Review the bounded task
 resource context, understand the trigger, and do the smallest useful maintenance

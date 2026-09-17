@@ -683,12 +683,19 @@ export async function executeScoutExplore(
     uncommittedChanges: changedKnowledgePaths(beforePublication),
   });
   const candidateProjectDir = beforePublication.projectRoot;
-  const agentTask = buildExploreTask(
-    task,
-    { appDir, projectDir: candidateProjectDir },
-    xhsPacket,
-    source,
-  );
+  const agentTask =
+    buildExploreTask(
+      task,
+      { appDir, projectDir: candidateProjectDir },
+      xhsPacket,
+      source,
+    ) +
+    `\n\nPublication boundary: edit durable content only in ${candidateProjectDir}.
+The final library root is ${beforePublication.canonicalProjectRoot}; use that
+final root for links from the working digest or other workspaces, and relative
+links within the library. Return candidate output paths for verification.
+The workflow commits accepted bytes and returns final canonical paths. Do not
+run Git publication or edit the canonical library in this call.`;
   const existingOutputSources = snapshotExistingOutputPrimarySources({
     appDir,
     projectDir: candidateProjectDir,

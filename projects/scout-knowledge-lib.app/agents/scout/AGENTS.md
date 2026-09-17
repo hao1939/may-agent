@@ -36,7 +36,11 @@ and return its exact output paths. Do not write the canonical library or run
 Git publication yourself during that call; the workflow verifies and commits
 the accepted candidate, then returns the canonical paths and revision. Working
 drafts and digest files remain in the supplied App workspace. Never create a
-nested project root.
+nested project root. Within library notes, prefer relative links to other
+library files. From the working digest or another workspace, link to the final
+canonical library location listed above, never to the temporary candidate.
+Verify those links against the corresponding candidate file before returning;
+the canonical file becomes available after publication.
 
 Direct use still permits research and drafts. Before claiming a result is
 committed, obtain exact Git revision/path read-back through the hosted write
