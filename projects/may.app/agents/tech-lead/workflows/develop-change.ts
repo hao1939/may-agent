@@ -1,6 +1,7 @@
-import { createHash } from "node:crypto";
+import { join } from "node:path";
 import {
   Type,
+  admitTaskReconcileResult,
   type Static,
   type TaskReconcileResult,
   type WorkflowContext,
@@ -10,17 +11,26 @@ import { readDevelopmentInput } from "../../../development.js";
 import {
   candidate,
   command,
+  commandReceipt,
   describeCandidate,
   sameCandidate,
   type Candidate,
 } from "./lib/repository.js";
+
+import {
+  artifactSchema,
+  recordSchema,
+  digest,
+  EvidenceStore,
+} from "./lib/evidence.js";
 
 export const name = "develop-change";
 export const description =
   "Reconcile one local change through agent judgment, implementation, verification and independent review.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
-const text = Type.String({ minLength: 1, maxLength: 16_000 });
+// Explanations are archived; code bounds the aggregate Task result.
+const text = Type.String({ minLength: 1 });
 const candidateSchema = Type.Object({
   commit: text,
   base: text,
@@ -65,11 +75,20 @@ const reviewSchema = Type.Object(
 );
 const savedSchema = Type.Object(
   {
+    version: Type.Literal(2),
+    taskId: text,
     requirementKey: text,
     inputKey: text,
     design: Type.Optional(designSchema),
     implementation: Type.Optional(candidateSchema),
     verified: Type.Optional(candidateSchema),
+    reports: Type.Array(
+      Type.Object({
+        stage: text,
+        executionId: Type.Optional(text),
+        ...recordSchema.properties,
+      }),
+    ),
     review: Type.Optional(
       Type.Object({ candidate: candidateSchema, judgment: reviewSchema }),
     ),
@@ -79,9 +98,11 @@ const savedSchema = Type.Object(
 );
 type Saved = Static<typeof savedSchema>;
 
-function digest(value: unknown): string {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
+const deliverySchema = Type.Object({
+  version: Type.Literal(2),
+  evidence: artifactSchema,
+  report: artifactSchema,
+});
 
 /** One bounded workflow; Runtime owns admission, persistence, wakes and recovery. */
 export async function execute(ctx: WorkflowContext) {
@@ -91,25 +112,86 @@ export async function execute(ctx: WorkflowContext) {
       "Development requires an ordinary Task and its worktree",
     );
   const root = ctx.workspace.root;
+  const archive = new EvidenceStore(
+    join(
+      ctx.workspace.output,
+      ".state",
+      "may-development",
+      digest({ appId: rec.appId, taskId: rec.taskId }),
+    ),
+  );
+  let archiveReady = false;
   let saved: Saved | undefined;
-  const finish = (summary: string, complete = false) => {
-    const result: TaskReconcileResult = complete
-      ? {
-          state: "converged",
-          summary,
-          facts: [
-            `worktree:${root}`,
-            `commit:${saved?.review?.candidate.commit}`,
-          ],
-          result: { development: saved },
-        }
-      : {
-          state: "incomplete",
-          report: true,
-          summary,
-          facts: [summary, `worktree:${root}`],
-          ...(saved ? { result: { development: saved } } : {}),
-        };
+  const finish = async (message: string, complete = false) => {
+    let summary = message;
+    let evidence;
+    let report;
+    try {
+      if (saved && archiveReady) {
+        evidence = await archive.put(
+          `${JSON.stringify(saved, null, 2)}\n`,
+          "json",
+        );
+        report = await archive.put(
+          [
+            "# Development delivery evidence",
+            message,
+            "This records local work. Task settlement and Request closure must be read from Runtime.",
+            `Task: ${rec.taskId}`,
+            `Requirement: ${saved.requirementKey}`,
+            `Worktree: ${root}`,
+            `Verified candidate: ${JSON.stringify(saved.verified ?? null)}`,
+            `Review: ${saved.review?.judgment.decision ?? "not available"}`,
+            "## Reports (latest first)",
+            ...[...saved.reports]
+              .reverse()
+              .map(
+                (item) =>
+                  `${item.stage}${item.executionId ? ` (${item.executionId})` : ""}\nReport: ${item.report.path}\nRaw receipt: ${item.record.path}`,
+              ),
+          ].join("\n\n"),
+          "md",
+        );
+      }
+    } catch (error) {
+      complete = false;
+      summary = `Cannot retain delivery evidence: ${String(error)}`;
+    }
+    // Explanations remain in the archive. Keep the entire envelope small,
+    // and run the same admission contract as the Host before returning it.
+    summary = summary.slice(0, 800);
+    const result: TaskReconcileResult = {
+      ...(complete
+        ? { state: "converged" as const }
+        : { state: "incomplete" as const, report: true as const }),
+      summary,
+      facts: [
+        `worktree:${root}`,
+        ...(complete
+          ? [`commit:${saved?.review?.candidate.commit}`]
+          : [summary]),
+        ...(evidence ? [`evidence:${evidence.path}`] : []),
+      ],
+      ...(evidence && report
+        ? { result: { development: { version: 2, evidence, report } } }
+        : {}),
+    };
+    const admitted = admitTaskReconcileResult(result, {
+      allowNeedsAgent: false,
+    });
+    if (
+      !admitted.ok ||
+      Buffer.byteLength(JSON.stringify(result), "utf8") > 16 * 1024
+    ) {
+      const failure =
+        "Development delivery cannot fit the Host result contract; retained files need inspection";
+      return ctx.done(failure, {
+        state: "incomplete",
+        report: true,
+        summary: failure,
+        facts: [failure],
+      } satisfies TaskReconcileResult);
+    }
     return ctx.done(summary, result);
   };
   try {
@@ -127,15 +209,58 @@ export async function execute(ctx: WorkflowContext) {
       input,
     });
     const inputKey = digest(rec.events.items);
-    const previous = current.result?.development;
-    saved =
-      Check(savedSchema, previous) && previous.requirementKey === requirementKey
-        ? structuredClone(previous)
-        : { requirementKey, inputKey };
-    // Any newly delivered input deserves judgment. Exact duplicate delivery is a
-    // Runtime concern. Affordable re-review is preferable to an event classifier.
-    if (rec.events.items.length && saved.inputKey !== inputKey) {
-      saved = { requirementKey, inputKey };
+    // Task-local output must be excluded from source acceptance. Do not edit
+    // ignore rules or quietly hide any candidate files in the workflow.
+    await candidate(root, ctx.signal, true);
+    await command(
+      root,
+      ["git", "check-ignore", "-q", "--", archive.directory],
+      ctx.signal,
+    );
+    archiveReady = true;
+    const fresh = (): Saved => ({
+      version: 2,
+      taskId: rec.taskId,
+      requirementKey,
+      inputKey,
+      reports: [],
+    });
+    saved = fresh();
+    const earlier = rec.previousAttempt;
+    // Rejected reports are evidence only. Current requirements and repository
+    // still have to pass every check below before a new completion.
+    const previousResults = [
+      ...(earlier?.generation === rec.generation &&
+      earlier.workspacePath === root
+        ? [earlier.unacceptedResult?.result?.development]
+        : []),
+      current.result?.development,
+    ];
+    for (const previous of previousResults) {
+      if (!Check(deliverySchema, previous)) continue;
+      try {
+        await archive.read(previous.report);
+        const recovered: unknown = JSON.parse(
+          await archive.read(previous.evidence),
+        );
+        if (
+          !Check(savedSchema, recovered) ||
+          recovered.taskId !== rec.taskId ||
+          recovered.requirementKey !== requirementKey ||
+          (rec.events.items.length > 0 && recovered.inputKey !== inputKey)
+        )
+          continue;
+        for (const report of recovered.reports) {
+          await archive.read(report.record);
+          await archive.read(report.report);
+        }
+        saved = structuredClone(recovered);
+        break;
+      } catch (error) {
+        ctx.log.info(
+          `Prior evidence is unavailable; inspect the candidate afresh: ${String(error)}`,
+        );
+      }
     }
     const ensureCurrent = async () => {
       ctx.signal.throwIfAborted();
@@ -176,7 +301,23 @@ export async function execute(ctx: WorkflowContext) {
         `Constraints: ${JSON.stringify(input.data.constraints ?? [])}`,
         `Verification argv: ${JSON.stringify(input.data.verify)}`,
         `Candidate: ${JSON.stringify(value)}`,
-        `Previous evidence: ${JSON.stringify(saved)}`,
+        `Previous judgments (previews; read reports for full explanations): ${JSON.stringify(
+          {
+            design: saved?.design && {
+              decision: saved.design.decision,
+              design: saved.design.design.slice(0, 2000),
+            },
+            implementation: saved?.implementation,
+            verified: saved?.verified,
+            review: saved?.review && {
+              candidate: saved.review.candidate,
+              decision: saved.review.judgment.decision,
+            },
+            feedback: saved?.feedback?.slice(0, 2000),
+          },
+        )}`,
+        `Retained reports and raw execution/command receipts: ${JSON.stringify(saved?.reports.filter((item, index, all) => index >= all.length - 8 || (item.stage === "design" && !all.slice(index + 1).some((later) => later.stage === "design"))))}`,
+        "Read the relevant retained reports before judging. Verification receipts include actual argv, directory, exit status, stdout/stderr and candidate readback. An agent's claim alone is not verification. Do not request a new implementation merely to repeat receipts already supplied here.",
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,
         "Return the supplied structured decision. Clarify only for a requirement or authority decision.",
@@ -188,6 +329,27 @@ export async function execute(ctx: WorkflowContext) {
         schema,
         tools: readonly ? "readonly" : "full",
       });
+      const evidence = await archive.record(
+        {
+          taskId: rec.taskId,
+          requirementKey,
+          inputKey,
+          stage,
+          candidate: value,
+          response,
+        },
+        `# ${stage}\nExecution: ${response.id}\nStatus: ${response.status}\nCandidate: ${JSON.stringify(value)}\n\n${response.summary}\n\n${Object.entries(
+          response.output ?? {},
+        )
+          .map(
+            ([key, body]) =>
+              `## ${key}\n${typeof body === "string" ? body : JSON.stringify(body, null, 2)}`,
+          )
+          .join(
+            "\n\n",
+          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, cliCalls: response.cliCalls }, null, 2)}`,
+      );
+      saved!.reports.push({ stage, executionId: response.id, ...evidence });
       ctx.signal.throwIfAborted();
       if (response.status !== "done" || !Check(schema, response.output)) {
         throw new Error(
@@ -256,14 +418,37 @@ export async function execute(ctx: WorkflowContext) {
       await ensureCurrent();
       if (!saved.verified || !sameCandidate(saved.verified, value)) {
         ctx.log.info(`Verifying candidate ${value.commit}`);
+        const receipt = await commandReceipt(
+          root,
+          input.data.verify,
+          ctx.signal,
+        );
+        let after: Candidate | undefined;
+        let failure = receipt.error;
         try {
-          await command(root, input.data.verify, ctx.signal);
-          const after = await candidate(root, ctx.signal);
+          after = await candidate(root, ctx.signal, true);
           if (!sameCandidate(value, after))
-            throw new Error("Verification changed the candidate");
+            failure = "Verification changed the candidate";
         } catch (error) {
-          ctx.signal.throwIfAborted();
-          saved.feedback = `Verification failed: ${String(error).slice(-12_000)}`;
+          failure = String(error);
+        }
+        const evidence = await archive.record(
+          {
+            taskId: rec.taskId,
+            requirementKey,
+            inputKey,
+            candidate: value,
+            after,
+            passed: !failure,
+            receipt,
+            failure,
+          },
+          `# Verification\nCandidate: ${JSON.stringify(value)}\nAfter: ${JSON.stringify(after)}\nPassed: ${!failure}\nCommand: ${JSON.stringify(receipt.argv)}\nDirectory: ${receipt.cwd}\nStarted: ${receipt.startedAt}\nEnded: ${receipt.endedAt}\nExit code: ${receipt.exitCode}\nSignal: ${receipt.signal}\nFailure: ${failure ?? "none"}\n\n## stdout\n${receipt.stdout}\n\n## stderr\n${receipt.stderr}`,
+        );
+        saved.reports.push({ stage: "verification", ...evidence });
+        ctx.signal.throwIfAborted();
+        if (failure) {
+          saved.feedback = `Verification failed: ${failure}. Full receipt: ${evidence.report.path}`;
           saved.verified = undefined;
           saved.review = undefined;
           continue;
@@ -293,9 +478,7 @@ export async function execute(ctx: WorkflowContext) {
         );
       if (review.decision === "clarify")
         return finish(`Creator decision needed: ${review.reason}`);
-      saved.feedback = [review.reason, ...review.findings]
-        .join("\n")
-        .slice(0, 16_000);
+      saved.feedback = [review.reason, ...review.findings].join("\n");
       saved.implementation = undefined;
       if (review.decision === "redesign") saved.design = undefined;
     }
@@ -304,6 +487,6 @@ export async function execute(ctx: WorkflowContext) {
     );
   } catch (error) {
     if (ctx.signal.aborted) throw error;
-    return finish(String(error).slice(-16_000));
+    return finish(String(error));
   }
 }

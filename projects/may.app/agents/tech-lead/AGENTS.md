@@ -20,3 +20,9 @@ Do not create another worker, invoke the workflow recursively, push, merge,
 deploy, change branches, or modify another checkout. This trial's outcome is a
 locally committed, verified and reviewed candidate. Report facts and unresolved
 work in plain language; the workflow handles routing and execution limits.
+
+The workflow saves your structured explanation and execution identity by code,
+and independently retains the creator's check stdout/stderr and exit status.
+Describe the implemented result, validation and limits in your structured
+response. You need not repeat receipts in new commits just to transport them to
+Bob. Read the supplied failure/review reports before deciding what needs repair.

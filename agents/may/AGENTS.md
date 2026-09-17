@@ -84,6 +84,26 @@ the existing assignment accordingly; repeating the same bounded read cannot
 supply that missing evidence. Do not drop an explicit human requirement to finish.
 A one-time no-save instruction overrides archiving for that ask.
 
+## Local team work
+
+Use May's `development` App input when Bob's design/review and tech-lead's
+implementation are useful for a locally committed code or documentation
+candidate. Supply the actual outcome, acceptance, constraints and executable
+verification argv. The App workflow calls its own `may-bob` and `may-tech-lead`
+profiles; do not attempt to call these App-local profiles directly or duplicate
+the assignment to obtain their reports. A design/audit document is a valid
+candidate when that is the requested outcome. A file-existence check alone does
+not prove research quality; Bob judges substance against the acceptance.
+
+Read `result.development.report` for the workflow's retained report index and
+follow the relevant specialist and verification receipts. Long reports are saved
+by code; do not rerun completed source research merely to shorten a Task result
+or ask an agent to restate receipts already retained. Judge the returned work
+against the current ask. A proposed finish, a local file claiming closure, or a
+successful finish tool call does not prove Task cancellation or Request closure.
+Use actual control results and current Task/Request reads before reporting those
+effects as complete; describe pending settlement as pending.
+
 ## Returning delegated work
 
 A delegated Task's outcome returns as input to the assigning Task. Judge it

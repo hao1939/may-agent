@@ -123,15 +123,54 @@ a new input requests fresh verification when those assumptions change.
 
 ## Reconciliation and updates
 
-The accepted Task result stores a small `development` record: requirement/input
-fingerprints, design judgment, implementation identity, verification identity,
-review judgment and any unresolved feedback. This is evidence inside existing
-Task status, not a second work authority or an instruction pointer.
+The accepted Task result stores a small versioned `development` record with
+checksummed references to a full evidence snapshot and a readable report index.
+The snapshot retains requirement/input fingerprints, design judgment,
+implementation identity, verification identity, review judgment and unresolved
+feedback. Each specialist call also retains its actual execution ID, summary,
+structured output, facts and any SDK-provided CLI receipts. Code records these
+before judging whether the returned decision is valid. Verification records its
+actual argv, directory, timestamps, exit status, stdout/stderr and before/after
+candidate identities on both success and failure. A timeout or output-limit
+error remains a failed check; captured output is not claimed to be exhaustive.
+
+Files live beneath the Task output's `.state/may-development/` directory. The
+repository must already ignore that directory, as this App does; the workflow
+checks this before work and never changes ignore rules to hide source edits.
+Code publishes complete content-addressed files and never replaces an existing
+artifact. Raw JSON preserves exact values; readable Markdown supports paginated
+inspection of long text. These are local deliverables retained with the Task
+worktree, not a permanent archive independent of worktree retention.
+
+The full reports are outside the Host's 16 KiB Task result field. Code bounds
+summary previews, retains full explanations, and validates the aggregate return
+against the SDK contract before delivery. Agents do not have to guess how many
+characters remain across all reports. Failure to save evidence cannot produce
+convergence. The reviewer receives report paths and execution identities,
+including actual successful check output, instead of being asked to trust an
+implementation claim or request repeated receipts from tech-lead.
 
 Each invocation reads the exact Task and repository. Current specification is
 authoritative. Matching accepted verification/review evidence can produce a
-quiet result without model calls. New input causes fresh judgment; this PoC
-accepts inexpensive extra review instead of classifying every event type.
+quiet result without model calls. When Runtime supplies a rejected previous
+attempt, the workflow can also inspect that attempt's evidence, only in the
+same generation and workspace. It validates the snapshot and referenced files,
+requirement/input fingerprints, and current clean commit and merge-base before
+reusing a completion. Missing or damaged evidence requires fresh assessment.
+Rejected settlement is never treated as accepted work or permission to replay
+effects. New input causes fresh judgment; this PoC accepts extra review instead
+of classifying every event type.
+
+The files have no latest pointer, executable phase, pending-work list, timer or
+scheduler. Runtime's accepted result or explicit previous-attempt reference is
+the only way reconciliation selects them. Interruption before a workflow returns
+may leave useful files without a selectable snapshot; ordinary source inspection
+and repeat verification still apply. This does not promise exact step replay.
+
+The readable delivery index records local evidence, not Task settlement,
+Request closure, merge or deployment. May reads the returned report and current
+Task/Request state before describing those effects as completed. Arbitrary prose
+written before settlement is not an authoritative closeout receipt.
 
 Events prompt reconciliation; the current specification and evidence determine
 the next step. An input event alone does not authorize a new requirement. May
@@ -174,7 +213,7 @@ Runtime settlement fences remain responsible for concurrent acceptance. These
 checks do not lock files, provider calls or specification updates, or prevent
 the creator's write.
 
-An interrupted attempt may leave a commit or dirty edit without an accepted
+An interrupted attempt may leave a commit or dirty edit without a Runtime-referenced
 workflow record. The next invocation inspects the same worktree and asks
 tech-lead to retain/repair that work. Cheap design and verification may repeat.
 We do not require exact step replay or create an external-action ledger.
@@ -203,7 +242,12 @@ exact suppression of repeated questions during retry.
 
 May retains the same Request/Task link for follow-up and uses the existing
 creator update capability for corrections. Ordinary `goal` input still selects
-May; only explicit `development` input selects `develop-change`.
+May; only explicit `development` input selects `develop-change`. Development
+can produce a locally committed design/audit document as well as code. Its
+verification must be executable argv, not English instructions. Bob still judges
+the substance: checking a document exists does not certify its conclusions.
+General research without a repository deliverable continues to use `goal`; this
+repair does not add a second research controller.
 
 Source needs the bounded workflow SDK, including `ctx.signal`, exact Task
 reads, structured agent calls and task workspaces. The local integration trial

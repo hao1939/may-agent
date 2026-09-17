@@ -151,7 +151,7 @@ export default defineApp({
   agent: "may",
   workspace: { kind: "git", localPath: ".", branch: "main" },
   description:
-    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required.",
+    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use development (outcome, acceptance, executable verify argv, optional constraints) for a locally committed code or documentation candidate with Bob design/review and direct tech-lead implementation; code retains reports and verification receipts. Use goal for other ongoing work.",
   inputSchema: mayInputSchema,
   conversation: {
     mode: "agent",

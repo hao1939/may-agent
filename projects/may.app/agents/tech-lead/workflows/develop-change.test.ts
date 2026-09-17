@@ -42,11 +42,11 @@ function trial() {
   git(repo, "init", "-b", "main");
   git(repo, "config", "user.name", "Development Test");
   git(repo, "config", "user.email", "development@example.invalid");
-  writeFileSync(join(repo, ".gitignore"), ".checks\n");
+  writeFileSync(join(repo, ".gitignore"), ".checks\n.state/\n");
   writeFileSync(join(repo, "answer.cjs"), "module.exports = () => 0;\n");
   writeFileSync(
     join(repo, "verify.cjs"),
-    `require('node:fs').appendFileSync('.checks', 'check\\n'); require('node:assert/strict').equal(require('./answer.cjs')(), Number(process.argv[2]));\n`,
+    `require('node:fs').appendFileSync('.checks', 'check\\n'); require('node:assert/strict').equal(require('./answer.cjs')(), Number(process.argv[2])); console.log('verification stdout'); console.error('verification stderr');\n`,
   );
   git(repo, "add", ".");
   git(repo, "commit", "-m", "baseline");
@@ -69,6 +69,7 @@ function trial() {
     input: spec(1),
     conditions: [],
   };
+  const prompts: string[] = [];
   const calls: Array<{ agent: string; stage: string; tools: unknown }> = [];
   let implementation = () => {
     const desired = (current.input as ReturnType<typeof spec>).data.verify[2];
@@ -140,11 +141,13 @@ function trial() {
         const stage =
           /^Development step: ([^.]+)/.exec(prompt)?.[1] ?? "unknown";
         calls.push({ agent, stage, tools: options.tools });
+        prompts.push(prompt);
         return {
           id: `step-${calls.length}`,
           kind: "agent",
           status: "done",
           summary: "step complete",
+          facts: { retained: "execution evidence" },
           output: judgment(stage),
         };
       }) as WorkflowContext["agents"]["call"],
@@ -152,7 +155,9 @@ function trial() {
   const run = async (ctx = context()) => {
     const response = await execute(ctx);
     const output = response.output as TaskReconcileResult;
-    const admitted = admitTaskReconcileResult(output);
+    const admitted = admitTaskReconcileResult(output, {
+      allowNeedsAgent: false,
+    });
     expect(admitted.ok).toBe(true);
     if (!admitted.ok) throw Error(JSON.stringify(admitted));
     current.result = output.result;
@@ -163,6 +168,11 @@ function trial() {
     worktree,
     current,
     calls,
+    prompts,
+    evidence() {
+      const delivery = current.result!.development as any;
+      return JSON.parse(readFileSync(delivery.evidence.path, "utf8"));
+    },
     context,
     run,
     git,
@@ -477,5 +487,205 @@ describe("development workflow using real Git and verification", () => {
     ctx.workspace!.root = t.repo;
     expect((await t.run(ctx)).state).toBe("incomplete");
     expect(t.calls).toHaveLength(0);
+  });
+  test.each(["a", "汉"])(
+    "large %s reports survive the aggregate UTF-8 result boundary",
+    async (character) => {
+      const t = trial();
+      t.current.input = t.spec(0);
+      t.current.outcome = t.spec(0).data.outcome;
+      t.current.acceptance = t.spec(0).data.acceptance;
+      const body = character.repeat(14_000);
+      t.setJudgment((stage) =>
+        stage === "design"
+          ? { decision: "review", reason: body, design: body }
+          : {
+              decision: "pass",
+              reason: body,
+              findings: [],
+              commit: t.git(t.worktree, "rev-parse", "HEAD"),
+            },
+      );
+      const result = await t.run();
+      expect(result.state).toBe("converged");
+      expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(3000);
+      const evidence = t.evidence();
+      expect(evidence.design.design).toBe(body);
+      expect(evidence.review.judgment.reason).toBe(body);
+      const designRecord = JSON.parse(
+        readFileSync(evidence.reports[0].record.path, "utf8"),
+      );
+      expect(designRecord.response.output.reason).toBe(body);
+      const readable = readFileSync(evidence.reports[0].report.path, "utf8");
+      expect(
+        readable.split("\n").every((line) => Buffer.byteLength(line) < 2000),
+      ).toBe(true);
+      expect((await t.run()).state).toBe("converged");
+      expect(t.calls).toHaveLength(2);
+    },
+  );
+
+  test("review receives inspectable implementation identity and actual successful verification receipt", async () => {
+    const t = trial();
+    expect((await t.run()).state).toBe("converged");
+    const evidence = t.evidence();
+    const implementation = evidence.reports.find(
+      (r: any) => r.stage === "implementation",
+    );
+    const verification = evidence.reports.find(
+      (r: any) => r.stage === "verification",
+    );
+    const reviewPrompt = t.prompts.find((p) =>
+      p.startsWith("Development step: review"),
+    )!;
+    expect(reviewPrompt).toContain(implementation.executionId);
+    expect(reviewPrompt).toContain(implementation.report.path);
+    expect(reviewPrompt).toContain(verification.report.path);
+    const execution = JSON.parse(
+      readFileSync(implementation.record.path, "utf8"),
+    ).response;
+    expect(execution).toMatchObject({
+      id: "step-2",
+      summary: "step complete",
+      output: { decision: "ready", reason: "Candidate committed" },
+      facts: { retained: "execution evidence" },
+    });
+    const verified = JSON.parse(readFileSync(verification.record.path, "utf8"));
+    expect(verified.passed).toBe(true);
+    expect(verified.candidate.commit).toBe(evidence.review.candidate.commit);
+    expect(verified.after).toEqual(verified.candidate);
+    expect(verified.receipt).toMatchObject({
+      argv: ["node", "verify.cjs", "1"],
+      cwd: t.worktree,
+      exitCode: 0,
+      signal: null,
+      stdout: "verification stdout\n",
+      stderr: "verification stderr\n",
+    });
+    expect(t.git(t.worktree, "status", "--porcelain")).toBe("");
+    const report = (t.current.result!.development as any).report;
+    expect(readFileSync(report.path, "utf8")).toContain(
+      "Task settlement and Request closure must be read from Runtime",
+    );
+  });
+
+  test("a failed verification receipt survives repair and is supplied to tech-lead", async () => {
+    const t = trial();
+    t.setImplementation(() => {});
+    expect((await t.run()).state).toBe("incomplete");
+    const evidence = t.evidence();
+    const verification = evidence.reports.find(
+      (r: any) => r.stage === "verification",
+    );
+    const receipt = JSON.parse(readFileSync(verification.record.path, "utf8"));
+    expect(receipt.passed).toBe(false);
+    expect(receipt.receipt.exitCode).toBe(1);
+    expect(receipt.receipt.stderr).toContain("AssertionError");
+    expect(
+      t.prompts.filter((p) =>
+        p.startsWith("Development step: implementation"),
+      )[1],
+    ).toContain(verification.report.path);
+    expect(evidence.verified).toBeUndefined();
+  });
+
+  test("a rejected delivery reuses checked evidence through Runtime previousAttempt", async () => {
+    const t = trial();
+    const result = await t.run();
+    t.current.result = undefined; // The proposed report was never admitted.
+    const ctx = t.context();
+    ctx.reconciliation!.previousAttempt = {
+      attemptId: "rejected-1",
+      generation: 1,
+      state: "failed",
+      workspacePath: t.worktree,
+      unacceptedResult: {
+        attemptId: "rejected-1",
+        settlementError: "settlement failed",
+        summary: result.summary,
+        result: result.result,
+        facts: result.facts,
+      },
+    };
+    expect((await t.run(ctx)).state).toBe("converged");
+    expect(t.calls).toHaveLength(3);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+  });
+
+  test.each(["generation", "workspace", "input"])(
+    "rejected evidence cannot cross a changed %s",
+    async (change) => {
+      const t = trial();
+      const result = await t.run();
+      t.current.result = undefined;
+      const ctx = t.context();
+      ctx.reconciliation!.previousAttempt = {
+        attemptId: "rejected-1",
+        generation: change === "generation" ? 0 : 1,
+        state: "failed",
+        workspacePath: change === "workspace" ? t.repo : t.worktree,
+        unacceptedResult: {
+          attemptId: "rejected-1",
+          settlementError: "settlement failed",
+          summary: result.summary,
+          result: result.result,
+          facts: result.facts,
+        },
+      };
+      if (change === "input")
+        ctx.reconciliation!.events.items.push({
+          eventId: 42,
+          observedAt: "2026-09-17T00:00:00Z",
+          event: {
+            type: "review.comment",
+            data: { text: "Reconsider coverage" },
+          },
+        });
+      expect((await t.run(ctx)).state).toBe("converged");
+      expect(t.calls.filter((c) => c.stage === "design")).toHaveLength(2);
+      expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe(
+        "check\ncheck\n",
+      );
+    },
+  );
+
+  test.each(["missing", "corrupt"])(
+    "%s evidence prevents quiet acceptance",
+    async (damage) => {
+      const t = trial();
+      await t.run();
+      const path = t
+        .evidence()
+        .reports.find((r: any) => r.stage === "verification").record.path;
+      if (damage === "missing") rmSync(path);
+      else writeFileSync(path, "{}");
+      expect((await t.run()).state).toBe("converged");
+      expect(t.calls.filter((c) => c.stage === "design")).toHaveLength(2);
+      expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe(
+        "check\ncheck\n",
+      );
+    },
+  );
+
+  test("a changed candidate cannot inherit a previous passing receipt", async () => {
+    const t = trial();
+    await t.run();
+    writeFileSync(join(t.worktree, "notes.md"), "A new committed change\n");
+    t.git(t.worktree, "add", "notes.md");
+    t.git(t.worktree, "commit", "-m", "new candidate");
+    expect((await t.run()).state).toBe("converged");
+    expect(t.calls.filter((c) => c.stage === "review")).toHaveLength(2);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe(
+      "check\ncheck\n",
+    );
+  });
+
+  test("archive failures cannot produce a completion claim", async () => {
+    const t = trial();
+    writeFileSync(join(t.worktree, ".state"), "output unavailable");
+    const result = await t.run();
+    expect(result.state).toBe("incomplete");
+    expect(result.result).toBeUndefined();
+    expect(t.calls.some((c) => c.stage === "review")).toBe(false);
   });
 });

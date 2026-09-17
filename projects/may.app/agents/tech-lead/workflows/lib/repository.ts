@@ -2,13 +2,28 @@ import { execFile } from "node:child_process";
 import { lstat, realpath } from "node:fs/promises";
 import { join } from "node:path";
 
-export function command(
+export type CommandReceipt = {
+  argv: string[];
+  cwd: string;
+  startedAt: string;
+  endedAt: string;
+  exitCode: number | null;
+  signal: string | null;
+  stdout: string;
+  stderr: string;
+  error?: string;
+};
+
+/** Capture success and failure alike. An error (including timeout/output limit)
+ * never becomes a passing check, even if no numeric exit code is available. */
+export function commandReceipt(
   root: string,
   argv: string[],
   signal: AbortSignal,
-): Promise<string> {
+): Promise<CommandReceipt> {
   signal.throwIfAborted();
-  return new Promise((resolve, reject) => {
+  const startedAt = new Date().toISOString();
+  return new Promise((resolve) => {
     execFile(
       argv[0]!,
       argv.slice(1),
@@ -19,19 +34,40 @@ export function command(
         maxBuffer: 2 * 1024 * 1024,
         encoding: "utf8",
       },
-      (error, stdout, stderr) => {
-        if (error)
-          reject(
-            new Error(
-              `${argv[0]} failed: ${error.message}\n${stdout}\n${stderr}`.slice(
-                -16_000,
-              ),
-            ),
-          );
-        else resolve(stdout.trim());
-      },
+      (error, stdout, stderr) =>
+        resolve({
+          argv: [...argv],
+          cwd: root,
+          startedAt,
+          endedAt: new Date().toISOString(),
+          exitCode: error
+            ? typeof error.code === "number"
+              ? error.code
+              : null
+            : 0,
+          signal: error?.signal ?? null,
+          stdout,
+          stderr,
+          ...(error ? { error: error.message } : {}),
+        }),
     );
   });
+}
+
+export async function command(
+  root: string,
+  argv: string[],
+  signal: AbortSignal,
+): Promise<string> {
+  const receipt = await commandReceipt(root, argv, signal);
+  signal.throwIfAborted();
+  if (receipt.error)
+    throw new Error(
+      `${argv[0]} failed: ${receipt.error}\n${receipt.stdout}\n${receipt.stderr}`.slice(
+        -16_000,
+      ),
+    );
+  return receipt.stdout.trim();
 }
 
 export type Candidate = { commit: string; base: string; dirty: boolean };

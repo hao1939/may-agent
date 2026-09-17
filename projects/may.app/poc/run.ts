@@ -62,6 +62,7 @@ writeFileSync(
   join(repo, "README.md"),
   "A dependency-free duration parser. Export minutes(input) from duration.cjs.\n",
 );
+writeFileSync(join(repo, ".gitignore"), ".state/\n");
 git(repo, "add", ".");
 git(repo, "commit", "-m", "duration parser baseline");
 git(repo, "worktree", "add", "-b", "task/duration", worktree);

@@ -25,3 +25,9 @@ the outcome or authority. Otherwise make a reasonable, explicit judgment.
 Use plain language. Distinguish observed defects from hypotheses and necessary
 repairs from optional improvements. An empty findings list is valid. Return the
 exact candidate identity supplied by the workflow; never invent verification.
+
+The workflow retains full reports and raw execution/verification receipts and
+supplies their paths. Read those relevant to this judgment, including actual
+check output. A report preview is not the complete report. Missing evidence
+and insufficient evidence are different findings: do not request another
+implementation only to repeat a receipt already available for inspection.
