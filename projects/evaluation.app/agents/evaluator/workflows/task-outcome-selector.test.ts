@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -82,7 +83,7 @@ describe("automatic task outcome selector", () => {
       }),
     ).toMatchObject({
       enabled: true,
-      maxApps: 100,
+      maxApps: 20,
       maxPagesPerApp: 5,
       recentWindowMs: 30 * DAY,
     });
@@ -303,10 +304,103 @@ describe("automatic task outcome selector", () => {
     );
     expect(result.candidate).toEqual({ appId: "scout", taskId: "goal/good" });
     expect(result.navigationFacts).toEqual([
-      "selector-navigation-failed:may:pages-read=0:tasks.list item has no usable updatedAt",
+      "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
     expect(result.state).not.toHaveProperty("taskCursor");
     expect(result.state.version).toBe(3);
+  });
+
+  test("advances past malformed and non-reviewable items within a page", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-invalid-items-"));
+    const command: PublicCommand = async (request) => {
+      if (request.type === "apps.list")
+        return { type: "ok", command: "apps.list", apps: [{ id: "may" }] };
+      return {
+        type: "ok",
+        command: "tasks.list",
+        tasks: {
+          items: [
+            { appId: "may", taskId: "goal/malformed" },
+            task("may", "goal/running", 0, "running"),
+            task("may", "goal/valid"),
+          ],
+        },
+      };
+    };
+    const result = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(result.candidate).toEqual({ appId: "may", taskId: "goal/valid" });
+    expect(result.navigationFacts).toEqual([
+      "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
+    ]);
+  });
+
+  test("preserves two-App exhaustion state so a newly inserted May Task is selected", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-exhaustion-"));
+    const tasks = {
+      may: [task("may", "goal/may-old", 0, "running")],
+      scout: [task("scout", "goal/scout-old", 0, "running")],
+    };
+    const command = catalogCommand(tasks);
+    const exhausted = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(exhausted.candidate).toBeNull();
+
+    tasks.may.unshift(task("may", "goal/may-new"));
+    const selected = await selectFairCandidate(
+      command,
+      config,
+      root,
+      exhausted.state,
+      NOW,
+    );
+    expect(selected.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/may-new",
+    });
+  });
+
+  test("continues from a malformed first page to a valid later page", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-malformed-page-"));
+    const cursors: unknown[] = [];
+    const command: PublicCommand = async (request) => {
+      if (request.type === "apps.list")
+        return { type: "ok", command: "apps.list", apps: [{ id: "may" }] };
+      cursors.push(request.cursor);
+      return request.cursor
+        ? {
+            type: "ok",
+            command: "tasks.list",
+            tasks: { items: [task("may", "goal/later")] },
+          }
+        : {
+            type: "ok",
+            command: "tasks.list",
+            tasks: { items: "malformed", nextCursor: "later" },
+          };
+    };
+    const result = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(result.candidate).toEqual({ appId: "may", taskId: "goal/later" });
+    expect(cursors).toEqual([undefined, "later"]);
+    expect(result.navigationFacts).toEqual([
+      "selector-navigation-failed:may:pages-read=1:tasks.list response has no items array",
+    ]);
   });
 
   test("bounds diagnostics and the full result at configured maximums", async () => {
@@ -350,6 +444,9 @@ describe("automatic task outcome selector", () => {
     expect(Buffer.byteLength(JSON.stringify(simulatedResult))).toBeLessThan(
       16 * 1_024,
     );
+    expect(
+      admitTaskReconcileResult(simulatedResult, { allowNeedsAgent: false }).ok,
+    ).toBeTrue();
   });
 
   test("enforces the App bound even when the catalog returns too many items", async () => {

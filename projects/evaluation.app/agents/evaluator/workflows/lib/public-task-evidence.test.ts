@@ -147,6 +147,7 @@ describe("public Task evidence", () => {
         },
       ],
       nextCursor: "next-page",
+      issues: [],
     });
     expect(seen).toEqual([
       {
@@ -173,9 +174,11 @@ describe("public Task evidence", () => {
         items: [{ appId: "other", taskId: "goal/one", updatedAt: 1 }],
       },
     }));
-    expect(recent.listRecentTaskPage("sample")).rejects.toThrow(
-      "item appId identity mismatch",
-    );
+    expect(await recent.listRecentTaskPage("sample")).toEqual({
+      items: [],
+      nextCursor: "",
+      issues: ["tasks.list item appId identity mismatch"],
+    });
   });
 
   test("combines real public envelopes without losing creator or original input", async () => {

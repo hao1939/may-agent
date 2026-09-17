@@ -82,7 +82,7 @@ export function automaticReviewConfig(
       86_400_000,
       604_800_000,
     ),
-    maxApps: bounded(env.EVALUATION_AUTO_REVIEW_MAX_APPS, 20, 100),
+    maxApps: bounded(env.EVALUATION_AUTO_REVIEW_MAX_APPS, 20, MAX_STATE_APPS),
     maxTasksPerApp: bounded(
       env.EVALUATION_AUTO_REVIEW_MAX_TASKS_PER_APP,
       20,
@@ -247,13 +247,18 @@ export async function selectFairCandidate(
           cursor,
         );
         pagesRead += 1;
+        for (const issue of page.issues)
+          appendNavigationFact(
+            navigationFacts,
+            navigationFailureFact(appId, pagesRead, issue),
+          );
         let reachedWindowBoundary = false;
         for (const item of page.items) {
           if (Number(item.updatedAt) < cutoff) {
             reachedWindowBoundary = true;
             break;
           }
-          if (isReviewable(item)) recent.push(item);
+          recent.push(item);
         }
         if (
           reachedWindowBoundary ||
@@ -279,16 +284,23 @@ export async function selectFairCandidate(
           (item) => identityDigest(taskId(item)) === rememberedTask,
         )
       : -1;
-    const candidates = recent.slice(
-      rememberedTaskIndex >= 0 ? rememberedTaskIndex + 1 : 0,
-    );
+    const candidates =
+      rememberedTaskIndex >= 0
+        ? [
+            ...recent.slice(rememberedTaskIndex + 1),
+            ...recent.slice(0, rememberedTaskIndex + 1),
+          ]
+        : recent;
     const selected = candidates.find(
-      (item) => !reviewed.has(`${reportKey}\u0000${taskId(item)}`),
+      (item) =>
+        isReviewable(item) &&
+        !reviewed.has(`${reportKey}\u0000${taskId(item)}`),
     );
     const nextIndex = (appIndex + 1) % apps.length;
     const lastTaskByApp = { ...state.lastTaskByApp };
-    if (selected) lastTaskByApp[key] = identityDigest(taskId(selected));
-    else if (rememberedTaskIndex >= 0) delete lastTaskByApp[key];
+    const lastAttempted = selected ?? candidates.at(-1);
+    if (lastAttempted)
+      lastTaskByApp[key] = identityDigest(taskId(lastAttempted));
     const boundedHistory = boundedStateHistory(lastTaskByApp);
     nextState = {
       version: STATE_VERSION,
