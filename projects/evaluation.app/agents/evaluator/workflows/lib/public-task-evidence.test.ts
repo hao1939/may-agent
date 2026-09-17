@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   configuredControlSocket,
+  createPublicTaskEvidenceProvider,
   readSubjectTask,
   type PublicCommand,
 } from "./public-task-evidence.ts";
@@ -87,6 +88,42 @@ describe("public Task evidence", () => {
         MAY_INTERFACE_AGENT: "may",
       }),
     ).toBe("/state/instances/canary/may.sock");
+  });
+
+  test("reads paginated live task and nested event envelopes", async () => {
+    const seen: unknown[] = [];
+    const provider = createPublicTaskEvidenceProvider(async (command) => {
+      seen.push(command.cursor);
+      if (command.type === "app.tasks.list")
+        return {
+          type: "ok",
+          command: "app.tasks.list",
+          appId: "sample",
+          tasks: command.cursor
+            ? { items: [{ id: "two" }], nextCursor: null }
+            : { items: [{ id: "one" }], nextCursor: "page-2" },
+        };
+      return {
+        type: "ok",
+        command: "event.get",
+        event: { event: { id: 42, type: "sample" }, delivery: {}, links: {} },
+      };
+    });
+    expect(await provider.listTasks("sample", 2)).toEqual([
+      { id: "one" },
+      { id: "two" },
+    ]);
+    expect(seen).toEqual([undefined, "page-2"]);
+    expect(await provider.getEvent(42)).toEqual({ id: 42, type: "sample" });
+  });
+
+  test("rejects malformed list envelopes instead of reporting zero coverage", async () => {
+    const provider = createPublicTaskEvidenceProvider(async () => ({
+      type: "ok",
+      command: "apps.list",
+      apps: {},
+    }));
+    expect(provider.listApps()).rejects.toThrow("no items array");
   });
 
   test("combines real public envelopes without losing creator or original input", async () => {

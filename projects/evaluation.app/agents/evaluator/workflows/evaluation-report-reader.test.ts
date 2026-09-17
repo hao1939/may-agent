@@ -1,0 +1,148 @@
+import { describe, expect, test } from "bun:test";
+import { appendFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { readEvaluationReports } from "./evaluation-report-reader.ts";
+import {
+  hashReport,
+  markTaskReportPublished,
+  renderTaskReportMarkdown,
+  resolveTaskReportPath,
+  taskReportPaths,
+  writeImmutable,
+} from "./lib/task-report-store.ts";
+
+function publishFixture(root: string, summary = "report"): ReturnType<typeof taskReportPaths> {
+  const paths = taskReportPaths("may", "goal/one", "abc");
+  const payload = {
+    version: 1,
+    rubricVersion: "task-outcome-v2",
+    sourceRevision: "test",
+    disposition: "assessed",
+    createdAt: 1,
+    subject: { appId: "may", taskId: "goal/one", evidenceHash: "abc" },
+    evidence: {},
+    evaluator: { executionId: "s_1", cost: "unknown" },
+    judgment: {
+      disposition: "assessed",
+      summary,
+      responsibility: "May owned the outcome.",
+      findings: [],
+      verification: ["fixture"],
+      delivery: "verified",
+    },
+  };
+  const json = resolveTaskReportPath(root, paths.jsonPath);
+  const markdown = resolveTaskReportPath(root, paths.markdownPath);
+  writeImmutable(json, `${JSON.stringify(payload, null, 2)}\n`);
+  writeImmutable(markdown, renderTaskReportMarkdown(payload)!);
+  markTaskReportPublished(root, {
+    appId: "may",
+    taskId: "goal/one",
+    evidenceHash: "abc",
+    executionId: "s_1",
+    jsonPath: paths.jsonPath,
+    markdownPath: paths.markdownPath,
+    jsonSha256: hashReport(json),
+    markdownSha256: hashReport(markdown),
+  });
+  return paths;
+}
+
+describe("evaluation report reader", () => {
+  test("lists and reads accepted immutable report pairs without an evaluator call", async () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-"));
+    const paths = publishFixture(root);
+    const listed = await readEvaluationReports(
+      createTestAppWorkflowContext({
+        input: { operation: "list", limit: 5 },
+        callAgent: async () => {
+          throw new Error("must not call");
+        },
+      }),
+      root,
+    );
+    const reports = (
+      listed.output as { result: { reports: Record<string, unknown>[] } }
+    ).result.reports;
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({
+      coverage: "bounded-single-task-snapshot",
+      markdownSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+    expect(Buffer.byteLength(JSON.stringify(listed.output))).toBeLessThan(16_384);
+    const read = await readEvaluationReports(
+      createTestAppWorkflowContext({
+        input: { operation: "read", path: paths.markdownPath },
+      }),
+      root,
+    );
+    expect((read.output as { result: { content: string } }).result.content).toContain(
+      "## Summary\n\nreport",
+    );
+  });
+
+  test("omits published pairs whose deterministic JSON or Markdown bytes were tampered", async () => {
+    for (const target of ["jsonPath", "markdownPath"] as const) {
+      const root = mkdtempSync(join(tmpdir(), `report-reader-tamper-${target}-`));
+      const paths = publishFixture(root);
+      appendFileSync(resolveTaskReportPath(root, paths[target]), "tampered");
+      const listed = await readEvaluationReports(
+        createTestAppWorkflowContext({ input: { operation: "list" } }),
+        root,
+      );
+      expect(
+        (listed.output as { result: { reports: unknown[] } }).result.reports,
+      ).toEqual([]);
+    }
+  });
+
+  test("returns a bounded preview and continuation for a published report over the Task result budget", async () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-large-"));
+    const paths = publishFixture(root, "x".repeat(20_000));
+    const result = await readEvaluationReports(
+      createTestAppWorkflowContext({
+        input: { operation: "read", path: paths.markdownPath },
+      }),
+      root,
+    );
+    const payload = (
+      result.output as {
+        result: {
+          content: string;
+          truncated: boolean;
+          continuation: unknown;
+          bytes: number;
+        };
+      }
+    ).result;
+    expect(payload.content.length).toBeGreaterThan(7_000);
+    expect(payload.content.length).toBeLessThanOrEqual(8_000);
+    expect(payload.truncated).toBeTrue();
+    expect(payload.continuation).not.toBeNull();
+    expect(payload.bytes).toBeGreaterThan(20_000);
+    expect(Buffer.byteLength(JSON.stringify(result.output))).toBeLessThan(16_384);
+  });
+
+  test("rejects paths outside the configured root and unpublished staged files", async () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-safe-"));
+    const outside = await readEvaluationReports(
+      createTestAppWorkflowContext({
+        input: { operation: "read", path: "../secret" },
+      }),
+      root,
+    );
+    expect(outside.status).toBe("blocked");
+
+    const paths = taskReportPaths("may", "goal/staged", "def");
+    writeImmutable(resolveTaskReportPath(root, paths.markdownPath), "staged");
+    const staged = await readEvaluationReports(
+      createTestAppWorkflowContext({
+        input: { operation: "read", path: paths.markdownPath },
+      }),
+      root,
+    );
+    expect(staged.status).toBe("blocked");
+  });
+});

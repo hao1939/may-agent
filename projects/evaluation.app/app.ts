@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { shouldDeferResumableInterruption } from "./agents/evaluator/workflows/evaluator-aftermath.js";
+import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import {
   Type,
   defineApp,
@@ -399,6 +399,24 @@ const evaluationInputSchema = Type.Union([
     { additionalProperties: false },
   ),
   Type.Object(
+    {
+      kind: Type.Literal("read-reports"),
+      data: Type.Object(
+        {
+          operation: Type.Union([Type.Literal("list"), Type.Literal("read")]),
+          path: Type.Optional(Type.String({ minLength: 1, maxLength: 512 })),
+          limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 })),
+        },
+        { additionalProperties: false },
+      ),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    { kind: Type.Literal("automatic-review"), data: detailsSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
     { kind: Type.Literal("deep-eval"), data: sessionSchema },
     { additionalProperties: false },
   ),
@@ -515,7 +533,7 @@ function eventSessionId(event: AppEvent<Record<string, unknown>>): string {
 
 function projectTarget(value: unknown): { targetProject: string } | null {
   const requested = stringValue(value);
-  if (!requested || isEvaluationOwnedReference(requested)) return null;
+  if (!requested) return null;
   const normalized = requested.endsWith(".app")
     ? requested
     : `${requested}.app`;
@@ -534,32 +552,6 @@ function projectReviewInput(value: unknown): AppInput | null {
       reason: stringValue(data.reason) || "manual",
     },
   };
-}
-
-function metricId(event: AppEvent<Record<string, unknown>>): string {
-  const data = eventData(event);
-  return stringValue(
-    data.metricId ?? data.metric_id ?? data.metric ?? event.target?.metricId,
-  );
-}
-
-function isEvaluationMetric(event: AppEvent<Record<string, unknown>>): boolean {
-  const data = eventData(event);
-  const project = stringValue(
-    data.project ?? data.projectId ?? event.target?.project,
-  );
-  const owner = stringValue(
-    event.owner ?? data.owner ?? event.target?.owner,
-  ).replace(/^agent:/, "");
-  const id = metricId(event);
-  return (
-    project === projectId ||
-    project === `${projectId}.app` ||
-    owner === "evaluator" ||
-    id.startsWith("evaluator.") ||
-    id.startsWith("evaluation.") ||
-    id.startsWith("eval.")
-  );
 }
 
 function isEvaluatorOwnerMessage(
@@ -604,7 +596,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "review-task-outcome": {
       const appId = stringValue(data.appId);
       const taskId = stringValue(data.taskId);
-      if (!appId || !taskId || isEvaluationOwnedReference(appId)) return null;
+      if (!appId || !taskId) return null;
       return {
         id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}`,
         parentId: "project-app-audit",
@@ -618,9 +610,47 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         priority: "P1",
       };
     }
+    case "read-reports": {
+      const operation = stringValue(data.operation);
+      const path = stringValue(data.path);
+      if (!operation || (operation === "read" && !path)) return null;
+      const key = operation === "read" ? safeTaskIdPart(path) : "latest";
+      return {
+        id: `runtime/report-reader/${key}`,
+        parentId: "project-app-audit",
+        outcome:
+          operation === "read"
+            ? `Read retained Evaluation report ${path}.`
+            : "List retained Evaluation reports without starting a review.",
+        acceptance: [
+          "Only the configured durable report root is read.",
+          "The operation does not invoke an evaluator or create a target finding.",
+        ],
+        workflow: "evaluation-report-reader",
+        input: {
+          operation,
+          ...(path ? { path } : {}),
+          ...(typeof data.limit === "number" ? { limit: data.limit } : {}),
+        },
+        priority: "P2",
+      };
+    }
+    case "automatic-review":
+      return {
+        id: "runtime/task-outcome-selector",
+        parentId: "project-app-audit",
+        outcome: "Select at most one fair external Task outcome for review.",
+        acceptance: [
+          "Selection uses bounded public App and Task lists and excludes Evaluation.",
+          "At most one canonical task-outcome review request is published.",
+        ],
+        workflow: "task-outcome-selector",
+        input: { reason: stringValue(data.reason) || "scheduled" },
+        priority: "P2",
+      };
     case "evaluate-session": {
       const sessionId = stringValue(data.sessionId);
-      if (!sessionId || isExplicitlyEvaluationOwned(data)) return null;
+      if (!sessionId) return null;
       const supersedeExisting = data.supersedeExisting === true;
       const correctionId = stringValue(data.correctionId);
       if (supersedeExisting && !correctionId) return null;
@@ -648,7 +678,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     }
     case "deep-eval": {
       const sessionId = stringValue(data.sessionId);
-      if (!sessionId || isExplicitlyEvaluationOwned(data)) return null;
+      if (!sessionId) return null;
       return {
         id: `runtime/deep-eval/${safeTaskIdPart(sessionId)}`,
         parentId: "session-audit",
@@ -714,8 +744,10 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "Every material claim cites an exact current file, command result, or durable observation.",
           "No file, Task, external system, or repository state is changed.",
         ],
-        agent: "evaluator",
-        executor: evaluationExecutor,
+        // Retained compatibility action: project hints cannot prove canonical
+        // external ownership, so the guarded workflow returns a neutral
+        // insufficient-evidence result without invoking a semantic evaluator.
+        workflow: "executor-trial",
         input: { ...target, focus, trial: true, readOnly: true },
         priority: "P2",
         category: "executor-trial",
@@ -793,20 +825,26 @@ export function taskForEvaluationInput(
   if (configured) {
     return { kind: "desired", intent: configured };
   }
+  if (admitted.input.kind !== "message") {
+    throw new Error(
+      `Unsupported structured Evaluation input: ${admitted.input.kind}`,
+    );
+  }
   const taskId = safeTaskIdPart(admitted.id);
   return {
     kind: "desired",
     intent: {
       id: `input/${taskId}`,
       parentId: "evaluator-reliability",
-      outcome: `Interpret and handle admitted evaluation input ${admitted.input.kind}.`,
+      outcome:
+        "Interpret and handle one admitted free-form Evaluation message.",
       acceptance: [
         "The evaluator returns an evidence-backed result and a caller response when one is owed.",
       ],
       agent: "evaluator",
       executor: evaluationExecutor,
       input: {
-        kind: admitted.input.kind,
+        kind: "message",
         data: record(admitted.input.data),
       },
       priority: "P1",
@@ -825,41 +863,20 @@ export function taskInputForEvent(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
   switch (event.type) {
-    case "session.end": {
+    case "session.end":
+      // Session identity and metadata cannot establish canonical work ownership.
+      // New semantic evaluation is selected from public external App Tasks.
+      return null;
+    case "evaluation.task.review.requested": {
       const data = eventData(event);
-      const agent = stringValue(data.agent);
-      const sessionId = eventSessionId(event);
-      const workflowRunId = stringValue(data.workflowRunId);
-      const routineWorkflowSession =
-        stringValue(data.status ?? data.outcome) === "done" &&
-        agent !== "may" &&
-        Boolean(workflowRunId);
-      const awaitingSameSessionAutoResume = shouldDeferResumableInterruption(
-        event.source,
-        data,
-      );
-      return isEvaluationOwnedReference(agent) ||
-        isExplicitlyEvaluationOwned(data, event) ||
-        !sessionId ||
-        routineWorkflowSession ||
-        awaitingSameSessionAutoResume
-        ? null
-        : {
-            kind: "evaluate-session",
-            data: {
-              sessionId,
-              ...(stringValue(
-                data.appId ?? data.ownerAppId ?? event.target?.appId,
-              )
-                ? {
-                    subjectAppId: stringValue(
-                      data.appId ?? data.ownerAppId ?? event.target?.appId,
-                    ),
-                  }
-                : {}),
-            },
-          };
+      const appId = stringValue(data.appId);
+      const taskId = stringValue(data.taskId);
+      return appId && taskId && !isEvaluationOwnedReference(appId)
+        ? { kind: "review-task-outcome", data: { appId, taskId } }
+        : null;
     }
+    case "evaluation.task.select":
+      return { kind: "automatic-review", data: eventData(event) };
     case "evaluation.session.requested": {
       const sessionId = eventSessionId(event);
       if (isExplicitlyEvaluationOwned(eventData(event))) return null;
@@ -888,16 +905,6 @@ export function taskInputForEvent(
         kind: "owner-review",
         data: { reason: "review-failed", reviewFailure: eventData(event) },
       };
-    case "metric.breach":
-    case "metric.recovered":
-      if (event.type === "metric.breach" && eventData(event).repeat === true)
-        return null;
-      return isEvaluationMetric(event)
-        ? {
-            kind: "owner-review",
-            data: { reason: event.type, metric: eventData(event) },
-          }
-        : null;
     case "evaluation.recorded":
     case "evaluation.deep_recorded": {
       const evaluation = record(eventData(event).evaluation);
@@ -917,7 +924,10 @@ export function taskIntentForEvent(
   return input ? taskIntentForInput(input) : null;
 }
 
-export const evaluationMetricDefinitions = [
+// Legacy session/deep/project metric definitions remain declared so normal App
+// activation can retire their persisted Host rows while preserving historical
+// measurements. They have no breach/recovery wake lane.
+export const retiredLegacyEvaluationMetricDefinitions = [
   {
     id: FAILED_TRIAGE_RATE_3H_METRIC_ID,
     name: "Failed session triage rate (3h)",
@@ -1129,6 +1139,14 @@ export const evaluationMetricDefinitions = [
   },
 ];
 
+export const evaluationMetricDefinitions =
+  retiredLegacyEvaluationMetricDefinitions.map((definition) => ({
+    ...definition,
+    status: "retired" as const,
+  }));
+
+const automaticReview = automaticReviewConfig();
+
 const baseApp = defineApp({
   id: projectId,
   version: 1,
@@ -1169,18 +1187,20 @@ const baseApp = defineApp({
     "evaluation.project.reviewed",
   ],
   schedules: [
-    {
-      id: "owner-heartbeat",
-      intervalMs: 86_400_000,
-      event: {
-        type: "evaluation.tick",
-        data: { reason: "owner-heartbeat" },
-        target: { appId: projectId, project: projectId },
-      },
-    },
-    // Automatic semantic sampling is intentionally off for initial rollout.
-    // Explicit App reviews and the daily owner reliability check remain usable;
-    // canary selection is enabled only after report/read-back calibration.
+    // No selector schedule exists unless the explicit rollout flag is true.
+    ...(automaticReview.enabled
+      ? [
+          {
+            id: "task-outcome-selector",
+            intervalMs: automaticReview.intervalMs,
+            event: {
+              type: "evaluation.task.select",
+              data: { reason: "scheduled" },
+              target: { appId: projectId, project: projectId },
+            },
+          },
+        ]
+      : []),
   ],
   actions: {
     "review-task-outcome": {
@@ -1194,6 +1214,30 @@ const baseApp = defineApp({
         { additionalProperties: false },
       ),
       toInput: (data) => ({ kind: "review-task-outcome", data }),
+    },
+    "list-evaluation-reports": {
+      description:
+        "List retained Evaluation reports without starting an evaluation.",
+      inputSchema: Type.Object(
+        { limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 })) },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => ({
+        kind: "read-reports",
+        data: { operation: "list", ...record(data) },
+      }),
+    },
+    "read-evaluation-report": {
+      description:
+        "Read one retained Evaluation report by its listed relative path.",
+      inputSchema: Type.Object(
+        { path: Type.String({ minLength: 1, maxLength: 512 }) },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => ({
+        kind: "read-reports",
+        data: { operation: "read", ...record(data) },
+      }),
     },
     "evaluate-session": {
       description: "Evaluate a specific session by sessionId.",
@@ -1258,7 +1302,7 @@ const baseApp = defineApp({
     },
     "trial-codex-goal-review": {
       description:
-        "Run one manual, read-only evaluation task through Evaluation's resumable Codex executor.",
+        "Retained compatibility action: return a neutral bounded result because a project hint cannot prove canonical external Task ownership.",
       inputSchema: Type.Object(
         {
           targetProject: Type.String({ minLength: 1 }),
@@ -1283,14 +1327,14 @@ const baseApp = defineApp({
   },
   tasks: {
     subscriptions: [
+      { type: "evaluation.task.review.requested", project: projectId },
+      { type: "evaluation.task.select", project: projectId },
       { type: "evaluation.session.requested", project: projectId },
       { type: "evaluation.deep.requested", project: projectId },
       { type: "evaluation.deep.scan", project: projectId },
       { type: "evaluation.project.review.requested", project: projectId },
       { type: "evaluation.tick", project: projectId },
       "evaluation.review_failed",
-      "metric.breach",
-      "metric.recovered",
       { type: "evaluation.recorded", project: projectId },
       { type: "evaluation.deep_recorded", project: projectId },
     ],

@@ -34,6 +34,18 @@ export async function execute(
 ): Promise<ExecutionResult> {
   const requestedSessionId =
     typeof ctx.input?.sessionId === "string" ? ctx.input.sessionId.trim() : "";
+  if (!isEvaluationApp(ctx.input?.subjectAppId)) {
+    const summary = `insufficient-evidence: session-only deep review is retired for ${requestedSessionId || "<unresolved>"}; use a canonical external App Task outcome.`;
+    return ctx.done(
+      summary,
+      result(summary, [
+        ...(requestedSessionId
+          ? [`insufficient-evidence-session:${requestedSessionId}`]
+          : []),
+        "legacy-deep-review:retired",
+      ]),
+    );
+  }
   if (isEvaluationApp(ctx.input?.subjectAppId)) {
     const summary = `Excluded Evaluation-owned session ${requestedSessionId || "<unresolved>"} before model execution.`;
     return ctx.done(

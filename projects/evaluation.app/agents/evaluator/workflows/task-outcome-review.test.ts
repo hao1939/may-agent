@@ -6,8 +6,10 @@ import {
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { taskForEvaluationInput } from "../../../app.ts";
 import { reviewTaskOutcome } from "./task-outcome-review.ts";
 import type { PublicCommand } from "./lib/public-task-evidence.ts";
+import { listTaskReports } from "./lib/task-report-store.ts";
 
 const appId = "sample";
 const taskId = "goal/one";
@@ -87,6 +89,8 @@ function reconciliation() {
 }
 
 const judgment = {
+  disposition: "assessed" as const,
+  responsibility: "sample owns the requested delivery.",
   summary: "Delivered with verification.",
   findings: [],
   verification: ["commit abc read back"],
@@ -126,7 +130,7 @@ describe("Task outcome review", () => {
       },
     });
 
-    const result = await reviewTaskOutcome(ctx, reader());
+    const result = await reviewTaskOutcome(ctx, reader(), root);
     const facts = factsOf(result);
     expect(result.status).toBe("done");
     expect(facts).toContain("review-disposition:assessed");
@@ -152,6 +156,11 @@ describe("Task outcome review", () => {
     expect(readFileSync(join(root, report), "utf8")).toContain(
       "Delivered with verification.",
     );
+    expect(JSON.parse(readFileSync(join(root, reportFacts), "utf8"))).toMatchObject({
+      rubricVersion: "task-outcome-v2",
+      disposition: "assessed",
+      evidence: { appTask: { creator: { appId: "sample" } }, detail: { resourceVersion: 2 } },
+    });
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       type: "evaluation.task_report_published",
@@ -186,15 +195,59 @@ describe("Task outcome review", () => {
       },
     });
 
-    const first = await reviewTaskOutcome(ctx, reader());
+    const first = await reviewTaskOutcome(ctx, reader(), root);
     accepted = { id: "review/sample-goal-one", result: first.output };
-    const second = await reviewTaskOutcome(ctx, reader());
+    const second = await reviewTaskOutcome(ctx, reader(), root);
 
     expect(modelCalls).toBe(1);
     expect(second.summary).toBe(
       "Reused accepted evaluation for unchanged sample/goal/one.",
     );
     expect(factsOf(second)).toEqual(factsOf(first));
+  });
+
+  test("keeps a failed publication undiscoverable and publishes the staged retry without another model call", async () => {
+    const reportRoot = mkdtempSync(join(tmpdir(), "task-review-publish-"));
+    const workspaceRoot = mkdtempSync(join(tmpdir(), "task-review-workspace-"));
+    let emitAttempts = 0;
+    let modelCalls = 0;
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      reconciliation: reconciliation(),
+      workspace: {
+        root: workspaceRoot,
+        appRoot: workspaceRoot,
+        projectRoot: workspaceRoot,
+        output: workspaceRoot,
+      },
+      callAgent: async () => {
+        modelCalls += 1;
+        return {
+          id: "s_retry",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: judgment,
+        };
+      },
+      emit: async () => {
+        emitAttempts += 1;
+        if (emitAttempts === 1) throw new Error("publication unavailable");
+      },
+    });
+
+    await expect(reviewTaskOutcome(ctx, reader(), reportRoot)).rejects.toThrow(
+      "publication unavailable",
+    );
+    expect(listTaskReports(reportRoot)).toEqual([]);
+    expect(listTaskReports(workspaceRoot)).toEqual([]);
+
+    const retry = await reviewTaskOutcome(ctx, reader(), reportRoot);
+    expect(retry.status).toBe("done");
+    expect(modelCalls).toBe(1);
+    expect(emitAttempts).toBe(2);
+    expect(listTaskReports(reportRoot)).toHaveLength(1);
+    expect(listTaskReports(workspaceRoot)).toEqual([]);
   });
 
   test("does not publish a report when evidence changes during model judgment", async () => {
@@ -227,6 +280,7 @@ describe("Task outcome review", () => {
     const result = await reviewTaskOutcome(
       ctx,
       reader(() => current),
+      root,
     );
     expect(result.summary).toContain("changed while it was being evaluated");
     expect(factsOf(result)).toContain(
@@ -234,6 +288,34 @@ describe("Task outcome review", () => {
     );
     expect(events).toHaveLength(0);
     expect(existsSync(join(root, "reports", "task-outcomes"))).toBeFalse();
+  });
+
+  test("routes an admitted self-review through deterministic exclusion with zero evaluator calls", async () => {
+    const attachment = taskForEvaluationInput({
+      id: "self-review",
+      source: { kind: "system", id: "test" },
+      input: {
+        kind: "review-task-outcome",
+        data: { appId: "evaluation", taskId: "runtime/owner-review" },
+      },
+    });
+    expect(attachment).toMatchObject({
+      kind: "desired",
+      intent: { workflow: "task-outcome-review" },
+    });
+    let calls = 0;
+    const result = await reviewTaskOutcome(
+      createTestAppWorkflowContext({
+        input: { appId: "evaluation", taskId: "runtime/owner-review" },
+        callAgent: async () => {
+          calls += 1;
+          throw new Error("must not call");
+        },
+      }),
+      reader(),
+    );
+    expect(result.summary).toContain("excluded");
+    expect(calls).toBe(0);
   });
 
   test("exclusion and evidence failures do not call the evaluator", async () => {

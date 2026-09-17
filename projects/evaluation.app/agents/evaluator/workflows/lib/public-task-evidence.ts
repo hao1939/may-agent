@@ -18,6 +18,11 @@ export type PublicCommand = (
 export type PublicTaskEvidenceProvider = {
   listApps(limit?: number): Promise<Record<string, unknown>[]>;
   listTasks(appId: string, limit?: number): Promise<Record<string, unknown>[]>;
+  listTaskPage(
+    appId: string,
+    limit?: number,
+    cursor?: string,
+  ): Promise<{ items: Record<string, unknown>[]; nextCursor: string }>;
   getAppTask(appId: string, taskId: string): Promise<Record<string, unknown>>;
   getTask(appId: string, taskId: string): Promise<Record<string, unknown>>;
   getEvent(eventId: string | number): Promise<Record<string, unknown>>;
@@ -185,18 +190,55 @@ export function createPublicTaskEvidenceProvider(
       });
       if (response.command !== "apps.list")
         throw new Error("apps.list response identity mismatch");
-      return Array.isArray(response.apps) ? response.apps.map(object) : [];
+      const envelope = response.apps;
+      const items = Array.isArray(envelope) ? envelope : object(envelope).items;
+      if (!Array.isArray(items))
+        throw new Error("apps.list response has no items array");
+      return items.map(object);
     },
-    async listTasks(appId, limit = 50) {
+    async listTaskPage(appId, limit = 50, cursor = "") {
       const response = await command({
         type: "app.tasks.list",
         appId,
         limit: boundedLimit(limit),
+        ...(cursor ? { cursor } : {}),
       });
       if (response.command !== "app.tasks.list")
         throw new Error("app.tasks.list response identity mismatch");
       assertIdentity(response.appId, appId, "app.tasks.list appId");
-      return Array.isArray(response.tasks) ? response.tasks.map(object) : [];
+      const envelope = response.tasks;
+      const items = Array.isArray(envelope) ? envelope : object(envelope).items;
+      if (!Array.isArray(items))
+        throw new Error("app.tasks.list response has no items array");
+      return {
+        items: items.map(object),
+        nextCursor: text(object(envelope).nextCursor ?? response.nextCursor),
+      };
+    },
+    async listTasks(appId, limit = 50) {
+      const maximum = boundedLimit(limit);
+      const collected: Record<string, unknown>[] = [];
+      let cursor = "";
+      do {
+        const response = await command({
+          type: "app.tasks.list",
+          appId,
+          limit: Math.min(50, maximum - collected.length),
+          ...(cursor ? { cursor } : {}),
+        });
+        if (response.command !== "app.tasks.list")
+          throw new Error("app.tasks.list response identity mismatch");
+        assertIdentity(response.appId, appId, "app.tasks.list appId");
+        const envelope = response.tasks;
+        const items = Array.isArray(envelope)
+          ? envelope
+          : object(envelope).items;
+        if (!Array.isArray(items))
+          throw new Error("app.tasks.list response has no items array");
+        collected.push(...items.map(object));
+        cursor = text(object(envelope).nextCursor ?? response.nextCursor);
+      } while (cursor && collected.length < maximum);
+      return collected.slice(0, maximum);
     },
     async getAppTask(appId, taskId) {
       const response = await command({ type: "app.task.get", appId, taskId });
@@ -221,7 +263,10 @@ export function createPublicTaskEvidenceProvider(
       const response = await command({ type: "event.get", eventId });
       if (response.command !== "event.get")
         throw new Error("event.get response identity mismatch");
-      const event = object(response.event);
+      const envelope = object(response.event);
+      const event = Object.keys(object(envelope.event)).length
+        ? object(envelope.event)
+        : envelope;
       if (String(event.id ?? response.eventId) !== String(eventId)) {
         throw new Error("event.get eventId identity mismatch");
       }

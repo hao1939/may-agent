@@ -1,12 +1,5 @@
-import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import { Type } from "typebox";
 import {
@@ -15,6 +8,16 @@ import {
   type SubjectEvidence,
 } from "./lib/public-task-evidence.js";
 import { taskEmissionKey } from "./lib/task-emission.js";
+import {
+  configuredTaskReportRoot,
+  hashReport,
+  markTaskReportPublished,
+  renderTaskReportMarkdown,
+  TASK_OUTCOME_RUBRIC_VERSION,
+  resolveTaskReportPath,
+  taskReportPaths,
+  writeImmutable,
+} from "./lib/task-report-store.js";
 
 export const name = "task-outcome-review";
 export const description =
@@ -22,7 +25,12 @@ export const description =
 
 const resultSchema = Type.Object(
   {
+    disposition: Type.Union([
+      Type.Literal("assessed"),
+      Type.Literal("insufficient-evidence"),
+    ]),
     summary: Type.String({ minLength: 1 }),
+    responsibility: Type.String({ minLength: 1 }),
     findings: Type.Array(Type.String({ minLength: 1 }), { maxItems: 12 }),
     verification: Type.Array(Type.String({ minLength: 1 }), { maxItems: 12 }),
     delivery: Type.String({ minLength: 1 }),
@@ -32,7 +40,9 @@ const resultSchema = Type.Object(
 
 type Input = { appId?: string; taskId?: string };
 type Judgment = {
+  disposition: "assessed" | "insufficient-evidence";
   summary: string;
+  responsibility: string;
   findings: string[];
   verification: string[];
   delivery: string;
@@ -40,9 +50,6 @@ type Judgment = {
 
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-function safe(value: string): string {
-  return value.replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 120);
 }
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -52,20 +59,6 @@ function object(value: unknown): Record<string, unknown> {
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 }
-function hashFile(path: string): string {
-  return createHash("sha256").update(readFileSync(path)).digest("hex");
-}
-
-function reportPaths(appId: string, taskId: string, evidenceHash: string) {
-  const base = join(
-    "reports",
-    "task-outcomes",
-    safe(appId),
-    `${safe(taskId)}-${evidenceHash.slice(0, 16)}`,
-  );
-  return { jsonPath: `${base}.json`, markdownPath: `${base}.md` };
-}
-
 function resultFacts(
   appId: string,
   taskId: string,
@@ -73,9 +66,10 @@ function resultFacts(
   jsonPath: string,
   markdownPath: string,
   executionId: string,
+  disposition: Judgment["disposition"] = "assessed",
 ): string[] {
   return [
-    "review-disposition:assessed",
+    `review-disposition:${disposition}`,
     `subject:${appId}/${taskId}`,
     `evidence-hash:${evidenceHash}`,
     `report:${markdownPath}`,
@@ -86,12 +80,18 @@ function resultFacts(
 
 function parsedJudgment(value: unknown): Judgment | null {
   const item = object(value);
+  const disposition = text(item.disposition);
   const summary = text(item.summary);
+  const responsibility = text(item.responsibility);
   const findings = strings(item.findings).slice(0, 12);
   const verification = strings(item.verification).slice(0, 12);
   const delivery = text(item.delivery);
-  return summary && delivery
-    ? { summary, findings, verification, delivery }
+  return (disposition === "assessed" ||
+    disposition === "insufficient-evidence") &&
+    summary &&
+    responsibility &&
+    delivery
+    ? { disposition, summary, responsibility, findings, verification, delivery }
     : null;
 }
 
@@ -113,10 +113,15 @@ function acceptedReport(
   facts: string[],
   subject: SubjectEvidence,
   workspaceRoot: string,
-): { jsonPath: string; markdownPath: string; executionId: string } | null {
+): {
+  jsonPath: string;
+  markdownPath: string;
+  executionId: string;
+  disposition: Judgment["disposition"];
+} | null {
   const evidenceHash = subject.evidenceHash!;
   if (!facts.includes(`evidence-hash:${evidenceHash}`)) return null;
-  const expected = reportPaths(subject.appId, subject.taskId, evidenceHash);
+  const expected = taskReportPaths(subject.appId, subject.taskId, evidenceHash);
   const jsonPath = facts
     .find((fact) => fact.startsWith("report-facts:"))
     ?.slice(13);
@@ -135,7 +140,12 @@ function acceptedReport(
   }
   const staged = readStagedReport(workspaceRoot, subject);
   return staged && staged.executionId === executionId
-    ? { jsonPath, markdownPath, executionId }
+    ? {
+        jsonPath,
+        markdownPath,
+        executionId,
+        disposition: staged.judgment.disposition,
+      }
     : null;
 }
 
@@ -148,7 +158,7 @@ function readStagedReport(
   markdownPath: string;
   executionId: string;
 } | null {
-  const paths = reportPaths(
+  const paths = taskReportPaths(
     subject.appId,
     subject.taskId,
     subject.evidenceHash!,
@@ -161,19 +171,29 @@ function readStagedReport(
     const identity = object(payload.subject);
     const evaluator = object(payload.evaluator);
     const judgment = parsedJudgment(payload.judgment);
+    const executionId = text(evaluator.executionId);
+    const sourceRevision = text(payload.sourceRevision);
+    const createdAt = Number(payload.createdAt);
     if (
       text(identity.appId) !== subject.appId ||
       text(identity.taskId) !== subject.taskId ||
       text(identity.evidenceHash) !== subject.evidenceHash ||
+      text(payload.rubricVersion) !== TASK_OUTCOME_RUBRIC_VERSION ||
+      JSON.stringify(payload.evidence) !== JSON.stringify(subject.task) ||
       !judgment ||
-      !text(evaluator.executionId)
+      !executionId ||
+      !sourceRevision ||
+      !Number.isFinite(createdAt) ||
+      !readFileSync(markdown).equals(
+        Buffer.from(renderTaskReportMarkdown(payload) ?? "", "utf8"),
+      )
     ) {
       return null;
     }
     return {
       judgment,
       ...paths,
-      executionId: text(evaluator.executionId),
+      executionId,
     };
   } catch {
     return null;
@@ -184,8 +204,14 @@ async function publish(
   ctx: WorkflowContext<Input>,
   subject: SubjectEvidence,
   report: { jsonPath: string; markdownPath: string; executionId: string },
+  reportRoot: string,
 ): Promise<void> {
-  const root = ctx.workspace!.root;
+  const jsonHash = hashReport(
+    resolveTaskReportPath(reportRoot, report.jsonPath),
+  );
+  const markdownHash = hashReport(
+    resolveTaskReportPath(reportRoot, report.markdownPath),
+  );
   await ctx.events.emit({
     type: "evaluation.task_report_published",
     localKey: taskEmissionKey(
@@ -199,10 +225,22 @@ async function publish(
       executionId: report.executionId,
       report: report.markdownPath,
       facts: report.jsonPath,
-      jsonHash: hashFile(join(root, report.jsonPath)),
-      markdownHash: hashFile(join(root, report.markdownPath)),
+      jsonHash,
+      markdownHash,
     },
     target: { appId: "evaluation" },
+  });
+  // The marker is the durable discoverability boundary. Staged files remain
+  // invisible until the publication event has been accepted.
+  markTaskReportPublished(reportRoot, {
+    appId: subject.appId,
+    taskId: subject.taskId,
+    evidenceHash: subject.evidenceHash!,
+    executionId: report.executionId,
+    jsonPath: report.jsonPath,
+    markdownPath: report.markdownPath,
+    jsonSha256: jsonHash,
+    markdownSha256: markdownHash,
   });
 }
 
@@ -223,6 +261,7 @@ function done(
 export async function reviewTaskOutcome(
   ctx: WorkflowContext<Input>,
   command?: PublicCommand,
+  reportRoot = configuredTaskReportRoot(),
 ): Promise<ExecutionResult> {
   const appId = text(ctx.input?.appId);
   const taskId = text(ctx.input?.taskId);
@@ -234,17 +273,8 @@ export async function reviewTaskOutcome(
       `subject:${appId}/${taskId}`,
     ]);
   }
-  if (!ctx.workspace?.root)
-    return ctx.blocked(
-      "task-outcome-review requires an allocated App workspace",
-    );
-
-  const paths = reportPaths(appId, taskId, subject.evidenceHash!);
-  const prior = acceptedReport(
-    await acceptedFacts(ctx),
-    subject,
-    ctx.workspace.root,
-  );
+  const paths = taskReportPaths(appId, taskId, subject.evidenceHash!);
+  const prior = acceptedReport(await acceptedFacts(ctx), subject, reportRoot);
   if (prior) {
     return done(
       ctx,
@@ -256,15 +286,16 @@ export async function reviewTaskOutcome(
         prior.jsonPath,
         prior.markdownPath,
         prior.executionId,
+        prior.disposition,
       ),
     );
   }
 
   // Files are written before publication. Their content identity lets a retry
   // republish after a rejected/failed event without spending another model call.
-  const staged = readStagedReport(ctx.workspace.root, subject);
+  const staged = readStagedReport(reportRoot, subject);
   if (staged) {
-    await publish(ctx, subject, staged);
+    await publish(ctx, subject, staged, reportRoot);
     return done(
       ctx,
       staged.judgment.summary,
@@ -275,6 +306,7 @@ export async function reviewTaskOutcome(
         staged.jsonPath,
         staged.markdownPath,
         staged.executionId,
+        staged.judgment.disposition,
       ),
     );
   }
@@ -282,9 +314,10 @@ export async function reviewTaskOutcome(
   const execution = await ctx.agents.call(
     "evaluator",
     [
-      "Evaluate the requested outcome represented by this exact public Task snapshot.",
-      "Judge requested value, delegation, follow-up, recovery, verification, and delivery. A failed intermediate attempt may precede a good recovery; operator-assisted delivery must be credited accurately.",
-      "Do not treat missing evidence as target failure or healthy coverage. Return only the requested structured result.",
+      "Evaluate the requested outcome represented by this exact public Task snapshot and the historical role/assignment recorded there.",
+      "Judge responsibility, delegation, corrections, follow-up, recovery, final verification, and actual delivery. Distinguish a failed attempt from later recovery and operator assistance from agent work.",
+      "Facts that only acknowledge, propose, or claim a fix are not verified resolution. Cite exact Task facts, event identities, artifacts, or checks in verification; conflicting stale summaries do not override later publication proof.",
+      "If the bounded snapshot cannot establish the outcome, return disposition insufficient-evidence neutrally rather than a target failure or healthy coverage. Return only the requested structured result.",
       JSON.stringify({
         subject: { appId, taskId, evidenceHash: subject.evidenceHash },
         task: subject.task,
@@ -323,39 +356,42 @@ export async function reviewTaskOutcome(
     );
   }
 
+  const sourceRevision =
+    text(process.env.EVALUATION_SOURCE_REVISION) || "unavailable";
   const payload = {
     version: 1,
-    disposition: "assessed",
+    rubricVersion: TASK_OUTCOME_RUBRIC_VERSION,
+    sourceRevision,
+    createdAt: Date.now(),
+    disposition: judgment.disposition,
     subject: { appId, taskId, evidenceHash: subject.evidenceHash },
+    evidence: subject.task,
     evaluator: { executionId: execution.id, cost: "unknown" },
     judgment,
   };
-  const absoluteJson = join(ctx.workspace.root, paths.jsonPath);
-  const absoluteMarkdown = join(ctx.workspace.root, paths.markdownPath);
-  mkdirSync(dirname(absoluteJson), { recursive: true });
-  const writeIdentity = `${ctx.reconciliation?.generation ?? 0}-${ctx.reconciliation?.resourceVersion ?? 0}`;
-  const temporaryJson = `${absoluteJson}.${writeIdentity}.tmp`;
-  const temporaryMarkdown = `${absoluteMarkdown}.${writeIdentity}.tmp`;
-  writeFileSync(temporaryJson, `${JSON.stringify(payload, null, 2)}\n`);
-  writeFileSync(
-    temporaryMarkdown,
-    `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${subject.evidenceHash}\`\n- Evaluator execution: \`${execution.id}\`\n- Cost: unknown\n\n## Summary\n\n${judgment.summary}\n\n## Findings\n\n${judgment.findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${judgment.verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${judgment.delivery}\n`,
+  const absoluteJson = resolveTaskReportPath(reportRoot, paths.jsonPath);
+  const absoluteMarkdown = resolveTaskReportPath(
+    reportRoot,
+    paths.markdownPath,
   );
-  renameSync(temporaryJson, absoluteJson);
-  renameSync(temporaryMarkdown, absoluteMarkdown);
+  writeImmutable(absoluteJson, `${JSON.stringify(payload, null, 2)}\n`);
+  writeImmutable(
+    absoluteMarkdown,
+    renderTaskReportMarkdown(payload) ?? "",
+  );
   const report = {
     ...paths,
     executionId: execution.id,
   };
   // Read-back validates subject identity and complete judgment before the event
   // becomes the publication checkpoint.
-  if (!readStagedReport(ctx.workspace.root, current)) {
+  if (!readStagedReport(reportRoot, current)) {
     return ctx.blocked(
       "Written task-outcome report failed identity read-back.",
       [`execution:${execution.id}`],
     );
   }
-  await publish(ctx, current, report);
+  await publish(ctx, current, report, reportRoot);
   return done(
     ctx,
     judgment.summary,
@@ -366,6 +402,7 @@ export async function reviewTaskOutcome(
       paths.jsonPath,
       paths.markdownPath,
       execution.id,
+      judgment.disposition,
     ),
   );
 }

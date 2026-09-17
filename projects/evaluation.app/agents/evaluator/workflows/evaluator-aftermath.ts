@@ -39,7 +39,11 @@ export type AftermathInput = {
 };
 
 function isEvaluationApp(value: unknown): boolean {
-  return text(value, 124).toLowerCase().replace(/\.app$/, "") === "evaluation";
+  return (
+    text(value, 124)
+      .toLowerCase()
+      .replace(/\.app$/, "") === "evaluation"
+  );
 }
 
 /**
@@ -620,12 +624,28 @@ export async function execute(
   if (!requestedSessionId) {
     return ctx.blocked("evaluator-aftermath requires an exact sessionId");
   }
+  // A session id and caller-supplied owner hint cannot prove canonical work
+  // ownership. Historical records remain readable; new semantic review uses
+  // task-outcome-review with an authoritative external App Task.
+  if (!isEvaluationApp(ctx.input?.subjectAppId)) {
+    const summary = `insufficient-evidence: session-only review is retired for ${requestedSessionId}; use a canonical external App Task outcome.`;
+    return ctx.done(
+      summary,
+      reconciled(summary, [
+        `insufficient-evidence-session:${requestedSessionId}`,
+        "legacy-session-review:retired",
+      ]),
+    );
+  }
   if (isEvaluationApp(ctx.input?.subjectAppId)) {
     const summary = `Excluded Evaluation-owned session ${requestedSessionId} before model execution.`;
-    return ctx.done(summary, reconciled(summary, [
-      `excluded-session:${requestedSessionId}`,
-      "excluded-owner:evaluation",
-    ]));
+    return ctx.done(
+      summary,
+      reconciled(summary, [
+        `excluded-session:${requestedSessionId}`,
+        "excluded-owner:evaluation",
+      ]),
+    );
   }
 
   const execution = await ctx.agents.call(
@@ -645,10 +665,7 @@ export async function execute(
     );
   }
 
-  const outcome = parseAftermathOutcome(
-    execution.output,
-    requestedSessionId,
-  );
+  const outcome = parseAftermathOutcome(execution.output, requestedSessionId);
   if (!outcome) {
     return reviewFailed(
       ctx,

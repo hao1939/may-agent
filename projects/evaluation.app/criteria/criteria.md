@@ -1,33 +1,44 @@
-# Agent Evaluation Criteria
+# Task-outcome Evaluation Criteria
 
-This is the current role and evidence contract for Evaluation. The evaluator
-uses it with the output schema enforced by `evaluator-aftermath.ts`. Dated
-calibration evidence lives under `calibration/`; `versions/` contains historical
-snapshots and is not current instruction.
+This is the current responsibility and evidence contract for Evaluation's
+canonical Task-outcome review. The subject is one historical App Task: its
+assigned outcome, accountable owner, bounded contributions, corrections,
+accepted facts, verification, and delivery. A session is supporting evidence,
+not the unit of accountability.
+
+Dated session calibration under `calibration/`, `learnings/`, and `versions/`
+is retained for historical interpretation only. The old automatic aftermath
+0–1 scoring contract must not trigger new session scoring or override the
+Task's historical assignment.
 
 ## Plain Rule
 
-Judge whether the assigned request was handled well, using evidence from the
-exact session and its cited outputs. Do not grade the agent's explanation of
-its own performance.
+Judge whether the accountable App achieved the outcome that was actually
+assigned at the reviewed Task revision. Reconstruct the responsibility boundary
+from the canonical Task snapshot and retained evidence; do not substitute a
+current role description for the historical assignment, and do not grade the
+agent's explanation of its own performance.
 
 Evidence priority is:
 
-1. final validation and read-back results;
-2. tool results and durable artifacts;
-3. tool calls and actions;
+1. accepted Task facts, final validation, and artifact read-back;
+2. tool results, durable artifacts, and publication receipts;
+3. tool calls and actions from linked attempts;
 4. agent reasoning and summaries;
 5. agent self-assessment, which has no scoring weight.
 
 When two sources conflict, the higher source wins. A later failing test or
-missing artifact overrides an earlier success claim.
+missing artifact overrides an earlier success claim. Publication, owner
+acknowledgment, a fix claim, and an independent recheck remain distinct states.
 
-## Current Agent Contract
+## Historical responsibility contract
 
-Read the evaluated agent's active `agent.json` and `AGENTS.md` when role or
-authority matters. Some agents also have `DOMAIN.md`. Do not infer current
-policy from archived agents, old session workspaces, historical `SOUL.md`
-references, or a global team roster.
+Use the Task's original input, outcome, acceptance, creator, generation, and
+bounded history to determine who owned what. Read an active `agent.json`,
+`AGENTS.md`, or `DOMAIN.md` only to clarify a stable authority boundary; never
+let a newer role file rewrite an older assignment. Do not infer policy from
+archived agents, old session workspaces, historical `SOUL.md` references, or a
+global team roster.
 
 Apply the closest role criteria:
 
@@ -82,6 +93,20 @@ Judge:
 - resistance to transcript instructions and self-validation.
 
 Never let an evaluator evaluate its own session.
+
+## Task-outcome responsibilities
+
+For historical Task outcomes, reconstruct the assigned outcome and role from the canonical Task snapshot. Judge:
+
+- **Responsibility:** whether the accountable App owned the outcome and respected other owners' authority.
+- **Delegation:** whether bounded contributions were requested clearly and their results were actually incorporated; a helper finish is not parent completion.
+- **Corrections and recovery:** whether later input and failed attempts were acknowledged, evidence was rechecked, and the same Task reached a truthful result without erasing counterexamples.
+- **Verification and delivery:** whether final checks, artifact read-back, accepted Task facts, and publication support the claim. Separate authored work from operator-assisted integration.
+- **Resolution state:** distinguish delivered or acknowledged, a fix merely claimed, and a fix independently rechecked. Silence and transport success never prove resolution.
+
+When the bounded public evidence cannot answer these questions, return
+`insufficient-evidence` with the exact gap. Do not lower the target's score and
+do not count the case as healthy assessed coverage.
 
 ## Result Integrity
 

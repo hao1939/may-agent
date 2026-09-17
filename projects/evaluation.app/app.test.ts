@@ -81,7 +81,7 @@ describe("canonical evaluation App", () => {
       "project-owner-request",
       "telegram-owner-reply",
     ]);
-    expect(app.schedules).not.toBeEmpty();
+    expect(app.schedules).toEqual([]);
     for (const schedule of app.schedules ?? []) {
       expect(schedule).toHaveProperty("event");
       expect(schedule).not.toHaveProperty("input");
@@ -110,7 +110,7 @@ describe("canonical evaluation App", () => {
     expect(app.actions?.["review-project-app"]).toBeUndefined();
   });
 
-  test("uses Evaluation's resumable Codex executor for a manual read-only review", () => {
+  test("retires the legacy Codex trial behind the guarded no-model workflow", () => {
     const input = app.actions?.["trial-codex-goal-review"]?.toInput?.({
       targetProject: "may-agent.app",
       focus: "Check whether the Task mental model matches current code.",
@@ -126,10 +126,10 @@ describe("canonical evaluation App", () => {
       id: expect.stringMatching(
         /^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/,
       ),
-      agent: "evaluator",
-      executor: "codex-goal",
+      workflow: "executor-trial",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
     });
+    expect(taskIntentForInput(input!)).not.toHaveProperty("executor");
     expect(
       app.schedules?.some((schedule) => schedule.id.includes("codex-goal")),
     ).toBeFalse();
@@ -160,7 +160,28 @@ describe("canonical evaluation App", () => {
     expect(workflow?.input).toEqual(codex?.input);
     expect(workflow?.id).not.toBe(codex?.id);
     expect(workflow).not.toHaveProperty("executor");
-    expect(codex).not.toHaveProperty("workflow");
+    expect(codex).not.toHaveProperty("executor");
+    expect(codex?.workflow).toBe("executor-trial");
+  });
+
+  test("routes legacy Evaluation self-review trials to the zero-model guard", () => {
+    const input = app.actions?.["trial-codex-goal-review"]?.toInput?.({
+      targetProject: "evaluation.app",
+      focus: "Assess Evaluation itself.",
+    });
+    expect(taskForEvaluationInput(admitted(input!))).toMatchObject({
+      kind: "desired",
+      intent: {
+        workflow: "executor-trial",
+        input: {
+          targetProject: "evaluation.app",
+          readOnly: true,
+        },
+      },
+    });
+    expect(taskForEvaluationInput(admitted(input!))).not.toHaveProperty(
+      "intent.executor",
+    );
   });
 
   test("resolves every admitted input to one task", () => {
@@ -181,90 +202,18 @@ describe("canonical evaluation App", () => {
     });
   });
 
-  test("declares Evaluation metrics with deterministic App-owned sources", () => {
+  test("declaratively retires legacy metrics without a metric breach wake lane", () => {
     expect(app.tasks?.maxConcurrent).toBe(1);
     expect(app.metrics).toHaveLength(11);
-    expect(app.metrics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: FAILED_TRIAGE_RATE_3H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: FAILED_TRIAGE_RATE_3H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: AFTERMATH_COVERAGE_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: AFTERMATH_COVERAGE_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: LLM_COVERAGE_LAG_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: LLM_COVERAGE_LAG_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: LLM_EVALUATIONS_24H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: LLM_EVALUATIONS_24H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: LOW_QUALITY_RATE_24H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: LOW_QUALITY_RATE_24H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: SUBSTANTIVE_LOW_QUALITY_RATE_24H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: SUBSTANTIVE_LOW_QUALITY_RATE_24H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: MEANINGFUL_REVIEW_RATE_24H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: MEANINGFUL_REVIEW_RATE_24H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: TRIAGE_CLOSURE_RATE_24H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: FALSE_GOOD_RATE_SAMPLE_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: FALSE_GOOD_RATE_SAMPLE_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: PROJECT_FINDING_DELIVERY_RATE_24H_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: PROJECT_FINDING_DELIVERY_RATE_24H_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-        expect.objectContaining({
-          id: PROJECT_FEEDBACK_PENDING_AGE_METRIC_ID,
-          owner: "evaluator",
-          project: "evaluation",
-          sourceQuery: PROJECT_FEEDBACK_PENDING_AGE_SOURCE_QUERY,
-          measureInterval: 300_000,
-        }),
-      ]),
+    expect(app.metrics?.every((metric) => metric.status === "retired")).toBeTrue();
+    expect(app.metrics?.map((metric) => metric.id)).toContain(
+      LLM_COVERAGE_LAG_METRIC_ID,
     );
+    expect(app.metrics?.map((metric) => metric.id)).toContain(
+      LLM_EVALUATIONS_24H_METRIC_ID,
+    );
+    expect(app.tasks?.subscriptions).not.toContain("metric.breach");
+    expect(app.tasks?.subscriptions).not.toContain("metric.recovered");
   });
 });
 
@@ -818,124 +767,21 @@ describe("evaluation fact admission", () => {
         matchesEventSelector(subscription.event, ended),
       ),
     ).toBeFalse();
-    expect(taskIntentForEvent(ended)).toMatchObject({
-      input: { sessionId: "s_route_audit" },
-      workflow: "evaluator-aftermath",
-    });
+    expect(taskIntentForEvent(ended)).toBeNull();
   });
 
-  test("routes automatic session endings to their exact independently runnable task", () => {
-    expect(
-      taskIntentForEvent(
-        event("session.end", {
-          sessionId: "s_exact_contract",
-          agent: "may",
-          task: "bounded payload",
-        }),
-      ),
-    ).toMatchObject({
-      id: "runtime/session-aftermath/s_exact_contract",
-      workflow: "evaluator-aftermath",
-      input: { sessionId: "s_exact_contract" },
-    });
-    expect(
-      taskIntentForEvent(
-        event("session.end", {
-          sessionId: "s/eval:42",
-          agent: "may",
-          task: "large payload",
-        }),
-      ),
-    ).toMatchObject({
-      id: expect.stringMatching(/^runtime\/session-aftermath\//),
-      workflow: "evaluator-aftermath",
-      input: { sessionId: "s/eval:42" },
-    });
-    expect(
-      taskIntentForEvent(event("session.end", { agent: "may" })),
-    ).toBeNull();
-    for (const agent of ["evaluator", "judge"]) {
+  test("does not route automatic session endings into retired semantic review", () => {
+    for (const agent of ["may", "gym", "evaluator", "judge"]) {
       expect(
         taskIntentForEvent(
-          event("session.end", { sessionId: `s-${agent}`, agent }),
+          event("session.end", {
+            sessionId: `s-${agent}`,
+            agent,
+            status: "error",
+          }),
         ),
       ).toBeNull();
     }
-    expect(
-      taskIntentForEvent(
-        event("session.end", {
-          sessionId: "s-routine-workflow",
-          agent: "gym",
-          status: "done",
-          workflowRunId: "wr-1",
-        }),
-      ),
-    ).toBeNull();
-    expect(
-      taskIntentForEvent(
-        event("session.end", {
-          sessionId: "s-failed-workflow",
-          agent: "gym",
-          status: "error",
-          workflowRunId: "wr-1",
-        }),
-      ),
-    ).toMatchObject({ input: { sessionId: "s-failed-workflow" } });
-    expect(
-      taskIntentForEvent(
-        event("session.end", {
-          sessionId: "s-may-workflow",
-          agent: "may",
-          status: "done",
-          workflowRunId: "wr-2",
-        }),
-      ),
-    ).toMatchObject({ input: { sessionId: "s-may-workflow" } });
-  });
-
-  test("defers a resumable interruption and evaluates the authoritative same-session terminal event", () => {
-    const interrupted = event(
-      "session.end",
-      {
-        sessionId: "s_resume_lifecycle",
-        agent: "aks-explorer",
-        status: "interrupted",
-        error: "localized runtime detail",
-        interruptionKind: "observation-timeout",
-      },
-      { source: "app-task-owner" },
-    );
-    const resumedDone = event(
-      "session.end",
-      {
-        sessionId: "s_resume_lifecycle",
-        agent: "aks-explorer",
-        status: "done",
-        outcome: "done",
-      },
-      { source: "runtime:auto-resume" },
-    );
-    const terminalInterrupted = event(
-      "session.end",
-      {
-        sessionId: "s_genuinely_interrupted",
-        agent: "aks-explorer",
-        status: "interrupted",
-        error: "No agent observation for 300000ms",
-        interruptionKind: "observation-timeout",
-      },
-      { source: "runtime:auto-resume" },
-    );
-
-    expect(taskIntentForEvent(interrupted)).toBeNull();
-    expect(taskIntentForEvent(resumedDone)).toMatchObject({
-      id: "runtime/session-aftermath/s_resume_lifecycle",
-      input: { sessionId: "s_resume_lifecycle" },
-    });
-    expect(taskIntentForEvent(terminalInterrupted)).toMatchObject({
-      id: "runtime/session-aftermath/s_genuinely_interrupted",
-      input: { sessionId: "s_genuinely_interrupted" },
-    });
   });
 
   test("creates an independent correction task that cannot reuse the inaccurate evaluation", () => {
@@ -977,53 +823,18 @@ describe("evaluation fact admission", () => {
     });
   });
 
-  test("admits only evaluation-owned metric changes", () => {
-    expect(
-      taskInputForEvent(
-        event(
-          "metric.breach",
-          { metricId: "evaluator.project-finding-delivery-rate-24h" },
-          { owner: "agent:evaluator" },
+  test("does not admit retired metric breach or recovery events", () => {
+    for (const type of ["metric.breach", "metric.recovered"]) {
+      expect(
+        taskInputForEvent(
+          event(
+            type,
+            { metricId: "eval.llm-coverage-lag-h" },
+            { owner: "agent:evaluator" },
+          ),
         ),
-      ),
-    ).toMatchObject({
-      kind: "owner-review",
-      data: { reason: "metric.breach" },
-    });
-    expect(
-      taskInputForEvent(
-        event(
-          "metric.breach",
-          { project: "aks-rp-e2e", metricId: "aks-rp-e2e.spec.blocked-count" },
-          { owner: "agent:app-ops" },
-        ),
-      ),
-    ).toBeNull();
-    expect(
-      taskInputForEvent(
-        event(
-          "metric.breach",
-          {
-            metricId: "eval.llm-coverage-lag-h",
-            repeat: true,
-            reason: "open-alert-updated",
-          },
-          { owner: "agent:evaluator" },
-        ),
-      ),
-    ).toBeNull();
-    expect(
-      taskInputForEvent(
-        event(
-          "metric.recovered",
-          { metricId: "eval.llm-coverage-lag-h", repeat: true },
-          { owner: "agent:evaluator" },
-        ),
-      ),
-    ).toMatchObject({
-      kind: "owner-review",
-      data: { reason: "metric.recovered" },
-    });
+      ).toBeNull();
+    }
   });
 
   test("admits only Telegram replies addressed to evaluation", () => {
