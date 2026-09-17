@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "workload identity federation", "DPoP", "MCP roadmap"]
-last_updated: "2026-08-26"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, and 49453910), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, and VS Code's first-party Agent Host launch post (2026-08-26). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. A pinned Ripwire implementation adds a concrete progressive-discovery rule: omit capabilities that provably cannot succeed in the bound workspace, disclose the omission, and retain execution-time refusal rather than confusing catalog visibility with authority."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "progressive discovery", "capability-conditioned discovery", "Ripwire", "workload identity federation", "DPoP", "MCP roadmap"]
+last_updated: "2026-09-11"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Aug 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, and 49453910), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), and redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -28,6 +28,7 @@ coordination topology.
 - [HN Implementation Follow-Through: Stateless MCP Pushes State Up the Stack](#8a1-hn-implementation-follow-through-2026-08-06-stateless-mcp-pushes-state-up-the-stack)
 - [GitHub Implementation Follow-Through: ACP Becomes a Backend Shell While Runtime Identity Lives Elsewhere](#8a2-github-implementation-follow-through-2026-08-06-acp-becomes-a-backend-shell-while-runtime-identity-lives-elsewhere)
 - [MCP Roadmap: Progressive Discovery Becomes an Authorization Boundary](#8a3-hn-roadmap-signal-2026-08-22-progressive-discovery-becomes-an-authorization-boundary)
+- [Ripwire: Capability-Conditioned Discovery Must Disclose Its Proof Boundary](#8a4-github-implementation-signal-2026-09-11-capability-conditioned-discovery-must-disclose-its-proof-boundary)
 - [MCP Protocol Debt — Quantitative Evidence](#8b-mcp-protocol-debt--quantitative-evidence-2026-07-12)
 
 ## Protocol Taxonomy
@@ -1000,6 +1001,62 @@ requirement that the revealed catalog must be authority-aware.
 
 **Source**: https://blog.modelcontextprotocol.io/posts/mcp-roadmap/
 HN: https://news.ycombinator.com/item?id=49399591
+
+### §8a.4. GitHub Implementation Signal (2026-09-11): Capability-Conditioned Discovery Must Disclose Its Proof Boundary
+
+A current GitHub repository turns one part of that roadmap direction into a
+narrow, inspectable implementation. At pinned revision
+[`5c4235b9`](https://github.com/redhat-et/ripwire/commit/5c4235b9befd4cd5b6f9f3a489940d7b79f86520),
+`redhat-et/ripwire` exposes a deterministic code map through both a CLI and an
+MCP server. The important signal is not the repository's advertised retrieval
+ratios, which are author-run and were not reproduced in this observation. It is
+how the MCP catalog changes when the server can prove facts about its bound
+workspace.
+
+For a listener pinned to a non-Git directory, the implementation omits three
+Git-only tools—`owners`, `whereis`, and `stray_content`—from `tools/list`,
+reducing that catalog from 31 to 28 entries. Its regression gate checks more
+than the count: it verifies the exact retained set, requires initialization
+instructions to name the omitted tools and explain the Git limitation, keeps
+four tools that can still answer without Git, and proves that an omitted tool
+called explicitly still reaches its normal Git-specific refusal rather than
+becoming an unknown route. The same non-Git directory served through the
+unbound stdio mode retains all 31 tools because a later request may name a
+different repository. Omission is therefore conditioned on what the server can
+prove impossible for that transport and scope, not on a broad guess about what
+the caller will need.
+
+This adds a useful rule to progressive discovery: **catalog reduction needs a
+proof boundary and a disclosure receipt**. A server may omit a capability when
+its binding makes success impossible, but it should not infer impossibility
+from an unbound or caller-selectable context. The response should also say what
+was hidden and why, so fewer schema tokens do not masquerade as the server's
+full capability surface. Finally, keeping invocation-time refusal distinct from
+catalog visibility preserves the layered contract: discovery guides planning;
+execution still enforces current preconditions.
+
+Ripwire also makes the context-cost tradeoff explicit by recommending its CLI
+as the cheaper interface when an agent can already run shell commands, because
+MCP verb schemas otherwise occupy every session's context. That is a design
+position rather than independent evidence that CLI always wins. Still, paired
+with the capability-conditioned catalog, it suggests three separate controls
+for large tool systems:
+
+1. choose the cheapest already-authorized transport for the task;
+2. advertise only capabilities that can succeed within the proven binding; and
+3. enforce preconditions and authority again when a capability is invoked.
+
+**Evidence boundary:** This inspection confirms repository code, tests, and
+published benchmark machinery at one commit; it does not establish the claimed
+retrieval accuracy, token savings, performance, or behavior of a built binary.
+The repository tree was complete in the GitHub response (`truncated: false`),
+and the discovery Search API returned `incomplete_results: false`.
+
+**Sources:** [repository](https://github.com/redhat-et/ripwire),
+[pinned MCP implementation](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/src/mcp.h),
+[pinned catalog-pruning regression gate](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/test/mcptoolprunecheck.sh),
+[pinned map-before-read guidance](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/skills/ripwire-orient/map-before-you-read.md), and
+[pinned warm-session benchmark harness](https://github.com/redhat-et/ripwire/blob/5c4235b9befd4cd5b6f9f3a489940d7b79f86520/bench/mcp_session_timing.py).
 
 ---
 

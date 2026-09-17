@@ -1,10 +1,10 @@
 <ai_context>
-summary: "Cross-source synthesis, created 2026-06-29 and qualified through 2026-09-04: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge shows stage-specific profiles; AutoMEM supports active query-time reads; Mnemo shows caller binding; and primary review of PROBE, Memory in the Loop, and NapMem separates useful memory mechanisms from an untested claim that they cause general proactivity."
-triggers: ["read-write inversion", "memory attention", "write governance", "read optimization", "write selection", "memory investment", "RAG ceiling", "retrieval saturates", "write quality", "write discipline", "memory engineering", "industry attention bias", "read-side optimization"]
+summary: "Cross-source synthesis, created 2026-06-29 and qualified through 2026-09-13: write admission, verification, management, and retirement are under-governed and often bind agent-memory quality, but retrieval is not solved or risk-neutral. MemGauge shows stage-specific profiles; AutoMEM supports active query-time reads; Mnemo shows caller binding; KnowledgeX makes abstention and write-action choice separately evaluable; and primary review of PROBE, Memory in the Loop, and NapMem separates useful memory mechanisms from an untested claim that they cause general proactivity."
+triggers: ["read-write inversion", "memory attention", "write governance", "read optimization", "write selection", "memory investment", "RAG ceiling", "retrieval saturates", "write quality", "write discipline", "memory engineering", "industry attention bias", "read-side optimization", "memory abstention", "memory judgment evaluation"]
 confidence: "moderate-high; strong for stage-specific evaluated settings, lower for field-wide investment and universal bottleneck claims"
 discovered: "2026-06-29"
-last_updated: "2026-09-04"
-source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), 2510.19771v4 (PROBE), 2607.05690v1/v2 (Memory in the Loop), 2607.05794v1 (NapMem), pinned source plus goal-owned MCP transport validation of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703 with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428, HN scan #220 (Write Discipline), GitHub MARM/Distill"
+last_updated: "2026-09-13"
+source_basis: "arXiv 2606.26806 (Memory Depth/EVAF), 2606.24595 (MEMPROBE), 2606.21144 (AdaMem), 2606.24428 (EDV), 2606.15903v2 (Control-Plane Placement), 2606.22030 (Nous), 2606.17591 (Insight Governance), 2606.25115 (Budget-Curated Memory/Forget to Improve), 2605.19576 (Library Drift), 2606.18829 (GateMem), 2608.30177v1 (MemGauge), 2606.04315v1 (memory generality and AutoMEM), 2510.19771v4 (PROBE), 2607.05690v1/v2 (Memory in the Loop), 2607.05794v1 (NapMem), pinned source plus goal-owned MCP transport validation of sattyamjjain/mnemo at 376ca28606c5b6287d9c8274482fa791d4dc8703 with isolated candidate c82e711e8a2bb386001e98c3437da44c32b62428, GitHub rahulnyk/KnowledgeX at 01fe7953e155833f2095ef905c2df4ac02123889, HN scan #220 (Write Discipline), GitHub MARM/Distill"
 connects_to: ["Subtraction Deficit", "Eternal Present", "Impedance Principle", "Write Discipline (scan #220)", "Library Drift", "Operational Memory"]
 </ai_context>
 
@@ -15,7 +15,7 @@ new stage-wise evidence bounds where that thesis does and does not hold.*
 
 **Type:** Cross-Source Synthesis
 **Created:** 2026-06-29
-**Last updated:** 2026-09-01
+**Last updated:** 2026-09-13
 **Status:** Active hypothesis, qualified by stage-wise utility-risk evidence
 **Extends:** Subtraction Deficit, Impedance Principle, Eternal Present
 **Unifies:** Write Discipline, Library Drift, Memory Depth, Budget-Curated Memory
@@ -171,6 +171,42 @@ relevance scorer LRE, 2606.20954) → Forgetting (mutation-time hooks,
 2606.15903) → Origin Binding (TMA-NM non-malleable IFC, 2606.24322) →
 Privacy Frontier (deployment-time memorization knob, 2606.10062). No single
 layer suffices; the stack is the architecture. Every layer is write-side.
+
+### Stream 10: Memory Judgment Needs Abstention and Transition Metrics
+
+KnowledgeX revision
+[`01fe7953`](https://github.com/rahulnyk/KnowledgeX/commit/01fe7953e155833f2095ef905c2df4ac02123889)
+turns selective memory writing into an inspectable evaluation contract. Its 20
+fictional cases distinguish expected, optional, and forbidden notes, including
+five conversations where the correct output is no write. The scorer reports
+recall and precision alongside **stayed quiet**, transient leaks, correct note
+type and transition action (`new`, `update`, `supersede`, or `contradict`), and
+detail completeness. This prevents a content-only score from hiding three
+materially different failures: retaining noise, copying sensitive or transient
+content, and representing a change as a new fact instead of a state transition.
+
+The implementation also makes two lifecycle rules executable: confirmed status
+counts only when verification follows the last content change, and decisions
+cannot be edited in place but can be superseded. In a clean clone pinned to the
+cited revision, Scout ran the public package checks: all six Node test groups
+passed and `npm run evals -- check` validated all 20 case definitions. That is
+schema and harness evidence, not independent validation of memory quality. The
+repository's only published model result is its own Llama 3.1 8B run: 4/20
+cases passed, 75% recall, 54% precision, 2/5 abstention cases stayed quiet, and
+seven transient leaks. No raw result directory is present in the pinned tree,
+so those model figures are project-reported rather than reproduced here.
+
+**Implication:** write admission is not adequately measured by whether the
+system remembered useful facts. A memory evaluation should separately score
+whether it should write at all, which lifecycle transition it chose, whether it
+leaked excluded material, and whether the retained detail is sufficient. The
+repository is early (`v0.2`) and its keyword scorer can miss unusual
+paraphrases; it demonstrates a useful evaluation decomposition, not broad
+model quality or production adoption.
+
+Primary source: [repository](https://github.com/rahulnyk/KnowledgeX),
+[pinned eval specification](https://github.com/rahulnyk/KnowledgeX/blob/01fe7953e155833f2095ef905c2df4ac02123889/evals/README.md),
+and [pinned tests](https://github.com/rahulnyk/KnowledgeX/blob/01fe7953e155833f2095ef905c2df4ac02123889/test/kx.test.ts).
 
 ### Qualification: Retrieval Is Also a Utility-Risk Control Surface
 

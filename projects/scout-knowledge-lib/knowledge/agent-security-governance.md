@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical note on agent security and governance patterns: attack surfaces (including AutoJack confused-deputy RCE via capability-containment isomorphism), structural governance, formal governance primitives, the Identity Boundary Convergence, the Boundary Delegation Paradox, the Composition Boundary, and the Minimum Viable Authority Turn. Three companion files: agent-security-defense-architectures.md (24 named defense patterns), agent-security-event-log.md (16 HN event narratives), and agent-security-state-level-governance.md (ITAR/Mythos, dual-use, infrastructure cost, browser moat). Aug 2026 updates add agent-native preflight auditing, self-hardening update channels, deterministic tool-provenance admission rules, resolved-tool auditing, and Cloudflare's Agent Access Model: task-scoped credentials, independently enforced tool and egress mediation, and a monotonic Trust Ratchet that narrows authority before protected data enters model context."
-triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "role confusion", "CoT forgery", "subconscious steering", "role perception", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity", "AutoJack", "confused deputy", "capability containment", "localhost trust", "browsing agent RCE", "agent identity", "identity boundary", "deployer identity", "execution authority", "attribution identity", "certificate-bound authority", "boundary delegation", "agent libOS", "CORS delegation", "observation authority", "capability runtime", "minimum viable authority", "privilege escalation", "ToolPrivBench", "over-privileged", "N-version programming", "ToolPro", "effect types", "scoped authority", "neuralyzer", "AIGX", "repo forensics", "preflight repo audit", "signed rulepack", "session-start security scan", "deterministic URL provenance", "agent-synthesized URL", "Rovo exfiltration", "foreign instruction file", "ambient context import", "AGENTS.md", "CLAUDE.md", "goal authorization", "mutation authority", "reversible action", "authorization check", "starter profile", "resolved tool audit", "toolset drift", "least-capability onboarding", "Agent Access Model", "task-scoped credential", "sender-constrained token", "Trust Ratchet", "capability ceiling", "multiplayer access control"]
-last_updated: "2026-08-21"
-source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control; Aug 2026 — Atlassian Rovo exfiltration thread 49185983 plus Simon Willison's deterministic URL-provenance mitigation comment, Ask HN item 49235224 reporting cross-client personal instruction import, HN item 49236439/ABC's gym-booking mutation report, and HN item 49392727 linking Cloudflare's Agent Access Model), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance. Microsoft Security Blog (Jun 18 2026): AutoJack confused-deputy exploit chain in AutoGen Studio MCP WebSocket. Sept 2026: Identity Boundary Convergence — SEB (2606.20520), Five-Plane (2606.12320), Delegated Execution Observability (2606.09692), Anthropic ID backlash, Cloudflare ephemeral accounts. Scan #82: ToolPrivBench (2606.20023), N-Version (2606.20158), ToolPro (2606.19992), Neuralyzer (57★), AIGX (24★), Claude-Pulse (23★). GitHub Aug 2026: alexgreensh/repo-forensics (146★, commit 7d0beff) for agent-native preflight auditing, signed IOC/rule-pack refresh, and monotonic self-hardening update control; teknium1/hermes-starter-profile (32★ at retrieval, commit 24dc015) for dual-layer tool restriction and resolved-capability drift auditing. Cloudflare Agent Access Model (Aug 2026) for task-scoped, sender-constrained credentials; immutable request authorization; dual tool/egress mediation; monotonic capability narrowing; and the unresolved multiplayer authority problem."
+summary: "Canonical note on agent security and governance patterns: attack surfaces (including AutoJack confused-deputy RCE via capability-containment isomorphism), structural governance, formal governance primitives, the Identity Boundary Convergence, the Boundary Delegation Paradox, the Composition Boundary, and the Minimum Viable Authority Turn. Three companion files: agent-security-defense-architectures.md (24 named defense patterns), agent-security-event-log.md (16 HN event narratives), and agent-security-state-level-governance.md (ITAR/Mythos, dual-use, infrastructure cost, browser moat). Aug–Sep 2026 updates add agent-native preflight auditing, self-hardening update channels, deterministic tool-provenance admission rules, resolved-tool auditing, Cloudflare's task-scoped Agent Access Model, a concrete separation between network containment, workspace containment, and principal authorization, a cryptographic identity example that keeps declaration, verification, applicability, trust, and authorization as separate verdicts, SHACKLE's small executable example of replay-aware ALLOW/DENY/HITL tool-call mediation, and the AEPD's first received notification of a personal-data breach allegedly executed through an AI agent."
+triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "role confusion", "CoT forgery", "subconscious steering", "role perception", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity", "AutoJack", "confused deputy", "capability containment", "localhost trust", "browsing agent RCE", "agent identity", "identity boundary", "deployer identity", "execution authority", "attribution identity", "certificate-bound authority", "boundary delegation", "agent libOS", "CORS delegation", "observation authority", "capability runtime", "minimum viable authority", "privilege escalation", "ToolPrivBench", "over-privileged", "N-version programming", "ToolPro", "effect types", "scoped authority", "neuralyzer", "AIGX", "repo forensics", "preflight repo audit", "signed rulepack", "session-start security scan", "deterministic URL provenance", "agent-synthesized URL", "Rovo exfiltration", "foreign instruction file", "ambient context import", "AGENTS.md", "CLAUDE.md", "goal authorization", "mutation authority", "reversible action", "authorization check", "starter profile", "resolved tool audit", "toolset drift", "least-capability onboarding", "Agent Access Model", "task-scoped credential", "sender-constrained token", "Trust Ratchet", "capability ceiling", "multiplayer access control", "containment topology", "workspace isolation", "network isolation", "principal authorization", "AgentVerse OS", "AgenID", "verification assertion", "manifest proof", "trust anchor", "claim applicability", "SHACKLE", "SP/1.0", "conformance vectors", "duplicate resume", "agent-executed data breach", "AEPD", "machine-speed incident response"]
+last_updated: "2026-09-17"
+source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control; Aug 2026 — Atlassian Rovo exfiltration thread 49185983 plus Simon Willison's deterministic URL-provenance mitigation comment, Ask HN item 49235224 reporting cross-client personal instruction import, HN item 49236439/ABC's gym-booking mutation report, and HN item 49392727 linking Cloudflare's Agent Access Model; Sept 2026 — HN item 49674222 linking Anuclei's vendor-authored behavioral-revision thesis, and HN item 49735336 linking the AEPD's first received notification of a personal-data breach reportedly executed through an AI agent, checked against the complete AEPD account), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance. Microsoft Security Blog (Jun 18 2026): AutoJack confused-deputy exploit chain in AutoGen Studio MCP WebSocket. Sept 2026: Identity Boundary Convergence — SEB (2606.20520), Five-Plane (2606.12320), Delegated Execution Observability (2606.09692), Anthropic ID backlash, Cloudflare ephemeral accounts. Scan #82: ToolPrivBench (2606.20023), N-Version (2606.20158), ToolPro (2606.19992), Neuralyzer (57★), AIGX (24★), Claude-Pulse (23★). GitHub Aug 2026: alexgreensh/repo-forensics (146★, commit 7d0beff) for agent-native preflight auditing, signed IOC/rule-pack refresh, and monotonic self-hardening update control; teknium1/hermes-starter-profile (32★ at retrieval, commit 24dc015) for dual-layer tool restriction and resolved-capability drift auditing. Cloudflare Agent Access Model (Aug 2026) for task-scoped, sender-constrained credentials; immutable request authorization; dual tool/egress mediation; monotonic capability narrowing; and the unresolved multiplayer authority problem. GitHub Sep 2026: agentverse-os/AgentVerse-OS at commit 8a96c0b for per-project Incus/network/gate containment and an explicit single-principal authorization boundary; AgenID-protocol/spec at commit 84cd99e for schema-level separation of operator declaration, authority verification, claim applicability, trust anchoring, and authorization, with deterministic vectors and successful repository CI but no production root-key ceremony or adoption evidence; HN item 49687638 and Fame510/SHACKLE commit e8c25ba for an emerging replay-aware ALLOW/DENY/HITL tool-call gate whose 15 SP/1.0 and 14 SP/1.0.1 repository vectors were locally reproduced, but whose author-defined self-tests and 19-star adoption level are not independent security validation."
 </ai_context>
 
 # Agent Security & Governance Patterns
@@ -16,6 +16,18 @@ practitioner discourse, and XHS Chinese community signals.
 - [Agent Protocols: MCP, A2A](./agent-protocols-mcp-a2a.md) — metadata leakage, protocol-layer security
 - [HN Agent Trends](./findings/hn-ai-agent-trends.md) — failure narratives, community sentiment
 - [XHS June 2026 Trends](./xhs_chinese_ai_trends_june2026.md) — structural governance turn
+
+**Quick navigation:**
+- [Attack surfaces](#1-attack-surfaces-for-tool-using-agents) and the
+  [defense-architecture handoff](#2-defense-architectures)
+- [Structural governance](#3-structural-governance-the-behavioral--architectural-shift),
+  [evaluation](#4-evaluation--adversarial-testing), and
+  [open problems](#5-open-problems)
+- [Composition risk](#6-the-composition-boundary--emergent-cross-unit-risk-june-2026),
+  [boundary delegation](#7-the-boundary-delegation-paradox-jun-2026-scan-80), and
+  [minimum viable authority](#8-the-minimum-viable-authority-turn-scan-82-2026-06-22)
+- [Institutional trust](#9-institutional-trust-formalization-deepmind-ai-control-roadmap-jun-2026)
+  and [pre-data authority narrowing](#10-authority-must-narrow-before-protected-data-arrives-aug-2026)
 
 ---
 
@@ -133,6 +145,39 @@ https://www.abc.net.au/news/2026-08-10/ai-assistant-hacks-gym-website-aus-cyber-
 (ABC report and HN comments checked via the live article and official HN API;
 the software provider did not discuss the specific incident, so this remains a
 reported field case rather than an independently reproduced exploit).* 
+
+**Sep 2026 regulatory signal — the AEPD's first agent-executed breach notification changes the incident-tempo assumption.**
+Spain's data-protection authority says it received its first notification of a
+personal-data breach in which an AI agent allegedly executed the attack. According
+to the affected organization's notification, the agent used a known language
+model, searched generic files for vulnerabilities, logged in successfully, then
+autonomously explored the application, found a vulnerability, modified personal
+data, and accessed invoices.
+
+This is not a verified forensic attribution or evidence of a compromised model.
+The AEPD explicitly says the account comes from the affected organization and
+still requires analysis; it does not name the organization or model, publish a
+timeline or indicators, or imply that the provider infrastructure was breached.
+One notification also cannot establish prevalence. HN contributed discovery only:
+the new item had two points and no comments when checked, and its Reuters link was
+captcha-blocked in this environment. The complete AEPD post is therefore the
+primary evidence for the narrow claim: a regulator has received a real breach
+notification that attributes a successful multi-stage intrusion to agentic tool
+use.
+
+The operational change is not a new class of vulnerability but a new **tempo and
+composition multiplier**. An agent can chain reconnaissance, authenticated access,
+vulnerability search, adaptation, and data effects faster than a manual attacker.
+Risk registers should therefore represent agent execution as modifiers of
+probability, parallelism, adaptation speed, and blast radius rather than hiding it
+inside a generic `unauthorized access` label. The corresponding controls must be
+machine-speed too: rapid credential revocation, least-privilege tokens, behavioral
+detection, automated containment, and rehearsed breach response. Human review
+remains accountable but is not itself a response-speed control.
+
+- **HN:** https://news.ycombinator.com/item?id=49735336
+- **Primary source:** https://www.aepd.es/prensa-y-comunicacion/blog/primera-notiviacion-brecha-datos-personales-causada-por-ataque-ejecutado-mediante-agente-ia
+- **Coverage:** complete AEPD post and complete zero-comment HN discussion read on 2026-09-17; Reuters article body was not accessible because its endpoint returned a CAPTCHA page.
 
 **Aug 2026 HN field report — Atlassian Rovo turns exfiltration into a tool-provenance problem.**
 PromptArmor's Rovo writeup and the HN thread around it (201 points / 79
@@ -623,8 +668,32 @@ sourced from HN discourse June 2026 (scans #13–54).
    Observability for Delegated Execution (2606.09692). HN discourse confirms the
    tension: practitioners resist deployer-identity gates while demanding execution-
    authority constraints. See [findings/2026-06-21-hn-scan-76.md](./findings/2026-06-21-hn-scan-76.md).
-   
+
+   **HN update (2026-09-12 — item 49674222): certificate subject identity is a
+   fourth boundary.** Anuclei's vendor-authored essay argues that approval should
+   bind to a “behavioral revision,” not a convenient agent name. That revision
+   would cover the instructions, model configuration, tools, policy, knowledge,
+   retrieval, and memory strategy that shaped the evaluated behavior, then follow
+   the agent through certification, runtime authorization, execution, and audit.
+   This sharpens the taxonomy above: deployer identity says *who launched*;
+   execution authority says *what may act*; attribution identity says *what did
+   act*; certificate subject identity says *which evaluated configuration the
+   approval actually covers*.
+
+   The claim is a product-builder's design thesis, not evidence that the promoted
+   Multisynapse system implements or validates the chain. A useful implementation
+   test is stricter than hashing a static bundle: declare which changes invalidate
+   certification, record the resolved runtime values (including fallback model,
+   retrieved/context inputs, granted credentials, and policy version), and require
+   pre-effect authorization to match those values to an approved revision. Dynamic
+   inputs need typed provenance and policy bounds rather than an impossible promise
+   that every production context exactly equals an evaluation context. Counterfactual
+   replay likewise establishes comparative evidence, not deterministic reproduction
+   of a stochastic model or proof that a replacement remains safe.
+
    Sources:
+   - [HN item 49674222](https://news.ycombinator.com/item?id=49674222)
+   - [Anuclei, “You Didn't Deploy the Agent You Evaluated”](https://www.anuclei.com/blog/you-didnt-deploy-the-agent-you-evaluated)
    - https://arxiv.org/abs/2606.20520
    - https://arxiv.org/abs/2606.12320
    - https://arxiv.org/abs/2606.09692
@@ -890,6 +959,42 @@ self-protected updaters, rather than left to ad hoc human judgment.
 - https://raw.githubusercontent.com/alexgreensh/repo-forensics/main/skills/repo-forensics/scripts/refresh_controller.py
 - https://raw.githubusercontent.com/alexgreensh/repo-forensics/main/iocs/rulepacks.json
 
+#### Sep 2026 update — executable transition contracts reach small runtimes
+
+A new HN submission points to **SHACKLE**, a small Python runtime gate that
+reduces each proposed tool call to `ALLOW`, `DENY`, or `HITL`. The useful signal
+is not the project's claim to be a standard; it is the concrete transition
+surface in the repository. Its published fixtures cover exhausted budgets,
+repeat calls, an open circuit, duplicate nonces, malformed or opaque context,
+and five human-review outcomes. In particular, reject and defer are terminal,
+modify supersedes the original call, and approve binds execution to the
+original argument digest. A call's presence in history therefore does not make
+it dispatchable again.
+
+At commit `e8c25bac0162ccc9c405cf71cc47bd2474e563ee`, the repository's executable
+harness reproduced all **15 SP/1.0 vectors plus 14 SP/1.0.1 adversarial
+vectors** locally. This is evidence that the code matches its own fixtures,
+not evidence that the policy is complete or production-secure: the fixtures
+and implementation share an author, the HN post had 1 point and no comments at
+retrieval, and the repository had 19 stars and one fork. The package's own
+liability note also describes enforcement as best-effort and says cost is
+observed after a call, so a budget gate stops the next call rather than the call
+that crosses the threshold.
+
+**Implication:** a portable tool-call gate should specify not only predicates
+such as budget or repetition, but the lifecycle of a reviewed action:
+argument binding, one-shot consumption, terminal rejection, supersession after
+modification, and replay denial. Hashes make vectors tamper-evident; they do not
+make the chosen policy sufficient. Treat this as an emerging implementation
+pattern, not an independently validated security standard.
+
+**Sources:**
+- HN: https://news.ycombinator.com/item?id=49687638
+- PyPI: https://pypi.org/project/pyshackle/
+- Repo: https://github.com/Fame510/SHACKLE
+- Fixtures: https://github.com/Fame510/SHACKLE/blob/e8c25bac0162ccc9c405cf71cc47bd2474e563ee/fixtures/conformance.json
+- Harness: https://github.com/Fame510/SHACKLE/blob/e8c25bac0162ccc9c405cf71cc47bd2474e563ee/tests/test_conformance.py
+
 Full scan: [findings/2026-06-22-hn-scan-82.md](./findings/2026-06-22-hn-scan-82.md)
 
 ---
@@ -1002,6 +1107,113 @@ a mid-run permission upgrade.
 
 **Source:** https://blog.cloudflare.com/the-agent-access-model/  
 **HN:** https://news.ycombinator.com/item?id=49392727
+
+---
+
+## 11. “Isolated workspace” names a topology, not a complete authority model (GitHub, Sep 2026)
+
+A current single-server agent platform, **AgentVerse OS**, makes three often-
+collapsed boundaries visible in one implementation:
+
+1. **Ingress containment.** The public README routes browser access through
+   Tailscale and says nothing is exposed directly to the internet.
+2. **Project/service containment.** Each project receives an Incus workspace,
+   its own network, and a Caddy gate. The gate renderer emits routes only for
+   granted capabilities and ends with a default `403 "no grant"`; a
+   repository-authored unit test checks that generated-text contract.
+3. **Principal authorization.** This is not implemented as a multi-user trust
+   boundary at the inspected revision. The README lists “user accounts and
+   permissions, a second user” as next work, while the control plane derives
+   workspace ownership from its Coder account.
+
+These are additive, not interchangeable. A private ingress does not decide
+which human or agent may exercise a capability. A per-project network limits
+where a workload can connect, but does not make every process inside that
+workspace least-privileged. The default workspace mode enables nested Docker;
+the `coder` user has passwordless sudo, and only non-VM modes disable Claude
+Code's permission-bypass setting. Separately, the Coder control plane mounts
+the host Incus admin socket; repository comments candidly label that a spike
+assumption rather than the intended product boundary.
+
+The useful pattern is therefore a **containment tuple**, not an “isolated”
+boolean:
+
+`{ingress, project network, service capabilities, workspace privilege, control-plane privilege, principal policy}`
+
+A deployment claim should identify which tuple elements are enforced and which
+principal they constrain. In this repository, source and a narrow unit test
+support the generated gate's default-deny behavior. They do **not** establish
+live packet-level enforcement, container-escape resistance, multi-principal
+non-interference, or end-to-end security; the README also says a fresh install
+has been verified step by step rather than in one run.
+
+**Operational implication:** test each boundary with a different adversary.
+Probe unauthorized ingress, ungranted service resolution, cross-project
+routing, workspace-to-host escalation, control-plane credential scope, and
+Alice-versus-Bob authorization separately. Do not promote success at one layer
+into a claim about the others.
+
+**Repo:** https://github.com/agentverse-os/AgentVerse-OS  
+**Pinned revision:** https://github.com/agentverse-os/AgentVerse-OS/commit/8a96c0b353cc97302045ffbbf3d897d1088ca222  
+**Primary evidence:** [README and explicit roadmap boundary](https://github.com/agentverse-os/AgentVerse-OS/blob/8a96c0b353cc97302045ffbbf3d897d1088ca222/README.md), [gate renderer](https://github.com/agentverse-os/AgentVerse-OS/blob/8a96c0b353cc97302045ffbbf3d897d1088ca222/cloudd/src/gate.rs), [gate unit test](https://github.com/agentverse-os/AgentVerse-OS/blob/8a96c0b353cc97302045ffbbf3d897d1088ca222/cloudd/src/tests.rs#L129-L148), [workspace privilege configuration](https://github.com/agentverse-os/AgentVerse-OS/blob/8a96c0b353cc97302045ffbbf3d897d1088ca222/templates/incus/main.tf), and [control-plane socket mount](https://github.com/agentverse-os/AgentVerse-OS/blob/8a96c0b353cc97302045ffbbf3d897d1088ca222/bootstrap/coder/docker-compose.yml).
+
+---
+
+## 12. A signed agent identity is a verdict tuple, not a trust badge (GitHub, Sep 2026)
+
+The new **AgenID v1.1.1 specification repository** provides a concrete,
+schema-level example of why “verified agent” is too lossy a status. It defines
+two different signed objects:
+
+- an operator-role `ManifestProof` says only that the operator **declares** a
+  particular manifest digest for an agent;
+- an authority-role `VerificationAssertion` says that one authority verified
+  one claim, at one level and scope, during one validity window, against that
+  same manifest digest.
+
+This separation is useful because it prevents a mathematically valid operator
+signature from becoming self-verification. The assertion schema requires the
+subject, claim, authority, evidence pointer, level, scope, verification and
+expiry times, manifest digest, key ID, and signature. The normative verifier
+procedure adds checks that schemas alone cannot supply: signer role and
+controller, key status at signing time, current manifest applicability, and
+whether the relying party trusts the authority at all.
+
+The resulting verdict should therefore preserve at least five independent
+facts:
+
+`{signature valid, signer role valid, claim applicable now, authority trusted, action authorized}`
+
+The last element is deliberately absent from v1.1.1. The specification says
+`DECLARED`, `VERIFIED`, and `AUTHORIZED` must not be inferred from one another,
+and reserves authorization for a later version. It also distinguishes a valid
+assertion about an older manifest from an invalid signature: the former remains
+cryptographically valid but is not applicable to the current manifest. This is
+a useful refinement of the library's deployer/execution/attribution identity
+split: **identity evidence needs claim-, version-, time-, and trust-context
+scope before it can participate in an authorization decision.**
+
+The repository supplies stronger evidence than prose alone, but not production
+proof. Its deterministic generator creates Ed25519/RFC 8785 vectors and several
+negative cryptographic cases; repository CI at the pinned revision completed
+successfully and also checks positive/negative schema cases. That CI does not
+exercise a complete resolver or production verification service, does not test
+all normative timing and revocation semantics, and does not establish adoption.
+Most importantly, the README says no production root authority key exists yet,
+so the proposed trust-anchor path is operationally incomplete. This remains a
+small, owner-authored protocol artifact, not evidence that deployed agents are
+independently verified.
+
+**Operational implication:** APIs and audit UIs should expose these dimensions
+separately. Never collapse a valid signature into “trusted,” an authority's
+narrow claim into whole-agent approval, an old assertion into current
+applicability, or identity verification into execution permission.
+
+**Repo:** https://github.com/AgenID-protocol/spec
+
+**Pinned revision:** https://github.com/AgenID-protocol/spec/commit/84cd99e9366a4edf6e09a5eb3d5c1dfed18fe64b
+
+**Primary evidence:** [normative specification](https://github.com/AgenID-protocol/spec/blob/84cd99e9366a4edf6e09a5eb3d5c1dfed18fe64b/spec/agenid-v1.1.1.md), [assertion schema](https://github.com/AgenID-protocol/spec/blob/84cd99e9366a4edf6e09a5eb3d5c1dfed18fe64b/schemas/assertion.json), [deterministic vector generator](https://github.com/AgenID-protocol/spec/blob/84cd99e9366a4edf6e09a5eb3d5c1dfed18fe64b/vectors/generate_vectors.py), and [successful pinned CI run](https://github.com/AgenID-protocol/spec/actions/runs/34761358639).
 
 ---
 

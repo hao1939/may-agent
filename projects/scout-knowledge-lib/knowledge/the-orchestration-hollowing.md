@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: orchestration frameworks are being hollowed from both ends simultaneously — BUT with a key revision (Jun 22, scan #106): the hollowing applies only to SINGLE-AGENT orchestration. META-orchestration (cross-agent policy, multi-agent coordination, device sync) is growing explosively (Omnigent 4,455★ in 11 days, Vercel Eve 2,266★ in 6 days). Revised thesis: orchestration BIFURCATES — simple routing/delegation absorbed by models (confirmed), while meta-harness layer ABOVE individual agents grows as new market category. The containment/sandboxing that 'doesn't work' with traditional approaches is being solved by this meta-layer treating agents as interchangeable execution units."
 triggers: ["orchestration framework", "framework complexity", "split terminal", "tmux agent", "anti-framework", "orchestration dead", "containment", "framework value", "orchestration hollowing", "agent sandbox", "permission fatigue", "dangerously-skip-permissions", "meta-harness", "omnigent", "vercel eve", "orchestration bifurcation", "Slack Code", "code channels", "multiplayer agents"]
-last_updated: "2026-08-21"
-source_basis: "HN discourse Jun 20 2026: 'I don't see any good orchestration system for AI agents' (48611527, ffacu.dev/blog/the-split-terminal-problem); HN comment Jimmc414: 'useful part of orchestration moved into the model...what's left to bolt on top is negative value'; Microsoft Security Blog Jun 18 2026 AutoJack exploit chain (confused-deputy RCE via MCP WebSocket); Relaymux tmux-based meta-harness (scan #55, Aug 2026, 8pts); HN permission fatigue (386pts, May 2026, governance-compilation-gradient.md); Substrate Inversion synthesis (Jul 2026); Coordination Tax production data (Jun 2026). UPDATE Jun 22: GitHub API omnigent-ai/omnigent (4,455★, created 2026-06-11), vercel/eve (2,266★, created 2026-06-16); arXiv 2606.20512 (Probe-and-Refine), 2606.20158 (N-Version Programming). HN Oak (48631726, 121pts/119c). UPDATE Aug 21: Salesforce Slack Code launch page and HN item 49374965 (78pts/105 comments reported by HN API fields at retrieval; 30 top-level comments returned by Algolia)."
+last_updated: "2026-09-10"
+source_basis: "HN discourse Jun 20 2026: 'I don't see any good orchestration system for AI agents' (48611527, ffacu.dev/blog/the-split-terminal-problem); HN comment Jimmc414: 'useful part of orchestration moved into the model...what's left to bolt on top is negative value'; Microsoft Security Blog Jun 18 2026 AutoJack exploit chain (confused-deputy RCE via MCP WebSocket); Relaymux tmux-based meta-harness (scan #55, Aug 2026, 8pts); HN permission fatigue (386pts, May 2026, governance-compilation-gradient.md); Substrate Inversion synthesis (Jul 2026); Coordination Tax production data (Jun 2026). UPDATE Jun 22: GitHub API omnigent-ai/omnigent (4,455★, created 2026-06-11), vercel/eve (2,266★, created 2026-06-16); arXiv 2606.20512 (Probe-and-Refine), 2606.20158 (N-Version Programming). HN Oak (48631726, 121pts/119c). UPDATE Aug 21: Salesforce Slack Code launch page and HN item 49374965 (78pts/105 comments reported by HN API fields at retrieval; 30 top-level comments returned by Algolia). UPDATE Sep 10: GitHub Search API metadata for omnigent-ai/omnigent (9,835★; search incomplete_results=false) and repository contents pinned at commit 14a53bf7f6ff3aec8c6c0231c50168dfe806d927, including policy documentation and its harness conformance bench."
 </ai_context>
 
 # The Orchestration Hollowing
@@ -282,3 +282,49 @@ replaceable.
 - **HN:** https://news.ycombinator.com/item?id=49383362
 - **Source:** https://developers.openai.com/blog/codex-as-a-platform
 - **Repo:** https://github.com/openai/codex
+
+---
+
+## Update: Interchangeability becomes a tested contract (2026-09-10)
+
+A current topic-led GitHub repository search returned `omnigent-ai/omnigent` at
+9,835 stars, up 121% from the 4,455-star observation retained in the June
+revision. The Search API reported `incomplete_results: false`. Stars are an
+attention signal, not evidence that the software works, but the pinned repository
+now supplies a more important implementation signal: the meta-harness claim is
+represented as an explicit cross-harness conformance surface rather than only a
+README category label.
+
+At commit `14a53bf7f6ff3aec8c6c0231c50168dfe806d927`:
+
+- the tree contains separate native integrations for Claude, Codex, Cursor,
+  Goose, Hermes, Kimi, Kiro, OpenCode, Pi, Qwen, and Antigravity;
+- `tests/harness_bench/README.md` defines probes for basic turns, streaming,
+  reasoning, tool calls, fork replay, interruption, model override, cost
+  tracking, MCP relay, and policy `ALLOW`/`ASK`/`DENY` behavior;
+- the bench explicitly distinguishes declared-only results from live probes,
+  marks unobservable behavior as skipped rather than unsupported, and exits
+  non-zero when an observed capability drifts from its declaration;
+- `docs/POLICIES.md` describes ordered declarative gates at input, tool-call,
+  tool-result, and output phases, with any `DENY` short-circuiting composition;
+  it also documents deny-by-default environment passthrough for sandboxed
+  agent processes.
+
+This does **not** establish that every adapter passes every live probe: Scout did
+not execute the suite or authenticate vendor harnesses. It establishes that the
+repository has made harness interchangeability falsifiable. That revises the
+bifurcation thesis in a useful way: the durable meta-layer is not merely a common
+launcher. It increasingly owns a **capability schema plus drift detector** across
+otherwise incompatible agent runtimes.
+
+The architectural implication is that “swap harnesses without rewriting” should
+be evaluated as a matrix, not a boolean. A replacement can preserve text turns
+while losing approval elicitation, interrupt semantics, cost telemetry, or fork
+replay. Meta-harnesses become credible when they continuously reconcile those
+observed semantics with declared support and surface partial or drifting cells
+instead of normalizing all backends to the lowest common denominator.
+
+- **Repository:** https://github.com/omnigent-ai/omnigent
+- **Pinned commit:** https://github.com/omnigent-ai/omnigent/commit/14a53bf7f6ff3aec8c6c0231c50168dfe806d927
+- **Pinned policy documentation:** https://github.com/omnigent-ai/omnigent/blob/14a53bf7f6ff3aec8c6c0231c50168dfe806d927/docs/POLICIES.md
+- **Pinned harness bench:** https://github.com/omnigent-ai/omnigent/blob/14a53bf7f6ff3aec8c6c0231c50168dfe806d927/tests/harness_bench/README.md

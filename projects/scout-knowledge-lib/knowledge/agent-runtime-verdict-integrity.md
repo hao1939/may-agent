@@ -1,0 +1,313 @@
+<ai_context>
+summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, and release-aware expected-outcome reconciliation."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
+last_updated: "2026-09-14"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
+</ai_context>
+
+# Agent Runtime Verdict Integrity
+
+**Companion note** to [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md).
+
+These patterns separate five questions that a green verification result can
+otherwise collapse: which subject was checked, which axes were covered, whether
+the verdict path can reject a known-bad case, whether the verifier inspected
+the intended universe, and what authority may turn that verdict into acceptance.
+
+## Verification-Evidence Binding — Brigade (GitHub, August 2026)
+
+[Brigade](./findings/2026-08-09-brigade-receipt-subject-binding.md) adds a
+useful boundary to runtime verification: a real process exit code proves that a
+check ran, but does not by itself prove **which work passed**. Its version-2
+receipt schema records baseline commit, tree fingerprint, and patch digest;
+missing identity data remains explicit rather than being silently upgraded into
+patch proof.
+
+Brigade reserves scoreable `subject_binding` for tracked, manifest-selected
+runs. That binding ties the named artifact and content fingerprint to the
+verifier manifest, patch source, producer-owned delta, and independent verifier.
+Ad hoc command receipts remain audit-only even when they are durable or signed.
+The implementation also avoids shell execution for verification commands and
+retains the local receipt if archival fails.
+
+**Runtime rule:** treat verification evidence as a typed ladder:
+
+1. execution receipt — the command and exit status are real;
+2. state binding — baseline, tree, and patch identity are known;
+3. subject binding — the artifact and approved verifier are named;
+4. authority separation — producer and verifier identities are distinct; and
+5. outcome admission — only evidence satisfying the required rung may change
+   promotion, routing, or completion state.
+
+This sharpens the effect-closure rule above. Cryptographic integrity can show
+that a receipt was not altered, but semantic binding determines what claim the
+receipt may support. The evidence is architecture and implementation evidence
+from Brigade's own repository at revision
+`0e8b83ae6ef779bb6be8701dd4cd534c064608f9`, not an independent reliability
+benchmark.
+
+- **Primary sources:** [receipt schema](https://github.com/escoffier-labs/brigade/blob/main/docs/receipt-schemas.md),
+  [execution model](https://github.com/escoffier-labs/brigade/blob/main/docs/execution-model.md),
+  [outcome scoring](https://github.com/escoffier-labs/brigade/blob/main/docs/outcome-scoring.md),
+  and [verification implementation](https://github.com/escoffier-labs/brigade/blob/main/src/brigade/work_cmd/verification.py).
+
+## A Valid Receipt Must Carry Its Coverage Boundary — ASQAV (GitHub, September 2026)
+
+ASQAV adds a second qualification to the verification ladder: even a correctly
+signed and subject-bound receipt does not establish checks the verifier never
+performed. Its standalone verifier returns per-axis outcomes plus a
+machine-readable `not_checked` list on passing results. Missing cryptographic
+dependencies or trust inputs produce `SKIPPED` and prevent a passing verdict;
+its generated requirement map likewise derives coverage by executing each
+vector and explicitly refuses to count a skipped axis as coverage.
+
+The conformance corpus also separates **evidence from enforcement** in two useful
+edge cases. Two valid pre-action receipts with the same `invocation_ref` both
+verify: the reference makes duplicate hook emission observable, but the verifier
+must not invent a uniqueness policy and reject either signed event. Separately,
+an `unsigned_gap` can record a signer outage without asserting that actions in
+the gap were policy-evaluated. Receipt integrity therefore preserves an anomaly
+for a downstream control plane; it does not resolve the anomaly or upgrade
+missing evidence into a control claim.
+
+This yields three distinct semantics that runtimes should not collapse:
+
+1. **cryptographic validity** — the recorded bytes and supported bindings check out;
+2. **verification coverage** — each required axis was actually evaluated with
+   the needed dependencies and caller-selected trust material; and
+3. **operational policy** — a separate owner decides whether duplicate
+   invocation references, unsigned intervals, or other valid anomalies block
+   admission and require reconciliation.
+
+The repository goes beyond prose with a frozen, hash-pinned corpus, Python and
+TypeScript parity fixtures, generated axis coverage, and negative vectors for
+tampering, key substitution, chain gaps, duplicate JSON members, and unsupported
+or absent trust inputs. That is implementation and conformance-corpus evidence,
+not independent validation of the hosted signing service, its policy decisions,
+or production adoption. The SDK is also Elastic License 2.0, and cloud-issued
+receipt cryptography runs server-side; those boundaries matter when interpreting
+“open” or “zero-trust” claims.
+
+**Runtime rule:** require every receipt verdict to travel with evaluated axes,
+explicit non-checks, and trust inputs; route valid-but-anomalous receipts to a
+separate admission or reconciliation policy rather than forcing the verifier to
+silently authorize or reject them.
+
+- **Repo:** https://github.com/jagmarques/asqav-sdk
+- **Inspected revision:** [`4cbf71b774fe18e67c2433c6ebee7b3940fe62ec`](https://github.com/jagmarques/asqav-sdk/commit/4cbf71b774fe18e67c2433c6ebee7b3940fe62ec)
+- **Primary sources:** [standalone verifier contract](https://github.com/jagmarques/asqav-sdk/blob/4cbf71b774fe18e67c2433c6ebee7b3940fe62ec/verifier/README.md), [generated requirement map](https://github.com/jagmarques/asqav-sdk/blob/4cbf71b774fe18e67c2433c6ebee7b3940fe62ec/verifier/conformance-vectors/requirement-map.json), [frozen corpus and vector semantics](https://github.com/jagmarques/asqav-sdk/blob/4cbf71b774fe18e67c2433c6ebee7b3940fe62ec/verifier/conformance-vectors/README.md), [duplicate-emission expectation](https://github.com/jagmarques/asqav-sdk/blob/4cbf71b774fe18e67c2433c6ebee7b3940fe62ec/verifier/conformance-vectors/asqav-36-invocation-ref-duplicate-emission/expected.json), and [unsigned-gap expectation](https://github.com/jagmarques/asqav-sdk/blob/4cbf71b774fe18e67c2433c6ebee7b3940fe62ec/verifier/conformance-vectors/asqav-15-unsigned-gap/expected.json)
+- **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`
+
+## The Verdict Path Needs Its Own Negative Controls — ProjectGuard (GitHub, September 2026)
+
+ProjectGuard is a compact example of why a process exit code is only as strong as
+the code that propagates the verdict. The repository presents a universal
+pre-completion verification layer and its CI invokes both `npm test` and
+`npm run verify`. At the pinned revision, however, three independent breaks make
+those commands structurally false-green:
+
+1. the test runner prints expected and observed outcomes but contains no
+   assertions, throws, or failing exit assignment, so a mismatched expectation
+   would not fail the process;
+2. the CLI file defines and exports `runAll()` but never invokes it when executed
+   as the package's `verify` script, so `npm run verify` performs no gates and
+   emits no report; and
+3. even if `runAll()` were called, the active `test.passes` gate runs
+   `node -e "console.log('ok')"`, not the repository tests. The README and skill
+   also advertise `lint.clean`, `evidence.fingerprint`, `custom`, `pg-gate`,
+   `pg-status`, and `pg-report`, while the CLI dispatcher implements only
+   `file.exists` and `test.passes`.
+
+Scout downloaded the archive at the pinned commit and reproduced both command
+paths: all six test cases printed their expected `PASS` labels and `npm test`
+exited 0; `npm run verify` also exited 0 with no ProjectGuard output. A scratch
+negative control then changed the test runner's expected-failure command into a
+success: the runner printed `Got: FAIL` but still exited 0. The original six
+examples happen to match their expectations; the negative control demonstrates
+that the surrounding verdict path does not propagate an expectation mismatch,
+while the empty verify run shows that the advertised entry point did not call
+its own `runAll()` function.
+
+This sharpens the verification ladder above. A command receipt must be paired
+with **negative controls for the verifier itself**:
+
+1. mutate or fixture one known-bad subject and require a nonzero verdict;
+2. prove that the public entry point actually reaches the gate dispatcher;
+3. bind configured commands to the intended check rather than a placeholder;
+4. fail when advertised or configured gates lack implementations; and
+5. keep test counts, assertion counts, and exercised entry points distinct.
+
+A green CI step establishes only that its command returned zero. It becomes
+completion evidence only after the verdict path has demonstrated both a true
+positive and a true negative under the exact public invocation. This repository
+was created the day it was inspected and had one GitHub star, so it is an early
+implementation signal, not evidence about production prevalence.
+
+- **Repo:** https://github.com/Dilikjon/projectguard
+- **Inspected revision:** [`55df81492aa4890d512efd4152e2cdca514471e8`](https://github.com/Dilikjon/projectguard/commit/55df81492aa4890d512efd4152e2cdca514471e8)
+- **Primary sources:** [CLI entry point](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/src/cli/pg-verify.js#L55-L80), [test runner](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/tests/run.js), [active gate configuration](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/.projectguard.yaml), and [CI workflow](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/.github/workflows/ci.yml)
+- **Discovery query:** GitHub Repository Search API `AI agent created:>=2026-09-13`, sorted by stars; `incomplete_results: false`
+
+## A Clean Sweep Must Prove What It Swept — Dream Studio (GitHub, September 2026)
+
+Dream Studio extends the negative-control lesson with a separate failure mode: a
+correct detector can still return green after inspecting an empty or incomplete
+universe. Its blocking `event-backed-write` gate looks for production functions
+that insert directly into rebuildable projection tables without a reachable
+canonical-event emission. The gate's own history records two listing failures
+that could turn “checked nothing” into “found nothing”: decoding failure could
+leave successful process status with no stdout, and an empty `git ls-files`
+result could be mistaken for a repository with no Python files.
+
+The repaired implementation makes **measurement coverage part of the verdict**:
+
+1. an empty tracked-file listing raises instead of passing;
+2. the target-table set is derived from each projection's `target_tables`
+   declaration—the same declarations used to decide what rebuild truncates—rather
+   than copied into a second hard-coded list;
+3. the clean report states both derived target-table count and examined
+   production-write-site count; and
+4. focused tests require unreadable and empty listings to fail, require a real
+   repository to enumerate its file, and check that declared projection targets
+   reach the detector.
+
+This is stronger than requiring only a known-bad test. A negative control proves
+that the verdict path can reject one defect; it does not prove that the scan
+reached the intended files or that its target inventory stayed aligned as the
+system evolved. For agent gates and compliance sweeps, a useful receipt should
+therefore bind **subject identity, inspected-universe identity, measured counts,
+and exclusions** to the verdict. A zero-finding result without those fields is
+ambiguous between compliance and absent input.
+
+The same source also shows why “an event call exists” is too weak. The analyzer
+credits only calls whose names resolve to the repository's spool writer, follows
+helper reachability, and rejects a known incompatible envelope object unless it
+is converted to the mapping accepted by the writer. In other words, evidence of
+an attempted side effect is not evidence of a viable side effect.
+
+The boundary is still narrower than complete event-sourcing assurance. This is a
+static, repository-specific analyzer: it excludes tests, recognizes particular
+SQL spellings, skips unreadable or unparsable source files, and catches projection
+module import exceptions while constructing the target set. Those paths can
+still reduce coverage, so the implementation is a useful pattern—not proof that
+every write is reconstructable. The project's historical missing-event counts
+and current clean-site count are repository-authored claims; Scout inspected the
+pinned source and tests but did not run the suite or inspect its live database.
+
+**Runtime rule:** a gate may report clean only when it can identify the intended
+subject universe, prove that enumeration produced meaningful input, disclose
+what it examined and excluded, and demonstrate that recognized evidence could
+actually execute. Fail closed on absent input, not only on detected violations.
+
+- **Repo:** https://github.com/SeayInsights/dream-studio
+- **Inspected revision:** [`1014fc185cbade7cb5b11bdf67b7150ce1e47d13`](https://github.com/SeayInsights/dream-studio/commit/1014fc185cbade7cb5b11bdf67b7150ce1e47d13)
+- **Primary sources:** [event-backed-write gate](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/core/gates/event_backed_write.py), [focused gate tests](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/tests/unit/test_event_backed_write.py), [task projection declaration](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/core/projections/task_projection.py), and [blocking pre-push wiring](https://github.com/SeayInsights/dream-studio/blob/1014fc185cbade7cb5b11bdf67b7150ce1e47d13/canonical/workflows/pre-push.yaml#L569-L587)
+- **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`
+
+## Checker Eligibility Must Not Become Acceptance Authority — Workstream (GitHub, September 2026)
+
+Workstream documents a useful verdict boundary for governed human/agent work:
+pre-submission checks decide whether a package is fit to submit, post-submission
+checkers decide whether an immutable submission is eligible for the next route,
+and a separate authorized decision decides acceptance. Its contract explicitly
+says that passing intake does not prove correctness, durable checker results do
+not grant final acceptance, and raw checker results cannot impersonate a human
+Review. A checker can produce `allow_review`; it cannot produce accepted work.
+
+The intended acceptance path binds the exact artifact, locked project policies,
+review identity, findings, and one decision (`accept`, `needs_revision`, or
+`reject`). Only `FinalAcceptance` may create an `accepted_submission`
+`ContributionRecord`. That makes contribution and compensation records
+**downstream projections of authorized acceptance**, rather than incentives that
+can write or reinterpret lifecycle truth. On an automated branch, the same
+separation still applies: a locked policy may route passing evidence into a
+separate authorized acceptance operation, but checker success itself is not the
+acceptance event.
+
+This complements receipt and coverage integrity with a distinct question:
+**what may a valid verdict cause?** A robust lifecycle should type at least four
+transitions separately:
+
+1. artifact intake — may the candidate become an immutable submission?
+2. evaluation eligibility — did the required checks run and permit routing?
+3. acceptance — which authorized actor or service admitted the exact submission
+   under which locked policy?
+4. consequence projection — which contribution, compensation, reputation, or
+   publication facts may be derived from that acceptance?
+
+Workstream is unusually explicit about its implementation boundary. At the
+inspected revision, immutable submission and checker foundations exist, review
+queue/lease persistence is hidden, while live post-submit `allow_review`, Review
+decisions, `FinalAcceptance`, and `ContributionRecord` effects remain planned.
+The repository therefore supplies an architecture contract and partial
+persistence evidence—not proof of a completed end-to-end production lifecycle.
+That qualification is itself useful: capability ledgers should prevent future
+architecture from being reported as current enforcement.
+
+**Runtime rule:** let checkers establish evidence and routing eligibility, never
+acceptance. Require a separately authorized, artifact- and policy-bound
+acceptance event before emitting contribution or economic consequences, and
+publish the implementation status of each transition independently.
+
+- **Repo:** https://github.com/Flow-Research/workstream
+- **Inspected revision:** [`d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b`](https://github.com/Flow-Research/workstream/commit/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b)
+- **Primary sources:** [lifecycle and trust contract](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/README.md), [capability ledger and explicit planned boundaries](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/docs/roadmap_status.md), [canonical Review decision record](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/docs/decision_0009_review_decisions_are_canonical.md), and [implemented review queue/admission persistence](https://github.com/Flow-Research/workstream/blob/d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b/backend/app/modules/reviews/models.py)
+- **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`
+
+## Expected Outcomes Need Release-Aware Reconciliation — Monet E2E (GitHub, September 2026)
+
+Monet E2E makes a useful distinction that ordinary green/red suites often lose:
+**test execution health and the product behavior observed are different verdict
+axes**. Its runner assigns separate exit codes to a passing contract, an
+unexpected harness or product failure, a known defect still present (`XFAIL`),
+and a known-defect test that now passes (`XPASS`). Only unexpected failures make
+the aggregate suite exit non-zero; the summary retains the other counts.
+
+That model prevents known defects from making every run unusably red, but it
+also exposes a reconciliation obligation. A zero suite exit can contain both
+open defects and behavior that appears fixed. The repository's metrics therefore
+reports unexpected failure rate separately from `XFAIL` and `XPASS`, while the
+runner emits an explicit warning that an `XPASS` needs issue-status review.
+Without that second consumer, “green” can silently accumulate stale expected
+outcomes: a fix remains an unexpected pass rather than becoming a normal
+regression guard.
+
+The pinned `doctor --json` test shows how to make the flip evidence-bearing
+rather than version-guessing. It creates a corrupt isolated store, verifies that
+startup fails closed and writes a causal sidecar, then compares the text and JSON
+diagnostic surfaces. Against the published 1.11.0 artifact, the test classifies
+absence of `startupFailure` in failure-path JSON as the known defect; if a later
+artifact returns `status: found` with the same phase and error code, it flips to
+`XPASS`. Broken setup, missing sidecar, malformed JSON, and loss of the
+success-path `status: none` contract remain ordinary failures instead of being
+absorbed into the expected-failure label.
+
+Revision identity is essential to that inference. The same test records that
+the repair had merged to the product's `main` branch but was not in the latest
+release. The harness's new source-baseline guardrail was prompted by its own
+audit finding that a local source clone was 39 commits behind and 32 of 48 cited
+TypeScript files had changed. Those are repository-authored audit counts, not an
+independent Scout reproduction, but the resulting rule is sound: bind behavioral
+verdicts to the exercised release artifact and bind implementation explanations
+to a pinned source revision. “Fixed on main” and “fixed in the tested release”
+are different facts.
+
+This is not independent evidence that Monet's full 57-test suite currently has
+the repository-reported pass matrix: Scout inspected the pinned harness,
+selected tests, guardrail, and ledger but did not install Monet or rerun the
+suite. It is implementation evidence for a reusable verdict protocol. The
+current runner also communicates reconciliation through text and exit codes;
+an automated host must preserve the four-way state and route `XPASS` for review
+rather than reducing every zero aggregate exit to `passed`.
+
+**Runtime rule:** represent expected outcomes as version-bound observations, not
+exceptions erased from suite health. Preserve at least `pass`, `unexpected
+failure`, `known defect observed`, and `expected defect absent`; make setup
+failure orthogonal; bind the observation to the tested artifact; and require a
+separate reconciliation step that turns a reviewed `XPASS` into a normal guard
+and updates the defect ledger.
+
+- **Repo:** https://github.com/team-monet/monet-e2e
+- **Inspected revision:** [`ba8acbc55a4574b3a453dcbf49842f7fb363f70c`](https://github.com/team-monet/monet-e2e/commit/ba8acbc55a4574b3a453dcbf49842f7fb363f70c)
+- **Primary sources:** [four-way suite runner](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/harness/run_all.py), [`doctor --json` release-flip test](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/tests/test57_re57_doctor_json_startup_failure.py), [metrics ledger and verdict definitions](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/METRICS.md), and [pinned-source guardrail](https://github.com/team-monet/monet-e2e/blob/ba8acbc55a4574b3a453dcbf49842f7fb363f70c/GUARDRAILS.md)
+- **Discovery query:** GitHub Repository Search API `"AI agent" pushed:>=2026-09-14`, sorted by update time; `incomplete_results: false`

@@ -1,20 +1,23 @@
 <ai_context>
-summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; arXiv 2608.25553v3 shows reachable provenance still fails when scarce verification is allocated elsewhere and that a relevance-only rule follows decision context while trading precision for recall when current constraints compete with a stale one; MutMem-V2 supplies a portable externally anchored evidence contract; and pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. Isolated fixes and project-authored artifact verification pass, but are not deployed or independently replicated proof."
-triggers: ["Halofy", "Switchboard", "Mnemo", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding"]
-last_updated: "2026-09-03"
-source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full source of arXiv 2604.16548v2, 2608.25553v3, and 2609.01235v1, including checksum-verified Zenodo record 22147784 and its byte-identical recomputation/full audit; exact MutMem-V2 tags v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c, offline verifiers, and commit-scoped public checks; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a."
+summary: "Cross-source finding on authority placement in agent memory: Halofy and Switchboard separate identity, writes, retrieval, grants, audit, erasure, and handoff custody; arXiv 2604.16548v2 adds five lifecycle predicates; arXiv 2608.25553v3 shows reachable provenance still fails when scarce verification is allocated elsewhere; arXiv 2609.08258v1 shows that retained revocation metadata is not retrieval-time validity and that derived write-back can launder revoked authority into a current record; and arXiv 2609.10263v1 separates retained history from query-conditioned answer-time use. MutMem-V2 supplies a portable externally anchored evidence contract, while pinned Mnemo reproductions prove why authenticated principal, organization scope, selector conjunction, verification completeness, and mandatory chain links must reach every request operation. Slowave adds a concrete feedback boundary: complete assessment coverage and retrieval-target binding do not establish that client-authored labels deserve to alter shared memory. Isolated fixes and project-authored artifact verification pass, but are not deployed or independently replicated proof."
+triggers: ["Halofy", "Switchboard", "Mnemo", "RD-Forget", "agent memory governance", "organizational context", "organization scope binding", "server-owned identity", "scoped retrieval", "memory resource authorization", "signed erasure", "memory ACL", "retrieval driver authority", "agent handoff custody", "caller identity binding", "retrieval-time validity", "query-conditioned memory", "soft revocation", "authority laundering", "Slowave", "feedback coverage", "feedback admission"]
+last_updated: "2026-09-14"
+source_basis: "GitHub repository metadata, primary documentation, recursive trees, tests, package metadata, and public check-run results for Halofy at 3763e64f521df8dc58d00d4632e732e702dd76ef and Switchboard at d2c53b117d554e9919e6f0c2909f04157a2fb49d; full source of arXiv 2604.16548v2, 2608.25553v3, 2609.01235v1, and the arXiv HTML papers for 2609.08258v1 and 2609.10263v1, including checksum-verified Zenodo record 22147784 and its byte-identical recomputation/full audit; exact MutMem-V2 tags v1.0.0 at fcda26d1e05c729185c09dd11446db2f79c14a0d and arXiv-matching v1.0.4 at abbcae39564e9f4aa57cf8aa9b824dd1b8ad6c0c, offline verifiers, and commit-scoped public checks; and pinned source plus goal-owned MCP duplex and live-HTTP tests of sattyamjjain/mnemo through public revision 2994abf185da50d43e5fa4b3f826812bd09c2f20, with preserved local repairs c82e711e8a2bb386001e98c3437da44c32b62428, b0e0873c69658cc74ca7b607553b6978e3d4781f, a2f42a3f00f8bfc7b25fa7868fa9c8edfc162004, 4217163bacba3d85ef34c2ef0a0c33f6faf4cae9, fcb022acf583b6146eb9dc866ced999b48f5dcf8, provenance-forget repair 42d5894755fc7bae4601cb7726d4bded50e8f9d4, provenance-read repair f90ce821d0d33d50f4e6c0a819ef8dd6eebaa02c, integrity-audit repair 60c3edb91b262a7281526b40659d8e5f3f8262e1, memory-resource repair ea7f8ea88a5104d79072e3b4a606e80cfdb20d65, checkpoint-organization repair d1fa97c6aa21002edbbc3227273a6cd37a3286cc, chronology/live-migration regression 4e0061b2dd99b8fcf8afe63920ce4eb2cc9edca7, event-organization repair a6649e56abd8da17bec5b9c339707eb02e04ddbb, REST/gRPC trajectory-filter repair 24d27c375318b30f70ebc5521f75f9641e2b60b2, aggregate-event-integrity fixture 52001f0e01144726aa9be11b8f0f153c40857e78, agent-thread integrity repair 5bf23661edc50ff341c7328c05629b8929cabd48, event-completeness repair 222060b4f6ca7a4de3d0990fc3a30fbac100ba06, memory-completeness repair 90a5790fbd986ee189726537e30b9e39abbf9672, live-HTTP regression fbb7000fdb75ae5fc799820570ec4cbd81e21a74, wrapper-completeness regression 9e4a1fee3486ac95b1755a5586cbc119ee9f5fa0, and missing-link repair d7b8190efa2f4ca8513890622b475b6e7e6bbb5a; plus Slowave documentation, feedback implementation, and project-authored tests at 8d538b370c37243a39e19e52e4a5fdb35c9527b5."
 </ai_context>
 
 # Agent Memory Governance Is an Authority-Placement Problem
 
 Date: 2026-08-26<br>
-Last updated: 2026-09-03<br>
+Last updated: 2026-09-14<br>
 Source: GitHub and arXiv<br>
 Repo: https://github.com/halofyai/halofy<br>
 Repo: https://github.com/Egoist-Machines/switchboard<br>
 Repo: https://github.com/sattyamjjain/mnemo<br>
+Repo: https://github.com/slowave-ai/slowave<br>
 Paper: https://arxiv.org/abs/2604.16548v2
 Paper: https://arxiv.org/abs/2608.25553v3
+Paper: https://arxiv.org/abs/2609.08258v1
+Paper: https://arxiv.org/abs/2609.10263v1
 
 ## Signal
 
@@ -1568,6 +1571,131 @@ immutable provenance link, append-only supersession/current record, and the
 policy that decides which path to verify. Provenance availability cannot stand
 in for allocation, just as freshness cannot stand in for mutation authority.
 
+## Retrieval-time validity qualification
+
+arXiv `2609.08258v1` tests the next boundary: a backend may preserve a
+supersession or revocation mark without enforcing it when records are assembled
+for the agent. Across five memory systems, the authors found no system that
+enforced soft revocation in every tested case. Under indirect, plain-text
+contradiction, three systems did not record revocation; Zep recorded it but did
+not expose status to callers; and Graphiti plus a mem0 configuration returned
+records whose revoked state was visible but not filtered.
+
+For the two exposed configurations, the revoked policy ranked above its
+replacement in every one of 81 scenario-model cells per system. Agents selected
+the revoked policy's unsafe action in **699/1,620 trials (43.1%)**. A read-time
+status filter reduced this to **0/1,620**, while prompt hardening alone left
+37.2% unsafe and an output filter—given the revoked texts, an advantage a normal
+deployment would not have—left 18.1%. This makes a precise distinction:
+provenance says where a record came from; **retrieval-time validity** says
+whether it is still authoritative when read.
+
+The stronger lifecycle result is authority laundering through agent write-back.
+Once an agent journals a conclusion derived from a revoked record as a new,
+current record, filtering the original no longer removes the conclusion. In the
+paper's direct-write Graphiti extension, filtered reads remained unsafe in
+**71.6%, 79.5%, and 83.1%** of poisoned runs over three later hops, compared
+with 0% in the single-read test. Under default shared-store retrieval, a reviewer
+independently phrased but reading the same store agreed with a poisoned
+executor's unsafe choice in **341/354 cases (96.3%)**. Without the journal,
+agreement fell to 81.7%: shared retrieval was already a correlated failure, and
+write-back compounded it.
+
+The governance implication is to bind lifecycle status and replacement lineage
+to each record, enforce current authority before context assembly, and carry
+that lineage into derived journals rather than admitting them as clean current
+facts. A second agent is not an independent check when its evidence path is the
+same memory backend. This remains an arXiv preprint with nine policy scenarios,
+nine models, and controlled backend configurations; its product-specific rates
+are not fleet-wide prevalence estimates.
+
+Source: https://arxiv.org/abs/2609.08258v1
+
+## Answer-time forgetting qualification
+
+RD-Forget (`2609.10263v1`) sharpens a separate boundary: preserving an
+observation and letting it influence this answer are different decisions. Its
+archive retains source observations, while a query-conditioned curator builds a
+2,048-token answer-time view. Facts grouped into the same semantic slot receive
+replacement links; superseded values are normally inactive, but historical
+query intent can make them eligible again. Relation closure is preserved so
+suppressing an obsolete value does not accidentally sever evidence needed for a
+multi-hop answer.
+
+Across four model families and three benchmark slices, RD-Forget reports the
+best score in all 12 comparisons. Its mean over AMB-Text, LME-KU, and MAB-FC was
+66.59 versus 48.86 for the stronger displayed Qwen baseline, 86.71 versus 67.26
+for GPT-5.6-Luna, 77.13 versus 57.77 for MiniMax-M2.5, and 72.83 versus 64.30 for
+Kimi-K2.5. In a separate 264-task Luna ablation, leaving older revisions active
+reduced scores from **91.86/93.59/74.00** to **68.60/60.26/51.00**; hiding the
+query from curation reduced them to **77.91/82.05/56.00**. Removing historical
+rescue, slot grouping, or relation closure also hurt at least one benchmark.
+This supports a practical design: keep the audit/history layer lossless, then
+construct a purpose-specific influence view rather than treating physical
+deletion as the only form of forgetting.
+
+The qualification is equally important. This is semantic relevance and
+supersession, not authorization or revocation enforcement: historical rescue
+must never reactivate evidence that the current principal is forbidden to see or
+that policy has invalidated. The method also uses the same model family for
+curation, selection, answering, and model-based evaluation, which the authors
+explicitly treat as within-protocol rather than independent judgment. Its
+benchmark subsets and model configurations establish a promising controlled
+result, not production prevalence or governance completeness.
+
+Source: https://arxiv.org/abs/2609.10263v1
+
+## Feedback coverage is not feedback authority — Slowave (HN, September 2026)
+
+Slowave makes a useful adaptive-memory contract unusually explicit. Its five
+public MCP verbs separate retrieval from feedback and task closure. Every
+memory exposed by `activate` or `recall` receives a target-specific assessment
+(`used`, `irrelevant`, or `stale`); declaring coverage complete while leaving a
+target unassessed is rejected, and `commit` blocks until all session retrievals
+have complete feedback. Partial coverage preserves silence as unknown rather
+than converting it into negative evidence. The pinned tests exercise those
+mechanics, and the implementation restricts feedback mutations to memory IDs
+actually exposed by that retrieval.
+
+This closes a **coverage** gap, not an **epistemic authority** gap. Slowave's own
+design says the connected agent decides what is true or important and acts as
+the author, consumer, and critic of memory. A `used` assessment can increase a
+schema's salience and confidence; stale feedback can retire it or name a
+replacement. Complete coverage therefore proves that every exposed item has a
+label, not that the labels are correct, independently verified, or safe to turn
+into ranking changes. The same agent that acted on a mistaken memory can report
+that it was useful, creating an endogenous reinforcement path.
+
+The reusable boundary is to keep three receipts distinct:
+
+1. **Exposure coverage:** which memories were returned, and were all of them
+   assessed?
+2. **Feedback provenance:** which client or principal supplied each assessment,
+   under which retrieval and scope?
+3. **Feedback admission:** what independent outcome evidence, corroboration, or
+   policy permits that assessment to change shared salience, confidence,
+   supersession, or visibility?
+
+Slowave already supplies useful ingredients for the first two: append-only
+feedback, retrieval-target binding, explicit partial versus complete coverage,
+scope-bound lifecycle calls, and a commit preflight. It explicitly warns that
+scope is not an authorization system and recommends separate stores for hard
+isolation. Its benchmark page also limits current evidence to retrieval
+containment rather than end-to-end agent correctness; historical artifacts omit
+the raw records and revision/checksum data needed for forensic reproduction.
+Accordingly, this HN signal supports the receipt separation above, not a claim
+that adaptive feedback improves deployed agents or that the project has solved
+memory truth.
+
+At observation time the Show HN item had 1 point and no comments, and the
+repository had four stars. Those counts establish only a very early source
+signal. Scout inspected documentation, implementation, and project-authored
+tests at revision `8d538b370c37243a39e19e52e4a5fdb35c9527b5`; it did not execute
+the suite independently.
+
+HN: https://news.ycombinator.com/item?id=49702887  
+Repo: https://github.com/slowave-ai/slowave/commit/8d538b370c37243a39e19e52e4a5fdb35c9527b5
+
 ## Why it matters
 
 Shared memory expands an agent's authority in two directions at once: it lets a
@@ -1632,6 +1760,10 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Test governance properties separately: authenticated write admission,
   cross-principal leakage, provenance completeness, rollback fidelity, and
   post-deletion reappearance measure different failure boundaries.
+- Keep feedback coverage, feedback provenance, and feedback admission distinct.
+  A label for every retrieved item does not prove those labels deserve to alter
+  shared memory; bind adaptations to independent outcome evidence where the
+  client is also the memory's author, consumer, and critic.
 - Read CI at the check level. A successful test workflow and a failed security
   workflow can coexist on the same revision.
 
@@ -1651,6 +1783,8 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Successful Switchboard test run: https://github.com/Egoist-Machines/switchboard/actions/runs/32932761986
 - Long-term memory security survey v2: https://arxiv.org/abs/2604.16548v2
 - Budgeted verification paper v3: https://arxiv.org/abs/2608.25553v3
+- Revocation-enforcement paper v1: https://arxiv.org/abs/2609.08258v1
+- Query-conditioned forgetting paper v1: https://arxiv.org/abs/2609.10263v1
 - Budgeted verification data/code archive v3: https://doi.org/10.5281/zenodo.22147784
 - Mnemo repository at inspected revision: https://github.com/sattyamjjain/mnemo/commit/376ca28606c5b6287d9c8274482fa791d4dc8703
 - Mnemo agent-managed tool inputs: https://github.com/sattyamjjain/mnemo/blob/376ca28606c5b6287d9c8274482fa791d4dc8703/crates/mnemo-mcp/src/tools/agent_managed.rs
@@ -1660,3 +1794,10 @@ that component is malicious, stale, unavailable, replayed, or bypassed.
 - Current Mnemo public revision used for Cycle 14 provenance: https://github.com/sattyamjjain/mnemo/commit/2994abf185da50d43e5fa4b3f826812bd09c2f20
 - Current public general-forget handler: https://github.com/sattyamjjain/mnemo/blob/2994abf185da50d43e5fa4b3f826812bd09c2f20/crates/mnemo-mcp/src/server.rs
 - Current public forget engine path: https://github.com/sattyamjjain/mnemo/blob/2994abf185da50d43e5fa4b3f826812bd09c2f20/crates/mnemo-core/src/query/forget.rs
+- Slowave Show HN item: https://news.ycombinator.com/item?id=49702887
+- Slowave repository at inspected revision: https://github.com/slowave-ai/slowave/commit/8d538b370c37243a39e19e52e4a5fdb35c9527b5
+- Slowave architecture: https://github.com/slowave-ai/slowave/blob/8d538b370c37243a39e19e52e4a5fdb35c9527b5/docs/architecture.md
+- Slowave design rationale: https://github.com/slowave-ai/slowave/blob/8d538b370c37243a39e19e52e4a5fdb35c9527b5/docs/design.md
+- Slowave feedback service: https://github.com/slowave-ai/slowave/blob/8d538b370c37243a39e19e52e4a5fdb35c9527b5/slowave/core/services/feedback.py
+- Slowave feedback-coverage tests: https://github.com/slowave-ai/slowave/blob/8d538b370c37243a39e19e52e4a5fdb35c9527b5/tests/unit/test_feedback_events.py
+- Slowave benchmark limits: https://github.com/slowave-ai/slowave/blob/8d538b370c37243a39e19e52e4a5fdb35c9527b5/docs/benchmarks.md

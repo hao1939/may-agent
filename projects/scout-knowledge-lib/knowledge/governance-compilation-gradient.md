@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: every successful agent governance mechanism follows a universal maturation path from soft signal → structural constraint → compiled enforcement. The compilation gradient explains why constraints in infrastructure outperform constraints in instructions (KE-1924), why memory without compliance fails (TRACE), and why the XHS Structural Turn is a mathematical necessity (KE-1957). Identifies auto-compilation as the highest-leverage missing primitive."
 triggers: ["governance", "compilation", "constraint placement", "structural turn", "when to compile", "soft signal", "hard enforcement", "agent maturation", "governance lifecycle"]
-last_updated: "2026-07-17"
-source_basis: "Cross-source synthesis of: arXiv papers (TRACE, AgentTrust, SENTINEL, HyperTool, HIPIF, SMSR, Forge/guardrails magnitude — June 2026 triage); XHS signals (Structural Turn, 技能工程, 治理即技能 — May–Jun 2026); HN discourse (harness engineering, YourMemory pruning, AGENTS.md rot, permission fatigue — Jun 2026); production KEs (1920 Forgetting Deficit, 1924 Constraint Placement, 1930 Guard Accumulation, 1933 Discrimination Distance, 1956 Instruction Ratchet, 1958 Oversight Inverted-U, 1973 Compiler Gap, 1975 OS Recapitulation, 1976 Accidental Skill, 1984 Phantom Feedback Loop)."
+last_updated: "2026-09-16"
+source_basis: "Cross-source synthesis of: arXiv papers (TRACE, AgentTrust, SENTINEL, HyperTool, HIPIF, SMSR, Forge/guardrails magnitude — June 2026 triage); XHS signals (Structural Turn, 技能工程, 治理即技能 — May–Jun 2026); HN discourse (harness engineering, YourMemory pruning, AGENTS.md rot, permission fatigue — Jun 2026); production KEs (1920 Forgetting Deficit, 1924 Constraint Placement, 1930 Guard Accumulation, 1933 Discrimination Distance, 1956 Instruction Ratchet, 1958 Oversight Inverted-U, 1973 Compiler Gap, 1975 OS Recapitulation, 1976 Accidental Skill, 1984 Phantom Feedback Loop); Charter repository and HN submission inspected at commit f174c4b574506e56e47b58a8ae3724c98865fa56 (2026-09-11); Alkis Yuvanelis's HN-linked Git concurrency case study and its reproduced shared-index experiment (2026-09-15)."
 </ai_context>
 
 # The Compilation Gradient: From Soft Signal to Hard Enforcement
@@ -210,6 +210,106 @@ arriving at this same insight from the practitioner direction.
 
 ---
 
+## Compilation Must Reach the Actual Contention Boundary (HN, 2026-09-15)
+
+An [HN submission](https://news.ycombinator.com/item?id=49718076) links Alkis
+Yuvanelis's account of a rule that prohibited one coding-assistant session from
+committing another session's work. The incident usefully separates three things
+that are often collapsed into “the agent had a rule”:
+
+1. **recording:** the rule existed in `DECISIONS.md`;
+2. **delivery:** it did not exist in the instruction and memory files loaded at
+   conversation start; and
+3. **enforcement:** a later pre-tool hook rejected broad staging commands such
+   as `git add -A` even under the author's permission-bypass mode.
+
+The first failure therefore was not established disobedience: the postmortem did
+not show that the committing conversation had received the rule. But moving from
+a ledger to an auto-loaded instruction, and then to a deterministic hook, still
+did not protect the complete invariant. Multiple sessions shared one Git working
+tree and therefore one index. If session A stages `mine.txt`, session B stages
+`yours.txt`, and B runs plain `git commit`, both staged files enter B's commit
+even though neither session staged broadly. Scout reproduced the article's fresh-
+repository experiment: the commit named for B contained both files.
+
+`git commit --only <tracked-path>` narrowed the commit to the named tracked file
+and left the other staged change behind in the reproduction. It is not a complete
+multi-writer protocol, however: an untracked path cannot be committed with
+`--only` until it has first been added, reopening the shared-index window. The
+author consequently reports using a helper that locks and names automated
+commits, while noting that assistant sessions still rely partly on convention.
+
+This adds a **boundary test** to the compilation gradient. A guard is not fully
+compiled merely because it is deterministic; it must mediate the operation that
+can violate the invariant. A staging-command hook governs *how one writer adds
+paths*. The actual invariant—*one writer must not commit another writer's staged
+state*—lives at the shared-index/commit boundary and needs serialization, isolated
+worktrees/indexes, or an atomic commit helper that binds ownership to exact paths.
+Instruction delivery, command refusal, and shared-state isolation should therefore
+produce separate receipts.
+
+The evidence remains bounded. This is one practitioner's local chronology, the
+later staging command was not recorded, and the reported month-long recurrence
+analysis was model-generated. The reproduced Git behavior establishes the shared-
+index mechanism, not the guard's field effectiveness or the frequency of such
+incidents.
+
+**Source:** https://dev.yuv.run/writing/rules-that-survive/  
+**HN:** https://news.ycombinator.com/item?id=49718076
+
+---
+
+## Guardrails Must Outlive the Behavior Version (Charter, HN, 2026-09-11)
+
+HN surfaced [Charter](https://github.com/boundflow/charter), a pre-1.0 agent
+control-plane frontend whose useful contribution to the compilation gradient is a
+**lifetime split**. It keeps four declarative artifacts separate:
+
+| Artifact | Lifetime | Compiled enforcement |
+|---|---|---|
+| Agent config | Immutable, versioned | Objective, inputs, declared MCP tools, result shape |
+| Runtime policy | Mutable, unversioned | Per-run budgets, timeouts, capability and file authority |
+| Lifecycle policy | Mutable, unversioned | Pause, cooldown, or version rollback from cross-run metrics |
+| Worker config | Deployment-scoped | Which immutable behavior versions a worker may serve |
+
+The key design decision is that rollback changes the behavior version **without
+rolling back the current guardrails**. `runtime.yaml` and `lifecycle.yaml` are
+re-applied independently of an agent version, while old behavior files remain
+immutable and available to workers. Otherwise, a safety-triggered rollback could
+restore the policy that failed alongside the code it is meant to contain.
+
+This makes a useful distinction within Stage 3 governance: **behavior history and
+safety authority need different clocks**. Behavior revisions need reproducibility;
+limits need immediate tightening. The same principle applies beyond agents: never
+bundle the circuit breaker into the release artifact that the circuit breaker may
+revert.
+
+The pinned implementation supports the documentation's narrower claims:
+
+- undeclared MCP tools are refused, so a server update cannot silently widen tool
+  authority;
+- runtime policy travels with an operation and is read by worker-side middleware;
+- approval tests use a real control plane, MCP subprocess, and Postgres store with
+  only the model faked, including park-and-resume and rejection-triggered pause;
+- lifecycle actions are deliberately limited to pause, cooldown, and switching to
+  a known version, avoiding in-place mutation that would leave behavior without a
+  reproducible version identity.
+
+There are important boundaries. The control plane does not interpret model prompts,
+tool arguments, or tool results; several harness-specific limits live in an opaque
+`custom` policy object and depend on Charter's worker middleware for enforcement.
+The repository itself is only pre-1.0, and code inspection plus deterministic tests
+do not establish production reliability or adoption. The source-grounded claim is
+therefore architectural: Charter demonstrates a concrete way to keep rollbackable
+behavior immutable while keeping its governing safety envelope live.
+
+**HN:** https://news.ycombinator.com/item?id=49649759  
+**Repo:** https://github.com/boundflow/charter  
+**Pinned source:** https://github.com/boundflow/charter/commit/f174c4b574506e56e47b58a8ae3724c98865fa56  
+**Primary evidence:** [design and lifetime split](https://github.com/boundflow/charter/blob/f174c4b574506e56e47b58a8ae3724c98865fa56/DESIGN.md), [runtime-policy transport and readers](https://github.com/boundflow/charter/blob/f174c4b574506e56e47b58a8ae3724c98865fa56/charter/policy.py), [lifecycle action schema](https://github.com/boundflow/charter/blob/f174c4b574506e56e47b58a8ae3724c98865fa56/charter/config/lifecycle.py), and [real-control-plane lifecycle tests](https://github.com/boundflow/charter/blob/f174c4b574506e56e47b58a8ae3724c98865fa56/tests/e2e/test_lifecycle.py).
+
+---
+
 ## §9. Skillscript — Stage 2→3 Implementation (2026-11-16)
 
 **Finding**: Show HN "Skillscript" — a declarative sandboxed language for agent
@@ -229,6 +329,65 @@ finding that code-owned enforcement is the only layer preserving both safety
 and utility.
 
 **Source**: HN Show HN (4pts, early), scan #284
+
+---
+
+## Failure-memory promotion needs both evidence and authority (HN, 2026-09-16)
+
+HN item [49723279](https://news.ycombinator.com/item?id=49723279) surfaced
+[`never-again`](https://github.com/malaysherasia-ai/claude-never-again), a small
+Claude Code tool that makes the compilation gradient concrete. At pinned commit
+[`808734c`](https://github.com/malaysherasia-ai/claude-never-again/commit/808734cfb257df8133f465a875302a8108f16ada),
+its skill triages each corrected mistake into an existing engineering gate, a
+new deterministic hook, a one-line judgment rule, or no durable record. New
+hooks start in warning mode. A shared dispatcher runs them from Claude Code,
+while a Git pre-commit runner applies commit-time hooks to terminal and other
+client commits too. Verify-shaped hooks hash watched Git-visible files and rerun
+their command only after a relevant input or the command itself changes.
+
+The useful addition is a staged path from remembered failure to enforced rule:
+warning fires are logged as declined or proceeded, people can mark a real fire
+correct or wrong, and the CLI reports a hook as ready after five consecutive
+correct outcomes. Promotion is then an explicit human action. Its default
+policy refuses that action on a remote repository's default branch, directing
+the state change through a branch and pull request; named Git identities and a
+single-user mode are alternatives. This is stronger than either automatic
+self-modification or a lesson file that merely hopes to be read.
+
+However, the implementation separates **promotion authority** from
+**promotion eligibility** only in its interface, not at the state transition.
+The CLI's `set_mode` path checks whether the caller may change mode, but it does
+not check the five-fire streak before changing `warn` to `block`. The streak is
+a recommendation printed by the stats and grading paths. Moreover, fire and
+grade logs stay local to each machine, while the blocking mode travels in
+`state.json`; the team document labels shared history as an unbuilt proposal.
+A pull request can therefore review *who* is changing a hook and the code being
+activated without carrying the evidence that supposedly earned activation.
+
+This yields a narrower rule for failure-driven governance: keep three receipts
+separate and make all three reviewable—(1) the source failure and candidate
+rule, (2) eligibility evidence from representative warning-mode observations,
+and (3) authority for activating the rule at the real execution boundary. A
+human promotion decision is still desirable, but it should consume or attach
+portable eligibility evidence rather than rely on a local CLI suggestion.
+Otherwise “learn from mistakes” can compile a plausible lesson into a repo-wide
+block without proving that the guard discriminates correctly.
+
+The repository has substantive tests for dispatcher behavior, Git-side
+coverage, fire outcomes, grading, promotion permissions, retirement, and
+reinstallation. In Scout's pinned Linux run, 135 checks passed and one failed:
+the failing Git-ignore-advice test invokes `python` directly even though the
+suite otherwise discovers `python3`; this environment has no `python` alias.
+That result supports the implemented hook lifecycle but is not field evidence
+that the generated guards reduce defects or false positives.
+
+**HN:** https://news.ycombinator.com/item?id=49723279
+
+**Repo:** https://github.com/malaysherasia-ai/claude-never-again
+
+**Pinned source:** https://github.com/malaysherasia-ai/claude-never-again/commit/808734cfb257df8133f465a875302a8108f16ada
+
+**Primary evidence:** [triage and promotion workflow](https://github.com/malaysherasia-ai/claude-never-again/blob/808734cfb257df8133f465a875302a8108f16ada/skills/never-again/SKILL.md), [mode-transition authority check](https://github.com/malaysherasia-ai/claude-never-again/blob/808734cfb257df8133f465a875302a8108f16ada/scripts/na), [Git runner](https://github.com/malaysherasia-ai/claude-never-again/blob/808734cfb257df8133f465a875302a8108f16ada/templates/pre-commit), [verification manifest](https://github.com/malaysherasia-ai/claude-never-again/blob/808734cfb257df8133f465a875302a8108f16ada/templates/na-manifest.py), and [team evidence boundary](https://github.com/malaysherasia-ai/claude-never-again/blob/808734cfb257df8133f465a875302a8108f16ada/docs/TEAMS.md).
 
 ---
 

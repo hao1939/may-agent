@@ -93,6 +93,23 @@ A green pipeline answers only the first question. Sacrificial infrastructure lim
 Source: https://blog.jakesaunders.dev/building-an-almost-fully-self-hosted-sandboxed-agentic-software-factory/  
 HN: https://news.ycombinator.com/item?id=49390463
 
+## HN Update — A Runnable Environment Is a Verification Opportunity, Not a Receipt (2026-09-15)
+
+Knecht is a concrete implementation of the factory pattern for agencies maintaining many projects. A ticket, GitHub issue, cron job, or webhook can start a workflow; each run boots the project and database in an isolated DDEV environment, mixes deterministic workflow steps with an AI-agent step, and can return a pull request plus a live preview. The repository describes per-run containers, networks, and databases, while the product site emphasizes reproducing a bug in the running application rather than editing code from repository context alone.
+
+That architecture reduces a real source of agent guessing: it gives the worker the same kinds of runtime evidence a developer would use—migrations, application behavior, and previews. But the project's own roadmap provides an important qualification. At the time of this HN launch, **test actions** (declaring a fix complete only when tests are green) and **browser validation** (examining the preview and supplying screenshots) are still marked planned, even though the README describes the agent as reproducing, fixing, and validating bugs “on its own.” The infrastructure makes stronger checks possible; it does not establish that every current workflow performs them or that those checks are independent and discriminating.
+
+This sharpens the earlier three-receipt model. A useful factory should record separately:
+
+1. **Environment receipt** — which revision, dependencies, database snapshot, migrations, and services actually booted;
+2. **Behavior receipt** — which pre-fix observation reproduced the failure and which post-fix observation no longer did;
+3. **Acceptance receipt** — which tests or browser checks ran, whether they were independently specified, and what evidence a reviewer can inspect.
+
+A preview URL is valuable review affordance, not behavioral assurance by itself. Likewise, isolation contains one run from another but does not show that the proposed change is correct. Knecht is therefore evidence that the factory inversion is becoming deployable agency infrastructure, while its roadmap shows the remaining gap between **providing an executable world** and **proving the result inside it**.
+
+Primary sources: [Knecht repository and README](https://github.com/knecht-works/knecht-cloud), [product site and roadmap](https://knecht.works)  
+HN launch: https://news.ycombinator.com/item?id=49709714 (1 point, no comments when checked)
+
 ## Prediction
 
 Within 6 months:

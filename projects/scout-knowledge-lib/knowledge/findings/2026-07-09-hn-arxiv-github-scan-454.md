@@ -1,7 +1,8 @@
 <ai_context>
 summary: "HN/arXiv/GitHub Scan #454 (2026-07-09), partly qualified. StateFuse supports conflict visibility, not a unique safety effect. PatchOptic supports projected-read leakage reduction and mechanical declared-path enforcement, not semantic validity. The OSS study's maintenance asymmetry comes from at most 25 self-selected survey respondents, while its repository panel finds no broad quality decline and inconsistent contributor broadening. HN and repository counters are discovery signals."
-triggers: ["write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "optic-based state", "projected reads", "verified patches", "write verification", "local update global validity", "OSS AI contribution", "vibe-coding OSS", "maintenance asymmetry", "AI code maintainability", "SWE-Review", "agentic code review", "generate-review-revise", "conflict-aware memory", "immutable history", "projection-time resolution", "claim correction", "patch-read enforcement", "state contract", "scan 454"]
-source_basis: "arXiv cs.MA 2026-07-07 (2607.05844 StateFuse, 2607.05483 PatchOptic) and cs.SE 2026-07-07 (2607.05677 Conversation to Contribution, 2607.06065 SWE-Review, 2607.05842 Beyond Refusal); checksum-verified v1 sources and bounded artifact/repository checks for StateFuse, PatchOptic, Conversation to Contribution, and SWE-Review on 2026-09-04. HN front page 2026-07-09 (30 stories via Algolia API). GitHub API (Rowboat 15,363★, ECC 227,132★, shepherd 1,063★, local-llm 1,200★, security-audit-skill 2,338★, SkillSpector 12,348★). Cross-referenced with Execution Boundary (#453), Knowledge Erosion (#450), Memory Control Plane (#441), Oversight Inversion (thesis)."
+triggers: ["write contract", "shared state governance", "conflict preservation", "CRDT memory", "StateFuse", "PatchOptic", "optic-based state", "projected reads", "verified patches", "write verification", "local update global validity", "OSS AI contribution", "vibe-coding OSS", "maintenance asymmetry", "AI code maintainability", "SWE-Review", "agentic code review", "generate-review-revise", "review-loop convergence", "censored review cost", "conflict-aware memory", "immutable history", "projection-time resolution", "claim correction", "patch-read enforcement", "state contract", "scan 454"]
+last_updated: "2026-09-12"
+source_basis: "arXiv cs.MA 2026-07-07 (2607.05844 StateFuse, 2607.05483 PatchOptic) and cs.SE 2026-07-07 (2607.05677 Conversation to Contribution, 2607.06065 SWE-Review, 2607.05842 Beyond Refusal); checksum-verified v1 sources and bounded artifact/repository checks for StateFuse, PatchOptic, Conversation to Contribution, and SWE-Review on 2026-09-04. HN front page 2026-07-09 (30 stories via Algolia API), plus HN item 49670367 and its linked single-organization review-loop case study checked 2026-09-12. GitHub API (Rowboat 15,363★, ECC 227,132★, shepherd 1,063★, local-llm 1,200★, security-audit-skill 2,338★, SkillSpector 12,348★). Cross-referenced with Execution Boundary (#453), Knowledge Erosion (#450), Memory Control Plane (#441), Oversight Inversion (thesis)."
 </ai_context>
 
 # Scan #454: The Write Contract
@@ -208,6 +209,48 @@ Primary-review qualification (2026-09-04):
 **Why this matters**: SWE-Review is useful evidence for making review executable before a code write becomes permanent. It does not establish that the loop alone is the unit of reliability: reviewer, generator, tools, scaffold, and sampling budget all vary and materially affect the result. The transfer result is compatible with the Co-Evolution Imperative (#452), but remains a benchmark-specific training result rather than proof that verification generally co-evolves generation.
 
 Sources: https://arxiv.org/abs/2607.06065; https://github.com/LegoX/SWE-Review (primary-reviewed at revision `95b652e095e5ac8f16f08ae52fd3b26513c56097`, 2026-09-04)
+
+#### HN update: measure whether review converges, not merely whether it repeats (2026-09-12)
+
+HN item [49670367](https://news.ycombinator.com/item?id=49670367) surfaced a
+vendor-authored case study of one customer's six-month coding-agent pipeline.
+The title's “12,000 reviews” refers to **11,967 lane-level reviewer verdicts**,
+not 12,000 pull requests: the underlying scope is 372 issues, of which 280 are
+reported shipped, across 1,801 plan or code review rounds. Seven isolated
+reviewer agents inspect narrow lanes in parallel; the round takes the worst
+`pass` / `warn` / `fail` verdict, and only `fail` blocks shipping.
+
+The useful operational signal is that repeated review is not automatically
+cumulative assurance. The post reports 65% of issues mergeable after round one
+and 98.9% by round four, while the probability of a first clean all-lane pass
+falls after round two and the cumulative clean-pass curve flattens around 87%.
+It also reports 218 failures appearing in lanes that had previously been clean
+and 29% of issues shipping with warnings rather than ever attaining a clean
+pass. Therefore the stop rule needs two curves: **blocking-failure clearance**
+and **first clean pass**, plus the conditional chance of passing the next
+round. A loop that keeps spending after mergeability has saturated can be
+oscillating across stochastic reviewer findings rather than buying monotonic
+quality.
+
+The post also shows why review cost needs censoring-aware accounting. Counting
+only eventual clean passes yields 3.31 rounds per issue; including issues that
+stopped without a clean pass yields 5.99, which the author describes as a 44%
+underestimate from the naive denominator. Infrastructure completeness is a
+separate axis: 3.7% of verdicts were reportedly lost to agent crashes, 8.1% of
+rounds had at least one unassessed lane, and 111 iterations ended without a
+verdict. “No failure found” must not silently include “reviewer did not run.”
+
+**Boundary:** this is an observational, vendor-authored account of one stealth
+customer using a harness the author helped build. The page provides charts and
+aggregate claims but no downloadable issue-level data, code corpus, independent
+quality labels, or downstream defect/incident outcomes. Claude Opus also moved
+from 4.6 to 5 during the window. The evidence supports instrumenting convergence,
+censoring, and missing verdicts; it does **not** establish that four rounds is a
+universal stopping point, that warnings were safe to ship, or that the harness
+caused stable per-issue cost.
+
+Source: https://blog.watson-labs.co.uk/6-learnings-from-12000-agentic-code-reviews/  
+Source: https://news.ycombinator.com/item?id=49670367
 
 ### 5. Beyond Refusal: Aligned vs. Abliterated LLMs for Vulnerability Analysis (2607.05842) [SUPPORTING]
 

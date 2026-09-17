@@ -1,10 +1,10 @@
 ---
 title: "arXiv Agent Signals: Memory Valuation, Cross-Benchmark Eval, Security Harnesses, Hierarchical Skills"
 date: 2026-07-29
-last_updated: 2026-07-29
-source_platform: arxiv
-query: "cat:cs.AI AND abs:agent"
-tags: [agent-memory, agent-evaluation, agent-security, agent-skills, arxiv, academic]
+last_updated: 2026-09-16
+source_platform: arxiv, xhs
+query: "cat:cs.AI AND abs:agent; XHS AI agent 智能体"
+tags: [agent-memory, agent-evaluation, agent-security, agent-skills, arxiv, xhs, academic]
 ---
 
 # arXiv Agent Signals — 2026-07-28 Batch
@@ -69,3 +69,32 @@ Outperforms baselines while reducing token consumption.
 **Why it matters:** Addresses the gap between high-level skill abstractions and
 executable action grounding. The hierarchical graph structure with recovery edges is
 a practical pattern for agent skill reuse in long-horizon tasks.
+
+## Update — GraphMemix treats retrieval as budgeted evidence composition (XHS, 2026-09-16)
+
+Source: https://www.xiaohongshu.com/explore/6a9fc9260000000019031ad9
+Referenced paper (reported by the post; not independently inspected in this source run): https://arxiv.org/abs/2608.26983
+
+A current XHS paper explainer describes **GraphMemix** as a query-time alternative
+to both up-front compression of an entire multimodal history and similarity-only
+Top-K retrieval. Starting from seeds matched through multiple views, the reported
+method expands a bounded candidate graph, scores individual memories separately
+from the incremental evidence supplied by their relations, and jointly selects a
+forest under a read budget of at most ten memories.
+
+The useful design signal is that long-term memory retrieval can be framed as
+**evidence composition under a budget**, not merely nearest-neighbor recall. In
+particular, validating edges for incremental evidence may prevent near-duplicate
+or conflicting memories from consuming context simply because each is individually
+similar to the query. This complements MemLens's record-level value attribution:
+record value answers what may be worth retaining, while query-conditioned forest
+selection asks which small combination supports the present answer.
+
+The post reports average Judge Accuracy of 61.55% with Qwen3-VL-8B (11.75
+percentage points above UniversalRAG) and 67.42% with Gemma 4 12B (12.33 points
+above UniversalRAG). It also reports that relation validation reduced selected
+edges from roughly 6–7 per query to 0.25–1.47 while increasing Hit@10 on all four
+datasets. These figures are **secondary-source claims** from the XHS explainer:
+Scout inspected the full post body but did not inspect the paper or reproduce its
+evaluation in this XHS-only run. They should therefore be treated as hypotheses
+for primary-source verification, not established benchmark results.

@@ -1,8 +1,8 @@
 <ai_context>
 summary: "DeepSeek Harness is a high-attention developer-preview implementation of a fully plugin-composed agent runtime. Its durable contribution is not 'everything is replaceable' alone, but the constraints that keep replacement observable: reversible registrations, event-sourced model context, capability-specific policy enforcement, and explicit refusal to call an in-process self-modification VM a security boundary."
 triggers: ["DeepSeek Harness", "DSH", "Cordis", "plugin agent runtime", "reversible effects", "event-sourced session", "self-modifying agent", "agent sandbox"]
-last_updated: "2026-08-27"
-source_basis: "GitHub Search metadata and primary repository architecture, agent instructions, implemented design notes, package manifest, commit history, and public check-run metadata at revision b150a551b8d465e31e418e1b2eaf5e79bbb7d28e."
+last_updated: "2026-09-12"
+source_basis: "GitHub Search metadata and primary repository architecture, agent instructions, implemented design notes, package manifest, commit history, and public check-run metadata at revisions b150a551b8d465e31e418e1b2eaf5e79bbb7d28e and c291e7961a515f6d7af9304e7fd1d257929aef26."
 </ai_context>
 
 # A Plugin Agent Runtime Still Needs Non-Plugin Invariants
@@ -87,6 +87,49 @@ improves correctness and inspectability; it does not create isolation.
   repository's test suite, so the implemented tests are design evidence rather
   than independently reproduced results.
 
+## September update: compatibility became an immutable migration pipeline
+
+At pinned revision `c291e7961a515f6d7af9304e7fd1d257929aef26`, DSH remains a
+compatibility-breaking developer preview, but its handling of **already released
+session formats** has become materially stricter. The repository now declares
+released predecessors frozen, assigns each format transition to one adjacent
+migration edge, retains source generations unchanged, and writes only the final
+current generation. Plugins cannot register these migrations: historical
+readability must not depend on which feature plugins happen to be mounted.
+
+This is more than a file converter. DSH's migration stages are stateful because
+old retries, interrupted attempts, packed assistant chunks, and sequence
+references cannot be transformed one row at a time without context. A compiled
+chain creates fresh per-session stages, streams records through each edge, and
+settles stages in source-to-target order. Compact runs can pass between edges
+without first expanding into millions of events. The repository reports that an
+earlier whole-artifact converter exhausted a 16 GB Node heap on a 116 MB session;
+its streaming path migrated that same internal fixture while retaining 477 MB of
+heap. Those are project-reported measurements, not an independent Scout
+benchmark, but they make a useful architectural point: backward compatibility
+for event-sourced agents is both a semantic and a bounded-state problem.
+
+Read access and mutation readiness are also separated. A read-only open may use
+a validated in-memory migration result without publishing new bytes. A later
+writer reuses that preparation, then encodes, verifies, and atomically publishes
+the successor before returning an append-capable handle. Concurrent callers
+share preparation without letting one caller's cancellation terminate work
+still needed by another; source drift aborts publication instead of silently
+recomputing history already shown to readers.
+
+The current V3 envelope makes the compatibility boundary explicit: surface
+placement is mandatory for model-visible messages and tool results, replacement
+spans have one canonical spelling, and contradictory tool-failure metadata is
+rejected rather than repaired. Historical normalization belongs only in the
+incoming V2→V3 edge. Current readers stay strict, so “being backward compatible”
+does not permanently widen the live schema.
+
+The reusable lesson is to treat durable agent-history evolution as four separate
+contracts: frozen predecessor semantics, adjacent deterministic transforms,
+strict current-format admission, and verified no-overwrite publication. Keeping
+those contracts outside the optional plugin graph is another example of the
+non-plugin invariants this note originally identified.
+
 ## Why it matters
 
 “Everything is a plugin” is safe only if some properties are not optional. A
@@ -137,3 +180,7 @@ The reusable architecture is therefore:
 - Web approval composition: https://github.com/deepseek-ai/deepseek-harness/blob/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e/.agents/notes/implemented/feature/2026-07-23-web-permission-and-approval.md
 - Defensive runtime patterns: https://github.com/deepseek-ai/deepseek-harness/blob/b150a551b8d465e31e418e1b2eaf5e79bbb7d28e/docs/defensive-patterns.md
 - Developer-preview release: https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.1-rc.2
+- Updated repository revision: https://github.com/deepseek-ai/deepseek-harness/commit/c291e7961a515f6d7af9304e7fd1d257929aef26
+- Released-format streaming migrations: https://github.com/deepseek-ai/deepseek-harness/blob/c291e7961a515f6d7af9304e7fd1d257929aef26/.agents/notes/implemented/architecture/2026-08-31-released-session-format-migrations.md
+- Read-only migration preparation: https://github.com/deepseek-ai/deepseek-harness/blob/c291e7961a515f6d7af9304e7fd1d257929aef26/.agents/notes/implemented/architecture/2026-09-05-read-only-session-migration-preparation.md
+- Canonical V3 session envelopes: https://github.com/deepseek-ai/deepseek-harness/blob/c291e7961a515f6d7af9304e7fd1d257929aef26/.agents/notes/implemented/architecture/2026-09-06-v3-canonical-session-envelopes.md

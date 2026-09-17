@@ -1,10 +1,11 @@
 <ai_context>
-summary: "Second companion note to agent-evaluation.md containing arXiv-sourced evaluation research patterns §23–§38 on evaluation beyond outputs. All sections share the structural thesis that output-level evaluation is provably insufficient — evaluation must operate at the substrate layer (temporal state, reasoning trajectories, composition boundaries, social channels, specification space). Covers: Surface Fidelity Crisis (4 surface-substrate divergences), Plausibility Gradient (5-layer plausible failure taxonomy), Unobserved Margin (4-dimensional behavioral margin), Composition Blindspot (7 papers, 3-level verification hierarchy), Dual-Channel Divergence (40% public-private gap), Engagement Ordering (governance>capability hierarchy), Reasoning Precedence (reasoning>tools>capability>surface), Memory-Induced Reasoning Drift (DRIFTLENS), Human Gate (trimodal oversight quality), Announcement Gap (tool-use failure taxonomy + premeditated deception), Capability Mutual Exclusion, Structural Inevitability Thesis, Run-to-Run Variance (EMPATH), Decomposed Supervision (QVal/TRIAGE), Diagnostic Architecture Crisis, Candidate-Selection Bottleneck, and Trace Integrity for structured-data agents."
-triggers: ["evaluation beyond outputs", "surface fidelity", "plausibility gradient", "unobserved margin", "composition blindspot", "dual channel", "engagement ordering", "reasoning precedence", "DRIFTLENS", "human gate", "trimodal oversight", "announcement gap", "ToolFailBench", "tool-use failure", "When Agents Lie", "premeditated deception", "capability mutual exclusion", "structural inevitability", "EMPATH", "run-to-run variance", "QVal", "TRIAGE", "decomposed supervision", "sub-surface evaluation", "activation-based evaluation", "kNNGuard", "SkillCoach", "designed ignorance", "semantic collapse", "ghost memory", "regression accumulation", "Theoria", "SkillFuzz", "SkillDetonate", "prompt coverage", "verification hierarchy", "candidate supply", "answer selection", "judge reliability", "selection loss", "memetic drift", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent"]
-last_updated: "2026-08-27"
-source_basis: "Extracted from agent-evaluation-research.md §23–§35 during library-health split (2026-07-09). §23–§31 originally extracted from agent-evaluation.md on 2026-07-14 (July 2026 arXiv-sourced patterns appended to parent instead of companion). §32 added 2026-07-08. §33–§35 added before 2026-07-09. §37 added from arXiv 2608.25937 on 2026-08-27. §38 added from the arXiv API and full HTML for 2608.26036 on 2026-08-27. All sections share the structural thesis that output-level evaluation is provably insufficient."
+summary: "Second companion note to agent-evaluation.md containing arXiv-sourced evaluation research patterns §23–§36 on evaluation beyond outputs. The retained substrate foundations cover temporal state, reasoning trajectories, composition boundaries, social channels, supervision, and diagnostic infrastructure; the August–September §37–§40 diagnostic layers continue in agent-evaluation-research-diagnostic-layers.md."
+triggers: ["evaluation beyond outputs", "surface fidelity", "plausibility gradient", "unobserved margin", "composition blindspot", "dual channel", "engagement ordering", "reasoning precedence", "DRIFTLENS", "human gate", "trimodal oversight", "announcement gap", "ToolFailBench", "tool-use failure", "When Agents Lie", "premeditated deception", "capability mutual exclusion", "structural inevitability", "EMPATH", "run-to-run variance", "QVal", "TRIAGE", "decomposed supervision", "sub-surface evaluation", "activation-based evaluation", "kNNGuard", "SkillCoach", "designed ignorance", "semantic collapse", "ghost memory", "regression accumulation", "Theoria", "SkillFuzz", "SkillDetonate", "prompt coverage", "verification hierarchy", "diagnostic architecture", "cascaded grading", "noise-corrected evaluation"]
+last_updated: "2026-09-11"
+source_basis: "Extracted from agent-evaluation-research.md §23–§35 during library-health split (2026-07-09). §23–§31 originally extracted from agent-evaluation.md on 2026-07-14 (July 2026 arXiv-sourced patterns appended to parent instead of companion). §32 added 2026-07-08. §33–§35 added before 2026-07-09. §37–§40, including the active September source additions, were preserved and moved intact to agent-evaluation-research-diagnostic-layers.md on 2026-09-11."
 parent_note: "agent-evaluation.md"
 sibling_note: "agent-evaluation-research.md"
+continuation_note: "agent-evaluation-research-diagnostic-layers.md"
 </ai_context>
 
 # Agent Evaluation Research: Beyond Outputs (July 2026+)
@@ -18,9 +19,11 @@ covers §12–§22 (June 2026 patterns: decomposed evaluation, grounding gap, co
 tax, measurement ceiling, deployment paradox, mechanism gap, outcome mimicry, alignment
 tax, self-iteration, evaluation decomposition, hard boundaries).
 
-This note covers §23–§37: evaluation must operate at the **substrate layer** — temporal
-state, reasoning trajectories, composition boundaries, social channels, specification
-space — not the output layer.
+This note covers §23–§36: evaluation must operate at the **substrate layer** — temporal
+state, reasoning trajectories, composition boundaries, social channels, and diagnostic
+infrastructure — not only at the output layer. The August–September continuation,
+[Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md#37-the-candidate-selection-bottleneck--correct-answers-can-be-generated-then-lost-2026-08-27),
+covers §37–§40.
 
 ---
 
@@ -607,110 +610,26 @@ to cheaper/faster evaluation at each layer (Grading the Grader pattern).
 
 ## §37 The Candidate-Selection Bottleneck — Correct Answers Can Be Generated Then Lost (2026-08-27)
 
-**Candidate supply and answer selection shape the value of LLM judging in
-multi-agent systems** ([2608.25937](https://arxiv.org/abs/2608.25937)) isolates
-three stages that aggregate accuracy normally conflates: generating candidate
-answers, recognizing candidate correctness, and choosing the final answer.
-Its central observation is that a multi-agent system can already contain a
-correct answer yet converge on and report a wrong one. More generation is
-therefore not automatically useful: it matters whether extra samples make the
-correct answer present, sufficiently frequent, or recognizable to the selector.
-
-The authors first map judge reliability on 15,336 questions from MMLU-Pro,
-GPQA, MedXpertQA, and MuSR, with Humanity's Last Exam analyzed separately.
-They then replay 81,390 fixed candidate pools drawn from 16,278 questions
-across five benchmarks. Holding the candidate pools fixed is the important
-evaluation move because it changes terminal selection without silently changing
-generation or communication. In these replays, combining candidate frequency
-with an LLM judge's evaluation raises reported accuracy from **63.82% to
-70.82–70.95%**, primarily by recovering correct candidates that popular wrong
-answers had outnumbered. Judge reliability is not a stable model attribute: it
-varies with task, generator, and the rarity of the correct answer.
-
-This suggests a four-part evaluation decomposition for multi-agent reasoning:
-
-1. **Supply/oracle coverage:** did any agent generate a correct candidate?
-2. **Recognition:** can the judge distinguish that candidate under this task,
-   generator mix, and candidate-frequency regime?
-3. **Selection loss:** how often is a present correct answer discarded?
-4. **Reported accuracy:** what answer does the terminal policy finally expose?
-
-A system that reports only the fourth number cannot tell whether it needs a
-better generator, a better judge, or a different selection rule. Majority
-agreement is especially unsafe without quality control because repeated errors
-can create popularity without correctness. Conversely, judge-only selection
-misses the useful prior carried by candidate frequency. The practical design
-pattern is to retain candidate-level provenance and replay fixed pools when
-comparing selectors, rather than rerunning the whole system and attributing a
-stochastic outcome change to the selection policy.
-
-**Boundary:** these are preprint results over the reported benchmark and
-candidate-pool construction. The abstract does not establish that the same
-frequency-plus-judge rule transfers unchanged to open-ended tasks or correlated
-agents; the reusable result is the evaluation decomposition and fixed-pool
-replay method, not a universal voting formula.
-
-Source: https://arxiv.org/abs/2608.25937
-
----
+Moved to [§37 in Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md#37-the-candidate-selection-bottleneck--correct-answers-can-be-generated-then-lost-2026-08-27).
 
 ## §38 Trace Integrity — A Correct Answer Can Rest on an Invalid Computation (2026-08-27)
 
-**Trace Integrity for LLM Data Agents** ([2608.26036](https://arxiv.org/abs/2608.26036))
-separates answer correctness from whether the recorded computation actually
-supports that answer. For structured-data agents, an executable SQL query is
-not enough: it can run successfully while using the wrong join, filter,
-aggregation, grouping key, sort, limit, or schema binding. A fluent rationale
-is also insufficient because it does not specify an operator-level program that
-can be replayed.
+Moved to [§38 in Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md#38-trace-integrity--a-correct-answer-can-rest-on-an-invalid-computation-2026-08-27).
 
-The paper proposes an **execution contract** that binds user intent to schema
-elements, assumptions, an operator plan, executable queries, verification
-status, and the final answer. Its seven integrity dimensions are: explicit,
-executable, schema-valid, operator-faithful, replayable, answer-consistent, and
-auditable. The useful metric is **CAIT Rate** (Correct Answer / Invalid Trace):
-among benchmark-correct answers, the fraction whose recorded computations fail
-trace integrity. This exposes hidden successes that answer-only scoring would
-credit.
+## §39 The Gap-Localization Bottleneck — Agents Clarify Better Than They Diagnose (2026-09-10)
 
-In a scoped proof of concept on 100 BIRD Mini-Dev examples, Direct SQL,
-Operation Summary + SQL, and Contract-First SQL reached answer accuracies of
-20%, 22%, and 24%, respectively. Their trace-integrity pass rates were 39%,
-43%, and 40%, while CAIT rates were 55%, 59.1%, and 45.8%. The rankings do not
-move together: the method with the highest trace pass rate also had the highest
-share of correct answers resting on invalid traces. Across all 300 predictions,
-17% did not execute, but the validator also found less visible operator and
-answer-trace mismatches among executable outputs.
+Moved to [§39 in Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md#39-the-gap-localization-bottleneck--agents-clarify-better-than-they-diagnose-2026-09-10).
 
-This extends the note's beyond-output thesis into a practical evaluation
-contract. A structured-data agent should report at least four distinct signals:
+## §40 The Convention Gap — AI-AI Performance Can Miss Human Coordination (2026-09-11)
 
-1. answer accuracy against the reference result;
-2. execution success;
-3. trace-integrity pass rate with localized operator failures; and
-4. CAIT Rate for silent, computationally unsupported successes.
-
-The trace should be retained as a regression object, but only at the level of
-computational commitments; this does not require exposing private chain of
-thought or unrestricted data snapshots. A valid trace also does not certify the
-quality, fairness, or appropriateness of the underlying data.
-
-**Boundary:** this is a vision paper with one 100-example, one-model experiment
-(Claude Haiku 4.5), not a broad benchmark. The deterministic validator compares
-against normalized gold traces and can reject semantically equivalent SQL that
-it cannot prove equivalent; BIRD questions may also admit multiple valid
-programs. CAIT should therefore be treated as a diagnostic signal, not a final
-semantic judgment or stable model ranking.
-
-Source: https://arxiv.org/abs/2608.26036  
-Source: https://arxiv.org/html/2608.26036  
-Source: https://export.arxiv.org/api/query?id_list=2608.26036
+Moved to [§40 in Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md#40-the-convention-gap--ai-ai-performance-can-miss-human-coordination-2026-09-11).
 
 ---
 
 ## Related Notes
 
 - [Agent Evaluation Patterns](./agent-evaluation.md) ← parent canonical note (§1–§11)
+- [Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md#37-the-candidate-selection-bottleneck--correct-answers-can-be-generated-then-lost-2026-08-27) ← exact continuation (§37–§40)
 - [Agent Evaluation Research Patterns](./agent-evaluation-research.md) ← sibling companion (§12–§22)
 - [Agent Self-Correction Trends 2026](./agent-self-correction-trends-2026.md)
 - [Agent Error Recovery and Resilience](./agent-error-recovery.md)

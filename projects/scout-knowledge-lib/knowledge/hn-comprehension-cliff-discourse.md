@@ -1,8 +1,8 @@
 <ai_context>
 summary: "The Comprehension Cliff discourse arc — complete lifecycle from HN micro-signal to peer-reviewed science to national policy action. Tracks AI-generated output overwhelming human review capacity."
 triggers: "comprehension cliff, reviews expensive, skill atrophy, code review, AI verification bottleneck"
-last_updated: "2026-08-26"
-source_basis: "HN scans #11–#53 (Jun–Aug 2026). Nature controlled trial (Anthropic, 52 engineers). VentureBeat coverage. arXiv 2606.20512 (Probe-and-Refine guidance tuning). GitHub open-steps repository and published activation/report smoke-test results (2026-08-25 commit)."
+last_updated: "2026-09-10"
+source_basis: "HN scans #11–#53 (Jun–Aug 2026). Nature controlled trial (Anthropic, 52 engineers). VentureBeat coverage. arXiv 2606.20512 (Probe-and-Refine guidance tuning). GitHub open-steps repository and published activation/report smoke-test results (2026-08-25 commit). HN item 49623754 and the Opusfived parody's own disclosure (Sep 2026)."
 parent_note: "hn-agent-operational-memory.md"
 extraction_reason: "Extracted from parent note (1,303→~907 lines) as thematic companion. The Comprehension Cliff is a complete discourse arc with its own evidence chain, distinct from the parent's operational memory / infrastructure themes."
 </ai_context>
@@ -625,3 +625,46 @@ Sources:
 - Completion-report contract: https://github.com/kharmanskyi/open-steps/blob/dad9df5dd49e21612b06ed9db4ef8ef295ad9369/skills/os-done-or-not/SKILL.md
 - Intake and merge policy: https://github.com/kharmanskyi/open-steps/blob/dad9df5dd49e21612b06ed9db4ef8ef295ad9369/skills/os-check-work/SKILL.md
 - Published evaluation table: https://github.com/kharmanskyi/open-steps/blob/dad9df5dd49e21612b06ed9db4ef8ef295ad9369/evals/results.md
+
+---
+
+## Update 2026-09-10: The Blue-Button Test Separates Outcome from Change Surface
+
+A hand-authored parody asking an imaginary Claude to make one “Add to Cart”
+button blue reached **1,150 points and 444 comments** on HN. The interaction
+repeatedly expands a one-element request into shared-token edits, unrelated
+fixes, research, subagents, and extra styling. This is not a model transcript:
+the site's own About panel calls it “a parody game” and says “The misery is
+hand-curated.” It cannot support a capability claim about Claude or any model.
+
+The discussion is useful precisely because it is polarized. Some practitioners
+said the scope creep felt familiar; others said current agents do not behave
+this way, blamed imprecise prompts, or objected that the game's forced replies
+ignore legitimate ambiguity. That disagreement turns the viral anecdote into a
+measurement requirement rather than evidence of prevalence: **functional
+success and scope fidelity are separate axes**. A button can become blue while
+the change still fails because unrelated surfaces moved, or it can remain
+unchanged while an agent produces extensive defensible-looking activity.
+
+This sharpens the earlier structural-review adaptation. For bounded changes,
+record and verify at least:
+
+1. **Target outcome:** did the requested observable change occur?
+2. **Change surface:** which files, components, tokens, dependencies, and
+   generated artifacts changed?
+3. **Negative contract:** which explicitly protected surfaces remained
+   byte-, behavior-, or screenshot-stable?
+4. **Work amplification:** how many tool calls, subagents, and validation steps
+   were used relative to the task's risk?
+
+A diff-size cap alone is not enough—a one-line shared-token edit can have a wide
+behavioral radius. Conversely, a large generated lockfile diff may be expected.
+The practical test is declared scope plus outcome checks and protected-surface
+checks. The HN thread establishes strong resonance around the failure mode, not
+its frequency; prevalence still requires real trace data and a task suite with
+scope-fidelity assertions.
+
+Sources:
+- Primary parody and disclosure: https://opusfived.dev/
+- HN discussion: https://news.ycombinator.com/item?id=49623754
+- Stable HN item API: https://hacker-news.firebaseio.com/v0/item/49623754.json

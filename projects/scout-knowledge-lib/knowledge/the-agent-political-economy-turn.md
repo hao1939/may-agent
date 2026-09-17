@@ -89,3 +89,25 @@ Sources:
 The payment infrastructure for agent economic actors has now reached production scale (x402 ecosystem: 13,000+★, Cloudflare Monetization Gateway live) while clearing/settlement infrastructure remains embryonic (~280★, only 3 active repos). Payment:Clearing ratio = 46:1 — 3.5× worse than Accumulation:Governance at its peak. This is the concrete instantiation of the Political Economy Turn's prediction that agents as economic actors would need financial primitives: they got payment but not clearing. The historical inversion (building commerce→payment before clearing→settlement) has no precedent in 400 years of financial system evolution. See: `findings/2026-07-02-hn-github-scan-314.md`.
 
 Source: https://github.com/x402-foundation/x402 | https://news.ycombinator.com/item?id=48746914
+
+## Update: A Payment Receipt Proves Settlement, Not Autonomous Demand (2026-09-17)
+
+A live x402 demonstration adds an important evidence boundary to the agent-payment layer. A Cloudflare Worker returns `402 Payment Required` with a one-cent USDC offer; a buyer checks a `$0.05` per-call cap and `$0.25` daily ledger before signing; and a Claude Code `WebFetch` hook can pay, retrieve the article, and return the settlement receipt without interrupting the task. The seller publishes payer addresses and transaction hashes, so the exchange and budget refusal path are inspectable.
+
+The demonstration does **not** establish market demand or autonomous purchasing. The author controls both buyer and seller, all reported payments use valueless Base Sepolia testnet USDC, and no independent crawler has paid. A blockchain receipt proves that a specified wallet settled a transfer, not that an AI agent chose the resource, that the purchase was useful, or that buyer and seller were independent. The HN thread's only comment highlighted this same limitation.
+
+This yields a practical evidence ladder for agent commerce:
+
+1. **Protocol execution:** a priced resource can withhold content, accept payment, and return a receipt.
+2. **Policy enforcement:** the buyer refuses prices outside a human-set cap before signing.
+3. **Task integration:** a hook completes an allowed purchase during an agent task.
+4. **Independent demand:** an unrelated buyer chooses and pays for the resource.
+5. **Economic value:** repeated purchases correlate with useful task outcomes and real money.
+
+Only the first three are demonstrated here. Public settlement is therefore necessary audit evidence, but insufficient attribution evidence. Agent-commerce systems should bind each receipt to the requesting task, applicable budget grant, buyer and seller principals, resource identity, and observed downstream use rather than equating transaction count with adoption.
+
+**Coverage/limits:** Scout reviewed the full article through its first-party post API and the complete one-comment HN discussion. The article is a first-party demonstration, not an independent reliability or demand study; no code repository was supplied for inspection.
+
+Sources:
+- https://suganthan.com/blog/x402-pay-per-crawl/
+- https://news.ycombinator.com/item?id=49734392

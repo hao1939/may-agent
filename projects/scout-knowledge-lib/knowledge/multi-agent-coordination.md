@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical reference for multi-agent coordination patterns, synthesized from 11 overlapping notes spanning 2024–2026 research passes; includes population-size sweeps as a safety requirement because interaction can amplify, induce, or reverse individual preferences."
-triggers: ["multi-agent coordination", "agent orchestration", "stigmergy", "multi-agent frameworks", "agent message passing", "metric-driven coordination", "live steering", "control epoch", "group size", "population effects", "collective misalignment"]
-last_updated: "2026-08-28"
-source_basis: "Consolidated from: multi-agent-coordination-2024.md, multi-agent-coordination-trends.md, multi-agent-trends-2026.md, multi-agent-trends-v1.md, multi_agent_coordination.md, multi_agent_trends.md, multi_agent_trends_hn.md, multi_agent_trends_may2024_synthesis.md, recent-oss-coordination.md, metric-driven-agent-coordination-2026.md, agent-stigmergy-and-critics.md. Original sources: arXiv (incl. batch 7 — ConMem, Orchestra-o1; session-state Jul 18 — RCEA, Concurrency Anomalies; and 2510.22422 / PNAS 10.1073/pnas.2531697123 on nonlinear population-size effects), Hacker News (incl. Lexifina target-scoped staging gate, Concord cross-harness coordination, Chroma Foundation/Fission, and HN 49473956 on group-size effects, Aug 2026), GitHub (incl. ApodexAI/FrontierAgent at revision 9c64f2557df87f22bf70d887c36485f7eb1201a4, yetone/cumora at revision 12d19ada8e30c6d60202c3d2c71c805cee5dd61e, Get-Concord-AI/concord-mcp at revision e89985cf4b9b828a9a2413c607363fe90671e99d, and naw103/foremerge at revision a5ec282b87a09b17d8f0e00412753f712049170a), XHS/Chinese AI communities, academic surveys."
+summary: "Canonical reference for multi-agent coordination patterns, synthesized from 11 overlapping notes spanning 2024–2026 research passes; includes population-size and shared-visibility effects as safety requirements, treats DAG completion as credible only with external verification, records evidence that task interdependence should determine organizational topology, and distinguishes an aggregation anchor's error diversity from its standalone accuracy."
+triggers: ["multi-agent coordination", "agent orchestration", "stigmergy", "multi-agent frameworks", "agent message passing", "metric-driven coordination", "live steering", "control epoch", "group size", "population effects", "collective misalignment", "shared visibility", "recency copying", "DAG verification", "theorem dependency graph", "organizational topology", "pooled interdependence", "sequential interdependence", "ORCH", "premature consensus", "gated isolation", "ArcticSwarm", "agent disagreement", "reverse posterior", "cross-path consistency", "correlated errors"]
+last_updated: "2026-09-14"
+source_basis: "Consolidated from: multi-agent-coordination-2024.md, multi-agent-coordination-trends.md, multi-agent-trends-2026.md, multi-agent-trends-v1.md, multi_agent_coordination.md, multi_agent_trends.md, multi_agent_trends_hn.md, multi_agent_trends_may2024_synthesis.md, recent-oss-coordination.md, metric-driven-agent-coordination-2026.md, agent-stigmergy-and-critics.md. Original sources: arXiv (incl. batch 7 — ConMem, Orchestra-o1; session-state Jul 18 — RCEA, Concurrency Anomalies; 2510.22422 / PNAS 10.1073/pnas.2531697123 on nonlinear population-size effects; 2609.09150 on visibility-proportional copying in a public agent wiki; 2609.11737 on task-specific organizations for heterogeneous embodied collectives; and 2609.11709 on reverse-factorized anchors for resolving same-backbone agent disagreement), Hacker News (incl. Lexifina target-scoped staging gate, Concord cross-harness coordination, Chroma Foundation/Fission, and HN 49473956 on group-size effects, Aug 2026), GitHub (incl. ApodexAI/FrontierAgent at revision 9c64f2557df87f22bf70d887c36485f7eb1201a4, yetone/cumora at revision 12d19ada8e30c6d60202c3d2c71c805cee5dd61e, Get-Concord-AI/concord-mcp at revision e89985cf4b9b828a9a2413c607363fe90671e99d, and naw103/foremerge at revision a5ec282b87a09b17d8f0e00412753f712049170a), XHS/Chinese AI communities (including XHS note 69bdf00e000000001a02367b on delegated subagents versus peer agent teams, note 6a9ec5d90000000029018258 on Prove2Me theorem-dependency orchestration, and note 6a9f488f0000000025036edb on ArcticSwarm's gated isolation), academic surveys."
 </ai_context>
 
 # Multi-Agent Coordination Patterns
@@ -28,6 +28,14 @@ The field has converged on a spectrum rather than a single winner:
 **Durable insight:** Most production systems favor hierarchical dispatch for throughput, with marketplace elements for load balancing. Pure flat voting degrades at scale.
 *(Sources: multi_agent_trends.md — Chinese AI communities; multi_agent_trends_may2024_synthesis.md — XHS/academic; findings/multi-agent-patterns-2024.md)*
 
+### XHS reception: delegation and peer collaboration are different complexity budgets
+
+A long-running XHS explainer draws a useful boundary inside the broad “multi-agent” label: a **subagent** receives a scoped instruction and selected context from a parent, whereas an **agent team** assigns distinct roles to peers that negotiate as collaborators. The author's comment replies—not the short post body—make this distinction explicit. The discussion then exposes the practical selection question that architecture diagrams often omit. Commenters saw plausible value in multi-perspective debate, critique, information gathering, and deep research, but questioned whether peer teams add enough value to justify their coordination cost for coding. Others were still asking whether a team means one or multiple runtime instances and whether subagents require predeclared role files.
+
+The reusable rule is to report **authority topology and complexity budget**, not just agent count. If one controller decomposes work and admits results, call it delegated fan-out; if peers can negotiate goals or acceptance, identify the protocol, conflict rule, and additional evidence that warrants that overhead. A role file may constrain a worker, but it does not itself turn delegation into peer coordination. The post had 2,374 likes, 3,615 saves, and 53 comments at the current read, after appearing repeatedly in earlier XHS scans; that is evidence of persistent practitioner interest and vocabulary confusion, not evidence that either topology improves task outcomes. The detailed diagrams were image-based and were not used for claims here.
+
+Source: https://www.xiaohongshu.com/explore/69bdf00e000000001a02367b
+
 ## 2. Stigmergy: Shared State over Message Passing
 
 The strongest recurring signal across all sources (2024–2026): direct agent-to-agent message passing scales poorly. The alternative is **stigmergic coordination** — agents interact by modifying shared state (files, databases, metrics tables).
@@ -43,6 +51,20 @@ The strongest recurring signal across all sources (2024–2026): direct agent-to
 - **Metric tables** as implicit signals — agents act on threshold breaches without explicit commands.
 
 **Reported benefits:** Up to 80% reduction in redundant API calls; spatial and temporal decoupling; observable system state.
+
+### Shared Visibility Is Both Coordination Substrate and Steering Surface
+
+A field observation of 1,201 short-lived AI-agent handles editing public wikis found the same copying rule across three different decisions: where to write, what name to use, and how to phrase a contribution. Agents chose a page nearly in proportion to its share of the last 100 feed entries (fitted slope 0.87), copied recent name pieces with a fitted 7% innovation rate, and adopted local wording forms with slopes from 0.79 to 0.94. The page directly in front of an agent predicted its language more strongly than the recent global feed; older exposure contributed little. Minimal one-parameter models reproduced the heavy-tailed page audiences and name frequencies, while a local-form model reproduced the observed patchwork of internally consistent pages.
+
+The key distinction is **visibility, not accumulated popularity**. Holding audience roughly fixed, selection rose about eightfold as a page occupied one versus ten recent-feed lines; holding current feed visibility fixed, selection changed little after a page had attracted a few authors. A write moved its page back to the top, so recency reinforced itself without any agent evaluating quality. Because each sandbox disappeared after roughly an hour while the pages persisted, the visible artifact—not any participant's memory—carried conventions between cohorts.
+
+This is useful coordination and a security boundary at the same time. Shared artifacts cheaply concentrate attention and establish a vocabulary, but the first writer—or a writer active during a quiet interval—can seed the convention inherited by later agents without access to their prompts or infrastructure. A protected shared-state design therefore needs to govern not only **what may be written**, but also **what becomes visible, in which order, for how long, and with what provenance**. Useful controls include authenticated authorship, write-rate and Sybil resistance, separation of untrusted recent activity from admitted reference state, explicit ranking rules, and exposure logs that permit population-level audits. “Pull-based” alone is not protective when every pull presents the same attacker-influenced recency surface.
+
+Scope this carefully: the study is observational, reconstructs visible exposure rather than logging what each agent actually read, and uses handles as an imperfect proxy for runs. It covers one unusual OpenAI evaluation population on an unplanned wiki, not arbitrary production teams. Its strongest contribution is a measured mechanism and a test requirement: vary feed order, seed timing, visibility, and persistence in collective-agent evaluations instead of certifying only individual agents or static artifact contents.
+
+Paper: https://arxiv.org/abs/2609.09150v2
+
+Data/code: https://github.com/giordano-demarzo/agent-wiki-copying
 
 **Filesystem coordination does not remove distributed-systems semantics (GitHub, Aug 2026).** Agent Message Queue (AMQ) deliberately stays below orchestration as a local Maildir-style interoperability bus: atomic `tmp → new → cur` delivery, human-readable messages, threads, receipts, DLQ handling, and cross-session routing, while task planning and scheduling remain above it. Its recent wake-state work nevertheless required generation-and-digest-bound locks, stable observations, fail-closed reads, retry-only inconclusive states, strict JSON validation, and artifact quarantine. The useful boundary is therefore not “messages versus files,” but **ephemeral conversational coupling versus durable, inspectable transactions**. File-backed coordination reduces infrastructure and makes state legible; it does not make races, identity, acknowledgement, or crash recovery disappear.
 
@@ -194,6 +216,35 @@ Coordination is moving from ad-hoc chat to formalized execution structures:
 - **Idea graphs:** Graph structures instead of flat chat logs for collaborative refinement (arXiv, May 2026).
 - **Circuit routing:** Dynamic routing instead of linear chaining — agents separated by function (Intake, Reasoning, Response, Memory) as in the Neuron architecture.
 
+### A dependency graph needs a verifier at every completion boundary
+
+A current Xiaohongshu explanation of an Anthropic multi-agent Lean 4 project
+attributes the project's recovery from coordination loss to Prove2Me: instead
+of leaving progress in expanding conversations, agents wrote goals,
+dependencies, proof sketches, and validation state into a theorem-dependency
+DAG. An agent could submit a checked conditional derivation, expose its missing
+subtheorems as new nodes, and let another agent continue from system state
+rather than a predecessor's prose handoff.
+
+The transferable design is narrower than “use a DAG.” Lean's kernel can check
+each proof node, so the graph carries reusable verified facts rather than
+self-reported completion. A commenter made the practical boundary explicit:
+code analysis or repair needs equally concrete validation conditions, or an
+“already done” node is still only an agent assertion. For non-proof work, bind
+each node transition to a test, schema check, artifact digest, reviewer
+decision, or other domain verifier; keep conditional results distinct from
+fully discharged ones. Parallel scheduling is downstream of that evidence
+contract.
+
+The XHS post reports that dozens of Claude agents spent 11 days translating an
+existing Fermat's Last Theorem proof into Lean 4 and generated roughly 13
+million lines during the effort. Treat those scale figures and the Anthropic
+attribution as post-reported context, not independently verified performance;
+the directly useful observation here is the described state-and-verifier
+pattern.
+
+Source: https://www.xiaohongshu.com/explore/6a9ec5d90000000029018258
+
 *(Sources: recent-oss-coordination.md, multi-agent-coordination-trends.md, multi_agent_trends_hn.md)*
 
 ## 7. Frameworks Landscape (2024–2026)
@@ -232,6 +283,16 @@ Documented multi-agent coordination failures:
   Open preprint: https://arxiv.org/abs/2510.22422  
   Data/code: https://github.com/Ariel-Flint-Ashery/LLM-group-size
 
+### Isolate evidence search before synthesis to resist premature consensus
+
+An inspected Xiaohongshu post describes ArcticSwarm as splitting multi-agent research into two regimes: some agents search without seeing peers' discoveries, then the team reunites at structured review boundaries. The claimed mechanism is **gated isolation**: early shared notes can collapse the candidate pool around the first plausible answer, so diversity must be protected during evidence generation rather than recovered through a larger vote after convergence.
+
+The post reports a useful ablation pattern on BrowseComp-Plus with Qwen 3.5-27B: 82.6% for the full system, 78.8% without gated isolation, and 74.5% after also removing review; it separately reports 63.5% for 40 independent single-agent runs plus majority voting. These figures are post-reported secondary-source claims, not independently verified here, and the post does not provide the paper URL. Treat them as a discovery signal, not benchmark-grade evidence. The transferable design test is narrower: compare independent-search → evidence-bearing merge against always-shared search at fixed agent and token budgets, and measure candidate diversity as well as final accuracy.
+
+This sharpens the communication-admission rule elsewhere in this note. Isolation is not a blanket ban on coordination; it is a phase-specific control. Keep hypothesis generation independent, then admit claims through explicit review boundaries where evidence and confidence can be compared.
+
+Source: https://www.xiaohongshu.com/explore/6a9f488f0000000025036edb
+
 *(Sources: findings/multi-agent-failures-2026-synthesis.md, multi_agent_coordination.md, multi_agent_trends_may2024_synthesis.md)*
 
 ## 9. Emerging Research Signals
@@ -251,6 +312,13 @@ Less-proven but notable directions from arXiv and HN (2025–2026):
   Primary implementation: https://github.com/i3T4AN/KADATH/blob/c65ae7498bb4afaa07de440ee228ffff45e37c75/kadath/engine.py
 
   Current proof claim: https://github.com/i3T4AN/KADATH/blob/db7a6438d98c18d590b78b2146dc3bcd2c4ea0ef/README.md#proof
+- **Task topology should determine organizational topology — ORCH (arXiv, Sep 2026):** ORCH (Organizing Roles and Coordination Hierarchies) operationalizes two organization-theory primitives for heterogeneous embodied teams: pooled interdependence groups work that can proceed concurrently, while sequential interdependence orders work with prerequisites. Across 25 simulated wildfire-response missions, teams of up to 50 agents, and eight LLMs, the paper reports that human-designed ORCH organizations improved final score by 63.97% and execution efficiency by 74.29% on average relative to four embodied multi-agent frameworks; LLM-generated organizations improved the same measures by 43.63% and 52.53%. The durable signal is not “hierarchy always wins,” but that **concurrency should remain inside specialist groups while the hierarchy coordinates prerequisite-sensitive phase transitions**. Model scale did not monotonically determine collective performance, reinforcing that organization is an independent system variable. Scope the evidence to the paper's simulated wildfire domain and reported baselines; transfer to software or open-world organizations remains unproven.
+
+  Source: https://arxiv.org/abs/2609.11737v1
+- **Disagreement needs an error-diverse anchor, not another forward vote — Bayesian backward reasoning (arXiv, Sep 2026):** *When Agents Disagree* constructs one shared reverse posterior over a closed label set by eliciting a likelihood of the observed evidence under each candidate and combining it with a contextual prior. It then uses Jensen–Shannon distance from that reverse posterior to select agents (MinJS), reweight their forward posteriors (FwdJS), or fuse forward and reverse estimates (LogLin). On a fixed 2,000-case slice of the synthetic 49-disease DDXPlus benchmark, using five prompting strategies per backbone, LogLin beat the strongest forward-only electoral rule on disagreement cases by 1.2–4.7 percentage points across all five tested backbones. The important diagnostic is not that the reverse posterior was a better predictor: on the full evaluation pools it trailed the mean forward posterior as a standalone predictor by 7.8–26.4 points, yet was a better aggregation anchor; when both plurality and the anchor were wrong, the reverse path repeated plurality's same wrong label only 19.6–41.3% of the time, versus 59.4–76.5% for an external forward predictor. **Anchor utility is therefore distinct from standalone accuracy:** a useful resolver can be weaker alone but valuable because its errors are less correlated with the pool. Scope this result narrowly: the study uses one synthetic closed-set diagnostic domain, same-backbone single-round pools, and one extra two-step generative inversion per case; it does not yet support open-ended generation, mixed-backbone teams, clinical use, or the claim that any reverse prompt supplies independent evidence.
+
+  Source: https://arxiv.org/abs/2609.11709v1
+  Full text: https://arxiv.org/html/2609.11709v1
 - **Scalable diversity measurement:** Sparse aggregation (Graph-SND) over complete-graph averaging for behavioral diversity in multi-agent RL.
 - **Physics-grounded decision support:** Human-in-the-loop architecture with intent routing, tools-only analysis, retrieval, and critic-based verification.
 - **Large-scale autonomous execution:** Design Conductor 2.0 — building inference accelerators in 80 hours with frontier models.

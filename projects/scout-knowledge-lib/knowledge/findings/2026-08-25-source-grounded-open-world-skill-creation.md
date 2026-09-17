@@ -1,8 +1,8 @@
 <ai_context>
 summary: "SkillAlchemy frames open-world skill authoring as two separate evidence problems: discover behavior-changing requirements omitted by a brief, then admit each source-derived procedure only at its supported scope. On 87 SkillsBench tasks across four agent-model configurations it reported 55.8% avg@5, versus 35.9% with no skill and 47.2% for the strongest automated baseline; small source-perturbation tests also suggest that retaining conflicts as evidence instead of copying them into runtime instructions can reduce contamination. The reusable pattern is contrastive discovery plus scoped admission, not unrestricted web synthesis."
 triggers: ["open-world skill creation", "source-grounded skills", "implicit requirement discovery", "procedure admission", "SkillAlchemy", "SkillsBench", "contrastive evidence", "scope-aware instructions", "skill authoring"]
-last_updated: "2026-08-25"
-source_basis: "arXiv:2608.23417v1 (Wang, Wei, Liu, Yang, Tong), including the Atom record, full arXiv HTML, and PDF retrieved with bounded timeouts on 2026-08-25."
+last_updated: "2026-09-15"
+source_basis: "arXiv:2608.23417v1 (Wang, Wei, Liu, Yang, Tong), including the Atom record, full arXiv HTML, and PDF retrieved with bounded timeouts on 2026-08-25; XHS note 69ec641a000000003701e0a8 inspected on 2026-09-15."
 </ai_context>
 
 # Discover missing requirements before compiling sources into skills
@@ -52,6 +52,16 @@ A source-grounded skill builder should persist at least three different artifact
 This changes search strategy. Instead of asking only “how do I perform this task?”, ask paired questions: when does this method stop applying, what sibling case needs different treatment, what failure changes recovery, and what output property proves success? Negative or conflicting evidence is not noise to summarize away; it is what prevents a local recipe from becoming a universal rule.
 
 The pattern also complements skill activation controls already covered in the library. Admission before activation governs whether an existing skill revision may enter a harness. SkillAlchemy moves the boundary earlier: it governs whether a source-derived claim may become part of the skill at all. A safe lifecycle needs both content admission during authoring and behavioral admission before deployment.
+
+## XHS practitioner signal: keep reflection output separate from learning claims
+
+**Source:** https://www.xiaohongshu.com/explore/69ec641a000000003701e0a8
+
+A current Chinese-language explainer about Hermes Agent presents self-improvement as two loops: a lightweight outer loop that reviews completed trajectories and turns mistakes, corrections, and validated practices into structured skill packages; and a manually triggered inner loop that trains a controllable model with reinforcement learning. The post also claims that later trajectories can revise existing skills, not merely add new ones. Its visible engagement—267 likes and 500 saves when inspected—shows practitioner interest in persistent skill accumulation, not that accumulated skills improve task outcomes.
+
+The useful distinction is **artifact change versus model change**. A reflection loop can alter retrieved instructions without changing model weights; an RL loop can change weights but requires a training-capable model, rollout environment, reward, and evaluation regime. The author's own comment narrows the latter claim to controllable open models, potentially using stronger closed-model trajectories as distillation or fine-tuning data. Neither the post nor its comments report controlled outcome measurements, admission checks, regression tests, rollback behavior, or defenses against promoting a faulty trajectory into a reusable skill.
+
+For a production lifecycle, “task completed” should therefore trigger a candidate revision rather than automatic accumulation: retain trajectory provenance, validate the inferred procedure against independent cases, apply the scope-aware admission ledger above, and compare the revision with the prior skill before activation. This turns the popular “the agent gets smarter the longer it runs” framing into an auditable claim: which artifact changed, what evidence admitted it, and what held-out result improved?
 
 ## Boundary of the evidence
 

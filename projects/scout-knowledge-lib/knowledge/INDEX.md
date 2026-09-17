@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-09-08"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current additions include the primary-scoped Skills Are Not Islands audit and pinned Hermes Agent/OpenClaw comparison. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-09-13"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes the §37–§40 Agent Evaluation Research: Diagnostic Layers companion extracted without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -70,6 +70,27 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ## Recent Source-Grounded Findings
 
+### 2026-09-12
+
+- [Agent forecast evaluation needs integrity, precedence, and completeness](./findings/2026-09-12-agent-forecast-ledger-evidence-layers.md) — GitHub finding separating tamper evidence, pre-outcome precedence, cohort completeness, and probability calibration into independently evidenced claims.
+- [A null result can reveal that an agent-rule benchmark is too inferable](./findings/2026-09-12-agentrulebench-architecture-boundary-null.md) — HN finding on validating detectors and unguarded failure rates before comparing prose, lint, and enforcement controls.
+- [AgentsPool scopes compute authority from placement to persistent workspace](./findings/2026-09-12-agentspool-scoped-compute-authority.md) — GitHub finding separating allocator, lease, sandbox, operation, and persistent-state authority in a trusted-LAN compute pool.
+- [Benchmark labels must match the executable treatment](./findings/2026-09-12-benchmark-labels-must-match-executable-treatment.md) — GitHub finding on checking orchestration treatment, timing semantics, judge lineage, and retained artifacts before accepting benchmark labels.
+- [Coding-agent tools are becoming a stateful substrate](./findings/2026-09-12-coding-agent-structure-aware-tool-plane.md) — GitHub/HN finding on structural perception, guarded mutation, compiler evidence, and lossless extraction boundaries below the model loop.
+- [Agent observability can converge before agent control does](./findings/2026-09-12-cross-runtime-agent-observability.md) — GitHub finding showing why normalized session events do not imply uniform pre-effect blocking or process control.
+- [Agentic programming shifts beginner literacy toward specification and assurance](./findings/2026-09-12-flaky-compiler-assurance-curriculum.md) — HN finding on the “flaky compiler” curriculum argument; a design hypothesis rather than an effectiveness result.
+- [Kiln makes 3D generation a source-preserving agent loop](./findings/2026-09-12-kiln-code-native-3d-agent-loop.md) — GitHub finding on executable source, immutable revisions, exact edits, targeted render review, and source-linked exports.
+- [LLM-authored state machines need an evidence-authoring boundary](./findings/2026-09-12-llm-authored-state-machine-evidence-boundary.md) — HN finding separating deterministic workflow execution from the validity of model-authored measurements, guards, and grants.
+- [Search prompts and topology as one coupled multi-agent design](./findings/2026-09-12-mass-prompt-topology-search.md) — XHS finding on locally optimizing and pruning topology blocks before composition and joint retuning; reported benchmark claims remain secondary.
+- [Cocoon Sandbox joins warm-pool latency to credential-bearing egress](./findings/2026-09-12-microvm-agent-sandbox-warm-pool.md) — GitHub finding on MicroVM lifecycle speed, NIC-less defaults, host-side credential injection, and unsafe transition refusal.
+- [Coding-agent context needs workspace scope and freshness receipts](./findings/2026-09-12-worktree-scoped-context-receipts.md) — GitHub finding separating repository lineage, checkout identity, generation freshness, and delivered-content integrity.
+
+### 2026-09-10
+
+- [Agent cost telemetry needs parser-shape conformance](./findings/2026-09-10-agent-cost-telemetry-conformance.md) — HN/GitHub audit finding on versioning provider event semantics, deduplication grain, resume/fork reconciliation, cache pricing, and parser fixtures instead of trusting apparently exact counters.
+- [Browser-agent reports need a fidelity axis separate from task success](./findings/2026-09-10-browser-agent-report-fidelity.md) — GitHub finding on scoring typed report claims against harness-owned outcome, action, state, coverage, and attribution evidence rather than treating terminal success as deed proof.
+- [Deterministic unit-wise merging can replace part of a meta-agent](./findings/2026-09-10-deterministic-unit-wise-agent-management.md) — arXiv finding on splitting assembly, residual allocation, and stopping from generative management when outputs have identifiable units and workers fail complementarily.
+
 ### 2026-09-08
 
 - [Agent skill supply chains need graph review, not a borrowed risk verdict](./findings/2026-09-08-agent-skill-supply-chain-scope.md) — primary review of `2607.01136v1` distinguishes 1,434,046 GitHub-backed SkillsMP records from unique/ecosystem-wide coverage and conditional transitive audit-signal reachability from confirmed vulnerability prevalence or matched npm/PyPI risk.
@@ -81,6 +102,10 @@ Migration and project-operation artifacts live outside `knowledge/`:
 ### 2026-09-01
 
 - [Agent self-evolution and autonomy: what actually changes?](./agent-self-evolution-and-autonomy.md) — mechanism-first taxonomy separating skill creation, admission, maintenance, internalization, routing, harnesses, weights, world models, evaluators, search, and authority; includes six direct comparison matrices and actionable experiments.
+
+### 2026-08-31
+
+- [Agent skills are instruction-code maintenance units](./findings/2026-08-31-agent-plugin-coevolution.md) — arXiv finding that skill instructions and implementation scripts co-change above chance, supporting paired behavioral review, testing, release, and rollback rather than treating prompts as disposable documentation.
 
 ### 2026-08-28
 
@@ -284,7 +309,8 @@ tracked as task `triage-inbox-imports` in the project task tree.
 - [Agent Architectures](./agent-architectures.md) ← canonical architecture reference (743 lines, split 2026-07-08)
 - [Agent Architectures — Research Catalog](./agent-architectures-research.md) — **companion research catalog**: 12 arXiv paper summaries on agent lifecycle, memory, state, and failure detection (Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent, Verified Concurrency Anomalies, TokenPilot, CacheWise, Insight Governance, SaliMory). Extracted from canonical note 2026-07-08
 - [Agent Runtime Hardening](./agent-runtime-hardening.md) — **companion runtime catalog**: 16+ named patterns spanning lifecycle adaptation, bounded recovery, typed safety, semantic transactions, deterministic admission, run compilation, and the Runtime Trust Gap 5-layer vulnerability stack.
-- [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md) — **effect-boundary companion**: revision-bound workspace admission, evidence-carrying effect closure, Brigade's verification subject binding, and Docker's explicit unattended-execution trust boundaries. Extracted intact from Runtime Hardening during the 2026-08-10 oversized-note review.
+- [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md) — **effect-boundary companion**: revision-bound workspace admission, evidence-carrying effect closure, and explicit unattended-execution trust boundaries. Extracted intact from Runtime Hardening during the 2026-08-10 oversized-note review.
+- [Agent Runtime Verdict Integrity](./agent-runtime-verdict-integrity.md) — **verification companion**: subject binding, receipt coverage, verdict-path negative controls, and inspected-universe evidence.
 - [AI Agent Architecture: Operational Memory Layer](./hn-agent-operational-memory.md) — experience cache: tool quirks, workflow patterns, env-specific process knowledge, sovereignty stack, sandbox convergence
 - [HN Sovereignty & Commoditization Discourse](./hn-sovereignty-commoditization-discourse.md) — **companion discourse**: Sovereignty Stack, Model Commoditization, AI Content Detection norms, Dual-Use Impossibility, provider arbitrage, capability extraction patterns. Extracted from operational memory note for size management (2026-07-21)
 - [The Comprehension Cliff: AI Review Costs & Skill Atrophy Discourse](./hn-comprehension-cliff-discourse.md) — **companion discourse arc**: "Reviews Expensive" lifecycle (11→75pts), Comprehension Cliff evidence chain (12 data points across 5 scales), skill atrophy controlled trial (Nature/Anthropic), governance pincer (Norway ban). Extracted from operational memory note.
@@ -311,7 +337,8 @@ tracked as task `triage-inbox-imports` in the project task tree.
 
 - [Agent Evaluation Patterns](./agent-evaluation.md) ← canonical evaluation reference (§1–§11: durable patterns, testing tooling landscape)
 - [Agent Evaluation Research Patterns](./agent-evaluation-research.md) — **companion research catalog**: §12–§22 arXiv-sourced evaluation research (BinEval decomposition, Grounding Gap, Composition Tax/co-failure ceiling, Measurement Ceiling, Deployment Paradox 5-8× gap, Mechanism Gap CAWM 20%, Outcome Mimicry AgentLens 10.7%, Alignment Tax N_eff monoculture, Self-Iteration Turn AgentX/JERP, Evaluation Decomposition 7 papers, Hard Boundary compression metric). §23–§35 extracted 2026-07-09 into second companion below. 520 lines
-- [Agent Evaluation Research: Beyond Outputs](./agent-evaluation-research-beyond-outputs.md) — **second companion research catalog**: §23–§35 evaluation-beyond-outputs research (Surface Fidelity Crisis 4 surface-substrate divergences, Plausibility Gradient 5-layer taxonomy, Unobserved Margin 4-dimension, Composition Blindspot 3-level verification hierarchy, Dual-Channel Divergence 40% miss rate, Engagement Ordering governance>capability, Reasoning Precedence reasoning>tools>capability, DRIFTLENS memory-induced drift, Human Gate trimodal oversight, Announcement Gap/ToolFailBench, Capability Mutual Exclusion, Structural Inevitability, EMPATH run-to-run variance, QVal/TRIAGE decomposed supervision). Extracted from first companion 2026-07-09. 573 lines
+- [Agent Evaluation Research: Beyond Outputs](./agent-evaluation-research-beyond-outputs.md) — **second companion research catalog**: §23–§36 substrate-level evaluation research, from surface/substrate divergence and plausible failures through decomposed supervision and diagnostic infrastructure. §37–§40 were extracted to the diagnostic-layers companion below on 2026-09-11.
+- [Agent Evaluation Research: Diagnostic Layers](./agent-evaluation-research-diagnostic-layers.md) — **third companion research catalog**: §37–§40 August–September diagnostic layers for candidate selection, computational trace integrity, specification-gap localization, and human convention recovery.
 - [Self-Correction and Reflection: 2026 Trends Analysis](./agent-self-correction-trends-2026.md) — undirected reflection fails; instinct-reflection misalignment; evolutionary memory outperforms zero-shot
 - ~~[Agent Error Recovery and Resilience Patterns](./agent-error-recovery.md)~~ → merged into agent-architectures.md §Harness Engineering + agent_failure_modes.md
 - [AI Agent Failure Modes & Solutions](./agent_failure_modes.md) — context overflow, tool hallucination, infinite loops, "False Blocked" status misclassification (production-observed)

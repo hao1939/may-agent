@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Five August 2026 studies converge on treating evolving agent state as a governed release system rather than append-only memory. Skill-level evidence supports quarantine, relationship-aware replay, bundle admission, and source-disjoint scanner evaluation; Harness Continual Learning generalizes the pattern to jointly version prompts, memory, capabilities, and routing. Another study adds evaluator qualification. An OWASP public-review draft independently turns the pattern into a deployable control stack: signed and pinned identity, least-privilege manifests, isolated behavioral testing, runtime enforcement, inventory, and outcome receipts must work together because no install-time verdict establishes safe execution."
-triggers: ["2608.05810", "2608.06153", "2608.19013", "2608.18719", "2608.19901", "skill contamination", "skill admission", "pre-commit gating", "Verifier-as-Gatekeeper", "skill lineage", "Skill Relation Graph", "globalized skill evolution", "self-evolving agents", "harness continual learning", "harness-level forgetting", "guarded harness evolution", "reference-free judge gate", "judge competence", "within-question AUC", "post-hoc rollback", "MaliciousSkillBench", "source-disjoint skill detection", "benign false-positive rate", "OWASP Agentic Skills Top 10", "AST10", "behavior layer", "skill permission manifest", "outcome receipt"]
-last_updated: "2026-08-22"
-source_basis: "arXiv 2608.05810v1, 2608.06153v1, 2608.19013v1, 2608.18719v1, and 2608.19901v1 metadata, abstracts, and full HTML inspected; quantitative claims are attributed to the papers' experiments. OWASP Agentic Skills Top 10 public-review v1 project page, repository README, AST03, AST05-AST09, and Universal Skill Format inspected via HN item 49393145; OWASP's incident figures remain attributed claims rather than independently revalidated measurements."
+summary: "Five August 2026 studies converge on treating evolving agent state as a governed release system rather than append-only memory. Skill-level evidence supports quarantine, relationship-aware replay, bundle admission, and source-disjoint scanner evaluation; Harness Continual Learning generalizes the pattern to jointly version prompts, memory, capabilities, and routing. Another study adds evaluator qualification. An OWASP public-review draft independently turns the pattern into a deployable control stack: signed and pinned identity, least-privilege manifests, isolated behavioral testing, runtime enforcement, inventory, and outcome receipts must work together because no install-time verdict establishes safe execution. A September HN launch makes the remaining product boundary concrete: a catalog can provide useful static findings and content hashes while still treating high risk as advisory, allowing confirmation bypass, and making a linked install change immediately when its source is synchronized."
+triggers: ["2608.05810", "2608.06153", "2608.19013", "2608.18719", "2608.19901", "skill contamination", "skill admission", "pre-commit gating", "Verifier-as-Gatekeeper", "skill lineage", "Skill Relation Graph", "globalized skill evolution", "self-evolving agents", "harness continual learning", "harness-level forgetting", "guarded harness evolution", "reference-free judge gate", "judge competence", "within-question AUC", "post-hoc rollback", "MaliciousSkillBench", "source-disjoint skill detection", "benign false-positive rate", "OWASP Agentic Skills Top 10", "AST10", "behavior layer", "skill permission manifest", "outcome receipt", "ai-community-skills", "linked skill activation", "advisory risk verdict"]
+last_updated: "2026-09-14"
+source_basis: "arXiv 2608.05810v1, 2608.06153v1, 2608.19013v1, 2608.18719v1, and 2608.19901v1 metadata, abstracts, and full HTML inspected; quantitative claims are attributed to the papers' experiments. OWASP Agentic Skills Top 10 public-review v1 project page, repository README, AST03, AST05-AST09, and Universal Skill Format inspected via HN item 49393145; OWASP's incident figures remain attributed claims rather than independently revalidated measurements. HN item 49698971 and ai-community-skills README plus pinned revision 73d6383 risk, install, and sync paths inspected; product behavior is bounded to that revision."
 </ai_context>
 
 # Admit agent skills before activation, not after contamination
@@ -26,6 +26,8 @@ source_basis: "arXiv 2608.05810v1, 2608.06153v1, 2608.19013v1, 2608.18719v1, and
 **Source:** https://news.ycombinator.com/item?id=49393145  
 **Source:** https://owasp.org/www-project-agentic-skills-top-10/  
 **Repo:** https://github.com/OWASP/www-project-agentic-skills-top-10  
+**Source:** https://news.ycombinator.com/item?id=49698971
+**Repo:** https://github.com/xm1k3/ai-community-skills
 **Tags:** agent-skills, self-evolution, admission-control, verification, provenance, rollback, dependency-graph, replay, harness-continual-learning, regression-anchors, judge-gates, evaluator-qualification, skill-security, runtime-enforcement, security-inventory
 
 ## Finding
@@ -161,6 +163,23 @@ The strongest sparse text baseline, a word TF-IDF SVM, falls from **0.932 Macro-
 Three off-the-shelf scanners also occupy poor trade-off regimes on the full benchmark. Two keep benign false positives below 1% but detect only **6.4%** and **3.3%** of malicious skills; the more sensitive scanner reaches **56.6% recall** with **45.1% benign false positives**. The comparison covers isolated `SKILL.md` text only, not package code or runtime behavior, so it is not an upper bound on behavioral detection.
 
 **Operational delta:** qualify a skill scanner on held-out publishers, registries, or provenance families before it can control admission. Report malicious recall and benign false-positive rate separately, preserve technical abstentions as a third state, and route novel-source or low-confidence artifacts to sandbox replay and human review. A random-split score should not become a universal “safe to install” badge. This strengthens the staged registry model above: static scanning is one fallible evidence producer inside quarantine, not the gate by itself.
+
+## HN update — a risk report is not an activation gate (2026-09-14)
+
+HN item 49698971 launched **ai-community-skills**, a local catalog that syncs community repositories, indexes more than 3,000 skills, exposes line-level risk findings, and installs selected skills into several agent harnesses. Revision `73d63830e4b8793bbd92ab3742a4c33af65e47ec` makes a useful distinction visible: the tool has meaningful inspection and provenance features, but those features do not constitute admission control.
+
+The static analyzer records scripts, network calls, destructive operations, same-block confirmation language, prompt-injection patterns, secret references, and pipe-to-interpreter patterns. It derives `low`, `medium`, or `high` risk and preserves finding excerpts plus content hashes. The installer then prints that report and warns on `high`, but high risk is not a blocker; `--yes` skips the only installation confirmation. This is not hidden—the README calls the analysis heuristic and warns about false positives and misses—but it means the label is **decision support**, not an enforced policy verdict.
+
+The sharper boundary appears in linked installs. A normal copied install is intentionally held at its recorded content hash until the user reinstalls. With `--link`, however, the active harness path is a symlink into the synchronized source clone. `acs sync` can pull changed upstream content and explicitly reports that the new content is “already active at the install path.” The same command later prints a general statement that installed copies are never updated automatically, which is true for copies but not links. A confirmation at first install therefore does not authorize future linked revisions.
+
+**Operational delta:** catalog, scan, admission, and activation need separate receipts. For each installed skill, record:
+
+1. the exact source and content hash that was inspected;
+2. the analyzer revision and bounded findings;
+3. the policy decision for that exact hash; and
+4. the active target revision after copying or linking.
+
+If synchronization can mutate a linked target, either pin the link to an immutable revision or make every hash change re-enter quarantine before the target is exposed to an agent. A UI warning after activation is drift detection, not pre-activation admission. The project is new (six GitHub stars when checked) and the HN item had no comments, so this is implementation evidence for a product boundary—not evidence of adoption, scanner accuracy, or an observed compromise.
 
 ## Evidence limits
 

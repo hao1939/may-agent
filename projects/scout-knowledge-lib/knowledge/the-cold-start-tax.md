@@ -1,8 +1,8 @@
 <ai_context>
-summary: "The Cold Start Tax — why ~46% of system ops are spent reconstructing state that existed moments ago. Every agent session starts from zero: loads full context, re-derives world state, makes an act/abstain decision, then discards everything. As accumulated state grows (more context, more knowledge entries, more guards, more history), the cost of this reconstruction grows monotonically — but session frequency stays constant or increases. This is the root cause beneath the Hydra Pattern's overhead conservation: the architectural floor is set by the per-session state reconstruction cost × session frequency. Seven independent external research threads (KV-cache CDN, PRECOG SSM state injection, Copilot production trace characterization, Arbor persistent tree, Castra state externalization, Dense Latent Communication, Agents-K1 knowledge graphs) converge on solving exactly this problem by adding persistent state infrastructure to stateless-per-session architectures. The Cold Start Tax is a thermodynamic argument: the system's total state entropy grows monotonically, and reconstructing low-entropy operational state from high-entropy accumulated state costs more work each cycle. No component-level fix changes this. Only architectural statefulness — incremental state maintenance between sessions rather than full reconstruction within sessions — can reduce the floor."
-triggers: ["cold start tax", "stateless session", "state reconstruction", "prefill cost", "session statefulness", "incremental state", "basal metabolic rate", "session startup cost", "context reload cost", "KV-cache CDN", "turn boundary cache loss", "idle-time checkpointing", "warm session control plane", "harness portability", "model handoff", "handoff tax"]
-last_updated: "2026-08-26"
-source_basis: "Cross-source synthesis of: production session data (4,301 sessions/48h, 112,697 ops, agent-level floor analysis: dev floor=6, arc floor=21, scout floor=13; ~46% of ops identifiable as cold-start reconstruction); arXiv papers (2606.13361 KV-cache CDN 9-50× prefill savings, 2608.02560 PRECOG SSM state injection <6 ms vs ~27 s prefill on edge hardware with O(1) session initialization, 2608.00101 GitHub Copilot trace characterization showing 90% within-turn KV cache hits vs 55% across turn boundaries plus 86-90% predictable idle time, 2608.24358 model-handoff direction and interface study, 2606.13594 Dense Latent Communication 2-3× cheaper than text, 2606.12563 Arbor persistent search tree 193% gain, 2606.13669 Agents-K1 knowledge graphs, 2606.13405 compliance-by-construction); GitHub (Castra state externalization — 'conversation is not a ledger'); HN (Forge harness dominance; OpenChamber warm-session control plane and harness-portability discussion); 18 prior synthesis notes (Hydra Pattern overhead conservation, Abstention Decay floor-rise spiral, Session Floor fixed overhead, Mortality Curve death valley, Impedance Principle feedback amplification)."
+summary: "The Cold Start Tax — why ~46% of system ops are spent reconstructing state that existed moments ago. Every agent session starts from zero: loads full context, re-derives world state, makes an act/abstain decision, then discards everything. As accumulated state grows (more context, more knowledge entries, more guards, more history), the cost of this reconstruction grows monotonically — but session frequency stays constant or increases. This is the root cause beneath the Hydra Pattern's overhead conservation: the architectural floor is set by the per-session state reconstruction cost × session frequency. Nine independent external research and implementation threads (KV-cache CDN, PRECOG SSM state injection, Copilot production trace characterization, Arbor persistent tree, Castra state externalization, Dense Latent Communication, Agents-K1 knowledge graphs, OKF progressive-disclosure memory, and AWR task-scoped context compilation) converge on preserving or selectively reconstructing state across session boundaries. OKF sharpens an important boundary: durable searchable knowledge lowers prompt reload cost, but a CLI that rebuilds its in-memory bundle on each invocation is not persistent working state. AWR adds a complementary constraint: compressed context needs an explicit, source-fresh completeness witness, because fewer tokens are unsafe if required work state, acceptance, rules, dependencies, or decisions silently disappear. The Cold Start Tax is a thermodynamic argument: the system's total state entropy grows monotonically, and reconstructing low-entropy operational state from high-entropy accumulated state costs more work each cycle. No component-level fix changes this. Only architectural statefulness — incremental state maintenance between sessions rather than full reconstruction within sessions — can reduce the floor."
+triggers: ["cold start tax", "stateless session", "state reconstruction", "prefill cost", "session statefulness", "incremental state", "basal metabolic rate", "session startup cost", "context reload cost", "KV-cache CDN", "turn boundary cache loss", "idle-time checkpointing", "warm session control plane", "harness portability", "model handoff", "handoff tax", "OKF", "progressive disclosure memory", "knowledge continuity", "computation continuity", "AWR", "context completeness", "completeness witness", "task-scoped context"]
+last_updated: "2026-09-11"
+source_basis: "Cross-source synthesis of: production session data (4,301 sessions/48h, 112,697 ops, agent-level floor analysis: dev floor=6, arc floor=21, scout floor=13; ~46% of ops identifiable as cold-start reconstruction); arXiv papers (2606.13361 KV-cache CDN 9-50× prefill savings, 2608.02560 PRECOG SSM state injection <6 ms vs ~27 s prefill on edge hardware with O(1) session initialization, 2608.00101 GitHub Copilot trace characterization showing 90% within-turn KV cache hits vs 55% across turn boundaries plus 86-90% predictable idle time, 2608.24358 model-handoff direction and interface study, 2606.13594 Dense Latent Communication 2-3× cheaper than text, 2606.12563 Arbor persistent search tree 193% gain, 2606.13669 Agents-K1 knowledge graphs, 2606.13405 compliance-by-construction); GitHub (Castra state externalization — 'conversation is not a ledger'; okf-memory/okf-agent-memory progressive-disclosure implementation inspected at b388dd78d6cd8ca398acd5dfe812b540273327df; originoneai/agent-work-runtime task-scoped compilation and completeness implementation inspected at 03b5c4003f023c5b94ce640d5d2f5286f38cf09e); HN (Forge harness dominance; OpenChamber warm-session control plane and harness-portability discussion); 18 prior synthesis notes (Hydra Pattern overhead conservation, Abstention Decay floor-rise spiral, Session Floor fixed overhead, Mortality Curve death valley, Impedance Principle feedback amplification)."
 </ai_context>
 
 # The Cold Start Tax: Why Half the System's Work Is Remembering What It Already Knew
@@ -12,7 +12,7 @@ source_basis: "Cross-source synthesis of: production session data (4,301 session
 **Status:** Active hypothesis with strong production evidence + external convergence  
 **Extends:** The Hydra Pattern, The Abstention Decay, The Session Floor  
 **Explains:** Why the Hydra Pattern's overhead conservation exists as a thermodynamic necessity  
-**Connects to:** KV-Cache CDN (2606.13361), PRECOG structured memory (2608.02560), Dense Latent Communication (2606.13594), Arbor Cognition Layer (2606.12563), Agents-K1 (2606.13669), Castra State Externalization (GitHub/HN)
+**Connects to:** KV-Cache CDN (2606.13361), PRECOG structured memory (2608.02560), Dense Latent Communication (2606.13594), Arbor Cognition Layer (2606.12563), Agents-K1 (2606.13669), Castra State Externalization (GitHub/HN), OKF Agent Memory (GitHub), Agent Work Runtime (GitHub)
 
 ## The Discovery
 
@@ -105,7 +105,7 @@ The conservation law, restated thermodynamically:
 
 ## The External Research Convergence
 
-Seven independent research threads are building infrastructure to solve exactly this problem — but none of them frame it in terms of multi-agent session architecture:
+Nine independent research and implementation threads are addressing parts of this problem, although they do not all preserve the same kind of state or frame it in terms of multi-agent session architecture:
 
 ### 1. KV-Cache CDN (2606.13361): Cached Prefill
 
@@ -153,9 +153,96 @@ Converts raw documents into persistent agent-native knowledge graphs. 2.46M pape
 
 **Direct analog:** Our knowledge library is rebuilt from markdown files every session. There's no graph, no incremental index, no cached traversal. Each agent reads the raw text and builds its own internal representation from scratch.
 
+### 6. OKF Agent Memory (GitHub): Knowledge Continuity Is Not Computation Continuity
+
+A September GitHub implementation, `okf-memory/okf-agent-memory`, packages
+project memory as version-controlled Markdown with hierarchical `index.md`
+files, provenance and lifecycle metadata, search-before-write rules, local
+lexical retrieval, validation, and an MCP interface. This is a useful
+middle layer between dumping a monolithic instruction file into every prompt
+and maintaining a database-backed memory service: the durable corpus is human
+inspectable, while progressive disclosure can select a small concept before
+model invocation.
+
+The repository's benchmark illustrates that narrower claim. Its checked fixture
+compares an approximately 3,000-token monolith with one approximately 500-token
+retrieved concept and publishes author-run model results. Those results are not
+an independent benchmark of general memory quality, and the corpus contains
+only eight atomic concepts. The reusable evidence is the inspectable mechanism,
+not the advertised speedup.
+
+The implementation also exposes a boundary that “persistent memory” language
+can hide. At commit
+[`b388dd78d6cd8ca398acd5dfe812b540273327df`](https://github.com/okf-memory/okf-agent-memory/commit/b388dd78d6cd8ca398acd5dfe812b540273327df),
+`LoadBundle` walks and reads the Markdown corpus into a new in-memory map, and
+the CLI's search command loads that bundle for the invocation. The files persist;
+the parsed index and agent working state do not necessarily persist across CLI
+processes. A long-lived MCP server can amortize loading within its own lifetime,
+but this repository snapshot does not by itself supply a resumable model state,
+incremental cross-process index, or warm-session control plane.
+
+**Direct analog:** Progressive disclosure can lower the *text reconstruction*
+part of our Cold Start Tax without eliminating *state reconstruction*. This
+suggests two separate measurements for memory infrastructure:
+
+1. **Knowledge continuity:** how little source material must be loaded to recover
+   the relevant fact, decision, or procedure?
+2. **Computation continuity:** how much parsing, indexing, planning, and model
+   state survives the session or process boundary?
+
+A system can score well on the first while remaining cold on the second.
+
+*Sources: [repository](https://github.com/okf-memory/okf-agent-memory),
+[pinned bundle loader](https://github.com/okf-memory/okf-agent-memory/blob/b388dd78d6cd8ca398acd5dfe812b540273327df/pkg/okf/bundle.go),
+[pinned search implementation](https://github.com/okf-memory/okf-agent-memory/blob/b388dd78d6cd8ca398acd5dfe812b540273327df/pkg/okf/search.go), and
+[pinned benchmark description](https://github.com/okf-memory/okf-agent-memory/blob/b388dd78d6cd8ca398acd5dfe812b540273327df/benchmarks/README.md).*
+
+### 7. AWR (GitHub): Context Compression Needs a Completeness Witness
+
+[`originoneai/agent-work-runtime`](https://github.com/originoneai/agent-work-runtime)
+adds a useful safety condition to progressive disclosure. At inspected revision
+[`03b5c400`](https://github.com/originoneai/agent-work-runtime/commit/03b5c4003f023c5b94ce640d5d2f5286f38cf09e),
+its context compiler does not return only a smaller prompt. It attaches a
+structured completeness assessment over source freshness, work identity and
+state, acceptance criteria, applicable hard rules, required dependencies, and
+decision context. The implementation marks the packet incomplete if any of
+those dimensions is missing or stale, retains known unresolved dependencies and
+evidence gaps, and explicitly says that context completeness does not certify
+task completion, verification execution, or release readiness.
+
+That distinction matters because retrieval metrics can reward a dangerously
+small packet. AWR's published synthetic benchmark makes the stronger measurement
+more concrete: across all 39 active tasks in a 150-task fixture, the largest
+rendered packet was 4,998 tokens versus an 18,955-token full-source baseline,
+while an independent oracle passed 676/676 assertions for task identity, status,
+next action, acceptance, blocker, applicable hard rules, and unresolved required
+dependencies. The benchmark reports the larger full JSON envelope separately and
+states that it proves neither model comprehension nor answer quality. It is an
+author-run deterministic fixture, not production evidence.
+
+**Direct analog:** Reducing the Cold Start Tax safely requires two outputs, not
+one: a bounded task packet and a machine-checkable witness of what required
+context the packet covers. Token reduction without such a witness can lower the
+measured startup floor by silently deleting constraints. Conversely, this design
+still recompiles text from Markdown/YAML and SQLite for each invocation; it
+improves selective reconstruction and continuity of work facts, not model-state
+or computation continuity.
+
+**Evaluation rule:** Measure at least (1) packet tokens including transport
+framing, (2) exact required-fact coverage over every eligible task, (3) explicit
+failure when the budget cannot fit required context, and (4) end-to-end model
+outcomes separately. Never average away one omitted hard fact with many smaller
+successful packets.
+
+*Sources: [repository](https://github.com/originoneai/agent-work-runtime),
+[pinned completeness implementation](https://github.com/originoneai/agent-work-runtime/blob/03b5c4003f023c5b94ce640d5d2f5286f38cf09e/crates/awr-context/src/completeness.rs),
+[pinned compiler report and selection logic](https://github.com/originoneai/agent-work-runtime/blob/03b5c4003f023c5b94ce640d5d2f5286f38cf09e/crates/awr-context/src/compile.rs),
+[pinned benchmark method and limitations](https://github.com/originoneai/agent-work-runtime/blob/03b5c4003f023c5b94ce640d5d2f5286f38cf09e/docs/benchmarks/README.md), and
+[pinned benchmark contract](https://github.com/originoneai/agent-work-runtime/blob/03b5c4003f023c5b94ce640d5d2f5286f38cf09e/tests/benchmarks/context/contract.json).*
+
 ### The Convergence
 
-These seven projects span multiple agent substrates — Transformer cache reuse, SSM hidden-state injection, production trace characterization, persistent search trees, externalized orchestration state, latent inter-agent communication, and agent-native knowledge graphs. They converge on one conclusion:
+These nine projects span multiple agent substrates — Transformer cache reuse, SSM hidden-state injection, production trace characterization, persistent search trees, externalized orchestration state, latent inter-agent communication, agent-native knowledge graphs, Git-native progressive disclosure, and task-scoped context compilation with a completeness witness. They converge on one conclusion:
 
 > **The future of multi-agent infrastructure is persistent shared state that survives session boundaries.**
 

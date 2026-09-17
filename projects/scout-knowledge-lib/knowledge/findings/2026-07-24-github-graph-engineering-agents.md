@@ -35,6 +35,29 @@ task-graph rules codify patterns we've seen emerging across multi-agent coordina
 The "stop rule" from DeepMind × MIT (teams win on parallel work, lose on sequential) is a
 concise heuristic for deciding when multi-agent is worth the overhead.
 
+## XHS adoption signal (observed 2026-09-12)
+
+Source: https://www.xiaohongshu.com/explore/6a5e47cb00000000110042f1
+
+A July 20 XHS post by Devin｜AI Lab presents “Graph Engineering” as the layer that
+organizes multiple agents when work has branches, parallelism, dependencies, and
+failure recovery. It describes nodes, edges, shared state, and conditional routing
+as making execution orchestratable, recoverable, and verifiable. The post had 586
+likes, 833 saves, and 49 comments when inspected, showing engagement with the
+terminology on this post. Because the post is dated July 20 and the GitHub repository
+was created July 23, this evidence does not establish diffusion from the repository,
+broader practitioner adoption, or the direction in which the label travelled.
+
+The discussion also sharply limits the novelty claim. Multiple commenters independently
+called it workflow engineering or LangGraph under a new name; the author agreed that it
+addresses workflow-like orchestration for complex multi-agent tasks and explicitly said
+it was a newly coined concept rather than a new agent or demonstrated open-source
+implementation. The useful signal is therefore **terminology discussion**, not proof
+of a new architecture or broad consolidation: in this observed thread, “Graph
+Engineering” serves as shorthand for explicit multi-agent topology, shared state,
+routing, and recovery, while its technical content remains established workflow/graph
+orchestration.
+
 ## Stats
 
 - 64 ★ (new, created 2026-07-23)

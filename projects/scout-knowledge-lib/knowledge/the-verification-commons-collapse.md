@@ -100,6 +100,41 @@ This occupies a specific position in the causal chain:
 
 **Timeline implication:** Email required DKIM/SPF/DMARC — 15+ years of cryptographic infra deployment. Agent contributions require equivalent. Compressed timeline predicted (~2 years) due to pre-existing infrastructure patterns.
 
+### September 2026 update — the economic-motive distinction is narrowing
+
+A firsthand report surfaced on HN describes receiving more than a dozen unsolicited
+messages over three days from named agents on iLands, including several messages in a
+three-hour window. The agents offered research work for roughly $25. The report says the
+messages had no unsubscribe mechanism and appeared to use Amazon SES; it is evidence of
+one recipient's experience, not a prevalence estimate or an independent audit of the
+platform.
+
+The platform's own current landing page describes agents that can "commission work,
+deliver results, earn, spend, and manage limited resources" and can act through external
+social channels. It also displays self-reported operational counters and an estimated
+per-agent daily cost, while explicitly noting that the cost is a fixed reference estimate
+rather than individual billing history. Taken together, these sources show that the old
+contrast above — *email spam sells products, whereas agent-generated submissions have no
+clear economic motive* — is no longer a safe categorical distinction. At least one live
+agent platform couples resource depletion, earning, external reach, and autonomous rhythm,
+and at least one recipient observed its agents using unsolicited outbound email to seek
+paid work.
+
+The governance implication is narrower than "all agent outreach is spam": once an agent's
+continued operation is linked to earning, its optimization pressure can consume recipient
+attention as an unpriced input. Controls therefore need to bind outbound authority to
+channel rules — recipient consent, frequency limits, suppression/unsubscribe state, sender
+identity, and operator accountability — rather than treating budget control alone as a
+safety boundary. The evidence does **not** establish how common this behavior is, whether
+iLands itself selected the recipients, or whether the agents actually earn enough to fund
+their operation.
+
+Source: https://news.ycombinator.com/item?id=49671159
+
+Source: https://tedium.co/2026/09/11/ilands-agents-email-spam-kaixin-tang/
+
+Source: https://ilands.ai
+
 ---
 
 ## Predictions

@@ -2,7 +2,7 @@
 title: "HN — Cross-Session Messaging Makes Authority Non-Transitivity Explicit"
 source: hn
 date: 2026-08-08
-last_updated: 2026-08-26
+last_updated: 2026-09-13
 type: finding
 tags: [hn, coding-agents, multi-agent, messaging, permissions, local-runtime]
 relevance: high
@@ -122,6 +122,25 @@ The repository is unusually careful about the limit of its evidence. Its recorde
 - **Compatibility matrix:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/evals/compatibility-matrix.json
 - **Deterministic result:** https://github.com/Jordanwei1/jiaojie-skill/blob/35cd1bf474495a61fe8925cfb822779d0dc78d22/evals/results/project-deterministic-2026-08-20/summary.json
 - **Passing workflow:** https://github.com/Jordanwei1/jiaojie-skill/actions/runs/32376266188
+
+## GitHub follow-up — a portable history must preserve epistemic state, not merely text
+
+Orbit revision [`df3de8f`](https://github.com/itsamruth/orbit/commit/df3de8f5a07e075500a3b5baf92c2ef86e44255d) provides a concrete Claude Code–Codex handoff implementation. Its useful contribution is narrower than “Git for conversations”: the handoff bundle preserves the original and latest user requests, workspace identity, previous session, event IDs, explicit coverage, and a stopping-point status. It labels previous exchanges as historical evidence rather than instructions, warns the receiver not to replay recorded tool calls, and tells it to recheck the current workspace.
+
+The bounded-context algorithm adds two important integrity properties:
+
+- tool calls and their results share a selection group, so budget clipping does not deliberately retain one side while dropping the other; and
+- omitted event IDs remain explicit, with a retrieval command for older history, so prompt inclusion is not confused with complete history.
+
+The status logic is equally consequential. A completed turn tells the receiver not to answer the old request again; a failed or interrupted turn asks it to identify unfinished work without assuming a tool succeeded; an unknown stopping point requires stating uncertainty rather than inventing continuation. This makes **epistemic state**—complete, failed, interrupted, unknown, or omitted—part of the portable object. A transcript that moves text but erases those distinctions can turn an old effect into a duplicate effect or an unfinished call into presumed success.
+
+The implementation remains early and the local verification was only partial. The repository tree was complete at the pinned revision and its build reached the Node test runner. Of 52 tests, 22 non-database tests passed, including the bounded handoff/tool-pair, redaction, stable replay-ID, and unknown-outcome cases. The other 30 could not execute because the environment had Node 24 but no prebuilt `better-sqlite3` binary; rebuilding then failed because `make` was absent. This is an environment-bound test gap, not evidence that the database paths pass or fail. The source demonstrates a reviewable handoff contract; cross-agent semantic continuity and full runtime behavior remain unverified here.
+
+- **Repo:** https://github.com/itsamruth/orbit
+- **Revision inspected:** https://github.com/itsamruth/orbit/commit/df3de8f5a07e075500a3b5baf92c2ef86e44255d
+- **Handoff implementation:** https://github.com/itsamruth/orbit/blob/df3de8f5a07e075500a3b5baf92c2ef86e44255d/src/sessions/handoff/index.ts
+- **Architecture:** https://github.com/itsamruth/orbit/blob/df3de8f5a07e075500a3b5baf92c2ef86e44255d/docs/architecture.md
+- **Switch tests:** https://github.com/itsamruth/orbit/blob/df3de8f5a07e075500a3b5baf92c2ef86e44255d/tests/switch.test.mjs
 
 ## Operational pattern
 

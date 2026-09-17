@@ -2,7 +2,7 @@
 title: "Agent Behavioral Skills — A Portable Ecosystem Emerges"
 source: github
 date: 2026-07-22
-last_updated: 2026-08-27
+last_updated: 2026-09-10
 type: finding
 tags: [github, agent-skills, coding-agents, portable-behaviors, harness-engineering, workflow-recording]
 ---
@@ -50,6 +50,10 @@ A distinct pattern is crystallizing on GitHub: **single-file "skills"** — port
 
    This bounds the earlier portability claim: a skill can be **syntactically portable** yet not **behaviorally equivalent** across hosts. Packages should declare required tool semantics, subagent/capability dependencies, concurrency assumptions, and observable events, then test degraded modes when dependencies are absent. `learn` explicitly describes itself as a personal system for one learner and warns that alternative subagent implementations require adaptation, so it is architecture evidence—not evidence that this pedagogy generalizes or improves learning outcomes.
 
+10. **Declared persistence is not enforced persistence (2026-09-10 HN update).** The current `i-have-adhd` skill explicitly says its output rules persist for the whole session and includes a pre-send check, yet its HN thread contains multiple user reports that the behavior drifts after a few turns. One commenter reports better adherence when the same policy is installed as an output style because that surface refreshes the instruction; another moved stable prose constraints into a Vale lint step. These are practitioner reports, not a controlled evaluation, but they expose a concrete harness distinction: **policy content, injection cadence, and output validation are separate controls**. A portable skill package should therefore declare where and how often its rules are reinjected, and behavior-critical formatting should have a cheap conformance check rather than relying on “stays on” prose inside the skill.
+
+   The thread also surfaces a supply-chain risk in the README's natural-language installation path: it asks the coding agent to install from a repository and consult `AGENTS.md`. That is convenient, but it delegates identity resolution and installation actions to the model. A safer distributor should pin a repository revision, preview the files and requested actions, and emit an installation receipt. The repository snapshot inspected for this update was commit `ff690b6fbd3383e4fce6a7e50c7b409ca9a6a804`; this observation does not establish that the installation flow has caused mis-resolution in practice.
+
 ## Connection to Harness Engineering
 
 This dovetails with the harness-engineering theme (lopopolo/harness-engineering, 2.2k★): skills are the behavioral-configuration layer of the harness. The harness provides execution infrastructure; skills provide behavioral policy. agent-chief (SmileLikeYe, 1k★) sits at the intersection — an attention-management harness that decides which agent outputs deserve human attention.
@@ -80,3 +84,5 @@ Repo: https://github.com/agentskillexchange/skills
 Repo: https://github.com/microsoft/skill-recorder
 Repo: https://github.com/amosblomqvist/learn
 Source: https://github.com/amosblomqvist/learn/commit/7cfd8942f82ab9476e63572387e1fe9bcea5082c
+Source: https://news.ycombinator.com/item?id=49610631
+Source: https://github.com/ayghri/i-have-adhd/commit/ff690b6fbd3383e4fce6a7e50c7b409ca9a6a804

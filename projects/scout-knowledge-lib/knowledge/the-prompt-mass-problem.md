@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Cross-source synthesis: The system's largest cost isn't output or compute — it's the mass of repeated, identical prompt text delivered to sessions that immediately exit. 141MB of task text was delivered across 16K sessions in 3 days. 51.5% of all task-text bytes are evaluator aftermath sessions echoing the original session's full task. Dev burns 93% of its task-text on sessions that exit within 10 ops. The system has invented a novel inefficiency: it pays the full input cost of context-rich prompts even when the session's first act is to determine nothing needs doing. Prior syntheses (Impedance, Observability, Abstention) analyzed the output side and compute side of feedback loops. This note identifies the INPUT side — the prompt mass delivered per session — as a distinct cost center that grows with system maturity and is invisible to all existing metrics."
 triggers: ["prompt mass", "input cost", "task text", "context nesting", "evaluator echo", "template repetition", "cold start cost", "quick exit cost", "token budget", "prompt efficiency"]
-last_updated: "2026-08-28"
-source_basis: "Production data analysis: 3-day window, 16K sessions, 141MB task text. Evaluator aftermath: 7,208 sessions averaging 10,631 chars each = 73MB echoed task text. Dev quick-exit: 593 sessions × 11,835 chars = 6.7MB of 11K-char prompts read and immediately exited. Arc: 14,548 avg task chars, 8 distinct templates, 79.8 sessions per template. Cross-referenced with Impedance Principle (feedback loop amplification), Observability Trap (meta-observation cost), Abstention Advantage (quick-exit efficiency), PerspectiveGap arXiv 2606.08878 (orchestration prompt quality ≠ task quality), InquiTree arXiv 2606.09550 (context length degrades judgment), app.nz's deterministic 37-turn wire-cost harness (HN 49210901), Shopify's production report on learned gist-token prompt compression (HN 49382646), and Mohammed Reschreiter's dynamic-tool implementation and 417-turn self-audit (HN 49476278)."
+last_updated: "2026-09-14"
+source_basis: "Production data analysis: 3-day window, 16K sessions, 141MB task text. Evaluator aftermath: 7,208 sessions averaging 10,631 chars each = 73MB echoed task text. Dev quick-exit: 593 sessions × 11,835 chars = 6.7MB of 11K-char prompts read and immediately exited. Arc: 14,548 avg task chars, 8 distinct templates, 79.8 sessions per template. Cross-referenced with Impedance Principle (feedback loop amplification), Observability Trap (meta-observation cost), Abstention Advantage (quick-exit efficiency), PerspectiveGap arXiv 2606.08878 (orchestration prompt quality ≠ task quality), InquiTree arXiv 2606.09550 (context length degrades judgment), app.nz's deterministic 37-turn wire-cost harness (HN 49210901), Shopify's production report on learned gist-token prompt compression (HN 49382646), Mohammed Reschreiter's dynamic-tool implementation and 417-turn self-audit (HN 49476278), and Replay Doctor's local transcript-level prompt-cache diagnosis with explicitly single-machine calibration (HN 49691257)."
 </ai_context>
 
 # The Prompt Mass Problem: Why Input Costs Dwarf Output Costs in Mature Agent Systems
@@ -349,6 +349,39 @@ that deferral does not increase turns or failures.
 
 - Source: https://m-reschreiter.at/en/blog/how-i-cut-80-percent-context-overhead-dynamic-tools
 - HN: https://news.ycombinator.com/item?id=49476278
+
+## HN Update — Make Cache Continuity an Observable Contract (2026-09-14)
+
+Replay Doctor adds a missing operational layer to this note: prefix caching is
+not merely a provider feature to enable, but a state transition to verify on
+every turn. Its local Go CLI reads existing Claude Code, Codex, and Cursor
+transcripts, reconstructs provider caching rules, and attributes a cache break
+to the turn and structural cause. The practical distinction is between a spend
+total and a diagnosis: aggregate token accounting can show cost growth, while a
+turn-level replay can identify that a tool-set change, client re-render, or TTL
+expiry caused an old prefix to be billed again.
+
+That makes cache continuity part of the agent harness's observability contract.
+A useful trace should retain, per turn, the effective prefix identity, tool-set
+delta, provider cache-read/write counters, gap since the preceding request, and
+pricing-rule version. This also qualifies capability working-set management:
+dynamic tool activation can save schema mass while simultaneously changing the
+prefix, so activation telemetry must measure both removed schema tokens and the
+resulting cache transition. Optimization is net-positive only when those two
+sides are evaluated together.
+
+The project's public evidence models appropriate uncertainty rather than
+establishing a general benchmark. Its README reports 97.79% reproduction of
+provider cache reads across 1,751 transcript lanes, but explicitly reduces the
+independent sample to 116 sessions from one machine, account, and operator. The
+site also keeps visible corrections—including a session-count overstatement—and
+refuses some model-routing estimates when the model pair was not measured on the
+wire. The reusable signal is therefore the instrumentation shape and disclosure
+practice, not the project's single-machine dollar totals or break-cause shares.
+
+- Source: https://replay.doctor/
+- Repo: https://github.com/RedRobotKK/Replay
+- HN: https://news.ycombinator.com/item?id=49691257
 
 ### The Maturation Trap
 

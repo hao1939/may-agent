@@ -1,8 +1,8 @@
 <ai_context>
 summary: "LoopX is a provider-neutral control plane above agent harnesses, not another assistant runtime. Its strongest contribution is governed cross-run state—typed objectives, evidence, gates, authority, quotas, leases, and idempotent settlement. Its auto-research workflow adapts Arbor; comparison with Hermes Agent and OpenClaw shows that LoopX is valuable mainly when multiple runtimes must share one auditable source of truth."
 triggers: ["LoopX", "Hermes Agent comparison", "OpenClaw comparison", "Arbor", "agent control plane", "auto research", "durable agent governance"]
-last_updated: "2026-09-03"
-source_basis: "Pinned source inspection of LoopX, Hermes Agent, OpenClaw, and Arbor; GitHub API and CI observation; LoopX deterministic auto-research smoke runs and a materialized KNN baseline. Product and paper results remain attributed unless the direct-check section says otherwise."
+last_updated: "2026-09-11"
+source_basis: "Pinned source inspection of LoopX, Hermes Agent, OpenClaw, and Arbor; GitHub API and CI observation; LoopX deterministic auto-research smoke runs and a materialized KNN baseline; and observational reads of two LoopX-author Xiaohongshu posts on human-attention cost and the OpenViking showcase. Product and paper results remain attributed unless the direct-check section says otherwise."
 </ai_context>
 
 # LoopX: Governed Cross-Harness Work, Not Another Agent Runtime
@@ -108,6 +108,33 @@ LoopX distinguishes states that many agent loops collapse:
 
 This separation matters for long-running systems. Repeatedly asking a model to
 re-explain an unchanged blocker creates activity, not progress.
+
+### Human attention belongs in the operating budget
+
+A 2026-09-10 Xiaohongshu post by LoopX author Ruiteng Huang sharpens the
+project's objective into two variables: maximize agent output while minimizing
+human attention. The post identifies the recurring human costs that survive
+across multi-day, multi-session projects: remembering the goal, assigning
+work, checking evidence, handling permissions, and deciding when execution may
+continue. It presents externalized state, effect programs, waiting and
+replanning, authority, and feedback that persists beyond the current
+conversation as ways to move those costs into the control plane.
+
+The useful evaluation shift is to treat operator attention as a metered runtime
+resource, not free glue. A long-horizon system should therefore report at least
+interventions, decision latency, repeated-context handoffs, and evidence-review
+time alongside tokens, wall-clock duration, and task output. “Unattended” is
+also too coarse: the stronger target is the author's phrase, translated as
+**stable without intervention, better with intervention**—routine continuation
+should not require a person, while a timely person can still improve the run.
+
+This post is author framing and discovery provenance, not an independent
+performance evaluation. It explicitly says the cited SWE-Marathon results,
+costs, and failures remain the experimental record and that an inference-
+acceleration example is explanatory rather than a LoopX result. That caveat is
+consistent with this note's evidence boundary: attention accounting is a useful
+operational hypothesis, but lower human effort and higher output still need a
+controlled comparison.
 
 ## Auto-research: inherited loop, different topology
 
@@ -263,6 +290,18 @@ control group. The post is therefore useful discovery provenance, but the
 pinned project sources and direct checks—not the social summary—carry the
 technical conclusion.
 
+A separate July 19 author post makes the operational boundary more concrete. It
+names an OpenViking issue/PR-fixing showcase, describes domain-specific issue
+states plus parallel capability evolution, and attributes stability to
+externalized state, supervision, management, and planning. In a direct comment
+exchange, however, the author says the reported run received a small number of
+human suggestions—for PR-format alignment, memory use, and reviewer replies.
+Another reply says the planning phase can consult an evidence log and an
+exploration graph. These details support the architecture's emphasis on durable
+state, but they do **not** independently verify “200+ hours without drift.” More
+importantly, they show why an intervention ledger is required: “human input is
+optional” and “this run had zero human correction” are different claims.
+
 LoopX also explicitly says it is not an autonomous production controller. That
 honest boundary should be preserved in any adoption decision.
 
@@ -379,6 +418,9 @@ move is selective borrowing:
    abstention threshold.
 10. Keep short delegation separate from durable task queues, following
     Hermes's useful UX distinction.
+11. Budget human attention explicitly: measure interventions, repeated context,
+    evidence-review time, and decision latency instead of treating operator
+    effort as free.
 
 Avoid Hermes's pressure to learn from most sessions, OpenClaw's default
 auto-activation without Scout-specific validation, LoopX's broad platform
@@ -401,6 +443,9 @@ duplication, and any claim that elapsed runtime or popularity proves quality.
 
 ## Sources
 
+- [LoopX author: “LoopX: 200+ hours of long-horizon agent work without state drift” (Xiaohongshu note `6a5cc086000000000f01ef85`)](https://www.xiaohongshu.com/explore/6a5cc086000000000f01ef85)
+- [LoopX author: “Long-horizon agents: how to consume less human attention” (Xiaohongshu note `6aa2b288000000002900cf8e`)](https://www.xiaohongshu.com/search_result/6aa2b288000000002900cf8e)
+- [Linked LoopX essay: “From One-Shot Agents to a Long-Horizon Control Plane”](https://huangruiteng.github.io/loopx/blog/zh/from-one-shot-agents-to-long-horizon-control/)
 - [LoopX repository at the inspected revision](https://github.com/huangruiteng/loopx/tree/ae4887d707e69c19e712c379c4a1ef98b159ae64)
 - [LoopX decentralized auto-research state contract](https://github.com/huangruiteng/loopx/blob/ae4887d707e69c19e712c379c4a1ef98b159ae64/docs/reference/protocols/decentralized-auto-research-state-v0.md)
 - [LoopX Reward Memory architecture](https://github.com/huangruiteng/loopx/blob/ae4887d707e69c19e712c379c4a1ef98b159ae64/loopx/capabilities/reward_memory/README.md)

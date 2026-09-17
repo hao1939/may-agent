@@ -1,9 +1,9 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-09-02"
-current_snapshot: "Hermes Agent 1cb3ab6 and OpenClaw 1212f99 add a direct-mutation versus governed-proposal comparison, including current memory, subagent, recovery, and authority boundaries."
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement. GitHub update (2026-08-19): volcengine/OpenViking revision 98a0104 adds implementation-level evidence that tiered memory is becoming an inspectable, crash-aware data plane with hierarchical retrieval, derived indexes, commit-triggered extraction, and memory diffs. GitHub update (2026-08-20): lesliechowsh/dsh-memo revision 86a94dd adds a reproducible session-localization harness and demonstrates why memory retrieval, evidence reading, and answer generation need separate metrics."
+last_updated: "2026-09-17"
+current_snapshot: "huggingface/funes 0612fce makes cross-harness session memory a publishable dataset, but its own contracts show that credential scanning, session-level release selection, and remote retraction are distinct controls: an append-only memory needs a governed egress ledger, not only redaction."
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening). §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md. §Intelligence Entropy through §SaliMory (12 arXiv research papers) extracted to agent-architectures-research.md (2026-07-08). HN updates (2026-08-05): HN 49182946 / Data For Science 'Building an Advanced Agentic Harness' added as practitioner evidence that harness engineering is being pressure-tested around thin orchestrators, benchmarkable structure, budget-aware graceful degradation, and explicit observability rather than framework bulk alone; HN 49189075 / Prime Intellect 'Prime Agent' added as practitioner evidence that self-improving harnesses now face a compression test from stronger base models and code-bloat skepticism. arXiv update (2026-08-06): Skill-Use [2608.04828] added as evidence that skill activation and compliance are harness-conditioned bottlenecks even when skill files already exist. HN update (2026-08-08): HN 49214109 and Prime Agent revision a18809e add concrete evidence that durable self-improvement is becoming a typed, rollback-capable supplemental state plane, while execution continuity and security containment remain separate concerns. arXiv update (2026-08-10): [2608.06953] adds controlled evidence that explicit source/certainty fields preserve epistemic stance under tight memory compression better than parenthetical prose, while showing that the mechanism and best explicit form remain model-dependent. HN update (2026-08-11): HN 49259702 / Lobu adds implementation-level practitioner evidence for treating durable agent memory as an append-only observation proxy with explicit supersession, run-to-input lineage, pre-effect approval, and corrections that survive model replacement. GitHub update (2026-08-19): volcengine/OpenViking revision 98a0104 adds implementation-level evidence that tiered memory is becoming an inspectable, crash-aware data plane with hierarchical retrieval, derived indexes, commit-triggered extraction, and memory diffs. GitHub update (2026-08-20): lesliechowsh/dsh-memo revision 86a94dd adds a reproducible session-localization harness and demonstrates why memory retrieval, evidence reading, and answer generation need separate metrics. GitHub update (2026-09-12): chigwell/Penelopa.ai revision 0abec61 adds repository-authored capture and delivery contracts that separate installation, real hook activity, durable local spooling, server acknowledgement, and stopping collection. GitHub update (2026-09-13): PebbleLog/SimonAgent revision 28f6b0a adds implementation-level evidence for validating and committing semantic memory artifacts before releasing source turns, while retaining a separate emergency context-trimming path. HN update (2026-09-14): HN 49704711 / data-gras/savi-loop-guard revision 43c35c6 adds pinned implementation evidence that repetition detection can be cheap and local, while showing why attempted calls, dispatched effects, progress, and circuit-breaker recovery cannot share one append-only history. GitHub update (2026-09-17): huggingface/funes revision 0612fce adds implementation-level evidence that cross-harness memory can be packaged as a derived, portable dataset while exposing a distinct publication-governance boundary: secret detection, release selection, and remote retraction are not one control."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -29,6 +29,49 @@ system-specific deep dives.
 - **Problem**: Autonomous agents get stuck in retry/failure loops or suffer context bloat leading to hallucinated tool calls.
 - **Solution**: A distinct "Monitor" agent observes worker agents, detects stagnation, and enforces exit mechanisms.
 - **Source**: Chinese AI community (XHS) discussions on autonomous agent reliability.
+
+#### Repetition detection needs an effect-state and recovery boundary (HN, Sep 2026)
+
+[SAVI Loop Guard](https://github.com/data-gras/savi-loop-guard), surfaced in
+[HN item 49704711](https://news.ycombinator.com/item?id=49704711), is a small
+implementation-level probe for the watchdog pattern. At pinned revision
+`43c35c61abef731fb9042880a3fe76a24d7c60d5`, it groups events by `agent_id`
+and detects either a burst of more than a configured number of calls in a time
+window or a lifetime count of fuzzy-matched tool names above a threshold. The
+checks are local and dependency-free, and repository tests cover threshold
+boundaries, per-agent isolation, fuzzy variants, and both simultaneous verdicts.
+The HN post had one point and no comments when checked, so this is code evidence,
+not community validation or adoption evidence.
+
+The preventive API exposes a more important architecture boundary.
+`check_before_call()` first stores the candidate event, then recomputes all
+historical issues, and raises if any issue belongs to that agent. The blocked
+attempt therefore remains indistinguishable from a dispatched call. There is
+also no reset or acknowledgement transition: once a structural issue exists,
+a later call to a different tool still raises because the old issue remains in
+the same agent's history. Scout reproduced this on the pinned source with a
+limit of two: the third `search_web` attempt was blocked and retained, then a
+`send_email` attempt was also blocked by the old `search_web` issue; all four
+attempted spans were stored.
+
+The underlying structural verdict is deliberately coarser than stagnation. It
+compares tool-name tokens but not arguments, results, state change, errors, or
+task phase, and counts repetitions over the guard's entire lifetime. Six
+productive paginated reads can therefore look the same as six identical failed
+reads. A production watchdog should keep four records distinct:
+
+1. **attempt evidence** — what the agent proposed;
+2. **effect evidence** — what was actually dispatched and what happened;
+3. **progress evidence** — whether relevant state or output changed; and
+4. **recovery policy** — whether the breaker is open, acknowledged, reset, or
+   escalated.
+
+This does not make cheap repetition heuristics useless; they are useful anomaly
+signals and possible preconditions for intervention. It means a repetition
+threshold alone is neither a progress detector nor a complete circuit breaker.
+Scout could compile the pinned package and run the focused reproduction, but
+could not execute the repository's pytest suite because pytest is absent from
+the environment; the passing suite remains project-authored evidence.
 
 ### 2. Lightweight Loops over Heavy Frameworks
 
@@ -458,6 +501,98 @@ Chinese benchmark. The boundary matters as much as the result.
 - **Inspected revision:** https://github.com/lesliechowsh/dsh-memo/commit/86a94dd8d188669e031ad6615a65b7a764b47cd4
 - **Primary sources:** [benchmark protocol and experiment log](https://github.com/lesliechowsh/dsh-memo/blob/86a94dd8d188669e031ad6615a65b7a764b47cd4/bench/README.md), [shipped retrieval and evidence-enrichment path](https://github.com/lesliechowsh/dsh-memo/blob/86a94dd8d188669e031ad6615a65b7a764b47cd4/index.js), [release/error history](https://github.com/lesliechowsh/dsh-memo/blob/86a94dd8d188669e031ad6615a65b7a764b47cd4/CHANGELOG.md)
 
+#### Plain-file memory still needs a governed derivation layer (GitHub, Sep 2026)
+
+[`tigerless-labs/agent-memory`](https://github.com/tigerless-labs/agent-memory)
+combines two patterns that are usually presented as alternatives: Markdown is
+the authoritative store, while SQLite FTS and optional vectors are rebuildable
+retrieval caches. Recall returns paths, abstracts, anchors, and scores rather
+than automatically pasting opaque chunks into context. This turns progressive
+disclosure into a storage invariant: the agent can stop at an index line,
+outline, full memory, or archived source trace.
+
+The more reusable signal is its separation of **deterministic maintenance** from
+**judgment that can erase distinctions**. At inspected revision
+[`34d12a2`](https://github.com/tigerless-labs/agent-memory/commit/34d12a2f8678d5561aba27bd8ff73c5ae4b6a258),
+the sleep-time Manage pass may normalize dates, settle weights, add links,
+merge exact duplicates by supersession, cluster directories, and request
+redistillation. Similar-entry merges, splits, supersession, and deletion are
+represented as stable proposals; per-kind caps limit accepted decisions, and a
+"delete" invalidates a file rather than physically removing it. Physical
+removal is a separate garbage-collection action. The included unit tests encode
+these boundaries, including that unattended sleep never shrinks the store,
+repeat sleep is idempotent, proposal identity is stable, and every pass emits
+an audit report.
+
+This suggests a three-plane architecture for portable agent memory:
+
+1. **source plane:** human-readable records plus archived provenance;
+2. **derived plane:** disposable indexes, weights, links, and placement; and
+3. **authority plane:** explicit proposals and decisions for lossy changes.
+
+“Files are the source of truth” alone does not solve memory governance; the
+important property is that every derived structure can be rebuilt and every
+lossy transition crosses a separately inspectable authority boundary.
+
+The repository also illustrates why implementation evidence and benchmark
+evidence must remain separate. Its README reports LongMemEval-S and cross-host
+results and says the protocol, ledger, and raw runs ship in `docs/experiments.md`
+and `experiments/`. Those paths were absent from the complete, non-truncated Git
+tree at the inspected revision, and the pinned raw `docs/experiments.md` URL
+returned HTTP 404. The architecture and tests are inspectable; the reported
+benchmark was not reproducible from that revision and should remain
+**author-reported**, not treated as verified performance.
+
+- **Repo:** https://github.com/tigerless-labs/agent-memory
+- **Inspected revision:** https://github.com/tigerless-labs/agent-memory/commit/34d12a2f8678d5561aba27bd8ff73c5ae4b6a258
+- **Primary sources:** [README](https://github.com/tigerless-labs/agent-memory/blob/34d12a2f8678d5561aba27bd8ff73c5ae4b6a258/README.md), [Manage implementation](https://github.com/tigerless-labs/agent-memory/blob/34d12a2f8678d5561aba27bd8ff73c5ae4b6a258/packages/core/src/agent_memory/core/manage.py), [Manage tests](https://github.com/tigerless-labs/agent-memory/blob/34d12a2f8678d5561aba27bd8ff73c5ae4b6a258/tests/unit/test_manage.py), [complete tree](https://api.github.com/repos/tigerless-labs/agent-memory/git/trees/0a7f8b7e5ecb5692517450232a49e2acf813c439?recursive=1)
+
+#### A publishable memory needs a governed egress ledger (GitHub, Sep 2026)
+
+[`huggingface/funes`](https://github.com/huggingface/funes) packages Claude
+Code, Codex, pi, and Hermes session traces into one local Lance dataset and can
+publish that derived memory to a Hugging Face dataset repository. At inspected
+revision [`0612fce`](https://github.com/huggingface/funes/commit/0612fce1a05450366bf2160f3dae5dcfcd3d48ce),
+chunk identity is deterministic over session, turn, block, and split; the
+embedding model is stamped into the dataset; and incompatible query embeddings
+are refused. This is useful portability machinery: raw transcripts remain the
+rebuild source, while a source-agnostic derived index can move between machines
+and agent harnesses.
+
+The repository's publication path exposes a more important governance boundary.
+Index-time credential redaction is best-effort and may be skipped when
+TruffleHog is unavailable, while `push` independently requires the scanner and
+fails closed. Before scanning, the implementation reconstructs whole blocks so
+a secret split across chunks cannot evade detection; when a block is dirty, all
+of its chunks are held back while unrelated rows may still publish with a
+warning. The gated end-to-end test checks one narrower case—a generated SSH
+private key is replaced by a marker and cannot be read back—but skips when
+TruffleHog or `ssh-keygen` is absent. Scout inspected these tests and code but
+did not execute the Rust suite or a live Hub push.
+
+Credential safety is not publication governance. A user can select whole
+sessions for a push, but the tool records no durable publication intent; the
+remote is append-only and offers no session retraction. The docs also state that
+local scrub does not repair an already-published remote. Consequently:
+
+1. **Secret gate:** machine detection can stop recognizable credentials.
+2. **Release gate:** a human or curator must decide whether an entire session's
+   non-secret content is appropriate to disclose.
+3. **Egress ledger:** publication should record selected session identities,
+   source revision, destination, resulting remote commit, and policy decision.
+4. **Retraction path:** rotation and remote dataset repair need an explicit
+   workflow; local deletion or scrub is not evidence of downstream removal.
+
+This extends the three-plane memory model above: once memory becomes portable,
+the authority plane must cover not only lossy local changes but also irreversible
+or externally durable release. A scanner, a selection flag, and an append receipt
+solve different problems and should not be collapsed into a generic “safe to
+share” status.
+
+- **Repo:** https://github.com/huggingface/funes
+- **Inspected revision:** https://github.com/huggingface/funes/commit/0612fce1a05450366bf2160f3dae5dcfcd3d48ce
+- **Primary sources:** [indexing contract](https://github.com/huggingface/funes/blob/0612fce1a05450366bf2160f3dae5dcfcd3d48ce/docs/index.md), [publication and redaction contract](https://github.com/huggingface/funes/blob/0612fce1a05450366bf2160f3dae5dcfcd3d48ce/docs/push.md), [push gate implementation](https://github.com/huggingface/funes/blob/0612fce1a05450366bf2160f3dae5dcfcd3d48ce/src/commands/push.rs), [gated redaction test](https://github.com/huggingface/funes/blob/0612fce1a05450366bf2160f3dae5dcfcd3d48ce/tests/redact_on_index.rs), [complete tree](https://api.github.com/repos/huggingface/funes/git/trees/0612fce1a05450366bf2160f3dae5dcfcd3d48ce?recursive=1)
+
 #### Event-sourced memory is an observation ledger, not a second source of truth (HN, Aug 2026)
 
 An HN-submitted Lobu architecture note supplies a concrete practitioner design
@@ -520,6 +655,45 @@ Tool outputs are too large for context windows. Infrastructure-layer compression
 - **Mechanism**: Compress tool outputs, logs, files, and RAG chunks before they reach the LLM.
 - **Aligns with**: Infrastructure-layer constraint (KE-1924) applied to token budget rather than behavior.
 - **Source**: GitHub trending repos June 2026.
+
+#### Release source turns only after derived memory is admissible (GitHub, Sep 2026)
+
+[`PebbleLog/SimonAgent`](https://github.com/PebbleLog/SimonAgent) makes a
+useful distinction between **semantic compaction** and **emergency context
+trimming**. At inspected revision
+[`28f6b0a`](https://github.com/PebbleLog/SimonAgent/commit/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed),
+its semantic path asks a model to derive an episode, long-term memory, and user
+profile from older turns. It keeps the full source history unless all three
+artifacts parse and their grouped commit reports success; only then does it
+return the recent suffix. Repository-authored tests cover the key admission
+rule: incomplete model output causes no memory writes and leaves history
+unchanged.
+
+The separate context-window path is deliberately less ambitious: it truncates
+large tool results and drops whole old turns until count and estimated-token
+limits fit. Both paths split only at a user-text turn boundary, avoiding an
+orphaned `tool_use`/`tool_result` sequence. This yields a reusable ordering for
+lossy context transitions:
+
+1. preserve protocol boundaries;
+2. derive every required replacement artifact;
+3. validate the complete set;
+4. persist it; and
+5. release the source turns only after persistence succeeds.
+
+The implementation also shows what this ordering does **not** prove. Its three
+memory files are individually replaced atomically, but the grouped operation is
+a sequence with best-effort rollback, not a crash-atomic multi-file
+transaction. The model-stream path calls basic window trimming before semantic
+compaction, so an unusually large in-flight turn can still force source loss
+through the emergency path. Finally, the repository provides unit-level
+contract evidence, not a fidelity or task-quality benchmark. Guarded admission,
+crash durability, emergency degradation, and semantic quality therefore remain
+four separate claims.
+
+- **Repo:** https://github.com/PebbleLog/SimonAgent
+- **Inspected revision:** https://github.com/PebbleLog/SimonAgent/commit/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed
+- **Primary sources:** [semantic compactor](https://github.com/PebbleLog/SimonAgent/blob/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed/core/compactor.py), [memory commit](https://github.com/PebbleLog/SimonAgent/blob/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed/core/memory.py), [context trimming](https://github.com/PebbleLog/SimonAgent/blob/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed/core/context.py), [call order](https://github.com/PebbleLog/SimonAgent/blob/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed/core/loop.py), and [compaction tests](https://github.com/PebbleLog/SimonAgent/blob/28f6b0a90d173e2c95fd7d6390041ea5b02a12ed/tests/test_compactor.py)
 
 ### The Illusion of Multi-Agent Advantage (arXiv, June 2026)
 
@@ -721,6 +895,33 @@ The agent–environment interface can be parameterized as a learnable bidirectio
 
 - **Key implication**: Extends Harness Engineering from manual craft to trainable infrastructure. The harness becomes a learned compression layer — context folding implemented at the interface level.
 - **Source**: [2606.12882] Wang et al., arXiv June 2026.
+
+### Agent-Side Memory as an Executor Interface (arXiv, September 2026)
+
+2AM separates long-horizon manipulation memory from motor execution: a
+multimodal agent retains interaction history and compiles it into subtask
+language plus optional 2D grasp, place, and move hints, while a single
+RGB-based action model remains episodically stateless. The action model is
+trained to accept those hints under condition dropout, spatial noise, and
+temporal jitter rather than receiving its own durable task memory. On the
+reported LIBERO-Mem evaluation, 2AM reaches 76.3% average completion versus
+14.8% for the strongest reported baseline, with 63.0% relaxed and 11.8% strict
+success.
+
+The architectural signal is the **memory-to-executor contract**, not a general
+claim that stateless executors are always superior. Keeping durable task state
+on the agent side makes memory ownership explicit and lets execution capability
+scale through interface bandwidth: natural-language subtasks bind coarse intent,
+while optional spatial and temporal hints bind finer intent. This also creates a
+clean attribution boundary between failures of remembered/planned intent and
+failures of motor execution. The evidence is limited to the paper's constrained
+robot-manipulation setting—single RGB observations, one action model, and no
+depth, online geometry, or planner-controlled object motion—and should not yet
+be generalized to other embodied domains.
+
+- **Source:** “2AM: Grounding Agent-Side Memory as Guidance for Steerable Action
+  Models in Long-Horizon Manipulation,” arXiv:2609.11308v1,
+  https://arxiv.org/abs/2609.11308v1
 
 ### Contrastive Skill Evolution (arXiv, June 2026)
 
@@ -1120,6 +1321,48 @@ content or users are adversarial.
 
 Source: [pinned comparative investigation](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md)
 and [concise finding](./findings/2026-09-02-hermes-agent-openclaw-comparison.md).
+
+### Capture pipelines need milestone-specific truth (GitHub, September 2026)
+
+[`chigwell/Penelopa.ai`](https://github.com/chigwell/Penelopa.ai) turns coding-agent
+sessions into recommendations, skills, checks, and prompts. Its more reusable
+signal is not the recommendation layer but the explicit refusal to collapse the
+capture path into one vague “connected” state.
+
+At inspected revision
+[`0abec61`](https://github.com/chigwell/Penelopa.ai/commit/0abec61340902ad6005c7b9762674764293e0191),
+the repository's maintained behavior contracts distinguish at least five
+milestones:
+
+1. **configured:** hook files and credentials exist, but the agent may not have
+   approved the hooks;
+2. **activated:** a real hook event—not a synthetic installer self-test—has
+   been observed;
+3. **spooled:** capture has durably queued a bounded event and returned within
+   the hook budget;
+4. **acknowledged:** the server has accepted the expected offset and hash; a
+   local queue receipt proves only spooling; and
+5. **stopped:** collection is paused or hooks are uninstalled; closing or
+   signing out of the desktop UI does not stop independent hooks.
+
+This is a general observability rule for agent telemetry and improvement loops:
+**name status after the strongest external milestone actually proved**. A local
+test cannot establish host approval, enqueue success cannot establish remote
+acceptance, and UI logout cannot establish capture cessation. Systems should
+surface these as separate conditions with their own timestamps or receipts,
+rather than a single green connection badge.
+
+The contracts also preserve v2 outbox epochs, hashes, idempotency keys, strict
+acknowledgement checks, monotonic cursors, quarantine, retry scheduling, and
+interruption recovery. Those details make the state boundaries concrete, but
+they are repository-authored contracts rather than an independently exercised
+end-to-end deployment in this observation. The privacy policy confirms the
+operational consequence: transcripts, prompts, outputs, command summaries, and
+workflow context may be uploaded, while sign-out alone does not halt collection.
+
+- **Repo:** https://github.com/chigwell/Penelopa.ai
+- **Inspected revision:** https://github.com/chigwell/Penelopa.ai/commit/0abec61340902ad6005c7b9762674764293e0191
+- **Primary sources:** [README and connection lifecycle](https://github.com/chigwell/Penelopa.ai/blob/0abec61340902ad6005c7b9762674764293e0191/README.md), [maintained behavior contracts](https://github.com/chigwell/Penelopa.ai/blob/0abec61340902ad6005c7b9762674764293e0191/docs/behavior-contracts.md), [desktop delivery architecture](https://github.com/chigwell/Penelopa.ai/blob/0abec61340902ad6005c7b9762674764293e0191/docs/desktop-delivery.md), and [privacy policy](https://github.com/chigwell/Penelopa.ai/blob/0abec61340902ad6005c7b9762674764293e0191/PRIVACY.md)
 
 ### Perception Architecture — The Missing Layer (June 2026)
 

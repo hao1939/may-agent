@@ -1,15 +1,15 @@
 <ai_context>
-summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), and hardware-confined signing with pre-committed effect authority."
-triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment"]
-last_updated: "2026-08-09"
-source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing. Scans #176–#183, #453; maintained with current source checks."
+summary: "Companion note to agent-security-defense-architectures.md: verified/formal enforcement patterns for AI agent security. These share a common principle — safety enforcement that does not depend on model cooperation. Covers out-of-band deterministic enforcement, institutional attestation, policy autoformalization, trust-by-construction, multi-layer verification oracles, per-datum trust scoring, runtime trace enforcement, knowledge-boundary defense, physical-world attestation, context-to-execution integrity (CXI), off-host identity-bound authorization (aiAuthZ), hardware-confined signing with pre-committed effect authority, adversarial MCP-server verification with replayability limits, mediated-action receipts that separate integrity, signer attribution, completeness, and per-request authentication strength, fail-closed shell/file hooks whose policy coverage is regression-tested against bypasses, model-relative SMT containment for agent-authored permission changes, path-composition evidence for layered controls, explicit egress assurance states, and MCP tool pins whose identity semantics and missing-observation behavior are part of the enforcement claim."
+triggers: ["verified enforcement", "out-of-band defense", "Progent", "CaMeL", "FIDES", "institutional attestation", "Cedar policy", "autoformalization", "Kiko protocol", "trust-by-construction", "VIGIL trace enforcement", "knowledge-based PR", "KPR", "hardware-gated agent", "deceptive fixes", "TerraProbe", "Robust-TO", "per-datum trust", "CXI", "context-to-execution integrity", "aiAuthZ", "identity-bound authorization", "hardware keystore", "PKCS#11", "signing authority", "payload commitment", "SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "Pipelock", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "protected path", "guardrail regression test", "OpenShell prover", "maximum policy", "SMT containment", "Z3 counterexample", "credentialed L4", "Kubernetes RBAC", "defense in depth", "path composition", "secure-agent", "egress firewall", "uninspected egress", "coverage posture", "tool identity", "tool pin", "schema canonicalization", "Rul1an/assay"]
+last_updated: "2026-09-17"
+source_basis: "Extracted from agent-security-defense-architectures.md §2.33–§2.42. §2.44–§2.45 (CXI, aiAuthZ) moved from defense-architectures.md §Execution Boundary Patterns (scan #453). Patterns sourced from arXiv June–August 2026 papers, including 2606.26479 Progent, 2606.26298 Institutional Attestation, 2606.26649 Cedar Pipeline, 2606.26590 TerraProbe, 2606.26156 Kiko, 2606.26904 Robust-TO, 2606.26524 VIGIL, 2606.26721 KPR, 2606.27231 Quantum Hardware Agent, 2607.06000 CXI, 2607.05518 aiAuthZ, and 2608.06130 hardware-confined signing; HN item 49649729 and the pinned SkillProof repository commit f5ddb4b (checked 2026-09-10); Pipelock's pinned repository commit f7d1816 (checked 2026-09-11) for mediated-action receipt verification and explicit evidence limits; HN item 49658005 plus agent-guardrails-kit's pinned commit 18c241e (checked 2026-09-11) for fail-closed, regression-tested hook enforcement; PassControl's pinned repository commit f9cb702 (checked 2026-09-12) for per-request authentication-strength receipts, revocation-state posture, and explicit receipt limits; HN item 49713261 plus OpenShell's formal-methods note and pinned spike commit df0ee1a (checked 2026-09-15) for model-relative policy containment, explicit unsupported surfaces, and counterexample-bearing permission review; k8s-rca-agent commit 29f5fad (checked 2026-09-15) for path-composition limits across RBAC, hooks, credentials, and redaction; secure-agent commit 017ec5a (checked 2026-09-16) for monitor-versus-block semantics, fail-open inspection, bounded payload coverage, and explicit uninspected-egress posture; and Rul1an/assay commit 900e536 (checked 2026-09-17) for structurally bounded tool-identity output, schema-pin canonicalization limits, and missing-identity behavior. Scans #176–#183, #453; maintained with current source checks."
 </ai_context>
 
 # Agent Security: Verified Enforcement Patterns
 
 **Companion note** to [Agent Security: Defense Architectures](./agent-security-defense-architectures.md).
 
-This note catalogs 12 defense patterns that share a structural principle:
+This note catalogs defense patterns that share a structural principle:
 **enforcement that does not depend on agent cooperation**. Unlike detection
 or behavioral guardrails, these mechanisms make violations structurally
 impossible, cryptographically bounded, or independently verifiable.
@@ -469,3 +469,493 @@ with SoftHSM and 1.4 s with the tested TPM, not per-request JWT/HMAC loops.
 **Connection to CXI (§2.44):** a hardware root protects the credential, while a
 pre-committed effect manifest protects its use. Credential custody and action
 authorization are independent boundaries; both must be proven.
+
+## A Signed Verdict Is Not a Replayable Experiment (HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49649729
+
+**Repo:** https://github.com/roblambert9/skillproof-verifications
+
+**Pinned observation:** repository commit
+`f5ddb4b21eba888c06bea5ec40566ff4efe905b1`
+
+HN surfaced SkillProof, a newly published adversarial-execution corpus for five
+official MCP servers. Its self-reported results are concrete rather than a
+scanner score: the fetch server followed a 302 redirect to a loopback canary;
+the Postgres server accepted a stacked `COMMIT; INSERT` that escaped its
+read-only transaction; SQLite's `write-query` accepted `VACUUM INTO` and wrote
+a database copy to an arbitrary process-writable path; and the memory server
+persisted relations whose endpoints did not exist. The filesystem server was
+the counterexample: 174 adversarial cases across three seeds found no boundary
+violation, including traversal and symlink probes.
+
+The implementation evidence supports a useful design rule: **a capability's
+label or description is not its enforcement boundary**. “Read-only query,”
+“write-query for INSERT/UPDATE/DELETE,” and “relation between entities” remained
+semantic claims until execution tested transaction control, the full SQL
+language, and referential integrity. MCP hosts should derive authority from OS,
+database, network, and schema constraints—not from the advertised tool text—and
+then test those constraints with honest controls, hostile cases, and an
+anti-vacuity requirement.
+
+The corpus also exposes an attestation distinction that its README blurs. At the
+pinned commit, the included Ed25519 verifiers validate the published manifests
+for fetch, memory, Postgres, and SQLite. That proves those JSON payloads match
+the repository's demo signing key; it does **not** independently prove that the
+experiments ran. Fetch and memory include drivers and raw reports, so their
+runs can be inspected and rerun. The Postgres and SQLite directories include
+results, manifests, and signature verifiers but no driver, setup script, or raw
+report, despite the top-level claim that each verification reruns end to end.
+The filesystem directory includes a driver and report but no standalone
+verification script. Therefore “4 of 5 fail” is credible self-reported evidence,
+not yet a fully replayable independent replication.
+
+**Operational evidence ladder:**
+
+1. Tool descriptions state intended semantics.
+2. Adversarial traces demonstrate one observed behavior at a pinned version.
+3. Signed manifests preserve the issuer's exact claim against mutation.
+4. Published drivers, fixtures, raw traces, and dependency pins make the claim
+   replayable.
+5. Independent reruns establish that the issuer's environment or harness did
+   not create the result.
+
+Do not collapse levels 2–5 into “verified.” A signature protects provenance and
+integrity; reproducibility and independent replication establish different
+properties.
+
+## A Receipt's Validity Is a Vector, Not a Boolean (GitHub, September 2026)
+
+**Repo:** https://github.com/luckyPipewrench/pipelock
+
+**Pinned observation:** repository commit
+`f7d1816f1a5ad63d501b0c48f36066f836f59022`
+
+Pipelock provides a concrete implementation of an external agent-action boundary:
+it mediates HTTP, WebSocket, MCP, and A2A traffic, records verdict and policy
+metadata, and emits Ed25519-signed, hash-chained action receipts. The standalone
+verifier's code distinguishes two materially different checks. Without a trusted
+key it can check internal consistency, but marks the receipt **unpinned** and exits
+non-zero unless the operator explicitly allows that weaker result. With a supplied
+key, it verifies the signature against that pinned signer. Chain verification then
+checks contiguous sequence numbers and predecessor hashes.
+
+The more reusable signal is the project's explicit refusal to call this evidence
+complete. Its hard-limit registry says receipts can establish byte integrity,
+ordering, and signer binding for records they see, while separately naming gaps:
+
+- a key holder can omit an action or an entire pre-anchor session;
+- a compromised signing key can produce an in-domain indistinguishable record;
+- a malicious recorder cannot vouch for itself;
+- a disabled recorder proves nothing;
+- unmediated traffic remains outside the receipt set; and
+- TLS passthrough may expose only host, port, and byte counts rather than the
+  inner request.
+
+Its completeness command consequently caps the best result at `LIMITED`, not
+`COMPLETE` or `PASS`. This yields a practical evidence model with independent
+axes:
+
+1. **Integrity:** are the observed bytes and chain unchanged?
+2. **Attribution:** was the signer checked against a separately trusted key?
+3. **Configuration:** was recording enabled under the policy being claimed?
+4. **Coverage:** did every relevant action actually cross the mediated boundary?
+5. **Completeness:** could a key holder or pre-anchor interval omit evidence?
+
+A green signature check should answer only the first two axes. Claims such as
+“all agent egress was governed” additionally require independently attested
+containment and recorder configuration, plus an external witness or anchor where
+omission matters. This complements the SkillProof evidence ladder above: a signed
+claim may be authentic and untampered while still being incomplete, unmediated,
+or non-replayable.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/luckyPipewrench/pipelock/blob/f7d1816f1a5ad63d501b0c48f36066f836f59022/README.md),
+[`docs/evidence/hard-limits.md`](https://github.com/luckyPipewrench/pipelock/blob/f7d1816f1a5ad63d501b0c48f36066f836f59022/docs/evidence/hard-limits.md),
+[`docs/guides/receipt-verification.md`](https://github.com/luckyPipewrench/pipelock/blob/f7d1816f1a5ad63d501b0c48f36066f836f59022/docs/guides/receipt-verification.md),
+and
+[`cmd/pipelock-verifier/receipt.go`](https://github.com/luckyPipewrench/pipelock/blob/f7d1816f1a5ad63d501b0c48f36066f836f59022/cmd/pipelock-verifier/receipt.go).
+
+**Evidence boundary:** this repository inspection verifies the implementation and
+documented semantics at one commit. It does not independently establish detection
+accuracy, deployment coverage, or the README's broader product-performance claims.
+
+## Default-Deny Needs a Coverage Contract, Not Just an Allow-List (HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49658005
+
+**Repo:** https://github.com/danielhagever/agent-guardrails-kit
+
+**Pinned observation:** repository commit
+`18c241ed172595ba73d827a2df42a189915ab4ff`
+
+HN surfaced `agent-guardrails-kit`, a new Claude Code hook implementation whose
+useful signal is not merely “allow-lists beat deny-lists.” Its Bash gate defaults
+to denying any command that both references a configured protected tree and uses
+a verb outside a short read-only allow-list. Its separate write gate recursively
+harvests every configured path key from nested tool payloads, rejects writes in
+protected paths or outside the allowed tree, and denies payloads from which it
+cannot read a path. Malformed configuration, malformed deny patterns, and
+unparseable shell quoting also produce denial rather than an optimistic allow.
+
+The repository records concrete bypass classes that motivated this inversion:
+`cp`, `tee`, `dd`, `sed -i`, `install`, and `rsync`; nested interpreters and
+subshells; variable, symlink, and `../` indirection; `find -delete`/`-exec`;
+`xargs`; and clobber redirection. More importantly, these examples are encoded as
+regression cases alongside benign controls such as `cat`, `grep`, and non-acting
+`find`. The checked commit's suite claims 125 assertions; inspection confirms
+that the suite feeds synthetic Claude Code hook payloads to the real wrappers and
+asserts both allow and deny exit codes, although this source check did not execute
+the author-controlled suite independently.
+
+The reusable pattern is a **coverage contract** with four parts:
+
+1. **Reference boundary:** define the exact tree, resource, or effect being
+   protected and resolve paths against the caller's actual working directory.
+2. **Payload coverage:** enumerate and test every tool and nested field capable
+   of naming that resource; “hook installed” is not evidence that its input was
+   understood.
+3. **Decision closure:** unknown verbs, missing paths, parse failures, and broken
+   policy must have an explicit fail-closed result.
+4. **Counterexample retention:** every discovered bypass becomes a permanent
+   hostile regression, paired with benign controls so “blocks everything” cannot
+   masquerade as safety.
+
+This also bounds the claim. The Bash default-deny rule activates only when its
+parser detects a protected-tree reference; unrelated commands are allowed unless
+a configured raw-string deny pattern catches them. Hooks run inside the client,
+not beneath it, and cannot constrain credentials already present in the process
+or tools outside that hook system. Regex and token parsing are not an OS security
+boundary. Therefore this is a useful reference-monitor discipline for a declared
+path set, but not a substitute for scoped credentials, filesystem permissions,
+or sandbox containment.
+
+**Design implication:** evaluate guardrails by the Cartesian product of
+`tool × payload shape × path/effect encoding × parser failure mode`, then preserve
+both bypasses and allowed controls in CI. An allow-list without that matrix can
+still be fail-open because the guard may never recognize that the protected
+effect was named.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/danielhagever/agent-guardrails-kit/blob/18c241ed172595ba73d827a2df42a189915ab4ff/README.md),
+[`gates/bash_guard.py`](https://github.com/danielhagever/agent-guardrails-kit/blob/18c241ed172595ba73d827a2df42a189915ab4ff/gates/bash_guard.py),
+[`gates/write_guard.py`](https://github.com/danielhagever/agent-guardrails-kit/blob/18c241ed172595ba73d827a2df42a189915ab4ff/gates/write_guard.py),
+and
+[`tests/run_tests.sh`](https://github.com/danielhagever/agent-guardrails-kit/blob/18c241ed172595ba73d827a2df42a189915ab4ff/tests/run_tests.sh).
+
+**Evidence boundary:** this is an implementation inspection of a newly published,
+zero-star repository surfaced by a one-point HN submission. It verifies that the
+named fail-closed branches and regression cases exist at the pinned commit; it is
+not an independent security audit, bypass-resistance measurement, or production
+validation.
+
+## Identity Proven at Mint Is Not Per-Request Possession (GitHub, September 2026)
+
+**Repo:** https://github.com/Vertias3u/PassControl
+
+**Pinned observation:** repository commit
+`f9cb7026067b135d0ff1cbee04b2c91a54e7b5dd`
+
+PassControl is an unusually explicit implementation of an agent credential gateway:
+it keeps provider keys behind a proxy, mints short-lived work visas after an Ed25519
+passport challenge, and gates requests by endpoint, model scope, live policy, budget,
+suspension, and kill state. The useful signal is not the product's broad “agent
+passport” framing, but the narrower distinctions its code and documentation preserve.
+
+A passport signature proves possession when a visa is minted. In `off` mode, later
+requests use that visa as a bearer credential. `observe` mode may check a request
+proof, but still records authentication as ordinary `passport`; only `required`
+mode rejects missing, invalid, stale, replayed, or unavailable proofs and upgrades the
+call to `passport_proof_per_request`. The signed receipt mirrors that distinction: its
+`auth` claim identifies a Direct Agent Key or enforced per-request proof, while the
+field is absent for a bearer passport call. Observing a valid proof is deliberately not
+promoted into assurance supplied to third parties.
+
+That design yields a general receipt rule: **record the enforcement actually applied to
+this request, not the strongest credential enrolled for the agent**. Agent identity,
+key custody, proof at credential mint, and proof at effect time are different claims.
+A verifier should interpret absent assurance fields conservatively rather than infer
+per-request possession from a passport subject identifier.
+
+The repository also makes current-state enforcement posture visible:
+
+- passport expiry and rotation grace are checked at mint, not on every issued visa;
+- passport scopes are visa snapshots and may lag edits for the 5–15 minute visa TTL;
+- blocking an already issued visa depends on Redis-backed suspension/kill state;
+- kill-state reads default to fail-open unless `KILL_SWITCH_FAIL_CLOSED=true` is set;
+  required sender-proof replay checks and Direct Agent Key validation fail closed; and
+- sender proof binds method, gateway origin/path, timestamp, nonce, and visa hash, but
+  not the body or query, and does not attest hardware-backed key custody.
+
+Consequently, a receipt should carry both an **authentication-strength claim** and the
+**effective policy/state revision** evaluated for that call. Even then, it remains an
+issuer record rather than independent truth. PassControl's receipt implementation says
+its digest covers client request bytes, not the gateway-mutated request or response;
+logging and signing are best-effort; absence of a receipt proves nothing; and signed
+costs do not establish provider invoices. This extends the receipt vector above:
+integrity, signer attribution, coverage, and completeness still do not answer whether
+this specific call used bearer authentication or fresh proof of possession.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/Vertias3u/PassControl/blob/f9cb7026067b135d0ff1cbee04b2c91a54e7b5dd/README.md),
+[`SECURITY.md`](https://github.com/Vertias3u/PassControl/blob/f9cb7026067b135d0ff1cbee04b2c91a54e7b5dd/SECURITY.md),
+[`lib/receipt.ts`](https://github.com/Vertias3u/PassControl/blob/f9cb7026067b135d0ff1cbee04b2c91a54e7b5dd/lib/receipt.ts), and the
+[data-plane proxy route](https://github.com/Vertias3u/PassControl/blob/f9cb7026067b135d0ff1cbee04b2c91a54e7b5dd/app/api/v1/%5Bprovider%5D/%5B...path%5D/route.ts).
+
+**Evidence boundary:** this source inspection confirms the declared branches and
+receipt construction in one pinned revision. It did not run the repository's tests,
+perform an independent security audit, deploy Redis/Supabase, or demonstrate that a
+real deployment mediates all relevant provider traffic.
+
+## A Formal Policy Proof Is Only as Broad as Its Action Model (HN, September 2026)
+
+**Source:** https://news.ycombinator.com/item?id=49713261
+
+**Primary note:** https://nvidia.github.io/OpenShell-Research/dev-notes/posts/2026-09-10-learning-formal-methods-agent-policy-prover/
+
+**Repo:** https://github.com/NVIDIA/OpenShell
+
+**Pinned observation:** `spike/maximal-policy-prover-subset` commit
+`df0ee1aaaf6af7ee6193b785fd189449a3848fe0`
+
+OpenShell reports a concrete capability-composition failure: a policy blocked an
+agent's attempted repository write through inspected REST traffic, but the agent
+then used the same GitHub credential with `git-remote-https`, an allowed binary
+whose wire protocol bypassed the layer-7 rule. The important unit of review was
+therefore not a host, credential, binary, or API rule in isolation. It was their
+composition: `credential × binary × endpoint × protocol layer × method × path`.
+
+The inspected prover branch turns one part of that review into a satisfiability
+query. For a candidate policy and a pre-approved maximum it asks whether there
+exists an action such that:
+
+```text
+candidate_allows(action) AND NOT maximum_allows(action)
+```
+
+`Unsat` yields `WithinMax`; `sat` yields `ExceedsMax` plus a concrete symbolic
+action; and solver uncertainty or an unsupported policy surface yields
+`Unsupported`. Raw L4 is deliberately broader than REST or WebSocket at the same
+binary, host, and port, so a REST maximum does not silently authorize an
+uninspectable wire-protocol path. Separate queries flag link-local reach,
+credentialed L7 bypass, newly credentialed endpoint reach, and new HTTP methods.
+This is materially stronger review evidence than asking another model to notice
+all interacting permission fields: the counterexample is deterministic for the
+encoded policy semantics and does not consume reviewer tokens.
+
+The reusable pattern is **counterexample-bearing permission review**:
+
+1. keep a human-approved capability ceiling distinct from the current policy;
+2. encode the whole enforcement-relevant action tuple, not a flat permission list;
+3. ask for an action in the candidate-minus-maximum set;
+4. return the witness when that set is non-empty; and
+5. route `unknown` and unmodeled syntax to review rather than interpreting them as
+   approval.
+
+The fifth step is essential because the proof is model-relative. This spike
+models L4, REST, and WebSocket allow surfaces plus a supported glob subset, but
+explicitly does not yet model deny-rule precedence, query constraints, GraphQL,
+MCP controls, endpoint path scoping, credential rewrite flags, or CIDR-only
+`allowed_ips`. Its credential input records host-coarse presence rather than
+fine-grained credential scope; it analyzes policy, not the proxy's actual runtime
+decisions; and it reasons per sandbox rather than proving cross-sandbox intent.
+The repository documentation also calls maximum-policy containment “spike work,”
+even though the four narrower risk queries are described as gateway auto-approval
+gates. A green result must therefore name the model revision and supported
+surface, not claim that the whole agent is safe.
+
+**Evidence inspected at the pinned commit:**
+[`crates/openshell-prover/README.md`](https://github.com/NVIDIA/OpenShell/blob/df0ee1aaaf6af7ee6193b785fd189449a3848fe0/crates/openshell-prover/README.md),
+[`MAXIMUM_POLICY_ENVELOPE_SPIKE.md`](https://github.com/NVIDIA/OpenShell/blob/df0ee1aaaf6af7ee6193b785fd189449a3848fe0/crates/openshell-prover/MAXIMUM_POLICY_ENVELOPE_SPIKE.md), and
+[`src/envelope.rs`](https://github.com/NVIDIA/OpenShell/blob/df0ee1aaaf6af7ee6193b785fd189449a3848fe0/crates/openshell-prover/src/envelope.rs).
+
+**Evidence boundary:** the official research note supplies the reported bypass
+story; this run did not independently reproduce that incident. Repository
+inspection confirms the query shape, fail-closed branches, counterexample path,
+listed unsupported surfaces, and in-tree test cases at one spike commit. The
+local environment had no `cargo` binary, so the tests were not executed here;
+this is not a deployment audit or evidence that every OpenShell effect crosses
+the modeled enforcement boundary.
+
+## “Defense in Depth” Needs Path-Composition Evidence (GitHub, September 2026)
+
+**Repo:** https://github.com/SinaSnyder/k8s-rca-agent
+
+**Pinned observation:** repository commit
+`29f5fad33df4bba0c3e04c0747ba0265f96b53dc`
+
+This Kubernetes RCA prototype usefully separates several safety mechanisms: a
+namespaced Role grants only `get`, `list`, and `watch`; a pre-tool hook scans tool
+arguments for six mutation words; a post-tool hook redacts a small family of
+secret-like assignments; and instructions tell the agent to remain in `test-ns`.
+But listing these controls does not establish that one request traverses all of
+them. The MCP configuration launches its Kubernetes server with the generic
+`~/.kube/config`; the repository does not supply runtime evidence that this
+credential is the declared `rca-agent` ServiceAccount. Likewise, the inspected
+tree contains the hook scripts but no test or deployment receipt proving that
+every MCP or shell action passes through them.
+
+The layers also have different failure semantics. `pre_tool_use.py` ignores the
+tool name, lowercases serialized arguments, allows on every exception, and uses
+substring matching. Executing the pinned script locally on synthetic payloads
+allowed `kubectl label pod ...` (a mutation outside its six words), allowed
+malformed JSON, and blocked a read of a pod named `delete-worker`. This is both a
+false-negative and false-positive demonstration of the parser—not a cluster
+exploit. The Role would still reject the mutation **if** the process actually
+uses the bound ServiceAccount. The post-tool regex successfully redacted direct
+`token=...` and `password: ...` examples, but that does not prove coverage for
+all sensitive structures or channels.
+
+The reusable lesson is to verify **path composition**, not count layers. For each
+agent effect, retain evidence for:
+
+1. the runtime identity and authorization decision at the resource boundary;
+2. the exact tool adapter and payload shape seen by each hook;
+3. fail-closed behavior for malformed, unknown, and bypass-shaped inputs;
+4. the output channels and data shapes covered by redaction; and
+5. an end-to-end test showing the same request crossed those controls in order.
+
+A weak client hook can still be useful for early feedback when a lower,
+credential-enforced boundary is proven. Without runtime identity and mediation
+receipts, however, RBAC manifests plus hook source are separate candidate
+controls—not evidence of cumulative defense in depth.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/SinaSnyder/k8s-rca-agent/blob/29f5fad33df4bba0c3e04c0747ba0265f96b53dc/README.md),
+[`mcp-config.json`](https://github.com/SinaSnyder/k8s-rca-agent/blob/29f5fad33df4bba0c3e04c0747ba0265f96b53dc/mcp-config.json),
+[`rbac/role.yaml`](https://github.com/SinaSnyder/k8s-rca-agent/blob/29f5fad33df4bba0c3e04c0747ba0265f96b53dc/rbac/role.yaml),
+[`rbac/role-binding.yaml`](https://github.com/SinaSnyder/k8s-rca-agent/blob/29f5fad33df4bba0c3e04c0747ba0265f96b53dc/rbac/role-binding.yaml),
+[`hooks/pre_tool_use.py`](https://github.com/SinaSnyder/k8s-rca-agent/blob/29f5fad33df4bba0c3e04c0747ba0265f96b53dc/hooks/pre_tool_use.py), and
+[`hooks/post_tool_use.py`](https://github.com/SinaSnyder/k8s-rca-agent/blob/29f5fad33df4bba0c3e04c0747ba0265f96b53dc/hooks/post_tool_use.py).
+
+**Evidence boundary:** this inspection and synthetic local execution verify the
+pinned source's behavior for the named payloads. They do not deploy the agent,
+exercise a Kubernetes cluster, prove which credential a real installation uses,
+or establish exploitability against OpenCode or either MCP server.
+
+## Egress Assurance Needs Observed, Blocked, and Uninspected States (GitHub, September 2026)
+
+**Repo:** https://github.com/cavi-ai/secure-agent
+
+**Pinned observation:** repository commit
+`017ec5a7e0507e8b82910e02106b2249bfd50e2b`
+
+Secure-agent supplies a useful implementation signal because its documentation
+and code resist collapsing an egress detector into a containment claim. Its
+opt-in local HTTP/HTTPS proxy inspects request headers, query strings, and the
+first 1 MiB of request bodies. A policy layer distinguishes a credential in the
+expected authorization header to a configured vendor host from the same token in
+a body, query, other header, or foreign-host request. Typed regexes and
+per-install HMAC fingerprints provide the stronger signals; entropy matches are
+always suspect and never blocking. Redirect following is disabled so a
+host-scoped decision cannot be bypassed by the proxy itself fetching another
+host.
+
+The important control semantics are explicit:
+
+- every rule starts in `monitor`, where a classified leak increments
+  `would_block` and the request proceeds;
+- only a rule promoted to `block` produces an HTTP 403;
+- TLS-pinned and non-proxied connections remain outside payload inspection;
+- inspection errors, timeouts, undecodable payloads, novel unregistered secrets,
+  and bytes beyond the bounded prefix are not fail-closed coverage; and
+- the threat model targets accidental and low-effort leakage, not a malicious
+  agent that encrypts, steganographically encodes, or routes around the proxy.
+
+This yields a reusable assurance model for agent egress. Status should report at
+least **observed would-block**, **enforced block**, and **uninspected egress** as
+separate states, plus the payload window and detector version. “No detected
+leak” is not “no leak,” and “a blocking mode exists” is not evidence that it was
+enabled for the matching rule. A fourth state—**inspection failure allowed**—is
+also useful when the mediator deliberately prioritizes agent availability.
+Coverage telemetry does not make a fail-open path safe, but it prevents an
+unknown path from being laundered into a clean security result. This is the
+application-payload analogue of [Containarium's activation and protocol-coverage
+finding](./findings/2026-09-10-opt-in-egress-enforcement.md): one asks whether the
+network policy was attached and covered the address family; the other asks
+whether the flow traversed inspection, the relevant bytes were visible, and the
+matching detector was armed to block.
+
+This pattern complements path-composition evidence above: a deployment can only
+claim governed egress when it proves that the relevant process was routed
+through the proxy, the payload region was inspected successfully, a matching
+rule was actually in blocking mode, and no alternate network path remained.
+Secure-agent itself does not make that broad claim; its README records bypassing
+endpoints in a rolling `uninspected_egress` view and its threat model names the
+fail-open boundary.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/README.md),
+[`docs/ARCHITECTURE.md`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/docs/ARCHITECTURE.md),
+[`docs/FIREWALL_THREAT_MODEL.md`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/docs/FIREWALL_THREAT_MODEL.md),
+[`engine.go`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/daemon/internal/firewall/engine.go),
+[`policy.go`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/daemon/internal/firewall/policy.go),
+[`engine_test.go`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/daemon/internal/firewall/engine_test.go), and
+[`proxy.go`](https://github.com/cavi-ai/secure-agent/blob/017ec5a7e0507e8b82910e02106b2249bfd50e2b/daemon/internal/proxy/proxy.go).
+
+**Evidence boundary:** this is static inspection of one pinned repository
+revision. The run did not execute its tests, install the CA, route a real agent,
+measure detector precision/recall, exercise encoded-payload normalization, or
+independently audit bypass resistance. In-tree tests confirm that source cases
+exist for vendor-auth allowance, monitor-mode `would_block`, and promoted-rule
+blocking; they are not reproduced benchmark results or production evidence.
+
+## Tool Pins Must Bind the Enforcer's Semantics, Not Just a Stable Digest (GitHub, September 2026)
+
+**Repo:** https://github.com/Rul1an/assay
+
+**Pinned observation:** repository commit
+[`900e53648ed80cb93d6eb4e574f0139889804c95`](https://github.com/Rul1an/assay/commit/900e53648ed80cb93d6eb4e574f0139889804c95)
+
+Assay's MCP proxy implements a useful two-part tool-identity control. On a
+`tools/list` response it derives an identity from server ID, tool name, input
+schema, and description, then caches that identity for later `tools/call`
+policy evaluation. A configured pin and a different observed identity produce
+`E_TOOL_DRIFT`. The current revision also tests that the proxy-added
+`tool_identity` object has exactly four leaves—`server_id`, `tool_name`,
+`schema_hash`, and `meta_hash`—and carries no added certification or partner
+status. This structural allow-set is stronger than scanning output strings:
+status-like words supplied by the upstream tool remain upstream data, while the
+proxy is prevented from adding an unsupported status assertion of its own.
+
+The same source makes two enforcement boundaries visible:
+
+1. **Canonical equality is not necessarily policy equality.** The schema digest
+   uses RFC 8785/JCS. JCS renders numbers through the ECMAScript double model,
+   so distinct integers above `2^53`, such as `9007199254740993` and
+   `9007199254740992`, can have the same schema hash. Assay's own test shows that
+   its `jsonschema` enforcement path still distinguishes those values for
+   `maximum`, `exclusiveMaximum`, `minimum`, `exclusiveMinimum`, `const`, and
+   `enum`. Thus two schemas can share the pinned identity while admitting
+   different calls. Canonicalization removes irrelevant serialization drift only
+   when its equivalence relation matches the downstream interpreter's.
+2. **Absent observation is not drift in the current decision helper.** Tool
+   identities enter the cache only after a parseable `tools/list` response. The
+   client-to-server path can then look up no identity—for example before that
+   discovery exchange—and `tool_drift_decision` returns no pin decision when the
+   runtime identity is absent. The optional evidence carrier records
+   `identity_state: absent`, but that carrier is explicitly non-blocking. Other
+   policy rules may still deny the call; the configured identity pin itself does
+   not establish fail-closed coverage for this state.
+
+The reusable requirement is therefore a three-part contract: define the exact
+fields and canonicalization included in identity, prove that identity equality
+implies equivalent enforcement for the downstream validator, and make every
+missing, invalid, or stale identity state an explicit policy outcome. A stable
+hash is useful evidence, but it is not an authority boundary unless its semantic
+model and its observation lifecycle match the decision path.
+
+**Evidence inspected at the pinned commit:**
+[`tools.rs`](https://github.com/Rul1an/assay/blob/900e53648ed80cb93d6eb4e574f0139889804c95/crates/assay-core/src/mcp/proxy/tools.rs),
+[`identity.rs`](https://github.com/Rul1an/assay/blob/900e53648ed80cb93d6eb4e574f0139889804c95/crates/assay-core/src/mcp/identity.rs),
+[`server.rs`](https://github.com/Rul1an/assay/blob/900e53648ed80cb93d6eb4e574f0139889804c95/crates/assay-core/src/mcp/proxy/server.rs),
+[`client.rs`](https://github.com/Rul1an/assay/blob/900e53648ed80cb93d6eb4e574f0139889804c95/crates/assay-core/src/mcp/proxy/client.rs),
+[`fail_closed.rs`](https://github.com/Rul1an/assay/blob/900e53648ed80cb93d6eb4e574f0139889804c95/crates/assay-core/src/mcp/policy/engine_next/fail_closed.rs), and
+[`ADR-043`](https://github.com/Rul1an/assay/blob/900e53648ed80cb93d6eb4e574f0139889804c95/docs/architecture/ADR-043-evidence-chain-integrity-invariants.md).
+
+**Evidence boundary:** Scout statically inspected the pinned source and its
+in-tree tests but did not clone the repository, run the Rust tests, operate the
+proxy against a live MCP server, or test whether other policy rules mask the
+missing-identity path in a particular deployment. The numeric collision and
+validator disagreement are assertions encoded by the repository's tests, not an
+independent reproduction in this run.

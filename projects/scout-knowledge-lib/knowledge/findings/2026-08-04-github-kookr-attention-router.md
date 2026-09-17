@@ -2,9 +2,9 @@
 title: "Kookr — Human Attention Routing Becomes a First-Class Agent Layer"
 source: github
 date: 2026-08-04
-last_updated: 2026-08-21
+last_updated: 2026-09-11
 type: finding
-tags: [github, coding-agents, supervision, attention-routing, multi-agent, hooks, github-awareness]
+tags: [github, hn, coding-agents, supervision, attention-routing, multi-agent, hooks, github-awareness, long-running-agents]
 relevance: high
 ---
 
@@ -88,3 +88,61 @@ The evidence remains early: the HN submission had 3 points and two comments at r
 - **Repo:** https://github.com/ClachDev/Voro
 - **Design:** https://github.com/ClachDev/Voro/blob/main/docs/DESIGN.md
 - **README:** https://github.com/ClachDev/Voro/blob/main/README.md
+
+## HN Update — An inbox needs three independent liveness planes (2026-09-11)
+
+**Pizza Bot OSS**, submitted in HN item 49657189, extends the attention-router
+pattern from supervising several coding terminals to supervising asynchronous,
+long-running work. Its visible contract is an inbox: finished runs enter global
+**Unread**, durable approval requests enter global **Action**, and folders remain
+an orthogonal organization layer. That separation matters because “where this
+thread belongs” and “what judgment it needs now” are different dimensions; a
+folder filter must not hide a pending approval from the global action queue.
+
+The repository architecture shows that this UI is supported by three different
+liveness mechanisms rather than one generic “running” state:
+
+1. **Execution liveness:** an in-process `ProtocolRunManager` owns a run after the
+   request that started it disconnects. Cancellation is generation-scoped by
+   `runId`, preventing a late abort from killing a replacement run on the same
+   thread.
+2. **Observation liveness:** per-run sequence numbers and `since`-based replay
+   fill the event gap before live-tail resumes. The client does not need to keep
+   every chat component mounted or every idle thread connected for work to
+   continue.
+3. **Attention liveness:** a separate durable terminal-activity stream drives
+   notifications, while checkpointed interrupts survive as actionable approval
+   state. Completion delivery and approval routing therefore do not depend on
+   the transient stream that renders model output.
+
+Its trigger recovery further exposes why these planes need distinct semantics.
+Cron intervals missed while the process was down fire once on startup, and
+crash-stranded occurrences are replayed within an attempt budget. But waking
+from sleep does **not** replay an in-flight occurrence because tool side effects
+may already have happened. Recovery is thus conditioned on both durable state
+and the kind of interruption; “reconnect,” “catch up,” and “retry execution” are
+not interchangeable operations.
+
+### Design implication
+
+A long-running-agent inbox should derive human queues from durable lifecycle and
+interrupt state, not from open sockets, mounted chat views, or a single boolean
+`running` flag. Model at least three independently testable contracts:
+
+- Can execution continue without an observer?
+- Can an observer reconstruct every event gap without re-executing work?
+- Can a human still find every completed result and unresolved decision after
+  clients, windows, or streams disappear?
+
+This sharpens Kookr and Voro's shared thesis: an attention router is reliable
+only when the claims it ranks survive independently of the interface currently
+showing them. Pizza Bot is implementation evidence, not reliability evidence;
+this run did not reproduce its recovery paths, and the HN submission had one
+point and no comments at retrieval.
+
+### Added sources
+
+- **Source:** https://news.ycombinator.com/item?id=49657189
+- **Repo:** https://github.com/pizza-bot-app/pizza-bot
+- **Architecture:** https://github.com/pizza-bot-app/pizza-bot/blob/main/docs/ARCHITECTURE.md
+- **README:** https://github.com/pizza-bot-app/pizza-bot/blob/main/README.md

@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-02"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 68 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts. Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
+last_updated: "2026-09-16"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, and 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69. Claims are traced to full primary sources and pinned code where available; titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -246,6 +246,129 @@ training, and co-evolution. Its breadth is also a risk: if every useful feedback
 source is called a world model, the term stops distinguishing prediction from
 memory, tools, and evaluators.
 
+### XHS reception frames harness evolution as a release pipeline
+
+A current [XHS HarnessEvolve post body](https://www.xiaohongshu.com/search_result/6a9ed8d3000000000d024c20),
+not merely its search card, translates the method into an engineering sequence:
+compare a failed trajectory with a reference trajectory, locate the first
+meaningful divergence, edit the implicated harness layer, reject answer leakage,
+and run regressions before admission. The author likens the two gates to agent
+CI/CD and attributes an ablation drop from 86.9 to 57.8 to removing the reference
+trajectory. Scout did not inspect the paper in this source-specific run, so the
+number and method remain the post author's account rather than independent
+verification.
+
+The reception itself adds one useful operational question. A commenter asks how
+the correct reference trajectory is obtained and how much reference coverage is
+needed. That is not a rebuttal, but it identifies the method's deployment hinge:
+first-divergence credit is only as available and representative as its reference
+trajectories. The practical fallback suggested by another commenter—retain
+replayable intermediate states—supports diagnosis when a gold trajectory is
+missing, but does not supply the same counterfactual supervision. This reinforces
+the existing separation between **diagnosis evidence** and **promotion evidence**:
+a plausible divergence can nominate a patch; protected regressions and fresh
+cases must still decide whether to ship it.
+
+### XHS now packages self-development as a multi-surface research program
+
+A later [XHS announcement body](https://www.xiaohongshu.com/explore/6aa15407000000002602237e)
+says ByteDance Seed and TokenWave launched a “Self-Developing Agents” project
+that groups Aspire, S³Gym, HarnessDev, and related papers, experiments, and code.
+Its most useful signal is organizational rather than technical: the post defines
+self-development as discovering problems, extracting experience, and then
+changing prompts, memory, tools, or workflows. That list spans several mutable
+coordinates in this note's taxonomy instead of presenting “self-improvement” as
+a single method.
+
+This announcement does **not** report comparative results, an admission gate,
+or evidence that the grouped methods improve one deployed agent. It therefore
+supports a narrower conclusion: self-development is becoming an umbrella
+research program organized around explicit mutable surfaces. Each included
+system still needs to disclose what changes, what persists, who evaluates the
+change, and which protected evidence permits promotion.
+
+### XHS survey reception converges on the mutable-layer question
+
+A current [XHS reading map](https://www.xiaohongshu.com/search_result/6a623f3d000000001d020a02)
+organizes six self-evolving-agent surveys through several competing cuts: what,
+when, and how a system changes; which component is optimized; whether evolution
+is model-centred, environment-centred, or joint; and whether prompts, memory,
+tools, control logic, or weights form the mutable scaffold. The post also
+attributes four possible forms of retained experience to one survey—skills,
+persistent memory, verifiable environmental feedback, and trainable model
+behaviour—and highlights “meta-evolution” of the improvement procedure itself.
+Scout did not inspect those six papers in this XHS-only pass, so these are the
+post author's descriptions rather than verified summaries of the surveys.
+
+The useful signal is convergence, not another taxonomy. The post's component
+question—**what exactly is being optimized?**—maps directly to this note's
+mutable-object coordinate. Its comments then expose the next unresolved layer:
+readers ask which layer should change after a failure, whether a small error can
+cause an overreaction analogous to an unstable training update, and whether
+memory evolution has demonstrated deployment cases. That practitioner response
+supports a stricter reporting rule: name both the mutable surface and the
+credit-assignment/admission mechanism. “Self-evolving” is otherwise too broad
+to distinguish a controlled release from an agent merely rewriting its own
+state. Engagement (198 likes and 323 saves when read) shows interest in a
+consolidated reading map, not evidence that any method works.
+
+### Procedural Graphs make the mutable procedure explicit—but graph syntax is not the gate
+
+[Procedural Graphs](https://arxiv.org/abs/2609.09153), surfaced in
+[HN item 49629868](https://news.ycombinator.com/item?id=49629868), represents
+procedural memory as typed procedure-to-procedure edges. At each step a guidance
+model localizes the current node and verbalizes its two-hop neighborhood; an
+offline refiner then proposes topology or attribute edits from successful and
+failed traces. Structural checks and a separate validation split decide whether
+the candidate replaces the retained graph, while rejected edits remain negative
+memory. This is a concrete external, inspectable, and reversible mutation surface
+rather than an implicit lesson buried in an ever-growing transcript.
+
+The broad comparison is meaningful: with a shared ReAct solver and training
+traces, the graph ranks first or joint first in 21 of 24 model–benchmark settings
+against no memory, summarized or retrieved experience, textual insights,
+conditional guidelines, linear workflows, and textual transition rules. The
+largest reported margin over the strongest baseline is 9 points; HotpotQA ranges
+from -0.9 to +1.3 points, so the advantage is not uniform. A same-graph ablation
+is more diagnostic: local two-hop guidance beats raw or generated full-graph
+injection on three benchmarks and uses 14.8–70.9% fewer tokens than full-graph
+generation, although it still costs 33.4% and 55.4% more tokens than no graph on
+GDPval and ALFWorld.
+
+Its evolution trace illustrates why rejection receipts matter. In the CFO
+simulator, validation rejected three performance regressions, one structurally
+invalid candidate, and a final mutation whose training survival reached 90% but
+validation fell to 85%. The returned checkpoint achieved 85% test survival
+against 0% for the unguided baseline. Yet each validation decision used only 20
+episodes and could turn on one or two outcomes; the paper explicitly frames
+those decisions as search traces rather than significance tests. Repeated
+non-decrease tests on a reusable validation set are therefore useful rollback,
+not inaccessible promotion evidence.
+
+HN discussion identifies the remaining attribution question: is the graph the
+essential representation, or an editable durable task list with named references?
+The study controls many memory baselines and shows that *localized* graph use is
+better than full-graph use, but does not isolate graph syntax against an equally
+editable hierarchical task list or simple self-modifying skill/harness. The
+durable operational lesson is narrower: externalize procedures into a typed
+artifact, localize what the solver sees, preserve rejected mutations, and keep a
+separate final test. Do not infer that every procedure needs a graph.
+
+A later [XHS explanation body](https://www.xiaohongshu.com/explore/6aa4bb3e0000000026015bc3)
+shows how that result is being translated for practitioners. Its useful metaphor
+is “GPS rather than rails”: locate the current node, expose a local neighborhood,
+and let the solver choose rather than forcing a fixed SOP. The post also correctly
+surfaces the paper's Gemini 3.5 Flash result in the CFO simulator: guidance reduced
+redundant tool use from 18.94 to 12.53 calls per simulated month while improving
+the enterprise score. That is not a universal efficiency result—the paper reports
+that calls increased for Claude Sonnet 4.6 and Gemini 3.1 Pro—nor does the post
+independently replicate the paper. Its broader “0% to 85%” headline is the returned
+CFO test checkpoint after a validation-selected evolution trace, not an aggregate
+across tasks or models. The reception is evidence that localized procedural
+guidance and its efficiency story are legible to builders, while reinforcing a
+reporting rule: retain the benchmark, model, split, denominator, and unit when
+turning an experiment into an operational claim.
+
 ## What the strongest evidence says
 
 ### Bounded skill learning works, but transfer is conditional
@@ -284,6 +407,89 @@ uses fixed domains, evaluation, archives, budgets, and human safety controls;
 its own limitations state that the implementation does not establish
 unbounded progress.
 
+### Beagle makes harness evolution operational—but its defaults are plumbing, not proof
+
+An HN submission surfaced Salesforce AI Research's open-source
+[Beagle](https://github.com/SalesforceAIResearch/Beagle), which turns the DarwinX
+harness-evolution procedure into a resumable campaign system. It treats harness source
+as the mutable artifact, evaluates candidates through each benchmark's native runner,
+keeps a genealogy database and isolated worktrees, distinguishes kept, archived,
+rejected, failed, and no-change nodes, and can preserve regressing specialists for later
+recombination without presenting them as the shipped best node. Its typed configuration
+also fails on unknown knobs rather than silently accepting configuration drift.
+
+The more important signal is the boundary Beagle's own documentation draws around those
+features. The generated smoke runs one node and one sample, and exercises only the built-in
+canary, content, and anti-cheat path. Cross-benchmark protection, mixture gates, repeated
+mini-evaluation, fixed comparison panels, scope constraints, and the optional verifier are
+separate opt-ins. Several settings have narrower behavior than their names suggest: the
+current mixture score is a regression floor rather than the parent-selection objective,
+`subset_eval_n_attempts` is not consumed by the hosted pipeline, and only one parent-solved
+canary is probed per node by default. Thresholds for regression and cross-benchmark gates
+must be calibrated from baseline rerun variance; copied margins are not evidence.
+
+This implementation sharpens the practical rule: **the presence of an evolution gate is
+not an evaluation claim**. A credible campaign record must name which gates actually ran,
+their sample counts and calibrated margins, the fixed or held-out task identities, the
+selection metric, and a final untouched-data evaluation of the selected commit. A dry-run
+or one-node smoke proves wiring, not generalized improvement.
+
+*Sources: [HN item 49650988](https://news.ycombinator.com/item?id=49650988);
+[Beagle repository](https://github.com/SalesforceAIResearch/Beagle);
+[pinned README](https://github.com/SalesforceAIResearch/Beagle/blob/15f12b7b014740583dda14454f0ba2227dd6de92/README.md),
+[DarwinX configuration guide](https://github.com/SalesforceAIResearch/Beagle/blob/15f12b7b014740583dda14454f0ba2227dd6de92/docs/darwinx-configuration.md),
+[typed configuration](https://github.com/SalesforceAIResearch/Beagle/blob/15f12b7b014740583dda14454f0ba2227dd6de92/beagle/algorithms/darwinx/config.py), and
+[algorithm adapter](https://github.com/SalesforceAIResearch/Beagle/blob/15f12b7b014740583dda14454f0ba2227dd6de92/beagle/algorithms/darwinx/algorithm.py),
+commit [`15f12b7`](https://github.com/SalesforceAIResearch/Beagle/commit/15f12b7b014740583dda14454f0ba2227dd6de92), inspected 2026-09-11. The published benchmark table and generalization claims are author-reported and were not independently reproduced here.*
+
+### Recurrent failures are stronger patch evidence than isolated failures—not promotion evidence
+
+[Ecdysis](https://arxiv.org/abs/2609.11677v1) changes the unit of harness
+repair from one failed trajectory to failure patterns recurring across a batch.
+Its multi-role FDCR stage separates diagnosis from implementation: analyst,
+critic, and engineer roles refine a structured modification specification; a
+coding agent changes the harness. This is a useful causal discipline because a
+single failure can reflect an idiosyncrasy of the task model rather than a
+systematic defect in prompts, state handling, or tool coordination. Editing the
+harness around every such error can shrink the valid action space into a
+model-specific workaround.
+
+The comparison controls the initial harness, frozen model weights, training
+evaluation, rollback, early stopping, and at most three candidate rounds.
+Candidates are evaluated on a subsequent complete training pass rather than on
+the trajectories that generated them, retained only on strict improvement, and
+then frozen before held-out testing. On the five-model by two-subset
+`τ²-Bench` matrix, average accuracy rises from 46.67% for per-failure
+self-evolution to 54.67% with batch aggregation and 59.33% with aggregation plus
+FDCR. Across `τ²-Airline`, `τ²-Retail`, and AgentBench, the paper reports
+58.67%→69.56% average accuracy (an 18.56% relative gain) over the same baseline.
+The harness was evolved with Qwen3-8B and reused without further evolution for
+four other task models, so the cross-model result is more informative than a
+same-model training replay.
+
+The efficiency result also separates two mechanisms. Aggregation without FDCR
+is cheapest and fastest: versus the self-evolution baseline, reported API cost
+falls from $8.484 to $2.485 on Retail and $6.382 to $2.136 on Airline, with
+1.42× and 3.23× speedups. FDCR recovers more accuracy but spends some of that
+advantage; its corresponding speedups are 1.30× and 1.84×. Collaborative
+critique is therefore an accuracy-oriented option, not the source of the main
+training-efficiency gain.
+
+The boundary matters: recurrence is **proposal evidence**, not causal proof or
+release authority. Correlated tasks can repeat the same spurious pattern, and
+the paper's promotion rule reuses 20 training tasks per `τ²` subset. The held-out
+20-task subsets and three trials provide useful transfer evidence, but this is a
+small, domain-limited campaign with author-reported results and no inspected
+implementation artifact. A production loop should cluster failures by mechanism,
+prefer changes supported across independent tasks and models, then still require
+fresh protected cases, regressions, lineage, and rollback.
+
+*Sources: [arXiv abstract](https://arxiv.org/abs/2609.11677v1),
+[full HTML](https://arxiv.org/html/2609.11677v1), and
+[API metadata](https://export.arxiv.org/api/query?id_list=2609.11677), inspected
+2026-09-11. Quantitative results are reported by the paper and were not
+independently reproduced here.*
+
 ### Realistic evaluation often matters more than another mutation operator
 
 AgentGym2 contains 437 tasks—182 complex tool-use, 57 data-analysis, and 198
@@ -316,6 +522,83 @@ disjoint 45/10/34 split, evolved-harness transfer averages only +0.6. These are
 protocol-level results for AHE-style evolution, not a direct refutation of
 RHO, but they justify requiring a harness-sensitivity diagnosis, matched task-
 level search, and disjoint transfer before crediting harness evolution itself.
+
+### Inherited task progress is not evidence that the research process improved
+
+Rekursiv.ai's HN-surfaced NanoChat campaign makes this distinction unusually
+concrete. Its agent teams preserved failed experiments, handed tested code and
+matched-seed panels to later waves, and sometimes revised role prompts and
+submission procedures. The current Priml recipe exposes a cumulative runnable
+sequence and reports a final B200 score of 0.887791 mean BPB over ten seeds.
+That is inspectable evidence of a better *training recipe*, not by itself a
+causal evaluation of the evolving research harness.
+
+The authors report that, in one retrieval-policy cohort, availability of the
+inherited recipe explained 97.79–100% of control-relative improvement area.
+They also disclose only two runs per model in one early-branch comparison,
+different provider stacks, human interventions, and a service interruption
+that left 35 completed panels awaiting qualification across 48 launched
+campaigns. Those details expose three separate ledgers:
+
+1. **task-state progress:** which code, configuration, failure, or measured
+   result descendants inherited;
+2. **process mutation:** which prompt, role, routing, deadline, or recovery rule
+   changed; and
+3. **process efficacy:** a matched comparison showing that the process change,
+   rather than inherited task state or extra opportunity, improved future
+   discovery.
+
+A swarm can be valuable while only the first ledger is strong. Preserve
+completion and qualification as different events, compare process variants
+from the same starting packet under matched resources, and report inherited-
+recipe contribution separately from incremental discovery. Otherwise
+"self-improving research" collapses artifact accumulation and causal
+meta-improvement into one label.
+
+Source: https://news.ycombinator.com/item?id=49716123  
+Primary report: https://rekursiv.ai/blog/autoautoresearch/  
+Repo: https://github.com/rekursiv-ai/priml  
+Inspected revision: https://github.com/rekursiv-ai/priml/commit/92c6bd2b23e922ecde5548431cd644c4cb6debe5  
+Runnable recipe and result table: https://github.com/rekursiv-ai/priml/blob/92c6bd2b23e922ecde5548431cd644c4cb6debe5/priml/baselines/nanochat/README.md#reproducing-the-blog-post
+
+### A documented promotion gate is not an enforced promotion gate
+
+[EvoOntology](https://github.com/ruc-datalab/EvoOntology) is a concrete,
+inspectable ontology-evolution layer for data agents. It versions semantic
+records, records tool-call trajectories rather than chain of thought, freezes a
+round budget, keeps rejected candidates in the same run, and advances the
+checkpoint only when a candidate is published. Its workflow distinguishes a
+protected validation reserve in fixed-split benchmarks from a frozen batch plus
+separately sampled validation tasks in rolling deployments. The authors report
+ontology-versus-baseline gains of 8.8 points on BIRD, 20.0 on DDR-Bench, and 1.0
+on InsightBench across a four-backbone subset; these are repository/paper
+claims, not independently reproduced results.
+
+The implementation exposes an important control-plane boundary. The skill tells
+the model to fix the evaluator, call the ground-truth or anonymous A/B gate,
+reject regressions, and accept only a reproducible improvement. The Python gate
+itself is simple and inspectable: a candidate wins when its mean ground-truth
+score strictly exceeds the parent's, or when it wins more judged cases with no
+candidate critical error. But `EvolutionSession.accept()` checks only that a
+candidate exists and loads, then publishes it, switches the active version, and
+advances the checkpoint. The public `accept_evolution` operation calls that
+method directly; it does not require a recorded evaluation, a passing gate
+receipt, paired case identities, or an acceptance-policy digest. Tests likewise
+exercise publication after merely recording candidate metrics.
+
+This is not evidence that the intended workflow routinely bypasses evaluation.
+It is evidence that lifecycle integrity and admission integrity are separate.
+A robust self-evolution control plane should make promotion consume a typed,
+immutable gate receipt bound to the parent, candidate, evaluator revision,
+protected case set, acceptance policy, and result. Human- or model-readable
+instructions remain valuable, but they should not be the only barrier between a
+candidate artifact and active state.
+
+**Repo:** https://github.com/ruc-datalab/EvoOntology
+
+**Inspected revision:** https://github.com/ruc-datalab/EvoOntology/commit/ace8ff695f6b1752240cb0e0322f65667d7016eb
+
+**Primary evidence:** [architecture and split contract](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/docs/architecture.md), [evaluation gate](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/evoontology/evaluation/evaluation.py), [accept/publish state transition](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/evoontology/evolution/session.py), [operation boundary](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/evoontology/runtime/ops.py), [workflow instructions](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/plugins/claude-code/skills/evo-evolve/SKILL.md), and [lifecycle operation test](https://github.com/ruc-datalab/EvoOntology/blob/ace8ff695f6b1752240cb0e0322f65667d7016eb/tests/test_mcp_ops.py).
 
 ### RL can expand capability only under identifiable headroom
 
@@ -393,6 +676,8 @@ Practical rules:
     and sequential search before attributing gains to a durable harness.
 12. Separate observed-set regression, proposal selection, and inaccessible
     promotion; report disjoint-task transfer.
+13. Aggregate failures by recurring mechanism before editing a harness, but do
+    not mistake recurrence for causal proof or promotion evidence.
 
 ## Highest-value next experiments
 
@@ -442,5 +727,6 @@ the [world-proxy survey](https://arxiv.org/abs/2608.02713),
 [SkillOpt](https://arxiv.org/abs/2605.23904), [SEAGym](https://arxiv.org/abs/2606.17546),
 [RHO](https://arxiv.org/abs/2606.05922), the [matched-budget harness critique](https://arxiv.org/abs/2607.12227),
 [SkillBoost](https://arxiv.org/abs/2607.26643), [WikiSkill](https://arxiv.org/abs/2608.27454),
-[EvoHarness-RL](https://arxiv.org/abs/2608.05446), the [statistical-limits paper](https://arxiv.org/abs/2510.04399),
+[EvoHarness-RL](https://arxiv.org/abs/2608.05446), [Ecdysis](https://arxiv.org/abs/2609.11677v1),
+the [statistical-limits paper](https://arxiv.org/abs/2510.04399),
 and the [controlled RL-interplay study](https://arxiv.org/abs/2512.07783).
