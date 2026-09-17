@@ -328,7 +328,8 @@ uses existing Task ownership or a supported provider operation with durable
 feedback. A session ID alone is no such promise. See
 [agent cooperation](agents.md) and [execution evidence](sessions.md).
 
-A workflow receives typed App input and narrow capabilities. It does not
+A workflow receives explicit invocation input and narrow capabilities, including
+the owning Task context when Task-bound. It does not
 receive the database, event bus, scheduler, queues, manager, global paths, or
 recovery state. A workflow finishes its attempt; it does not stay alive as a
 background controller.

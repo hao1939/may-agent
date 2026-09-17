@@ -138,3 +138,10 @@ operations. Code handles predictable execution and retains evidence; agents
 choose methods and judge changing requirements. `await` expresses a dependency
 within an active attempt; durable events and Task state coordinate work across
 attempts. See [Workflow execution](../2a-design/workflows.md#invocation-and-ownership).
+
+Standardize those execution guarantees, not a universal procedure. Participants,
+step order, review methods, private parameters and evidence applicability belong
+to the owning App. A declared required check remains enforceable until the
+procedure or accepted requirement changes; flexibility comes from useful decision
+points and returning control when the method no longer fits. See
+[shared contract and changeable procedure](../2a-design/workflows.md#shared-contract-and-changeable-procedure).

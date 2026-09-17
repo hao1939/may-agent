@@ -41,6 +41,13 @@ event handler, database table, timer, queue, workflow checkpoint service or
 agent heartbeat. An exhausted local repair allowance returns an incomplete
 attempt; the same Task remains responsible under ordinary backoff.
 
+Bob's design/review stages, tech-lead authorship, local commit and verification
+argv are this procedure's choices. Other workflows preserve the
+[common execution contract](../../may-agent.app/docs/2a-design/workflows.md#shared-contract-and-changeable-procedure)
+without copying this team or graph. May can evolve these choices as evidence
+changes; the active implementation still enforces its declared gates and returns
+control when it cannot satisfy them.
+
 The process is one reconciliation loop: read the latest requirements, check
 the work so far, and decide what to do next. Execute that step and save the
 result. Feedback, failed checks and recovery all lead to another iteration. The

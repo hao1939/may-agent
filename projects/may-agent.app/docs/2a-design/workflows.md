@@ -125,7 +125,9 @@ export async function execute(
 Rules:
 
 - export explicit `name`, `description`, and `execute`;
-- receive all invocation meaning through typed `ctx.input`;
+- receive procedure parameters through typed `ctx.input`; for Task-bound work,
+  read the authoritative outcome, acceptance and admitted input through the
+  supplied Task context and scoped reads;
 - end every path with `ctx.done(...)` or `ctx.blocked(...)`;
 - call agents with `ctx.agents.call` and nested workflows with
   `ctx.workflows.run`;
@@ -135,8 +137,11 @@ Rules:
 - keep tests beside the workflow or in the owning App's established test
   layout.
 
-Do not reconstruct input from prompt text, global task files, event history,
-the current working directory, or an unrestricted query.
+For a standalone bounded invocation, its caller supplies the assignment through
+explicit input. For a Task-bound invocation, an objective parameter describes
+the assigned operation; it cannot replace or broaden the owning Task's outcome.
+Do not reconstruct missing authority from prompt text, global task files,
+unscoped event history, the current working directory or an unrestricted query.
 
 ## Scoped context
 
@@ -237,6 +242,69 @@ accepted settlement changes Task state or consumes input.
 
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
+
+## Shared contract and changeable procedure
+
+Keep the execution contract common; let each owning App evolve its procedure.
+The May development workflow is one application of this contract, not a template
+that every workflow must copy. A research assessment, a code review and a Gym
+experiment can have different graphs and evidence while using the same execution
+mechanisms. A simple procedure may need no specialist call at all.
+
+### What every implementation must preserve
+
+| Shared rule | Responsibility in a workflow |
+| --- | --- |
+| One authority for the outcome | When Task-bound, retain that Task's identity, current requirement and authority. A workflow result is evidence for its caller, not independent Task completion. Standalone calls remain bounded caller-owned work. |
+| Inherited execution scope | Use supplied agent/helper capabilities, scoped reads and workspace. Propagate cancellation to cooperative I/O and respect the remaining allowance; do not recreate scheduling, leases or recovery. |
+| Durable input, optional live observation | Use the supplied Task input and shared feedback mechanism. Observing a hint does not acknowledge input, grant authority or justify another executor for the same Task. |
+| Honest result admission | Validate structured data before depending on it. Return useful evidence, partial work and failures truthfully; command success alone does not establish outcome acceptance. |
+| Recoverable effects and evidence | Preserve enough evidence to inspect what actually happened. Reassess it against current requirements; do not delete it merely because input changed or repeat an external write merely because an attempt failed. |
+| Bounded execution versus durable waiting | Use ordinary calls and await for in-attempt dependencies. Return to the existing Task/dependency/Condition mechanism for work that must wait across attempts; do not keep a JavaScript stack as durable state. |
+
+The Host supplies identity, delivery, fencing, execution limits and cleanup.
+Workflow authors use those capabilities and implement the domain checks that
+the Host cannot infer. Shared does not mean copying that infrastructure into
+every workflow. These are stable compatibility rules, not a claim that the SDK
+can never change; changing them requires updating the common contract and its
+affected consumers together.
+
+### What the owning App can change
+
+| Procedure choice | Freedom and boundary |
+| --- | --- |
+| Participants and method | Choose agents, models, skills, deterministic helpers or direct tools that fit the assignment and granted capabilities. Bob and tech-lead are not universal roles. |
+| Order and branching | Use the necessary steps, including a path that accepts existing work without implementation. Independent operations may run concurrently when their effects do not conflict and the caller's scope permits it. |
+| Review and verification | Choose domain evidence, commands and whether independent review is required. A paper assessment need not run a compiler; an explicit acceptance requirement cannot be silently weakened. |
+| Input and output shape | Own private procedure parameters and structured step results. Add public App input only for a distinct caller-facing contract, not for each workflow or task. Keep results bounded and large evidence referenced. |
+| Repair and feedback response | Choose bounded local repair, another agent judgment or return to the caller. Check updates at useful operation boundaries; long operations must cooperate with cancellation or expose bounded observation opportunities. No fixed retry count or review graph applies to every workflow. |
+| Evidence format and reuse | Define the artifacts and applicability rules the domain needs. Preserve readable retained references, or report incompatibility and inspect current state. This does not establish a universal workspace/file layout. |
+
+The agent chooses a method within its assignment. Once it invokes a workflow,
+code enforces that workflow's declared procedure and required checks; agent
+judgment enters through its explicit decision points. If the procedure no longer
+fits, preserve the evidence and return control for another authorized approach.
+Flexibility is not permission to skip a gate while reporting that procedure
+completed. A changed procedure is an ordinary source change: active runs keep
+their pinned definition, and subsequent dispatches use the new version. A new
+version must reassess earlier evidence rather than pretending it came from the
+new procedure.
+
+### Applying this to another workflow
+
+Describe its promised result, required evidence and reasons to return control.
+Start with explicit invocation input and supplied Task context where present;
+reuse retained work where it fits, perform only the missing operations, validate
+the results and return the evidence. This is a reasoning guide, not a mandatory
+base class, stage registry or new configuration language.
+
+Use existing Host coverage for shared execution guarantees. Add workflow tests
+for its actual domain decisions and effects: for example, whether valid evidence
+can avoid reimplementation, whether failed verification prevents a success claim,
+or whether a changed requirement prompts reassessment. Add a boundary regression
+when extending a capability or when a live trial demonstrates a missing contract.
+Do not duplicate the full Host test suite for every workflow or require a live
+model to test deterministic branches.
 
 ## Awaited execution and durable waiting
 
