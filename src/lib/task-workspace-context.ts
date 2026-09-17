@@ -49,6 +49,7 @@ export function prepareTaskWorkspaceContext(
     writeJsonArtifact(root, "catalog.json", catalog);
     const currentRead = JSON.stringify({ action: "get", taskId: binding.taskId, target: { appId: binding.appId } });
     const previousSession = rec.previousAttempt?.sessionId;
+    const selected = catalog.find((definition) => definition.name === rec.agent);
     const brief = [
       "# Task context",
       "",
@@ -65,9 +66,11 @@ export function prepareTaskWorkspaceContext(
       `- Current authoritative Task: use the tasks tool with ${currentRead}; workflows use ctx.read.tasks.get(${JSON.stringify(binding.taskId)}).`,
       '- Related Task discovery: tasks {"action":"list","limit":50}; continue with each returned nextCursor. Read exact linked Tasks with get. Workflows use ctx.read.tasks.list({limit:50}).',
       "- Read catalog.json beside this file for installed agent profiles, tools, full skill references and workflow source roots, including skills omitted from prompts. List/search those roots for entries not individually mentioned. Invocation remains subject to the available tools and existing scope.",
+      ...(selected?.instructions ? [`- Selected executor instructions: ${pathRef(selected.instructions)}. Loaded definition root: ${pathRef(selected.sourceRoot!)}.`] : []),
+      "- Loaded definitions can be newer than the working checkout. Use catalog source paths for agent instructions, skills and workflows; do not assume they exist at the corresponding worktree-relative path.",
       '- Use agents {"action":"list"} or workflow {"action":"list"} when those tools are available to discover callable capabilities. A source directory is evidence, not permission to call another App agent.',
       `- Working source and output root: ${pathRef(context.executionPaths.workspaceDir)}. List/search this directory for documents and artifacts not individually referenced.`,
-      `- App root: ${pathRef(context.executionPaths.appDir)}. Project root: ${pathRef(context.executionPaths.projectDir)}. Follow their instruction and documentation indexes.`,
+      `- App workspace root: ${pathRef(context.executionPaths.appDir)}. Project root: ${pathRef(context.executionPaths.projectDir)}. Follow their documentation indexes; loaded capability definitions use the catalog paths above.`,
       `- Earlier context snapshots for this Task: ${pathRef(taskRoot)}. List its attempt directories; their files are historical views, not current accepted state.`,
       "",
       "## Diagnosis and working notes",
@@ -89,9 +92,11 @@ export function prepareTaskWorkspaceContext(
       rmSync(temporary, { force: true });
     }
     return context.workspaceBrief = { taskFile };
-  } catch {
+  } catch (error) {
     // Navigation is optional infrastructure: retain inline context if it cannot be saved.
-    return context.workspaceBrief = { error: "Task workspace brief could not be saved; use supplied context and Task reads." };
+    const rawCode = error && typeof error === "object" && "code" in error ? error.code : undefined;
+    const code = typeof rawCode === "string" && /^[A-Z][A-Z0-9_]+$/.test(rawCode) ? rawCode : "UNKNOWN";
+    return context.workspaceBrief = { error: `Task workspace brief could not be saved (${code}); use supplied context and Task reads.` };
   }
 }
 

@@ -12,7 +12,7 @@ function context(root: string, appId = "example", attemptId = "attempt-1"): Task
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
     reconciliation: {
       appId, taskId: "../same/task", generation: 1, resourceVersion: 3,
-      outcome: "Investigate the failed check", acceptance: ["Cite the source"],
+      agent: "reviewer", outcome: "Investigate the failed check", acceptance: ["Cite the source"],
       input: { context: { sourceRoot: root, omittedFact: "retained-full-input" } },
       events: { items: [], truncated: true },
     },
@@ -39,6 +39,8 @@ test("Task entry preserves discovery, scopes attempts and excludes provider/live
     expect(entry).toContain("context.json");
     expect(entry).toContain("nextCursor");
     expect(entry).toContain('"action":"get"');
+    expect(entry).toContain(join(root, "agents", "reviewer", "AGENTS.md"));
+    expect(entry).toContain("Loaded definitions can be newer than the working checkout");
     expect(snapshot).toContain("retained-full-input");
     expect(JSON.parse(snapshot).reconciliation.events.truncated).toBe(true);
     expect(catalog).toContain("/example/hidden/SKILL.md");
@@ -65,7 +67,7 @@ test("navigation failure reports a usable fallback without invoking Task capabil
     writeFileSync(file, "existing data");
     const c = context(root);
     expect(prepareTaskWorkspaceContext(c, file, [])).toEqual({
-      error: "Task workspace brief could not be saved; use supplied context and Task reads.",
+      error: "Task workspace brief could not be saved (ENOTDIR); use supplied context and Task reads.",
     });
     expect(c.reconciliation.input).toEqual({ context: { sourceRoot: root, omittedFact: "retained-full-input" } });
     expect(readFileSync(file, "utf8")).toBe("existing data");
