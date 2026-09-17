@@ -52,6 +52,17 @@ Task. It records source findings, consumer migration, deletion gates and checks.
 The [implemented candidate and PoC evidence](archive/reviews/execution-consolidation-poc-20260914.md)
 record the passing source checks and remaining live-trial limits; deployment is separate.
 
+The [recurring project review proposal](proposals/may-project-review-loop-20260912.md)
+applies lessons from design work, three Codex sessions and PR discussions to an
+ordinary periodic Task owned by May. It proposes current-fact review,
+continued work across wakes, scoped fixes and verified learning, with a bounded
+pilot before further automation. The [pilot record](archive/reviews/may-project-review-pilot-20260912.md)
+separates preliminary isolated trials, a stopped scope-extension retry, and
+ordinary May Task `3644b5a1`: three reviews, two timed waits and final quiescence.
+A small navigation correction passed its checks. Durable scope changes and two
+extra clock-echo attempts need further work before wider automation; Host
+Operations activation is not required.
+
 The [scripts review proposal](proposals/poc-retirement-and-knowledge-20260912.md)
 accounts for the refreshed 54-file Host inventory, including all 27 files in
 `scripts/poc/`. Its isolated implementation removes that folder, retains useful

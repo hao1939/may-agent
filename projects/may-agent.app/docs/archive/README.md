@@ -32,6 +32,12 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Bounded May project-review pilot — 2026-09-12](reviews/may-project-review-pilot-20260912.md)
+  — isolated comparison and visible container trials; a stopped scope-extension
+  retry, three ordinary periodic reviews on `3644b5a1`, and clock-echo overhead.
+- [How we review, design, and implement May — 2026-09-12](reviews/may-project-development-method-20260912.md)
+  — three Codex sessions, 23 PRs and current design/source evidence; scoped
+  preferences, review case studies and gaps for a recurring owner-review task.
 - [Core implementation after #111 and #112 — 2026-09-10](reviews/core-implementation-post112-20260910.md)
   — 229 passing focused tests and three reproduced input dispatch/recovery/reporting
   failures; portable probe and source limits retained with the review.

@@ -519,6 +519,74 @@ existing Task and execution readers. Keep response guidance with its App or
 agent, separate from untrusted external output. A wake is a request to
 reconsider current evidence, never acceptance proof or new authority.
 
+### Duplicate delivery and safe reconsideration
+
+Duplicate delivery is expected, including worker relay retries, recovery after
+restart, and delayed copies arriving after an attempt has accepted its result.
+Producer restraint and receiver idempotency are complementary requirements.
+Neither relies on exactly-once transport.
+
+- **Producer:** reuse a stable publication identity for the same fact or result.
+  A fact already available to the publishing attempt does not automatically
+  require another attempt. Do not notify merely to acknowledge a duplicate and
+  create a feedback loop. Keep observations distinct when their source revision
+  or meaning actually changes.
+- **Host receiver:** recognize the same durable event for the same Task across
+  pending input, claim, settlement and restart. Receipt identity survives removal
+  from the pending queue. A repeated delivery acknowledges that existing receipt;
+  it does not append fresh input, resubmit old desired state or create another
+  model turn. Active attempts also suppress repeated live hints for claimed,
+  consumed or already-delivered input; each listener still receives new input.
+  Receipt and Task changes share a durable boundary. One Task's receipt cannot
+  consume another Task's input.
+- **App receiver:** different event identities may describe the same business
+  fact. Compare current source evidence with retained Task results and operation
+  identity before acting. If nothing remains, return a bounded no-op without
+  repeating effects, notifications or progress increments. Preserve unrelated
+  input, outstanding waits and genuinely changed state. Delivery order alone
+  does not establish source freshness.
+
+Receiving input is not accepting an outcome. Claiming or remembering its
+identity must not discard unfinished input: a failed, invalid or interrupted
+attempt recovers from its retained batch and pending input. Accepted results
+and incorporated input settle through the existing fenced transaction. A
+worker's self-addressed publication is durable before relay; when its valid
+result consumes that fact, a late first relay or repeat cannot revive it. A
+retry that returns an existing publication receipt has the same handling rule.
+
+Journal recovery preserves the stored event ID, so readback and delayed delivery
+refer to the same input. A consumed event stays quiet unless it matches a current
+open Condition under the existing freshness and report-revision rules. This lets
+a newly declared wait use retained evidence without waking again for an already
+satisfied wait. Condition and input changes use the same fenced transaction.
+See [Task event input](task-resource-engine.md#event-input-and-checkpoints).
+
+For an external action, use the destination's idempotency key where available,
+or read back operation state before retrying an uncertain result. There is no
+atomic exactly-once guarantee across arbitrary external systems and Task
+settlement. Record unresolved ambiguity; never infer that a failed attempt
+means its external action did not happen.
+
+Correctness means no repeated effect or false progress from an already-handled
+fact. Avoiding unnecessary attempts is a separate efficiency goal. A harmless
+extra reconsideration can be correct; repeated self-wakes without new work are
+still a defect worth removing. These rules apply to ordinary Tasks, including
+periodic reviews; they do not require a special owner-review controller.
+
+**Implementation status:** Host [PR #175](https://github.com/hao1939/may-agent/pull/175)
+merged as `e38d2861` with receipt retention and self-publication handling.
+It builds on merged Host #168: `attempt-execution.ts` owns publication receipt
+capture and live-listener filtering; admission and storage retain exact delivery
+identity across attempts. Admission, storage, publication tracking and worker
+relay share target parsing, including the supported project alias and surrounding
+whitespace. The existing fenced reconciler still owns settlement.
+Its focused regressions cover duplicate admission during execution, after
+acceptance/restart, delayed child-process relay, and journal readback for a newly
+declared Condition. This is not a claim of
+installed-container adoption or universal App-level semantic deduplication.
+The [pilot record](../archive/reviews/may-project-review-pilot-20260912.md)
+keeps validation and rollout evidence separate.
+
 ### Observation is not successful publication
 
 An adapter must not mark a notification handled merely because it read the

@@ -133,10 +133,19 @@ current-design list.
 
 Active reviews are:
 
+- [Reduce context cost through App knowledge and agent methods](proposals/focused-session-continuation.md)
+  — separates App context policy, agent methods and supporting system capabilities;
+  compares their effects on complete work and retains the extension-rule review;
 - [Keep domain policy in Apps, keep the Host generic](proposals/app-policy-and-host-boundary-cleanup.md)
   — accepted direction with source application in progress: clear domain
   ownership, retirement of legacy project policy, and explicit remaining
   permission/deployment/maintenance dependencies;
+- [A recurring task to review and improve May](proposals/may-project-review-loop-20260912.md)
+  — source-grounded method using an ordinary periodic May Task;
+  [pilot evidence](archive/reviews/may-project-review-pilot-20260912.md) records
+  the three-review container trial, failed extension and isolated comparison, while
+  [research and case studies](archive/reviews/may-project-development-method-20260912.md)
+  preserve session and PR sources;
 - [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md)
   — accepted disposition of all 54 Host script files: remove the PoC directory,
   retain useful checks/findings, and maintain the explicit command surface;
