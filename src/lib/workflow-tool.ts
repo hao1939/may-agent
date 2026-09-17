@@ -1,4 +1,5 @@
 import type { TaskExecutionContext } from "./task-execution-context.js";
+import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import { ExecutionScope, executionTimeout } from "./execution-scope.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
@@ -1466,6 +1467,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         }
       };
 
+      const taskBrief = opts.taskContext && persistDir
+        ? prepareTaskWorkspaceContext(opts.taskContext, persistDir, opts.taskContext.agentDefinitions?.values() ?? [])
+        : undefined;
       const ctx: AppWorkflowContext = {
         input: authoredInput ? authoredInput.value : task,
         signal,
@@ -1503,6 +1507,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 projectRoot: opts.executionPaths.projectDir,
                 root: opts.executionPaths.workspaceDir,
                 output: opts.executionPaths.workspaceDir,
+                ...(taskBrief && "taskFile" in taskBrief ? { taskFile: taskBrief.taskFile } : {}),
               },
             }
           : {}),

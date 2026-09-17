@@ -4,6 +4,7 @@ import type { SubagentDefinition } from "./types.js";
 import type { TaskBinding } from "./persistence.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
 import { childEventTrace, EVENT_ROW_ID, type AgentEvent } from "../app/core/events/bus.js";
+import type { TaskWorkspaceBrief } from "./task-workspace-context.js";
 
 /** Live capabilities of one owning attempt. Never serialized or recovered from a session. */
 export interface TaskExecutionContext {
@@ -15,6 +16,9 @@ export interface TaskExecutionContext {
   taskEmitter: AppTaskEvents;
   observeEvents: TaskAttempt["onEvent"];
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+  /** Navigation facts only; never contain live capabilities or provider credentials. */
+  details?: { task: TaskAttempt["task"]; declaredOutputs: string[]; dependencies?: unknown[] };
+  workspaceBrief?: TaskWorkspaceBrief;
 }
 
 /** Delivery is a hint, not acknowledgment or acceptance of the input. */

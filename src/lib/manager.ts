@@ -1,4 +1,5 @@
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
+import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
 /**
  * Durable agent session runtime.
  *
@@ -574,6 +575,14 @@ export class SubagentManager {
       };
     }
     opts?.signal?.throwIfAborted();
+    if (opts?.taskContext) {
+      const brief = prepareTaskWorkspaceContext(
+        opts.taskContext,
+        this._persistDir,
+        opts.taskContext.agentDefinitions?.values() ?? [...this.agents.values()].map((agent) => agent.definition),
+      );
+      task = `${task}\n\n${taskWorkspacePrompt(brief)}`;
+    }
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);

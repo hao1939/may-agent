@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Type, createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { SubagentManager } from "../../src/lib/manager.js";
@@ -29,7 +29,7 @@ export const description = "Inspect with a specialist; input {marker:string}";
 export async function execute(ctx) {
   const task = await ctx.read.tasks.get(ctx.reconciliation.taskId);
   const result = await ctx.agents.call("worker", ctx.input.marker);
-  return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, result });
+  return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, taskFile: ctx.workspace.taskFile, result });
 }`,
     );
     const model = fakeModel();
@@ -37,6 +37,7 @@ export async function execute(ctx) {
     const release = new Map<string, ReturnType<typeof Promise.withResolvers<void>>>();
     const listeners = new Map<string, Set<(event: AppEvent<Record<string, unknown>>, accept: () => void) => void>>();
     const seen = new Map<string, string>();
+    const taskFiles = new Map<string, string>();
     let accepted = 0;
     for (const marker of ["alpha", "beta"]) {
       entered.set(marker, Promise.withResolvers<void>());
@@ -155,7 +156,7 @@ export async function execute(ctx) {
         taskBinding: { appId: "fixture", taskId: marker, generation: 1, attemptId: `attempt-${marker}` },
         recoveryOwner: "app-task",
         executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
-        reconciliation: { taskId: marker, events: { items: [], truncated: false } },
+        reconciliation: { taskId: marker, input: { omitted: `only-${marker}` }, events: { items: [], truncated: false } },
         taskRead: { get: async (id: string) => ({ id }) },
         taskEmitter: { read: () => null, publish: () => 1, onEvent: () => () => {} },
         observeEvents(listener) {
@@ -165,7 +166,7 @@ export async function execute(ctx) {
           };
         },
       } as TaskExecutionContext;
-      return manager.callAgent("owner", marker, {
+      const running = manager.callAgent("owner", marker, {
         taskContext: context,
         taskBinding: context.taskBinding,
         executionRoot: root,
@@ -173,9 +174,21 @@ export async function execute(ctx) {
         signal: controller.signal,
         timeout: 10_000,
       });
+      const brief = context.workspaceBrief;
+      if (!brief || !("taskFile" in brief)) throw new Error("Missing Task entry");
+      taskFiles.set(marker, brief.taskFile);
+      return running;
     });
     try {
       await Promise.all([...entered.values()].map((p) => p.promise));
+      for (const marker of ["alpha", "beta"]) {
+        const owner = [...manager.activeSessions.values()].find((s) => s.agentName === "owner" && s.taskBinding?.taskId === marker)!;
+        const worker = [...manager.activeSessions.values()].find((s) => s.agentName === "worker" && s.taskBinding?.taskId === marker)!;
+        expect(worker.taskContext).toBe(owner.taskContext);
+        const snapshot = JSON.parse(readFileSync(join(dirname(taskFiles.get(marker)!), "context.json"), "utf8"));
+        expect(snapshot.reconciliation.input.omitted).toBe(`only-${marker}`);
+      }
+      expect(taskFiles.get("alpha")).not.toBe(taskFiles.get("beta"));
       expect(listeners.get("alpha")!.size).toBe(2);
       expect(listeners.get("beta")!.size).toBe(2);
       if (mode === "cancel") controller.abort(new Error("Owner cancelled"));
@@ -197,6 +210,7 @@ export async function execute(ctx) {
           if (result.status !== "fulfilled") throw result.reason;
           const messages = JSON.stringify(result.value.messages);
           expect(messages).toContain('\\"task\\": \\"' + ["alpha", "beta"][i]);
+          expect(messages).toContain(taskFiles.get(["alpha", "beta"][i])!);
         }
       } else expect(results.every((r) => r.status === "rejected")).toBe(true);
       expect(accepted).toBe(0);

@@ -478,6 +478,8 @@ export type WorkflowContext<TInput = unknown> = {
     root: string;
     /** Output root admitted for this bounded attempt. */
     output: string;
+    /** Generated Task entry shared with agents; snapshot and discovery, not live state. */
+    taskFile?: string;
   };
   log: Logger;
   done<T>(summary: string, output?: T): ExecutionResult<T>;
