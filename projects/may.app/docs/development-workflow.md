@@ -87,6 +87,14 @@ New Task input keeps previous reports visible while prompting fresh judgment.
 Matching verification receipts may be reused for the same candidate and checks;
 changed requirements reset validity, not access to the evidence.
 
+An explicitly Task-addressed `message` is follow-up input for that Task, even
+though an unaddressed message normally enters May's Conversation. During a
+workflow call, the active specialist receives the shared Host hint. It judges
+the correction within its step; May judges the overall result when the call
+returns. Input not incorporated by accepted settlement remains for the next
+Task attempt. This uses common Host admission and feedback, with no team-specific
+message route or workflow resume service.
+
 Bob uses GPT-6 Astra with read-only tools plus the structured finish capability.
 Tech-lead uses GPT-5.6 Sol with file/shell tools plus finish. Neither profile
 has agent delegation, CLI-worker, message, workflow-recursion or cron tools.

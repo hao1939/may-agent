@@ -202,6 +202,19 @@ events carry both fields, and inbox recovery reads and wakes that same scoped
 identity. A retained legacy event without `appId` may use the compatibility
 wake, but new producers must never address a Task by its App-local ID alone.
 
+For `app.input.requested`, an explicit Task address continues that Task before
+automatic Conversation routing or App task mapping. Its input still passes the
+App schema. Channel and Conversation metadata describe the caller; they do not
+override an explicit work destination. With no Task address, the App's normal
+Conversation and task mapping rules apply.
+
+The Host uses one address reader for admission and live delivery, including
+the existing `data.targetTaskId` input form and envelope `target.taskId` form.
+Conflicting addresses are rejected. Saved envelopes and idempotency identities
+are not rewritten to deliver a hint. A running attempt and its nested agents
+observe the same addressed fact; this neither consumes its durable input nor
+starts a concurrent attempt. See [input during execution](workflows.md#input-during-execution).
+
 An App subscription has a stable ID and produces input only when its pure
 translator returns a valid value. The deferred request coordinator passes
 addressed input through the App's pure `task(input)` mapping. A direct Task
