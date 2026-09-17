@@ -80,37 +80,7 @@ import type {
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
 import { readMetricView } from "../app/adapters/reporting/metric-read.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
-import { cliCallFacts } from "./tools/run-cli-agent.js";
-
-function appAgentExecutionResult(result: TaskResult): AppExecutionResult {
-  const finishStatus = result.finishResult?.status;
-  const status =
-    result.status === "interrupted"
-      ? "interrupted"
-      : result.status === "error" || finishStatus === "failure"
-        ? "error"
-        : finishStatus === "blocked"
-          ? "blocked"
-          : "done";
-  return {
-    id: result.sessionId,
-    kind: "agent",
-    status,
-    summary:
-      (result.status === "error" ? result.error?.trim() : undefined) ||
-      result.finishResult?.summary?.trim() ||
-      result.lastAssistantText?.trim() ||
-      result.error?.trim() ||
-      `Agent execution ${status}`,
-    ...(result.structuredResult !== undefined
-      ? { output: result.structuredResult }
-      : result.finishResult?.result !== undefined
-        ? { output: result.finishResult.result }
-        : {}),
-    ...(result.finishResult ? { facts: result.finishResult } : {}),
-    cliCalls: cliCallFacts(result.sessionId, result.messages),
-  };
-}
+import { agentExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
 
 function normalizeAuthoredWorkflowResult(
   value: unknown,
@@ -1514,7 +1484,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         agents: {
           call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
             trackStep(
-              runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions).then(appAgentExecutionResult),
+              runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions).then(agentExecutionResult),
             ),
         },
 
@@ -1560,25 +1530,15 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                   typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
                 const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
                 if ("reason" in nested) {
-                  return { id: runId, kind: "workflow", status: "blocked", summary: nested.reason };
+                  throw new Error(nested.reason);
                 }
                 const { sub } = nested;
-                if (sub.result.type === "done") {
-                  return {
-                    id: sub.runId,
-                    kind: "workflow",
-                    status: "done",
-                    summary: sub.result.summary,
-                    ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
-                  };
-                }
-                return {
-                  id: sub.runId,
-                  kind: "workflow",
-                  status: "blocked",
-                  summary: sub.result.reason,
-                  ...(sub.result.context !== undefined ? { facts: sub.result.context } : {}),
-                };
+                return workflowExecutionResult({
+                  ...sub.result,
+                  workflow: wfName,
+                  workflowRunId: sub.runId,
+                  steps: [],
+                })!;
               })(),
             ),
         },
@@ -1924,7 +1884,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       "List available workflows or run a workflow by name. " +
       "Workflows are predefined step sequences that coordinate sub-agents efficiently. " +
       "Use 'list' to see what's available, 'run' to execute one. " +
-      "Results include workflowRunId — use subagents.trace(workflowRunId) to see the full session tree.",
+      "Terminal runs return id, kind, status, summary and output/facts; workflowRunId and steps retain diagnostic references. Completion is evidence for your assignment, not Task acceptance.",
     parameters: WorkflowToolParams,
     run: runner.run,
     steer: runner.steer,
@@ -1952,7 +1912,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             workflows,
             ...(catalog.diagnostics.length > 0 ? { diagnostics: [...catalog.diagnostics] } : {}),
           };
-          return textResult(JSON.stringify(result, null, 2));
+          return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
         }
 
         case "run": {
@@ -1971,7 +1931,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               : JSON.stringify(params.input)
             : params.task!;
           const result = await runTyped(params.name, task, catalog, hasInput ? { value: params.input } : undefined);
-          return textResult(JSON.stringify(result, null, 2));
+          return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
         }
 
         case "resume": {
@@ -2073,7 +2033,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               summary: prevRunRecord.result_summary ?? "workflow already done",
               steps: buildStoredStepSummaries(prevRun.steps),
             };
-            return textResult(JSON.stringify(result, null, 2));
+            return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
           }
 
           if (prevRun.status === "blocked" || prevRun.status === "escalated") {
@@ -2091,7 +2051,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               reason: prevRunRecord.result_reason ?? "workflow already blocked",
               steps: buildStoredStepSummaries(prevRun.steps),
             };
-            return textResult(JSON.stringify(result, null, 2));
+            return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
           }
 
           const { workflow: resumeWf, error: resumeFindError } = findWorkflow(catalog, prevRun.workflow);
@@ -2115,7 +2075,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             prevRun.parentWorkflowRunId,
             prevRun,
           );
-          return textResult(JSON.stringify(result, null, 2));
+          return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
         }
 
         default: {

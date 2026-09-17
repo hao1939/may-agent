@@ -12,11 +12,13 @@ import { closeDb } from "../../src/lib/requests.js";
 import type { TaskExecutionContext } from "../../src/lib/task-execution-context.js";
 import type { AppEvent } from "@may-agent/sdk";
 import { fakeModel } from "../fixtures/model.js";
+import { createFinishTool } from "../../src/lib/tools/lifecycle.js";
 
-// Real loader -> model tool -> workflow -> managed agent. Only the provider is synthetic.
-test.each(["feedback", "cancel"] as const)(
-  "agent-selected workflow shares Task context: %s",
-  async (mode) => {
+// Real loader/model tools and managed executions. Only the provider is synthetic.
+const routes = ["agent", "workflow", "nested-workflow"] as const;
+test.each(routes.flatMap((route) => (["feedback", "cancel"] as const).map((mode) => ({ route, mode }))))(
+  "handoff shares Task context: $route / $mode",
+  async ({ route, mode }) => {
     const root = mkdtempSync(join(tmpdir(), "may-task-workflow-"));
     const persistDir = join(root, ".state");
     const agentDir = join(root, "agents", "owner");
@@ -32,6 +34,14 @@ export async function execute(ctx) {
   return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, taskFile: ctx.workspace.taskFile, result });
 }`,
     );
+    if (route === "nested-workflow") {
+      writeFileSync(join(agentDir, "workflows", "delegate.ts"), readFileSync(join(agentDir, "workflows", "inspect.ts"), "utf8").replace('name = "inspect"', 'name = "delegate"'));
+      writeFileSync(join(agentDir, "workflows", "inspect.ts"), `
+export const name = "inspect";
+export const description = "Nested contribution";
+export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.input); }
+`);
+    }
     const model = fakeModel();
     const entered = new Map<string, ReturnType<typeof Promise.withResolvers<void>>>();
     const release = new Map<string, ReturnType<typeof Promise.withResolvers<void>>>();
@@ -62,8 +72,9 @@ export async function execute(ctx) {
                     {
                       type: "toolCall",
                       id: "operation",
-                      name: owner ? "workflow" : "hold",
-                      arguments: owner ? { action: "run", name: "inspect", input: { marker } } : { marker },
+                      name: owner ? route === "agent" ? "agents" : "workflow" : "hold",
+                      arguments: owner ? route === "agent" ? { action: "call", agent: "worker", task: marker }
+                        : { action: "run", name: "inspect", input: { marker } } : { marker },
                     },
                   ]
                 : step === 2
@@ -106,7 +117,7 @@ export async function execute(ctx) {
       },
     });
     const bus = new EventBus();
-    const tools = await buildTools({ name: "owner", tools: ["workflow", "finish"] } as never, {
+    const tools = await buildTools({ name: "owner", tools: ["workflow", "agents", "finish"] } as never, {
       manager,
       bus,
       agentDir,
@@ -127,6 +138,7 @@ export async function execute(ctx) {
       domain: "fixture",
       model,
       tools: [
+        createFinishTool({ agentName: "worker", projectRoot: root, persistDir }),
         {
           name: "hold",
           label: "Hold",
@@ -185,6 +197,12 @@ export async function execute(ctx) {
         const owner = [...manager.activeSessions.values()].find((s) => s.agentName === "owner" && s.taskBinding?.taskId === marker)!;
         const worker = [...manager.activeSessions.values()].find((s) => s.agentName === "worker" && s.taskBinding?.taskId === marker)!;
         expect(worker.taskContext).toBe(owner.taskContext);
+        const meta = JSON.parse(readFileSync(join(persistDir, "sessions", worker.sessionId, "meta.json"), "utf8"));
+        expect(meta.task).toContain("## Assigned contribution");
+        expect(meta.task).toContain("does not assign you the entire Task");
+        expect(meta.task).toContain(owner.sessionId);
+        expect(meta.task).toContain(taskFiles.get(marker)!);
+        expect(meta.task).not.toContain("Delegation Memo");
         const snapshot = JSON.parse(readFileSync(join(dirname(taskFiles.get(marker)!), "context.json"), "utf8"));
         expect(snapshot.reconciliation.input.omitted).toBe(`only-${marker}`);
       }
@@ -208,9 +226,19 @@ export async function execute(ctx) {
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
           if (result.status !== "fulfilled") throw result.reason;
-          const messages = JSON.stringify(result.value.messages);
-          expect(messages).toContain('\\"task\\": \\"' + ["alpha", "beta"][i]);
-          expect(messages).toContain(taskFiles.get(["alpha", "beta"][i])!);
+          const reply = result.value.messages.find((message) => message.role === "toolResult" && message.toolName === (route === "agent" ? "agents" : "workflow"));
+          if (!reply || reply.role !== "toolResult") throw new Error("Missing handoff result");
+          const text = reply.content.find((part) => part.type === "text");
+          if (text?.type !== "text") throw new Error("Missing handoff result text");
+          const returned = JSON.parse(text.text);
+          expect(returned).toMatchObject({ kind: route === "agent" ? "agent" : "workflow", status: "done" });
+          expect(returned.id).toBeTruthy();
+          expect(returned.output.marker).toBe(["alpha", "beta"][i]);
+          if (route !== "agent") {
+            expect(returned.output.task).toBe(["alpha", "beta"][i]);
+            expect(returned.output.taskFile).toBe(taskFiles.get(["alpha", "beta"][i])!);
+            expect(returned.output.result).toMatchObject({ kind: "agent", status: "done" });
+          }
         }
       } else expect(results.every((r) => r.status === "rejected")).toBe(true);
       expect(accepted).toBe(0);

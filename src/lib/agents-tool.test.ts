@@ -178,6 +178,26 @@ describe("V2 agents tool", () => {
     expect(dispatchedTask).toContain("shared/skills/control-plane-operation/SKILL.md");
   });
 
+  it.each(["blocked", "partial", "failure"] as const)("returns truthful handoff status for a completed session reporting %s", async (finishStatus) => {
+    manager.register({ name: "worker", description: "Worker", domain: "fixture", model: mockModel(), tools: [] });
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("worker") } as any);
+    manager.callAgent = async () => ({
+      sessionId: "child", status: "done", duration: "1s", outputDir: "evidence/child", messages: [],
+      lastAssistantText: "Session ended",
+      finishResult: { status: finishStatus, summary: "Review needs the missing specification", result: { report: "review.md" } },
+    });
+    const returned = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
+      action: "call", agent: "worker", task: "Review the candidate",
+    });
+    expect(returned).toMatchObject({
+      id: "child", kind: "agent", status: finishStatus === "failure" ? "error" : "blocked",
+      summary: "Review needs the missing specification", output: { report: "review.md" },
+      facts: { status: finishStatus }, outputDir: "evidence/child",
+    });
+    expect(returned.messages).toBeUndefined();
+    manager.activeSessions.clear();
+  });
+
   it("cancel on non-existent session reports an unknown owner", async () => {
     const tool = manager.createAgentsTool();
     const result = await callTool(tool, { action: "cancel", sessionId: "s_nonexistent" });

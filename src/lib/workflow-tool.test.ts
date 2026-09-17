@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createWorkflowRunner } from "./workflow-tool.js";
+import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
 
 const roots: string[] = [];
 function workflowRoot(prefix: string): string {
@@ -15,6 +15,52 @@ afterEach(() => {
 });
 
 describe("workflow execution boundaries", () => {
+  it("lets the caller recover from an unavailable nested workflow without inventing a child execution", async () => {
+    const root = workflowRoot("workflow-missing-child-");
+    writeFileSync(join(root, "parent.ts"), `
+export const name = "parent";
+export const description = "Recover from a missing method";
+export async function execute(ctx) {
+  try {
+    const child = await ctx.workflows.run("missing", {});
+    return ctx.done("unexpected child result", { child });
+  } catch (error) {
+    return ctx.done("caller can choose another method", { reason: error.message });
+  }
+}`);
+    const runner = createWorkflowRunner({ manager: {} as any, workflowDir: root });
+    const result = await runner.run("parent", "bounded assignment");
+    expect(result).toMatchObject({ type: "done", summary: "caller can choose another method" });
+    if (result.type !== "done") throw new Error("Expected caller recovery");
+    expect(result.output).toMatchObject({ reason: expect.stringContaining("missing") });
+    expect(result.output).not.toHaveProperty("child");
+  });
+
+  it("exposes normalized blocked evidence to model workflow callers and preserves setup errors without an ID", async () => {
+    const root = workflowRoot("workflow-handoff-result-");
+    writeFileSync(join(root, "review.ts"), `
+export const name = "review";
+export const description = "Review with missing evidence";
+export async function execute(ctx) { return ctx.blocked("Specification missing", { report: "review.md" }); }
+`);
+    const tool = createWorkflowTool({ manager: {} as any, workflowDir: root });
+    for (const name of ["review", "missing"]) {
+      const response = await tool.execute("call", { action: "run", name, input: {} });
+      const part = response.content[0];
+      if (part.type !== "text") throw new Error("Missing result text");
+      const result = JSON.parse(part.text);
+      if (name === "review") {
+        expect(result).toMatchObject({ kind: "workflow", status: "blocked", summary: "Specification missing", facts: { report: "review.md" } });
+        expect(result.id).toBe(result.workflowRunId);
+        expect(result.id).toBeTruthy();
+      } else {
+        expect(result.type).toBe("error");
+        expect(result.id).toBeUndefined();
+        expect(result.workflowRunId).toBeUndefined();
+      }
+    }
+  });
+
   it("uses the canonical App read capability supplied by its owning Runtime", async () => {
     const root = workflowRoot("workflow-app-read-");
     const workflowDir = join(root, "workflows");

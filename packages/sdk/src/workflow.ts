@@ -206,7 +206,10 @@ export type CliCallFacts = {
   eventsPath: string;
 };
 
-/** One terminal result vocabulary for bounded Agent and workflow execution. */
+/** One terminal result vocabulary for bounded Agent and workflow contributions.
+ * Done is a contribution claim, not accepted Task completion. Explicit partial
+ * agent work is blocked with its output/facts retained. Setup/cancellation or
+ * infrastructure failures may throw before a terminal result is available. */
 export type ExecutionResult<T = unknown> = {
   id: string;
   kind: "agent" | "workflow";

@@ -10,6 +10,7 @@ import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./requests.js";
+import { agentExecutionResult } from "./execution-handoff.js";
 import { readIdentity } from "./instance-identity.js";
 import type { EventTrace } from "../app/core/events/bus.js";
 
@@ -78,7 +79,7 @@ const AgentsToolParams = Type.Object({
     ["call", "fork", "context", "list", "peek", "cancel", "sessions"] as const,
     {
       description: [
-        "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree.",
+        "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree. Returns id, kind, status, summary and output/facts; inspect evidence before accepting the contribution.",
         "'fork': start a bounded helper owned by your live execution. Returns sessionId. Inspect its result before finishing; unfinished helpers stop with you. Durable work belongs to a Task.",
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
         "'list': show all available agents with descriptions and any running sessions.",
@@ -192,16 +193,6 @@ function appendContextFiles(task: string, contextFiles?: string[], successCriter
       ...successCriteria.map((c) => `- ${c}`),
     );
   }
-
-  // Delegation-memo convention reminder
-  parts.push(
-    "",
-    "## Delegation Memo",
-    "This task follows the delegation-memo convention. The receiving agent MUST:",
-    "1. Read all context_files before acting.",
-    "2. Verify each success criterion with facts in finish().",
-    "3. Stay within scope — finish as 'blocked' if out-of-scope work is needed.",
-  );
 
   return parts.join("\n");
 }
@@ -324,7 +315,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
             // Return result without full messages array (too large for tool output)
             const { messages: _msgs, ...resultWithoutMessages } = result;
-            return textResult(JSON.stringify(resultWithoutMessages, null, 2));
+            return textResult(JSON.stringify({ ...resultWithoutMessages, ...agentExecutionResult(result) }, null, 2));
           }
 
           case "fork": {

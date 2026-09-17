@@ -56,7 +56,7 @@ export function prepareTaskWorkspaceContext(
       `Task: ${JSON.stringify(binding)}. Resource version: ${rec.resourceVersion}. Generated: ${generatedAt}.`,
       "This is an attempt-start snapshot. Read current Task state before settling work. Files do not change Task authority or acknowledge input.",
       "",
-      "## Assignment",
+      "## Task outcome and acceptance",
       String(rec.outcome ?? "Read context.json for the assignment."),
       ...(rec.acceptance ?? []).map((item) => `- ${item}`),
       "",
