@@ -43,6 +43,57 @@ function fixture() {
 }
 
 describe("Scout knowledge publication", () => {
+  it("rechecks canonical ancestry after candidate preparation and before integration", () => {
+    const { root, project } = fixture();
+    const head = run(root, "rev-parse", "HEAD");
+    const index = run(root, "ls-files", "--stage");
+    const bin = join(root, "injection");
+    const outside = join(root, "outside");
+    mkdirSync(bin);
+    mkdirSync(outside);
+    const wrapper = join(bin, "git");
+    writeFileSync(
+      wrapper,
+      `#!${process.execPath}
+import { execFileSync } from "node:child_process";
+import { symlinkSync } from "node:fs";
+const args = process.argv.slice(2);
+try { process.stdout.write(execFileSync(${JSON.stringify(Bun.which("git"))}, args)); }
+catch (error) { process.stderr.write(error.stderr ?? ""); process.exit(error.status ?? 1); }
+if (args.includes("commit")) symlinkSync(${JSON.stringify(outside)}, ${JSON.stringify(join(project, "knowledge/newdir"))});
+`,
+    );
+    chmodSync(wrapper, 0o755);
+    const script = join(bin, "probe.ts");
+    writeFileSync(
+      script,
+      `
+import { mkdirSync, writeFileSync } from "node:fs";
+import { snapshotKnowledge, publishKnowledgeChanges } from ${JSON.stringify(fileURLToPath(new URL("./knowledge-publication.ts", import.meta.url)))};
+const snapshot = snapshotKnowledge(${JSON.stringify(project)}, ${JSON.stringify(join(root, "artifacts"))});
+mkdirSync(snapshot.projectRoot + "/knowledge/newdir");
+const output = snapshot.projectRoot + "/knowledge/newdir/new.md";
+writeFileSync(output, "candidate\\n");
+try { publishKnowledgeChanges(snapshot, { executionId: "ancestry-race", summary: "ancestry race" }); throw new Error("unexpected success"); }
+catch (error) { console.log(JSON.stringify({ error: String(error), output })); }
+`,
+    );
+    const result = JSON.parse(
+      execFileSync(process.execPath, [script], {
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+        encoding: "utf8",
+      }),
+    );
+    expect(result.error).toContain(
+      "Canonical publication path contains a symlink",
+    );
+    expect(existsSync(join(outside, "new.md"))).toBe(false);
+    expect(readFileSync(result.output, "utf8")).toBe("candidate\n");
+    expect(run(root, "rev-parse", "HEAD")).toBe(head);
+    expect(run(root, "ls-files", "--stage")).toBe(index);
+    expect(existsSync(join(root, ".git/index.lock"))).toBe(false);
+  });
+
   it("attempts remaining file and index restoration when branch and one file rollback fail", () => {
     const { root, project } = fixture();
     const blockedPath = join(project, "knowledge/z.md");

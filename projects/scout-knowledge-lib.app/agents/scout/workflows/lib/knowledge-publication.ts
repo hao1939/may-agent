@@ -534,6 +534,7 @@ export function publishKnowledgeChanges(
         throw new Error(
           "Branch changed while publication acquired the index lock",
         );
+      for (const path of projectPaths) assertCanonicalFile(before, path);
       const newlyDirty = repoPaths.filter((path) =>
         dirtyPaths(before.repositoryRoot, before.canonicalProjectRoot).has(
           path,
