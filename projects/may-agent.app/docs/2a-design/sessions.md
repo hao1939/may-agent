@@ -185,6 +185,27 @@ stale-state/process cleanup remain, without inventing another work owner.
 
 ## Data Retention
 
+### Checkpoint evidence
+
+The optional checkpoint tool appends coarse progress to
+`.state/checkpoints/<sessionId>.jsonl`. This is execution evidence, not another
+Task result or automatic authority to repeat an external effect. The proposed
+numbering rule makes the session log authoritative: a recreated tool or restarted
+process continues from retained progress in that state directory. Separate
+installations would not share a counter. The per-agent latest file remains a
+convenience pointer.
+
+The [tool cleanup candidate](../proposals/authority-boundary-simplification.md#independent-tool-cleanup)
+implements this by reading the highest saved step before each synchronous
+append. It accepts reading the coarse-progress log instead of maintaining
+another cache/lifecycle. Execution has one writer per session; this does not
+add cross-process writer coordination or transactional checkpoint/pointer/digest
+writes. Existing history is retained. Host source `dd548cab`, reviewed September
+18, still uses the old global counter; the candidate has not landed and no
+deployed-state guarantee is implied.
+
+### Retained sessions
+
 Runtime maintenance expires old SQL projections in bounded batches. It does not
 delete a live record merely because its original task is large: new task text
 is bounded in SQL by construction and the full task stays in `meta.json`.

@@ -89,6 +89,24 @@ The source candidate is tracked in the
 [simplification proposal](../proposals/authority-boundary-simplification.md#1-one-durable-delegation-path);
 rollout remains separate.
 
+Host #175, merged as `e38d2861`, retains compact per-Task event
+identities in the existing Task-event links after pending input is claimed or
+consumed. A link records receipt, not successful work or another work lifecycle.
+Pending bodies remain in the Task trigger/attempt, and Events remain the fact
+authority. Receipt lookup uses exact identity, not a scan of attempt history or
+a highest-event-ID shortcut that could discard out-of-order input.
+
+Receipt keys remain for the receiving Task's lifetime and are removed with that
+Task. Event-detail pruning must not silently make an old receipt new input.
+This adds one compact key per received durable event; it does not retain a
+second copy of each event body. Version 3 rebuilds missing links once from
+retained attempt batches, compatibility triggers, accepted live-input IDs and
+pending input. Evidence already removed before this upgrade cannot be
+reconstructed. Mixed old/new writers are unsupported: an older writer can
+still delete receipt history. Rollback preserves Task results and pending input
+but restores the earlier duplicate-wake risk. See
+[duplicate handling](events.md#duplicate-delivery-and-safe-reconsideration).
+
 Small Event bodies remain inline. Large bodies are written to the
 content-addressed store before their event row commits; SQL retains a bounded
 projection and the artifact reference.

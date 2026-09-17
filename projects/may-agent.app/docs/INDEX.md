@@ -146,9 +146,10 @@ Active reviews are:
   the three-review container trial, failed extension and isolated comparison, while
   [research and case studies](archive/reviews/may-project-development-method-20260912.md)
   preserve session and PR sources;
-- [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md)
-  — accepted disposition of all 54 Host script files: remove the PoC directory,
-  retain useful checks/findings, and maintain the explicit command surface;
+- [Review Host scripts and retire completed PoCs](proposals/poc-retirement-and-knowledge-20260912.md#accepted-decision)
+  — accepted direction removes the completed PoC directory while retaining
+  useful checks, findings, and the explicit command surface; the proposal owns
+  the current inventory and candidate evidence;
 - [Teaching agents: from a correction to dependable behavior](proposals/agent-behavior-and-capability-extension.md)
   — proposed conversational teaching, scoped adoption and verified activation;
   [guidance PoC](proposals/agent-adoption-poc-20260912.md) and
@@ -180,8 +181,9 @@ Active reviews are:
   — compact remaining-work plan; canonical boundaries live in Architecture
   and completed separation/recovery evidence lives in the archive;
 - [Simplify the system: fewer paths, clear owners](proposals/authority-boundary-simplification.md)
-  — design reductions before code moves: Task handoff, evaluation UI scope and
-  affordable redo; retained behavioral-comparison and App-owned delivery work;
+  — [current implementation plan](proposals/authority-boundary-simplification.md#current-implementation-plan)
+  separates merged Task/HTTP and event-delivery work from the unmerged checkpoint,
+  typing and CLI cleanup; workflow redo and live delivery remain conditional;
 - [design-implementation-convergence.md](proposals/design-implementation-convergence.md)
   — index of known source gaps and their owning contracts, including Request
   closure, turn control, owner decisions and remaining metric migration.

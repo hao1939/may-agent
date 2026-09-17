@@ -433,14 +433,14 @@ remain fenced as an atomic batch: saving a result that reports admission while
 withholding its actions would falsely record work as admitted. Rejected batches
 remain execution evidence, not accepted Task result or a replay queue.
 Failure findings remain failed-attempt evidence, not stale-result interruptions.
-Both retained mode labels use this same rule. A new cross-App request remains
-effect-fenced separately.
+A new cross-App request remains effect-fenced separately.
 
-Facts retain their scope: a run passed at a particular source head, and a review
-covered particular content. Whether that fact establishes current readiness is
-an App judgment. A changed head need not erase the run or justify rerunning
-unrelated work, but it also cannot make old-head proof exact-head validation.
-No universal event invalidation table or new workflow state machine is needed.
+Delivery identity survives claim, settlement and late relay; receipt is not outcome acceptance.
+See [duplicate handling](events.md#duplicate-delivery-and-safe-reconsideration) for Host/App duties and Host #175.
+
+Facts retain their source/content scope; Apps judge whether they establish readiness.
+A changed head neither erases useful evidence nor makes old-head proof current validation.
+No universal invalidation table or new workflow state machine is needed.
 
 A storage compare-and-swap collision is not a domain failure. Result and
 workspace-metadata persistence may reread current resources and retry the

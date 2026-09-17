@@ -1,11 +1,13 @@
 # Simplify the system: fewer paths, clear owners
 
-**Status:** Selected cleanup in implementation review; larger feature reductions
-remain conditional. Existing direct-work and attempt-context contracts remain
-accepted. See [implementation evidence](#implementation-evidence).
-**Reviewed:** September 11, 2026, against Host `main` `0bedd93a`, including the
-merged Conversation/state separation [#129](https://github.com/hao1939/may-agent/pull/129).
-Source review does not identify the deployed release.
+**Status:** Task/HTTP, caller-feedback, script-retirement and event-delivery
+changes are merged. Independent tool cleanup remains an unmerged candidate;
+workflow redo and provider-facing delivery still need their separate evidence.
+**Reviewed:** September 18, 2026, against local Host `main` `dd548cab` for source
+status. The September 12 review at `f6a11d1c` (#172), earlier #129/#164 findings
+and candidate checks below retain their dated evidence. They are not a new
+implementation backlog or fresh validation. Source review does not identify
+the deployed release.
 
 Make ordinary conversation and authorized work easier to understand, change and
 operate at acceptable total cost. Directory organization now has an explicit
@@ -14,6 +16,28 @@ with that work independently of conditional behavior reductions. Follow the
 [value/cost rules](../1-principles/design-philosophy.md#how-to-decide-a-tradeoff).
 One existing proposal owns this review; subsystem contracts and implementation
 plans remain with the owners linked below.
+
+## Current implementation plan
+
+Keep one owner for work and one authoritative home for evidence. Remove a
+duplicate decision or state copy when doing so fixes a demonstrated problem;
+do not build another coordination framework or delete useful recovery merely
+to reduce the line count.
+
+| Area | Current disposition |
+| --- | --- |
+| Shared execution and ownership | Conversation already executes through one stable Task in merged #158; child-wait retirement, component layout and core policy cleanup are also merged. Do not repeat those changes. |
+| Task outcome names, vocabulary and execution path | [#168](https://github.com/hao1939/may-agent/pull/168) integrated [#170](https://github.com/hao1939/may-agent/pull/170) and [#171](https://github.com/hao1939/may-agent/pull/171), merged as `c0cbb59e`. Preserve its paired App contract and retained-state verification; do not reimplement the stack. |
+| Session review UI ownership | [#173](https://github.com/hao1939/may-agent/pull/173) integrated in `c0cbb59e`: HTTP-owned generation and inline feedback writes were removed; historical notes and the existing Evaluation App action remain. This deliberately gives up inline corrections, without claiming an equivalent replacement. |
+| Independent tool-state cleanup | Apply checkpoint numbering from retained session evidence, one shared test declaration, and removal of the advertised obsolete CLI reuse choice. See [candidate and verification](#independent-tool-cleanup). No Task schema or controller changes. |
+| Caller feedback and retired experiments | #169 merged as `b1c7cbef`; #174 merged as `649d801c`. Preserve caller reports and the supported checks without restoring `scripts/poc/`. |
+| Duplicate event delivery | #175 merged as `e38d2861`. Retain exact per-Task delivery identities; [Events](../2a-design/events.md#duplicate-delivery-and-safe-reconsideration) owns the common contract. |
+| Workflow redo, model-quality comparison and App-owned delivery | Deferred experiments with the explicit evidence/authority requirements below. They do not block the independent cleanup or authorize deployment. |
+
+Resume the independent tool candidate against current `main`. Preserve the
+already merged CLI vocabulary changes from #170 during integration.
+The historical sections below explain prior decisions. The table above and
+[remaining work](#remaining-work) are the current plan.
 
 ## Current contract
 
@@ -185,6 +209,123 @@ the absence of an unsafe duplicate action. Measure redo cost for that workload.
 Update [workflows](../2a-design/workflows.md) and the
 [Task engine](../2a-design/task-resource-engine.md) only with the selected change.
 
+## September 12 codebase cleanup review
+
+**Status:** Original findings at #164, now triaged by the
+[current implementation plan](#current-implementation-plan). The original review
+changed no Host source; the independent implementation is recorded below.
+This extends the [48-file scripts review](poc-retirement-and-knowledge-20260912.md)
+to `src/`, `packages/`, `test/` and `container/` at Host #164. These areas contain
+614 tracked files, including 284 test files. Inventory, relative-import and
+identifier searches covered those areas; manual review focused on runtime/state
+boundaries, HTTP policy, compatibility APIs, tool state and type declarations.
+This is a focused review, not a line-by-line audit of every file.
+
+There is useful cleanup, but no demonstrated large pile of unreachable source.
+The relative-import scan found references to every production `src/` module
+except the known binary entrypoint. Re-exports and test/dynamic callers can hide
+unused code, so that observation neither proves every export is useful nor
+justifies deleting modules by filename. Much of the old inbox execution has
+already been removed; current inbox code admits input and projects exact results.
+
+### Concrete candidates
+
+| Priority / candidate | Evidence at this revision | Proposed change and verification |
+| --- | --- | --- |
+| First: checkpoint counter ownership | [`checkpoint.ts`](../../../may-agent/src/lib/tools/checkpoint.ts) keeps a process-wide `stepCounters` map keyed only by session ID. Its exported cleanup hook has no caller in tracked Host code. An isolated invocation of the real tool in two fresh state roots with the same session ID wrote first steps **1 and 2**, demonstrating shared state. | Give counters an explicit session/state-root lifetime or derive numbering from retained checkpoints. Preserve numbering across any supported resume/recreated-tool path. Exercise separate installations, repeated sessions and teardown. Update the existing checkpoint tests to use temporary roots; their current fixed source-directory fixture should not become shared test state. Deleting the unused cleanup function alone would leave the problem. |
+| First: duplicated Bun test declarations | At #164, `src/types/bun-test.d.ts` and [`packages/sdk/src/bun-test.d.ts`](../../../may-agent/packages/sdk/src/bun-test.d.ts) are byte-identical, 11-line declarations exposing all test APIs as `any`. There are also separate minimal Bun runtime/SQLite declarations. | Keep the SDK declaration: its standalone target includes it and the Host already includes `packages/`. Delete only the redundant Host copy; add no new dependency or ambient declarations. Run Host/SDK type checks and the SDK export-contract test. Existing `any` declarations remain a limitation, not improved Bun type coverage. |
+| First: misleading private lifecycle name | [`stopAppTask()`](../../../may-agent/src/app/core/tasks/app-task-reconciler.ts) accepts an unsuccessful outcome and schedules retry. Its production caller is in the Task runtime. Actual attempt Stop and owner closure are separate operations; the Task README already has to explain the mismatch. | Rename the private operation to describe recording an unsuccessful outcome, and update its caller, tests and navigation. Preserve persisted `stopped` values and SDK compatibility in this slice. Existing stale-result, backoff, closure and public Stop tests must still exercise distinct behaviors. |
+| Small API cleanup: obsolete advertised CLI option | [`run-cli-agent.ts`](../../../may-agent/src/lib/tools/run-cli-agent.ts) advertises `reuseSession`, while [`cli-agent.ts`](../../../may-agent/src/lib/cli-agent.ts) rejects implicit reuse without an exact native session ID. No use was found in the scoped current App/Gym/agent configuration and workflow search. | Stop advertising the obsolete option after a final caller check; retain the explicit `resumeSessionId` operation and a clear rejection at the compatibility boundary. Update schema/documentation tests and preserve native-session identity, cancellation and result-evidence tests. This removes an unnecessary model-facing choice, not native resume support. |
+| Largest feature simplification: HTTP/Evaluation ownership | [`http/server.ts`](../../../may-agent/src/app/http/server.ts) constructs evaluation prompts and appends human feedback directly. [`sessions.js`](../../../may-agent/packages/webui/static/pages/sessions.js) calls these endpoints. The current [Evaluation App](../../../evaluation.app/app.ts) maps the request to a Task whose input retains session ID/correction fields, dropping the requested focus line and instructions. | Resolve the existing [evaluation feature decision](#2-reduce-evaluation-ui-obligations): retain historical reads and either remove the unsupported write controls/routes or supply one App-owned implementation. Compare a concrete line-review/human-correction journey before selecting removal. A route extraction alone preserves the incomplete behavior. Verify retained history, honest admission/completion reporting and the served UI together. |
+| Coordinated cleanup: legacy imports, aliases and ignored configuration | [`requests.ts`](../../../may-agent/src/lib/requests.ts) is a DB re-export facade whose introductory comment still describes sessions/events as work tracking. A [tech-lead helper](../../agents/tech-lead/handlers/testing.ts) imports it. A [current workflow](../../agents/tech-lead/workflows/platform-owner-review.ts) imports deprecated `taskOwnerResultSchema`. Agent definitions still declare `context_files`; Host loading maps these into `contextFiles`, with no production reader of that property found. Tool-call arguments also named `context_files` have real consumers and are a different contract. | Prefer owning DB modules in changed internal code and correct the facade's misleading description. Migrate actual sibling imports before deleting the facade or SDK aliases. Resolve the ignored agent configuration through the existing [context/adoption review](agent-behavior-and-capability-extension.md), verifying what reaches execution before removing fields. Preserve the working tool-call context arguments. |
+
+The first three candidates can be reviewed independently. The checkpoint change
+is a correctness fix with a small simplification; the type and naming changes
+reduce maintenance ambiguity. The CLI schema cleanup has a compatibility check.
+Evaluation scope and sibling API migration need their existing owners and paired
+changes, rather than being folded into a mechanical deletion PR.
+
+### Independent tool cleanup
+
+**Candidate:** `fix/authority-tool-state-20260912`, based on `f6a11d1c`.
+The September 12 record reports local implementation and focused checks; full
+CI and publication evidence were pending. September 18 source inspection at
+`dd548cab` still finds the global checkpoint counter and advertised `reuseSession`
+option. This candidate has not landed; refresh it and its checks before calling
+it ready.
+
+- The checkpoint log, scoped by state directory and session, owns its step
+  numbers. Each save takes the highest retained valid step plus one. A fresh
+  installation starts at one; a recreated tool or restarted process continues
+  the same evidence. Previously reset numbers are retained, not rewritten.
+  Remove the process-global map and its unused cleanup hook.
+- Accept reading this small, coarse-progress log on each save instead of adding
+  a cache and another lifecycle. Read and append are synchronous under the
+  existing one-executing-writer-per-session assumption. This is not a new
+  cross-process multi-writer lock, external-effect receipt or exactly-once write
+  guarantee; it does not change Task acceptance or workflow resume.
+- Checkpoint tests use fresh temporary roots and close their databases. Four
+  regressions failed before the change: cross-installation leakage, process
+  restart reset, numbering below retained history, and consuming a step after
+  a failed write. The existing dynamic-session test also exercises switching
+  away and back; recreated and still-live tool objects share persisted evidence.
+- The SDK's existing test declaration serves both compilation targets. Broader
+  Bun typing remains separate; no new `any` or dependency is introduced.
+- The model-facing CLI schema offers explicit `resumeSessionId` only. Existing
+  raw legacy calls still get the runner's clear rejection for implicit reuse.
+  Native resume, cancellation, identity and evidence behavior remain unchanged.
+
+Focused verification: 44 checkpoint/preparation/recovery tests and 32 native CLI/
+SDK-export tests pass. The CLI schema assertion also failed before removal.
+No model call, installed-state edit or deployment was needed.
+
+### Large modules: organize by responsibility
+
+The largest production files include HTTP server (3,886 lines), Task reconciler
+(3,755), Task runtime (3,206), session manager (2,492), and workflow tool (2,046).
+Size identifies review effort, not unused behavior.
+
+The HTTP server is the clearest organizational slice: extract cohesive project,
+session/evaluation and transport/static-serving handlers under its existing
+`http/` home, with explicit dependencies and the current route contracts. Start
+with one family after its feature decision. Do not introduce a new router or
+service framework merely to distribute the lines.
+
+For Task/runtime files, retain one owner for each claim, result acceptance,
+transaction and publication/rollback boundary. Move cohesive private helpers
+only where they reduce shared context or duplicate decisions. The current Task
+and inbox READMEs already identify those owners; use their tests and source map.
+Do not recreate the removed inbox executor, or unify dispatch backoff with
+attempt backoff: one retries dispatch/storage, the other may execute model work.
+The [existing runtime plan](task-runtime-organization.md) owns these extractions.
+
+### Retain until the relevant evidence exists
+
+- Keep old-state conversion and historical readers until the supported upgrade
+  window is deliberately retired. Fresh-source success does not prove old
+  retained Tasks, input links or receipts can be discarded.
+- Keep the direct-agent adapter while Gym calls it; the scripts proposal records
+  the paired migration. It is a bounded executor, not proof of a second durable
+  Task owner.
+- Keep workflow reuse pending the existing cost/effect comparison. Native CLI
+  resume, workflow step reuse and Task recovery solve different problems.
+- Preserve file-backed, concurrent-connection, worker-death and restart tests.
+  Sharing assertions or similar fixture shapes does not make those guarantees
+  interchangeable. Use the existing [test coverage map](../../../may-agent/test/README.md).
+- Refresh stale implementation-status passages when landing the affected slice.
+  The September 12 review found Architecture still describing separate
+  Conversation execution; that passage now reflects the shared Task handlers.
+  Do not use an older status paragraph to reimplement completed cleanup or infer
+  deployed state.
+
+**Validation:** The checkpoint reproduction called production code with synthetic
+inputs and two temporary directories, then closed databases and deleted those
+directories. No model calls, installed-state operations or deployments ran.
+The counter result is evidence of shared in-process state, not a measured memory
+growth rate. Declaration equality and named caller checks are source evidence.
+Documentation links and design checks are validated separately; no full Host CI
+or behavior-preserving extraction is claimed by this review.
+
 ## Smaller organization changes worth keeping
 
 #129 already gives core state and the conversational frontend separate homes.
@@ -304,17 +445,14 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. #138/#139/#140 are merged (`ca6c9d7f`, `b725f546`, `335bf178`). Build the
-   move-only slices on those ownership boundaries.
-2. Reorganize core Task, inbox, state and shared scheduling files in one cohesive
-   move-only slice. Put the mixed inbox orchestration and worker entry points in
-   composition. Move tests, update imports, lint boundaries, worker/build paths
-   and documentation references together.
-3. Group concrete executors and producers in a separate slice. Then extract
-   existing HTTP route families where that makes the server readable. Preserve
-   their behavior; evaluation feature deletion remains a separate decision.
-4. Child-wait retirement landed separately in #140. Affordable workflow redo
-   remains a separate review and does not block directory organization.
+1. Refresh the unmerged independent tool cleanup against current `main`, then
+   repeat its regression/full-CI checks before review and integration.
+2. Preserve the merged Task/HTTP stack, caller reports, script retirement and
+   event-delivery fixes. Their source work is complete, not a new backlog.
+3. Select any further HTTP extraction by responsibility after the feature
+   decision, rather than splitting large files merely for their size.
+4. Leave workflow redo and provider-facing delivery at their explicit evidence
+   gates. Completing this source milestone does not authorize a live rollout.
 
 For every source slice, run the existing affected tests and full Host CI,
 including subprocess and browser coverage where paths change. Do not add a
@@ -351,8 +489,11 @@ saved waits, stale claims, unchanged Task evidence and continued Task execution.
 The canonical design check passed against that SDK. This is source/fixture
 evidence; deployment remains separate. Directory moves are not part of #140.
 
-Child-wait removal is now accepted as a separate source change. The earlier
-#138/#139 scope above did not include it. The remaining reductions are:
+Child-wait removal was accepted as a separate source change. The earlier
+#138/#139 scope above did not include it. At that review, the reductions below
+remained deferred. The later #173 change, merged through #168, superseded the
+Evaluation recommendation by explicitly removing inline writes; workflow redo
+still lacks its workload proof.
 
 - **Evaluation UI:** The shipped session page is a caller of both generation and
   comment routes. Comments currently append usable line-attributed evidence;
@@ -365,8 +506,8 @@ Child-wait removal is now accepted as a separate source change. The earlier
   no concrete workload establishes a worthwhile saving from deleting reuse.
   Keep existing paths until redo cost and effect safety have been measured.
 
-Evaluation and workflow redo remain explicit deferrals under the value/cost
-rule. The core/composition directory candidate moves 42 files with their tests,
+These were explicit deferrals under the value/cost rule at that revision.
+The core/composition directory candidate moved 42 files with their tests,
 updates source and fixture imports, retains all runtime algorithms and storage
 formats, and adds short component reading guides. The agent-facing Task tool
 remains outside core. Concrete executor/producer grouping is implemented in the separate 13-file
@@ -377,11 +518,11 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Retire conversational child waits | Merged in #140; unfinished legacy waits fail visibly while admitted work and accepted asks remain. Deployment is separate. |
-| Reorganize directories for code review | Core/composition (#141) and concrete capabilities (#142) are merged. HTTP extraction remains a separate slice of the [layout map](#directory-organization-for-code-review). |
+| Finish independent tool cleanup | Refresh the retained candidate; repeat the four previously reproduced checkpoint regressions and check one test declaration and honest CLI discovery. Complete full local/hosted checks and review before merge. |
+| Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
-| Resolve HTTP/Evaluation ownership | Compare feature reduction with an App-owned implementation using the [external plan](external-components-simplification.md#conditional-follow-ups). Preserve history and honest receipt/saved semantics. The paired migration is conditional on retaining the feature's value. |
+| Legacy imports and ignored agent context | #170's SDK vocabulary migration is merged. Keep the DB facade until sibling imports move; resolve unused agent-definition context through the existing extension/adoption review. Tool-call context arguments remain supported. |
 | Prove one App-owned delivery workflow | Select one repository, responsible Task, executor and requested terminal outcome. The recorded read-only PR assessment did not exercise publication, review dispatch or validation effects. |
 | Assess historical production state before rollout | Verify the actual artifact and retained state. Candidate fixes do not establish that a previously revived Task generation was authorized or repair historical rows automatically. |
 

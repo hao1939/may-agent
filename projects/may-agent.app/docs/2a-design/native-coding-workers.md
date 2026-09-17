@@ -111,6 +111,10 @@ Start a fresh native context for an independent opinion. Pass
 `resumeSessionId` only to continue an exact known native thread.
 Implicit shared `reuseSession: true` is rejected without an explicit ID.
 The tool neither reads nor writes an owner-wide latest-session map.
+The [tool cleanup candidate](../proposals/authority-boundary-simplification.md#independent-tool-cleanup)
+would also remove that retired option from model-facing discovery. Host source
+`dd548cab` still advertises it; the compatibility runner rejects old implicit-reuse
+calls, and exact native resume is unchanged.
 
 Native process groups are recorded against the exact caller session using
 the same tracking and drain code as shell commands. Cancellation and timeout

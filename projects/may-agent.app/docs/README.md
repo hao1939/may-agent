@@ -63,12 +63,14 @@ A small navigation correction passed its checks. Durable scope changes and two
 extra clock-echo attempts need further work before wider automation; Host
 Operations activation is not required.
 
-The [scripts review proposal](proposals/poc-retirement-and-knowledge-20260912.md)
-accounts for the refreshed 54-file Host inventory, including all 27 files in
-`scripts/poc/`. Its isolated implementation removes that folder, retains useful
-checks in maintained suites, and preserves findings with exact historical source
-references. Command-safety fixes are reviewed separately; Gym compatibility stays
-until its consumers/storage migrate together. This is not a merged/deployed claim.
+The [scripts review proposal](proposals/poc-retirement-and-knowledge-20260912.md#accepted-decision)
+owns the Host script inventory and current candidate evidence. Its accepted
+direction removes the completed `scripts/poc/` collection, retains useful checks
+in maintained suites, and preserves findings with exact historical source
+references. Command-safety fixes are reviewed separately; Gym compatibility
+stays until its consumers and storage migrate together. Follow the proposal for
+current integration and deployment status rather than treating this navigation
+summary as source evidence.
 
 The [caller-feedback proposal](proposals/caller-feedback-and-waiting.md) explores
 returning problems to the exact caller without another escalation lifecycle.
@@ -152,8 +154,12 @@ traces admission through restart; the focused reload fix merged in #145 (`585752
 Definition preparation merged in #146 (`e1a0005e`). The
 [Request follow-through review](proposals/task-runtime-organization.md#request-follow-through-review)
 checks correction, non-success and closure across storage reopen. HTTP handler extraction remains separate.
-Evaluation feature reduction and workflow redo remain conditional. Candidate
-validation and merge status live in the proposal; deployment remains separate.
+The refreshed [implementation plan](proposals/authority-boundary-simplification.md#current-implementation-plan)
+records the #168/#170/#171/#173 Task/HTTP stack merged as `c0cbb59e`, caller
+feedback #169, script retirement #174 and event-delivery correction #175.
+Independent checkpoint, test-declaration and CLI-discovery cleanup remains
+unmerged at reviewed Host source `dd548cab`; workflow redo still needs workload
+evidence. The proposal owns source status; deployment remains separate.
 
 The [external component plan](proposals/external-components-simplification.md#candidate-evidence)
 records the completed source fixes for guard guidance, the blocking credential
