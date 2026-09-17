@@ -186,8 +186,10 @@ export async function execute(ctx: WorkflowContext) {
       allowNeedsAgent: false,
     });
     if (!admitted.ok) {
-      const failure =
-        "Development delivery cannot fit the Host result contract; retained files need inspection";
+      const failure = `Development delivery rejected: ${admitted.error}`.slice(
+        0,
+        800,
+      );
       return ctx.done(failure, {
         state: "incomplete",
         report: true,
@@ -387,6 +389,10 @@ export async function execute(ctx: WorkflowContext) {
           true,
           value,
         );
+        // The new judgment supersedes the old request for repair. Honor review
+        // of existing work; do not let stale feedback force implementation.
+        saved.feedback = undefined;
+        saved.implementation = undefined;
       }
       if (saved.design.decision === "clarify")
         return finish(`Creator decision needed: ${saved.design.reason}`);

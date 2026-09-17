@@ -28,6 +28,33 @@ when evidence shows the existing foundation is insufficient. This applies the
 [20/80 principle](core-principles.md#solidify-the-common-20-teach-the-remaining-80)
 without imposing a numerical budget or another review gate.
 
+## Code should help agents work
+
+Code exists to make agents more effective: reliable actions, useful observation,
+evidence retention, recovery and less repetitive bookkeeping. A procedure is
+valuable when it improves the outcome; following more steps is not progress.
+Keep agents responsible for meaning, tradeoffs and sufficiency. A fresh judgment
+must be able to change the approach, reuse sound work or conclude that no edit
+is needed, within the current requirement and authority.
+
+When reviewing a tool or workflow, ask:
+
+- Does it give the agent a useful capability or remove repeated mechanical work?
+- Does each mandatory step protect a real invariant, authority boundary or
+  explicit acceptance requirement? Could guidance or an optional tool suffice?
+- Can the agent inspect enough evidence, choose a different approach and recover
+  without the human reconstructing the run?
+- Does failure explain what happened and preserve useful work, or does it force
+  another full attempt simply because delivery or formatting failed?
+- Do observed completion quality, unnecessary repeats and human intervention
+  improve? Measure those effects instead of procedural compliance alone.
+
+Retain checks for actual effects, identity, authority and result correctness.
+Revisit routing rules, history cutoffs and tool restrictions when they prevent
+useful judgment or investigation. A narrow workflow may deliberately serve one
+outcome; do not make all work adopt that process merely to access a shared
+capability such as saving evidence.
+
 ## Decision guide
 
 ```text

@@ -97,7 +97,10 @@ authority checks and the assignment; prompts restricting effects are not a sandb
 
 Use the SDK's structured result schema for each call. The workflow validates
 the returned decision and invokes fixed profile names; agents do not construct
-routes, events or timers. Findings in a pass result must be empty. This small
+routes, events or timers. A fresh design judgment supersedes the earlier request for repair: when Bob
+chooses review of existing clean work, stale feedback must not force another
+implementation. Existing exact-candidate verification remains reusable.
+Findings in a pass result must be empty. This small
 contract treats all returned findings as unresolved work; optional ideas belong
 in the explanation and do not require a new finding taxonomy.
 

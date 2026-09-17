@@ -718,4 +718,35 @@ describe("development workflow using real Git and verification", () => {
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     expect(t.calls.filter((c) => c.stage === "design")).toHaveLength(1);
   });
+  test("a fresh design can choose rereview without forcing implementation", async () => {
+    const t = trial();
+    t.current.input = t.spec(0);
+    t.current.outcome = t.spec(0).data.outcome;
+    t.current.acceptance = t.spec(0).data.acceptance;
+    let reviews = 0;
+    t.setJudgment((stage) => {
+      if (stage === "design")
+        return {
+          decision: "review",
+          reason: "Existing source is sufficient",
+          design: "Inspect it against the requirement",
+        };
+      if (stage === "implementation")
+        return { decision: "ready", reason: "No source change was needed" };
+      return {
+        decision: ++reviews === 1 ? "redesign" : "pass",
+        reason: "Reconsider the interpretation",
+        findings: [],
+        commit: t.git(t.worktree, "rev-parse", "HEAD"),
+      };
+    });
+    expect((await t.run()).state).toBe("converged");
+    expect(t.calls.map((c) => c.stage)).toEqual([
+      "design",
+      "review",
+      "design",
+      "review",
+    ]);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+  });
 });
