@@ -19,7 +19,7 @@ A Task outcome—not one worker session—is the accountability unit. The review
 
 Automatic semantic sampling is **off by default**. No selector schedule exists unless `EVALUATION_AUTO_REVIEW_ENABLED=true`; rollout documentation proposes a daily canary only after manual calibration. There is no active two-hour schedule.
 
-Legacy session-aftermath, deep-evaluation, and project-health records remain historical evidence. Their compatibility entrypoints do not perform new session-only semantic scoring. The App manifest declares all 11 legacy Evaluation metrics as `retired` so normal activation retires persisted definitions without deleting measurements; metric breach/recovery events do not wake an Evaluation owner lane.
+Legacy session-aftermath, deep-evaluation, project-health, and grouping Tasks remain historical evidence. Every supported input is admitted as an independent ordinary Task with no artificial parent, so cancelled legacy groups cannot block new review, reader, selector, or compatibility requests. Compatibility entrypoints do not perform new session-only semantic scoring. The App manifest declares all 11 legacy Evaluation metrics as `retired` so normal activation retires persisted definitions without deleting measurements; metric breach/recovery events do not wake an Evaluation owner lane.
 
 ## Reports
 

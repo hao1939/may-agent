@@ -1,6 +1,6 @@
 # Task-outcome evaluation and report use
 
-**Status:** The explicit single-Task review, initially-off bounded selector, durable report store, and deterministic list/read path are implemented in this candidate. Legacy Task retirement, real-model calibration, report-query UX trials, and live activation remain rollout steps.
+**Status:** The explicit single-Task review, initially-off bounded selector, durable report store, deterministic list/read path, and legacy Task retirement are deployed. Automatic selection remains off while bounded real-model calibration and report-query UX trials complete.
 
 ## Boundary
 
@@ -33,4 +33,4 @@ Initial rollout is serialized (`maxConcurrent: 1`) and automatic semantic sampli
 
 The deterministic `list-evaluation-reports` and `read-evaluation-report` actions expose at most 5 valid published pairs and an 8 KiB content preview per read, keeping the complete Task result below the 16 KiB admission budget. Larger reports return exact size, SHA-256, canonical path, and explicit continuation metadata. Listing says each entry is one bounded Task snapshot and returns disposition plus relative action paths and canonical absolute artifact paths. Neither action invokes the evaluator or creates findings.
 
-Activation must not awaken the retained legacy Evaluation backlog. Session-only shallow/deep semantic entrypoints now return neutral retired/insufficient-evidence results regardless of caller ownership hints; canonical Task-outcome review is the semantic path. Follow `rollout-and-migration-2026-09.md` for the exact 2,037-Task frozen retirement, staged canary, and rollback. Never delete Task or report history.
+Activation must not awaken the retained legacy Evaluation backlog. The retired grouping Tasks are historical organization only: every supported input now creates or reuses an independent ordinary Task with `parentId: null`, so a cancelled legacy group cannot block admission. Session-only shallow/deep semantic entrypoints return neutral retired/insufficient-evidence results regardless of caller ownership hints; canonical Task-outcome review is the semantic path. Follow `rollout-and-migration-2026-09.md` for the exact 2,037-Task frozen retirement, staged canary, and rollback. Never delete Task or report history.
