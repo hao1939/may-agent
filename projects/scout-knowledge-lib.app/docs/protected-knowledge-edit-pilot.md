@@ -1,55 +1,76 @@
-# Protected Scout knowledge edit pilot
+# Scout knowledge publication boundary
 
-## Current convention
+## Implemented decision
 
-A knowledge or report path returned by a Scout Task or workflow is a published
-interface. Maintenance may improve its title and add index navigation, but must
-not rename or move the delivered file. This keeps retained Task and workflow
-results useful without a global reference registry or duplicate full findings.
-Unpublished files may be moved only after checking and repairing editable links.
+Scout publishes at each accepted durable-write boundary. `scout-explore`,
+`knowledge-planner` (including generic goals and fallback owner review), and
+`scout-assess-source` all use the same small Git helper. A periodic sweep was
+rejected because it cannot distinguish accepted knowledge from an abandoned
+or rejected draft. A broad Host worktree framework was also rejected: Scout
+needs isolation only around its own `knowledge/` and `reports/` writes.
 
-`scout-assess-source` already follows this convention mechanically: a source's
-normalized identity selects one stable, source-identity-derived assessment path,
-and later questions update that path while retaining earlier evidence. The workflow
-returns the exact path only after write/read-back succeeds. If saving fails, it
-returns the substantive draft and failure evidence without claiming a path.
+The helper allocates a detached Git worktree under the workflow's retained
+output directory. Code passes that candidate project root to the writer.
+Exploration and planner agents judge usefulness, source continuity, links,
+and whether a change fulfills the assignment. Assessment code owns retrieval
+and archive construction. Code—not agent prose—then inventories candidate
+bytes, validates scope and regular-file ancestry, commits exact named paths,
+checks concurrent branch/path state, and reads the commit back byte-for-byte.
+Only after those checks does workflow evidence say `publication:commit:<sha>`
+and list repository paths plus canonical output paths.
 
-## Bounded protected-edit pilot proposal
+`archive:false` never allocates or publishes an assessment record. A write
+boundary with no durable change returns `publication:no-change`, makes no
+commit, and removes its pristine candidate worktree. Exploration additionally
+rejects durable changes omitted from the
+agent's output list. Failed or rejected calls are not published; their isolated
+candidate and changed-path inventory are retained in workflow evidence for
+review instead of contaminating the shared library.
 
-Pilot only `knowledge-planner`, because it is the observed workflow that edits
-versioned knowledge and reports. Keep `library-health` JSONL and daily-digest
-accumulator/snapshots in their existing App runtime workspace; they are runtime
-scratch/artifacts, not source-branch changes.
+## Git transaction and recovery
 
-1. The Host allocates and retains one Task worktree and exposes its root as
-   `ctx.workspace.root`. The App must also receive an explicit mapping for the
-   Scout project and App roots inside that candidate.
-2. The planner prompt names only those candidate roots as writable. Canonical
-   `projectRoot`/`appRoot` remain read-only reference locations.
-3. Before and after the agent call, code records `git status --porcelain` (or an
-   equivalent Host-owned changed-path inventory) in that same candidate. Admit
-   only changes under Scout knowledge, reports, and the explicitly allowed App
-   documentation paths; reject runtime state and unrelated paths.
-4. A reviewer reads the exact diff and verifies links, including every path
-   previously returned by the Task. The candidate is committed only after
-   checks pass.
-5. Integration remains an explicit authorized repository operation. The result
-   distinguishes prepared, reviewed, integrated, and deployed states and keeps
-   the candidate reference until integration is proved.
+Publication stages only the exact changed paths in the isolated candidate; it
+never uses repository-wide `git add`. Before integration it rejects a target
+that was dirty at allocation, a symlink/non-file output, an unreviewed deletion,
+or concurrent change to an intended path. A disjoint branch advance is accepted
+by replaying the already captured candidate bytes onto the new parent.
 
-## Why this is a proposal, not enabled behavior
+The candidate commit is created and read from Git. Before any canonical write,
+the helper exclusively acquires the canonical index lock, rechecks the branch,
+both index and worktree dirtiness, and every intended canonical ancestor (no
+symlink traversal). It builds a replacement index from the existing index and
+changes only intended entries, preserving unrelated staged bytes and modes.
+Candidate bytes are prepared in same-directory temporary files; applied files
+and the index are rolled back if integration fails. The shared ref is advanced
+last with an expected-old-value update, and an uncertain command result is
+accepted only when Git read-back proves that exact commit. A lock, protected
+path, or ref race is rolled back without moving the branch or leaving Scout
+bytes in the canonical checkout in tested ordinary failures. This is not a
+claim of atomic recovery from arbitrary process crashes or external filesystem
+writers. If rollback itself encounters another failure, it still attempts every
+remaining applied-file and index restoration, and reports unresolved branch,
+file, or index effects with the retained candidate. The retained candidate base,
+revision, and complete
+base-to-revision/worktree path inventory are recovery evidence. Git remains the
+only registry: a retry that observes committed bytes is a no-change at that
+revision rather than a duplicate commit.
 
-The current planner explicitly writes `ctx.workspace.projectRoot` and
-`ctx.workspace.appRoot`; its result contract has no candidate revision or
-integration state. Although ordinary Git can inventory the diff under
-`ctx.workspace.root`, the workflow cannot prove from the current mapping that
-both writable sibling roots point into that candidate, nor can it request an
-authorized integration after review. Repointing the prompt alone could therefore
-mix candidate and canonical paths, while a post-write manifest would only detect
-a shared mutation after it happened. Implementing a second worktree manager
-inside Scout would duplicate Host ownership and make retry cleanup unsafe. The
-smallest experiment is a local Host run that supplies candidate mappings for
-both roots, lets the agent make one in-place note edit, and retains the resulting
-branch/diff without integration. Until that contract is proven, planner writes
-remain an explicit unresolved protection limit rather than falsely protected
-edits.
+The mechanism preserves file modes supplied by Git for existing regular files;
+new knowledge is ordinary non-executable content. It intentionally does not
+make arbitrary direct edits to canonical paths transactional. Direct Scout use
+must either use this workflow boundary or report exact uncommitted paths for an
+owner to adopt; it must never broadly stage or claim a commit from prose alone.
+
+## Existing backlog
+
+The separate reviewer adoption is complete at local-main commit
+`16937cf877b9738410569ab84b894fbb0dfd6343`. It committed all 149 historical
+Scout paths plus the adoption report after exact-byte, deletion, source-link,
+and 457 retained-result published-path checks. The canonical Scout project was
+clean at review completion and unrelated design work was preserved.
+
+The committed [adoption report](../../scout-knowledge-lib/reports/triage/scout-git-backlog-adoption-2026-09-18.md)
+records the scope and verification. Detailed per-path receipts remain in
+`backlog-review/adoption-result.json`, `manifest-draft.json`, and
+`published-path-check.json` under the review-pilot artifact directory.
+No second backlog commit or `archive:false` publication is required.

@@ -48,8 +48,11 @@ a different source.
 
 Search by topic, title, source URL, paper ID, repository, or post ID before
 creating a file. Update an existing note when it already covers the topic. Use
-the absolute roots above and never create another `projects/scout-knowledge-lib`
-tree beneath the domain workspace.
+the workflow-supplied candidate root for hosted library edits; the roots above
+are the final publication locations. Code publishes accepted changes and returns
+their canonical paths with Git evidence. Failed candidates remain available for
+recovery. Never create another `projects/scout-knowledge-lib` tree beneath the
+domain workspace, and never mistake a working draft for a committed result.
 
 ## Safety And Verification
 

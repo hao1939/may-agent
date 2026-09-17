@@ -1,4 +1,5 @@
 import { afterEach, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
 import {
   mkdtempSync,
   readFileSync,
@@ -41,6 +42,15 @@ afterEach(() => {
 function temporary() {
   const root = mkdtempSync(join(tmpdir(), "scout-assessment-"));
   roots.push(root);
+  mkdirSync(join(root, "knowledge"), { recursive: true });
+  writeFileSync(join(root, "knowledge/README.md"), "# Knowledge\n");
+  execFileSync("git", ["init", "-b", "main"], { cwd: root });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
+  execFileSync("git", ["config", "user.email", "test@example.invalid"], {
+    cwd: root,
+  });
+  execFileSync("git", ["add", "."], { cwd: root });
+  execFileSync("git", ["commit", "-m", "fixture"], { cwd: root });
   return root;
 }
 const sourceUrl = "https://arxiv.org/pdf/2508.10874";
@@ -136,7 +146,7 @@ it("admits a source operation and binds its code procedure without changing gene
     source: { kind: "app", id: "may" },
     input: { ...input, kind: "goal" },
   });
-  expect(generic).not.toHaveProperty("intent.workflow");
+  expect(generic).toHaveProperty("intent.workflow", "knowledge-planner");
 });
 
 it("supplies bounded excerpts with exact offsets, including the tail", () => {
@@ -174,6 +184,23 @@ it("the procedure saves and reads back the analysis with code-owned coverage", a
   ).toBe(true);
   const record = assessmentRecord(root, sourceUrl);
   const saved = readFileSync(record.path, "utf8");
+  const revision = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
+  expect(result.output).toMatchObject({
+    facts: expect.arrayContaining([
+      `publication:commit:${revision}`,
+      `output:${record.path}`,
+    ]),
+  });
+  expect(
+    execFileSync(
+      "git",
+      ["show", `${revision}:${record.path.slice(root.length + 1)}`],
+      { cwd: root, encoding: "utf8" },
+    ),
+  ).toBe(saved);
   expect(saved).toContain(draft.assessment);
   expect(saved).toContain("Supplied 10 of 100");
   const evidence = JSON.parse(saved.split("```json\n")[1].split("\n```")[0]);
@@ -224,7 +251,7 @@ it("no-save performs the assessment without creating archive files", async () =>
   );
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(result.output).toHaveProperty("state", "converged");
-  expect(readdirSync(root)).toEqual([]);
+  expect(readdirSync(root)).toEqual([".git", "knowledge"]);
   expect(result.output).toHaveProperty(
     "response",
     expect.stringContaining("No assessment was archived"),
@@ -246,7 +273,7 @@ it("an aborted attempt cannot save a late model result", async () => {
   await expect(
     executeSourceAssessment(ctx, async () => packet),
   ).rejects.toThrow("Assignment changed");
-  expect(readdirSync(join(root, "knowledge/findings"))).toEqual([]);
+  expect(() => readdirSync(join(root, "knowledge/findings"))).toThrow();
 });
 
 it("source failure records access limits and leaves research incomplete without a model call", async () => {
@@ -267,6 +294,8 @@ it("concurrent edits prevent a successful save and preserve the existing content
   const root = temporary();
   const record = assessmentRecord(root, sourceUrl);
   saveAssessment(record, sourceUrl, "Existing note", "Earlier assessment");
+  execFileSync("git", ["add", "."], { cwd: root });
+  execFileSync("git", ["commit", "-m", "existing assessment"], { cwd: root });
   const ctx = context(root, (async () => {
     writeFileSync(
       record.path,
@@ -278,7 +307,7 @@ it("concurrent edits prevent a successful save and preserve the existing content
   expect(result.output).toHaveProperty("state", "incomplete");
   expect(result.output).toHaveProperty(
     "summary",
-    expect.stringContaining("changed during research"),
+    expect.stringContaining("changed concurrently"),
   );
   expect(readFileSync(record.path, "utf8")).toContain("Human correction");
   expect(readFileSync(record.path, "utf8")).not.toContain(draft.assessment);
@@ -364,7 +393,7 @@ it("a completed call without a draft cannot produce an assessment", async () => 
   })) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(result.output).toHaveProperty("state", "incomplete");
-  expect(readdirSync(join(root, "knowledge/findings"))).toEqual([]);
+  expect(() => readdirSync(join(root, "knowledge/findings"))).toThrow();
 });
 
 it("reads a real HTTP post, excludes scripts, and reports retrieval failure", async () => {
@@ -392,7 +421,7 @@ it("reads a real HTTP post, excludes scripts, and reports retrieval failure", as
   }
 });
 
-it("a save failure never produces a successful result or a claimed saved path", async () => {
+it("an unsafe canonical target never produces a successful result or a claimed saved path", async () => {
   const root = temporary();
   const record = assessmentRecord(root, sourceUrl);
   const ctx = context(root, (async () => {
@@ -407,7 +436,7 @@ it("a save failure never produces a successful result or a claimed saved path", 
   );
   expect(result.output).toHaveProperty(
     "facts",
-    expect.arrayContaining([expect.stringContaining("archive-failure:")]),
+    expect.arrayContaining([expect.stringContaining("candidate-root:")]),
   );
   expect(result.output).toHaveProperty(
     "response",
@@ -415,7 +444,7 @@ it("a save failure never produces a successful result or a claimed saved path", 
   );
   expect(result.output).toHaveProperty(
     "response",
-    expect.stringContaining("Assessment archive failed"),
+    expect.stringContaining("Publication failed"),
   );
 });
 

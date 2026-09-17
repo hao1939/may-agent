@@ -347,11 +347,11 @@ export function taskForScoutInput(
         parentId: "library-operations",
         outcome: data.outcome.trim(),
         acceptance: data.acceptance as string[],
-        agent: "scout",
         input: { kind: admitted.input.kind, data },
-        ...(admitted.input.kind === "assess-source"
-          ? { workflow: "scout-assess-source" }
-          : {}),
+        workflow:
+          admitted.input.kind === "assess-source"
+            ? "scout-assess-source"
+            : "knowledge-planner",
         outputs: [
           `${projectDir}/knowledge`,
           `${projectDir}/reports`,
@@ -374,8 +374,9 @@ export function taskForScoutInput(
         acceptance: [
           "Scout returns an evidence-backed result; if the assignment needs changing, report the evidence and ask its owner to refine it.",
         ],
-        agent: "scout",
+        workflow: "knowledge-planner",
         input: admitted.input,
+        outputs: [`${projectDir}/knowledge`, `${projectDir}/reports`],
         priority: "P1",
       },
     };

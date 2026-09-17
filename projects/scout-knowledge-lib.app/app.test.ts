@@ -29,7 +29,7 @@ describe("Scout task reconciliation", () => {
       kind: "desired",
       intent: {
         id: "goal/request-repair",
-        agent: "scout",
+        workflow: "knowledge-planner",
         outcome: "Repair library navigation",
         acceptance: ["Links resolve"],
         input: input.input,
@@ -100,7 +100,7 @@ describe("Scout task reconciliation", () => {
     ).toMatchObject({
       kind: "desired",
       intent: {
-        agent: "scout",
+        workflow: "knowledge-planner",
         input,
         outcome: input.data.outcome,
         acceptance: input.data.acceptance,
@@ -125,7 +125,7 @@ describe("Scout task reconciliation", () => {
       }),
     ).toMatchObject({
       kind: "desired",
-      intent: { id: "input/review", agent: "scout", input },
+      intent: { id: "input/review", workflow: "knowledge-planner", input },
     });
     expect(
       resolveScoutTask({ type: "project.owner.requested", data: input.data }),

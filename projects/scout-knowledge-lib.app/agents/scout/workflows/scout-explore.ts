@@ -28,6 +28,13 @@ import {
   type XhsSearchItem,
   type XhsSearchResult,
 } from "../tools/lib/xhs-source.js";
+import {
+  changedKnowledgePaths,
+  publicationFacts,
+  publishKnowledgeChanges,
+  retainedCandidateFacts,
+  snapshotKnowledge,
+} from "./lib/knowledge-publication.js";
 
 type TaskHandlerResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
@@ -480,7 +487,8 @@ function repeatedPrimarySourceReferences(
   let sectionId = 0;
   let parentSectionId = 0;
   let currentSection:
-    { id: number; label: string; level: number; parent: number } | undefined;
+    | { id: number; label: string; level: number; parent: number }
+    | undefined;
 
   for (const line of content.split(/\r?\n/)) {
     const heading = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
@@ -669,17 +677,23 @@ export async function executeScoutExplore(
 
   // The task comes from the workflow-backed handler config — source-specific instructions
   const task = JSON.stringify(ctx.reconciliation, null, 2);
+  const beforePublication = snapshotKnowledge(projectDir, ctx.workspace.output);
+  const candidateFailureDetails = () => ({
+    candidateFacts: retainedCandidateFacts(beforePublication),
+    uncommittedChanges: changedKnowledgePaths(beforePublication),
+  });
+  const candidateProjectDir = beforePublication.projectRoot;
   const agentTask = buildExploreTask(
     task,
-    { appDir, projectDir },
+    { appDir, projectDir: candidateProjectDir },
     xhsPacket,
     source,
   );
   const existingOutputSources = snapshotExistingOutputPrimarySources({
     appDir,
-    projectDir,
+    projectDir: candidateProjectDir,
   });
-  const knowledgeRoot = realpathSync(resolve(projectDir, "knowledge"));
+  const knowledgeRoot = realpathSync(resolve(candidateProjectDir, "knowledge"));
   const existingKnowledgeFiles = new Set(
     [...existingOutputSources.keys()].filter(
       (path) =>
@@ -700,6 +714,7 @@ export async function executeScoutExplore(
       executionId: result.id,
       status: result.status,
       summary: result.summary,
+      ...candidateFailureDetails(),
     });
   }
   // Execution "done" means the call returned, not that its work succeeded.
@@ -715,6 +730,7 @@ export async function executeScoutExplore(
       executionId: result.id,
       summary: result.summary,
       finish,
+      ...candidateFailureDetails(),
     });
   }
   const structured = result.output as ExploreAgentResult | undefined;
@@ -723,6 +739,7 @@ export async function executeScoutExplore(
       "Scout exploration did not return a structured source result",
       {
         executionId: result.id,
+        ...candidateFailureDetails(),
       },
     );
   }
@@ -741,18 +758,19 @@ export async function executeScoutExplore(
         invalidField: observationAdmission.invalidField,
         reason: observationAdmission.reason,
         executionId: result.id,
+        ...candidateFailureDetails(),
       },
     );
   }
   const observation = observationAdmission.observation;
   const outputs = admittedOutputPaths(structured.outputs, {
     appDir,
-    projectDir,
+    projectDir: candidateProjectDir,
   });
   if (!outputs) {
     return ctx.blocked(
       "Scout exploration returned a missing output or an output outside the allowed roots",
-      { outputs: structured.outputs },
+      { outputs: structured.outputs, ...candidateFailureDetails() },
     );
   }
   if (
@@ -766,6 +784,7 @@ export async function executeScoutExplore(
         summary: structured.summary,
         source: observation,
         outputs,
+        ...candidateFailureDetails(),
       },
     );
   }
@@ -776,13 +795,14 @@ export async function executeScoutExplore(
       {
         replacements,
         executionId: result.id,
+        ...candidateFailureDetails(),
       },
     );
   }
   const duplicateReferences = duplicateSourceReferences(
     outputs,
     existingKnowledgeFiles,
-    projectDir,
+    candidateProjectDir,
   );
   if (duplicateReferences.length > 0) {
     return ctx.blocked(
@@ -790,8 +810,42 @@ export async function executeScoutExplore(
       {
         duplicates: duplicateReferences,
         executionId: result.id,
+        ...candidateFailureDetails(),
       },
     );
+  }
+  const durableChanges = changedKnowledgePaths(beforePublication);
+  const omittedOutputs = durableChanges.filter(
+    (path) => !outputs.includes(path),
+  );
+  if (omittedOutputs.length > 0) {
+    return ctx.blocked("Scout exploration omitted changed durable outputs", {
+      executionId: result.id,
+      outputs,
+      uncommittedChanges: durableChanges,
+      omittedOutputs,
+      candidateFacts: retainedCandidateFacts(beforePublication),
+    });
+  }
+  let publication;
+  // Scratch/digest paths passed the existing App-workspace admission above.
+  // They remain readable outputs, but are not versioned library content.
+  const scratchOutputs = outputs.filter(
+    (path) => !path.startsWith(`${candidateProjectDir}${sep}`),
+  );
+  try {
+    publication = publishKnowledgeChanges(beforePublication, {
+      executionId: result.id,
+      summary: structured.summary,
+      reportedOutputs: outputs.filter((path) => !scratchOutputs.includes(path)),
+    });
+  } catch (error) {
+    return ctx.blocked("Scout exploration was accepted but not published", {
+      executionId: result.id,
+      outputs,
+      ...candidateFailureDetails(),
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
   return ctx.done(structured.summary, {
     state: "converged",
@@ -803,7 +857,10 @@ export async function executeScoutExplore(
           observation,
           source === "xhs" ? "workflow" : "agent-result+workflow-time",
         ),
-        ...outputs.map((output) => `output:${output}`),
+        ...[...publication.outputs, ...scratchOutputs].map(
+          (output) => `output:${output}`,
+        ),
+        ...publicationFacts(publication),
         ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
         `execution:${result.id}`,
       ]),

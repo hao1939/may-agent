@@ -6,6 +6,13 @@ import {
   type WorkflowContext,
 } from "@may-agent/sdk";
 import { taskEmissionKey } from "./lib/task-emission.js";
+import {
+  changedKnowledgePaths,
+  publicationFacts,
+  publishKnowledgeChanges,
+  retainedCandidateFacts,
+  snapshotKnowledge,
+} from "./lib/knowledge-publication.js";
 
 type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
 
@@ -77,7 +84,15 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     );
   }
   const appDir = ctx.workspace.appRoot;
-  const projectDir = ctx.workspace.projectRoot;
+  const beforePublication = snapshotKnowledge(
+    ctx.workspace.projectRoot,
+    ctx.workspace.output,
+  );
+  const candidateFailureDetails = () => ({
+    candidateFacts: retainedCandidateFacts(beforePublication),
+    uncommittedChanges: changedKnowledgePaths(beforePublication),
+  });
+  const projectDir = beforePublication.projectRoot;
   const experienceReview = isExperienceReview(ctx);
   const experienceContext = experienceReview
     ? `Bounded reconciliation history:\n${JSON.stringify(ctx.reconciliation.children, null, 2)}`
@@ -208,6 +223,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       executionId: result.id,
       status: result.status,
       summary: result.summary,
+      ...candidateFailureDetails(),
     });
   }
 
@@ -222,21 +238,57 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       executionId: result.id,
       summary: result.summary,
       finish,
+      ...candidateFailureDetails(),
     });
   }
-  let agentResult = result.output as unknown as AgentResult;
+  const admitted = admitTaskReconcileResult(result.output, {
+    allowNeedsAgent: false,
+  });
+  if (!admitted.ok || admitted.result.state === "needs-agent") {
+    return ctx.blocked("Scout owner maintenance returned an invalid result", {
+      executionId: result.id,
+      error: admitted.ok ? "needs-agent is not accepted" : admitted.error,
+      ...candidateFailureDetails(),
+    });
+  }
+  let agentResult = admitted.result as AgentResult;
   if (experienceReview) {
-    const admitted = admitExperienceReviewResult(agentResult);
-    if ("error" in admitted) {
+    const reviewed = admitExperienceReviewResult(agentResult);
+    if ("error" in reviewed) {
       return ctx.blocked(
-        `Scout experience review result was rejected: ${admitted.error}`,
-        {
-          executionId: result.id,
-        },
+        `Scout experience review result was rejected: ${reviewed.error}`,
+        { executionId: result.id, ...candidateFailureDetails() },
       );
     }
-    agentResult = admitted.result;
+    agentResult = reviewed.result;
   }
+  let publication;
+  try {
+    const reportedOutputs = (agentResult.facts ?? [])
+      .filter((fact) => fact.startsWith("output:"))
+      .map((fact) => fact.slice("output:".length));
+    publication = publishKnowledgeChanges(beforePublication, {
+      executionId: result.id,
+      summary: agentResult.summary,
+      reportedOutputs,
+    });
+  } catch (error) {
+    return ctx.blocked("Scout maintenance was not published", {
+      executionId: result.id,
+      error: error instanceof Error ? error.message : String(error),
+      ...candidateFailureDetails(),
+    });
+  }
+  agentResult = {
+    ...agentResult,
+    facts: [
+      ...(agentResult.facts ?? []).filter(
+        (fact) => !fact.startsWith("output:"),
+      ),
+      ...publication.outputs.map((path) => `output:${path}`),
+      ...publicationFacts(publication),
+    ] as [string, ...string[]],
+  };
   const maintenanceFact = {
     project: "scout-knowledge-lib",
     summary: agentResult.summary,

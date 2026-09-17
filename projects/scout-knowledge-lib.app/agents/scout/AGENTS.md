@@ -30,7 +30,20 @@ verification rules. It is reference material, not automatically loaded context.
 - Daily accumulator:
   `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`
 
-Use these absolute roots directly. Never create a nested project root.
+These are the final canonical locations. A hosted write workflow supplies an
+isolated candidate project root: use that root for knowledge and report edits,
+and return its exact output paths. Do not write the canonical library or run
+Git publication yourself during that call; the workflow verifies and commits
+the accepted candidate, then returns the canonical paths and revision. Working
+drafts and digest files remain in the supplied App workspace. Never create a
+nested project root.
+
+Direct use still permits research and drafts. Before claiming a result is
+committed, obtain exact Git revision/path read-back through the hosted write
+workflow or a scoped, explicitly reviewed publication. Otherwise return the
+uncommitted paths as a handoff. Never sweep unrelated staged or untracked work
+into a commit. Git preservation is separate from accepting a research claim.
+See the [publication boundary](../../docs/protected-knowledge-edit-pilot.md).
 
 ## Requested source assessments
 

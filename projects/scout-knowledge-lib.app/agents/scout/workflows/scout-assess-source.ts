@@ -5,6 +5,14 @@ import {
 } from "@may-agent/sdk";
 import { assessmentRecord, saveAssessment } from "./lib/assessment-archive.js";
 import {
+  changedKnowledgePaths,
+  publicationFacts,
+  publishKnowledgeChanges,
+  retainedCandidateFacts,
+  snapshotKnowledge,
+  type KnowledgeSnapshot,
+} from "./lib/knowledge-publication.js";
+import {
   coverageEvidence,
   coverageSummary,
   readSource,
@@ -56,23 +64,67 @@ export async function executeSourceAssessment(
     archive: boolean;
   };
   let record: ReturnType<typeof assessmentRecord> | undefined;
+  let beforePublication: KnowledgeSnapshot | undefined;
   const finish = (
     state: "converged" | "incomplete",
     summary: string,
     facts: string[],
     response = summary,
-  ) =>
-    ctx.done(
-      summary,
-      state === "converged"
-        ? ({ state, summary, response, facts } satisfies TaskReconcileResult)
-        : ({
-            state,
-            summary,
+  ) => {
+    let finalState = state;
+    let finalSummary = summary;
+    let finalFacts = facts;
+    if (beforePublication) {
+      try {
+        const reportedOutputs = facts
+          .filter((fact) => fact.startsWith("output:"))
+          .map((fact) => fact.slice("output:".length));
+        const publication = publishKnowledgeChanges(beforePublication, {
+          executionId:
+            facts.find((fact) => fact.startsWith("execution:"))?.slice(10) ??
+            "workflow-source-access",
+          summary,
+          reportedOutputs,
+        });
+        finalFacts = [
+          ...facts.filter((fact) => !fact.startsWith("output:")),
+          ...publication.outputs.map((path) => `output:${path}`),
+          ...publicationFacts(publication),
+        ];
+        response = response.replaceAll(
+          beforePublication.projectRoot,
+          beforePublication.canonicalProjectRoot,
+        );
+      } catch (error) {
+        finalState = "incomplete";
+        finalSummary = `${summary} Publication failed: ${error instanceof Error ? error.message : String(error)}`;
+        finalFacts = [
+          ...facts.filter((fact) => !fact.startsWith("output:")),
+          ...retainedCandidateFacts(beforePublication),
+          ...changedKnowledgePaths(beforePublication).map(
+            (path) => `uncommitted-output:${path}`,
+          ),
+        ];
+        response = `${response.replace(/\n\nSaved assessment:.*$/s, "")}\n\nPublication failed: I could not commit this assessment to the library. The draft is retained at ${beforePublication.candidateRoot}.`;
+      }
+    }
+    return ctx.done(
+      finalSummary,
+      finalState === "converged"
+        ? ({
+            state: finalState,
+            summary: finalSummary,
             response,
-            facts: [summary, ...facts],
+            facts: finalFacts,
+          } satisfies TaskReconcileResult)
+        : ({
+            state: finalState,
+            summary: finalSummary,
+            response,
+            facts: [finalSummary, ...finalFacts],
           } satisfies TaskReconcileResult),
     );
+  };
   try {
     ctx.signal.throwIfAborted();
     if (
@@ -87,8 +139,13 @@ export async function executeSourceAssessment(
     // No-save creates neither a note nor an archive directory.
     if (!ctx.workspace)
       throw new Error("Source assessment requires an App workspace");
-    if (input.archive)
-      record = assessmentRecord(ctx.workspace.projectRoot, input.sourceUrl);
+    if (input.archive) {
+      beforePublication = snapshotKnowledge(
+        ctx.workspace.projectRoot,
+        ctx.workspace.output,
+      );
+      record = assessmentRecord(beforePublication.projectRoot, input.sourceUrl);
+    }
     let packet: SourcePacket;
     try {
       packet = await read(input.sourceUrl, ctx.signal);

@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterAll, afterEach, describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -10,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { publicationTestFixture } from "./lib/publication-test-fixture";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import {
   admittedOutputPaths,
@@ -21,6 +24,10 @@ import {
 } from "./scout-explore";
 
 const temporaryRoots: string[] = [];
+const defaultFixture = publicationTestFixture();
+afterAll(() =>
+  rmSync(defaultFixture.repositoryRoot, { recursive: true, force: true }),
+);
 
 afterEach(() => {
   for (const root of temporaryRoots.splice(0))
@@ -28,6 +35,32 @@ afterEach(() => {
 });
 
 const xhsTask = `work\n\n## Reconciliation Task\n\`\`\`json\n${JSON.stringify({ input: { source: "xhs" } })}\n\`\`\``;
+
+function initRepository(root: string): void {
+  for (const dir of [join(root, "knowledge"), join(root, "scout/knowledge")]) {
+    if (existsSync(dir) && !existsSync(join(dir, "README.md")))
+      writeFileSync(join(dir, "README.md"), "# Knowledge\n");
+  }
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: root, encoding: "utf8" });
+  git("init", "-b", "main");
+  git("config", "user.name", "Test");
+  git("config", "user.email", "test@example.invalid");
+  writeFileSync(
+    join(root, ".gitignore"),
+    "output/\nartifacts/\n**/agents/scout/workspace/\n",
+  );
+  git("add", ".");
+  git("commit", "--allow-empty", "-m", "fixture");
+}
+
+function candidateProjectFromPrompt(task: string): string {
+  const candidate = task.match(
+    /Durable Scout notes and findings belong under `(.+)\/knowledge\/`/,
+  )?.[1];
+  if (!candidate) throw new Error("candidate project missing from prompt");
+  return candidate;
+}
 
 function workflowContext(
   runAgent: (
@@ -50,12 +83,7 @@ function workflowContext(
       input: { source },
       children: { live: [], completed: [] },
     },
-    workspace: {
-      appRoot: "/app/projects/scout-knowledge-lib.app",
-      projectRoot: "/app/projects/scout-knowledge-lib",
-      root: "/app/projects/scout-knowledge-lib",
-      output: "/app/projects/scout-knowledge-lib.app/.state/output",
-    },
+    workspace: { ...defaultFixture.workspace },
     callAgent: (async (agent: string, task: string, options?: unknown) => {
       const result = (await runAgent(agent, task, options)) as Record<
         string,
@@ -86,11 +114,13 @@ describe("scout-explore workflow prompt", () => {
     const root = mkdtempSync(join(tmpdir(), "scout-draft-result-"));
     temporaryRoots.push(root);
     mkdirSync(join(root, "knowledge"));
+    writeFileSync(join(root, "knowledge/README.md"), "# Knowledge\n");
     const scratch = join(root, "agents/scout/workspace");
     mkdirSync(join(scratch, "findings"), { recursive: true });
     mkdirSync(join(scratch, "digest"));
     const draft = join(scratch, "findings/draft.md");
     const digest = join(scratch, "digest/today.md");
+    initRepository(root);
     const ctx = workflowContext(async () => {
       writeFileSync(
         draft,
@@ -136,6 +166,8 @@ describe("scout-explore workflow prompt", () => {
     const root = mkdtempSync(join(tmpdir(), "scout-partial-result-"));
     temporaryRoots.push(root);
     mkdirSync(join(root, "knowledge"));
+    writeFileSync(join(root, "knowledge/README.md"), "# Knowledge\n");
+    initRepository(root);
     let callOptions: unknown;
     const ctx = workflowContext(async (_agent, _task, options) => {
       callOptions = options;
@@ -183,6 +215,7 @@ describe("scout-explore workflow prompt", () => {
     const root = mkdtempSync(join(tmpdir(), "scout-blocked-result-"));
     temporaryRoots.push(root);
     mkdirSync(join(root, "knowledge"));
+    initRepository(root);
     const ctx = workflowContext(
       async () => ({
         status: "blocked",
@@ -566,6 +599,7 @@ describe("scout-explore workflow prompt", () => {
     const finding = join(knowledgeDir, "finding.md");
     mkdirSync(knowledgeDir, { recursive: true });
     mkdirSync(digestDir, { recursive: true });
+    initRepository(root);
     let prompt = "";
     let runOptions: unknown;
     let agentCalls = 0;
@@ -573,8 +607,12 @@ describe("scout-explore workflow prompt", () => {
       agentCalls += 1;
       prompt = task;
       runOptions = options;
+      const candidateFinding = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/finding.md",
+      );
       writeFileSync(output, "Current XHS finding.\n");
-      writeFileSync(finding, "Source-grounded XHS knowledge note.\n");
+      writeFileSync(candidateFinding, "Source-grounded XHS knowledge note.\n");
       return {
         status: "done",
         sessionId: "s_xhs",
@@ -585,7 +623,7 @@ describe("scout-explore workflow prompt", () => {
             queryOrFeed: "ignored because the workflow owns XHS evidence",
             itemIdsOrUrls: [],
           },
-          outputs: [finding, output],
+          outputs: [candidateFinding, output],
         },
       };
     });
@@ -620,6 +658,25 @@ describe("scout-explore workflow prompt", () => {
     });
 
     expect(agentCalls).toBe(1);
+    const revision = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    const facts = (result.output as { facts: string[] }).facts;
+    expect(facts).toContain(`publication:commit:${revision}`);
+    expect(facts).toContain(`published-output:${finding}`);
+    expect(
+      execFileSync("git", ["show", `${revision}:scout/knowledge/finding.md`], {
+        cwd: root,
+        encoding: "utf8",
+      }),
+    ).toBe(readFileSync(finding, "utf8"));
+    expect(
+      execFileSync("git", ["status", "--porcelain", "--", "scout/knowledge"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim(),
+    ).toBe("");
     expect(runOptions).toMatchObject({ schema: expect.any(Object) });
     expect(prompt).toContain('"id": "note-1"');
     expect(result).toMatchObject({
@@ -941,9 +998,18 @@ describe("scout-explore workflow prompt", () => {
     const existing = join(findingsDir, "existing.md");
     const duplicate = join(findingsDir, "duplicate.md");
     writeFileSync(existing, "Source: https://example.com/research\n");
+    initRepository(root);
+    let candidateDuplicate = "";
 
-    const ctx = workflowContext(async () => {
-      writeFileSync(duplicate, "Source: https://example.com/research\n");
+    const ctx = workflowContext(async (_agent, task) => {
+      candidateDuplicate = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/findings/duplicate.md",
+      );
+      writeFileSync(
+        candidateDuplicate,
+        "Source: https://example.com/research\n",
+      );
       return {
         status: "done",
         sessionId: "s_duplicate",
@@ -954,7 +1020,7 @@ describe("scout-explore workflow prompt", () => {
             queryOrFeed: "topstories",
             itemIdsOrUrls: ["https://example.com/research"],
           },
-          outputs: [duplicate],
+          outputs: [candidateDuplicate],
         },
       };
     }, "hn");
@@ -969,9 +1035,11 @@ describe("scout-explore workflow prompt", () => {
         duplicates: [
           {
             kind: "existing-file",
-            output: duplicate,
+            output: candidateDuplicate,
             sourceUrl: "https://example.com/research",
-            existingFiles: [existing],
+            existingFiles: [
+              expect.stringContaining("/knowledge/findings/existing.md"),
+            ],
           },
         ],
         executionId: "s_duplicate",
@@ -990,9 +1058,18 @@ describe("scout-explore workflow prompt", () => {
     mkdirSync(workspaceDir, { recursive: true });
     const existing = join(findingsDir, "existing.md");
     writeFileSync(existing, "Source: https://example.com/original\n");
+    initRepository(root);
+    let candidateExisting = "";
 
-    const ctx = workflowContext(async () => {
-      writeFileSync(existing, "Source: https://example.com/replacement\n");
+    const ctx = workflowContext(async (_agent, task) => {
+      candidateExisting = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/findings/existing.md",
+      );
+      writeFileSync(
+        candidateExisting,
+        "Source: https://example.com/replacement\n",
+      );
       return {
         status: "done",
         sessionId: "s_replacement",
@@ -1003,7 +1080,7 @@ describe("scout-explore workflow prompt", () => {
             queryOrFeed: "topstories",
             itemIdsOrUrls: ["https://example.com/replacement"],
           },
-          outputs: [existing],
+          outputs: [candidateExisting],
         },
       };
     }, "hn");
@@ -1018,7 +1095,7 @@ describe("scout-explore workflow prompt", () => {
         replacements: [
           {
             kind: "existing-output-replaced",
-            output: existing,
+            output: candidateExisting,
             removedPrimarySources: ["https://example.com/original"],
             currentPrimarySources: ["https://example.com/replacement"],
           },

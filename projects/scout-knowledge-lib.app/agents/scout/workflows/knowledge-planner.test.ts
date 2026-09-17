@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
@@ -10,13 +11,88 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { publicationTestFixture } from "./lib/publication-test-fixture";
 import {
   admitExperienceReviewResult,
   execute,
   isExperienceReview,
 } from "./knowledge-planner";
 
+const defaultFixture = publicationTestFixture();
+afterAll(() =>
+  rmSync(defaultFixture.repositoryRoot, { recursive: true, force: true }),
+);
+
 describe("Scout owner reconciliation boundary", () => {
+  it.each(["direct-write", "deleted-reuse"])(
+    "does not claim completion for an uncommitted or missing output: %s",
+    async (scenario) => {
+      const fixture = publicationTestFixture();
+      const originalHead = fixture.git("rev-parse", "HEAD");
+      try {
+        const result = await execute(
+          createTestAppWorkflowContext({
+            input: {},
+            reconciliation: {
+              appId: "scout-knowledge-lib",
+              taskId: "goal/publication-review",
+              generation: 1,
+              resourceVersion: 1,
+              agent: "scout",
+              outcome: "Save a result",
+              acceptance: ["Committed readable output"],
+              input: {},
+              children: { live: [], completed: [] },
+              events: { items: [], truncated: false },
+            },
+            workspace: fixture.workspace,
+            callAgent: (async (_agent, prompt) => {
+              let output: string;
+              if (scenario === "direct-write") {
+                output = join(
+                  fixture.workspace.projectRoot,
+                  "knowledge/direct.md",
+                );
+                writeFileSync(output, "Uncommitted draft\n");
+              } else {
+                const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+                expect(candidate).toBeDefined();
+                output = join(candidate!, "knowledge/README.md");
+                rmSync(
+                  join(fixture.workspace.projectRoot, "knowledge/README.md"),
+                );
+              }
+              return {
+                id: "s_review",
+                kind: "agent",
+                status: "done",
+                summary: "Result prepared",
+                output: {
+                  state: "converged",
+                  summary: "Result prepared",
+                  facts: [`output:${output}`],
+                  actions: [],
+                },
+              };
+            }) as WorkflowContext["agents"]["call"],
+          }),
+        );
+        expect(result.status).toBe("blocked");
+        expect(fixture.git("rev-parse", "HEAD")).toBe(originalHead);
+        expect(result).not.toHaveProperty("output.state", "converged");
+        if (scenario === "direct-write")
+          expect(
+            readFileSync(
+              join(fixture.workspace.projectRoot, "knowledge/direct.md"),
+              "utf8",
+            ),
+          ).toBe("Uncommitted draft\n");
+      } finally {
+        rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+      }
+    },
+  );
+
   it.each([
     { status: "blocked", facts: undefined },
     {
@@ -42,12 +118,7 @@ describe("Scout owner reconciliation boundary", () => {
             children: { live: [], completed: [] },
             events: { items: [], truncated: false },
           },
-          workspace: {
-            appRoot: "/test/scout.app",
-            projectRoot: "/test/scout",
-            root: "/test/scout",
-            output: "/test/output",
-          },
+          workspace: { ...defaultFixture.workspace },
           callAgent: (async () => ({
             id: "s_blocked",
             kind: "agent",
@@ -152,12 +223,7 @@ describe("Scout owner reconciliation boundary", () => {
           children: { live: [], completed: [] },
           events: { items: [], truncated: false },
         },
-        workspace: {
-          appRoot: "/app/projects/scout-knowledge-lib.app",
-          projectRoot: "/app/projects/scout-knowledge-lib",
-          root: "/app/projects/scout-knowledge-lib",
-          output: "/app/projects/scout-knowledge-lib.app/.state/output",
-        },
+        workspace: { ...defaultFixture.workspace },
         callAgent: (async (
           _agent: string,
           value: string,
@@ -229,20 +295,20 @@ describe("Scout owner reconciliation boundary", () => {
       prompt.indexOf("Start by reading:"),
       prompt.indexOf("Valid durable outcomes:"),
     );
-    expect(startList).toContain(
-      "/app/projects/scout-knowledge-lib/knowledge/README.md",
+    expect(startList).toMatch(
+      /scout-knowledge-candidate-[^/]+\/projects\/scout-knowledge-lib\/knowledge\/README\.md/,
     );
     expect(startList).toContain(
-      "/app/projects/scout-knowledge-lib.app/tasks/README.md",
+      `${defaultFixture.workspace.appRoot}/tasks/README.md`,
     );
     expect(startList).not.toContain(
       "- /app/projects/scout-knowledge-lib/knowledge/INDEX.md",
     );
-    expect(prompt).toContain(
-      "Open /app/projects/scout-knowledge-lib/knowledge/INDEX.md only when",
+    expect(prompt).toMatch(
+      /Open .*scout-knowledge-candidate-[^/]+\/projects\/scout-knowledge-lib\/knowledge\/INDEX\.md only when/,
     );
     expect(prompt).toMatch(
-      /Open\s+\/app\/projects\/scout-knowledge-lib\/knowledge\/xhs-topic-map\.md only when/u,
+      /Open\s+.*scout-knowledge-candidate-[^/]+\/projects\/scout-knowledge-lib\/knowledge\/xhs-topic-map\.md only when/u,
     );
     expect(runOptions?.schema).toBeDefined();
     expect(emitted.at(-1)).toMatchObject({
@@ -292,6 +358,13 @@ describe("Scout owner reconciliation boundary", () => {
     });
     mkdirSync(join(projectRoot, "knowledge", "findings"), { recursive: true });
     writeFileSync(published, "# Old title\n\nSource-grounded assessment.\n");
+    execFileSync("git", ["init", "-b", "main"], { cwd: root });
+    execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
+    execFileSync("git", ["config", "user.email", "test@example.invalid"], {
+      cwd: root,
+    });
+    execFileSync("git", ["add", "."], { cwd: root });
+    execFileSync("git", ["commit", "-m", "fixture"], { cwd: root });
     try {
       const result = await execute(
         createTestAppWorkflowContext({
@@ -316,8 +389,10 @@ describe("Scout owner reconciliation boundary", () => {
           },
           callAgent: (async (_agent, prompt) => {
             expect(prompt).toContain("Do not move or rename that file");
+            const candidateRoot = prompt.match(/- Domain workspace: (.+)/)?.[1];
+            expect(candidateRoot).toBeDefined();
             writeFileSync(
-              published,
+              join(candidateRoot!, published.slice(projectRoot.length + 1)),
               "# Descriptive title\n\nSource-grounded assessment.\n",
             );
             return {
@@ -337,6 +412,23 @@ describe("Scout owner reconciliation boundary", () => {
       );
       expect(result.status).toBe("done");
       expect(readFileSync(published, "utf8")).toContain("# Descriptive title");
+      const commit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      expect(result.output).toMatchObject({
+        facts: expect.arrayContaining([
+          `publication:commit:${commit}`,
+          `published-output:${published}`,
+        ]),
+      });
+      expect(
+        execFileSync(
+          "git",
+          ["status", "--porcelain", "--", "scout/knowledge"],
+          { cwd: root, encoding: "utf8" },
+        ).trim(),
+      ).toBe("");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -370,12 +462,7 @@ describe("Scout owner reconciliation boundary", () => {
             children: { live: [], completed: [] },
             events: { items: [], truncated: false, throughEventId: eventId },
           },
-          workspace: {
-            appRoot: "/app/projects/scout-knowledge-lib.app",
-            projectRoot: "/app/projects/scout-knowledge-lib",
-            root: "/app/projects/scout-knowledge-lib",
-            output: "/app/projects/scout-knowledge-lib.app/.state/output",
-          },
+          workspace: { ...defaultFixture.workspace },
           callAgent: (async () => ({
             id: "s_owner",
             kind: "agent",
@@ -429,12 +516,7 @@ describe("Scout owner reconciliation boundary", () => {
           children: { live: [], completed: [] },
           events: { items: [], truncated: false },
         },
-        workspace: {
-          appRoot: "/app/projects/scout-knowledge-lib.app",
-          projectRoot: "/app/projects/scout-knowledge-lib",
-          root: "/app/projects/scout-knowledge-lib",
-          output: "/app/projects/scout-knowledge-lib.app/.state/output",
-        },
+        workspace: { ...defaultFixture.workspace },
         callAgent: (async () => ({
           id: "s_owner",
           kind: "agent",
@@ -551,12 +633,7 @@ describe("Scout owner reconciliation boundary", () => {
             truncated: false,
           },
         },
-        workspace: {
-          appRoot: "/app/projects/scout-knowledge-lib.app",
-          projectRoot: "/app/projects/scout-knowledge-lib",
-          root: "/app/projects/scout-knowledge-lib",
-          output: "/app/projects/scout-knowledge-lib.app/.state/output",
-        },
+        workspace: { ...defaultFixture.workspace },
         callAgent: (async (_agent: string, value: string) => {
           prompt = value;
           return {
