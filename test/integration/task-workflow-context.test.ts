@@ -47,6 +47,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
     const release = new Map<string, ReturnType<typeof Promise.withResolvers<void>>>();
     const listeners = new Map<string, Set<(event: AppEvent<Record<string, unknown>>, accept: () => void) => void>>();
     const seen = new Map<string, string>();
+    const helperPrompts = new Map<string, string>();
     const taskFiles = new Map<string, string>();
     let accepted = 0;
     for (const marker of ["alpha", "beta"]) {
@@ -65,6 +66,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
             step++;
             const all = JSON.stringify(context.messages);
             const marker = all.includes("alpha") ? "alpha" : "beta";
+            if (!owner) helperPrompts.set(marker, config.initialState!.systemPrompt!);
             if (!owner && step > 1) seen.set(marker, all);
             const content: AssistantMessage["content"] =
               step === 1
@@ -198,9 +200,9 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         const worker = [...manager.activeSessions.values()].find((s) => s.agentName === "worker" && s.taskBinding?.taskId === marker)!;
         expect(worker.taskContext).toBe(owner.taskContext);
         const meta = JSON.parse(readFileSync(join(persistDir, "sessions", worker.sessionId, "meta.json"), "utf8"));
-        expect(meta.task).toContain("## Assigned contribution");
-        expect(meta.task).toContain("does not assign you the entire Task");
-        expect(meta.task).toContain(owner.sessionId);
+        expect(helperPrompts.get(marker)).toContain("## Assigned contribution");
+        expect(helperPrompts.get(marker)).toContain("does not assign you the entire Task");
+        expect(meta.parentSessionId).toBe(owner.sessionId);
         expect(meta.task).toContain(taskFiles.get(marker)!);
         expect(meta.task).not.toContain("Delegation Memo");
         const snapshot = JSON.parse(readFileSync(join(dirname(taskFiles.get(marker)!), "context.json"), "utf8"));

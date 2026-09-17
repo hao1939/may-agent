@@ -214,6 +214,8 @@ export type AgentPreparationOptions = {
   executionRoot?: string;
   promptTimestamp?: string;
   chatContext?: string;
+  /** Host-authored execution facts/guidance; never caller task text or source content. */
+  executionContext?: string;
   createFinish?: () => AgentTool;
   /** Create a durable checkpoint capability scoped to this exact execution. */
   createCheckpoint?: () => AgentTool;
@@ -432,6 +434,7 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
     base = `<system_instructions>\n${sections.join("\n\n")}\n</system_instructions>`;
   }
 
+  if (options.executionContext) base += `\n\n<execution_context>\n${options.executionContext}\n</execution_context>`;
   if (requireFinish) {
     const resultInstruction = options.outputSchema
       ? "The finish() call must include the required schema-validated result payload."

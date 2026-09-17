@@ -118,18 +118,19 @@ describe("workflow composition: runWorkflow", () => {
     }
   });
 
-  it("returns escalate when sub-workflow is not found", async () => {
+  it("lets the caller report blocked when a sub-workflow cannot start", async () => {
     writeWorkflow(
       "parent-missing.ts",
       `
       export const name = "parent-missing";
       export const description = "Calls nonexistent sub";
       export async function execute(ctx) {
-        const result = await ctx.workflows.run("nonexistent", "task");
-        if (result.status === "blocked") {
-          return ctx.blocked("sub not found: " + result.summary);
+        try {
+          await ctx.workflows.run("nonexistent", "task");
+          return ctx.done("should not reach");
+        } catch (error) {
+          return ctx.blocked("sub not found: " + error.message);
         }
-        return ctx.done("should not reach");
       }
     `,
     );

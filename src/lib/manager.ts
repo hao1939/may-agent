@@ -586,15 +586,13 @@ export class SubagentManager {
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
-    if (opts?.parentSessionId || opts?.workflowRunId) {
-      task += [
-        "", "", "## Assigned contribution",
-        "The request above defines your contribution. Shared Task context provides background and discovery; it does not assign you the entire Task or expand your authority.",
-        "Choose useful methods within this assignment, inspect relevant updates, and return evidence, partial work and any specific blocker to your caller. Your caller judges whether the contribution is sufficient.",
-        `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts.workflowRunId ?? null)}.`,
-        `Assignment and caller links are retained in ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. Use exact linked execution IDs to discover earlier evidence.`,
-      ].join("\n");
-    }
+    const executionContext = opts?.parentSessionId || opts?.workflowRunId ? [
+      "## Assigned contribution",
+      "The call request defines your contribution. Shared Task context provides background and discovery; it does not assign you the entire Task or expand your authority.",
+      "Choose useful methods within this assignment, inspect relevant updates, and return evidence, partial work and any specific blocker to your caller. Your caller judges whether the contribution is sufficient.",
+      `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts.workflowRunId ?? null)}.`,
+      `Assignment and caller links are retained in ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. Use exact linked execution IDs to discover earlier evidence.`,
+    ].join("\n") : undefined;
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
     const autoClose = opts?.autoClose ?? "immediate";
@@ -623,6 +621,7 @@ export class SubagentManager {
         );
     const prepared = prepareAgentExecution({
       onPreparation: usage?.preparation,
+      executionContext,
       definition: def,
       projectRoot: this._projectRoot,
       sessionId,
