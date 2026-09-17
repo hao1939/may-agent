@@ -18,6 +18,7 @@ export type TaskConversationRunner = {
     app: Readonly<AppDefinition>;
     registry: AppRegistrySnapshot;
     signal: AbortSignal;
+    execution: Pick<TaskAgentInput, "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskRead" | "taskSnapshot">;
     getTaskApp(appId: string): { app: Readonly<AppDefinition>; config: AppTaskContext };
   }): Promise<ConversationTaskProposal>;
   snapshot?(): TaskConversationRunner;
@@ -39,6 +40,9 @@ type TaskExecutionInput = {
 };
 
 export type TaskAgentInput = TaskExecutionInput & {
+  taskEvents: AppTaskEvents;
+  taskRead: AppRead["tasks"];
+  taskSnapshot: AppTaskLiveSnapshot;
   dependencies: ReturnType<typeof appDependencyCatalog>;
   sessionStarted(sessionId: string): void;
 };

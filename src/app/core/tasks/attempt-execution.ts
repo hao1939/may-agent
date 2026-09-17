@@ -86,7 +86,6 @@ export async function runTaskCapability(
           unavailable: true,
         };
       const { opts, descriptor, claim, declaredOutputPaths: _outputs, ...execution } = input;
-      const config = { taskStateConfig: appTaskConfig(input.descriptor) };
       return opts.workflows!.execute({
         ...execution,
         handler: claim.handler,
@@ -106,24 +105,29 @@ export async function runTaskCapability(
         attempt,
         taskEvents,
         executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
-        taskRead: {
-          list: async (options) => listRuntimeTaskViews(config, options),
-          outcomes: async (projection) => {
-            if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
-            return opts.readOutcomes({
-              appDir: descriptor.appDir,
-              projection,
-              tasks: {
-                list: (options) => listRuntimeTaskViews(config, options),
-                get: (id) => readRuntimeTaskView(config, id),
-              },
-            });
-          },
-          get: async (id) => readRuntimeTaskView(config, id),
-        },
+        taskRead: taskReads(opts, descriptor),
       });
     },
   });
+}
+
+export function taskReads(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor): TaskAgentInput["taskRead"] {
+  const config = { taskStateConfig: appTaskConfig(descriptor) };
+  return {
+    list: async (options) => listRuntimeTaskViews(config, options),
+    outcomes: async (projection) => {
+      if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
+      return opts.readOutcomes({
+        appDir: descriptor.appDir,
+        projection,
+        tasks: {
+          list: (options) => listRuntimeTaskViews(config, options),
+          get: (id) => readRuntimeTaskView(config, id),
+        },
+      });
+    },
+    get: async (id) => readRuntimeTaskView(config, id),
+  };
 }
 
 type RuntimeTaskAttempt = {
@@ -342,7 +346,10 @@ export async function runTaskExecutorAttempt(input: {
 }
 
 export async function runTaskAgent(
-  input: Omit<TaskAgentInput, "attempt" | "sessionStarted" | "dependencies" | "executionTimeoutMs"> & {
+  input: Omit<
+    TaskAgentInput,
+    "attempt" | "sessionStarted" | "dependencies" | "executionTimeoutMs" | "taskEvents" | "taskRead"
+  > & {
     opts: AppTaskRuntimeOptions;
     descriptor: AppTaskRuntimeDescriptor;
     claim: AppTaskClaim;
@@ -357,7 +364,7 @@ export async function runTaskAgent(
     declaredOutputPaths: input.declaredOutputPaths,
     childContext: input.childContext,
     ...(input.event ? { event: input.event } : {}),
-    execute: async (attempt) => {
+    execute: async (attempt, taskEvents) => {
       const { opts, descriptor, claim: _claim, declaredOutputPaths: _outputs, ...execution } = input;
       if (!opts.agents?.available(input.claim.agent))
         return {
@@ -374,6 +381,8 @@ export async function runTaskAgent(
         ...execution,
         attempt,
         executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
+        taskEvents,
+        taskRead: taskReads(opts, descriptor),
         descriptor: {
           id: descriptor.id,
           appDir: descriptor.appDir,

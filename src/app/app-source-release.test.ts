@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -59,6 +59,18 @@ describe("App source releases", () => {
     }
     return { root, stateDir, appPath };
   }
+
+  it.each([true, false])("supports an installation with only App-local agents (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const local = join(root, "projects", "sample.app", "agents");
+    renameSync(join(root, "agents"), local);
+    if (withGit) { await git(root, "add", "-A"); await git(root, "commit", "-qm", "App owns its agent"); }
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const released = store.ensureCurrent();
+    expect(existsSync(released.agentsRoot)).toBe(true);
+    expect(readFileSync(join(released.projectsRoot, "sample.app", "agents", "worker", "agent.json"), "utf8")).toContain('"worker"');
+    expect(new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent().id).toBe(released.id);
+  });
 
   it("restores the activated committed source until a later release is explicitly activated", async () => {
     const { root, stateDir, appPath } = await fixture();

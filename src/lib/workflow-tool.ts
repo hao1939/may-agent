@@ -1,3 +1,4 @@
+import type { TaskExecutionContext } from "./task-execution-context.js";
 import { ExecutionScope, executionTimeout } from "./execution-scope.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
@@ -164,10 +165,16 @@ const WorkflowToolParams: TSchema = Type.Object({
         "Workflow name to execute (required for 'run'). Use 'list' first to see available workflows and their descriptions.",
     }),
   ),
+  input: Type.Optional(
+    Type.Unknown({
+      description:
+        "Structured workflow input. Check the workflow description. Required for run unless using the legacy task string.",
+    }),
+  ),
   task: Type.Optional(
     Type.String({
       description:
-        "Task string to pass to the workflow (required for 'run'). Format depends on the workflow — check the workflow description from 'list' for expected format.",
+        "Legacy string input (prefer input for new callers). Format depends on the workflow — check the workflow description from 'list' for expected format.",
     }),
   ),
   workflowRunId: Type.Optional(
@@ -181,6 +188,7 @@ interface WorkflowInput {
   action: "list" | "run" | "resume";
   name?: string;
   task?: string;
+  input?: unknown;
   workflowRunId?: string;
 }
 
@@ -673,6 +681,7 @@ export interface RunWorkflowDirectOpts {
   projectId?: string;
   /** Explicit task resource whose controller owns this workflow result. */
   taskBinding?: TaskBinding;
+  taskContext?: TaskExecutionContext;
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   /** Fenced event capability for a resource-backed Task attempt. */
@@ -716,6 +725,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     parentSessionId: opts.parentSessionId,
     projectId: opts.projectId,
     taskBinding: opts.taskBinding,
+    taskContext: opts.taskContext,
     recoveryOwner: opts.recoveryOwner,
     taskEmitter: opts.taskEmitter,
     onEvent: opts.onEvent,
@@ -791,6 +801,7 @@ export interface WorkflowToolOptions {
   projectId?: string;
   /** Explicit task resource whose controller owns this workflow result. */
   taskBinding?: TaskBinding;
+  taskContext?: TaskExecutionContext;
   /** Runtime that exclusively owns crash recovery for workflow step sessions. */
   recoveryOwner?: string;
   /** Pre-built RuntimeCtx — shared infra (emit, getDb, log, notify, paths). */
@@ -837,7 +848,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   };
 
   const resolveCallerSessionId = (): string | undefined => {
-    const v = opts.callerSessionId;
+    const v = opts.callerSessionId ?? opts.parentSessionId;
     return typeof v === "function" ? v() : v;
   };
   const getCallerSessionMeta = (sessionId?: string) => {
@@ -1200,7 +1211,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           const prevStep = previousRun.steps[currentStep];
           if (prevStep.agent === agentName && prevStep.task === agentTask) {
             try {
-              const taskResult = enforceStructuredWorkflowResult(manager.result(prevStep.sessionId), !!stepOpts?.schema);
+              const taskResult = enforceStructuredWorkflowResult(
+                manager.result(prevStep.sessionId),
+                !!stepOpts?.schema,
+              );
               if (taskResult.status === "error") throw new Error(taskResult.error);
               const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
               localSteps.push(step);
@@ -1263,6 +1277,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 manager.resumeSession(sid, effectiveTask, {
                   source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
                   taskBinding: opts.taskBinding,
+                  taskContext: opts.taskContext,
                   timeoutMs: stepTimeoutMs,
                   signal,
                   deadlineAt: executionDeadlineAt,
@@ -1285,6 +1300,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                 workflowRunId: runId,
                 projectId: effectiveProjectId,
                 taskBinding: opts.taskBinding,
+                taskContext: opts.taskContext,
                 recoveryOwner: opts.recoveryOwner,
                 stepLabel: agentName,
                 source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
@@ -1311,10 +1327,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           onEvent?.({ type: "workflow.step_started", step: label });
           taskResult = await callAgent(agentName, effectiveTask, {
             parentSessionId,
-            source: isRepair ? "guard" : stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
+            source: isRepair ? "guard" : (stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`),
             workflowRunId: runId,
             projectId: effectiveProjectId,
             taskBinding: opts.taskBinding,
+            taskContext: opts.taskContext,
             recoveryOwner: opts.recoveryOwner,
             stepLabel: label,
             timeout: stepTimeoutMs,
@@ -1491,7 +1508,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           : {}),
         agents: {
           call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
-            trackStep(runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions).then(appAgentExecutionResult)),
+            trackStep(
+              runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions).then(appAgentExecutionResult),
+            ),
         },
 
         events: {
@@ -1516,7 +1535,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           onEvent: (listener) => {
             assertExecutionActive();
             if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can observe Task events");
-            const unsubscribe = opts.taskEmitter.onEvent((event) => listener(canonicalAppEvent(event)));
+            const unsubscribe = opts.taskContext
+              ? opts.taskContext.observeEvents((event) => listener(event))
+              : opts.taskEmitter.onEvent((event) => listener(canonicalAppEvent(event)));
             const tracked = () => {
               taskEventUnsubscribers.delete(tracked);
               unsubscribe();
@@ -1528,30 +1549,33 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
         workflows: {
           run: (wfName: string, workflowInput: unknown): Promise<AppExecutionResult> =>
-            trackStep((async () => {
-              const nestedTask = typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
-              const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
-              if ("reason" in nested) {
-                return { id: runId, kind: "workflow", status: "blocked", summary: nested.reason };
-              }
-              const { sub } = nested;
-              if (sub.result.type === "done") {
+            trackStep(
+              (async () => {
+                const nestedTask =
+                  typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
+                const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
+                if ("reason" in nested) {
+                  return { id: runId, kind: "workflow", status: "blocked", summary: nested.reason };
+                }
+                const { sub } = nested;
+                if (sub.result.type === "done") {
+                  return {
+                    id: sub.runId,
+                    kind: "workflow",
+                    status: "done",
+                    summary: sub.result.summary,
+                    ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+                  };
+                }
                 return {
                   id: sub.runId,
                   kind: "workflow",
-                  status: "done",
-                  summary: sub.result.summary,
-                  ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+                  status: "blocked",
+                  summary: sub.result.reason,
+                  ...(sub.result.context !== undefined ? { facts: sub.result.context } : {}),
                 };
-              }
-              return {
-                id: sub.runId,
-                kind: "workflow",
-                status: "blocked",
-                summary: sub.result.reason,
-                ...(sub.result.context !== undefined ? { facts: sub.result.context } : {}),
-              };
-            })()),
+              })(),
+            ),
         },
 
         done: (summary, output) => ({
@@ -1571,6 +1595,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       };
 
       assertExecutionActive();
+      const needsWorktree = workflow.workspace === "task" || (typeof workflow.workspace === "object" && workflow.workspace.kind === "task");
+      if (needsWorktree && (!opts.taskBinding || !opts.executionPaths || opts.executionPaths.workspaceDir === opts.executionPaths.projectDir)) {
+        throw new Error(`Workflow "${workflow.name}" requires an allocated Task worktree; use an ordinary Git-backed Task for this work`);
+      }
       let stopForAbort!: () => void;
       const stopped = new Promise<never>((_, reject) => {
         stopForAbort = () => {
@@ -1592,7 +1620,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const execution = (async () => {
         const authoredResult = await workflow.execute(ctx);
         assertExecutionActive();
-        const result = normalizeAuthoredWorkflowResult(authoredResult, completedSteps, runId, Boolean(opts.taskBinding));
+        const result = normalizeAuthoredWorkflowResult(
+          authoredResult,
+          completedSteps,
+          runId,
+          Boolean(opts.taskBinding),
+        );
 
         // ── Guard: workflow_done event ──────────────────────────────────
         if (guards.length > 0) {
@@ -1739,6 +1772,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     parentSessionId: string | undefined,
     parentWorkflowRunId: string | undefined,
     previousRun?: WorkflowRun,
+    authoredInput?: { value: unknown },
   ): Promise<WorkflowToolResult> {
     const completedSteps: CompletedStep[] = [];
     const steeringQueue: string[] = [];
@@ -1759,7 +1793,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         completedSteps,
         steeringQueue,
         previousRun,
-        !previousRun && opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined,
+        authoredInput ?? (!previousRun && opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined),
         runId,
       );
 
@@ -1835,7 +1869,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     }
   }
 
-  async function runTyped(name: string, task: string, existingCatalog?: WorkflowCatalog): Promise<WorkflowToolResult> {
+  async function runTyped(
+    name: string,
+    task: string,
+    existingCatalog?: WorkflowCatalog,
+    authoredInput?: { value: unknown },
+  ): Promise<WorkflowToolResult> {
     const catalog = existingCatalog ?? (await buildWorkflowCatalog(workflowDir));
     const { workflow, error } = findWorkflow(catalog, name);
     if (!workflow) {
@@ -1850,7 +1889,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     }
     const callerSessionId = resolveCallerSessionId();
     const callerMeta = getCallerSessionMeta(callerSessionId);
-    return runOrResume(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId);
+    return runOrResume(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId, undefined, authoredInput);
   }
 
   const runner: WorkflowRunner = {
@@ -1912,15 +1951,33 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         }
 
         case "run": {
-          if (!params.name || !params.task) {
-            return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
+          const hasInput = Object.hasOwn(params, "input");
+          if (!params.name || (!hasInput && !params.task) || (hasInput && params.task !== undefined)) {
+            return textResult(
+              JSON.stringify({
+                type: "error",
+                error: "action 'run' requires 'name' and exactly one of 'input' or legacy 'task'",
+              }),
+            );
           }
-
-          const result = await runTyped(params.name, params.task, catalog);
+          const task = hasInput
+            ? typeof params.input === "string"
+              ? params.input
+              : JSON.stringify(params.input)
+            : params.task!;
+          const result = await runTyped(params.name, task, catalog, hasInput ? { value: params.input } : undefined);
           return textResult(JSON.stringify(result, null, 2));
         }
 
         case "resume": {
+          if (opts.taskBinding)
+            return textResult(
+              JSON.stringify({
+                type: "error",
+                error:
+                  "Task-owned work recovers through its owning Task. Inspect retained evidence and run against the current input; do not resume a historical attempt.",
+              }),
+            );
           if (!params.workflowRunId) {
             return workflowResumeError({
               reason: "action 'resume' requires 'workflowRunId'",
@@ -1964,6 +2021,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             });
           }
 
+          if (prevRunRecord.taskBinding)
+            return textResult(
+              JSON.stringify({ type: "error", error: "This workflow belongs to a Task. Recover through that Task." }),
+            );
           // Reconstruct WorkflowRun with steps from sessions table
           const stepSessions = getWorkflowStepSessions(persistDir, params.workflowRunId);
           const prevRun: WorkflowRun = {
