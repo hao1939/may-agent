@@ -887,6 +887,53 @@ describe("evaluation task policy", () => {
     );
   });
 
+  test("keeps every supported input independent of retired legacy grouping parents", () => {
+    const inputs: AppInput[] = [
+      {
+        kind: "review-task-outcome",
+        data: { appId: "may", taskId: "goal/example" },
+      },
+      { kind: "read-reports", data: { operation: "list" } },
+      { kind: "automatic-review", data: {} },
+      { kind: "evaluate-session", data: { sessionId: "s-example" } },
+      { kind: "deep-eval", data: { sessionId: "s-example" } },
+      { kind: "deep-scan", data: {} },
+      { kind: "project-review", data: { targetProject: "may.app" } },
+      {
+        kind: "codex-goal-trial",
+        data: { targetProject: "may.app", focus: "bounded check" },
+      },
+      {
+        kind: "workflow-trial",
+        data: { targetProject: "may.app", focus: "bounded check" },
+      },
+      {
+        kind: "feedback-record",
+        data: {
+          evaluation: {
+            sessionId: "s-example",
+            agent: "may",
+            quality: 0.5,
+            verdict: "needs_improvement",
+            issues: ["Missing evidence."],
+          },
+        },
+      },
+      { kind: "owner-review", data: {} },
+    ];
+    for (const input of inputs) {
+      const intent = taskIntentForInput(input);
+      expect(intent).not.toBeNull();
+      expect(intent?.parentId).toBeNull();
+    }
+    expect(
+      taskForEvaluationInput({
+        id: "app_message",
+        input: { kind: "message", data: { message: "Review this" } },
+      } as AppTaskInput).intent,
+    ).toMatchObject({ parentId: null });
+  });
+
   test("uses standing maintain tasks for recurring responsibilities", () => {
     expect(
       taskIntentForInput({
@@ -895,7 +942,6 @@ describe("evaluation task policy", () => {
       }),
     ).toMatchObject({
       id: "runtime/owner-review",
-      parentId: "evaluator-reliability",
       agent: "evaluator",
       executor: "codex-goal",
     });
@@ -914,7 +960,6 @@ describe("evaluation task policy", () => {
       }),
     ).toMatchObject({
       id: "runtime/evaluation-feedback/may",
-      parentId: "finding-delivery",
       workflow: "evaluation-feedback-projection",
       input: { evaluation, feedbackKey: "may" },
     });

@@ -1,16 +1,16 @@
 # Evaluation outcome-review rollout and legacy retirement
 
-**Status:** candidate procedure; no runtime mutation or deployment has been performed.
+**Status:** migration and first activation completed on 2026-09-17 at integrated source `fe5556be551c8b0aa5513c6bf4c430c7bc88eabe`; automatic selection remains off. The first ordinary live admissions exposed and prompted removal of obsolete legacy grouping parents before calibration continues.
 
 ## Frozen legacy inventory
 
-The independent public inventory in `/app/.state/review-pilots/evaluation-setup-20260918/reviewer-migration-proposal.json` contains exactly **2,037** Evaluation Tasks: 2,007 legacy session reviews, 9 feedback projections, 16 pipeline-maintenance Tasks, and 5 project audits. Its source snapshot SHA-256 is `ad0cfd543ac8c71289ae37d80919b0893747cf84f1a162219894f2b394939f70`. Every identity was last updated no later than 2026-09-10T06:32:44.753Z. The proposal and current preflight are evidence, not applied state.
+The independent public inventory in `/app/.state/review-pilots/evaluation-setup-20260918/reviewer-migration-proposal.json` contains exactly **2,037** Evaluation Tasks: 2,007 legacy session reviews, 9 feedback projections, 16 pipeline-maintenance Tasks, and 5 project audits. Its source snapshot SHA-256 is `ad0cfd543ac8c71289ae37d80919b0893747cf84f1a162219894f2b394939f70`. Every identity was last updated no later than 2026-09-10T06:32:44.753Z. The frozen set was retired through the public fenced route; `/app/.state/review-pilots/evaluation-setup-20260918/migration-verify.json` records all 2,037 as already cancelled after application.
 
 Retirement means `cancel-as-superseded`, never assessed, repaired, or successful. Preserve every Task, attempt, event, evaluation, and report. Apply only the frozen manifest: while Evaluation remains disabled, reread each exact generation/resourceVersion, emit the supported fenced `app.task.cancel.requested` operation, retain its receipt, and reread terminal cancellation. Skip stale identities for individual review; never broaden the set dynamically. Do not write SQLite or delete legacy directories.
 
 ## Offline receipt-import evidence
 
-The host reviewer proved the deployed Host's existing receipt migrator on an isolated full database copy; this is not a live migration receipt. The run imported 16,739 historical completion receipts into canonical history, created 16,738 already-closed historical Task projections, linked 34 inputs, preserved original receipt content, and changed none of the 2,037 open frozen Task resources. The retained receipt is `/app/.state/review-pilots/evaluation-setup-20260918/cutover-receipts-copy.json`. Imported history is not new evaluation and must not revive work.
+The host reviewer first proved the deployed Host's existing receipt migrator on an isolated full database copy, then applied the same bounded operation during the coordinated cutover. The live run imported 16,739 historical completion receipts into canonical history, created 16,738 already-closed historical Task projections, linked 34 inputs, and preserved original receipt content. The retained live receipt is `/app/.state/review-pilots/evaluation-setup-20260918/cutover-receipts-live.json`. Imported history is not new evaluation and must not revive work.
 
 ## Staged activation
 

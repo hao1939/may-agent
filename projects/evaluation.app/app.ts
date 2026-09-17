@@ -599,7 +599,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       if (!appId || !taskId) return null;
       return {
         id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}`,
-        parentId: "project-app-audit",
+        parentId: null,
         outcome: `Evaluate the accepted outcome of ${appId}/${taskId}.`,
         acceptance: [
           "Canonical public Task identity and evidence are read before judgment.",
@@ -617,7 +617,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       const key = operation === "read" ? safeTaskIdPart(path) : "latest";
       return {
         id: `runtime/report-reader/${key}`,
-        parentId: "project-app-audit",
+        parentId: null,
         outcome:
           operation === "read"
             ? `Read retained Evaluation report ${path}.`
@@ -638,7 +638,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "automatic-review":
       return {
         id: "runtime/task-outcome-selector",
-        parentId: "project-app-audit",
+        parentId: null,
         outcome: "Select at most one fair external Task outcome for review.",
         acceptance: [
           "Selection uses bounded public App and Task lists and excludes Evaluation.",
@@ -658,7 +658,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         id: supersedeExisting
           ? `runtime/session-aftermath-repair/${safeTaskIdPart(sessionId)}/${safeTaskIdPart(correctionId)}`
           : `runtime/session-aftermath/${safeTaskIdPart(sessionId)}`,
-        parentId: "session-audit",
+        parentId: null,
         outcome: `Evaluate completed session ${sessionId} and publish its evidence-backed disposition.`,
         acceptance: [
           "A durable evaluation record or structured skip is linked to the exact source session.",
@@ -681,7 +681,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       if (!sessionId) return null;
       return {
         id: `runtime/deep-eval/${safeTaskIdPart(sessionId)}`,
-        parentId: "session-audit",
+        parentId: null,
         outcome: `Run one deep evaluator review for session ${sessionId}.`,
         acceptance: [
           "The deep evaluator returns a workflow-traced judgment linked to the exact requested session.",
@@ -699,7 +699,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "deep-scan":
       return {
         id: "runtime/deep-eval-scan",
-        parentId: "pipeline-health",
+        parentId: null,
         outcome:
           "Find and deeply evaluate at most one eligible recent session.",
         acceptance: [
@@ -715,7 +715,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       if (!target) return null;
       return {
         id: `runtime/project-audit/${safeTaskIdPart(target.targetProject)}`,
-        parentId: "project-app-audit",
+        parentId: null,
         outcome: `Maintain an independent, evidence-backed health assessment for ${target.targetProject}.`,
         acceptance: [
           "The current meaningful-state fingerprint is persisted for the target.",
@@ -737,7 +737,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         .slice(0, 12);
       return {
         id: `runtime/codex-goal-trial/${safeTaskIdPart(target.targetProject)}/${trialKey}`,
-        parentId: "project-app-audit",
+        parentId: null,
         outcome: `Produce one bounded read-only assessment of ${target.targetProject}: ${focus}`,
         acceptance: [
           "The assessment answers the requested focus directly.",
@@ -763,7 +763,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
         .slice(0, 12);
       return {
         id: `runtime/workflow-trial/${safeTaskIdPart(target.targetProject)}/${trialKey}`,
-        parentId: "project-app-audit",
+        parentId: null,
         outcome: `Produce one bounded read-only assessment of ${target.targetProject}: ${focus}`,
         acceptance: [
           "The assessment answers the requested focus directly.",
@@ -783,7 +783,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       const feedbackKey = safeTaskIdPart(agent);
       return {
         id: `runtime/evaluation-feedback/${feedbackKey}`,
-        parentId: "finding-delivery",
+        parentId: null,
         outcome: `Keep ${agent}'s generated last-eval feedback projection aligned with the latest durable evaluation fact.`,
         acceptance: [
           "The latest evaluation issues are projected to the matching agent feedback file.",
@@ -801,7 +801,7 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
     case "owner-review":
       return {
         id: "runtime/owner-review",
-        parentId: "evaluator-reliability",
+        parentId: null,
         outcome:
           "Keep evaluation.app's own organization coherent and act on evaluator-local exceptions.",
         acceptance: [
@@ -835,7 +835,7 @@ export function taskForEvaluationInput(
     kind: "desired",
     intent: {
       id: `input/${taskId}`,
-      parentId: "evaluator-reliability",
+      parentId: null,
       outcome:
         "Interpret and handle one admitted free-form Evaluation message.",
       acceptance: [
