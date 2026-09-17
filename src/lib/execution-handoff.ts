@@ -5,6 +5,7 @@ import { cliCallFacts } from "./tools/run-cli-agent.js";
 
 /** Project execution evidence for callers; never accepts the owning Task. */
 export function agentExecutionResult(result: TaskResult): ExecutionResult {
+  if (!result.sessionId) throw new Error(result.error || result.errorMessage || "Agent call did not start an execution");
   const finish = result.finishResult;
   const status = result.status === "interrupted"
     ? "interrupted"

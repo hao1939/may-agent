@@ -126,7 +126,7 @@ describe("V2 agents tool", () => {
     let dispatchedTask = "";
     (manager as any).callAgent = async (_agent: string, task: string) => {
       dispatchedTask = task;
-      return { status: "done", agent: "coder", summary: "ok", messages: [] };
+      return { sessionId: "child", status: "done", lastAssistantText: "ok", messages: [], duration: "0s", outputDir: "" };
     };
 
     manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("coder") } as any);
@@ -195,6 +195,18 @@ describe("V2 agents tool", () => {
       facts: { status: finishStatus }, outputDir: "evidence/child",
     });
     expect(returned.messages).toBeUndefined();
+    manager.activeSessions.clear();
+  });
+
+  it("reports a depth rejection without claiming that a child execution exists", async () => {
+    manager = new SubagentManager({ persistDir, maxCallDepth: 0 });
+    manager.register({ name: "worker", description: "Worker", domain: "fixture", model: mockModel(), tools: [] });
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("worker") } as any);
+    const result = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
+      action: "call", agent: "worker", task: "Review the candidate",
+    });
+    expect(result.error).toContain("Call depth limit exceeded");
+    expect(result.id).toBeUndefined();
     manager.activeSessions.clear();
   });
 
@@ -476,7 +488,7 @@ describe("V2 agents tool", () => {
       model: mockModel(),
       tools: [echoTool()],
     });
-    (manager as any).callAgent = async () => ({ status: "done", summary: "ok", messages: [] });
+    (manager as any).callAgent = async () => ({ sessionId: "child", status: "done", lastAssistantText: "ok", messages: [], duration: "0s", outputDir: "" });
 
     manager.activeSessions.set("owner-session", { definition: manager.getAgentDefinition("owner") } as any);
     const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner", getCallerSessionId: () => "owner-session" });
