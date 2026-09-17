@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   automaticReviewConfig,
+  runTaskOutcomeSelector,
   selectFairCandidate,
   selectorStateFact,
 } from "./task-outcome-selector.ts";
@@ -152,7 +153,7 @@ describe("automatic task outcome selector", () => {
       ]),
     );
     const fact = selectorStateFact({
-      version: 2,
+      version: 3,
       appId: "应用-next",
       appIndex: 99,
       lastTaskByApp: manyEntries,
@@ -166,6 +167,31 @@ describe("automatic task outcome selector", () => {
     expect(Buffer.byteLength(JSON.stringify(simulatedResult))).toBeLessThan(
       16_000,
     );
+  });
+
+  test("keeps the actual selected result bounded while emitting the full identity", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-selected-budget-"));
+    const long = `goal/${"任务🚀".repeat(2_000)}`;
+    let emitted: Record<string, unknown> | undefined;
+    const ctx = {
+      reconciliation: { taskId: "automatic-review", resourceVersion: 1 },
+      read: { tasks: { get: async () => ({ facts: [] }) } },
+      events: {
+        emit: async (event: Record<string, unknown>) => {
+          emitted = event;
+        },
+      },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+    const result = await runTaskOutcomeSelector(
+      ctx,
+      catalogCommand({ may: [task("may", long)] }),
+      config,
+      root,
+    );
+    expect((emitted?.data as Record<string, unknown>).taskId).toBe(long);
+    expect(String(emitted?.localKey).length).toBeLessThan(100);
+    expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(16 * 1_024);
   });
 
   test("round-robins discovered Apps and never Evaluation", async () => {
@@ -276,8 +302,54 @@ describe("automatic task outcome selector", () => {
       NOW,
     );
     expect(result.candidate).toEqual({ appId: "scout", taskId: "goal/good" });
+    expect(result.navigationFacts).toEqual([
+      "selector-navigation-failed:may:pages-read=0:tasks.list item has no usable updatedAt",
+    ]);
     expect(result.state).not.toHaveProperty("taskCursor");
-    expect(result.state.version).toBe(2);
+    expect(result.state.version).toBe(3);
+  });
+
+  test("bounds diagnostics and the full result at configured maximums", async () => {
+    const apps = Array.from({ length: 100 }, (_, index) => ({
+      id: `${String(index).padStart(3, "0")}-${"应用🚀".repeat(50)}`,
+    }));
+    const command: PublicCommand = async (request) => {
+      if (request.type === "apps.list")
+        return { type: "ok", command: "apps.list", apps };
+      return {
+        type: "ok",
+        command: "tasks.list",
+        tasks: { items: [{ taskId: `goal/${"任务".repeat(200)}` }] },
+      };
+    };
+    const result = await selectFairCandidate(
+      command,
+      { ...config, maxApps: 100, maxTasksPerApp: 100, maxPagesPerApp: 5 },
+      mkdtempSync(join(tmpdir(), "selector-budget-")),
+      undefined,
+      NOW,
+    );
+    const simulatedResult = {
+      state: "converged",
+      summary:
+        "No eligible recent external Task candidate was found within selector bounds; ordinary Task navigation advanced.",
+      response:
+        "No eligible recent external Task candidate was found within selector bounds; ordinary Task navigation advanced.",
+      facts: [
+        "selector:no-candidate",
+        selectorStateFact(result.state),
+        ...result.navigationFacts,
+      ],
+      actions: [],
+    };
+    expect(result.candidate).toBeNull();
+    expect(result.navigationFacts.length).toBeGreaterThan(0);
+    expect(
+      Buffer.byteLength(JSON.stringify(result.navigationFacts)),
+    ).toBeLessThanOrEqual(3_000);
+    expect(Buffer.byteLength(JSON.stringify(simulatedResult))).toBeLessThan(
+      16 * 1_024,
+    );
   });
 
   test("enforces the App bound even when the catalog returns too many items", async () => {
