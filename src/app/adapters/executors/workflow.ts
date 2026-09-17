@@ -9,6 +9,7 @@ import {
   inspectWorkflowDefinition,
   runWorkflowDirect,
   WorkflowHandlerUnavailable,
+  WorkflowExecutionFailure,
 } from "../../../lib/workflow-tool.js";
 import { createRuntimeAppRead } from "../../core/reads/app-read.js";
 import { readMetricView } from "../reporting/metric-read.js";
@@ -243,6 +244,7 @@ async function executeTaskCapability(
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
     const unavailable = error instanceof WorkflowHandlerUnavailable;
+    const runId = error instanceof WorkflowExecutionFailure ? error.execution.id : null;
     bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
@@ -255,7 +257,7 @@ async function executeTaskCapability(
         projectId: descriptor.id,
         taskId: taskDetail.id,
         taskGeneration: taskDetail.generation,
-        workflowRunId: null,
+        workflowRunId: runId,
         status: "blocked",
         reason: summary,
       },
@@ -265,10 +267,10 @@ async function executeTaskCapability(
       handlerResult: {
         state: "error",
         summary,
-        facts: [],
+        facts: runId ? [`workflow-run:${runId}`] : [],
         actions: [],
       },
-      runId: null,
+      runId,
       ...(unavailable ? { unavailable: true } : {}),
       ...(!unavailable ? { executionFailed: true } : {}),
     };

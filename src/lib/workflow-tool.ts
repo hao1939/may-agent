@@ -629,6 +629,14 @@ export class WorkflowHandlerUnavailable extends Error {
   }
 }
 
+/** System callers keep their failure path without losing the contribution evidence. */
+export class WorkflowExecutionFailure extends Error {
+  constructor(workflow: string, public readonly execution: AppExecutionResult) {
+    super(`Workflow "${workflow}" ${execution.status}: ${execution.summary} (workflow-run:${execution.id})`);
+    this.name = "WorkflowExecutionFailure";
+  }
+}
+
 // ── runWorkflowDirect — for system-level callers (handlers) ───────────
 
 export interface RunWorkflowDirectOpts {
@@ -725,6 +733,8 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     if (parsed.category === "workflow_definition_missing") {
       throw new WorkflowHandlerUnavailable(opts.workflowName, parsed.error);
     }
+    const execution = workflowExecutionResult(parsed);
+    if (execution) throw new WorkflowExecutionFailure(opts.workflowName, execution);
     throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
   }
   if (parsed.type === "blocked") {
@@ -735,7 +745,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     };
   }
   if (parsed.type === "interrupted") {
-    throw new Error(`Workflow "${opts.workflowName}" interrupted: ${parsed.steeringMessage}`);
+    throw new WorkflowExecutionFailure(opts.workflowName, workflowExecutionResult(parsed)!);
   }
   throw new Error(`Workflow "${opts.workflowName}" returned unknown result: ${(parsed as any).type ?? "unknown"}`);
 }

@@ -2,14 +2,16 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createWorkflowTool } from "./workflow-tool.js";
+import { createWorkflowTool, runWorkflowDirect, WorkflowExecutionFailure } from "./workflow-tool.js";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import { closeDb } from "./requests.js";
+import type { RuntimeCtx } from "./runtime-ctx.js";
 
 const cases = (["done", "blocked", "error", "interrupted"] as const)
-  .flatMap((status) => [false, true].map((nested) => ({ status, nested })));
+  .flatMap((status) => (["model", "nested", "system"] as const).map((route) => ({ status, route })));
 
-test.each(cases)("retains contribution output and facts: $status / nested=$nested", async ({ status, nested }) => {
+test.each(cases)("retains contribution output and facts: $status / $route", async ({ status, route }) => {
+  const nested = route === "nested";
   const root = mkdtempSync(join(tmpdir(), "may-handoff-evidence-"));
   const workflowDir = join(root, "workflows");
   mkdirSync(workflowDir);
@@ -26,11 +28,30 @@ export const description = "Caller retains the contribution";
 export async function execute(ctx) { return ctx.workflows.run("child", ctx.input); }
 `);
   try {
-    const tool = createWorkflowTool({ manager: {} as never, workflowDir, persistDir: root });
-    const response = await tool.execute("call", { action: "run", name: nested ? "parent" : "child", input: { status } });
-    const text = response.content[0];
-    if (text.type !== "text") throw new Error("Missing result text");
-    const result = JSON.parse(text.text);
+    let result;
+    if (route === "system") {
+      try {
+        const completed = await runWorkflowDirect({
+          manager: {} as never, runtimeCtx: { emit: () => {}, log: () => {} } as unknown as RuntimeCtx, agentName: "owner",
+          workflowDir, persistDir: root, workflowName: "child", task: "contribution", workflowInput: { status },
+        });
+        expect(["done", "blocked"]).toContain(status);
+        result = { ...completed.result, id: completed.runId, kind: "workflow", status: completed.result.type,
+          summary: completed.result.type === "done" ? completed.result.summary : completed.result.reason };
+      } catch (error) {
+        expect(["error", "interrupted"]).toContain(status);
+        expect(error).toBeInstanceOf(WorkflowExecutionFailure);
+        if (!(error instanceof WorkflowExecutionFailure)) throw error;
+        result = error.execution;
+        expect(error.message).toContain(`workflow-run:${result.id}`);
+      }
+    } else {
+      const tool = createWorkflowTool({ manager: {} as never, workflowDir, persistDir: root });
+      const response = await tool.execute("call", { action: "run", name: nested ? "parent" : "child", input: { status } });
+      const text = response.content[0];
+      if (text.type !== "text") throw new Error("Missing result text");
+      result = JSON.parse(text.text);
+    }
     const payload = { output: { draft: "retained.md" }, facts: { checked: true } };
     expect(result).toMatchObject({ kind: "workflow", status, summary: "narrow contribution", ...payload });
     closeDb(root);
