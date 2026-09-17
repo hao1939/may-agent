@@ -1,13 +1,15 @@
 <ai_context>
 summary: "Triage of 10 arXiv papers (July 1-9, 2026 batch). Key themes: runtime repair via trajectory graphs (AgentTether), memory poisoning through forged reasoning (FARMA/SENTINEL), harness engineering formalized as contracts (Prompts-to-Contracts), CoT monitoring defeated by persuasion attacks, pre-execution scope gating (ScopeJudge), privacy spillage in shared agent systems (PiSAs), failure-driven data curation evolution (CurateEvo), object-centric executable memory (OCM)."
 triggers: ["arXiv triage", "runtime repair", "AgentTether", "memory poisoning", "FARMA", "harness engineering", "contracts", "CoT monitoring", "persuasion attacks", "scope gating", "ScopeJudge", "privacy spillage", "shared agents", "PiSAs", "data curation", "CurateEvo", "object-centric memory", "OCM", "framework ecosystem"]
-last_updated: "2026-11-12"
+last_updated: "2026-09-17"
 source_basis: "arXiv API queries: all:\"AI agent\" AND all:\"multi-agent\", all:\"LLM agent\" AND all:\"memory\", all:\"agent\" AND all:\"safety\" AND all:\"LLM\" (July 1-9, 2026 papers)"
 </ai_context>
 
 # arXiv Triage — July 1–9, 2026 (Batch 6)
 
-*Triaged: 2026-11-12 | Source: `https://export.arxiv.org/api/query` | Queries: multi-agent, LLM memory, agent safety | Note: Supplements prior triages; no duplicates.*
+*Triaged: 2026-07-12 | Source: `https://export.arxiv.org/api/query` | Queries: multi-agent, LLM memory, agent safety | Note: Supplements prior triages; no duplicates.*
+
+> **Historical path:** This finding was published under a false future-dated filename. Its verified observation identity is 2026-07-12; the path remains readable as a published interface. See the [retained July finding](./2026-07-12-arxiv-agent-triage-b.md).
 
 ---
 

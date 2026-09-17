@@ -15,18 +15,38 @@ This pass repaired the two exact duplicate HN aliases with unambiguous July iden
 
 A repository-wide Markdown reference search found no incoming links to either removed November path, including the working digest tree. Source URLs, HN IDs, claims, and prose remain in the retained files.
 
+## 2026-09-17 bounded follow-up
+
+The two arXiv paths have unambiguous July counterparts. Commit
+`a2d3df9f847459d464360835ef2831e95f470e8c`, authored 2026-07-13, introduced
+both November aliases; content comparison showed each differs from its July
+counterpart only in date metadata. This pass therefore corrected their internal
+observation identities and added an inline link to the retained July finding:
+
+| Published historical path | Verified observation identity | Retained finding |
+|---|---|---|
+| `knowledge/findings/2026-11-12-arxiv-agent-triage.md` | 2026-07-12 | `knowledge/findings/2026-07-12-arxiv-agent-triage-b.md` |
+| `knowledge/findings/2026-11-15-arxiv-scan-283.md` | 2026-07-12 | `knowledge/findings/2026-07-12-arxiv-scan-283.md` |
+
+The false filename dates remain visible because these exact paths are published
+interfaces and this maintenance call has no explicit deletion approval. Keeping
+the aliases readable avoids breaking retained consumers; their contents now
+state the truthful July observation date rather than presenting November as a
+real scan date.
+
 ## Remaining observable batch
 
-Nine future-dated paths remain and require content-by-content identity reconciliation rather than blind renaming:
+Seven future-dated HN aliases remain for a separately reviewed batch:
 
-- `knowledge/findings/2026-11-12-arxiv-agent-triage.md`
 - `knowledge/findings/2026-11-13-hn-scan-278.md`
 - `knowledge/findings/2026-11-14-hn-scan-279.md`
-- `knowledge/findings/2026-11-15-arxiv-scan-283.md`
 - `knowledge/findings/2026-11-15-hn-scan-280.md`
 - `knowledge/findings/2026-11-15-hn-scan-282.md`
 - `knowledge/findings/2026-11-16-hn-scan-284.md`
 - `knowledge/findings/2026-11-17-hn-scan-285.md`
 - `knowledge/findings/2026-11-18-hn-scan-286.md`
 
-The arXiv item already has multiple July candidates with overlapping paper IDs, and the later HN scan numbers also have July candidates. Those collisions make a bulk filename rewrite unsafe. The next smallest batch should reconcile scans 278 and 279 against their July candidates, preserving any content-distinct observations.
+Each has a 2026-07-12 counterpart with date-normalized identical content. The
+next smallest batch should correct those seven internal dates while preserving
+both the published path and source-grounded prose; deletion or renaming requires
+separate interface review.
