@@ -278,7 +278,7 @@ export async function selectFairCandidate(
       );
     }
 
-    const rememberedTask = state.lastTaskByApp[key];
+    const rememberedTask = nextState.lastTaskByApp[key];
     const rememberedTaskIndex = rememberedTask
       ? recent.findIndex(
           (item) => identityDigest(taskId(item)) === rememberedTask,
@@ -297,7 +297,7 @@ export async function selectFairCandidate(
         !reviewed.has(`${reportKey}\u0000${taskId(item)}`),
     );
     const nextIndex = (appIndex + 1) % apps.length;
-    const lastTaskByApp = { ...state.lastTaskByApp };
+    const lastTaskByApp = { ...nextState.lastTaskByApp };
     const lastAttempted = selected ?? candidates.at(-1);
     if (lastAttempted)
       lastTaskByApp[key] = identityDigest(taskId(lastAttempted));

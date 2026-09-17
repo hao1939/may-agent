@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { createHash } from "node:crypto";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -355,6 +356,16 @@ describe("automatic task outcome selector", () => {
       NOW,
     );
     expect(exhausted.candidate).toBeNull();
+    expect(exhausted.state.lastTaskByApp).toEqual({
+      [createHash("sha256").update("may").digest("hex")]: createHash("sha256")
+        .update("goal/may-old")
+        .digest("hex"),
+      [createHash("sha256").update("scout").digest("hex")]: createHash(
+        "sha256",
+      )
+        .update("goal/scout-old")
+        .digest("hex"),
+    });
 
     tasks.may.unshift(task("may", "goal/may-new"));
     const selected = await selectFairCandidate(
