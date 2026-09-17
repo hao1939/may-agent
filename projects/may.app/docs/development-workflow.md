@@ -8,7 +8,7 @@ default rollout or certify the current live installation.
 
 Turn an accepted requirement into a locally committed, verified and reviewed
 candidate. May understands the human and retains the accepted Request. One
-ordinary May Task selects the development workflow; Bob judges design/review,
+ordinary May Task runs May, who selects the development workflow; Bob judges design/review,
 and tech-lead implements directly. No separate coding worker is introduced.
 
 This trial deliberately ends at local source evidence. PR creation, remote CI,
@@ -68,11 +68,24 @@ workflow. The initial parser PoC's three-minute/40-operation caps interrupted
 substantive report authoring in the local integration trial. Removing those
 overrides keeps the existing bounded execution path and ordinary recovery.
 
-Profiles use internal names `may-bob` and `may-tech-lead` to avoid collisions
-with the existing Host Operations profiles. They live under `may.app`. The
-workflow selects them through its bounded SDK calls. May can submit an ordinary
-development input through its App, so this PoC needs no global May relocation,
-cross-App helper exception, or Host Operations activation.
+May, Bob and tech-lead live under `may.app/agents/`. May owns the workflow
+catalog and chooses `develop-change` when useful; Bob and tech-lead perform
+bounded specialist calls. The existing `may-bob` and `may-tech-lead` names remain
+because the Host registry is flat and Host Operations also has a Bob profile.
+Scoped naming redesign is separate.
+
+Public inputs are ordinary `message` and `goal`. Workflow selection adds no
+public schema or router branch. `develop-change` takes private procedure options
+`{ verify: [executable, ...arguments] }`; outcome, acceptance and constraints
+come from the owning Task. The retired development envelope is read only for
+retained Task recovery; new development inputs are rejected. Historical
+tech-lead workflow bindings must finish or be retired before activation.
+
+May reads the workflow result and proposes the owning Task result, retaining
+`result.development` evidence references. Host acceptance still owns settlement.
+New Task input keeps previous reports visible while prompting fresh judgment.
+Matching verification receipts may be reused for the same candidate and checks;
+changed requirements reset validity, not access to the evidence.
 
 Bob uses GPT-6 Astra with read-only tools plus the structured finish capability.
 Tech-lead uses GPT-5.6 Sol with file/shell tools plus finish. Neither profile
@@ -233,7 +246,7 @@ exact suppression of repeated questions during retry.
 
 ```json
 {
-  "kind": "development",
+  "kind": "goal",
   "data": {
     "outcome": "Correct the duration parser",
     "acceptance": [
@@ -247,8 +260,9 @@ exact suppression of repeated questions during retry.
 ```
 
 May retains the same Request/Task link for follow-up and uses the existing
-creator update capability for corrections. Ordinary `goal` input still selects
-May; only explicit `development` input selects `develop-change`. Development
+creator update capability for corrections. Ordinary `goal` input selects May,
+who chooses the method. When the team procedure fits, May invokes
+`workflow({ action: "run", name: "develop-change", input: { verify: ["node", "verify.cjs"] } })`. Development
 can produce a locally committed design/audit document as well as code. Its
 verification must be executable argv, not English instructions. Bob still judges
 the substance: checking a document exists does not certify its conclusions.

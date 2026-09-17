@@ -12,7 +12,10 @@ work; an accepted `done` result alone does not prove a Task should end.
 
    ```ts
    import { sendSocketCommand } from "/app/projects/may-agent/packages/control/src/client.ts";
-   const response = await sendSocketCommand(socketPath, { type: "task.get", ref });
+   const response = await sendSocketCommand(socketPath, {
+     type: "task.get",
+     ref,
+   });
    ```
 
    Use the running installation's socket path and the candidate's exact `ref`.
@@ -20,6 +23,7 @@ work; an accepted `done` result alone does not prove a Task should end.
    `taskId`, `generation`, `resourceVersion`, and `cancellable`. This avoids
    treating private SQLite tables as a control API. Stop if the current view
    contradicts the closure decision or refuses cancellation.
+
 3. Use the installed `may-agent` binary to submit the control. Verify its
    version if the checkout and deployment differ; do not execute a guessed
    source entry point, import private writers, or assume Docker is available
@@ -34,6 +38,7 @@ work; an accepted `done` result alone does not prove a Task should end.
    routing fields. Keep the same key and payload after an uncertain transport
    result. A stale-fence rejection requires a fresh read and renewed judgment,
    not blindly copying newer version numbers into the same operation.
+
 4. Verify the returned event with `event.get` and reread the exact Task.
    Acceptance proves control delivery; `tasks.get` showing `closed: true`
    proves closure. The control view calls this `cancelled`; accepted achievement

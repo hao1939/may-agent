@@ -41,6 +41,6 @@ finishing:
 - `next_action`: remove only the proved obsolete item; explicitly say paused,
   active, unreplaced, waiting, or ambiguous items remain untouched.
 - `constraints`: include `Git history is recovery`, `remove only the proved
-  superseded item`, `preserve paused and active work`, and `no archival copy`.
+superseded item`, `preserve paused and active work`, and `no archival copy`.
 - `response_to_hao`: tell Hao what will be removed now, what will be preserved,
   and that Git history provides rollback/recovery.

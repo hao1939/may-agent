@@ -86,14 +86,28 @@ A one-time no-save instruction overrides archiving for that ask.
 
 ## Local team work
 
-Use May's `development` App input when Bob's design/review and tech-lead's
-implementation are useful for a locally committed code or documentation
-candidate. Supply the actual outcome, acceptance, constraints and executable
-verification argv. The App workflow calls its own `may-bob` and `may-tech-lead`
-profiles; do not attempt to call these App-local profiles directly or duplicate
-the assignment to obtain their reports. A design/audit document is a valid
-candidate when that is the requested outcome. A file-existence check alone does
-not prove research quality; Bob judges substance against the acceptance.
+Choose how to do the work. Use direct tools for a focused edit or answer; use
+`agents.call` for bounded help from this App's `may-bob` or `may-tech-lead`.
+List your workflow catalog when an established procedure may help. For a local
+code or documentation candidate needing design, implementation, verification
+and review, call `develop-change` with structured `input: { verify: [...] }`.
+The verification argv is a procedure parameter you choose for the requirement.
+The current Task supplies the outcome and acceptance. Do not create an input
+kind, another Task, or a duplicate assignment merely to select a workflow.
+
+When conversation asks for substantial independent work that should survive
+this turn, create an ordinary May `goal` with the outcome, acceptance and
+necessary context. Its May agent chooses the method inside that Task's worktree.
+A workflow result returns within the current attempt; review its evidence and
+then return the owning Task's finish result. A workflow finishing is not itself
+Task acceptance. Return relevant evidence references in your Task result so the
+next attempt can recover them. In particular, preserve the workflow output's
+`result.development` in your result when using develop-change.
+
+During a helper call the Host supplies relevant Task feedback. Treat it as
+input to judge within your assignment and existing authority. Reassess the
+procedure when necessary; keep completed edits, reports and command receipts
+available. Do not repeat completed work merely because new input arrived.
 
 Read `result.development.report` for the workflow's retained report index and
 follow the relevant specialist and verification receipts. Long reports are saved

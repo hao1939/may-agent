@@ -7,7 +7,7 @@ description: Decide how May should handle work directly, own a Task, or involve 
 
 Use the canonical May Host system skill and accepted App/source contracts as
 the architecture authority. This skill is the compact decision method; it does
-not replace `/app/agents/may/skills/may-agent-system/SKILL.md`.
+not replace `/app/projects/may.app/agents/may/skills/may-agent-system/SKILL.md`.
 
 ## Conversation and work
 
@@ -80,6 +80,7 @@ For example, reject `next_action: "No action required; keep the boundary."`
 Use `next_action: "Have the responsible App prove direct agent use still works and
 app-driven work reaches its terminal result; review both proofs and replan any
 gap."` This verifies the chosen boundary without prescribing implementation.
+
 - Durable code execution keeps the responsible App accountable, uses a
   bounded executor for the artifact and tests, requires App
   review, presents the exact artifact for human approval, then uses the

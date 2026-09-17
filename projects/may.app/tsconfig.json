@@ -11,11 +11,6 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": [
-    "app.ts",
-    "development.ts",
-    "agents/**/*.ts",
-    "poc/intent-learning/**/*.ts"
-  ],
+  "include": ["app.ts", "agents/**/*.ts", "poc/intent-learning/**/*.ts"],
   "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
 }

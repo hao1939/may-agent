@@ -110,7 +110,7 @@ for (const profile of ["bob", "tech-lead"]) {
   manager.register(definition);
 }
 const specification = (revised: boolean) => ({
-  kind: "development",
+  kind: "goal",
   data: {
     outcome: revised
       ? "Parse whole-number minute/hour durations, including combined hours and minutes"
@@ -158,7 +158,7 @@ async function run(label: string) {
     agentName: "may-tech-lead",
     projectId: "may",
     persistDir: persist,
-    workflowDir: join(appRoot, "agents/tech-lead/workflows"),
+    workflowDir: join(appRoot, "agents/may/workflows"),
     workflowInput: task.input,
     read: createTestAppRead({
       tasks: {

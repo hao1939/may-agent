@@ -1,9 +1,11 @@
 # Workflow Discovery And Execution
 
 **Design status:** Accepted.
-**Implementation status:** Implemented. Bounded TypeScript workflows use the
-canonical scoped context as their public authoring contract; additional host
-internals are not App capabilities and must not be consumed by new workflows.
+**Implementation status:** Bounded TypeScript workflows use the canonical scoped
+context. The shared Task-context and feedback candidate covers agent-selected,
+Task-bound and conversation invocation; local activation evidence is recorded in
+[the iteration review](../archive/reviews/shared-execution-20260917.md).
+Host internals are not App capabilities.
 
 ## Purpose
 
@@ -196,45 +198,92 @@ alone cannot grant an unbound workflow Task access or fenced event authority.
 This is capability propagation within one attempt, not a new Task or session
 ownership rule; existing read scope and event-publication fences still apply.
 
-## Invocation
+## Invocation and ownership
 
-Workflow execution is explicit from one bounded Task attempt:
+A workflow orchestrates agent operations. Wrapping operations in a workflow
+preserves the same Task identity, permissions, remaining execution allowance,
+workspace, feedback and cancellation mechanisms as direct agent execution.
+There is no workflow-specific work lifecycle or parallel Task reconciler.
 
-```text
-task reconciler -> selected agent's workflow
-App task        -> bounded workflow capability
-workflow        -> ctx.workflows.run(name, input)
-model tool      -> explicit workflow invocation
+The responsible agent chooses a method from its scoped catalog using judgment.
+Descriptions support discovery; they do not trigger code by fuzzy matching.
+An App may explicitly bind an established procedure when its input promises
+that procedure. General assignments do not need a new public input kind for
+each workflow. Procedure parameters belong to the workflow invocation; the
+owning Task remains authoritative for the desired outcome and acceptance.
+
+The model tool lists and invokes the selected agent's catalog:
+
+```ts
+workflow({ action: "list" });
+workflow({ action: "run", name: "implement-and-verify", input: {
+  objective: "Update the parser", maxIterations: 2,
+} });
 ```
 
-An App schedule, fact subscription, observer, or metric cannot directly launch
-a workflow. It first creates the appropriate App request or persisted task
-intent; the App task then decides whether a workflow is required.
+The legacy `task` string remains an alternative input for existing callers;
+passing both `input` and `task` is an error. Nested workflows use
+`ctx.workflows.run(name, input)`. Neither interface permits selecting another
+App's private workflow catalog. Adding a workflow normally changes only its
+owning agent's files and guidance.
 
-Descriptions aid discovery but never trigger code by fuzzy matching.
+Agent-selected and Task-bound workflows receive the same exact Host-supplied
+Task binding, reconciliation snapshot, scoped reads, event publication,
+workspace and pinned agent definitions. The runtime resolves the current caller
+by session identity, never by the latest session with the same agent name.
+Invocation cannot broaden a caller's tool policy or execution deadline.
+The workflow returns execution evidence to its caller; only the owning Task's
+accepted settlement changes Task state or consumes input.
 
-## Synchronous bounded execution
+An App schedule, subscription or observer first enters through a declared App
+input or Task trigger. Publishing a fact does not directly launch a workflow.
 
-Synchronous describes the control contract, not the absence of JavaScript
-`await`: each declared step finishes before dependent code continues, and the
-caller receives one terminal result from the run.
+## Awaited execution and durable waiting
 
-The host applies one finite deadline to the whole workflow attempt, including
-code between agent calls. A workflow that stalls before or after a model step
-cannot hold App/task capacity forever. Deadline expiry is execution failure,
-not domain judgment.
+`await` expresses a dependency inside an active attempt: the next step needs
+this result. It suspends the calling function, not event admission or unrelated
+Tasks. The Host can receive feedback while an agent or workflow awaits a helper.
+A JavaScript promise is not durable state or a restartable continuation.
 
-Retries inside a workflow must be bounded and must use changed evidence. A
-workflow cannot recursively re-enter itself with the same input and state. Each
-iteration must implement/verify a change, establish a durable wait, return a
-result, or fail honestly.
+Use an awaited tool, specialist or nested workflow for bounded work that belongs
+inside the current attempt. Independent work and external waits retain their
+caller correlation through the existing Task/dependency/Condition mechanism.
+When no useful independent work remains, return a meaningful wait. Work lifetime
+and ownership determine this choice; whether code is called an agent or workflow
+does not. Do not add a second queue, subscription protocol or recovery service.
 
-Good in-run waits are bounded operations such as:
+The Host applies one finite deadline to the whole workflow execution, including
+code between calls, capped by the caller's remaining allowance. Cancellation
+propagates to nested agents and cooperative I/O. Helpers are drained before the
+attempt releases execution capacity. Arbitrary synchronous JavaScript cannot be
+preempted; long I/O must accept cancellation or provide bounded observation
+opportunities. Cancellation does not undo completed external effects.
 
-- an awaited agent call with host timeout;
-- an imported deterministic helper or provider request;
-- a nested workflow returning `done` or `blocked`; or
-- a bounded retry with explicit limit and terminal condition.
+### Input during execution
+
+New input is saved durably against its owning Task. Shared managed-agent execution
+supplies live hints to active agents, including workflow specialists; workflows
+may optionally observe the same input with `ctx.events.onEvent`. Delivery does
+not acknowledge input, expand authority, or prove that a correction was followed.
+Accepted Task settlement owns consumption. Missed live hints remain available
+for reconciliation; callbacks are a responsiveness aid, not durable state.
+
+The active specialist judges updates within its assignment. The caller judges
+whether the overall procedure still fits when control returns. Do not launch a
+second executor for the same Task simply because input arrived. A correction
+requiring a different procedure can return control at a safe boundary; explicit
+cancellation stops supported ongoing operations through the common mechanism.
+
+New input requires reassessment, not deletion of completed work. Retained edits,
+reports and execution receipts remain available as evidence. Their validity for
+the latest requirement is a new judgment. After restart, the Task retries using
+current input and retained evidence; it does not revive a historical workflow's
+JavaScript stack or replay a prior attempt's authority. Task-bound historical
+runs are inspectable but cannot be resumed through the model tool.
+
+Retries inside a workflow remain bounded and evidence-based. Each iteration must
+make progress, establish a durable wait, return a result or fail honestly. Do not
+recursively re-enter the same procedure with identical input and evidence.
 
 ### Repair within an attempt
 

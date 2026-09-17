@@ -64,9 +64,36 @@ describe("canonical May conversation App", () => {
     });
   });
 
+  test("method selection does not add a development input or bound workflow", () => {
+    const input = {
+      kind: "goal",
+      data: {
+        outcome: "Implement a change",
+        acceptance: ["Verified"],
+        verify: ["bun", "test"],
+      },
+    };
+    expect(Check(app.inputSchema, input)).toBe(true);
+    expect(Check(app.inputSchema, { ...input, kind: "development" })).toBe(
+      false,
+    );
+    const attached = taskForMayInput({
+      id: "code",
+      source: { kind: "human", id: "operator" },
+      input,
+    });
+    expect(attached).toMatchObject({
+      kind: "desired",
+      intent: { agent: "may", input },
+    });
+    expect(
+      attached.kind === "desired" && attached.intent.workflow,
+    ).toBeUndefined();
+  });
+
   test("keeps common authority shared and separates domain Task guidance", () => {
     const common = readFileSync(
-      new URL("../../agents/may/AGENTS.md", import.meta.url),
+      new URL("./agents/may/AGENTS.md", import.meta.url),
       "utf8",
     );
     expect(common).toContain("Never bypass missing");

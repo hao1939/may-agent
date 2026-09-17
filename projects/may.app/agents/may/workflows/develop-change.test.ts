@@ -52,7 +52,7 @@ function trial() {
   git(repo, "commit", "-m", "baseline");
   git(repo, "worktree", "add", "-b", "task/development", worktree);
   const spec = (expected: number) => ({
-    kind: "development",
+    kind: "goal",
     data: {
       outcome: `Return ${expected}`,
       acceptance: [`The function returns ${expected}`],
@@ -101,7 +101,7 @@ function trial() {
   };
   const context = (signal = new AbortController().signal): WorkflowContext =>
     createTestAppWorkflowContext({
-      input: current.input,
+      input: { verify: (current.input as any).data.verify },
       signal,
       reconciliation: {
         appId: "may",
@@ -187,7 +187,7 @@ function trial() {
 }
 
 describe("development workflow using real Git and verification", () => {
-  test("admission selects the App-local workflow through the existing Task route", () => {
+  test("admission selects May to judge the method inside an ordinary Task", () => {
     const t = trial();
     const admitted = taskForMayInput({
       id: "request",
@@ -197,8 +197,7 @@ describe("development workflow using real Git and verification", () => {
     expect(admitted).toMatchObject({
       kind: "desired",
       intent: {
-        agent: "may-tech-lead",
-        workflow: "develop-change",
+        agent: "may",
         input: t.current.input,
       },
     });
@@ -461,6 +460,55 @@ describe("development workflow using real Git and verification", () => {
       "design",
       "review",
     ]);
+  });
+
+  test("informational input retains reports and permits judgment to reuse exact verification", async () => {
+    const t = trial();
+    await t.run();
+    const reports = t.evidence().reports.map((r: any) => r.report.path);
+    const ctx = t.context();
+    ctx.reconciliation!.events.items.push({
+      eventId: 91,
+      observedAt: "2026-09-17T00:00:00Z",
+      event: {
+        type: "review.comment",
+        data: { text: "Please summarize the existing evidence" },
+      },
+    });
+    t.setJudgment((stage) =>
+      stage === "design"
+        ? {
+            decision: "review",
+            reason: "The current checks still fit",
+            design: "Review retained work",
+          }
+        : {
+            decision: "pass",
+            reason: "Existing evidence is sufficient",
+            commit: t.git(t.worktree, "rev-parse", "HEAD"),
+            findings: [],
+          },
+    );
+    const before = t.prompts.length;
+    expect((await t.run(ctx)).state).toBe("converged");
+    for (const report of reports) expect(t.prompts[before]).toContain(report);
+    expect(t.calls.slice(before).map((c) => c.stage)).toEqual([
+      "design",
+      "review",
+    ]);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+  });
+
+  test("changed procedure checks cannot reuse a passing receipt", async () => {
+    const t = trial();
+    await t.run();
+    const reports = t.evidence().reports.map((r: any) => r.report.path);
+    const ctx = t.context();
+    ctx.input = { verify: ["node", "-e", "process.exit(1)"] };
+    const before = t.prompts.length;
+    expect((await t.run(ctx)).state).toBe("incomplete");
+    for (const report of reports) expect(t.prompts[before]).toContain(report);
+    expect(t.evidence().verified).toBeUndefined();
   });
 
   test("clarification returns ordinary caller feedback, without inventing a passive wait", async () => {

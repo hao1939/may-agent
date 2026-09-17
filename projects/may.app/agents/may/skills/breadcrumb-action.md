@@ -1,9 +1,11 @@
 # Skill: Act on Red Metrics Before Other Work
 
 ## The Problem
+
 When your heartbeat prompt shows metrics with "⚠️ BELOW TARGET", you often skip investigating them and jump to project work or inbox processing. This leaves red metrics unaddressed.
 
 ## The Rule
+
 **Red metrics come FIRST in your heartbeat — before projects, before inbox, before anything else.**
 
 ## Required Steps When You See BELOW TARGET
@@ -28,4 +30,5 @@ When your heartbeat prompt shows metrics with "⚠️ BELOW TARGET", you often s
 ## In Your finish() Summary
 
 Always mention what you did about red metrics. Example:
+
 > "Investigated handler.fires-per-hour (12 vs target 30) — ramping up naturally after restart, no action needed."

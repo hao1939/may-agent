@@ -7,7 +7,7 @@ import {
   type WorkflowContext,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import { readDevelopmentInput } from "../../../development.js";
+import { readDevelopmentOptions } from "./lib/input.js";
 import {
   candidate,
   command,
@@ -26,7 +26,7 @@ import {
 
 export const name = "develop-change";
 export const description =
-  "Reconcile one local change through agent judgment, implementation, verification and independent review.";
+  "Produce a locally committed, verified and reviewed code or documentation candidate using Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for May to judge; does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
 // Explanations are archived; code bounds the aggregate Task result.
@@ -207,11 +207,25 @@ export async function execute(ctx: WorkflowContext) {
         "Task changed before this attempt; reconcile the current requirement",
       );
     }
-    const input = readDevelopmentInput(current.input);
+    // Retained Tasks may still carry the retired development envelope. New
+    // callers supply only procedure options; the Task remains the requirement.
+    const legacy = current.input as {
+      kind?: string;
+      data?: { verify?: unknown; constraints?: string[] };
+    };
+    const input = readDevelopmentOptions(
+      legacy?.kind === "development"
+        ? { verify: legacy.data?.verify }
+        : ctx.input,
+    );
+    const constraints =
+      (current.input as { data?: { constraints?: string[] } })?.data
+        ?.constraints ?? [];
     const requirementKey = digest({
       outcome: current.outcome,
       acceptance: current.acceptance,
-      input,
+      input: current.input,
+      verify: input.verify,
     });
     const inputKey = digest(rec.events.items);
     // Task-local output must be excluded from source acceptance. Do not edit
@@ -248,18 +262,25 @@ export async function execute(ctx: WorkflowContext) {
         const recovered: unknown = JSON.parse(
           await archive.read(previous.evidence),
         );
-        if (
-          !Check(savedSchema, recovered) ||
-          recovered.taskId !== rec.taskId ||
-          recovered.requirementKey !== requirementKey ||
-          (rec.events.items.length > 0 && recovered.inputKey !== inputKey)
-        )
+        if (!Check(savedSchema, recovered) || recovered.taskId !== rec.taskId)
           continue;
         for (const report of currentReports(recovered.reports)) {
           await archive.read(report.record);
           await archive.read(report.report);
         }
-        saved = structuredClone(recovered);
+        saved = {
+          ...fresh(),
+          reports: structuredClone(currentReports(recovered.reports)),
+        };
+        if (recovered.requirementKey === requirementKey) {
+          saved = { ...structuredClone(recovered), inputKey };
+          if (rec.events.items.length > 0 && recovered.inputKey !== inputKey) {
+            // Keep receipts visible. New input needs judgment, not automatic
+            // deletion of earlier work or blind replay of an old approval.
+            delete saved.design;
+            delete saved.review;
+          }
+        }
         break;
       } catch (error) {
         ctx.log.info(
@@ -278,6 +299,7 @@ export async function execute(ctx: WorkflowContext) {
           outcome: latest.outcome,
           acceptance: latest.acceptance,
           input: latest.input,
+          verify: input.verify,
         }) !== requirementKey
       ) {
         throw new Error(
@@ -303,8 +325,8 @@ export async function execute(ctx: WorkflowContext) {
         `Development step: ${stage}. Worktree: ${root}.`,
         `Current requirement: ${current.outcome}`,
         `Acceptance: ${JSON.stringify(current.acceptance)}`,
-        `Constraints: ${JSON.stringify(input.data.constraints ?? [])}`,
-        `Verification argv: ${JSON.stringify(input.data.verify)}`,
+        `Constraints: ${JSON.stringify(constraints)}`,
+        `Verification argv: ${JSON.stringify(input.verify)}`,
         `Candidate: ${JSON.stringify(value)}`,
         `Previous judgments (previews; read reports for full explanations): ${JSON.stringify(
           {
@@ -427,11 +449,7 @@ export async function execute(ctx: WorkflowContext) {
       await ensureCurrent();
       if (!saved.verified || !sameCandidate(saved.verified, value)) {
         ctx.log.info(`Verifying candidate ${value.commit}`);
-        const receipt = await commandReceipt(
-          root,
-          input.data.verify,
-          ctx.signal,
-        );
+        const receipt = await commandReceipt(root, input.verify, ctx.signal);
         let after: Candidate | undefined;
         let failure = receipt.error;
         try {

@@ -11,6 +11,7 @@ No exceptions. Even if you "just wrote" the file. Even if you "know" what's in i
 ## Trigger
 
 Before calling `edit(path, ...)` — ask yourself: "Did I `read(path)` in this session?"
+
 - If YES → proceed with edit
 - If NO → `read(path)` first, THEN edit
 
@@ -30,6 +31,7 @@ Before calling `edit(path, ...)` — ask yourself: "Did I `read(path)` in this s
 ## Files You Edit Most (high-risk)
 
 These files ALWAYS need a read before edit:
+
 - `agents/may/workspace/dispatch-board.md` — changes every heartbeat
 - `agents/may/workspace/EXP-*.md` — experiment logs
 - `shared/knowledge/experiments/*/design.md` — shared experiment files

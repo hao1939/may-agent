@@ -129,3 +129,12 @@ duplicate a clearer owner or no longer improve outcomes.
 
 See [evolution.md](evolution.md) for promotion and retirement and
 [work-model.md](work-model.md) for the complete work loop.
+
+## Composition preserves execution rules
+
+A workflow is orchestration of agent operations. It uses the same ownership,
+input observation, permission, cancellation and recovery rules as those
+operations. Code handles predictable execution and retains evidence; agents
+choose methods and judge changing requirements. `await` expresses a dependency
+within an active attempt; durable events and Task state coordinate work across
+attempts. See [Workflow execution](../2a-design/workflows.md#invocation-and-ownership).
