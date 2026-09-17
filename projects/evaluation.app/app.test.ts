@@ -69,6 +69,9 @@ describe("canonical evaluation App", () => {
       id: "evaluation",
       version: 1,
       agent: "evaluator",
+      description: expect.stringContaining(
+        "read-reports with operation list/read",
+      ),
       tasks: { maxConcurrent: 1 },
     });
     expect(app).not.toHaveProperty("inbox");

@@ -36,11 +36,20 @@ task-outcomes/<app>/task-outcome-v2/<task>-<evidence-hash>.published.json
 
 The publication marker is written only after `evaluation.task_report_published` is accepted. Listing and reading require that marker and revalidate the JSON identity, both recorded SHA-256 hashes, and deterministic Markdown content. A failed publication therefore leaves staged files undiscoverable; retry can publish the same validated bytes without another model call.
 
-Reports are evidence, not commands or issue state. A reader should distinguish report publication, owner acknowledgment, a fix claim, and independent recheck. Reading or listing never starts another evaluation.
+Reports are evidence, not commands or issue state. A reader should distinguish report creation time from the dates of the work it covers, and distinguish publication, owner acknowledgment, a fix claim, and independent recheck. Reading or listing never starts another evaluation.
+
+The installed App contract exposes the `read-reports` input directly. These inputs use the ordinary Task mechanism and make no evaluator/model call:
+
+```json
+{"kind":"read-reports","data":{"operation":"list","limit":5}}
+{"kind":"read-reports","data":{"operation":"read","path":"task-outcomes/scout/task-outcome-v2/<listed-report>.md"}}
+```
+
+The equivalent named actions are `list-evaluation-reports` and `read-evaluation-report`. List first, then pass a listed relative path to read. A read returns a bounded preview plus byte count, SHA-256, canonical absolute artifact path, and continuation offset/path when full content is larger than the result budget. The canonical durable root is `${EVALUATION_REPORT_ROOT:-${MAY_PERSIST_DIR:-/app/.state}/evaluation/reports}`; deployment may override it with `EVALUATION_REPORT_ROOT`. Treat filesystem paths as paths, not invented web URLs; provide clickable references only where the caller's interface supports them.
 
 ## Selection and cost
 
-When explicitly enabled, the selector uses bounded `apps.list` and paginated `app.tasks.list`, excludes Evaluation, and emits at most one ordinary review request per wake. App, cursor, and within-page item offset are persisted as ordinary Task result facts so an unavailable or repeatedly unreviewed first item cannot starve later items. `maxConcurrent: 1` keeps initial rollout serialized.
+When explicitly enabled, the selector discovers external Apps with bounded `apps.list`, then reads recently updated Task projections with public `tasks.list(appId, includeDone: true)`. It considers an initially configurable seven-day window, reads at most two small pages per visited App by default, rotates Apps after every selection, excludes Evaluation, and emits at most one ordinary review request per wake. Bounded versioned navigation facts in the selector Task remember the next App and a short SHA-256 digest of the last attempted Task identity per App; full Task identities remain in the emitted request, and legacy `app.tasks.list` cursor facts reset neutrally. Exact `app.task.get` and `task.get` identity/provenance checks still occur before semantic review. Old outcomes remain explicitly reviewable. `maxConcurrent: 1` keeps initial rollout serialized.
 
 ## Public actions
 

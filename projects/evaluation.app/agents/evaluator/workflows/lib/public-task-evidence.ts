@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 const ALLOWED_COMMANDS = new Set([
   "apps.list",
   "app.tasks.list",
+  "tasks.list",
   "app.task.get",
   "task.get",
   "event.get",
@@ -19,6 +20,11 @@ export type PublicTaskEvidenceProvider = {
   listApps(limit?: number): Promise<Record<string, unknown>[]>;
   listTasks(appId: string, limit?: number): Promise<Record<string, unknown>[]>;
   listTaskPage(
+    appId: string,
+    limit?: number,
+    cursor?: string,
+  ): Promise<{ items: Record<string, unknown>[]; nextCursor: string }>;
+  listRecentTaskPage(
     appId: string,
     limit?: number,
     cursor?: string,
@@ -214,6 +220,30 @@ export function createPublicTaskEvidenceProvider(
         items: items.map(object),
         nextCursor: text(object(envelope).nextCursor ?? response.nextCursor),
       };
+    },
+    async listRecentTaskPage(appId, limit = 50, cursor = "") {
+      const response = await command({
+        type: "tasks.list",
+        appId,
+        includeDone: true,
+        limit: boundedLimit(limit),
+        ...(cursor ? { cursor } : {}),
+      });
+      if (response.command !== "tasks.list")
+        throw new Error("tasks.list response identity mismatch");
+      const envelope = object(response.tasks);
+      if (!Array.isArray(envelope.items))
+        throw new Error("tasks.list response has no items array");
+      const items = envelope.items.map(object);
+      for (const item of items) {
+        assertIdentity(item.appId, appId, "tasks.list item appId");
+        if (!text(item.taskId))
+          throw new Error("tasks.list item has no taskId");
+        const updatedAt = Number(item.updatedAt);
+        if (!Number.isFinite(updatedAt) || updatedAt <= 0)
+          throw new Error("tasks.list item has no usable updatedAt");
+      }
+      return { items, nextCursor: text(envelope.nextCursor) };
     },
     async listTasks(appId, limit = 50) {
       const maximum = boundedLimit(limit);

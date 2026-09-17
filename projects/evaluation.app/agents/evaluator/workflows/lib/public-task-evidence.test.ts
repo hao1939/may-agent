@@ -117,6 +117,47 @@ describe("public Task evidence", () => {
     expect(await provider.getEvent(42)).toEqual({ id: 42, type: "sample" });
   });
 
+  test("reads the public recent-Task envelope without inventing a top-level App identity", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const provider = createPublicTaskEvidenceProvider(async (command) => {
+      seen.push(command);
+      return {
+        type: "ok",
+        command: "tasks.list",
+        tasks: {
+          items: [
+            {
+              appId: "sample",
+              taskId: "goal/recent",
+              status: "done",
+              updatedAt: 42,
+            },
+          ],
+          nextCursor: "next-page",
+        },
+      };
+    });
+    expect(await provider.listRecentTaskPage("sample", 20)).toEqual({
+      items: [
+        {
+          appId: "sample",
+          taskId: "goal/recent",
+          status: "done",
+          updatedAt: 42,
+        },
+      ],
+      nextCursor: "next-page",
+    });
+    expect(seen).toEqual([
+      {
+        type: "tasks.list",
+        appId: "sample",
+        includeDone: true,
+        limit: 20,
+      },
+    ]);
+  });
+
   test("rejects malformed list envelopes instead of reporting zero coverage", async () => {
     const provider = createPublicTaskEvidenceProvider(async () => ({
       type: "ok",
@@ -124,6 +165,17 @@ describe("public Task evidence", () => {
       apps: {},
     }));
     expect(provider.listApps()).rejects.toThrow("no items array");
+
+    const recent = createPublicTaskEvidenceProvider(async () => ({
+      type: "ok",
+      command: "tasks.list",
+      tasks: {
+        items: [{ appId: "other", taskId: "goal/one", updatedAt: 1 }],
+      },
+    }));
+    expect(recent.listRecentTaskPage("sample")).rejects.toThrow(
+      "item appId identity mismatch",
+    );
   });
 
   test("combines real public envelopes without losing creator or original input", async () => {
