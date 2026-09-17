@@ -229,6 +229,10 @@ it("no-save performs the assessment without creating archive files", async () =>
     "response",
     expect.stringContaining("No assessment was archived"),
   );
+  expect(result.output).toHaveProperty(
+    "response",
+    expect.stringContaining(draft.assessment),
+  );
 });
 
 it("an aborted attempt cannot save a late model result", async () => {
@@ -292,6 +296,34 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
   expect(assessmentRecord(root, sourceUrl).previous).toContain(
     draft.assessment,
   );
+});
+
+it("preserves the current Host-normalized blocked partial draft", async () => {
+  const root = temporary();
+  const ctx = context(root, (async () => ({
+    id: "s_normalized_partial",
+    kind: "agent",
+    status: "blocked",
+    summary: "A usable draft needs repository evidence.",
+    output: { ...draft, complete: false },
+    facts: {
+      status: "partial",
+      next_steps: "Read implementation and tests.",
+    },
+  })) as WorkflowContext["agents"]["call"]);
+  const result = await executeSourceAssessment(ctx, async () => packet);
+  const record = assessmentRecord(root, sourceUrl);
+  expect(result.output).toMatchObject({
+    state: "incomplete",
+    facts: expect.arrayContaining([
+      "execution:s_normalized_partial",
+      "execution-status:blocked",
+      expect.stringContaining("Read implementation and tests."),
+      `output:${record.path}`,
+    ]),
+    response: expect.stringContaining(draft.assessment),
+  });
+  expect(record.previous).toContain(draft.assessment);
 });
 
 it.each([false, true])(
@@ -372,6 +404,18 @@ it("a save failure never produces a successful result or a claimed saved path", 
   expect(result.output).toHaveProperty(
     "facts",
     expect.not.arrayContaining([`output:${record.path}`]),
+  );
+  expect(result.output).toHaveProperty(
+    "facts",
+    expect.arrayContaining([expect.stringContaining("archive-failure:")]),
+  );
+  expect(result.output).toHaveProperty(
+    "response",
+    expect.stringContaining(draft.assessment),
+  );
+  expect(result.output).toHaveProperty(
+    "response",
+    expect.stringContaining("Assessment archive failed"),
   );
 });
 

@@ -51,7 +51,10 @@ function stateWith(
 describe("latest accepted Scout source output collector", () => {
   it("refuses to sample the retired live path implicitly", async () => {
     const child = Bun.spawn(
-      [process.execPath, new URL("./accepted-source-outputs.ts", import.meta.url).pathname],
+      [
+        process.execPath,
+        new URL("./accepted-source-outputs.ts", import.meta.url).pathname,
+      ],
       { stdout: "pipe", stderr: "pipe" },
     );
     const [exitCode, stdout, stderr] = await Promise.all([

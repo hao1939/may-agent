@@ -1,7 +1,20 @@
 import { describe, expect, it } from "bun:test";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { admitExperienceReviewResult, execute } from "./knowledge-planner";
+import {
+  admitExperienceReviewResult,
+  execute,
+  isExperienceReview,
+} from "./knowledge-planner";
 
 describe("Scout owner reconciliation boundary", () => {
   it.each([
@@ -208,6 +221,10 @@ describe("Scout owner reconciliation boundary", () => {
     expect(prompt).toContain(
       "file-level mention elsewhere is not a substitute",
     );
+    expect(prompt).toContain(
+      "every path previously returned in Task/workflow evidence",
+    );
+    expect(prompt).toContain("keeping the exact delivered path readable");
     const startList = prompt.slice(
       prompt.indexOf("Start by reading:"),
       prompt.indexOf("Valid durable outcomes:"),
@@ -258,6 +275,71 @@ describe("Scout owner reconciliation boundary", () => {
       appId: "scout-knowledge-lib",
       input: { kind: "goal", data: { outcome: "Repair library navigation" } },
     });
+  });
+
+  it("keeps an already-published path readable during a controlled maintenance pass", async () => {
+    const root = mkdtempSync(join(tmpdir(), "scout-published-path-"));
+    const appRoot = join(root, "projects", "scout-knowledge-lib.app");
+    const projectRoot = join(root, "projects", "scout-knowledge-lib");
+    const published = join(
+      projectRoot,
+      "knowledge",
+      "findings",
+      "2026-09-16-source-assessment-59968e7b4159.md",
+    );
+    mkdirSync(join(appRoot, "agents", "scout", "workspace", "digest"), {
+      recursive: true,
+    });
+    mkdirSync(join(projectRoot, "knowledge", "findings"), { recursive: true });
+    writeFileSync(published, "# Old title\n\nSource-grounded assessment.\n");
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "library-maintenance",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Improve assessment discoverability",
+            acceptance: ["Published references remain readable"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: {
+            appRoot,
+            projectRoot,
+            root,
+            output: join(root, "output"),
+          },
+          callAgent: (async (_agent, prompt) => {
+            expect(prompt).toContain("Do not move or rename that file");
+            writeFileSync(
+              published,
+              "# Descriptive title\n\nSource-grounded assessment.\n",
+            );
+            return {
+              id: "s_maintenance",
+              kind: "agent",
+              status: "done",
+              summary: "Improved title in place.",
+              output: {
+                state: "converged",
+                summary: "Improved title in place.",
+                facts: [`preserved:${published}`],
+                actions: [],
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+        }),
+      );
+      expect(result.status).toBe("done");
+      expect(readFileSync(published, "utf8")).toContain("# Descriptive title");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("keeps repeated maintenance emissions byte-stable and gives changed facts distinct identities", async () => {
@@ -379,6 +461,63 @@ describe("Scout owner reconciliation boundary", () => {
         "requires repair rather than immediate retry",
       ),
     });
+  });
+
+  it("recognizes wrapped experience-review intent anywhere in a mixed admitted batch", () => {
+    const ctx = {
+      reconciliation: {
+        events: {
+          items: [
+            {
+              observedAt: "2026-09-17T00:00:00.000Z",
+              event: {
+                type: "project.comment.created",
+                data: { reason: "comment" },
+              },
+            },
+            {
+              observedAt: "2026-09-17T00:00:01.000Z",
+              event: {
+                type: "app.task.requested",
+                data: {
+                  request: {
+                    input: {
+                      kind: "owner-review",
+                      data: { reason: "experience-review" },
+                    },
+                  },
+                },
+              },
+            },
+            {
+              observedAt: "2026-09-17T00:00:02.000Z",
+              event: {
+                type: "project.comment.created",
+                data: { reason: "later" },
+              },
+            },
+          ],
+        },
+      },
+    } as WorkflowContext;
+    expect(isExperienceReview(ctx)).toBe(true);
+
+    const arbitraryNestedReason = {
+      reconciliation: {
+        events: {
+          items: [
+            {
+              observedAt: "2026-09-17T00:00:00.000Z",
+              event: {
+                type: "project.comment.created",
+                data: { arbitrary: { reason: "experience-review" } },
+              },
+            },
+          ],
+        },
+      },
+    } as WorkflowContext;
+    expect(isExperienceReview(arbitraryNestedReason)).toBe(false);
   });
 
   it("prepares bounded experience evidence before the owner generation", async () => {

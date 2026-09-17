@@ -42,12 +42,27 @@ export function admitExperienceReviewResult(
   return { ok: true, result: admitted.result };
 }
 
-function isExperienceReview(ctx: WorkflowContext): boolean {
-  const data = ctx.reconciliation?.events.items.at(-1)?.event.data;
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/** Read only the two admitted owner-request shapes; do not recursively infer intent. */
+export function isExperienceReview(ctx: WorkflowContext): boolean {
   return Boolean(
-    data &&
-    typeof data === "object" &&
-    (data as Record<string, unknown>).reason === "experience-review",
+    ctx.reconciliation?.events.items.some(({ event }) => {
+      const data = record(event.data);
+      if (data.reason === "experience-review") return true;
+      if (event.type !== "app.task.requested") return false;
+      const request = record(data.request);
+      const input = record(request.input);
+      const inputData = record(input.data);
+      return (
+        input.kind === "owner-review" &&
+        inputData.reason === "experience-review"
+      );
+    }),
   );
 }
 
@@ -130,6 +145,9 @@ Health-signal closure rules:
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.
+- Treat every path previously returned in Task/workflow evidence as a published
+  interface. Do not move or rename that file during maintenance. Improve its
+  title or add index navigation while keeping the exact delivered path readable.
 - today.md is a mutable accumulator, not an archive. The daily workflow preserves
   a snapshot and clears the accumulator after recording its handoff to May.
   Before repairing missing digest content, read the daily-digest Task and its retained snapshot.

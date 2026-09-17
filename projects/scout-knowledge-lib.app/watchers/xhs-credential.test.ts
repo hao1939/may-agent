@@ -47,7 +47,7 @@ describe("XHS credential watcher", () => {
     ]);
   });
 
-  it("publishes one unavailable transition for the App owner route", () => {
+  it("publishes one unavailable transition for source-task observation", () => {
     const status = {
       credential: "xhs" as const,
       state: "unavailable" as const,

@@ -21,6 +21,8 @@ delivery to the independently runnable Scout knowledge-library project in
   live reads, and the boundary with retained historical JSON files.
 - [`docs/herdr-supervisor.md`](docs/herdr-supervisor.md) explains which Scout
   responsibilities fit Herdr goals, how to run them, and how to recover them.
+- [`docs/protected-knowledge-edit-pilot.md`](docs/protected-knowledge-edit-pilot.md)
+  defines immutable published paths and the bounded protected-edit pilot gap.
 - [`herdr/goals/library-health-pilot.goal.json`](herdr/goals/library-health-pilot.goal.json)
   is a safe, portable first contract for validating the supervised workflow.
 - [`design/archive/`](design/archive/) retains completed proposals and rollout

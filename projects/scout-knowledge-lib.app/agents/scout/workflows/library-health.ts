@@ -59,6 +59,8 @@ export type WakeDecision = {
 
 export type LibraryHealthPacket = {
   schema_version: 2;
+  /** Stable identity of the admitted Task wake; absent on historical packets. */
+  observation_id?: string;
   generated_at: string;
   role: "observer";
   project: string;
@@ -514,9 +516,15 @@ export function buildLibraryHealthPacket(input: {
   appDir: string;
   projectDir: string;
   now?: number;
+  observationId?: string;
 }): LibraryHealthPacket {
   const now = input.now ?? Date.now();
-  const history = readHistory(input.appDir);
+  // A retry after publication/history append must reconstruct the first
+  // attempt, not treat its own packet as prior observation history.
+  const history = readHistory(input.appDir).filter(
+    (packet) =>
+      !input.observationId || packet.observation_id !== input.observationId,
+  );
   const knowledgeDir = join(input.projectDir, "knowledge");
   const reportsDir = join(input.projectDir, "reports");
   const knowledgeFiles = listMarkdownFiles(knowledgeDir);
@@ -713,6 +721,7 @@ export function buildLibraryHealthPacket(input: {
 
   return {
     schema_version: 2,
+    ...(input.observationId ? { observation_id: input.observationId } : {}),
     generated_at: new Date(now).toISOString(),
     role: "observer",
     project: projectId,
@@ -753,6 +762,24 @@ export function acceptedSourceOutputsMetricDefinition() {
     description:
       "Retired because its source command reads the historical JSON Task projection, not live Host state. Retained samples cannot establish current output health. Inspect current source Task evidence through supported Task reads; do not restore the obsolete projection or infer quality from an output count.",
   } as const;
+}
+
+function packetAlreadyRecorded(appDir: string, observationId: string): boolean {
+  return readHistory(appDir).some(
+    (packet) => packet.observation_id === observationId,
+  );
+}
+
+function retainedPacket(value: unknown): LibraryHealthPacket | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return;
+  const packet = value as Partial<LibraryHealthPacket>;
+  return packet.schema_version === 2 &&
+    typeof packet.generated_at === "string" &&
+    Array.isArray(packet.facts) &&
+    Array.isArray(packet.wake_decisions) &&
+    Array.isArray(packet.wake_signals)
+    ? (packet as LibraryHealthPacket)
+    : undefined;
 }
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
@@ -810,25 +837,54 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       measuredBy: `workflow:${name}`,
     },
   );
-  const packet = buildLibraryHealthPacket({ appDir, projectDir });
+  const localKey = taskEmissionKey(ctx, "library-health-observed");
+  const retained = await ctx.events.read(
+    "project.library_health.observed",
+    localKey,
+  );
   const packetPath = join(appDir, ".state", packetFile);
+  const publishedPacket = retainedPacket(retained?.data.packet);
+  if (retained && !publishedPacket) {
+    const summary =
+      "Library health publication was retained, but its legacy payload has no packet snapshot; history was not reconstructed from changed files.";
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      facts: [
+        `publication:project.library_health.observed:${localKey}`,
+        "history:legacy-publication-packet-unavailable",
+      ],
+      actions: [],
+    });
+  }
+  const packet =
+    publishedPacket ??
+    buildLibraryHealthPacket({
+      appDir,
+      projectDir,
+      observationId: localKey,
+    });
+  const publication = retained?.data ?? {
+    project: projectId,
+    packetPath,
+    factCount: packet.facts.length,
+    wakeCount: packet.wake_signals.length,
+    wakeSignals: packet.wake_signals,
+    packet,
+  };
 
-  await ctx.events.emit({
-    type: "project.library_health.observed",
-    localKey: taskEmissionKey(ctx, "library-health-observed"),
-    target: { appId: projectId, project: projectId },
-    data: {
-      project: projectId,
-      packetPath,
-      factCount: packet.facts.length,
-      wakeCount: packet.wake_signals.length,
-      wakeSignals: packet.wake_signals,
-    },
-  });
-  // The event carries the owner facts. Start reminder history only after the
-  // Host accepts publication; a failed emit must leave those facts due.
-  // A crash before this append may repeat a signal, but cannot silence it.
-  writePacket(packetPath, packet);
+  if (!retained) {
+    await ctx.events.emit({
+      type: "project.library_health.observed",
+      localKey,
+      target: { appId: projectId, project: projectId },
+      data: publication,
+    });
+  }
+  // The retained publication is authoritative across a lost acknowledgement:
+  // filesystem changes cannot alter this wake's key/payload. Record its packet
+  // once after publication so later, genuinely new ticks see reminder history.
+  if (!packetAlreadyRecorded(appDir, localKey)) writePacket(packetPath, packet);
 
   const summary =
     packet.wake_signals.length > 0

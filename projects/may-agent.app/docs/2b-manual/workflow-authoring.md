@@ -342,6 +342,9 @@ For a repository-changing workflow:
    A workflow may prove one without proving the next. No code path or prompt
    may infer merge/deploy authority from a passing command.
 6. Return exact branch/commit, checks, PR when applicable, and the next action.
+   A returned artifact path is a published interface: later maintenance keeps
+   that exact path readable (or retains an immutable snapshot there) rather
+   than silently renaming it. Improve discoverability through titles and indexes.
    Wait through a Task Condition only when no independent authorized work can
    advance. External observation should free the worker from repetitive polling.
 7. Confirm integration before cleanup; retain unfinished changes and evidence.

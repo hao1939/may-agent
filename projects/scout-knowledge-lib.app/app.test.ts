@@ -486,6 +486,22 @@ describe("Scout task reconciliation", () => {
     ).toBe(false);
   });
 
+  it("keeps credential observations with the waiting source Task", () => {
+    expect(
+      app.subscriptions?.some(
+        ({ id, event }) =>
+          id === "xhs-credential-attention" ||
+          (typeof event !== "string" && event.type === "credential.state"),
+      ),
+    ).toBe(false);
+    expect(app.observers).toContainEqual(
+      expect.objectContaining({ id: "xhs-credential", intervalMs: 300_000 }),
+    );
+    // scout-explore records the first unavailable result and waits on the
+    // credential.state Condition. The observer publishes transitions/recovery;
+    // maintenance no longer receives every fresh-observer unavailable event.
+  });
+
   it("translates Scout metric breaches into one addressed owner input", () => {
     const subscription = app.subscriptions?.find(
       ({ id }) => id === "scout-metric-breach",

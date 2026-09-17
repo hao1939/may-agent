@@ -442,21 +442,6 @@ export default defineApp({
       event: { type: "metric.breach" },
       toInput: scoutMetricInput,
     },
-    {
-      id: "xhs-credential-attention",
-      event: { type: "credential.state", project: projectId },
-      toInput(event) {
-        const details = eventDetails(
-          event as unknown as Record<string, unknown>,
-        );
-        return details.credential === "xhs" && details.state === "unavailable"
-          ? scoutInput("owner-review", {
-              reason: "library-health-signal",
-              credential: details,
-            })
-          : null;
-      },
-    },
   ],
   observations: ["project.knowledge.maintained"],
   observers: [xhsCredentialObserver],

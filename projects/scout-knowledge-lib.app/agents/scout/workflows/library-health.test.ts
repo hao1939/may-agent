@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
   appendFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   utimesSync,
   writeFileSync,
@@ -97,6 +99,265 @@ describe("Scout library-health observer", () => {
       }),
     );
     expect(buildLibraryHealthPacket(paths).wake_signals).toEqual([]);
+  });
+
+  it("replays one admitted tick with byte-stable publication and history identity", async () => {
+    const paths = fixture();
+    oversizedNote(paths.projectDir, 801);
+    const emitted: Parameters<
+      ReturnType<typeof createTestAppWorkflowContext>["events"]["emit"]
+    >[0][] = [];
+    const publications = new Map<
+      string,
+      Parameters<
+        ReturnType<typeof createTestAppWorkflowContext>["events"]["emit"]
+      >[0]
+    >();
+    const run = (eventId: number, observedAt: string) =>
+      execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "runtime/library-health-observer",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Observe library health",
+            acceptance: ["Publish one bounded observation"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: {
+              throughEventId: eventId,
+              truncated: false,
+              items: [
+                {
+                  eventId,
+                  observedAt,
+                  event: { type: "project.library_health.tick", data: {} },
+                },
+              ],
+            },
+          },
+          workspace: {
+            appRoot: paths.appDir,
+            projectRoot: paths.projectDir,
+            root: paths.projectDir,
+            output: join(paths.appDir, ".state", "output"),
+          },
+          emit: async (event) => {
+            const key = `${event.type}:${event.localKey}`;
+            const prior = publications.get(key);
+            if (
+              prior &&
+              JSON.stringify(prior.data) !== JSON.stringify(event.data)
+            )
+              throw new Error("same key with different data");
+            publications.set(key, event);
+            emitted.push(event);
+          },
+          readEvent: async (type, localKey) => {
+            const event = publications.get(`${type}:${localKey}`);
+            return event ? { eventId: 1, data: event.data ?? {} } : null;
+          },
+        }),
+      );
+
+    await run(41, "2026-07-20T00:00:00.000Z");
+    // Change the observed filesystem before retrying the same admitted input.
+    writeFileSync(join(paths.projectDir, "knowledge", "README.md"), "");
+    await run(41, "2026-07-20T00:00:00.000Z");
+    expect(emitted).toHaveLength(1);
+    const historyPath = join(
+      paths.appDir,
+      ".state",
+      "library-health-packets.jsonl",
+    );
+    expect(readFileSync(historyPath, "utf8").trim().split("\n")).toHaveLength(
+      1,
+    );
+
+    await run(42, "2026-07-20T06:00:00.000Z");
+    expect(emitted[1]?.localKey).not.toBe(emitted[0]?.localKey);
+    expect(emitted[1]?.data?.wakeCount).toBe(0);
+    expect(readFileSync(historyPath, "utf8").trim().split("\n")).toHaveLength(
+      2,
+    );
+  });
+
+  it("recovers a retained publication after its acknowledgement was lost", async () => {
+    const paths = fixture();
+    oversizedNote(paths.projectDir, 801);
+    let retained: Record<string, unknown> | undefined;
+    let loseAcknowledgement = true;
+    const makeContext = () =>
+      createTestAppWorkflowContext({
+        input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "runtime/library-health-observer",
+          generation: 1,
+          resourceVersion: 1,
+          agent: "scout",
+          outcome: "Observe library health",
+          acceptance: ["Publish one bounded observation"],
+          input: {},
+          children: { live: [], completed: [] },
+          events: {
+            throughEventId: 51,
+            truncated: false,
+            items: [
+              {
+                eventId: 51,
+                observedAt: "2026-07-20T00:00:00.000Z",
+                event: { type: "project.library_health.tick", data: {} },
+              },
+            ],
+          },
+        },
+        workspace: {
+          appRoot: paths.appDir,
+          projectRoot: paths.projectDir,
+          root: paths.projectDir,
+          output: join(paths.appDir, ".state", "output"),
+        },
+        emit: async (event) => {
+          retained = event.data ?? {};
+          if (loseAcknowledgement) {
+            loseAcknowledgement = false;
+            throw new Error("lost acknowledgement");
+          }
+        },
+        readEvent: async () =>
+          retained ? { eventId: 1, data: retained } : null,
+      });
+
+    await expect(execute(makeContext())).rejects.toThrow(
+      "lost acknowledgement",
+    );
+    writeFileSync(join(paths.projectDir, "knowledge", "README.md"), "");
+    expect((await execute(makeContext())).status).toBe("done");
+    const lines = readFileSync(
+      join(paths.appDir, ".state", "library-health-packets.jsonl"),
+      "utf8",
+    )
+      .trim()
+      .split("\n");
+    expect(lines).toHaveLength(1);
+    expect(JSON.parse(lines[0]).wake_signals).toContainEqual(
+      expect.objectContaining({
+        key: "oversized-canonical-note:knowledge/large.md",
+      }),
+    );
+  });
+
+  it("uses the publication key as history identity for wrapped inputs without numeric event ids", async () => {
+    const paths = fixture();
+    const publications = new Map<string, Record<string, unknown>>();
+    const makeContext = () =>
+      createTestAppWorkflowContext({
+        input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "runtime/library-health-observer",
+          generation: 1,
+          resourceVersion: 1,
+          agent: "scout",
+          outcome: "Observe library health",
+          acceptance: ["Publish one bounded observation"],
+          input: {},
+          children: { live: [], completed: [] },
+          events: {
+            truncated: false,
+            items: [
+              {
+                observedAt: "2026-07-20T00:00:00.000Z",
+                event: {
+                  type: "app.task.requested",
+                  data: {
+                    request: { input: { kind: "library-health", data: {} } },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        workspace: {
+          appRoot: paths.appDir,
+          projectRoot: paths.projectDir,
+          root: paths.projectDir,
+          output: join(paths.appDir, ".state", "output"),
+        },
+        emit: async (event) => {
+          publications.set(`${event.type}:${event.localKey}`, event.data ?? {});
+        },
+        readEvent: async (type, localKey) => {
+          const data = publications.get(`${type}:${localKey}`);
+          return data ? { eventId: 1, data } : null;
+        },
+      });
+
+    await execute(makeContext());
+    await execute(makeContext());
+    expect(
+      readFileSync(
+        join(paths.appDir, ".state", "library-health-packets.jsonl"),
+        "utf8",
+      )
+        .trim()
+        .split("\n"),
+    ).toHaveLength(1);
+  });
+
+  it("does not invent history for a retained legacy publication", async () => {
+    const paths = fixture();
+    const result = await execute(
+      createTestAppWorkflowContext({
+        input: {},
+        reconciliation: {
+          appId: "scout-knowledge-lib",
+          taskId: "runtime/library-health-observer",
+          generation: 1,
+          resourceVersion: 1,
+          agent: "scout",
+          outcome: "Observe library health",
+          acceptance: ["Publish one bounded observation"],
+          input: {},
+          children: { live: [], completed: [] },
+          events: { throughEventId: 61, items: [], truncated: false },
+        },
+        workspace: {
+          appRoot: paths.appDir,
+          projectRoot: paths.projectDir,
+          root: paths.projectDir,
+          output: join(paths.appDir, ".state", "output"),
+        },
+        readEvent: async () => ({
+          eventId: 1,
+          data: {
+            project: "scout-knowledge-lib",
+            packetPath: "/old/path.jsonl",
+            factCount: 1,
+            wakeCount: 1,
+            wakeSignals: [
+              { key: "human-navigation-missing:knowledge/README.md" },
+            ],
+          },
+        }),
+      }),
+    );
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        facts: expect.arrayContaining([
+          "history:legacy-publication-packet-unavailable",
+        ]),
+      },
+    });
+    expect(
+      existsSync(join(paths.appDir, ".state", "library-health-packets.jsonl")),
+    ).toBe(false);
   });
 
   it("retires the obsolete JSON output metric when the observer runs", async () => {

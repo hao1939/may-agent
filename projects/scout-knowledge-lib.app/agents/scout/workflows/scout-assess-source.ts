@@ -151,37 +151,92 @@ ${JSON.stringify(packet)}
       },
     );
     ctx.signal.throwIfAborted();
-    if (result.status !== "done" || !result.output)
+    const candidate = result.output as
+      | Partial<{
+          title: string;
+          summary: string;
+          assessment: string;
+          complete: boolean;
+        }>
+      | undefined;
+    const draft =
+      candidate &&
+      typeof candidate.title === "string" &&
+      candidate.title.length > 0 &&
+      typeof candidate.summary === "string" &&
+      candidate.summary.length > 0 &&
+      typeof candidate.assessment === "string" &&
+      candidate.assessment.length > 0 &&
+      typeof candidate.complete === "boolean"
+        ? (candidate as {
+            title: string;
+            summary: string;
+            assessment: string;
+            complete: boolean;
+          })
+        : undefined;
+    if (!draft)
       return finish(
         "incomplete",
-        "Source retrieved, but the assessment attempt did not complete.",
-        [`execution:${result.id}`, coverage],
+        "Source retrieved, but the assessment attempt did not produce a usable draft.",
+        [
+          `execution:${result.id}`,
+          `execution-status:${result.status}`,
+          coverage,
+          ...(result.summary ? [`blocker:${result.summary}`] : []),
+        ],
       );
-    const draft = result.output;
-    // A partial finish can carry a valid, useful draft. Preserve it without
-    // converting the execution's incomplete status into assignment success.
+
+    // The current Host normalizes a structured partial finish to `blocked`, but
+    // retains its schema-valid output. Preserve that evidence while keeping the
+    // assignment incomplete. A terminal error with an output is likewise
+    // evidence, not accepted completion.
     const facts = result.facts as
       | { status?: string; next_steps?: string }
       | undefined;
-    const complete = draft.complete && facts?.status !== "partial";
-    const limitation = complete
-      ? ""
-      : `Assessment incomplete.${typeof facts?.next_steps === "string" ? ` ${facts.next_steps}` : " See the assessment for missing evidence."}`;
+    const complete =
+      result.status === "done" && draft.complete && facts?.status !== "partial";
+    const blocker =
+      typeof facts?.next_steps === "string"
+        ? facts.next_steps
+        : result.status !== "done" && result.summary
+          ? result.summary
+          : "See the assessment for missing evidence.";
+    const limitation = complete ? "" : `Assessment incomplete. ${blocker}`;
     const evidence = JSON.stringify(coverageEvidence(packet), null, 2);
     const entry = `## Assessment ${new Date().toISOString()}\n\nQuestion: ${input.outcome}\n\n${draft.assessment}${limitation ? `\n\n${limitation}` : ""}\n\n### Source access recorded by workflow\n\n${coverage}\n\n\`\`\`json\n${evidence}\n\`\`\``;
-    const path = record
-      ? saveAssessment(record, input.sourceUrl, draft.title, entry)
-      : undefined;
+    let path: string | undefined;
+    let saveFailure: string | undefined;
+    if (record) {
+      try {
+        path = saveAssessment(record, input.sourceUrl, draft.title, entry);
+      } catch (error) {
+        saveFailure = error instanceof Error ? error.message : String(error);
+      }
+    }
+    const finalComplete = complete && !saveFailure;
+    const archiveMessage = path
+      ? `Saved assessment: ${path}`
+      : saveFailure
+        ? `Assessment archive failed: ${saveFailure}`
+        : "No assessment was archived, as requested.";
     return finish(
-      complete ? "converged" : "incomplete",
-      draft.summary,
+      finalComplete ? "converged" : "incomplete",
+      saveFailure
+        ? `${draft.summary} Archive failed: ${saveFailure}`
+        : draft.summary,
       [
         `execution:${result.id}`,
+        `execution-status:${result.status}`,
         coverage,
         ...(limitation ? [limitation] : []),
-        ...(path ? [`output:${path}`] : ["archive:disabled-by-assignment"]),
+        ...(path
+          ? [`output:${path}`]
+          : saveFailure
+            ? [`archive-failure:${saveFailure}`]
+            : ["archive:disabled-by-assignment"]),
       ],
-      `${draft.summary}${limitation ? `\n\n${limitation}` : ""}\n\n${coverage}\n\n${path ? `Saved assessment: ${path}` : "No assessment was archived, as requested."}`,
+      `${draft.summary}${limitation ? `\n\n${limitation}` : ""}\n\n${draft.assessment}\n\n${coverage}\n\n${archiveMessage}`,
     );
   } catch (error) {
     ctx.signal.throwIfAborted();
