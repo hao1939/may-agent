@@ -146,9 +146,12 @@ export function snapshotKnowledge(
   const head = git(repositoryRoot, ["rev-parse", "HEAD"]);
   const ref = git(repositoryRoot, ["symbolic-ref", "-q", "HEAD"]);
   if (!ref) throw new Error("Scout publication requires an attached branch");
-  mkdirSync(artifactRoot, { recursive: true });
+  // The admitted output root can be the App root itself. Keep recovery drafts
+  // in its existing runtime-state convention, separate from App definitions.
+  const candidateParent = resolve(artifactRoot, ".state", "scout-publication");
+  mkdirSync(candidateParent, { recursive: true });
   const candidateRoot = mkdtempSync(
-    join(artifactRoot, "scout-knowledge-candidate-"),
+    join(candidateParent, "scout-knowledge-candidate-"),
   );
   git(repositoryRoot, ["worktree", "add", "--detach", candidateRoot, head]);
   const relativeProject = relative(repositoryRoot, canonicalProjectRoot);

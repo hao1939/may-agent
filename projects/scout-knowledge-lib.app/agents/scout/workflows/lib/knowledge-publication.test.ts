@@ -425,7 +425,10 @@ catch (error) { console.log(JSON.stringify({ error: String(error), candidate: sn
 
   it("retains an out-of-scope-only draft and its complete identity", () => {
     const { root, project } = fixture();
-    const candidate = snapshotKnowledge(project, join(root, "artifacts"));
+    writeFileSync(join(root, ".gitignore"), ".state/\n");
+    run(root, "add", ".gitignore");
+    run(root, "commit", "-m", "existing runtime convention");
+    const candidate = snapshotKnowledge(project, root);
     writeFileSync(join(candidate.candidateRoot, "outside.md"), "draft\n");
     expect(() =>
       publishKnowledgeChanges(candidate, {
@@ -434,6 +437,7 @@ catch (error) { console.log(JSON.stringify({ error: String(error), candidate: sn
       }),
     ).toThrow(/candidate base:.*candidate revision:.*outside\.md/);
     expect(existsSync(candidate.candidateRoot)).toBe(true);
+    expect(run(root, "status", "--porcelain")).toBe("");
   });
 
   it("acquires the index lock before mutation and rejects canonical symlink ancestors", () => {

@@ -273,7 +273,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
   try {
     const reportedOutputs = (agentResult.facts ?? [])
       .filter((fact) => fact.startsWith("output:"))
-      .map((fact) => fact.slice("output:".length));
+      .map((fact) => fact.slice("output:".length).trim());
     publication = publishKnowledgeChanges(beforePublication, {
       executionId: result.id,
       summary: agentResult.summary,

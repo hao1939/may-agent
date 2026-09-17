@@ -9,8 +9,9 @@ rejected because it cannot distinguish accepted knowledge from an abandoned
 or rejected draft. A broad Host worktree framework was also rejected: Scout
 needs isolation only around its own `knowledge/` and `reports/` writes.
 
-The helper allocates a detached Git worktree under the workflow's retained
-output directory. Code passes that candidate project root to the writer.
+The helper allocates a detached Git worktree under `.state/scout-publication/`
+in the workflow's admitted output directory. This also works when the Host
+supplies the App root as that output directory. Code passes that candidate project root to the writer.
 Exploration and planner agents judge usefulness, source continuity, links,
 and whether a change fulfills the assignment. Assessment code owns retrieval
 and archive construction. Code—not agent prose—then inventories candidate

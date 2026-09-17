@@ -385,7 +385,7 @@ describe("Scout owner reconciliation boundary", () => {
             appRoot,
             projectRoot,
             root,
-            output: join(root, "output"),
+            output: appRoot,
           },
           callAgent: (async (_agent, prompt) => {
             expect(prompt).toContain("Do not move or rename that file");
@@ -403,7 +403,10 @@ describe("Scout owner reconciliation boundary", () => {
               output: {
                 state: "converged",
                 summary: "Improved title in place.",
-                facts: [`preserved:${published}`],
+                facts: [
+                  `preserved:${published}`,
+                  `output:  ${join(candidateRoot!, published.slice(projectRoot.length + 1))}  `,
+                ],
                 actions: [],
               },
             };
