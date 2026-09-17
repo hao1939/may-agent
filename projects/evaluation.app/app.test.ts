@@ -175,7 +175,7 @@ describe("canonical evaluation App", () => {
       kind: "desired",
       intent: {
         id: "input/request-1",
-          agent: "evaluator",
+        agent: "evaluator",
         executor: "codex-goal",
       },
     });
@@ -596,7 +596,7 @@ describe("evaluation metrics", () => {
 
     db.run("DELETE FROM events");
     expect(db.query(TRIAGE_CLOSURE_RATE_24H_SOURCE_QUERY).get()).toMatchObject({
-      value: 1,
+      value: 0,
       sampleSize: 0,
     });
   });
@@ -1228,36 +1228,22 @@ describe("evaluation task policy", () => {
     expect(instructions).toContain("never use prose");
   });
 
-  test("keeps Codex task-tree actions inside open-ended Evaluation work", () => {
+  test("keeps Task actions inside open-ended Evaluation work", () => {
     expect(
       validateEvaluationTaskAction({
-        kind: "create-task",
-        id: "review-evaluator-routing",
-        parentId: "runtime/owner-review",
-        outcome: "Review evaluator routing",
-          outputs: [],
-        acceptance: ["Routing evidence is current"],
-        priority: "P1",
-      }),
-    ).toBeNull();
-    expect(
-      validateEvaluationTaskAction({
-        kind: "update-task",
+        kind: "unblock-task",
         taskId: "runtime/project-audit/may-agent.app",
         expectedGeneration: 1,
-        outcome: "Take over target remediation",
+        reason: "Retry the reconciler-owned task",
       }),
     ).toContain("cannot mutate reconciler-owned task");
     expect(
       validateEvaluationTaskAction({
-        kind: "create-task",
-        id: "target-remediation",
-        parentId: "project-app-audit",
-        outcome: "Repair another App",
-          outputs: [],
-        acceptance: ["Target changed"],
-        priority: "P1",
+        kind: "unblock-task",
+        taskId: "bounded-child",
+        expectedGeneration: 1,
+        reason: "New evidence arrived",
       }),
-    ).toContain("must remain under");
+    ).toBeNull();
   });
 });

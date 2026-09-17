@@ -11,7 +11,7 @@ import {
 const agentResult = {
   state: "converged" as const,
   summary: "The supplied owner state is already coherent.",
-  evidence: ["bounded reconciliation packet"],
+  facts: ["bounded reconciliation packet"],
   actions: [],
 };
 
@@ -114,7 +114,7 @@ describe("schema-backed agent finish result envelope", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: [
+        facts: [
           expect.stringContaining("report:"),
           "execution:s_health_result",
         ],

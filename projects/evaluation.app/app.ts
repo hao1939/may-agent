@@ -318,18 +318,23 @@ const evaluationFeedbackSchema = Type.Object(
 // Legacy exports remain readable for old tooling, but production selection is
 // deliberately not a fixed allow-list. The owner review discovers loaded Apps
 // through the normal catalog/control surface and creates ordinary App handoffs.
-export const watchedProjectTargets: ReadonlyArray<{ targetProject: string }> = [];
+export const watchedProjectTargets: ReadonlyArray<{ targetProject: string }> =
+  [];
 
 const EVALUATION_APP_IDS = new Set(["evaluation", "evaluation.app"]);
 const EVALUATION_AGENT_IDS = new Set(["evaluator", "judge"]);
 
 function canonicalAppId(value: unknown): string {
-  return stringValue(value).toLowerCase().replace(/\.app$/, "");
+  return stringValue(value)
+    .toLowerCase()
+    .replace(/\.app$/, "");
 }
 
 export function isEvaluationOwnedReference(value: unknown): boolean {
   const normalized = canonicalAppId(value);
-  return EVALUATION_APP_IDS.has(normalized) || EVALUATION_AGENT_IDS.has(normalized);
+  return (
+    EVALUATION_APP_IDS.has(normalized) || EVALUATION_AGENT_IDS.has(normalized)
+  );
 }
 
 /**
@@ -378,6 +383,19 @@ const evaluationInputSchema = Type.Union([
   ),
   Type.Object(
     { kind: Type.Literal("evaluate-session"), data: sessionSchema },
+    { additionalProperties: false },
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("review-task-outcome"),
+      data: Type.Object(
+        {
+          appId: Type.String({ minLength: 1 }),
+          taskId: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+    },
     { additionalProperties: false },
   ),
   Type.Object(
@@ -476,7 +494,9 @@ function safeTaskIdPart(value: unknown): string {
   return `${normalized.slice(0, 107) || "id"}-${digest}`;
 }
 
-export function validateEvaluationTaskAction(action: TaskAction): string | null {
+export function validateEvaluationTaskAction(
+  action: TaskAction,
+): string | null {
   if (action.taskId.startsWith("runtime/")) {
     return `${action.kind} cannot mutate reconciler-owned task ${action.taskId}`;
   }
@@ -496,7 +516,9 @@ function eventSessionId(event: AppEvent<Record<string, unknown>>): string {
 function projectTarget(value: unknown): { targetProject: string } | null {
   const requested = stringValue(value);
   if (!requested || isEvaluationOwnedReference(requested)) return null;
-  const normalized = requested.endsWith(".app") ? requested : `${requested}.app`;
+  const normalized = requested.endsWith(".app")
+    ? requested
+    : `${requested}.app`;
   return { targetProject: normalized };
 }
 
@@ -579,6 +601,23 @@ function ownerMessageInput(
 export function taskIntentForInput(input: AppInput): TaskIntent | null {
   const data = record(input.data);
   switch (input.kind) {
+    case "review-task-outcome": {
+      const appId = stringValue(data.appId);
+      const taskId = stringValue(data.taskId);
+      if (!appId || !taskId || isEvaluationOwnedReference(appId)) return null;
+      return {
+        id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}`,
+        parentId: "project-app-audit",
+        outcome: `Evaluate the accepted outcome of ${appId}/${taskId}.`,
+        acceptance: [
+          "Canonical public Task identity and evidence are read before judgment.",
+          "An immutable report and machine-readable facts are read back before publication.",
+        ],
+        workflow: "task-outcome-review",
+        input: { appId, taskId },
+        priority: "P1",
+      };
+    }
     case "evaluate-session": {
       const sessionId = stringValue(data.sessionId);
       if (!sessionId || isExplicitlyEvaluationOwned(data)) return null;
@@ -618,7 +657,12 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "The deep evaluator returns a workflow-traced judgment linked to the exact requested session.",
         ],
         workflow: "evaluator-deep-eval",
-        input: { sessionId },
+        input: {
+          sessionId,
+          ...(stringValue(data.subjectAppId ?? data.appId)
+            ? { subjectAppId: stringValue(data.subjectAppId ?? data.appId) }
+            : {}),
+        },
         priority: "P1",
       };
     }
@@ -785,6 +829,11 @@ export function taskInputForEvent(
       const data = eventData(event);
       const agent = stringValue(data.agent);
       const sessionId = eventSessionId(event);
+      const workflowRunId = stringValue(data.workflowRunId);
+      const routineWorkflowSession =
+        stringValue(data.status ?? data.outcome) === "done" &&
+        agent !== "may" &&
+        Boolean(workflowRunId);
       const awaitingSameSessionAutoResume = shouldDeferResumableInterruption(
         event.source,
         data,
@@ -792,14 +841,21 @@ export function taskInputForEvent(
       return isEvaluationOwnedReference(agent) ||
         isExplicitlyEvaluationOwned(data, event) ||
         !sessionId ||
+        routineWorkflowSession ||
         awaitingSameSessionAutoResume
         ? null
         : {
             kind: "evaluate-session",
             data: {
               sessionId,
-              ...(stringValue(data.appId ?? data.ownerAppId ?? event.target?.appId)
-                ? { subjectAppId: stringValue(data.appId ?? data.ownerAppId ?? event.target?.appId) }
+              ...(stringValue(
+                data.appId ?? data.ownerAppId ?? event.target?.appId,
+              )
+                ? {
+                    subjectAppId: stringValue(
+                      data.appId ?? data.ownerAppId ?? event.target?.appId,
+                    ),
+                  }
                 : {}),
             },
           };
@@ -1127,6 +1183,18 @@ const baseApp = defineApp({
     // canary selection is enabled only after report/read-back calibration.
   ],
   actions: {
+    "review-task-outcome": {
+      description:
+        "Evaluate one exact external App Task outcome using bounded public evidence.",
+      inputSchema: Type.Object(
+        {
+          appId: Type.String({ minLength: 1 }),
+          taskId: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+      toInput: (data) => ({ kind: "review-task-outcome", data }),
+    },
     "evaluate-session": {
       description: "Evaluate a specific session by sessionId.",
       inputSchema: sessionSchema,

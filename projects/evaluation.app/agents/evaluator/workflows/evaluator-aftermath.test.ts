@@ -302,7 +302,7 @@ describe("canonical evaluator aftermath", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: ["execution:s_evaluator", "evaluated-session:s_source"],
+        facts: ["execution:s_evaluator", "evaluated-session:s_source"],
       },
     });
     expect(suppliedSchema).toBe(aftermathOutcomeSchema);
@@ -343,7 +343,7 @@ describe("canonical evaluator aftermath", () => {
     ]);
   });
 
-  test("records a structured skip as the same durable evaluation fact", async () => {
+  test("records a structured skip as neutral coverage, not a target evaluation", async () => {
     const events: AppEvent[] = [];
     const skip = {
       kind: "skip" as const,
@@ -361,11 +361,17 @@ describe("canonical evaluator aftermath", () => {
         localKey: "evaluation-recorded",
       },
     ]);
-    expect(recordedEvaluation(events[0])).toMatchObject({
-      sessionId: "s_skip",
-      verdict: "skipped",
-      overall: { structuredSkip: true, aftermathVersion: AFTERMATH_VERSION },
+    expect(events[0]).toMatchObject({
+      type: "evaluation.review_skipped",
+      data: {
+        disposition: "insufficient-evidence",
+        sessionId: "s_skip",
+        agent: "coder",
+        reason: "duplicate runtime carrier",
+        aftermathVersion: AFTERMATH_VERSION,
+      },
     });
+    expect(recordedEvaluation(events[0])).toEqual({});
   });
 
   test("converges an already-recorded exact session without side effects", async () => {
@@ -575,7 +581,7 @@ describe("canonical evaluator aftermath", () => {
       "project.owner.requested",
     ]);
     expect(equivalentResult.output).toMatchObject({
-      evidence: [
+      facts: [
         "execution:s_evaluator",
         "evaluated-session:s_1787349957833_811",
         expect.stringContaining("finding-delivery-receipt:"),
@@ -601,7 +607,7 @@ describe("canonical evaluator aftermath", () => {
       "evaluation.recorded",
     ]);
     expect(repeatResult.output).toMatchObject({
-      evidence: [
+      facts: [
         "execution:s_evaluator",
         "evaluated-session:s_changed_repeat",
         "finding-delivery-suppressed:gym:gym-implementer-missing-artifact-directory-dispatch",
@@ -612,9 +618,7 @@ describe("canonical evaluator aftermath", () => {
     const receiptDir = join(appRoot, ".state", "finding-delivery", "receipts");
     expect(readdirSync(receiptDir)).toHaveLength(2);
     const receipt = readdirSync(receiptDir)
-      .map((name) =>
-        JSON.parse(readFileSync(join(receiptDir, name), "utf8")),
-      )
+      .map((name) => JSON.parse(readFileSync(join(receiptDir, name), "utf8")))
       .find(
         (candidate) =>
           candidate.stableIdentity?.dedupeKey ===
@@ -630,12 +634,12 @@ describe("canonical evaluator aftermath", () => {
         {
           sourceSessionId: "s_1787349848905_805",
           requestedHumanAction: "none",
-          artifactAndVerificationContext: firstFinding.facts,
+          artifactAndVerificationContext: firstFinding.evidence,
         },
         {
           sourceSessionId: "s_changed",
           requestedHumanAction: "approve",
-          artifactAndVerificationContext: changedFinding.facts,
+          artifactAndVerificationContext: changedFinding.evidence,
           humanDeliveredAt: expect.any(String),
         },
       ],

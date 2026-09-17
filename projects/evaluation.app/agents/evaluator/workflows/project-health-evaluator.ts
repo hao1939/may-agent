@@ -797,6 +797,16 @@ export async function execute(
       "project-health-evaluator requires a safe targetProject",
     );
   }
+  if (appIdForTarget(targetProject).toLowerCase() === "evaluation") {
+    const summary = `Excluded Evaluation-owned target ${targetProject} before model execution.`;
+    return ctx.done(
+      summary,
+      reconciled(summary, [
+        "excluded-owner:evaluation",
+        `excluded-target:${targetProject}`,
+      ]),
+    );
+  }
 
   const reason = triggerReason(ctx);
   const previous = readState(ctx.workspace.root, targetProject);

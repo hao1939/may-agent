@@ -1,5 +1,6 @@
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import { Type } from "typebox";
+import { unresolvedReviewSubject } from "./lib/public-task-evidence.js";
 
 export const name = "executor-trial";
 export const description =
@@ -68,31 +69,16 @@ export async function execute(
       "Executor trial requires targetProject, focus, and the read-only fence.",
     );
   }
-
-  const execution = await ctx.agents.call(
-    "evaluator",
-    executorTrialPrompt({ targetProject, focus }),
-    { schema: executorTrialResultSchema },
-  );
-  if (execution.status !== "done") {
-    return ctx.blocked(
-      `Workflow trial execution ${execution.id} ended ${execution.status}: ${execution.summary}`,
-      [`execution:${execution.id}`],
-    );
-  }
-
-  const result = parseExecutorTrialResult(execution.output);
-  if (!result) {
-    return ctx.blocked("Workflow trial returned an invalid assessment.", [
-      `execution:${execution.id}`,
-    ]);
-  }
-
-  return ctx.done(result.assessment, {
+  const subject = unresolvedReviewSubject(targetProject);
+  const summary = `${subject.disposition}: ${subject.reason}`;
+  return ctx.done(summary, {
     state: "converged",
-    summary: result.assessment,
-    response: result.assessment,
-    evidence: [`execution:${execution.id}`, ...result.evidence],
+    summary,
+    facts: [
+      `review-disposition:${subject.disposition}`,
+      `subject-hint:${targetProject}`,
+    ],
     actions: [],
   });
+
 }

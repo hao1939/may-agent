@@ -12,10 +12,21 @@ export const description =
 
 type DeepEvaluationInput = {
   sessionId?: string;
+  subjectAppId?: string;
 };
 
-function result(summary: string, evidence: string[]) {
-  return { state: "converged" as const, summary, evidence, actions: [] };
+function result(summary: string, facts: string[]) {
+  return { state: "converged" as const, summary, facts, actions: [] };
+}
+
+function isEvaluationApp(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/\.app$/, "") === "evaluation"
+  );
 }
 
 export async function execute(
@@ -23,6 +34,18 @@ export async function execute(
 ): Promise<ExecutionResult> {
   const requestedSessionId =
     typeof ctx.input?.sessionId === "string" ? ctx.input.sessionId.trim() : "";
+  if (isEvaluationApp(ctx.input?.subjectAppId)) {
+    const summary = `Excluded Evaluation-owned session ${requestedSessionId || "<unresolved>"} before model execution.`;
+    return ctx.done(
+      summary,
+      result(summary, [
+        "excluded-owner:evaluation",
+        ...(requestedSessionId
+          ? [`excluded-session:${requestedSessionId}`]
+          : []),
+      ]),
+    );
+  }
   await ctx.events.emit({
     type: "evaluation.deep_dispatched",
     localKey: taskEmissionKey(ctx, "deep-dispatched"),

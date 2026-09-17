@@ -82,7 +82,7 @@ describe("evaluation feedback projection", () => {
       output: {
         state: "converged",
         actions: [],
-        evidence: ["evaluated-session:s_latest", "feedback-verified:sample"],
+        facts: ["evaluated-session:s_latest", "feedback-verified:sample"],
       },
     });
     expect(readFileSync(feedbackPath, "utf8")).toBe(output);
@@ -258,7 +258,7 @@ describe("evaluation feedback projection", () => {
       project("s_resume", ["INCOMPLETE_OUTPUT: false interrupted result"], 100),
     ).resolves.toMatchObject({
       output: {
-        evidence: ["evaluated-session:s_resume", "feedback-stale:sample"],
+        facts: ["evaluated-session:s_resume", "feedback-stale:sample"],
       },
     });
     expect(existsSync(feedbackPath)).toBe(false);
@@ -550,7 +550,7 @@ describe("evaluation feedback projection", () => {
       status: "blocked",
       summary:
         "Actionable evaluation s_actionable_missing_target cannot be delivered because no canonical active feedback target exists for retired-agent; the finding remains unresolved.",
-      evidence: [
+      facts: [
         "evaluated-session:s_actionable_missing_target",
         "feedback-target:missing:retired-agent",
         "feedback-target-verified:retired-agent",

@@ -19,6 +19,29 @@ const evaluation = {
 };
 
 describe("evaluator deep workflow", () => {
+  test("excludes an explicitly Evaluation-owned session before side effects", async () => {
+    let calls = 0;
+    const events: unknown[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: { sessionId: "s_self", subjectAppId: "evaluation" },
+      callAgent: async () => {
+        calls += 1;
+        throw new Error("must not call");
+      },
+      emit: async (event) => {
+        events.push(event);
+      },
+    });
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      output: {
+        facts: ["excluded-owner:evaluation", "excluded-session:s_self"],
+      },
+    });
+    expect(calls).toBe(0);
+    expect(events).toEqual([]);
+  });
+
   test("passes typed workflow input and a strict result schema to the evaluator", async () => {
     const calls: Array<[string, string]> = [];
     let suppliedSchema: unknown;
@@ -77,7 +100,7 @@ describe("evaluator deep workflow", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: ["execution:s_inner"],
+        facts: ["execution:s_inner"],
         actions: [],
       },
     });
@@ -188,7 +211,7 @@ describe("evaluator deep workflow", () => {
       summary: "Recorded deep evaluation for s_source with verdict good.",
       output: {
         state: "converged",
-        evidence: ["execution:s_inner", "recorded-evaluation:s_source"],
+        facts: ["execution:s_inner", "recorded-evaluation:s_source"],
         actions: [],
       },
     });

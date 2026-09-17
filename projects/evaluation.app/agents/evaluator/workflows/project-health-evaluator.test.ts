@@ -458,7 +458,7 @@ describe("canonical project-health evaluator", () => {
       status: "done",
       output: {
         state: "converged",
-        evidence: [expect.stringContaining("report:"), "execution:s_audit"],
+        facts: [expect.stringContaining("report:"), "execution:s_audit"],
       },
     });
     expect(prompts).toHaveLength(1);
@@ -553,7 +553,7 @@ describe("canonical project-health evaluator", () => {
       status: "blocked",
       summary:
         "gym.app project/App review produced no complete judgment: provider unavailable",
-      evidence: ["execution:s_failed", "status:error"],
+      facts: ["execution:s_failed", "status:error"],
     });
 
     expect(events.map((event) => event.type)).toEqual([
@@ -619,6 +619,28 @@ describe("canonical project-health evaluator", () => {
       "2026081503.facts.json",
       "2026081503.md",
     ]);
+  });
+
+  test("excludes Evaluation before model and publication side effects", async () => {
+    let calls = 0;
+    const root = mkdtempSync(join(tmpdir(), "project-health-self-"));
+    const ctx = createTestAppWorkflowContext({
+      input: { targetProject: "evaluation.app" },
+      workspace: { root, appRoot: root, projectRoot: root, output: root },
+      reconciliation: reconciliation(),
+      callAgent: async () => {
+        calls += 1;
+        throw new Error("must not call");
+      },
+    });
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      output: {
+        facts: ["excluded-owner:evaluation", "excluded-target:evaluation.app"],
+      },
+    });
+    expect(calls).toBe(0);
+    expect(readdirSync(root)).toEqual([]);
   });
 
   test("blocks when canonical task context or workspace is missing", async () => {

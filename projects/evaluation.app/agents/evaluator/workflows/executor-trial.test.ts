@@ -30,32 +30,54 @@ describe("executor trial workflow", () => {
     expect(parseExecutorTrialResult({ assessment: "No evidence." })).toBeNull();
   });
 
-  test("returns the assessment through the canonical Task result", async () => {
+  test("keeps an external project hint neutral without authoritative Task identity", async () => {
+    let calls = 0;
     const ctx = createTestAppWorkflowContext({
       input: {
-        targetProject: "evaluation.app",
+        targetProject: "gym.app",
         focus: "Check executor isolation.",
         readOnly: true,
       },
-      callAgent: async () =>
-        ({
-          id: "s_trial",
-          kind: "agent",
-          status: "done",
-          summary: "done",
-          output: {
-            assessment: "The paths are isolated.",
-            evidence: ["app.ts:353"],
-          },
-        }) as const,
+      callAgent: async () => {
+        calls += 1;
+        throw new Error("must not call");
+      },
     });
     const result = await execute(ctx);
-    expect(result).toMatchObject({ status: "done" });
-    expect(result.output).toMatchObject({
-      state: "converged",
-      response: "The paths are isolated.",
-      evidence: ["execution:s_trial", "app.ts:353"],
-      actions: [],
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        summary: expect.stringContaining("insufficient-evidence"),
+        facts: [
+          "review-disposition:insufficient-evidence",
+          "subject-hint:gym.app",
+        ],
+        actions: [],
+      },
     });
+    expect(calls).toBe(0);
+  });
+
+  test("excludes Evaluation before calling the model", async () => {
+    let calls = 0;
+    const ctx = createTestAppWorkflowContext({
+      input: {
+        targetProject: "evaluation.app",
+        focus: "self review",
+        readOnly: true,
+      },
+      callAgent: async () => {
+        calls += 1;
+        throw new Error("must not call");
+      },
+    });
+    await expect(execute(ctx)).resolves.toMatchObject({
+      status: "done",
+      output: {
+        facts: ["review-disposition:excluded", "subject-hint:evaluation.app"],
+      },
+    });
+    expect(calls).toBe(0);
   });
 });
