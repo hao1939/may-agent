@@ -313,9 +313,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               signal,
             });
 
-            // Return result without full messages array (too large for tool output)
-            const { messages: _msgs, ...resultWithoutMessages } = result;
-            return textResult(JSON.stringify({ ...resultWithoutMessages, ...agentExecutionResult(result) }, null, 2));
+            // Keep diagnostic references, not additional copies of the transcript
+            // or payload now exposed through the shared summary/output/facts.
+            const {
+              messages: _messages, lastAssistantText: _text, finishResult: _finish,
+              structuredResult: _structured, ...diagnostics
+            } = result;
+            return textResult(JSON.stringify({ ...diagnostics, ...agentExecutionResult(result) }, null, 2));
           }
 
           case "fork": {

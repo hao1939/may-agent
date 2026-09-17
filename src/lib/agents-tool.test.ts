@@ -195,6 +195,9 @@ describe("V2 agents tool", () => {
       facts: { status: finishStatus }, outputDir: "evidence/child",
     });
     expect(returned.messages).toBeUndefined();
+    expect(returned.finishResult).toBeUndefined();
+    expect(returned.structuredResult).toBeUndefined();
+    expect(returned.lastAssistantText).toBeUndefined();
     manager.activeSessions.clear();
   });
 
