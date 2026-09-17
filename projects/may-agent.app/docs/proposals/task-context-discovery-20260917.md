@@ -1,7 +1,8 @@
 # Task context discovery and agent-directed work
 
 **Status:** Implemented candidate; five main local trials completed, not merged.
-**Contract owner:** [Workspace convention](../2a-design/workflows.md#task-entry-and-discovery).
+**Contract owners:** [Workspace convention](../2a-design/workflows.md#task-entry-and-discovery)
+and [one handoff contract](../2a-design/workflows.md#one-handoff-contract).
 
 ## Problem and intended experience
 
@@ -104,6 +105,60 @@ Portable checks cover App/Task/attempt isolation, preserving omitted input,
 excluding live/provider capabilities from files, helper/workflow propagation,
 and graceful navigation-write failure. Run Host CI and May App/design checks.
 Record unsuccessful iterations and polish only demonstrated gaps.
+
+## Uniform handoff refinement
+
+**Host candidate:** `32a8ece5`, extending the shared-execution branch.
+
+
+The same bounded-contribution contract applies in all four agent/workflow call
+directions. Keep one shared Task entry and a separate assignment on each
+execution. A review of Gym's trainable behaviors, for example, receives the full
+rebuild context but owns only that review contribution. Team names and the
+chosen procedure remain App policy; this common mechanism does not encode Gym,
+May, Bob or tech-lead.
+
+The implementation reuses the SDK's `ExecutionResult` vocabulary through a small
+Host adapter shared by model agent calls and workflow agent calls. Model
+workflow results also expose its fields while retaining existing diagnostic
+aliases. The model agent tool replaces its raw text/finish/structured payload
+aliases with the common fields, avoiding additional copies of large results.
+A completed session reporting blocked, partial or failed work must not
+appear to its caller as successful contribution completion. Partial output and
+the original finish facts remain available. Existing UI execution-row projections
+describe runtime sessions and are not the assignment acceptance contract.
+
+The manager supplies the same contribution guidance and exact execution/caller
+references to helper sessions reached through either route. This Host-authored
+guidance belongs in system context, separate from the caller payload; appending
+it to a JSON assignment broke a portable context-preparation consumer in the
+first full check and was corrected. No source text or caller instruction is
+promoted to system context. The agent tool's
+separate mandatory delegation-memo prose is removed; explicit context files and
+success criteria remain supported caller instructions. The generated Task brief
+labels its outcome as the overall Task outcome rather than a specialist's
+assignment. Specific assignments stay in existing session metadata and workflow
+input records; no new file or handoff registry is introduced.
+
+A workflow that cannot start a requested nested workflow must report the failed
+invocation. It must not return the parent run ID as if it identified that child.
+Errors without an execution record remain control errors or exceptions; shared
+rules do not require inventing evidence or hiding cancellation in a success
+shaped response.
+
+Portable boundary coverage exercises direct agent calls, agent-selected workflows
+and nested workflows, all using real execution/tool paths with only the model
+provider replaced. Two concurrent Tasks exercise exact caller isolation, shared
+entry and assignment discovery, feedback without automatic acknowledgment,
+normalized results and cancellation cleanup. Separate regressions check explicit
+partial/blocked/failed agent results and unavailable nested workflow identity.
+Live trials inspect actual choices and returned evidence; a model choosing one
+route is not evidence that it tested every route.
+
+This slice does not finish explicit input-incorporation bookkeeping or historical
+input pagination. Those remain the adjacent work below. It also does not promise
+that arbitrary authored JavaScript can be preempted, require exact mid-call crash
+recovery, or turn diagnostic row projections into a second acceptance authority.
 
 ## Adjacent work and priorities
 

@@ -34,7 +34,10 @@ small shared state boundary.
 The [Task context discovery proposal](proposals/task-context-discovery-20260917.md)
 adds a shared `TASK.md` entry with full context and discovery references. Its
 local trials assess omitted-information discovery, self-diagnosis and unprompted
-method selection. Candidate status and limits are recorded in the proposal.
+method selection. Its [handoff refinement](2a-design/workflows.md#one-handoff-contract)
+separates the shared Task from each contribution and applies one execution/result
+contract across agent and workflow calls. Candidate status and limits are recorded
+in the proposal.
 
 The [execution consolidation proposal](proposals/execution-entrypoint-consolidation.md)
 addresses inconsistent helper scope, watchdog rules, one-shot completion and

@@ -243,6 +243,60 @@ accepted settlement changes Task state or consumes input.
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
 
+### One handoff contract
+
+Agent-to-agent, agent-to-workflow, workflow-to-agent and workflow-to-workflow
+calls delegate a bounded contribution under the caller's execution scope. The
+receiver's implementation does not change context, responsibility or acceptance.
+Keep the existing agent tools and SDK calls as scoped entrypoints; a universal
+invocation tool, extra queue or handoff lifecycle is unnecessary.
+
+Each call has two distinct inputs:
+
+- **Inherited context:** exact caller identity and, when Task-bound, its
+  App/Task/generation/attempt, Task entry, scoped reads, feedback source, working
+  paths, effective capabilities, cancellation and remaining execution allowance.
+  The Host supplies these from the live execution. An input path or agent name
+  cannot establish them or broaden access.
+- **Assigned contribution:** the requested outcome, constraints, relevant
+  references and expected evidence. The caller supplies ordinary task text or
+  private workflow parameters. There is no public schema per scenario and no
+  requirement to copy the whole Task or transcript into each call.
+
+`TASK.md` describes the overall Task. The specific call describes the receiver's
+role. Receiving the shared brief never assigns the receiver the entire Task.
+The receiver chooses useful methods within its assignment; a workflow applies
+its authored procedure and calls agents where judgment is needed. The caller
+judges the returned contribution, and the Task's owning executor proposes the
+overall settlement. A helper finishing does not transfer ownership or settle
+the Task. Independent obligations that must outlive the call use the existing
+Task/dependency mechanism; lifetime and ownership determine that choice.
+
+Task feedback remains durable input with optional live notification. Participants
+inspect relevant updates at useful operation boundaries and before depending on
+affected evidence. Notification alone neither consumes input nor permits a
+concurrent replacement executor. A receiver can report how an update affects
+its contribution; only accepted Task settlement can record its incorporation.
+Long operations must cooperate with cancellation or offer bounded observation
+opportunities. No guarantee of instantaneous reconsideration or exact stack
+restoration follows from this contract.
+
+Execution records retain the specific assignment, caller/session/workflow
+correlation and results. Discovery follows those existing records and the Task
+entry; it does not overwrite the shared brief for each specialist or introduce
+a separate handoff registry. References identify evidence, not permission or
+acceptance. Returned execution IDs must identify the actual execution, never
+the caller substituted for a child that did not start.
+
+The common boundary normalizes terminal results as described below. Code
+preserves identity, scope, delivery, result evidence and cleanup. Agents and
+App-authored procedures decide relevance, sufficiency, bounded repair and which
+method to try next. Failed operations should leave enough evidence to continue
+useful authorized work without requiring the human to reconstruct the handoff.
+
+The [Task context proposal](../proposals/task-context-discovery-20260917.md#uniform-handoff-refinement)
+records the current implementation slice and remaining gaps.
+
 ## Shared contract and changeable procedure
 
 Keep the execution contract common; let each owning App evolve its procedure.
@@ -538,7 +592,7 @@ wait, escalation, agent handoff, or new request automatically.
 
 ## Result admission
 
-All agent and workflow calls use:
+Terminal agent and workflow contributions use:
 
 ```ts
 type ExecutionResult<T = unknown> = {
@@ -550,6 +604,25 @@ type ExecutionResult<T = unknown> = {
   facts?: unknown;
 };
 ```
+
+The model-facing tools retain legacy diagnostic fields such as `sessionId`,
+`workflowRunId`, `outputDir` and workflow steps while exposing this common
+terminal vocabulary. Callers use the normalized `status`, `summary`, `output`
+and `facts` to assess the contribution. Raw agent `lastAssistantText`,
+`structuredResult` and `finishResult` payload aliases are replaced by these
+shared fields; do not add more copies of large payloads for compatibility.
+Session completion and a nested finish
+claim are execution evidence; they are not competing Task completion signals.
+An explicit partial agent result is `blocked` with its partial output retained,
+not `done`. Prose-only calls may return a summary when no structured result was
+requested; this does not manufacture verified domain data.
+
+Invocation/setup failure can occur before a child exists, and cancelled scopes
+or infrastructure failures may throw. Do not fabricate a terminal execution ID
+to make those paths look like completed calls. Existing control errors or thrown
+failures describe the failed operation; available diagnostic references remain
+discoverable. The shared contract does not require every tool response or
+exception to be an `ExecutionResult`.
 
 When later workflow code requires structured agent output, the workflow owns a
 TypeBox or equivalent schema and validates `result.output` before use. A prose
