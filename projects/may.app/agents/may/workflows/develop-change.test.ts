@@ -209,13 +209,13 @@ describe("development workflow using real Git and verification", () => {
     });
   });
 
-  test("design → direct implementation → real checks → read-only review, then quiet replay", async () => {
+  test("design → direct implementation → real checks → review with configured tools, then quiet replay", async () => {
     const t = trial();
     expect((await t.run()).state).toBe("converged");
     expect(t.calls).toEqual([
-      { agent: "may-bob", stage: "design", tools: "readonly" },
-      { agent: "may-tech-lead", stage: "implementation", tools: "full" },
-      { agent: "may-bob", stage: "review", tools: "readonly" },
+      { agent: "may-bob", stage: "design", tools: undefined },
+      { agent: "may-tech-lead", stage: "implementation", tools: undefined },
+      { agent: "may-bob", stage: "review", tools: undefined },
     ]);
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     const ctx = t.context(); // A fresh invocation; only Task result and repository survive.

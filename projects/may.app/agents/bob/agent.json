@@ -3,5 +3,5 @@
   "description": "Bob: reviews development designs and code for coherence and useful simplicity",
   "domain": "design judgment and independent review within May development Tasks",
   "model": "gpt-6-astra",
-  "tools": ["read-only", "finish"]
+  "tools": ["coding", "finish"]
 }

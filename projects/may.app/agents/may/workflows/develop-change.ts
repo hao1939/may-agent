@@ -316,7 +316,6 @@ export async function execute(ctx: WorkflowContext) {
       agent: string,
       stage: string,
       schema: S,
-      readonly: boolean,
       value: Candidate,
     ): Promise<Static<S>> => {
       await ensureCurrent();
@@ -354,7 +353,6 @@ export async function execute(ctx: WorkflowContext) {
       ].join("\n\n");
       const response = await ctx.agents.call(agent, prompt, {
         schema,
-        tools: readonly ? "readonly" : "full",
       });
       const evidence = await archive.record(
         {
@@ -404,13 +402,7 @@ export async function execute(ctx: WorkflowContext) {
         );
       }
       if (!saved.design) {
-        saved.design = await ask(
-          "may-bob",
-          "design",
-          designSchema,
-          true,
-          value,
-        );
+        saved.design = await ask("may-bob", "design", designSchema, value);
         // The new judgment supersedes the old request for repair. Honor review
         // of existing work; do not let stale feedback force implementation.
         saved.feedback = undefined;
@@ -429,7 +421,6 @@ export async function execute(ctx: WorkflowContext) {
           "may-tech-lead",
           "implementation",
           implementationSchema,
-          false,
           value,
         );
         saved.verified = undefined;
@@ -483,7 +474,7 @@ export async function execute(ctx: WorkflowContext) {
         await ensureCurrent();
         saved.verified = value;
       }
-      const review = await ask("may-bob", "review", reviewSchema, true, value);
+      const review = await ask("may-bob", "review", reviewSchema, value);
       if (
         !sameCandidate(value, await candidate(root, ctx.signal)) ||
         review.commit !== value.commit

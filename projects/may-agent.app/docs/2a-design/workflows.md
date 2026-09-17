@@ -692,6 +692,54 @@ Normal parent judgment or explicit fenced retry can revisit the retained work.
 Shared ledgers, observation state, and maintenance migrations do not belong in
 task worktrees. Genuine offline repair belongs in an explicit maintenance CLI.
 
+### Task entry and discovery
+
+**Design direction:** Agreed for the next workspace iteration. The
+[implementation proposal and local trials](../proposals/task-context-discovery-20260917.md)
+track generation of `TASK.md`, its discovery references and remaining limits.
+
+Every Task should have a Host-supplied entry path to `TASK.md`, shared by its
+agents and workflows. The brief summarizes the outcome, acceptance, pending
+inputs, effective working paths, prior results and current execution problems.
+Agent-owned notes and outputs remain separate from this generated brief. The
+entry path does not require moving existing source workspaces or artifacts.
+
+The discovery rule is: **information omitted from the brief remains reachable
+through a reference or a concrete listing/search route.** The brief is an entry
+point to the available Task context, not a closed selection of what the
+generator considers relevant. Each information category links to its existing
+source or index so the agent can discover items that were not individually
+mentioned. This includes:
+
+- full original inputs, attachments, corrections and Task history;
+- App/project instructions, design documentation and source roots;
+- available team members, tools, skills and workflows through their catalogs;
+- related Tasks, dependencies, results, reports and produced artifacts; and
+- attempt/workflow/session evidence, command output and failure diagnostics.
+
+A reference identifies what is available, where it comes from, and how to read
+or enumerate it: an accessible path, an existing index, or an exact supported
+tool/query with the relevant Task or execution identity. A vague instruction
+to "look in the logs" is insufficient. Large collections use existing
+paginated reads, directory listing or search; a shortened preview retains a
+route to the full content and remaining entries. Unavailable sources and
+access limitations are explicit. References must resolve within the receiving
+agent's environment and existing access scope.
+
+`TASK.md` records its Task/attempt identity, source version and generation time,
+and provides the existing read route for current Task state. The Host refreshes
+the projection at defined execution/read boundaries. The underlying Task and
+source records remain authoritative; editing the brief, notes or an artifact
+does not accept an input or settle work. Existing artifact indexes and result
+references expose new outputs without a second workspace registry or copied
+event ledger. Historical evidence and unaccepted proposals remain distinguishable
+from accepted results.
+
+The first implementation should generate the small brief and working discovery
+routes from existing context and read capabilities. Agents choose what to
+inspect, including for self-diagnosis; the Host need not predict every useful
+document, preload full histories or introduce another search service.
+
 ## Discovery, reload, and provenance
 
 Discovery enumerates the resolved agent's workflow entries, imports and

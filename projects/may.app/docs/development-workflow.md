@@ -102,17 +102,19 @@ returns. Input not incorporated by accepted settlement remains for the next
 Task attempt. This uses common Host admission and feedback, with no team-specific
 message route or workflow resume service.
 
-Bob uses GPT-6 Astra with read-only tools plus the structured finish capability.
-Tech-lead uses GPT-5.6 Sol with file/shell tools plus finish. Neither profile
-has agent delegation, CLI-worker, message, workflow-recursion or cron tools.
-The standard loader also supplies its scoped `tasks` capability. That tool
-includes reads, fact publication and creator-authorized updates; its name in
-the current read-only allowlist does not make every action read-only. These
-profiles are instructed to return judgments without using Task mutations.
-Tech-lead's shell remains trusted code execution, not a filesystem/network
-sandbox. The workflow mechanically checks candidate acceptance and removes
-Bob's file/shell write tools. Shared Task effects still rely on their ordinary
-authority checks and the assignment; prompts restricting effects are not a sandbox.
+Bob uses GPT-6 Astra and tech-lead uses GPT-5.6 Sol. Both receive the normal
+coding tools (read, shell/search, edit and write) plus structured finish. The
+workflow preserves configured tools instead of adding a review-specific filter.
+Bob's design/review assignment requires preserving the candidate; a separately
+assigned repair can authorize edits. The standard loader also supplies scoped
+`tasks` reads, fact publication and creator-authorized updates. Available tools
+do not expand the assignment or bypass these authority checks.
+
+The shared [Task entry convention](../../may-agent.app/docs/2a-design/workflows.md#task-entry-and-discovery)
+provides full context and discovery references to every participant. It is
+navigation, not a team-specific evidence ledger. The workflow still checks the
+actual candidate and retained verification/review evidence before proposing
+completion. Shell tools are trusted execution; role instructions are not a sandbox.
 
 ## Decision contracts and enforcement
 

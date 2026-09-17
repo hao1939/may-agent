@@ -31,6 +31,11 @@ small shared state boundary.
 
 ## Current focus
 
+The [Task context discovery proposal](proposals/task-context-discovery-20260917.md)
+adds a shared `TASK.md` entry with full context and discovery references. Its
+local trials assess omitted-information discovery, self-diagnosis and unprompted
+method selection. Candidate status and limits are recorded in the proposal.
+
 The [execution consolidation proposal](proposals/execution-entrypoint-consolidation.md)
 addresses inconsistent helper scope, watchdog rules, one-shot completion and
 standalone session recovery after the execution-feedback PoC. Keep bounded agent
