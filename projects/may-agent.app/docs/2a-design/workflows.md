@@ -659,15 +659,19 @@ must not become workflow-local retry schedulers.
 ## Workspace convention
 
 The host allocates the workflow workspace according to the App/task policy and
-provides only:
+provides working/output roots and, when available, the Task entry:
 
 ```ts
 ctx.workspace?.root;
 ctx.workspace?.output;
+ctx.workspace?.taskFile;
 ```
 
-All file and command work stays beneath that allocation. Workflows do not
-derive repository, App, agent, or persistent-state roots from process cwd.
+Task-owned writes and commands use the supplied working/output roots or explicit
+scratch allocation. Supplied context and source/evidence references may resolve
+outside the checkout within existing access scope; a reference grants no mutation
+authority. Workflows do not derive repository, App, agent, or persistent-state
+roots from process cwd.
 
 For isolated Git work, the host owns worktree creation, base revision, branch
 lineage, cleanup, and recovery. A workflow returns verified evidence and clean

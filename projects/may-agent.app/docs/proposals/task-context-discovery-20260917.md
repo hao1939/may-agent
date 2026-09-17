@@ -1,6 +1,6 @@
 # Task context discovery and agent-directed work
 
-**Status:** Proposed; local implementation and evaluation in progress.
+**Status:** Implemented candidate; five main local trials completed, not merged.
 **Contract owner:** [Workspace convention](../2a-design/workflows.md#task-entry-and-discovery).
 
 ## Problem and intended experience
@@ -48,6 +48,13 @@ to specialists through the shared snapshot. Moving large owner prompt fields to
 references is a later measured change, not necessary to establish discoverability.
 Navigation generation failure leaves the existing prompt/read path usable and
 reports the limitation. It does not stop otherwise useful execution.
+The polished candidate retains a bounded filesystem error code in this fallback,
+so the agent can distinguish an unavailable directory from other failures.
+
+Loaded agent/skill/workflow definitions may be newer than a Task checkout. The
+brief links the selected executor's actual instruction path and directs other
+capability discovery through pinned catalog paths. The App workspace path is
+not presented as the loaded definition source.
 
 ## Authority, freshness and limits
 
@@ -87,6 +94,11 @@ outputs. A passing script alone does not prove useful agent behavior.
    check. Verify fresh context, retained evidence and a useful response without
    asking for information already discoverable. Include ambiguity only when a
    missing human decision materially affects the outcome.
+4. A larger portable coding example requiring independent review, without naming
+   a helper or workflow. Check whether May discovers and selects useful team
+   execution, and independently assess the resulting implementation.
+5. After polishing observed path-discovery problems, repeat a focused loaded-source
+   question on the updated Host. Record whether the invalid-path detour recurs.
 
 Portable checks cover App/Task/attempt isolation, preserving omitted input,
 excluding live/provider capabilities from files, helper/workflow propagation,
@@ -107,5 +119,76 @@ preserved work/evidence is sufficient for this iteration.
 
 ## Results
 
-Pending local trials. This proposal does not claim implementation deployment,
-autonomous success, complete historical discoverability or exact crash recovery.
+The initial Host candidate is `d26e4793`; the path/diagnostic polish is
+`2ca9e59b`. May App executable definitions are `7b930d169e`. Both Host revisions
+extend the shared-execution branch rather than the older canonical checkout.
+
+| Iteration | Observed result |
+| --- | --- |
+| Focused fallback question | May first read `TASK.md`, searched actual source, checked current Task state and answered correctly in 139 words. One May session; no delegation. An unavailable `python` command was replaced with an available shell command without human help. |
+| Engineering review and diagnostic sample | May read the entry and full context, discovered indexed documents omitted from the brief, reproduced the cwd defect, verified a one-line repair in a temporary copy and committed the report. The original fixture remained unchanged. |
+| Same-Task clarification | A new attempt received a distinct snapshot with the prior result and new input. May enumerated the sample directory, discovered a newly added clarification absent from the old index, reused the investigation and committed the revised report. |
+| Larger coding example | May selected `develop-change` without the request naming it or the team. May, Bob and tech-lead read the same entry. Bob designed, tech-lead implemented, Bob reviewed, and May checked returned evidence before delivery. The clean four-file candidate passed eight authored tests and independent checks. |
+| Polished loaded-source question | On Host `2ca9e59b`, May read the entry, followed pinned source paths, read the loaded instructions and explained the bounded `ENOTDIR`/`UNKNOWN` diagnostic. No tool error or obsolete App-local-path detour occurred. The loaded and legacy global checkout profiles had different hashes. |
+
+The first report candidate is `3bdd814f8f04ad63024e1b62ac3dde83b42292d1`;
+the clarified candidate is `1b5ebfcb754722b79796c0673ea0681c47d2c72d`.
+Each changes only the requested report. The latter includes the exact requested
+sentence, "A resolved path is a location, not permission." Independent inspection
+confirmed scope, content and clean worktree. Word counts differ by tokenizer but
+both reports satisfy the requested 400–650 word range.
+
+The coding candidate is `882c22f676b269c0aed55508ce50e322702be8af`, containing
+only `README.md`, `index.mjs`, `cli.mjs` and `test.mjs` beneath
+`projects/may.app/examples/task-reference-demo/`. Independent source review and
+execution confirmed its eight tests plus preservation of 101 immutable entries
+with duplicate labels/paths across six page sizes, Task-root path resolution,
+absolute references and the distinction between empty and missing files. The
+Task retained checksummed development report/evidence references. This example
+remains a local evaluation candidate; it is not added to the Host or proposed as
+a required reference registry.
+
+The larger trial exposed an attempted read of an obsolete worktree-relative May
+profile. The agent recovered, but this justified the small source-path polish.
+It also showed that useful reviewer tools permit Bob to search the actual source.
+The navigation convention does not eliminate repeated investigation or prove that
+every team choice is efficient.
+
+An independent reviewer initially checked the absent App-local checkout profile
+instead of the legacy global checkout profile actually compared by May, and
+incorrectly challenged the valid differing-hash statement. Rechecking the exact
+tool arguments and all three paths corrected the evaluation. Both feedback
+messages are retained, and the completed same-Task follow-up identifies all
+three paths correctly, including the two verified hashes and the absent file.
+This is an evaluator error, not a reproduced Host defect or evidence
+that May's original hash comparison was false.
+
+Local evidence is retained under the installation's
+`.state/review-pilots/may-task-context-20260917/`: `trial-*-input.json`,
+`trial-*-result.json`, `trial-*-observations.json`, `independent-review.json`,
+`independent-code-review.json`, `independent-source-review.json`, the immutable
+source copies and activation records. Observations contain tool
+calls and selected facts, not copied model reasoning. The temporary harness is
+not a production workflow or committed runtime dependency.
+
+Both Host revisions passed CI: 3,082 tests with three installation-only skips; May
+App checks passed 50 with one optional integration skip, and design checks passed.
+All five main trial requests and both evaluator follow-up inputs settled on
+their original Tasks. These bounded trials
+do not prove complete historical discoverability, exact crash recovery or a
+general autonomous success rate. Explicit live-input incorporation is still the
+separate work described above.
+
+## Recommendation after the trials
+
+Keep the small entry/snapshot/catalog convention and broader reviewer tools.
+The demonstrated value is discovery and useful handoff: direct work stays direct,
+the agent can choose a team procedure when useful, and a correction can reuse
+saved work. Code owns paths and exact identity; agents choose what to inspect
+and judge the evidence. No scenario-specific input, mandatory team pipeline or
+new workspace lifecycle is needed.
+
+Next, make omitted historical input reachable through the existing scoped read
+surface and complete explicit input-incorporation bookkeeping. Measure before
+removing large fields from the current owner prompt or adding continuous
+snapshot refresh. Precise crash continuation remains deferred.
