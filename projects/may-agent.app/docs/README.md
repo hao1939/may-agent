@@ -39,6 +39,11 @@ separates the shared Task from each contribution and applies one execution/resul
 contract across agent and workflow calls. Candidate status and limits are recorded
 in the proposal.
 
+The [workflow enforcement table](2a-design/workflows.md#enforcement-infrastructure-and-guidance)
+distinguishes shared guarantees, available infrastructure and current gaps.
+[Authoring best practices](2b-manual/workflow-authoring.md#best-practices-and-learning)
+keep uncertain procedure choices advisory until ordinary usage justifies code.
+
 The [execution consolidation proposal](proposals/execution-entrypoint-consolidation.md)
 addresses inconsistent helper scope, watchdog rules, one-shot completion and
 standalone session recovery after the execution-feedback PoC. Keep bounded agent

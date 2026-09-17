@@ -4,6 +4,12 @@ This manual describes the canonical App workflow surface. See
 [Workflows](../2a-design/workflows.md), [SDK](../2a-design/sdk.md), and
 [App](../2a-design/agent-app.md) for the governing contracts.
 
+The [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
+identifies what shared code enforces, what it only supports, and known gaps.
+The best practices below guide author decisions; uncertain choices stay advisory
+until experience justifies a stronger contract. This guide targets the shared
+handoff candidate recorded in the [Task context proposal](../proposals/task-context-discovery-20260917.md).
+
 ## Choose A Skill, Module, Or Workflow
 
 - Use a skill when an agent should interpret reusable judgment for one turn.
@@ -25,34 +31,15 @@ agents/<name>/workflows/<workflow>.ts  # standalone/system agent only
 ```
 
 Use a flat `.ts` module exporting `name`, a nonempty `description`, and
-`execute(ctx)`:
+`execute(ctx)`. Start from the [checked review example](../examples/review-change.ts).
+It validates its input, requests structured review output, retains incomplete
+work, and returns a completed review even when the verdict asks for changes.
+Its `reviewer` is an example team capability, not a universal role or an installed
+agent guaranteed by the Host. Its description states the promised result and scope.
 
-```ts
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
-
-type Input = { changeId: string };
-
-export const name = "review-change";
-export const description = "Review one exact change and record evidence";
-
-export async function execute(
-  ctx: WorkflowContext<Input>,
-): Promise<ExecutionResult> {
-  const review = await ctx.agents.call(
-    "reviewer",
-    `Review change ${ctx.input.changeId}`,
-  );
-
-  if (review.status !== "done") {
-    return ctx.blocked("Reviewer did not complete", { review });
-  }
-
-  return ctx.done("Review completed", {
-    changeId: ctx.input.changeId,
-    reviewExecutionId: review.id,
-  });
-}
-```
+Procedure input types belong to that module. Validate their shape and limits
+before use; a TypeScript generic does not validate incoming JSON at runtime.
+Adding a recipe does not require a new public App input variant.
 
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in
@@ -65,6 +52,7 @@ The stable capabilities are:
 | Capability                               | Purpose                                                                        |
 | ---------------------------------------- | ------------------------------------------------------------------------------ |
 | `ctx.input`                              | App-owned typed workflow input                                                 |
+| `ctx.signal`                             | Shared cancellation/deadline signal; pass it to cooperative I/O                  |
 | `ctx.reconciliation`                     | Exact task generation, events, and bounded child/frontier facts when a task owns the run |
 | `ctx.read.appResult(id)`                 | Read one completed App result                                                  |
 | `ctx.read.tasks.get(id)`                 | Read one bounded current-App task resource                                     |
@@ -74,6 +62,8 @@ The stable capabilities are:
 | `ctx.agents.call(agent, task, options?)` | Run and await one bounded agent execution                                      |
 | `ctx.workflows.run(name, input)`         | Run and await one nested workflow                                              |
 | `ctx.events.emit(event)`                 | Publish an immediate durable fact from the current bounded attempt             |
+| `ctx.events.read(type, localKey)`         | Inspect a retained publication in this Task generation                          |
+| `ctx.events.onEvent(listener)`           | Observe live Task input; returns an unsubscribe function, not an acknowledgment |
 | `ctx.metrics.record(...)`                | Record a domain metric definition/sample                                       |
 | `ctx.workspace`                          | App/task-scoped source and output paths when granted                           |
 | `ctx.log`                                | Structured diagnostic logging                                                  |
@@ -86,20 +76,29 @@ recovery APIs.
 
 ## Terminal Results
 
-Every workflow returns exactly one `ExecutionResult` through `ctx.done(...)` or
-`ctx.blocked(...)`.
+Normal workflow branches return one `ExecutionResult`, usually through
+`ctx.done(...)` or `ctx.blocked(...)`. The common vocabulary also carries
+`error` and `interrupted` with available output/facts. Setup, cancellation or
+infrastructure failures can throw; do not catch them merely to claim success or
+fabricate an execution identity. A system failure may carry its result on
+`error.execution`; retain it when handling that failure.
 
 `done` means this bounded workflow completed. It does not by itself complete an
 App request or task. The calling App/task boundary validates and admits the
 output.
 
-An agent call can finish its bounded execution with `status: "done"` while
-explicitly reporting partial progress in `evidence.status`. Inspect the
-agent's finish evidence and the App's acceptance contract before accepting its
-output. For work that requires a completed result, `evidence.status ===
-"partial"` is incomplete, not a successful no-op. Retain that evidence when
-returning a blocker. A real no-op needs a completed observation and a reason
-that no useful change is warranted; exhausting the call allowance is not one.
+Use `id`, `kind`, `status`, `summary`, `output` and `facts` consistently for agent
+and workflow contributions. The candidate maps explicit partial agent work to
+`blocked` and preserves the original finish facts. Inspect evidence as well as
+status: normalization cannot establish semantic completeness. A completed review
+can be `done` while the reviewed implementation still needs changes. An unfinished
+review is incomplete even if it produced useful findings. A no-op needs a completed
+observation and a reason no change is warranted; an exhausted allowance is not one.
+
+Keep useful output/facts from every terminal status. For a compact child result,
+`ctx.blocked(reason, { review })` preserves its identity and findings. Store large
+bodies through existing artifact support and return exact readable references;
+the Host's retained inspection copy is bounded, not a complete archive.
 
 `blocked` means this run cannot continue locally. It does not delegate,
 escalate, start an agent session, notify a human, or keep the workflow open.
@@ -110,40 +109,23 @@ The owning App request or task decides the durable next state.
 When a task owns the run, `ctx.reconciliation` supplies:
 
 - App/task identity and fenced generation;
-- outcome, acceptance, mode, selected agent, and typed input;
+- outcome, acceptance, selected agent, and typed input;
 - ordered unobserved Task events; and
 - bounded live/completed direct children.
 
-It does not expose a global Task hierarchy or mutation handles. A Task workflow
-returns the reconciliation output expected by its App task policy:
+It does not expose a global Task hierarchy or mutation handles. Distinguish an
+agent-selected helper workflow from a workflow bound as the Task executor. The
+helper returns its contribution to the agent. The Task executor returns the
+reconciliation output expected by the App; its caller admits that output.
 
-```ts
-if (!ctx.reconciliation) {
-  return ctx.blocked("This workflow requires task reconciliation");
-}
+Use the [checked Task result examples](../examples/app.ts) for exact Condition
+and dependency shapes, returned with `ctx.done(result.summary, result)` by a
+Task workflow. See [Task authoring](handler-authoring.md) for the owning contract.
+No live children is not sufficient evidence that acceptance is met. Retain exact
+`facts`, and describe a real wait or the supported outcome.
 
-if (ctx.reconciliation.children.live.length > 0) {
-  return ctx.done("Waiting for child work", {
-    state: "waiting",
-    summary: "Direct children are still live",
-    evidence: ctx.reconciliation.children.live.map(
-      (child) => `live-child:${child.taskId}`,
-    ),
-    actions: [],
-  });
-}
-
-return ctx.done("Desired state converged", {
-  state: "converged",
-  summary: "All acceptance evidence is present",
-  evidence: ["report:verified"],
-  actions: [],
-});
-```
-
-Return task changes through the compatibility `actions` field and Conditions in the typed result. Do not edit task-state
-files, write projections, acquire task locks, or emit assignment/completion
-events.
+Return Task changes as typed output. Do not edit Task-state files, write
+projections, acquire Task locks, or emit assignment/completion events.
 
 For a resource-backed task, publish facts only with
 `ctx.events.emit({ type, localKey, data })`. The older `ctx.emit` and
@@ -167,8 +149,8 @@ cross-App outcome -> task returns typed dependency -> exact child App task resul
 external fact     -> task returns waiting -> exact Condition/external fact
 ```
 
-The parent request/task persists the dependency before the current bounded run
-ends. A later result or fact wakes that exact authority. Do not reconstruct the
+The Task boundary admits and persists the returned dependency before waiting.
+A later result or fact wakes that exact authority. Do not reconstruct the
 wait from an event pair, owner label, message, session, or prompt.
 
 ## Agent And Nested Workflow Calls
@@ -185,10 +167,14 @@ if (implementation.status !== "done") {
 const review = await ctx.agents.call("qa", reviewPrompt, {
   schema: ReviewResultSchema,
 });
-if (review.status !== "done" || review.output.verdict !== "pass") {
+if (review.status !== "done" || !review.output || review.output.verdict !== "pass") {
   return ctx.blocked("Review failed", { review });
 }
 ```
+
+This example assumes a passing review is required for the implementation
+procedure. That is an App requirement, not a rule that every completed review
+must be positive. Names, prompts and schema are owned by this example's App.
 
 Use `ctx.workflows.run(...)` for another bounded recipe:
 
@@ -204,6 +190,64 @@ if (result.status !== "done") {
 Background forks and direct agent messages cannot satisfy a workflow
 dependency. If work must outlive this run or cross an App boundary, use the App
 request/task model instead.
+
+All four call directions share the same contribution rules. Give a helper its
+specific outcome, constraints and relevant references. The Host supplies caller
+identity and shared Task context; do not copy the whole transcript or rewrite
+`TASK.md` for each specialist. Read the brief as a snapshot and follow its links
+for current state or omitted information. The caller judges the contribution;
+the Task's owner judges the whole outcome.
+
+## Best Practices And Learning
+
+Use these as a starting point, adjusting them to the assignment. They introduce
+no new Host rejection, required helper, fixed review graph or universal retry
+count. Explicit user constraints and established App acceptance still apply.
+
+| Decision | Starting guidance | What to learn from actual use |
+| --- | --- | --- |
+| Sequence | Inspect context and prior evidence; do missing work; check it; return evidence. Use fewer steps when sufficient. | Which omissions actually caused incorrect or incomplete results? |
+| Team | Call a specialist when its contribution adds useful judgment or capacity. Keep narrow assignments clear. | Did it find something useful, or repeat the caller's work? |
+| Updates | Reassess relevant input between meaningful operations, before an affected write, and before relying on affected evidence. | Where did a correction arrive too late or get misunderstood? |
+| Progress | Report a useful finding, blocker or changed expectation through existing facts. Avoid a message for every internal step. | Could the caller understand progress without repeated status requests? |
+| Repair | Feed the failed check and partial work into a bounded, plausible next attempt. Stop or return control when the method no longer fits. | Was another attempt useful, or did it repeat the same failure? |
+| Evidence | Keep compact findings and exact references; use the supplied workspace and existing artifact helpers. | Could another agent find, read and assess the result without repeating the investigation? |
+| Reuse | Check prior evidence against the current requirement and actual target state. | Which reused facts became stale, and which rechecks were unnecessary? |
+
+For long work, `await` suspends that dependency, while the Host continues admitting
+input. Agents receive live hints; a workflow may use `ctx.events.onEvent` to mark
+that new information needs inspection at its next useful decision point. Keep
+listeners lightweight, unsubscribe when finished, and keep decisions/effects in
+normal execution. A listener is optional. It should not launch a competing
+executor, accept input, or invent a private durable inbox. Choose checkpoint
+placement through experience; a callback per step is not required.
+
+The current reconciliation context and Task brief are attempt-start snapshots.
+Live delivery does not prove incorporation, and explicit incorporation bookkeeping
+is still unfinished. Use current reads and retained input; let a subsequent
+same-Task attempt reconsider pending input where needed. Do not promise instant
+steering, complete historical pagination, or cancellation of arbitrary JavaScript.
+
+When uncertainty remains, keep the recommendation as guidance and record the
+observed limitation. Reuse the Task's results and execution references to capture
+the assignment, method, outcome, relevant correction/failure and useful or wasted
+work. No extra reporting schema or evaluation service is needed. A few successful
+runs can inform a decision; they are not a universal promotion threshold.
+
+Promote a practice only when its benefit and scope are clear:
+
+- Stable domain sequence or acceptance check: put it in the owning workflow/App
+  with a meaningful failure-case check. If every method must satisfy it, enforce
+  it at the App's common acceptance boundary.
+- Repeated missing mechanical capability: first improve an existing SDK/tool/read
+  or ordinary helper. Add Host support only for a shared execution guarantee.
+- Context-dependent judgment: retain guidance, examples and agent discretion.
+
+For example, lost returned evidence justified shared result preservation. The best
+number of reviewers or interval between updates remains uncertain. Hardcoding
+either would constrain agents without the same evidence of benefit. A proposed
+checkpoint helper, richer input discovery or reusable evidence helper should first
+show which concrete failure existing capabilities cannot reasonably prevent.
 
 ## Facts And Metrics
 
@@ -222,6 +266,8 @@ For task-owned workflows, `localKey` is required and must describe the stable
 logical emission, not the current retry. Durable acceptance makes the event
 visible immediately; a later workflow failure does not roll it back, and a
 retry with the same key does not publish it twice.
+This deduplication is within one Task generation. Across revisions or external
+provider writes, use the domain operation identity and authoritative target state.
 
 Publishing a fact does not address an owner or guarantee a reply. An App
 input subscription, exact task target, or Condition must own any
@@ -237,25 +283,13 @@ Do not let metric code mutate tasks or dispatch sessions directly.
 
 ## Pure Functions And Retry
 
-Call pure deterministic functions normally. Keep retries bounded inside the
-current run and verify after every effect:
+Call pure deterministic functions normally. Keep local retries bounded by the
+current run and use checks appropriate to the effect. Return useful partial
+output and failed-check evidence when repair cannot continue; a loop-exhausted
+message alone loses the information the caller needs. A fixed local limit can
+fit a particular procedure, but no number is a universal requirement.
 
-```ts
-for (let iteration = 1; iteration <= 2; iteration += 1) {
-  const result = await ctx.agents.call(
-    "dev",
-    iteration === 1 ? initialPrompt : repairPrompt,
-  );
-  const verification = await verifyResult(result);
-  if (verification.ok) {
-    return ctx.done("Implemented and verified", verification);
-  }
-}
-
-return ctx.blocked("Verification failed after two repair iterations");
-```
-
-These iterations share one Task attempt and its deadline. Feed the failed check's
+Local iterations share one Task attempt and its deadline. Feed the failed check's
 evidence into the repair, and stop when scope, prerequisites or remaining budget
 no longer permit useful work. See the
 [two-loop boundary](../2a-design/workflows.md#repair-within-an-attempt).
@@ -339,32 +373,37 @@ Do not add App-specific domain routing to a shared guard.
 
 ## Testing
 
-Use the SDK test context rather than starting the daemon:
+Use `createTestAppWorkflowContext` from `@may-agent/sdk/testing` with supplied
+agent/workflow results to test domain decisions without a daemon or model. Its
+default agent reply has no domain output; supply the evidence needed for the
+branch being checked. A status-membership assertion alone proves little.
 
-```ts
-import { expect, test } from "bun:test";
-import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { execute } from "./review-change";
+For the review example, useful checks would include a complete negative review
+remaining a completed review, incomplete findings surviving in a blocker, and a
+different subject reference preventing a completion claim. For a writing workflow,
+check that failed required verification prevents acceptance of the exact candidate.
+Select cases that protect actual behavior; do not mirror every implementation line.
 
-test("returns one bounded result", async () => {
-  const ctx = createTestAppWorkflowContext({
-    input: { changeId: "v4" },
-  });
+Use exact `reconciliation` fixtures for Task workflows and real SDK admission for
+their returned Task output. Rely on Host tests for shared cancellation, context
+isolation and result retention; add a boundary regression when a capability changes
+or a real defect exposes a missing guarantee. Live trials assess method selection,
+use of corrections and usefulness of results, which fake responses cannot prove.
 
-  const result = await execute(ctx);
-  expect(["done", "blocked"]).toContain(result.status);
-});
-```
-
-Test task workflows with an exact `reconciliation` fixture. Assert emitted
-facts, metric calls, child task changes, Conditions, evidence, and terminal state.
+`bun run check:may-design` type-checks the linked review example and validates the
+linked Task examples. It does not run this review against a real team or establish
+that all installed workflows follow this guidance.
 
 ## Integrity Checklist
 
 - The workflow has one owner and one typed input.
 - Every call is bounded to the current run.
-- Every path returns `ctx.done(...)` or `ctx.blocked(...)`.
+- Normal branches return a truthful terminal contribution; failures retain available evidence.
 - Durable waits use task dependencies or Conditions.
 - Task mutation is returned as typed output, never performed directly.
 - Cross-App outcomes use typed task dependencies; events remain facts.
 - Tests use scoped fake capabilities and require no global runtime.
+
+Use the [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
+to distinguish required contracts from available support. This checklist does
+not turn the advisory choices above into new runtime gates.

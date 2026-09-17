@@ -78,49 +78,11 @@ resolved by filesystem order.
 
 ## Module contract
 
-```ts
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
-import { verifyChange } from "./lib/verify-change.js";
-
-type Input = {
-  objective: string;
-  maxIterations: number;
-};
-
-export const name = "implement-and-verify";
-export const description =
-  "Implement one bounded change and prove it with deterministic checks.";
-
-export async function execute(
-  ctx: WorkflowContext<Input>,
-): Promise<ExecutionResult> {
-  let feedback = "";
-  const limit = Math.max(1, Math.min(ctx.input.maxIterations, 3));
-
-  for (let iteration = 1; iteration <= limit; iteration += 1) {
-    const implementation = await ctx.agents.call(
-      "dev",
-      [ctx.input.objective, feedback].filter(Boolean).join("\n\n"),
-    );
-    if (implementation.status !== "done") {
-      return ctx.blocked("Implementation step did not finish safely", {
-        executionId: implementation.id,
-        status: implementation.status,
-      });
-    }
-
-    const verification = await verifyChange(ctx.workspace?.root);
-    if (verification.ok) {
-      return ctx.done("Implemented and verified", {
-        evidence: verification.evidence,
-      });
-    }
-    feedback = `Iteration ${iteration} failed verification: ${verification.summary}`;
-  }
-
-  return ctx.blocked("Bounded repair loop exhausted", { feedback });
-}
-```
+Export `name`, `description`, and an asynchronous `execute(ctx)` from an ordinary
+TypeScript module. The [authoring manual](../2b-manual/workflow-authoring.md)
+and [checked review example](../examples/review-change.ts) show the SDK surface.
+The example completes a review contribution; its verdict does not accept the
+reviewed change or settle the enclosing Task.
 
 Rules:
 
@@ -128,7 +90,8 @@ Rules:
 - receive procedure parameters through typed `ctx.input`; for Task-bound work,
   read the authoritative outcome, acceptance and admitted input through the
   supplied Task context and scoped reads;
-- end every path with `ctx.done(...)` or `ctx.blocked(...)`;
+- return one terminal contribution, normally with `ctx.done(...)` or
+  `ctx.blocked(...)`; preserve failure evidence and allow control failures to throw;
 - call agents with `ctx.agents.call` and nested workflows with
   `ctx.workflows.run`;
 - keep deterministic mechanics in imported TypeScript helpers;
@@ -310,6 +273,44 @@ every workflow. These are stable compatibility rules, not a claim that the SDK
 can never change; changing them requires updating the common contract and its
 affected consumers together.
 
+### Enforcement, infrastructure and guidance
+
+Enforce stable, mechanically decidable boundaries in their existing owner.
+Use guidance for uncertain choices, then learn from ordinary executions before
+promoting them. A recommendation does not become a runtime rejection merely
+because it appears in an authoring checklist. An explicit App acceptance
+requirement still applies through every method the agent chooses.
+
+| Concern | Enforcement or support owner | Current support and limit |
+| --- | --- | --- |
+| Task/caller identity and accepted state | Host Task admission and execution adapters | Existing scope propagation and settlement fences. Helpers do not gain Task ownership. This is not an OS sandbox for arbitrary TypeScript. |
+| Finite execution and cancellation | Shared execution scope | Existing deadlines, cooperative cancellation and child cleanup. No preemption of synchronous JavaScript or rollback of external effects. |
+| Terminal status, identity and returned evidence | Shared result adapters and retained run artifacts | Handoff candidate normalizes explicit partial work and preserves returned output/facts across terminal statuses. Retention is bounded; pre-return work and historical replay are not universally captured. |
+| Structured data and required domain checks | Workflow/App validation at use and admission | SDK supports structured agent results; authors supply domain schemas and checks. TypeScript input types alone do not validate caller data. Host cannot prove semantic sufficiency. |
+| Task fact publication | Existing scoped event capability | Stable local key and attempt fence required; deduplication is within a Task generation. This does not make arbitrary provider writes idempotent. |
+| Task context and evidence discovery | Host projections, existing reads and artifacts | Shared entry and exact execution links are in the candidate. The brief is an attempt-start snapshot; complete historical-input pagination remains unfinished. |
+| Feedback and incorporation | Durable Task input, live hints and accepted settlement | Delivery exists and does not prove incorporation. Explicit live-input incorporation bookkeeping remains unfinished; do not infer it from callbacks. |
+
+These rows distinguish contracts from current coverage; source and local-trial
+status remain in the [handoff proposal](../proposals/task-context-discovery-20260917.md).
+An unavailable capability must be reported truthfully rather than replaced by
+an App-local copy of Task storage, scheduling or recovery.
+
+Workflow code enforces its declared procedure. Optional shared modules make
+mechanics easier but cannot enforce a gate that callers can bypass. If a check
+is required regardless of method, the App's common acceptance boundary owns it.
+If compliance requires understanding meaning, let an agent judge it using
+evidence; a field-presence check cannot substitute for that judgment.
+
+Retry counts, specialist roles, review order, progress frequency, exact update
+checkpoints and artifact organization remain guidance unless the particular App
+has an established requirement. No mandatory step template, general checkpoint
+API, automatic retry policy or new tool restriction follows from this refinement.
+Proposed infrastructure needs a concrete missing capability and evidence that
+existing APIs plus guidance are insufficient. See the manual's
+[best practices](../2b-manual/workflow-authoring.md#best-practices-and-learning)
+for observations that can justify a later change.
+
 ### What the owning App can change
 
 | Procedure choice | Freedom and boundary |
@@ -456,8 +457,8 @@ adds two narrow contracts, not yet a released capability:
   operation. Child runs inherit the parent signal; their own longer timeout
   cannot extend the parent bound. It cannot preempt arbitrary JavaScript,
   interrupt synchronous work, or undo external effects.
-- Returned `done` output or `blocked` evidence gets a bounded JSON inspection
-  copy in the existing run artifact (`result_payload`), including its kind and
+- Returned output and facts get a bounded JSON inspection copy in the existing
+  run artifact (`result_payload`), including its kind and
   availability. Inspected source strings/keys and the compact encoded value each
   have a cumulative 64 KiB budget, with a depth limit of 32, sufficient for small
   evidence packets; larger bodies should use existing artifact references.
@@ -469,6 +470,8 @@ adds two narrow contracts, not yet a released capability:
   nested undefined values and sparse arrays, or oversized/deep structures is
   explicitly unavailable and does not change the execution
   outcome. No field means no captured payload, not proof of no source evidence.
+  The handoff candidate extends this retention across all terminal statuses and
+  retains output and facts together; the earlier slice retained only one field.
 
 Existing artifact integrity checks cover that copy. Missing or corrupt artifacts
 remain explicit failures of inspection; required run-state persistence remains

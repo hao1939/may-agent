@@ -5,5 +5,5 @@
     "types": ["bun", "node"],
     "noEmit": true
   },
-  "include": ["app.ts", "client.ts"]
+  "include": ["app.ts", "client.ts", "review-change.ts"]
 }

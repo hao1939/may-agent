@@ -70,7 +70,7 @@ owning document and keep implementation details there.
 | [agents.md](2a-design/agents.md)                               | Agent identity, cooperation, and app-local registration.      |
 | [runtime.md](2a-design/runtime.md)                             | Host process modes, startup, capacity, reload and recovery.   |
 | [sessions.md](2a-design/sessions.md)                           | Durable execution lifecycle and persistence.                  |
-| [workflows.md](2a-design/workflows.md)                         | App-local reusable process and execution contract.            |
+| [workflows.md](2a-design/workflows.md)                         | App-local execution contract, enforcement owners and support limits. |
 | [skills.md](2a-design/skills.md)                               | Scoped reusable judgment guidance.                            |
 | [sdk.md](2a-design/sdk.md)                                     | Stable agent and workflow capability surface.                 |
 | [native-coding-workers.md](2a-design/native-coding-workers.md) | Codex/Claude adapter and continuity model.                    |
@@ -121,7 +121,7 @@ current-design list.
 | [user-guide.md](2b-manual/user-guide.md)                                   | CLI flags, Docker, socket, and chat commands.               |
 | [sdk-quickstart.md](2b-manual/sdk-quickstart.md)                           | Checked App quickstart and public capability guide.                                         |
 | [handler-authoring.md](2b-manual/handler-authoring.md)                     | Task reconciler results, waits and mutation rules.                                    |
-| [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring and invocation.                          |
+| [workflow-authoring.md](2b-manual/workflow-authoring.md)                   | Workflow authoring, advisory best practices and checked examples. |
 | [agent-app-adoption-playbook.md](2b-manual/agent-app-adoption-playbook.md) | Adoption checklist using the shared quickstart.                   |
 | [agent-convention.md](2b-manual/agent-convention.md)                       | Agent directory and definition conventions.                 |
 | [metric-alerts.md](2b-manual/metric-alerts.md)                             | Alert triage, repair, calibration, and escalation.          |
