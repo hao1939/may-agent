@@ -124,7 +124,7 @@ describe("canonical evaluation App", () => {
     });
     expect(taskIntentForInput(input!)).toMatchObject({
       id: expect.stringMatching(
-        /^runtime\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/,
+        /^runtime\/compat\/codex-goal-trial\/may-agent\.app\/[a-f0-9]{12}$/,
       ),
       workflow: "executor-trial",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
@@ -150,7 +150,7 @@ describe("canonical evaluation App", () => {
     expect(workflowInput).toEqual({ kind: "workflow-trial", data });
     expect(workflow).toMatchObject({
       id: expect.stringMatching(
-        /^runtime\/workflow-trial\/may-agent\.app\/[a-f0-9]{12}$/,
+        /^runtime\/compat\/workflow-trial\/may-agent\.app\/[a-f0-9]{12}$/,
       ),
       workflow: "executor-trial",
       input: { targetProject: "may-agent.app", trial: true, readOnly: true },
@@ -195,7 +195,7 @@ describe("canonical evaluation App", () => {
     ).toMatchObject({
       kind: "desired",
       intent: {
-        id: "input/request-1",
+        id: "runtime/compat/input/request-1",
         agent: "evaluator",
         executor: "codex-goal",
       },
@@ -794,7 +794,7 @@ describe("evaluation fact admission", () => {
         }),
       ),
     ).toMatchObject({
-      id: "runtime/session-aftermath-repair/s_resume_lifecycle/complete-terminal-lifecycle-v1",
+      id: "runtime/compat/session-aftermath-repair/s_resume_lifecycle/complete-terminal-lifecycle-v1",
       input: {
         sessionId: "s_resume_lifecycle",
         supersedeExisting: true,
@@ -817,7 +817,7 @@ describe("evaluation fact admission", () => {
         }),
       ),
     ).toMatchObject({
-      id: "runtime/session-aftermath/s_concrete_request",
+      id: "runtime/compat/session-aftermath/s_concrete_request",
       workflow: "evaluator-aftermath",
       input: { sessionId: "s_concrete_request" },
     });
@@ -883,7 +883,7 @@ describe("evaluation task policy", () => {
     });
     expect(first?.id).not.toBe(second?.id);
     expect(first?.id.length).toBeLessThanOrEqual(
-      "runtime/session-aftermath/".length + 120,
+      "runtime/compat/session-aftermath/".length + 120,
     );
   });
 
@@ -921,17 +921,28 @@ describe("evaluation task policy", () => {
       },
       { kind: "owner-review", data: {} },
     ];
-    for (const input of inputs) {
-      const intent = taskIntentForInput(input);
+    const intents = inputs.map((input) => taskIntentForInput(input));
+    for (const intent of intents) {
       expect(intent).not.toBeNull();
-      expect(intent?.parentId).toBeNull();
+      expect(intent?.parentId).toBe("evaluation-system");
+    }
+    expect(intents.slice(0, 3).map((intent) => intent?.id)).toEqual([
+      expect.stringMatching(/^runtime\/task-outcome\/may\/goal-example-[a-f0-9]{12}$/),
+      "runtime/report-reader/latest",
+      "runtime/task-outcome-selector",
+    ]);
+    for (const intent of intents.slice(3)) {
+      expect(intent?.id).toStartWith("runtime/compat/");
     }
     expect(
       taskForEvaluationInput({
         id: "app_message",
         input: { kind: "message", data: { message: "Review this" } },
       } as AppTaskInput).intent,
-    ).toMatchObject({ parentId: null });
+    ).toMatchObject({
+      id: "runtime/compat/input/app_message",
+      parentId: "evaluation-system",
+    });
   });
 
   test("uses standing maintain tasks for recurring responsibilities", () => {
@@ -941,7 +952,7 @@ describe("evaluation task policy", () => {
         data: { reason: "metric.breach" },
       }),
     ).toMatchObject({
-      id: "runtime/owner-review",
+      id: "runtime/compat/owner-review",
       agent: "evaluator",
       executor: "codex-goal",
     });
@@ -959,7 +970,7 @@ describe("evaluation task policy", () => {
         data: { evaluation },
       }),
     ).toMatchObject({
-      id: "runtime/evaluation-feedback/may",
+      id: "runtime/compat/evaluation-feedback/may",
       workflow: "evaluation-feedback-projection",
       input: { evaluation, feedbackKey: "may" },
     });
@@ -969,7 +980,7 @@ describe("evaluation task policy", () => {
         data: { reason: "scheduled" },
       }),
     ).toMatchObject({
-      id: "runtime/owner-review",
+      id: "runtime/compat/owner-review",
       executor: "codex-goal",
     });
   });
@@ -998,7 +1009,7 @@ describe("evaluation task policy", () => {
     );
     expect(shallow).toEqual(deep);
     expect(shallow).toMatchObject({
-      id: "runtime/evaluation-feedback/app-ops-bae9bad818b6",
+      id: "runtime/compat/evaluation-feedback/app-ops-bae9bad818b6",
       workflow: "evaluation-feedback-projection",
       input: {
         evaluation,
@@ -1020,7 +1031,7 @@ describe("evaluation task policy", () => {
         data: { targetProject: "gym.app" },
       }),
     ).toMatchObject({
-      id: "runtime/project-audit/gym.app",
+      id: "runtime/compat/project-audit/gym.app",
       workflow: "project-health-evaluator",
       input: {
         targetProject: "gym.app",
@@ -1088,7 +1099,7 @@ describe("evaluation task policy", () => {
     expect(
       validateEvaluationTaskAction({
         kind: "unblock-task",
-        taskId: "runtime/project-audit/may-agent.app",
+        taskId: "runtime/compat/project-audit/may-agent.app",
         expectedGeneration: 1,
         reason: "Retry the reconciler-owned task",
       }),
