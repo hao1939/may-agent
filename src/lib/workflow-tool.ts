@@ -61,7 +61,7 @@ export interface WorkflowStep {
   lastAssistantText: string | null;
 }
 import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./requests.js";
-import { retainWorkflowPayload } from "./workflow-payload.js";
+import { retainWorkflowResultPayload } from "./workflow-payload.js";
 import { log } from "./log.js";
 import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
@@ -84,8 +84,6 @@ import { agentExecutionResult, workflowExecutionResult } from "./execution-hando
 
 function normalizeAuthoredWorkflowResult(
   value: unknown,
-  completedSteps: CompletedStep[],
-  runId: string,
   taskOwned: boolean,
 ): WorkflowResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -102,24 +100,25 @@ function normalizeAuthoredWorkflowResult(
     typeof result.id === "string" &&
     typeof result.summary === "string";
   if (!isExecutionResult) throw new Error("Workflow returned an invalid terminal execution result");
+  const payload = {
+    ...(result.output !== undefined ? { output: result.output } : {}),
+    ...(result.facts !== undefined ? { facts: result.facts } : {}),
+  };
   if (result.status === "done") {
     return {
       type: "done",
       summary: result.summary as string,
-      ...(result.output !== undefined ? { output: result.output } : {}),
+      ...payload,
     };
   }
-  if (result.status === "blocked") {
+  if (result.status === "blocked" || result.status === "error" || result.status === "interrupted") {
     return {
-      type: "blocked",
+      type: result.status,
       reason: result.summary as string,
-      ...(result.facts !== undefined ? { context: result.facts } : {}),
+      ...payload,
+      ...(result.status === "blocked" && result.facts !== undefined ? { context: result.facts } : {}),
     };
   }
-  if (result.status === "interrupted") {
-    throw new WorkflowInterrupted(result.summary as string, completedSteps, runId);
-  }
-  if (result.status === "error") throw new Error(result.summary as string);
   throw new Error(`Workflow returned an unknown execution status: ${String(result.status)}`);
 }
 
@@ -717,7 +716,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
 
   if (parsed.type === "done") {
     return {
-      result: { type: "done", summary: parsed.summary, output: parsed.output },
+      result: { type: "done", summary: parsed.summary, output: parsed.output, facts: parsed.facts },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
     };
@@ -730,7 +729,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
   }
   if (parsed.type === "blocked") {
     return {
-      result: { type: "blocked", reason: parsed.reason, context: parsed.context },
+      result: { type: "blocked", reason: parsed.reason, context: parsed.context, output: parsed.output, facts: parsed.facts },
       runId: parsed.workflowRunId,
       ...(verifier ? { verifier } : {}),
     };
@@ -1410,7 +1409,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         assertExecutionActive();
         if (sub.result.type === "done") {
           onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
-        } else {
+        } else if (sub.result.type === "blocked") {
           onEvent?.({ type: "workflow.blocked", reason: sub.result.reason });
         }
         return { sub };
@@ -1533,12 +1532,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
                   throw new Error(nested.reason);
                 }
                 const { sub } = nested;
-                return workflowExecutionResult({
-                  ...sub.result,
-                  workflow: wfName,
-                  workflowRunId: sub.runId,
-                  steps: [],
-                })!;
+                return {
+                  id: sub.runId, kind: "workflow", status: sub.result.type,
+                  summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
+                  ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+                  ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
+                };
               })(),
             ),
         },
@@ -1587,13 +1586,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         assertExecutionActive();
         const result = normalizeAuthoredWorkflowResult(
           authoredResult,
-          completedSteps,
-          runId,
           Boolean(opts.taskBinding),
         );
 
         // ── Guard: workflow_done event ──────────────────────────────────
-        if (guards.length > 0) {
+        if (guards.length > 0 && (result.type === "done" || result.type === "blocked")) {
           const doneEvent: WorkflowGuardEvent = {
             type: "workflow_done",
             workflow: workflow.name,
@@ -1627,7 +1624,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
 
       // Finalize the workflow run
       run.endedAt = Date.now();
-      run.status = result.type === "done" ? "done" : "blocked";
+      run.status = result.type;
       run.result = result.type === "done" ? { summary: result.summary } : { reason: result.reason };
       if (persistDir)
         updateWorkflowRun(persistDir, runId, {
@@ -1635,12 +1632,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           endedAt: run.endedAt,
           result_summary: run.result.summary,
           result_reason: run.result.reason,
-          result_payload:
-            result.type === "done"
-              ? retainWorkflowPayload("output", result.output)
-              : retainWorkflowPayload("facts", result.context),
+          result_payload: retainWorkflowResultPayload(result),
         });
-      if (result.type !== "done" && depth === 1 && !opts.taskBinding) {
+      if (result.type === "blocked" && depth === 1 && !opts.taskBinding) {
         emitWorkflowBlockedOwnerWake({
           workflowRunId: runId,
           workflow: workflow.name,
@@ -1653,7 +1647,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         });
       }
       emitRuntimeEvent({
-        type: result.type === "done" ? "workflow.completed" : "workflow.blocked",
+        type: result.type === "done" ? "workflow.completed" : result.type === "blocked" ? "workflow.blocked" : result.type === "interrupted" ? "workflow.interrupted" : "workflow.failed",
         source: `workflow:${workflow.name}`,
         owner: normalizeEventOwner(opts.agentName),
         data: {
@@ -1775,11 +1769,22 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           workflowRunId: runId,
           summary: result.summary,
           output: result.output,
+          facts: result.facts,
           steps: stepSummaries,
         };
         return toolResult;
       }
 
+      // Authored terminal errors have completed normal finalization. Thrown
+      // setup/persistence failures below require a verified retained reference.
+      if (result.type === "error") return {
+        type: "error", workflow: workflow.name, workflowRunId: runId,
+        error: result.reason, output: result.output, facts: result.facts,
+      };
+      if (result.type === "interrupted") return {
+        type: "interrupted", workflow: workflow.name, workflowRunId: runId,
+        steeringMessage: result.reason, completedSteps, output: result.output, facts: result.facts,
+      };
       onEvent?.({ type: "workflow.blocked", reason: result.reason });
       const toolResult: WorkflowToolResult = {
         type: "blocked",
@@ -1787,6 +1792,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         workflowRunId: runId,
         reason: result.reason,
         context: result.context,
+        output: result.output,
+        facts: result.facts,
         steps: stepSummaries,
       };
       return toolResult;

@@ -8,7 +8,8 @@ export const MAX_WORKFLOW_PAYLOAD_BYTES = 64 * 1024;
 const MAX_WORKFLOW_PAYLOAD_DEPTH = 32;
 type UnavailableReason = "too-large" | "not-json" | "sensitive-key";
 
-export type WorkflowPayload = { kind: "output" | "facts" } & (
+/** "result" retains the output/facts pair; single-field and legacy artifacts remain readable. */
+export type WorkflowPayload = { kind: "output" | "facts" | "result" } & (
   { state: "available"; value: unknown; redacted: boolean } | { state: "unavailable"; reason: UnavailableReason }
 );
 
@@ -95,4 +96,14 @@ export function retainWorkflowPayload(kind: WorkflowPayload["kind"], value: unkn
     // Do not expose arbitrary serializer errors or stringify the payload again.
     return { kind, state: "unavailable", reason };
   }
+}
+
+/** Retain both contribution fields in the existing bounded run artifact. */
+export function retainWorkflowResultPayload(result: { output?: unknown; facts?: unknown }): WorkflowPayload | undefined {
+  if (result.output !== undefined && result.facts !== undefined) {
+    return retainWorkflowPayload("result", { output: result.output, facts: result.facts });
+  }
+  return result.output !== undefined
+    ? retainWorkflowPayload("output", result.output)
+    : retainWorkflowPayload("facts", result.facts);
 }

@@ -40,7 +40,8 @@ export function workflowExecutionResult(result: WorkflowToolResult): ExecutionRe
     summary: result.type === "done" ? result.summary
       : result.type === "blocked" ? result.reason
         : result.type === "interrupted" ? result.steeringMessage : result.error,
-    ...(result.type === "done" && result.output !== undefined ? { output: result.output } : {}),
-    ...(result.type === "blocked" && result.context !== undefined ? { facts: result.context } : {}),
+    ...(result.output !== undefined ? { output: result.output } : {}),
+    ...(result.facts !== undefined ? { facts: result.facts }
+      : result.type === "blocked" && result.context !== undefined ? { facts: result.context } : {}),
   };
 }
