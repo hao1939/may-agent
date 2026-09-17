@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile, link, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { Type, type Static } from "@may-agent/sdk";
+import { Type, type Static } from "typebox";
 
 export const artifactSchema = Type.Object(
   {

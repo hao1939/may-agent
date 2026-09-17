@@ -430,7 +430,7 @@ type ExecutionResult<T = unknown> = {
   status: "done" | "blocked" | "error" | "interrupted";
   summary: string;
   output?: T;
-  evidence?: unknown;
+  facts?: unknown;
 };
 ```
 
@@ -455,6 +455,49 @@ For task-owned work:
   dependency; and
 - use `blocked` for inability to produce a safe structured execution result,
   not as an ordinary domain branch.
+
+## Evidence retention and autonomous recovery
+
+The shared recovery rule is **read the current requirement, inspect retained
+evidence, validate its applicability, and continue unfinished work on the same
+Task**. It applies to a resumed executor and to a replacement agent. Neither
+agent identity nor remembered conversation is the work's authority.
+
+Runtime retains Task identity, current specification, accepted results and
+previous-attempt evidence. `previousAttempt.unacceptedResult` is a proposed
+result whose settlement failed; it is inspectable evidence, not an accepted
+effect. A retry must distinguish work that ran from results that were admitted.
+Do not replay external writes simply because an attempt failed: inspect the
+actual target state or use its supported idempotency identity first.
+
+Workflow code retains the data needed to assess a step: actual execution ID,
+returned output/facts and command receipts, including failure details. Store
+long bodies in artifacts and carry checksummed references through bounded Task
+results. Validate the aggregate result with SDK admission; independent string
+limits on each field do not establish aggregate size correctness. Keep current
+relevant receipts reachable regardless of how many later attempts fail. A
+summary or preview is not the full evidence, and saving a receipt is not proof
+that its claims satisfy the requirement.
+
+`shared/tools/task-evidence.ts` supplies reusable local immutable JSON/Markdown
+storage and checked reads for workflows. It accepts an output directory and
+arbitrary JSON records; it depends on no agent name, team stage, repository or
+Task scheduler. It has no latest pointer, executable phase or queue. The Task's
+Runtime-retained reference selects evidence. Shared agent guidance tells any
+executor to inspect those references before repeating work. This is available
+support, not automatic adoption by every App or a universal guarantee of
+unassisted recovery.
+
+Applicability remains App policy: a coding check may match a clean commit and
+requirement; research may match a source version and question; an external
+operation requires a current target read or operation receipt. Use code for
+identities and observed facts, and agents for relevance and sufficiency. A
+shared helper cannot infer these validity rules. Missing/corrupt evidence calls
+for fresh inspection; changed requirements call for reassessment; missing
+credentials, authority or an owner decision remain ordinary caller feedback.
+Work before an interrupted executor produced a Runtime-referenced result may
+require source inspection or repeated safe checks. This does not create exact
+step replay or a separate durable workflow engine.
 
 ## Facts and side effects
 

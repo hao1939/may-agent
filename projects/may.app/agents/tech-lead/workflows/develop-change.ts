@@ -22,7 +22,7 @@ import {
   recordSchema,
   digest,
   EvidenceStore,
-} from "./lib/evidence.js";
+} from "../../../../../shared/tools/task-evidence.js";
 
 export const name = "develop-change";
 export const description =
@@ -97,6 +97,12 @@ const savedSchema = Type.Object(
   { additionalProperties: false },
 );
 type Saved = Static<typeof savedSchema>;
+
+// Current evidence for each kind stays visible across arbitrarily many repair
+// attempts. Older reports remain in the archive for inspection.
+function currentReports(reports: Saved["reports"]): Saved["reports"] {
+  return [...new Map(reports.map((report) => [report.stage, report])).values()];
+}
 
 const deliverySchema = Type.Object({
   version: Type.Literal(2),
@@ -179,10 +185,7 @@ export async function execute(ctx: WorkflowContext) {
     const admitted = admitTaskReconcileResult(result, {
       allowNeedsAgent: false,
     });
-    if (
-      !admitted.ok ||
-      Buffer.byteLength(JSON.stringify(result), "utf8") > 16 * 1024
-    ) {
+    if (!admitted.ok) {
       const failure =
         "Development delivery cannot fit the Host result contract; retained files need inspection";
       return ctx.done(failure, {
@@ -250,7 +253,7 @@ export async function execute(ctx: WorkflowContext) {
           (rec.events.items.length > 0 && recovered.inputKey !== inputKey)
         )
           continue;
-        for (const report of recovered.reports) {
+        for (const report of currentReports(recovered.reports)) {
           await archive.read(report.record);
           await archive.read(report.report);
         }
@@ -316,7 +319,7 @@ export async function execute(ctx: WorkflowContext) {
             feedback: saved?.feedback?.slice(0, 2000),
           },
         )}`,
-        `Retained reports and raw execution/command receipts: ${JSON.stringify(saved?.reports.filter((item, index, all) => index >= all.length - 8 || (item.stage === "design" && !all.slice(index + 1).some((later) => later.stage === "design"))))}`,
+        `Retained reports and raw execution/command receipts: ${JSON.stringify(currentReports(saved!.reports))}`,
         "Read the relevant retained reports before judging. Verification receipts include actual argv, directory, exit status, stdout/stderr and candidate readback. An agent's claim alone is not verification. Do not request a new implementation merely to repeat receipts already supplied here.",
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,

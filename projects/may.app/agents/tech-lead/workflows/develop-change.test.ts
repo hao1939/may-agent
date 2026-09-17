@@ -688,4 +688,34 @@ describe("development workflow using real Git and verification", () => {
     expect(result.result).toBeUndefined();
     expect(t.calls.some((c) => c.stage === "review")).toBe(false);
   });
+  test("current verification stays visible after many later review failures", async () => {
+    const t = trial();
+    t.setJudgment((stage) =>
+      stage === "design"
+        ? {
+            decision: "review",
+            reason: "Existing candidate",
+            design: "Review the current behavior",
+          }
+        : { decision: "invalid" },
+    );
+    t.current.input = t.spec(0);
+    t.current.outcome = t.spec(0).data.outcome;
+    t.current.acceptance = t.spec(0).data.acceptance;
+    for (let attempt = 0; attempt < 10; attempt++)
+      expect((await t.run()).state).toBe("incomplete");
+    const verification = t
+      .evidence()
+      .reports.find((r: any) => r.stage === "verification");
+    t.setJudgment(() => ({
+      decision: "pass",
+      reason: "Reviewed with retained proof",
+      findings: [],
+      commit: t.git(t.worktree, "rev-parse", "HEAD"),
+    }));
+    expect((await t.run()).state).toBe("converged");
+    expect(t.prompts.at(-1)).toContain(verification.report.path);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+    expect(t.calls.filter((c) => c.stage === "design")).toHaveLength(1);
+  });
 });

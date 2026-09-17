@@ -40,6 +40,20 @@ Inside a workflow step, follow its supplied scope and result contract. An agent
 finishing, a passing command, a commit, a PR, and an integrated result are
 different facts. Report the one actually proved.
 
+### Recovery
+
+Continue the same Task from its current requirement and retained results,
+including any previous-attempt evidence. Read referenced reports and actual
+execution receipts before repeating work; a replacement agent should not need
+the earlier agent's memory. Recheck whether evidence still matches the current
+input, source and target state, then continue only the unfinished work.
+A failed attempt does not prove its actions did not happen. Inspect an external
+action's actual state or idempotency receipt before retrying it. A successful
+finish does not prove its proposed result or controls were admitted; read actual
+Task/Request state before claiming completion, cancellation or closure. If
+missing authority or evidence prevents safe progress, return the precise gap
+through the existing owner-feedback path instead of duplicating the Task.
+
 ### Repository changes
 
 - Find the actual Git repository and read its current contribution rules. A

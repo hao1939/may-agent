@@ -137,8 +137,10 @@ error remains a failed check; captured output is not claimed to be exhaustive.
 Files live beneath the Task output's `.state/may-development/` directory. The
 repository must already ignore that directory, as this App does; the workflow
 checks this before work and never changes ignore rules to hide source edits.
-Code publishes complete content-addressed files and never replaces an existing
-artifact. Raw JSON preserves exact values; readable Markdown supports paginated
+The shared `shared/tools/task-evidence.ts` helper publishes complete
+content-addressed files and never replaces an existing artifact. Its common
+recovery rule is described in the [workflow contract](../../may-agent.app/docs/2a-design/workflows.md#evidence-retention-and-autonomous-recovery). May supplies
+the Git/requirement validity checks and team policy. Raw JSON preserves exact values; readable Markdown supports paginated
 inspection of long text. These are local deliverables retained with the Task
 worktree, not a permanent archive independent of worktree retention.
 
@@ -146,7 +148,8 @@ The full reports are outside the Host's 16 KiB Task result field. Code bounds
 summary previews, retains full explanations, and validates the aggregate return
 against the SDK contract before delivery. Agents do not have to guess how many
 characters remain across all reports. Failure to save evidence cannot produce
-convergence. The reviewer receives report paths and execution identities,
+convergence. The reviewer always receives the latest report for each evidence kind, without
+a history-length cutoff, and execution identities,
 including actual successful check output, instead of being asked to trust an
 implementation claim or request repeated receipts from tech-lead.
 
