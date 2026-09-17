@@ -282,9 +282,45 @@ catch (error) { console.log(JSON.stringify({ error: String(error), candidate: sn
           executionId: "controlled",
           summary: "staged collision",
         }),
-      ).toThrow(/already dirty|became dirty/);
+      ).toThrow(
+        /already dirty|became dirty|changed outside the isolated candidate/,
+      );
       expect(run(root, "ls-files", "--stage")).toBe(index);
       expect(readFileSync(join(root, path), "utf8")).toBe("original\n");
+    },
+  );
+
+  it.each(["changed-reuse", "unreported-new"] as const)(
+    "rejects mixed candidate and direct canonical edits before publication: %s",
+    (scenario) => {
+      const { root, project } = fixture();
+      const candidate = snapshotKnowledge(project, join(root, "artifacts"));
+      const output = join(candidate.projectRoot, "knowledge/new.md");
+      writeFileSync(output, "accepted candidate\n");
+      const direct = join(
+        project,
+        "knowledge",
+        scenario === "changed-reuse" ? "existing.md" : "direct.md",
+      );
+      writeFileSync(direct, "direct uncommitted edit\n");
+      const head = run(root, "rev-parse", "HEAD");
+      const index = run(root, "ls-files", "--stage");
+      expect(() =>
+        publishKnowledgeChanges(candidate, {
+          executionId: "mixed-edit",
+          summary: "must preserve both drafts without partial publication",
+          reportedOutputs: [
+            output,
+            ...(scenario === "changed-reuse" ? [direct] : []),
+          ],
+        }),
+      ).toThrow(/Canonical Scout paths changed outside the isolated candidate/);
+      expect(run(root, "rev-parse", "HEAD")).toBe(head);
+      expect(run(root, "ls-files", "--stage")).toBe(index);
+      expect(run(candidate.candidateRoot, "rev-parse", "HEAD")).toBe(head);
+      expect(existsSync(join(project, "knowledge/new.md"))).toBe(false);
+      expect(readFileSync(direct, "utf8")).toBe("direct uncommitted edit\n");
+      expect(readFileSync(output, "utf8")).toBe("accepted candidate\n");
     },
   );
 

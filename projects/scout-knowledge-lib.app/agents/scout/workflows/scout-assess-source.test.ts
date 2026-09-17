@@ -307,7 +307,7 @@ it("concurrent edits prevent a successful save and preserve the existing content
   expect(result.output).toHaveProperty("state", "incomplete");
   expect(result.output).toHaveProperty(
     "summary",
-    expect.stringContaining("changed concurrently"),
+    expect.stringContaining("changed outside the isolated candidate"),
   );
   expect(readFileSync(record.path, "utf8")).toContain("Human correction");
   expect(readFileSync(record.path, "utf8")).not.toContain(draft.assessment);

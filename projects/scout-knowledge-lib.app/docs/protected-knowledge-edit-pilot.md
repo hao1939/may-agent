@@ -30,7 +30,11 @@ review instead of contaminating the shared library.
 ## Git transaction and recovery
 
 Publication stages only the exact changed paths in the isolated candidate; it
-never uses repository-wide `git add`. Before integration it rejects a target
+never uses repository-wide `git add`. Before either the no-change or changed
+publication path, it rejects newly introduced uncommitted canonical Scout edits,
+including an undeclared direct write alongside an otherwise valid candidate.
+It preserves that observed edit and the candidate for owner recovery. Before
+integration it rejects a target
 that was dirty at allocation, a symlink/non-file output, an unreviewed deletion,
 or concurrent change to an intended path. A disjoint branch advance is accepted
 by replaying the already captured candidate bytes onto the new parent.

@@ -314,14 +314,18 @@ export function publishKnowledgeChanges(
       throw new Error(
         `Candidate changed paths outside Scout durable roots: ${outside.join(", ")}`,
       );
+    for (const path of changedAbsolute) {
+      assertSafeFile(before, path);
+      assertCanonicalFile(before, projectRelative(before, path));
+    }
+    const introducedCanonicalChanges = [
+      ...dirtyPaths(before.repositoryRoot, before.canonicalProjectRoot),
+    ].filter((path) => !before.canonicalDirty.has(path));
+    if (introducedCanonicalChanges.length)
+      throw new Error(
+        `Canonical Scout paths changed outside the isolated candidate: ${introducedCanonicalChanges.join(", ")}`,
+      );
     if (changedAbsolute.length === 0) {
-      const introducedCanonicalChanges = [
-        ...dirtyPaths(before.repositoryRoot, before.canonicalProjectRoot),
-      ].filter((path) => !before.canonicalDirty.has(path));
-      if (introducedCanonicalChanges.length)
-        throw new Error(
-          `Canonical Scout paths changed outside the isolated candidate: ${introducedCanonicalChanges.join(", ")}`,
-        );
       const commit = git(before.repositoryRoot, ["rev-parse", before.ref]);
       verifyReportedRevision(before, commit, reportedHashes);
       verifyCanonicalOutputPaths(before, commit, reportedOutputs);
@@ -333,12 +337,10 @@ export function publishKnowledgeChanges(
         outputs: reportedOutputs,
       };
     }
-    for (const path of changedAbsolute) assertSafeFile(before, path);
     const projectPaths = changedAbsolute.map((path) =>
       projectRelative(before, path),
     );
     const repoPaths = projectPaths.map((path) => repositoryPath(before, path));
-    for (const path of projectPaths) assertCanonicalFile(before, path);
     const preexisting = repoPaths.filter((path) =>
       before.canonicalDirty.has(path),
     );
@@ -532,7 +534,6 @@ export function publishKnowledgeChanges(
         throw new Error(
           "Branch changed while publication acquired the index lock",
         );
-      for (const path of projectPaths) assertCanonicalFile(before, path);
       const newlyDirty = repoPaths.filter((path) =>
         dirtyPaths(before.repositoryRoot, before.canonicalProjectRoot).has(
           path,
