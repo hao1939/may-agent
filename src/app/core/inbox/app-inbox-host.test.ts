@@ -178,19 +178,23 @@ describe("App inbox host", () => {
     ).toThrow("different input");
   });
 
-  it("uses the exact target and passes immutable typed input with human origin", () => {
+  it("uses the exact target before Conversation routing and recovers that same attachment", async () => {
     let received: Readonly<AppInputContext> | undefined;
+    let available = false;
     const host = new AppInboxHost({
       db,
       apps: [
         {
           ...app(),
+          conversation: { mode: "agent", inputKinds: ["probe"] },
           task: () => {
             throw new Error("exact target bypasses mapping");
           },
         },
       ],
+      admitConversation: () => { throw new Error("explicit Task input must not enter Conversation"); },
       attachTask: fakeTaskAttacher(db, ({ attachment, inputContext }) => {
+        if (!available) throw new Error("temporarily unavailable");
         expect(attachment).toEqual({ kind: "existing", taskId: "existing" });
         received = inputContext;
         return { taskId: "existing" };
@@ -203,6 +207,10 @@ describe("App inbox host", () => {
       source: { kind: "human", id: "operator" },
       input: { kind: "probe", data: { value: "correction" } },
     });
+    expect(host.get("feedback")?.status).toBe("pending");
+    available = true;
+    await host.recoverAdmissions();
+    expect(host.get("feedback")?.waitingOn).toEqual({ kind: "task", id: "existing" });
     expect(received).toMatchObject({ id: "feedback", humanRequested: true });
     expect(Object.isFrozen(received?.input.data)).toBe(true);
   });

@@ -327,7 +327,7 @@ export class AppInboxHost {
     const app = this.#requiredApp(input.appId);
     assertValidAppInput(app, input.input);
     const conversationInput = Boolean(
-      app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
+      !input.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
     );
     const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =
@@ -398,7 +398,7 @@ export class AppInboxHost {
     if (item.lease && item.lease.expiresAt > this.#now()) return;
     try {
       const app = this.#requiredApp(item.appId);
-      if (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind)))
+      if (!item.targetTaskId && app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind)))
         throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (item.waitingOn?.kind === "task") {
         // An old Host may have stopped while projecting an already attached
