@@ -1,18 +1,19 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, and release-aware expected-outcome reconciliation."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
-last_updated: "2026-09-14"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
+summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, and release-aware expected-outcome reconciliation."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
+last_updated: "2026-09-18"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation and replay-freshness analysis. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
 
 **Companion note** to [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md).
 
-These patterns separate five questions that a green verification result can
+These patterns separate six questions that a green verification result can
 otherwise collapse: which subject was checked, which axes were covered, whether
-the verdict path can reject a known-bad case, whether the verifier inspected
-the intended universe, and what authority may turn that verdict into acceptance.
+the verdict path can reject a known-bad case, whether replay evidence is fresh for
+the candidate, whether the verifier inspected the intended universe, and what
+authority may turn that verdict into acceptance.
 
 ## Verification-Evidence Binding — Brigade (GitHub, August 2026)
 
@@ -147,6 +148,48 @@ implementation signal, not evidence about production prevalence.
 - **Inspected revision:** [`55df81492aa4890d512efd4152e2cdca514471e8`](https://github.com/Dilikjon/projectguard/commit/55df81492aa4890d512efd4152e2cdca514471e8)
 - **Primary sources:** [CLI entry point](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/src/cli/pg-verify.js#L55-L80), [test runner](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/tests/run.js), [active gate configuration](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/.projectguard.yaml), and [CI workflow](https://github.com/Dilikjon/projectguard/blob/55df81492aa4890d512efd4152e2cdca514471e8/.github/workflows/ci.yml)
 - **Discovery query:** GitHub Repository Search API `AI agent created:>=2026-09-13`, sorted by stars; `incomplete_results: false`
+
+## A Replayed Trace Needs a Freshness Receipt — skilldiff (GitHub, September 2026)
+
+`skilldiff` explores a useful testing shape for instruction-only agent skills: a
+plain-YAML scenario states expected files, commands, normalized tool calls,
+forbidden effects, and output substrings; the reporter evaluates the same contract
+against old and new traces and labels a failure as a regression only when the old
+trace passed. Its live path also retrieves the old skill from a Git ref, restores
+the current skill between runs, and uses a real harness against a fixture repo.
+This makes agent behavior rather than a text diff the intended review object.
+
+The checked CI path exposes a crucial provenance gap. On every skill PR, the workflow
+selects checked-in `examples/traces/<scenario>-old.json` and `-new.json`; recorded
+mode simply loads those JSON files and reevaluates their assertions. No step derives
+either trace from the changed skill, records which skill revision produced it, or
+fails because a trace predates the PR. A skill-only edit can therefore rerun the
+same traces and obtain the same “new skill” verdict even though the new skill never
+executed. The workflow gates recorded assertion failures, so its exit code is real,
+but its verified subject is the supplied trace fixture—not necessarily the changed
+skill revision.
+
+The repository keeps live execution separate, which is a sound architectural
+starting point but not yet a blocking freshness control. At the inspected revision,
+`runner.ts` rejects every live harness except Freebuff despite broader adapters being
+described in the README, and the GitHub Actions live step is manual-only and ends
+with `exit 0` after running scenarios. Scout statically inspected the pinned source
+and repository-authored assertion tests but did not install dependencies, execute
+the tests, or run an agent harness. The repository had three stars at retrieval, so
+this is an early implementation boundary rather than adoption evidence.
+
+**Runtime rule:** every behavioral regression verdict should bind three different
+artifacts: the candidate instruction revision, the exact execution environment, and
+the resulting trace. Deterministic replay is valuable for testing parsers,
+assertions, reports, and previously recorded incidents; it becomes fresh evidence
+about a changed skill only when the trace is regenerated from that revision or a
+content-bound freshness receipt proves equivalence. CI should fail closed when that
+binding is absent, stale, or produced only by a non-gating/manual path.
+
+- **Repo:** https://github.com/scs0209/skilldiff
+- **Inspected revision:** [`285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64`](https://github.com/scs0209/skilldiff/commit/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64)
+- **Primary sources:** [recorded/live runner](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/runner.ts), [trace assertions](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/assertions.ts), [report semantics](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/report.ts), [baseline fetch](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/baseline.ts), [CLI exit path](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/cli.ts), [GitHub Actions workflow](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/.github/workflows/skilldiff.yml), and [repository-authored assertion tests](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/tests/assertions.test.ts)
+- **Discovery query:** GitHub Repository Search API `agentic created:>2026-09-17`, sorted by stars; 3,721 results, `incomplete_results: false`
 
 ## A Clean Sweep Must Prove What It Swept — Dream Studio (GitHub, September 2026)
 

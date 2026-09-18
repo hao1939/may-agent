@@ -52,6 +52,20 @@ No child assignment is justified from these repeated size facts alone. The
 standing maintenance task can review `the-oversight-inversion.md` as the next
 bounded split candidate without creating duplicate project work.
 
+## Targeted recurrence — 2026-09-18 (runtime notes)
+
+A later health packet on the same day named only the two runtime companions.
+Direct `wc -l` counts were again one below the observer values:
+
+| Note | Observer / direct lines | Disposition |
+|------|------------------------:|-------------|
+| `agent-runtime-effect-integrity.md` | 1145 / 1144 | No second split during active intake. The verified verdict-integrity extraction still resolves through its forwarding headings. Four source publications landed on 2026-09-18, and the recent growth remains within the effect-boundary scope, including unknown-effect quarantine, review-versus-commit atomicity, guarded configuration writes, and apply-time revalidation. This is growth after a successful split, not evidence that the split failed. Re-review after intake stabilizes and only if a cohesive block can materially reduce the parent. |
+| `agent-runtime-hardening.md` | 805 / 804 | Tolerated at four lines above threshold. Its two 2026-09-18 additions compare harness controls by model/context budget and distinguish planning benefit from release-verification risk. Both belong with the existing harness-evolution catalog, while the effect-specific catalog is already delegated through the closing companion section. Re-review at 1,000 lines or when a stable thematic block exceeds roughly 150 lines. |
+
+No note was split solely to lower a line-count signal, and no child assignment
+is justified: both dispositions are independently closable in the standing
+maintenance task.
+
 ## Unsourced INDEX batch — 2026-09-18
 
 The observer reported 200 entries still marked `Not yet sourced` after 34

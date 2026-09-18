@@ -62,7 +62,14 @@ function fixture() {
     candidateCommit,
   ]);
   const verification = '{"status":"passed","fixture":true}\n';
-  const comparison = '{"verdict":"candidate-supported","fixture":true}\n';
+  const comparison = `${JSON.stringify({
+    kind: "comparison-decision",
+    gymUsed: false,
+    reason: "The candidate fixes a deterministic application guard.",
+    evidence: ["focused production-module regression"],
+    limitations: ["No behavioral comparison or live adoption was performed."],
+    fixture: true,
+  })}\n`;
   const body = {
     baselineCommit,
     candidateCommit,
@@ -87,6 +94,18 @@ function fixture() {
   writeFileSync(files.comparison, comparison);
   return { root, git, packet, files };
 }
+
+test("truthful non-Gym evidence remains pinned while missing approval preserves source", () => {
+  const f = fixture();
+  expect(JSON.parse(readFileSync(f.files.comparison, "utf8"))).toMatchObject({
+    kind: "comparison-decision",
+    gymUsed: false,
+    evidence: ["focused production-module regression"],
+  });
+  expect(sha(readFileSync(f.files.comparison))).toBe(f.packet.comparisonSha256);
+  expect(applyImprovement(f.files).applied).toBe(false);
+  expect(f.git("rev-parse", "HEAD")).toBe(f.packet.baselineCommit);
+});
 
 test("real Git application requires an exact operator decision and preserves source on denial", () => {
   const f = fixture();

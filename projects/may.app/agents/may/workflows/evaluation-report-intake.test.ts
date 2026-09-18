@@ -125,6 +125,21 @@ describe("May Evaluation report intake procedure", () => {
     );
     const saved = (first.output as any).result;
     saved.linkedTaskId = "goal/repair";
+    const executionOriginRepair = {
+      stage: "owner-failure-disposition",
+      source: {
+        kind: "execution-failure",
+        appId: "may",
+        taskId: "goal/original",
+        attemptId: "r_1_fixture",
+        operationId: "op_fixture",
+        executionId: "s_fixture",
+      },
+      disposition: "repair-linked",
+      currentImpact: "The original outcome remains blocked.",
+      nextStep:
+        "Review the isolated candidate; live adoption is still pending.",
+    };
     const reads: string[] = [];
     const ctx = createTestAppWorkflowContext({
       input: data.publication,
@@ -146,8 +161,7 @@ describe("May Evaluation report intake procedure", () => {
             reads.push(id);
             return {
               id,
-              result:
-                id === "intake/one" ? saved : { summary: "repair evidence" },
+              result: id === "intake/one" ? saved : executionOriginRepair,
             } as any;
           },
         },
@@ -164,7 +178,11 @@ describe("May Evaluation report intake procedure", () => {
     expect(reads).toEqual(["intake/one", "goal/repair"]);
     saved.publication = { ...data.publication, jsonHash: "different" };
     const changed = await intakeEvaluationReport(ctx, data.root, reader(data));
-    expect((changed.output as any).result.disposition).toBe("investigate");
+    expect((changed.output as any).result).toMatchObject({
+      disposition: "investigate",
+      linkedTaskId: null,
+      priorRead: "absent",
+    });
   });
 
   test("missing prior owner stays unresolved rather than creating replacement work", async () => {
