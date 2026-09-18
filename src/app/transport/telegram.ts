@@ -16,7 +16,7 @@
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
@@ -244,7 +244,8 @@ function humanActionText(task: HumanTaskView): string {
 
 function humanActionLine(task: HumanTaskView): string {
   const owner = task.humanAction?.task;
-  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${humanActionText(task)}` : humanActionText(task);
+  const text = fullHumanApprovalAction(task) ?? humanActionText(task);
+  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${text}` : text;
 }
 
 function elapsedText(value: number): string {
@@ -359,7 +360,9 @@ function renderTelegramTaskUpdate(task: HumanTaskView): string {
     taskStatusLabel(task),
     "",
     currentTaskText(task),
-    ...(task.humanAction ? ["", `Needs you: ${humanActionText(task)}`, "Reply here with your decision."] : []),
+    ...(task.humanAction
+      ? ["", `Needs you: ${fullHumanApprovalAction(task) ?? humanActionText(task)}`, "Reply here with your decision."]
+      : []),
   ].join("\n");
 }
 
@@ -405,6 +408,8 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
 
 export type TelegramApprovalAnchor = {
   approvalId: string;
+  /** Fingerprint of the exact Condition proposal bytes shown to the human. */
+  displayedActionHash: string;
   packetHash?: string;
   proposalHash?: string;
   proposalRevision?: number;
@@ -428,9 +433,16 @@ function pendingHumanApprovalCondition(task: HumanTaskView | null) {
   return matches.length === 1 ? matches[0]! : null;
 }
 
+function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
+  const action = pendingHumanApprovalCondition(task)?.spec.requestedAction?.trim();
+  return action || null;
+}
+
 function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
   const condition = pendingHumanApprovalCondition(task);
   if (!condition) return null;
+  const displayedAction = condition.spec.requestedAction?.trim();
+  if (!displayedAction) return null;
   const expected =
     condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
       ? (condition.spec.expected as Record<string, unknown>)
@@ -442,6 +454,7 @@ function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | nu
   if (!approvalId) return null;
   return {
     approvalId,
+    displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
     ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
     ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
     ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
@@ -467,7 +480,10 @@ export function telegramApprovalReply(
   if (!decision || !task || !displayed || !current || JSON.stringify(displayed) !== JSON.stringify(current))
     return null;
   const condition = pendingHumanApprovalCondition(task)!;
-  const expected = condition.spec.expected as Record<string, unknown>;
+  const expected =
+    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+      ? (condition.spec.expected as Record<string, unknown>)
+      : {};
   const allowed = Array.isArray(expected.anyOf)
     ? expected.anyOf
     : Array.isArray(expected.allowedDecisions)
@@ -893,6 +909,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
     const rendered = renderTelegramTaskUpdate(task);
+    const displayedApproval = approvalAnchor(task);
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
@@ -900,7 +917,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       agent: opts.interfaceAgent,
       messageThreadId: watched.topicId,
       replyMarkup: taskButtons([{ appId: task.appId, taskId: task.taskId }]),
-      data: JSON.stringify({ taskRefs: [{ appId: task.appId, taskId: task.taskId }], topicId: conversationTopicId }),
+      data: JSON.stringify({
+        taskRefs: [{ appId: task.appId, taskId: task.taskId }],
+        topicId: conversationTopicId,
+        ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+      }),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -948,7 +969,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const proposal = single ? (opts.humanTasks.getTask?.(actionTask) ?? first) : first;
     const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
     const text = single
-      ? `Needs your decision: ${proposal.outcome}\n${humanActionText(proposal)}\n\nReply here with your decision.`
+      ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
       : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
     const messageId = await sendMessage(coordinates.chatId, text, undefined, {
       eventType: "task.human-action",
@@ -1210,12 +1231,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let replyToSourceId: string | undefined;
     let replyTopicId: string | undefined;
     let replyTask: { appId: string; taskId: string } | undefined;
-    let replyNotification: ReturnType<typeof getNotificationMessage> | undefined;
     let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
     if (replyToMsgId) {
       try {
         const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
-        replyNotification = notification ?? undefined;
         const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
         replyTask = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
         replyTopicId = typeof data?.topicId === "string" ? data.topicId : undefined;
@@ -1242,10 +1261,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     const approverId = String(msg.from?.id ?? "");
     const approval =
-      replyToMsgId &&
-      replyTask &&
-      replyNotification?.event_type === "task.human-action" &&
-      allowedApproverIds.includes(approverId)
+      replyToMsgId && replyTask && replyApprovalAnchor && allowedApproverIds.includes(approverId)
         ? telegramApprovalReply(text, opts.humanTasks.getTask(replyTask), replyApprovalAnchor)
         : null;
 
@@ -1382,11 +1398,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       taskRefs: Array<{ appId: string; taskId: string }> = [],
       onDelivered?: () => void,
       followTask?: { appId: string; taskId: string },
+      approvalTask?: HumanTaskView,
     ): void => {
       const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
+      const displayedApproval = approvalAnchor(approvalTask ?? null);
       queueCommandDelivery(surface, async () => {
         const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
-          eventType: "telegram.reply",
+          eventType: displayedApproval ? "task.human-action" : "telegram.reply",
           agent: opts.interfaceAgent,
           data: JSON.stringify({
             direction: "outbound",
@@ -1395,6 +1413,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             taskRefs,
             followTask,
             topicId: conversationTopicId,
+            ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
           }),
           replyToMessageId: msg.message_id,
           messageThreadId: topicId,
@@ -1596,6 +1615,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         task ? representedTaskIdentities(task) : [],
         undefined,
         task ? { appId: task.appId, taskId: task.taskId } : undefined,
+        task ?? undefined,
       );
       return true;
     }
@@ -1618,6 +1638,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                 shownWatchRevisions.set(surface, taskPresentationRevision(task));
             },
             task ? { appId: task.appId, taskId: task.taskId } : undefined,
+            task ?? undefined,
           );
           if (!task || task.terminal) {
             stopWatching(surface);
@@ -1634,6 +1655,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           representedTaskIdentities(task),
           undefined,
           { appId: task.appId, taskId: task.taskId },
+          task,
         );
       } else {
         const topicRef = taskTopicId(task);
@@ -1658,6 +1680,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             if (watchedTasks.get(surface) === watched) shownWatchRevisions.set(surface, taskPresentationRevision(task));
           },
           { appId: task.appId, taskId: task.taskId },
+          task,
         );
       }
       return true;
