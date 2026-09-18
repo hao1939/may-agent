@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Aug 2026 update: a Databricks field report describes a softer cost-control stack—model/harness portability, routing, progressive spend friction, and context-overhead tuning—rather than hard user cutoffs."
-triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio", "AI gateway", "progressive spend friction", "model downshifting", "coding agent cost routing"]
-last_updated: "2026-08-07"
-source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404. Aug 2026: Databricks field report on AI coding cost controls, surfaced by HN item 49214468."
+summary: "Cross-source synthesis: Agent-era token consumption was structurally unpredictable from 2025 vantage, causing universal budget blowouts. The trap has three layers: (1) predictability collapse (no budget set in 2025 could model agent consumption), (2) cost-trajectory inversion (humans get cheaper per-quality-unit over time, LLMs don't), (3) hallucination-size inversion (bigger models cost more AND hallucinate more). The combined effect drives model-tier differentiation, local adoption, and two-model architectures as structural responses. Jul 2026 update: Cost Inversion Threshold identified — when AI infrastructure cost per engineer exceeds total compensation (bull case: $596K/engineer by 2029, Goldman Sachs). Aug 2026 update: a Databricks field report describes a softer cost-control stack—model/harness portability, routing, progressive spend friction, and context-overhead tuning—rather than hard user cutoffs. Sep 2026 update: abstract-level evidence suggests live tool progress is a materially better KV-cache scheduling signal than duration estimates fixed before a call."
+triggers: ["AI cost wall", "token economics", "budget blowout", "AI budget", "token budget cap", "$1500/month", "model tiering", "frontier economics", "cost-trajectory inversion", "agent token consumption", "budget predictability", "cost inversion threshold", "AI costs more than engineer", "24x token consumption", "compute payroll ratio", "AI gateway", "progressive spend friction", "model downshifting", "coding agent cost routing", "tool progress signal", "KV cache scheduling", "post-tool TTFT"]
+last_updated: "2026-09-18"
+source_basis: "HN scans #47-#58 (Jun-Aug 2026), FT reporting on AI budget strain, simonw framing (predictability thesis), gamblor956 (cost-trajectory inversion), hallucination benchmarks (AA-Omniscience). Cross-referenced with: The Cold Start Tax (session-start token overhead), The Coordination Tax (multi-agent cost multiplication), Evaluation Mirage (dangerous valley from budget opacity). Jul 2026: tomtunguz.com/ai-spend-breakeven-2029, Goldman Sachs AI Economy 2026, Forbes Global 2000, HN Scan #404. Aug 2026: Databricks field report on AI coding cost controls, surfaced by HN item 49214468. Sep 2026: arXiv 2609.18849v1 abstract on live tool-progress signals for KV-cache scheduling."
 </ai_context>
 
 # The Token Economics Trap: Why Every AI Budget Is Wrong
@@ -381,6 +381,41 @@ portable client surface, centralized routing, and progressive spend gates.
 
 Source: https://news.ycombinator.com/item?id=49214468,
 https://www.databricks.com/blog/managing-ai-coding-costs-scale
+
+## Live Tool Progress Beats Pre-Call Duration Guesses (arXiv, September 2026)
+
+“Ask the Tool, Don't Guess” targets a hidden source of agent-serving cost: a
+request's KV cache continues occupying GPU memory while a tool runs, but cache
+retention and eviction decisions commonly use duration estimates fixed before
+the call starts. The paper argues that no such estimate can observe the actual
+run's remaining work, whereas the running tool often can expose either a
+fraction-complete signal or a reliable “nearly done” signal.
+
+The v1 abstract reports a census of four public agent corpora in which most
+tool-wait time contains a readable progress signal once exposed. At cache
+decision points, that signal was reportedly several times to an order of
+magnitude more accurate than the strongest compared predictors. A harness that
+kept the signal hidden from the agent had no measurable benchmark-score cost;
+small hints to a production serving engine reduced post-tool-call p90 time to
+first token by **20.7% with HBM-only cache** and **20.8% with HBM + DRAM** versus
+LRU, close to the paper's oracle.
+
+**Durable implication:** tool observability can be a resource-control input,
+not only debugging telemetry. Agent protocols should distinguish user/model
+output from a private runtime progress channel, and schedulers should prefer
+live, monotonic evidence over a tool-name prior or a duration promise made
+before execution. This complements centralized routing: routing chooses a path,
+while live progress lets the serving layer revise cache policy as that path
+actually unfolds.
+
+**Evidence boundary:** this assessment covers the arXiv v1 abstract only. The
+figures are author-reported; the corpus labeling, predictor definitions,
+benchmark protocol, engine integration, and statistical uncertainty were not
+checked in the full paper. The result does not show that every tool can expose
+honest progress, so interfaces still need a defined fallback for opaque or
+non-monotonic work.
+
+Source: https://arxiv.org/abs/2609.18849v1
 
 ## Cost-Aware Speculative Execution (arXiv, June 2026)
 
