@@ -894,16 +894,6 @@ reconciliation when it requires durable waits.
 
 ## Cross-App outcome review and report consumption
 
-A reviewing App uses the same Task mechanism as any other App. Code may use
-bounded public catalog and Task reads to bind an external `(appId, taskId)` and
-collect mechanical evidence; an agent judges responsibility, recovery,
-verification, and delivery. Caller hints and session identity do not establish
-ownership. Missing or conflicting evidence is an inconclusive review result,
-not a target failure and not healthy coverage.
-
-Published review artifacts belong in a configured durable App output beneath
-`.state`, not a source checkout or disposable Task worktree. Immutable reports
-and facts sidecars are evidence. A bounded list/read workflow may expose them
-to May through ordinary App actions without launching a new review. Receipt or
-acknowledgment does not mean a finding was fixed; verified resolution requires
-later evidence from the responsible App's accepted Task result or output.
+Cross-App reviews use ordinary Tasks, scoped reads and durable report outputs.
+Agents judge the evidence; acknowledgment alone does not establish resolution.
+See the [authoring guide](../2b-manual/workflow-authoring.md#cross-app-outcome-reviews) for identity checks and report handling.
