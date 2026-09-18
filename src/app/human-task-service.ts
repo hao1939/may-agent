@@ -23,6 +23,14 @@ export type HumanTaskStatus =
   | "closed"
   | "cancelled";
 
+// These identities denote the authenticated person in this installation.
+// Other `human:*` owners are roles with their own responsible party, not Hao.
+const PERSONAL_HUMAN_OWNERS = ["human", "human:hao", "human:operator", "hao"] as const;
+
+export function isPersonalHumanOwner(owner: string | undefined): boolean {
+  return PERSONAL_HUMAN_OWNERS.includes(owner?.trim().toLowerCase() as (typeof PERSONAL_HUMAN_OWNERS)[number]);
+}
+
 export type HumanTaskProgress = {
   stage: string;
   message?: string;
@@ -56,6 +64,8 @@ export type HumanTaskView = {
   result?: Record<string, unknown>;
   facts?: string[];
   updatedAt: number;
+  /** True when this Task was admitted by a configured App input schedule. */
+  recurring?: boolean;
   terminal: boolean;
   cancellable: boolean;
   execution?: { attemptId: string; sessionId?: string };
@@ -148,6 +158,7 @@ type TaskRow = {
   attempt_json?: string | null;
   observed_attempt_json?: string | null;
   human_conditions_json?: string | null;
+  recurring?: number;
 };
 
 type TaskProgressRow = { data?: string | null; timestamp?: number };
@@ -291,9 +302,21 @@ function taskStatusDetail(
   }
 }
 
-const HUMAN_OWNER_SQL = `(lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'human'
-      OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) LIKE 'human:%'
-      OR lower(json_extract(human_condition.condition_json, '$.spec.owner')) = 'hao')`;
+// Keep the SQL projection aligned with isPersonalHumanOwner so list/detail
+// reads and their transport presentation use the same structured principals.
+const HUMAN_OWNER_SQL = `(lower(trim(json_extract(human_condition.condition_json, '$.spec.owner'))) IN
+      (${PERSONAL_HUMAN_OWNERS.map((owner) => `'${owner}'`).join(", ")}))`;
+
+function recurringTaskSql(appId: string, taskId: string): string {
+  return `EXISTS (
+    SELECT 1 FROM app_inbox_items AS scheduled_input INDEXED BY idx_app_inbox_waiting
+    WHERE scheduled_input.waiting_on_kind = 'task'
+      AND scheduled_input.waiting_on_id = ${taskId}
+      AND scheduled_input.app_id = ${appId}
+      AND scheduled_input.source_kind = 'system'
+      AND instr(scheduled_input.source_id, 'schedule:' || ${appId} || ':') = 1
+  )`;
+}
 
 const HUMAN_CONDITIONS_SQL = `(SELECT json_group_array(json(human_condition.condition_json))
   FROM app_task_condition_routes human_route
@@ -471,6 +494,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       ...(cancellation.result ? { result: structuredClone(cancellation.result) } : {}),
       ...(cancellation.facts ? { facts: [...cancellation.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(cancellation.cancelledAt),
+      recurring: row.recurring === 1,
       terminal: true,
       cancellable: false,
     };
@@ -495,6 +519,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
       ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
       ...(receipt.facts ? { facts: [...receipt.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
+      recurring: row.recurring === 1,
       terminal: true,
       cancellable: false,
     };
@@ -526,6 +551,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
     ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
     ...(observationIsCurrent && resource.status.facts ? { facts: [...resource.status.facts] } : {}),
     updatedAt: row.updated_at ?? Date.parse(resource.status.updatedAt),
+    recurring: row.recurring === 1,
     terminal: false,
     cancellable: true,
     ...(resource.status.currentAttemptId
@@ -565,6 +591,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
          t.ready, a.attempt_json, oa.attempt_json AS observed_attempt_json,
          ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
+         ${recurringTaskSql("t.app_id", "t.task_id")} AS recurring,
          t.generation AS current_generation
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
@@ -577,6 +604,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
          r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
+         ${recurringTaskSql("r.app_id", "r.receipt_id")} AS recurring,
          json_extract(r.receipt_json, '$.metadata.generation') AS current_generation
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
@@ -584,6 +612,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
          c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
+         ${recurringTaskSql("c.app_id", "c.task_id")} AS recurring,
          json_extract(c.cancellation_json, '$.generation') AS current_generation
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
@@ -919,7 +948,8 @@ export class HumanTaskService {
     if (includeLive && livePhases.length > 0) {
       parts.push(
         `SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-           t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json
+           t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
+           ${recurringTaskSql("t.app_id", "t.task_id")} AS recurring
          FROM app_tasks t
          LEFT JOIN app_task_attempts a
            ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
@@ -938,7 +968,8 @@ export class HumanTaskService {
     if (includeDone) {
       parts.push(
         `SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-           r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
+           r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
+           ${recurringTaskSql("r.app_id", "r.receipt_id")} AS recurring
          FROM app_task_receipts r
          WHERE NOT EXISTS (
            SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
@@ -953,7 +984,8 @@ export class HumanTaskService {
       const closureKinds = [includeCancelled ? "cancelled" : null, includeClosed ? "closed" : null].filter(Boolean);
       parts.push(
         `SELECT c.app_id, c.task_id, COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') AS phase, c.requested_at AS updated_at,
-           c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json
+           c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
+           ${recurringTaskSql("c.app_id", "c.task_id")} AS recurring
          FROM app_task_cancellations c
          WHERE COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') IN (${closureKinds.map(() => "?").join(", ")})${appId ? " AND c.app_id = ?" : ""}`,
       );

@@ -160,7 +160,7 @@ describe("Telegram exact approval reply", () => {
     }
   });
 
-  it("shows every human action but does not guess among multiple approvals", () => {
+  it("shows every personal action, excludes human roles, and does not guess among multiple approvals", () => {
     const withClarification = proposal("a", 1);
     withClarification.humanAction = { requestedAction: "Two human actions remain." };
     withClarification.diagnostics!.conditions.push({
@@ -178,10 +178,30 @@ describe("Telegram exact approval reply", () => {
         status: { state: "false" },
       },
     } as any);
+    withClarification.diagnostics!.conditions.push({
+      id: "maintainer-merge",
+      condition: {
+        metadata: { id: "maintainer-merge", generation: 1, resourceVersion: 1 },
+        spec: {
+          type: "human.answer.received",
+          subject: "pull-request:199",
+          expected: { merged: true },
+          owner: "human:github-maintainer",
+          requestedAction: "Run checks, obtain review, and merge the May-owned change.",
+          reviewAfterMs: 60_000,
+        },
+        status: { state: "false" },
+      },
+    } as any);
     const rendered = renderTelegramTask(withClarification);
     expect(rendered).toContain("Verified benefit: exact packet binding.");
     expect(rendered).toContain("Clarify the preferred rollback observation window.");
+    expect(rendered).not.toContain("merge the May-owned change");
     expect(telegramApprovalReply("approve", withClarification, anchorA)).not.toBeNull();
+
+    const roleOwnedApproval = proposal("a", 1);
+    roleOwnedApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "human:github-maintainer";
+    expect(telegramApprovalReply("approve", roleOwnedApproval, anchorA)).toBeNull();
 
     const ambiguous = proposal("a", 1);
     ambiguous.humanAction = { requestedAction: "Choose one proposal." };
