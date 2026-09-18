@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,6 +11,16 @@ import {
   selectorStateFact,
 } from "./task-outcome-selector.ts";
 import type { PublicCommand } from "./lib/public-task-evidence.ts";
+import { readSubjectTask } from "./lib/public-task-evidence.ts";
+import {
+  hashReport,
+  listTaskReports,
+  markTaskReportPublished,
+  renderTaskReportMarkdown,
+  taskReportPaths,
+  TASK_OUTCOME_RUBRIC_VERSION,
+  writeImmutable,
+} from "./lib/task-report-store.ts";
 
 const NOW = Date.UTC(2026, 8, 17);
 const DAY = 86_400_000;
@@ -30,6 +40,50 @@ function task(
   status = "up-to-date",
 ) {
   return { appId, taskId, status, updatedAt: NOW - ageDays * DAY };
+}
+
+function publishReport(
+  root: string,
+  appId: string,
+  taskId: string,
+  evidenceHash: string,
+  createdAt: number,
+): void {
+  const paths = taskReportPaths(appId, taskId, evidenceHash);
+  const executionId = `fixture-${createHash("sha256").update(taskId).digest("hex").slice(0, 12)}`;
+  const payload = {
+    version: 1,
+    rubricVersion: TASK_OUTCOME_RUBRIC_VERSION,
+    sourceRevision: "selector-regression",
+    createdAt,
+    disposition: "assessed",
+    subject: { appId, taskId, evidenceHash },
+    evaluator: { executionId },
+    judgment: {
+      disposition: "assessed",
+      summary: "Fixture report",
+      responsibility: "Fixture",
+      delivery: "Fixture",
+      findings: [],
+      verification: [],
+    },
+  };
+  const markdown = renderTaskReportMarkdown(payload)!;
+  writeImmutable(
+    join(root, paths.jsonPath),
+    `${JSON.stringify(payload, null, 2)}\n`,
+  );
+  writeImmutable(join(root, paths.markdownPath), markdown);
+  markTaskReportPublished(root, {
+    appId,
+    taskId,
+    evidenceHash,
+    executionId,
+    jsonPath: paths.jsonPath,
+    markdownPath: paths.markdownPath,
+    jsonSha256: hashReport(join(root, paths.jsonPath)),
+    markdownSha256: hashReport(join(root, paths.markdownPath)),
+  });
 }
 
 function catalogCommand(
@@ -62,6 +116,36 @@ function catalogCommand(
         },
       };
     }
+    const appId = String(request.appId);
+    const exactTaskId = String(request.taskId);
+    const listed = (tasks[appId] ?? []).find(
+      (item) => item.taskId === exactTaskId,
+    );
+    if (request.type === "app.task.get")
+      return {
+        type: "ok",
+        command: "app.task.get",
+        appId,
+        taskId: exactTaskId,
+        task: {
+          id: exactTaskId,
+          generation: 1,
+          creator: { appId },
+          outcome: `Review ${exactTaskId}`,
+          result: { status: listed?.status },
+        },
+      };
+    if (request.type === "task.get")
+      return {
+        type: "ok",
+        command: "task.get",
+        task: {
+          ...listed,
+          appId,
+          taskId: exactTaskId,
+          generation: 1,
+        },
+      };
     throw new Error("unexpected");
   };
 }
@@ -229,7 +313,7 @@ describe("automatic task outcome selector", () => {
     const command = catalogCommand({
       may: [
         task("may", "goal/running", 0, "running"),
-        task("may", "goal/recent", 1, "needs-attention"),
+        task("may", "goal/recent", 1, "attention"),
         task("may", "goal/old", 8),
         task("may", "goal/older", 9),
       ],
@@ -248,8 +332,11 @@ describe("automatic task outcome selector", () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({
       may: [
+        task("may", "goal/attention", 0, "attention"),
+        task("may", "goal/done", 0, "done"),
         task("may", "goal/closed", 0, "closed"),
         task("may", "goal/cancelled", 0, "cancelled"),
+        task("may", "goal/obsolete", 0, "needs-attention"),
       ],
     });
     const first = await selectFairCandidate(
@@ -259,14 +346,16 @@ describe("automatic task outcome selector", () => {
       undefined,
       NOW,
     );
-    const second = await selectFairCandidate(
-      command,
-      config,
-      root,
-      first.state,
-      NOW,
-    );
-    expect([first.candidate?.taskId, second.candidate?.taskId]).toEqual([
+    const selected = [first.candidate?.taskId];
+    let state = first.state;
+    for (let index = 0; index < 3; index += 1) {
+      const next = await selectFairCandidate(command, config, root, state, NOW);
+      selected.push(next.candidate?.taskId);
+      state = next.state;
+    }
+    expect(selected).toEqual([
+      "goal/attention",
+      "goal/done",
       "goal/closed",
       "goal/cancelled",
     ]);
@@ -313,9 +402,9 @@ describe("automatic task outcome selector", () => {
 
   test("advances past malformed and non-reviewable items within a page", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-invalid-items-"));
+    const base = catalogCommand({ may: [task("may", "goal/valid")] });
     const command: PublicCommand = async (request) => {
-      if (request.type === "apps.list")
-        return { type: "ok", command: "apps.list", apps: [{ id: "may" }] };
+      if (request.type !== "tasks.list") return base(request);
       return {
         type: "ok",
         command: "tasks.list",
@@ -360,9 +449,7 @@ describe("automatic task outcome selector", () => {
       [createHash("sha256").update("may").digest("hex")]: createHash("sha256")
         .update("goal/may-old")
         .digest("hex"),
-      [createHash("sha256").update("scout").digest("hex")]: createHash(
-        "sha256",
-      )
+      [createHash("sha256").update("scout").digest("hex")]: createHash("sha256")
         .update("goal/scout-old")
         .digest("hex"),
     });
@@ -384,9 +471,9 @@ describe("automatic task outcome selector", () => {
   test("continues from a malformed first page to a valid later page", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-malformed-page-"));
     const cursors: unknown[] = [];
+    const base = catalogCommand({ may: [task("may", "goal/later")] });
     const command: PublicCommand = async (request) => {
-      if (request.type === "apps.list")
-        return { type: "ok", command: "apps.list", apps: [{ id: "may" }] };
+      if (request.type !== "tasks.list") return base(request);
       cursors.push(request.cursor);
       return request.cursor
         ? {
@@ -483,6 +570,92 @@ describe("automatic task outcome selector", () => {
     );
     expect(result.candidate).toBeNull();
     expect(taskReads).toBe(3);
+  });
+
+  test("deduplicates unchanged evidence outside recent-100 while allowing changed evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-exact-report-"));
+    const item: Record<string, unknown> = {
+      ...task("may", "goal/stable"),
+      result: { output: { ref: "artifact:original" } },
+    };
+    const command = catalogCommand({ may: [item] });
+    const subject = await readSubjectTask(
+      { appId: "may", taskId: "goal/stable" },
+      command,
+    );
+    expect(subject.disposition).toBe("eligible");
+    publishReport(root, "may", "goal/stable", subject.evidenceHash!, NOW - 1);
+    for (let i = 0; i < 100; i++) {
+      publishReport(
+        root,
+        "may",
+        `goal/newer-${i}`,
+        createHash("sha256").update(String(i)).digest("hex"),
+        NOW + i,
+      );
+    }
+    const recent = listTaskReports(root, 100);
+    expect(recent).toHaveLength(100);
+    expect(recent.some((entry) => entry.taskId === "goal/stable")).toBe(false);
+    const paths = taskReportPaths("may", "goal/stable", subject.evidenceHash!);
+    const reportBefore = hashReport(join(root, paths.jsonPath));
+    expect(
+      (await selectFairCandidate(command, config, root, undefined, NOW))
+        .candidate,
+    ).toBeNull();
+    Object.assign(item, {
+      ref: "expanded-display-ref",
+      resourceVersion: 9,
+      updatedAt: NOW + 1,
+      progress: { stage: "refresh" },
+    });
+    expect(
+      (await selectFairCandidate(command, config, root, undefined, NOW))
+        .candidate,
+    ).toBeNull();
+    item.result = { output: { ref: "artifact:replacement" } };
+    expect(
+      (await selectFairCandidate(command, config, root, undefined, NOW))
+        .candidate,
+    ).toEqual({ appId: "may", taskId: "goal/stable" });
+    expect(hashReport(join(root, paths.jsonPath))).toBe(reportBefore);
+  });
+
+  test("does not deduplicate a different full hash at the same shortened report path", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-hash-collision-"));
+    const command = catalogCommand({ may: [task("may", "goal/one")] });
+    const subject = await readSubjectTask(
+      { appId: "may", taskId: "goal/one" },
+      command,
+    );
+    expect(subject.disposition).toBe("eligible");
+    const hash = subject.evidenceHash!;
+    const other = hash.slice(0, -1) + (hash.endsWith("0") ? "1" : "0");
+    publishReport(root, "may", "goal/one", other, NOW);
+    expect(taskReportPaths("may", "goal/one", other)).toEqual(
+      taskReportPaths("may", "goal/one", hash),
+    );
+    expect(
+      (await selectFairCandidate(command, config, root, undefined, NOW))
+        .candidate,
+    ).toEqual({ appId: "may", taskId: "goal/one" });
+  });
+
+  test("does not deduplicate corrupted report evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-corrupt-report-"));
+    const command = catalogCommand({ may: [task("may", "goal/one")] });
+    const subject = await readSubjectTask(
+      { appId: "may", taskId: "goal/one" },
+      command,
+    );
+    expect(subject.disposition).toBe("eligible");
+    publishReport(root, "may", "goal/one", subject.evidenceHash!, NOW);
+    const paths = taskReportPaths("may", "goal/one", subject.evidenceHash!);
+    writeFileSync(join(root, paths.markdownPath), "corrupt fixture");
+    expect(
+      (await selectFairCandidate(command, config, root, undefined, NOW))
+        .candidate,
+    ).toEqual({ appId: "may", taskId: "goal/one" });
   });
 
   test("disabled selection performs no public reads", async () => {

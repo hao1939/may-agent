@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile, link, rm } from "node:fs/promises";
+import { mkdir, readFile, writeFile, link, rm, open } from "node:fs/promises";
+import { constants } from "node:fs";
 import { join, resolve } from "node:path";
 import { Type, type Static } from "typebox";
 
@@ -16,6 +17,70 @@ export const recordSchema = Type.Object(
 );
 export type Artifact = Static<typeof artifactSchema>;
 export type EvidenceRecord = Static<typeof recordSchema>;
+
+export type ArtifactRead = {
+  reference: Artifact;
+  status: "read" | "missing" | "unavailable" | "mismatched" | "truncated";
+  bytes?: number;
+  sha256?: string;
+  content?: string;
+};
+
+/** Read only an explicitly pinned regular file. Never present a prefix as a
+ * verified artifact: oversized files have metadata, but no consumed content.
+ * This is byte integrity, not independent verification of a producer's claim. */
+export async function readPinnedArtifact(
+  reference: Artifact,
+  maxBytes = 32_768,
+): Promise<ArtifactRead> {
+  if (
+    !/^[a-f0-9]{64}$/.test(reference.sha256) ||
+    !reference.path.startsWith("/")
+  )
+    return { reference, status: "unavailable" };
+  const limit = Math.max(0, Math.min(131_072, Math.floor(maxBytes) || 0));
+  let file;
+  try {
+    file = await open(
+      reference.path,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    );
+    const stat = await file.stat();
+    if (!stat.isFile()) return { reference, status: "unavailable" };
+    if (stat.size > limit)
+      return { reference, status: "truncated", bytes: stat.size };
+    // Read at most limit+1, including growth after stat; do not allocate by file size.
+    const buffer = Buffer.alloc(limit + 1);
+    let bytes = 0;
+    while (bytes < buffer.length) {
+      const read = await file.read(buffer, bytes, buffer.length - bytes, bytes);
+      if (!read.bytesRead) break;
+      bytes += read.bytesRead;
+    }
+    if (bytes > limit) return { reference, status: "truncated", bytes };
+    const body = buffer.subarray(0, bytes);
+    const sha256 = createHash("sha256").update(body).digest("hex");
+    if (sha256 !== reference.sha256)
+      return { reference, status: "mismatched", bytes, sha256 };
+    return {
+      reference,
+      status: "read",
+      bytes,
+      sha256,
+      content: body.toString("utf8"),
+    };
+  } catch (error) {
+    return {
+      reference,
+      status:
+        (error as NodeJS.ErrnoException).code === "ENOENT"
+          ? "missing"
+          : "unavailable",
+    };
+  } finally {
+    await file?.close();
+  }
+}
 
 export function digest(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");

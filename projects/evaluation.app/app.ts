@@ -392,6 +392,10 @@ const evaluationInputSchema = Type.Union([
         {
           appId: Type.String({ minLength: 1 }),
           taskId: Type.String({ minLength: 1 }),
+          subjectGeneration: Type.Optional(Type.Number({ minimum: 1 })),
+          evidenceHash: Type.Optional(
+            Type.String({ minLength: 64, maxLength: 64 }),
+          ),
         },
         { additionalProperties: false },
       ),
@@ -597,8 +601,16 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       const appId = stringValue(data.appId);
       const taskId = stringValue(data.taskId);
       if (!appId || !taskId) return null;
+      const subjectGeneration = Number(data.subjectGeneration);
+      const evidenceHash = stringValue(data.evidenceHash);
+      const pinnedIdentity =
+        Number.isSafeInteger(subjectGeneration) &&
+        subjectGeneration > 0 &&
+        evidenceHash
+          ? `/generation-${subjectGeneration}/${safeTaskIdPart(evidenceHash)}`
+          : "";
       return {
-        id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}`,
+        id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}${pinnedIdentity}`,
         parentId: "evaluation-system",
         outcome: `Evaluate the accepted outcome of ${appId}/${taskId}.`,
         acceptance: [
@@ -606,7 +618,14 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
           "An immutable report and machine-readable facts are read back before publication.",
         ],
         workflow: "task-outcome-review",
-        input: { appId, taskId },
+        input: {
+          appId,
+          taskId,
+          ...(Number.isSafeInteger(subjectGeneration) && subjectGeneration > 0
+            ? { subjectGeneration }
+            : {}),
+          ...(evidenceHash ? { evidenceHash } : {}),
+        },
         priority: "P1",
       };
     }
@@ -1210,6 +1229,10 @@ const baseApp = defineApp({
         {
           appId: Type.String({ minLength: 1 }),
           taskId: Type.String({ minLength: 1 }),
+          subjectGeneration: Type.Optional(Type.Number({ minimum: 1 })),
+          evidenceHash: Type.Optional(
+            Type.String({ minLength: 64, maxLength: 64 }),
+          ),
         },
         { additionalProperties: false },
       ),

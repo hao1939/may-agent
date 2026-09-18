@@ -93,7 +93,7 @@ Every human adapter exposes the same small meanings:
 | watch one Task        | `/watch [ref]`                               | `/watch [ref]`, later buttons allowed               |
 | stop watching         | `/unwatch`                                   | `/unwatch`                                          |
 | cancel one Task       | `/cancel [ref]`                              | `/cancel [ref]`                                     |
-| stop this turn        | Esc when the conversation input has focus     | Stop button on the active turn                      |
+| stop this turn        | Esc when the conversation input has focus    | Stop button on the active turn                      |
 | talk or give feedback | bare text                                    | ordinary message                                    |
 
 Adapters may render these resources differently. Console uses aligned text and
@@ -254,6 +254,15 @@ secondary details. This is one bounded read projection of Task truth: it adds
 no presentation record, lifecycle, polling, delivery acknowledgement, or model
 turn.
 
+Use the same current-first order in human views and bounded agent context: show
+the current objective, status, result or blocker, next action, and accountable
+owner before history. Outstanding handoff references and already selected
+review evidence are current state; do not silently replace them with a newer
+subject snapshot. Link older attempts, logs, full reports, and history instead
+of leading with them, but expand the exact detail immediately when the present
+decision needs it—for example, the full approval proposal and evidence links.
+This is presentation and discovery guidance, not a new stored projection or UI.
+
 ## Human actions
 
 Human attention is a derived Task view, not another inbox. A live Task appears
@@ -296,6 +305,37 @@ change a Conversation result or a Task.
 Bare text always goes to May with `context.focusedApp`. A watch additionally
 adds `context.focusedTask`. The selected App is a useful conversational lens,
 not permission to force work into the wrong owner.
+
+### Exact plain-text decisions
+
+A narrow explicit decision may additionally produce a generic control fact when
+all of these mechanical conditions hold: the provider authenticated a configured
+approver; the literal reply is exactly an allowed decision such as `approve`,
+`reject`, or `defer`; it replies to one stored human-action card; and the card's
+immutable approval identity, packet/proposal hashes, revision, Task, and allowed
+decisions still match one current unresolved human Condition. The adapter stores
+that anchor from the same exact Task snapshot whose text it displays. A reply to
+an older card cannot decide its replacement.
+
+The literal reply still enters the ordinary Conversation with provider sender,
+message, reply, chat, thread, Task, and Topic correlation. Conditional text,
+corrections, unbound affirmations, unauthorized senders, ambiguous multi-Task
+cards, and stale anchors remain only Conversation input. The adapter does not
+interpret them as consent.
+
+The control fact is journaled evidence, not App-work admission and not mutation
+authority by event name alone. Current state comes first: ingress rereads the exact
+Task/Condition before journaling a decision, and applying code rereads it again
+before mutation. Its anchor includes the Task generation and exact Condition
+identity, but not mutable resource version; a cancelled, terminal or
+new-generation Task cannot reuse the old card. An applying App must reread the
+trusted journal source and exact decision association at its mutation boundary,
+immediately recheck the reviewed candidate/evidence/scope/current target, and
+enforce replay idempotency. A separately approved activation operation must also
+pin the source identity it will activate and report the identity actually loaded.
+Source application, activation, observed adoption, and independent follow-up are
+separate receipts on the ordinary accountable Task; failure of a later stage
+cannot rewrite an earlier receipt into completed rollout.
 
 When May assigns asynchronous work, the Conversation Topic links to the real
 Tasks owned by destination Apps. When a destination App durably attaches the
@@ -388,11 +428,11 @@ Watch does not poll and owns no timer, workflow, session, or model turn.
 **Interface decision:** Use Esc in Console and a Stop button in Telegram/browser.
 No `/stop` command is needed in the intended everyday vocabulary.
 
-| Console context | Esc behavior |
-| --- | --- |
-| A menu or dialog is open | Dismiss that UI first; do not stop work |
+| Console context                                   | Esc behavior                                                          |
+| ------------------------------------------------- | --------------------------------------------------------------------- |
+| A menu or dialog is open                          | Dismiss that UI first; do not stop work                               |
 | Conversation input has focus and a turn is active | Request Stop for that exact turn; preserve the draft and Conversation |
-| No turn is active | Preserve the draft and Conversation; do not exit Console |
+| No turn is active                                 | Preserve the draft and Conversation; do not exit Console              |
 
 Show the shortcut while a turn is active. A Stop button carries the observed
 turn identity and becomes inactive when that turn ends. A control reports
@@ -419,12 +459,12 @@ Stop still prevents replay of the stopped input.
 
 Human adapters expose distinct meanings:
 
-| Action | Effect |
-| --- | --- |
-| Stop this turn | Stop the exact active conversational turn, leaving admitted background Tasks running. |
-| Steer this turn | Apply a correction to the exact active conversational turn. |
-| Steer or cancel Task X | Send feedback to, or cancel, that exact durable Task. |
-| Stop watching | End local notifications; work continues. |
+| Action                 | Effect                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| Stop this turn         | Stop the exact active conversational turn, leaving admitted background Tasks running. |
+| Steer this turn        | Apply a correction to the exact active conversational turn.                           |
+| Steer or cancel Task X | Send feedback to, or cancel, that exact durable Task.                                 |
+| Stop watching          | End local notifications; work continues.                                              |
 
 An adapter targets the observed Conversation and turn identity. Stop and
 explicit steering travel through events to Host control without waiting for

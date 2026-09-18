@@ -1,11 +1,14 @@
-/** Human-operated source application. Never installed as an agent workflow/tool. */
+/** Trusted-event source application used by May; the packet-hash operator route remains a fallback. */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   applicationDenial,
+  trustedDecisionFromEvent,
   type ApprovalPacket,
+  type ApprovalProposal,
+  type TrustedApprovalEvent,
 } from "../improvement-approval";
 
 export type ApplicationFiles = {
@@ -122,8 +125,30 @@ export function applyImprovement(
         candidateCommit: packet.candidateCommit,
         candidateTreeHash: packet.candidateTreeHash,
         activationScope: packet.activationScope,
+        ...(packet.activation ? { activation: packet.activation } : {}),
       }
     : null;
+  // A replay of the exact approved operation is a successful no-op. This is
+  // checked only after the packet/evidence and approval identity were reread.
+  if (current.baselineCommit === packet.candidateCommit) {
+    // applicationDenial normally requires HEAD at the approved baseline. For
+    // replay only, substitute that one invariant after proving actual HEAD is
+    // already the candidate; every packet, decision, tree and scope invariant
+    // must still pass against this exact checkout.
+    const replayDenial = applicationDenial(packet, decision, {
+      ...current,
+      baselineCommit: packet.baselineCommit,
+    });
+    if (!replayDenial) {
+      return {
+        applied: true,
+        alreadyApplied: true,
+        appliedCommit: packet.candidateCommit,
+        ...inspected,
+      };
+    }
+    return { applied: false, denial: replayDenial, ...inspected };
+  }
   const denial = applicationDenial(packet, decision, current);
   if (denial) return { applied: false, denial, ...inspected };
   // Operator owns exclusive use of this clean checkout during this bounded command.
@@ -149,6 +174,101 @@ export function applyImprovement(
   return { applied: true, appliedCommit, ...inspected };
 }
 
+/**
+ * Production source-application entrypoint for the plain-text approval path.
+ * It rereads the Host-stamped journal event through the public control plane;
+ * a caller-provided approval flag is not accepted. Activation remains a
+ * separate, explicitly scoped Task after this source-only receipt.
+ */
+export function currentProposalMatches(
+  task: Record<string, unknown>,
+  proposal: ApprovalProposal,
+): boolean {
+  const diagnostics = task.diagnostics as Record<string, unknown> | undefined;
+  const conditions = Array.isArray(diagnostics?.conditions)
+    ? diagnostics.conditions
+    : [];
+  const matches = conditions.filter((entry) => {
+    const wrapper = entry as Record<string, unknown>;
+    const condition = (wrapper.condition ?? wrapper) as Record<string, unknown>;
+    const spec = condition.spec as Record<string, unknown> | undefined;
+    const status = condition.status as Record<string, unknown> | undefined;
+    const expected = spec?.expected as Record<string, unknown> | undefined;
+    return (
+      wrapper.id === proposal.conditionId &&
+      spec?.type === "project.approval.submitted" &&
+      (status?.state === "false" || status?.state === "true") &&
+      (spec?.owner === "human" ||
+        String(spec?.owner ?? "").startsWith("human:")) &&
+      spec?.requestedAction === proposal.text &&
+      expected?.approvalId === proposal.approvalId &&
+      expected?.packetHash === proposal.packetHash &&
+      expected?.proposalHash === proposal.proposalHash &&
+      expected?.proposalRevision === proposal.proposalRevision &&
+      expected?.taskGeneration === proposal.task.generation &&
+      expected?.conditionId === proposal.conditionId
+    );
+  });
+  return (
+    task.appId === proposal.task.appId &&
+    (task.taskId === proposal.task.taskId ||
+      task.id === proposal.task.taskId) &&
+    task.generation === proposal.task.generation &&
+    ["pending", "waiting", "running", "attention"].includes(
+      String(task.status),
+    ) &&
+    task.terminal !== true &&
+    matches.length === 1
+  );
+}
+
+export async function applyImprovementFromTrustedEvent(
+  files: ApplicationFiles,
+  proposal: ApprovalProposal,
+  eventId: number,
+  readEvent: (
+    eventId: number,
+  ) => Promise<TrustedApprovalEvent | undefined> = async (id) => {
+    const { createPublicTaskEvidenceProvider } =
+      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
+    const provider = createPublicTaskEvidenceProvider();
+    return (await provider.getEvent(id)) as unknown as TrustedApprovalEvent;
+  },
+  readTask: (
+    appId: string,
+    taskId: string,
+  ) => Promise<Record<string, unknown>> = async (appId, taskId) => {
+    const { createPublicTaskEvidenceProvider } =
+      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
+    const provider = createPublicTaskEvidenceProvider();
+    return provider.getTask(appId, taskId);
+  },
+) {
+  const packet = JSON.parse(
+    readFileSync(files.packet, "utf8"),
+  ) as ApprovalPacket;
+  const before = await readTask(proposal.task.appId, proposal.task.taskId);
+  if (!currentProposalMatches(before, proposal))
+    throw new Error("approval proposal is no longer the current human wait");
+  const decision = await trustedDecisionFromEvent(
+    packet,
+    proposal,
+    eventId,
+    readEvent,
+  );
+  if (decision.decision !== "approved") {
+    return {
+      applied: false,
+      denial: `human decision is ${decision.decision}`,
+      decision: decision.decision,
+    };
+  }
+  const current = await readTask(proposal.task.appId, proposal.task.taskId);
+  if (!currentProposalMatches(current, proposal))
+    throw new Error("approval proposal changed before source application");
+  return applyImprovement(files, decision.packetHash);
+}
+
 if (import.meta.main) {
   const args = process.argv.slice(2);
   const option = (name: string) => {
@@ -168,6 +288,26 @@ if (import.meta.main) {
     comparison: required("--comparison"),
   };
   const receiptPath = required("--receipt");
+  const proposalPathOption = option("--proposal");
+  const retainedProposal = proposalPathOption
+    ? (JSON.parse(
+        readFileSync(resolve(proposalPathOption), "utf8"),
+      ) as ApprovalProposal)
+    : undefined;
+  const authority = option("--event-id")
+    ? {
+        kind: "trusted-journal-event",
+        eventId: option("--event-id"),
+        proposal: proposalPathOption ? resolve(proposalPathOption) : undefined,
+        task: retainedProposal?.task,
+        conditionId: retainedProposal?.conditionId,
+        proposalHash: retainedProposal?.proposalHash,
+        packetHash: retainedProposal?.packetHash,
+      }
+    : {
+        kind: "operator-packet-hash",
+        supplied: Boolean(option("--approve")),
+      };
   // Evidence and receipts must be outside the target checkout so inspection is clean.
   writeFileSync(
     receiptPath,
@@ -175,18 +315,35 @@ if (import.meta.main) {
       stage: "source-application",
       phase: "requested",
       files,
-      approvedPacketHash: option("--approve") ?? null,
+      authority,
     }) + "\n",
     { flag: "wx" },
   );
   try {
-    const result = applyImprovement(files, option("--approve"));
+    const eventIdText = option("--event-id");
+    const proposalPath = option("--proposal");
+    if (Boolean(eventIdText) !== Boolean(proposalPath))
+      throw new Error("--event-id and --proposal must be supplied together");
+    const eventId = eventIdText ? Number(eventIdText) : 0;
+    if (eventIdText && (!Number.isSafeInteger(eventId) || eventId < 1))
+      throw new Error("--event-id must be a positive integer");
+    const result = eventIdText
+      ? await applyImprovementFromTrustedEvent(
+          files,
+          JSON.parse(
+            readFileSync(resolve(proposalPath!), "utf8"),
+          ) as ApprovalProposal,
+          eventId,
+        )
+      : applyImprovement(files, option("--approve"));
     writeFileSync(
       receiptPath,
       JSON.stringify(
         {
           stage: "source-application",
           time: new Date().toISOString(),
+          files,
+          authority,
           ...result,
         },
         null,
@@ -209,6 +366,7 @@ if (import.meta.main) {
           stage: "source-application",
           phase: "failed",
           files,
+          authority,
           error: String(error),
           time: new Date().toISOString(),
         },

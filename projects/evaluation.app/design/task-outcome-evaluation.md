@@ -7,25 +7,60 @@
 Evaluation reviews an accepted outcome, not merely one worker session. The unit is an exact `(appId, taskId)` resolved through the Host's public control socket:
 
 1. `apps.list` establishes that the subject App is registered.
-2. `app.task.get` supplies the original input, acceptance, creator, generation, facts, and result.
+2. `app.task.get` supplies the original input, acceptance, optional creator provenance, generation, facts, and result.
 3. `task.get(appId, taskId)` supplies resource version, status, bounded history, attempts, Conditions, and dependencies.
 4. Both response envelopes and Task identities must match. The combined stable snapshot is hashed and passed to the evaluator.
 
 The provider is bounded, read-only, timeout- and byte-limited. It neither opens SQLite nor imports private Host stores. Unknown ownership, identity mismatch, unavailable history, or read failure is `insufficient-evidence`: it is neither a target failure nor healthy coverage.
 
-Evaluation-owned subjects are excluded. A Task created by Evaluation in another App is conservatively inconclusive when public provenance cannot distinguish reviewer delegation from independently owned remediation. A later Task owned and created by the external App remains eligible even when an Evaluation finding motivated it.
+The snapshot now includes `readBack`, following structured `{path, sha256}`
+references through the shared Task evidence reader. This includes development
+indexes, helper reports and raw verification receipts, not just their filenames.
+Only explicit absolute pinned regular files are read; no directory scan, prose
+path guessing, network fetch or transcript injection. JSON artifacts can expose
+further pinned references. Missing, inaccessible, hash-mismatched, unpinned and
+truncated evidence stays visible; oversized content is **not** presented as a
+verified prefix. Limits per subject read are 12 artifacts, 32 KiB per artifact or
+linked Task snapshot, 64 KiB combined consumed artifact/linked Task content,
+4 linked Tasks, 2,000 scan nodes and depth 12. Existing public Task navigation
+truncation is retained. Exact structured `{appId, taskId}` references and declared
+dependencies use the existing public Task reader; Evaluation-owned links are
+excluded. Remote-only, prose-only or over-budget references require a bounded
+owner investigation, not a guessed read or failure verdict.
+
+Artifact read-back proves the bytes consumed, not the truth of their claims or
+independent recovery. The evaluator judges whether any gap is material to the
+requested outcome; unread required evidence prevents claiming that outcome.
+Read statuses, bytes and linked results are retained in immutable JSON reports
+and participate in the evidence fingerprint, including the pre-publication
+recheck. Newly readable evidence can therefore be reviewed without changing the
+Task generation. The new `readBack.version` changes identity once, while the
+existing rubric/path reader continues to read old immutable reports unchanged.
+This costs bounded file/public reads even when an unchanged report is reused;
+that is simpler than a second evidence cache and detects replaced/missing bytes.
+
+Evaluation-owned subjects are excluded. Matching public App/Task identities establish the owning App; optional creator provenance identifies who initiated work, not who owns it. Creator-less historical/recurring Tasks remain readable without inventing a creator. Their missing creator/delegation provenance is retained in `readBack.gaps` for semantic judgment: eligibility to read is not proof of independent initiation, success, or healthy coverage. A Task created by Evaluation in another App is conservatively inconclusive when public provenance cannot distinguish reviewer delegation from independently owned remediation. A later Task owned and created by the external App remains eligible even when an Evaluation finding motivated it.
 
 ## Mechanical versus semantic work
 
 Code owns catalog and Task identity checks, evidence binding, exclusion, stable hashing, pre-model reuse, stale-after-model recheck, immutable file naming, read-back, and event identity. The evaluator judges requested value, delegation, follow-up, recovery, verification, and delivery. Missing evidence is stated rather than scored as failure.
 
-An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. If the source changes while judgment runs, no report is published as current.
+An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. If the source changes while judgment runs, no report is published as current. Explicit post-adoption review carries the subject generation and evidence hash in both its input and deterministic Task identity. This keeps the exact-evidence outcome separate from an older generic review owned by another caller, reuses an identical pinned request, and makes generation or evidence drift insufficient evidence before model judgment or publication.
 
 ## Reports and use
 
 Each successful review stages an immutable Markdown report and JSON facts sidecar under the configured durable `${EVALUATION_REPORT_ROOT:-${MAY_PERSIST_DIR:-/app/.state}/evaluation/reports}/task-outcomes/<app>/<rubric-version>/<task>-<evidence-hash>.*`, then emits `evaluation.task_report_published` with a stable Task-owned `localKey` and both content hashes. Only after that emit succeeds does it write an immutable `.published.json` marker. Listing and reading require the marker and revalidate the JSON identity, recorded JSON/Markdown hashes, and deterministically rendered Markdown bytes. A failed publish therefore leaves staged files undiscoverable, while a retry republishes the same validated bytes without another model call. A rubric change creates a new directory and deliberate assessment rather than overwriting history.
 
 Reports are evidence, not commands or issue state. May should discover Evaluation through the normal App catalog and bounded Task list, inspect accepted review Task facts, and read the referenced report and sidecar. A human answer should state the covered subjects/time, a few material findings, missing evidence, exact report/evidence paths, and whether remediation is only delivered/acknowledged, claimed complete, or independently rechecked. Repeating a query reuses published reports; it does not automatically launch another evaluation. Responsible Apps receive exact findings through ordinary App inputs/Tasks and retain remediation results there.
+
+May's intake rereads its current owner's accepted result through `ctx.read.tasks.get`.
+An exact prior `evaluation-report-intake` result (including identical publication
+hashes and subject) reuses its handoff or no-change disposition. If it carries a
+`linkedTaskId`, that same-App owner is read before reuse; an unavailable link
+stays unresolved instead of creating replacement work. Changed publication or
+subject evidence does not reuse a stale conclusion. The workflow does not search
+for semantically similar issues or infer recovery from terminal status; May owns
+that judgment and should retain the accepted intake and exact owner link.
 
 Before suggesting a repair, compare the historical finding with current accepted
 Task evidence and any later recovery. A stale summary is not stronger evidence
@@ -46,7 +81,7 @@ an automatically prepared improvement.
 
 ## Cost and rollout
 
-Initial rollout is serialized (`maxConcurrent: 1`) and automatic semantic sampling is off unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. The selector chooses at most one outcome per wake: bounded `apps.list` discovers subjects, and public `tasks.list(appId, includeDone: true)` supplies recently updated navigation projections. Defaults cover seven days, at most 20 Tasks on each of two pages per visited App, and at most 20 external Apps. App rotation occurs after every selection. Versioned ordinary Task facts retain only the next App and a byte-bounded map of last-attempted Task identity digests; emitted requests retain the full identity, and legacy `app.tasks.list` cursors reset rather than crossing contracts. Malformed pages rotate neutrally. `up-to-date`, `closed`, `cancelled`, and `needs-attention` outcomes remain candidates while active `running`, `pending`, and `waiting` work does not; the evaluator, not selector code, interprets cancellation or failure meaning. Exact subject reads still validate external ownership and generation before any model call. Old outcomes remain explicitly reviewable. Selection/scoring thresholds remain guidance/configuration until trials justify enforcement.
+Initial rollout is serialized (`maxConcurrent: 1`) and automatic semantic sampling is off unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. The selector chooses at most one outcome per wake: bounded `apps.list` discovers subjects, and public `tasks.list(appId, includeDone: true)` supplies recently updated navigation projections. Defaults cover seven days, at most 20 Tasks on each of two pages per visited App, and at most 20 external Apps. App rotation occurs after every selection. Versioned ordinary Task facts retain only the next App and a byte-bounded map of last-attempted Task identity digests; emitted requests retain the full identity, and legacy `app.tasks.list` cursors reset rather than crossing contracts. Malformed pages rotate neutrally. `up-to-date`, `attention`, `closed`, `cancelled`, and retained `done` receipts remain candidates while active `running`, `pending`, and `waiting` work does not; obsolete status spellings are not accepted. The evaluator, not selector code, interprets cancellation or failure meaning. A prior report suppresses only the same decision-relevant evidence hash and rubric: the selector performs a bounded exact subject read before deduplicating, so changed evidence can produce another immutable review. Exact subject reads also exclude Evaluation-owned/self work before any model call. This daily, one-candidate mechanism is sampling, not exhaustive or healthy coverage; explicit post-application follow-up must use an ordinary review Task instead. Old outcomes remain explicitly reviewable. Selection/scoring thresholds remain guidance/configuration until trials justify enforcement.
 
 The deterministic `list-evaluation-reports` and `read-evaluation-report` actions expose at most 5 valid published pairs and an 8 KiB content preview per read, keeping the complete Task result below the 16 KiB admission budget. Larger reports return exact size, SHA-256, canonical path, and explicit continuation metadata. Listing says each entry is one bounded Task snapshot and returns disposition plus relative action paths and canonical absolute artifact paths. Neither action invokes the evaluator or creates findings.
 

@@ -124,6 +124,29 @@ tools or `develop-change` for isolated preparation, involving Bob or tech-lead
 where useful. Check the actual current target baseline before building; a
 retained worktree or old remote ref may not contain the latest accepted fixes.
 
+Use two explicit human-judgment gates, without a generic score or invented ROI.
+First decide whether the finding merits improvement: distinguish useful successful
+work, recovered/duplicate findings, noise and missing evidence from a real
+user-impacting issue or worthwhile opportunity. Missing evidence calls for a
+bounded investigation, not a target failure. Record impact, recurrence/risk,
+evidence/confidence and the do-nothing or simpler alternative. A justified no-op
+ends in the existing owner Task and normally stays quiet.
+
+Second, after an exact candidate is verified, decide whether it is worth presenting.
+Record demonstrated benefit, regression risk, implementation and ongoing
+maintenance/operating cost, scope, limitations, and whether a simpler
+straightforward solution exists. Ask explicitly whether this fix is worth applying;
+passing tests alone is insufficient. Put that plain-language judgment, the full
+review references and exact application/activation scope in the same human-owned
+Condition that presents the proposal. Use `prepare-improvement-approval` to
+reread the clean current target and pinned packet, diff, verification and
+comparison bytes, retain the exact proposal, and construct that ordinary wait.
+It prepares no authority. After an exact trusted Telegram decision, the bounded
+`apply-improvement.ts --event-id ... --proposal ...` path may apply only the
+approved source fast-forward. The operator-hash route remains a fallback. Always
+retain its source receipt; activation is a separate explicit Task dependency and
+independent Evaluation follows only verified live adoption.
+
 Keep the stages separately reviewable: investigation returns a disposition;
 development returns a committed candidate and checks; Gym returns comparison
 evidence. Assign Gym an ordinary goal with exact frozen baseline/candidate
@@ -138,11 +161,16 @@ exact candidate and baseline, full diff, verification and comparison references,
 activation scope, limitations and rollback. Preserve the packet and its hash in
 the owning Task result. The human may approve, reject, defer or correct it;
 silence and self-authored approval fields never authorize application. A changed
-candidate, target or evidence requires a refreshed packet and approval. For this
-release, the operator performs source application and deployment after the exact
-human decision. Do not invoke the operator application command or deploy a
-generated candidate on your own. After application, inspect the actual receipt
-and adoption checks before saying it is live; retain the original report.
+candidate, target or evidence requires a refreshed packet and approval. After an
+exact trusted decision, use the bounded verified-event source-application path;
+the operator packet-hash command remains a fallback. Never invoke either path
+before approval. Source application does not imply activation or deployment.
+Use `improvement-activation-follow-up` only when the displayed packet explicitly
+includes its pinned App-definition reload; it rereads the trusted event, current
+owner wait and source receipt, then keeps failed/inconclusive adoption open and
+requests Evaluation only for concrete new post-adoption work. Other deployment
+still remains an explicit operator action. After application, inspect the actual
+receipt and adoption checks before saying it is live; retain the original report.
 
 Read `design/evaluation-improvement-loop.md` and `design/operator-application.md`
 under the May App source for the stage and operator contracts.

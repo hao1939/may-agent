@@ -84,7 +84,15 @@ describe("canonical evaluation App", () => {
       "project-owner-request",
       "telegram-owner-reply",
     ]);
-    expect(app.schedules).toEqual([]);
+    // The installed rollout may intentionally enable the bounded selector.
+    // Control the inherited manifest environment instead of treating that
+    // configured schedule as candidate drift.
+    const automaticEnabled =
+      process.env.EVALUATION_AUTO_REVIEW_ENABLED?.trim().toLowerCase() ===
+      "true";
+    expect(app.schedules?.map(({ id }) => id)).toEqual(
+      automaticEnabled ? ["task-outcome-selector"] : [],
+    );
     for (const schedule of app.schedules ?? []) {
       expect(schedule).toHaveProperty("event");
       expect(schedule).not.toHaveProperty("input");
@@ -208,7 +216,9 @@ describe("canonical evaluation App", () => {
   test("declaratively retires legacy metrics without a metric breach wake lane", () => {
     expect(app.tasks?.maxConcurrent).toBe(1);
     expect(app.metrics).toHaveLength(11);
-    expect(app.metrics?.every((metric) => metric.status === "retired")).toBeTrue();
+    expect(
+      app.metrics?.every((metric) => metric.status === "retired"),
+    ).toBeTrue();
     expect(app.metrics?.map((metric) => metric.id)).toContain(
       LLM_COVERAGE_LAG_METRIC_ID,
     );
@@ -890,6 +900,47 @@ describe("evaluation task policy", () => {
     );
   });
 
+  test("gives pinned outcome evidence a deterministic identity separate from generic review", () => {
+    const generic = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: { appId: "may", taskId: "goal/example" },
+    });
+    const first = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        subjectGeneration: 3,
+        evidenceHash: "a".repeat(64),
+      },
+    });
+    const duplicate = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        subjectGeneration: 3,
+        evidenceHash: "a".repeat(64),
+      },
+    });
+    const changed = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        subjectGeneration: 3,
+        evidenceHash: "b".repeat(64),
+      },
+    });
+    expect(first?.id).toBe(duplicate?.id);
+    expect(first?.id).not.toBe(generic?.id);
+    expect(first?.id).not.toBe(changed?.id);
+    expect(first?.input).toMatchObject({
+      subjectGeneration: 3,
+      evidenceHash: "a".repeat(64),
+    });
+  });
+
   test("keeps every supported input independent of retired legacy grouping parents", () => {
     const inputs: AppInput[] = [
       {
@@ -930,7 +981,9 @@ describe("evaluation task policy", () => {
       expect(intent?.parentId).toBe("evaluation-system");
     }
     expect(intents.slice(0, 3).map((intent) => intent?.id)).toEqual([
-      expect.stringMatching(/^runtime\/task-outcome\/may\/goal-example-[a-f0-9]{12}$/),
+      expect.stringMatching(
+        /^runtime\/task-outcome\/may\/goal-example-[a-f0-9]{12}$/,
+      ),
       "runtime/report-reader/latest",
       "runtime/task-outcome-selector",
     ]);

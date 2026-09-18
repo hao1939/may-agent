@@ -83,6 +83,13 @@ work. An unchanged repeat reuses the decision; changed evidence prompts judgment
 on the same issue. Event idempotency handles transport duplicates, not semantic
 equivalence between different reports.
 
+Before opening candidate work, May makes the first human judgment: does this
+finding merit improvement? Correct useful work, recovered or duplicate findings,
+noise and missing evidence normally do not. Missing evidence triggers a bounded
+investigation, not a target failure. The decision records user impact,
+recurrence/risk, evidence and confidence, and the do-nothing or simpler option;
+it does not invent numerical ROI.
+
 Start with one candidate at a time and an explicit small experiment allowance.
 The exact allowance is pilot guidance, not a new Host scheduling rule. Keep
 routine reads and no-op dispositions quiet. Notify the human when there is a
@@ -131,6 +138,14 @@ fix. Independent tests can establish a different, explicitly stated claim.
 
 ## Human approval and application
 
+Before presenting the packet, May makes the second judgment: does the exact
+candidate merit human approval? Passing checks alone is not enough. Consider the
+demonstrated benefit, regression risk, implementation and ongoing
+maintenance/operating cost, scope and limitations; then reconsider whether a
+simpler straightforward solution exists and whether applying this fix is still
+worth it. Gym supplies comparison evidence when appropriate, but does not make
+this value judgment or approve the candidate.
+
 The review packet must contain:
 
 - the problem, user impact, proposed behavior and affected components;
@@ -150,9 +165,12 @@ Request approval through the existing trusted human-facing return path; do not
 invent a Condition type or pretend a self-published approval is human consent.
 The existing owner/deployment capability must validate current baseline, exact
 approved artifact and actor immediately before applying it. Broad shell access
-is not an approval enforcement boundary. The first release provides an exact-packet source application command and keeps
-merge/deployment as explicit operator actions; see May’s
-[operator application contract](../../may.app/design/operator-application.md). Gym has no production apply step in the pilot.
+is not an approval enforcement boundary. The bounded exact-packet source application path may run only after the trusted
+human decision; its manual packet-hash route remains an operator fallback.
+Activation or deployment requires the exact separately displayed scope and its
+own receipt; see May’s
+[operator application contract](../../may.app/design/operator-application.md).
+Gym has no production apply step in the pilot.
 
 After approval, the responsible owner verifies the actually activated revision
 and runs targeted checks. A failure reports what changed and follows the approved

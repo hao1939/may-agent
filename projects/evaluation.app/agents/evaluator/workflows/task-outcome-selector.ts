@@ -2,11 +2,13 @@ import { createHash } from "node:crypto";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   createPublicTaskEvidenceProvider,
+  readSubjectTask,
   type PublicCommand,
 } from "./lib/public-task-evidence.js";
 import {
   configuredTaskReportRoot,
-  listTaskReports,
+  readPublishedTaskReport,
+  taskReportPaths,
 } from "./lib/task-report-store.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
@@ -19,11 +21,14 @@ const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
 const MAX_NAVIGATION_FACTS = 20;
+// HumanTaskStatus is the public tasks.list contract. `done` is a retained
+// completion receipt, while `attention` is the current unresolved status.
 const REVIEWABLE_STATUSES = new Set([
   "up-to-date",
+  "attention",
   "closed",
   "cancelled",
-  "needs-attention",
+  "done",
 ]);
 
 type Input = { reason?: string };
@@ -204,11 +209,6 @@ export async function selectFairCandidate(
     };
   const state = cleanState(priorState);
   const provider = createPublicTaskEvidenceProvider(command);
-  const reviewed = new Set(
-    listTaskReports(reportRoot, 100).map(
-      (report) => `${canonical(report.appId)}\u0000${report.taskId}`,
-    ),
-  );
   const apps = (await provider.listApps(config.maxApps))
     .map((app) => text(app.id ?? app.appId))
     .filter((id) => id && canonical(id) !== "evaluation")
@@ -291,11 +291,41 @@ export async function selectFairCandidate(
             ...recent.slice(0, rememberedTaskIndex + 1),
           ]
         : recent;
-    const selected = candidates.find(
-      (item) =>
-        isReviewable(item) &&
-        !reviewed.has(`${reportKey}\u0000${taskId(item)}`),
-    );
+    let selected: Record<string, unknown> | undefined;
+    for (const item of candidates) {
+      if (!isReviewable(item)) continue;
+      // Resolve the same decision-relevant evidence identity the reviewer will
+      // publish. An exact immutable marker lookup avoids treating the recent-100
+      // report listing as a registry while preserving changed-evidence review.
+      const subject = await readSubjectTask(
+        { appId, taskId: taskId(item) },
+        command,
+      );
+      if (subject.disposition !== "eligible" || !subject.evidenceHash) {
+        appendNavigationFact(
+          navigationFacts,
+          `selector-evidence-unavailable:${canonical(appId).slice(0, 80)}:${identityDigest(taskId(item))}:${subject.reason.replace(/\s+/g, " ").slice(0, 180)}`,
+        );
+        continue;
+      }
+      const reportPath = taskReportPaths(
+        reportKey,
+        taskId(item),
+        subject.evidenceHash,
+      ).jsonPath;
+      const published = readPublishedTaskReport(reportRoot, reportPath);
+      // Paths use shortened/sanitized identity components; compare the verified
+      // full identity as well so a path collision cannot suppress changed work.
+      if (
+        !published ||
+        canonical(published.appId) !== reportKey ||
+        published.taskId !== taskId(item) ||
+        published.evidenceHash !== subject.evidenceHash
+      ) {
+        selected = item;
+        break;
+      }
+    }
     const nextIndex = (appIndex + 1) % apps.length;
     const lastTaskByApp = { ...nextState.lastTaskByApp };
     const lastAttempted = selected ?? candidates.at(-1);

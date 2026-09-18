@@ -233,6 +233,46 @@ describe("public Task evidence", () => {
     });
   });
 
+  test("ignores only public detail presentation metadata without altering evidence read-back", async () => {
+    const subject = { appId: "sample", taskId: "goal/one" };
+    const first = await readSubjectTask(subject, fixture());
+    const refreshed = {
+      ...taskDetail,
+      ref: "abc12345-expanded",
+      resourceVersion: 99,
+      updatedAt: 200,
+      progress: { stage: "presentation refresh", updatedAt: 200 },
+    };
+    const second = await readSubjectTask(subject, fixture(appTask, refreshed));
+    expect(first.disposition).toBe("eligible");
+    expect(second.evidenceHash).toBe(first.evidenceHash);
+    expect(second.task?.detail).toEqual(refreshed);
+  });
+
+  for (const key of ["ref", "progress", "updatedAt", "resourceVersion"]) {
+    for (const view of ["appTask", "detail"]) {
+      for (const field of ["input", "result"]) {
+        test(`preserves ${view}.${field} nested ${key} as meaningful evidence`, async () => {
+          const read = (value: string) => {
+            const domain = { [field]: { outputs: [{ [key]: value }] } };
+            return readSubjectTask(
+              { appId: "sample", taskId: "goal/one" },
+              fixture(
+                view === "appTask" ? { ...appTask, ...domain } : appTask,
+                view === "detail" ? { ...taskDetail, ...domain } : taskDetail,
+              ),
+            );
+          };
+          const before = await read("original");
+          const after = await read("replacement");
+          expect(before.disposition).toBe("eligible");
+          expect(after.disposition).toBe("eligible");
+          expect(after.evidenceHash).not.toBe(before.evidenceHash);
+        });
+      }
+    }
+  }
+
   test("excludes Evaluation and Evaluation-created external work before judgment", async () => {
     let calls = 0;
     const excluded = await readSubjectTask(
@@ -260,16 +300,84 @@ describe("public Task evidence", () => {
         detail: { appId: "sample", taskId: "goal/one" },
       },
     });
+  });
 
-    const unknown = await readSubjectTask(
-      { appId: "sample", taskId: "goal/one" },
-      fixture({ ...appTask, creator: undefined }),
+  test("retains verified Scout ownership without inventing optional creator provenance", async () => {
+    const { creator, ...withoutCreator } = appTask;
+    const view = {
+      ...withoutCreator,
+      id: "explore-github",
+      parentId: "scout",
+      owner: "scout",
+    };
+    const detail = { ...taskDetail, appId: "scout", taskId: view.id };
+    const subject = await readSubjectTask(
+      { appId: "scout", taskId: view.id },
+      fixture(view, detail, [{ id: "scout" }]),
     );
-    expect(unknown).toMatchObject({
+    expect(subject).toMatchObject({
+      disposition: "eligible",
+      appId: "scout",
+      taskId: "explore-github",
+      task: { appTask: view, detail },
+    });
+    expect(subject.task!.appTask).not.toHaveProperty("creator");
+    expect(subject.task!.readBack).toMatchObject({
+      gaps: [
+        expect.stringContaining(
+          "Optional creator/delegation provenance is unavailable",
+        ),
+      ],
+    });
+    expect(subject.evidenceHash).toHaveLength(64);
+    const withCreator = await readSubjectTask(
+      { appId: "scout", taskId: view.id },
+      fixture({ ...view, creator: { appId: "scout" } }, detail, [
+        { id: "scout" },
+      ]),
+    );
+    expect(withCreator.evidenceHash).not.toBe(subject.evidenceHash);
+  });
+
+  test("does not infer ownership from a creator when the public App envelope mismatches", async () => {
+    const base = fixture();
+    const subject = await readSubjectTask(
+      { appId: "sample", taskId: "goal/one" },
+      async (request) => {
+        const response = await base(request);
+        return request.type === "app.task.get"
+          ? { ...response, appId: "other" }
+          : response;
+      },
+    );
+    expect(subject).toMatchObject({
       disposition: "insufficient-evidence",
-      reason: expect.stringContaining("no creator provenance"),
+      reason: "app.task.get appId identity mismatch",
     });
   });
+
+  for (const creator of [undefined, { source: { appId: "Evaluation.app" } }]) {
+    test(`preserves self-work exclusion with creator ${JSON.stringify(creator)}`, async () => {
+      let calls = 0;
+      const excluded = await readSubjectTask(
+        { appId: "Evaluation.app", taskId: "goal/self" },
+        async () => {
+          calls++;
+          return {};
+        },
+      );
+      expect(excluded.disposition).toBe("excluded");
+      expect(calls).toBe(0);
+      if (creator) {
+        const delegated = await readSubjectTask(
+          { appId: "sample", taskId: "goal/one" },
+          fixture({ ...appTask, creator }),
+        );
+        expect(delegated.disposition).toBe("insufficient-evidence");
+        expect(delegated.evidenceHash).toBeUndefined();
+      }
+    });
+  }
 
   test("keeps catalog gaps, read failures, and identity mismatches neutral", async () => {
     expect(
