@@ -2,7 +2,7 @@
 summary: "Companion note to agent-architectures.md: 16+ named runtime hardening patterns for agent effect containment, concurrency, compilation, stabilization, lifecycle adaptation, collaborative harness evolution, bounded recovery, typed safety, source-level evolution, reviewed runtime-state admission, process harness governance, architecture evolution, and evidence binding. Includes the Runtime Trust Gap five-layer vulnerability stack (Scan #276), Harness Discipline papers, a September 2026 component-level harness study showing that context budget and model capability change which controls add value, Argus on verification-gated runtime self-evolution, a cross-source pattern for revision-bound admission when executable interfaces and skills enter persistent workspaces, practitioner implementations distinguishing simulation from compensation and giving local file edits typed commit semantics, evidence-carrying effect closure across physical actuation and multi-provider emergency stops, Brigade's distinction between audit-only execution receipts and scoreable subject-bound evidence, and Docker's concrete microVM trust-boundary defaults for unattended coding agents."
 triggers: ["runtime hardening", "semantic transactions", "Cordon", "agent_acid", "Patchloom", "structured file edits", "typed commit semantics", "tool surface versus sandbox", "compensation failure", "pure simulation", "session guardrail", "CoAgent", "advisory concurrency", "readout bottleneck", "PreAct", "run compilation", "SkillWeaver", "skill routing", "ADE", "intelligence entropy", "harness evolution", "harness design", "context management", "rule-based elision", "context overflow", "bash-only interface", "false-success detection", "process harness", "CUGA FLO", "architecture gradient", "NOVA", "verification cascade", "forbidden directions", "agentic BPM", "runtime trust gap", "thanatosis", "containment gap", "CLAWAUDIT", "AOHP", "User as Code", "executable memory", "Life-Harness", "lifecycle adaptation", "EvolveNet", "collaborative harness evolution", "scope-typed aggregation", "self-healing orchestrator", "bounded recovery", "LACUNA", "typed holes", "MOSS", "source-level rewriting", "Argus", "reviewed runtime state", "verification-gated self-evolution", "persistent agent workspace", "programmatic tool calling", "revision-bound admission", "skill self-test", "evidence-carrying actuation", "kill switch", "effect closure", "still-dangerous set", "Brigade", "verification receipt", "subject binding", "scoreable evidence", "Docker Sandboxes", "microVM isolation", "shared skills trust boundary", "credential proxy"]
 last_updated: "2026-09-18"
-source_basis: "Extracted from agent-architectures.md §Runtime Hardening and §Process Harness. Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363], Argus [2608.05144]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. Argus and EvolveNet integrated 2026-08-06 from arXiv API queries. Revision-bound workspace admission synthesis added 2026-08-07 from arXiv 2608.06370, AWS AgentCore runtime instances, and eternityspring/shuohao-skills revision 594a0471a5862e267c2af58ce4e37a392b92ad72. Practitioner transaction-boundary update added 2026-08-08 from HN 49219014 and muhammadwaqasai/agent_acid revision c9a7509108db8262bb5937312fa93bf206f014fc. Evidence-carrying effect closure added 2026-08-08 from YINGLINGH/limioryn revision 0469e409180569b1387cde191224d6e8a3fed327 and Countersign packages revision 6ef7904e74aa3adf61c8416457c08961da050026 surfaced via HN 49220224. Local-file commit semantics added 2026-08-08 from HN 49224010 and patchloom/patchloom revision 220be477137c259262e7cd4b02d6948994787d6e. Verification-evidence binding added 2026-08-09 from escoffier-labs/brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9 and its receipt schema, execution model, outcome-scoring documentation, and verification implementation. Docker sandbox boundary analysis added 2026-08-10 from HN 49239751 and Docker's product, security-model, default-posture, and credential documentation. Mnemosyne principal-binding qualification added 2026-09-04 from exact v2 tag 7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4; isolated repair-candidate evidence added 2026-09-09 against exact upstream main ba43036035bb33dfb955d53da54635aac2ab83a0. Component-level harness-design evidence added 2026-09-18 from the live arXiv API abstract for 2609.20804v1."
+source_basis: "Extracted from agent-architectures.md §Runtime Hardening and §Process Harness. Sources: Cordon [2606.17573], CoAgent [2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929], SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621], False-Success Detection [2606.09863], CLAWAUDIT [2606.21071], OpenClaw [2606.15008], Plans Don't Persist [2606.22953], CUGA FLO [2606.27188], NOVA [2606.27243], Thanatosis [2606.14831], Containment Gap [2606.12797], AOHP [2606.23449], User as Code [2606.16707], APEX [2606.15363], Argus [2608.05144]. Originally sourced during Jul 22 runtime hardening triage + Jun 27 arXiv triage + Jul 1 Runtime Trust Gap scan #276. Harness Discipline batch integrated 2026-07-09: Life-Harness [2605.22166], Self-Healing Orchestrators [2606.01416], LACUNA [2605.28617], MOSS [2605.22794]. Argus and EvolveNet integrated 2026-08-06 from arXiv API queries. Revision-bound workspace admission synthesis added 2026-08-07 from arXiv 2608.06370, AWS AgentCore runtime instances, and eternityspring/shuohao-skills revision 594a0471a5862e267c2af58ce4e37a392b92ad72. Practitioner transaction-boundary update added 2026-08-08 from HN 49219014 and muhammadwaqasai/agent_acid revision c9a7509108db8262bb5937312fa93bf206f014fc. Evidence-carrying effect closure added 2026-08-08 from YINGLINGH/limioryn revision 0469e409180569b1387cde191224d6e8a3fed327 and Countersign packages revision 6ef7904e74aa3adf61c8416457c08961da050026 surfaced via HN 49220224. Local-file commit semantics added 2026-08-08 from HN 49224010 and patchloom/patchloom revision 220be477137c259262e7cd4b02d6948994787d6e. Verification-evidence binding added 2026-08-09 from escoffier-labs/brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9 and its receipt schema, execution model, outcome-scoring documentation, and verification implementation. Docker sandbox boundary analysis added 2026-08-10 from HN 49239751 and Docker's product, security-model, default-posture, and credential documentation. Mnemosyne principal-binding qualification added 2026-09-04 from exact v2 tag 7aab09c43c1672c01b415b4987cd2d1d9a6fd0a4; isolated repair-candidate evidence added 2026-09-09 against exact upstream main ba43036035bb33dfb955d53da54635aac2ab83a0. Component-level harness-design evidence added 2026-09-18 from the live arXiv API abstract for 2609.20804v1; planning-versus-release-control evidence added the same day from the live arXiv API abstract for 2609.20474v1."
 </ai_context>
 
 # Agent Runtime Hardening
@@ -518,6 +518,44 @@ paper, experiment tables, code, or benchmark trajectories. The setting counts,
 comparative outcomes, and mechanism attributions above are author-reported
 abstract claims; they do not establish that the same component ordering holds
 for other models, harnesses, tasks, or context distributions.
+
+## Planning and Release Verification Optimize Different Risks (arXiv, September 2026)
+
+**How Do Agent Harnesses Create Value? Planning Information and Release Control
+in Stateful LLM Agents**
+([2609.20474v1](https://arxiv.org/abs/2609.20474v1)) separates two harness
+functions that are often evaluated only as a bundle. In two Retail experiments
+and an Airline pilot in τ²-bench, the primary comparison uses prewritten,
+task-specific plans versus shuffled policy text matched in word count; this is
+a stronger control than comparing a planned agent with a shorter or unrelated
+prompt because it aims to isolate the value of guidance content. A separate
+read-only terminal verifier decides whether completed episodes should be
+released.
+
+Across 265 matched cells, the abstract reports that fixed plans improve
+oracle-verified success by 7.17 percentage points, with a 90% task-clustered
+bootstrap interval of 1.15–13.36 points and gains concentrated in more complex
+tasks. The verifier rejects 61% of oracle-invalid Retail episodes, but also
+withholds 17% of correct episodes, for less than one cent of additional cost per
+episode. The authors further report that a standalone verifier captures nearly
+all of the full planning-plus-verification stack's false-pass reduction at a
+fraction of its cost.
+
+The runtime implication is that planning and release control should not share a
+single “harness quality” score. Planning primarily changes task success, while a
+terminal verifier primarily changes erroneous acceptance; the right deployment
+depends on the liability assigned to a false release and the opportunity cost
+of withholding a correct result. This also refines the component-admission rule
+above: ablate controls against the risk they are meant to change, and report
+both verifier recall on invalid work and its false-withhold rate rather than
+celebrating fewer false passes alone.
+
+**Evidence boundary:** Scout reviewed the live arXiv API abstract, not the full
+paper, experimental tables, verifier implementation, or τ²-bench trajectories.
+The cell count, interval, rejection/withholding rates, cost, and component
+comparison are author-reported abstract claims. The Airline result is described
+as a pilot, and the abstract does not provide uncertainty for the verifier rates
+or establish transfer beyond these stateful customer-service environments.
 
 ## False-Success Detection — Lightweight vs LLM Judges (arXiv, June 2026)
 
