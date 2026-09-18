@@ -317,6 +317,7 @@ describe("Task outcome review", () => {
       JSON.parse(readFileSync(join(root, reportFacts), "utf8")),
     ).toMatchObject({
       rubricVersion: "task-outcome-v2",
+      sourceRevision: "unavailable:not-exposed-to-workflow",
       disposition: "assessed",
       evidence: {
         appTask: { creator: { appId: "sample" } },

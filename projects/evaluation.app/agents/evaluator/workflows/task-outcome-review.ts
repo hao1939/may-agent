@@ -541,8 +541,10 @@ export async function reviewTaskOutcome(
     );
   }
 
-  const sourceRevision =
-    text(process.env.EVALUATION_SOURCE_REVISION) || "unavailable";
+  // The workflow context does not expose the loaded App-definition source.
+  // An arbitrary process environment label is not activation provenance, so
+  // report the identity gap rather than fabricating a revision.
+  const sourceRevision = "unavailable:not-exposed-to-workflow";
   const payload = {
     version: 1,
     rubricVersion: assessment.rubricVersion,
