@@ -148,6 +148,80 @@ describe("Scout owner reconciliation boundary", () => {
     },
   );
 
+  it("keeps publication accepted when optional research delivery is malformed", async () => {
+    const fixture = publicationTestFixture();
+    const emitted: Array<Record<string, unknown>> = [];
+    const published = join(
+      fixture.workspace.projectRoot,
+      "knowledge/findings/qualified.md",
+    );
+    try {
+      const result = await execute(
+        createTestAppWorkflowContext({
+          input: {},
+          reconciliation: {
+            appId: "scout-knowledge-lib",
+            taskId: "library-maintenance",
+            generation: 1,
+            resourceVersion: 1,
+            agent: "scout",
+            outcome: "Maintain the library",
+            acceptance: ["Publish one bounded result"],
+            input: {},
+            children: { live: [], completed: [] },
+            events: { items: [], truncated: false },
+          },
+          workspace: fixture.workspace,
+          callAgent: (async (_agent, prompt) => {
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+            const output = join(candidate!, "knowledge/findings/qualified.md");
+            mkdirSync(join(candidate!, "knowledge/findings"), {
+              recursive: true,
+            });
+            writeFileSync(output, "# Qualified finding\n");
+            return {
+              id: "s_qualified",
+              kind: "agent",
+              status: "done",
+              summary: "Published source record.",
+              output: {
+                state: "converged",
+                summary: "Published source record.",
+                facts: [`output:${output}`],
+                actions: [],
+                result: {
+                  researchRecommendation: {
+                    sourceUrl: "https://example.test/paper",
+                    // sourceRevision is intentionally missing.
+                    artifact: published,
+                  },
+                },
+              },
+            };
+          }) as WorkflowContext["agents"]["call"],
+          emit: async (event) => {
+            emitted.push(event as unknown as Record<string, unknown>);
+          },
+        }),
+      );
+      expect(result.status).toBe("done");
+      expect(readFileSync(published, "utf8")).toBe("# Qualified finding\n");
+      expect(result.output).toMatchObject({
+        state: "converged",
+        facts: expect.arrayContaining([
+          expect.stringContaining(
+            "research-handoff:deferred:Qualified research handoff requires sourceRevision",
+          ),
+        ]),
+      });
+      expect(emitted.map((event) => event.type)).toEqual([
+        "project.knowledge.maintained",
+      ]);
+    } finally {
+      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("accepts one bounded Scout goal and rejects obsolete or unbounded creation", () => {
     const dependency = {
       id: "repair",

@@ -1,7 +1,7 @@
 {
   "name": "may-bob",
-  "description": "Bob: reviews development designs and code for coherence and useful simplicity",
-  "domain": "design judgment and independent review within May development Tasks",
+  "description": "Bob: reviews development work and owns bounded research investigations through decision-ready recommendations",
+  "domain": "design judgment, independent review, and owned research-adoption investigation within May Tasks",
   "model": "gpt-6-astra",
-  "tools": ["coding", "finish"]
+  "tools": ["coding", "agents", "finish"]
 }

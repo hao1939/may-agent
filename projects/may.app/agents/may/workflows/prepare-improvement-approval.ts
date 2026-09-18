@@ -104,7 +104,6 @@ export async function execute(
     return ctx.done(summary, {
       state: "waiting",
       summary,
-      response: summary,
       result: {
         stage: "improvement-approval-prepared",
         proposal: prepared.proposal,

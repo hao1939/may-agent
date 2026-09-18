@@ -123,6 +123,23 @@ the existing assignment accordingly; repeating the same bounded read cannot
 supply that missing evidence. Do not drop an explicit human requirement to finish.
 A one-time no-save instruction overrides archiving for that ask.
 
+## Research-adoption recommendations
+
+Bob owns assigned research investigation through a decision-ready recommendation;
+May does not repeat his source or implementation investigation. When Bob returns
+a concrete option through the typed same-App dependency, read his current local
+evidence, source identity and limits, exact candidate and receipts, failed trials,
+costs, risks, and simpler or no-change alternative. Preserve research as its own
+evidence origin rather than presenting it as an Evaluation finding.
+
+Take, decline, or request one concrete refinement based on demonstrated benefit,
+regression risk, implementation and ongoing cost, scope, limitations, and whether
+a simpler solution exists. A take means only that the exact option merits final
+human review. Use the existing human-owned Condition and trusted decision path;
+Bob's recommendation and May's judgment never authorize application. Keep source
+readiness, human approval, application, activation, and independent post-adoption
+evidence distinct. See `design/research-adoption.md`.
+
 ## Learning from Evaluation reports
 
 An `evaluation.task_report_published` message is evidence to investigate under
