@@ -255,6 +255,54 @@ describe("automatic task outcome selector", () => {
     );
   });
 
+  test("retains the public keyset continuation for a long Task identity", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-long-keyset-"));
+    const long = `goal/${"x".repeat(400)}`;
+    const items = [
+      task("may", long, 0, "waiting"),
+      task("may", "goal/older", 0, "waiting"),
+    ];
+    const token = Buffer.from(
+      JSON.stringify({
+        updatedAt: items[0]!.updatedAt,
+        appId: "may",
+        taskId: long,
+        terminal: 0,
+      }),
+    ).toString("base64url");
+    expect(Buffer.byteLength(token)).toBeGreaterThan(512);
+    const exact = catalogCommand({ may: items });
+    const command: PublicCommand = async (request) => {
+      if (request.type !== "tasks.list") return exact(request);
+      return {
+        type: "ok",
+        command: "tasks.list",
+        tasks: request.cursor
+          ? { items: [items[1]], nextCursor: null }
+          : { items: [items[0]], nextCursor: token },
+      };
+    };
+
+    const first = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    const second = await selectFairCandidate(
+      command,
+      config,
+      root,
+      first.state,
+      NOW,
+    );
+    expect(first.candidate?.taskId).toBe(long);
+    expect(second.candidate?.taskId).toBe("goal/older");
+    expect(Object.values(first.state.taskCursorByApp)).toEqual([token]);
+    expect(selectorStateFact(first.state).length).toBeLessThan(8_000);
+  });
+
   test("keeps the actual selected result bounded while emitting the full identity", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-selected-budget-"));
     const long = `goal/${"任务🚀".repeat(2_000)}`;

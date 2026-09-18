@@ -158,8 +158,12 @@ function boundedTaskCursors(value: unknown): Record<string, string> {
   )) {
     const key = canonical(appId).slice(0, 80);
     const cursor = text(storedValue);
-    // Cursors are opaque: never truncate one into a different token.
-    if (!key || !cursor || Buffer.byteLength(cursor) > 512) continue;
+    // Cursors are opaque: never truncate one into a different token. The public
+    // keyset token includes the full Task identity, so a supported long Task id
+    // can legitimately exceed 512 bytes. The aggregate state budget remains
+    // the bound.
+    if (!key || !cursor || Buffer.byteLength(cursor) > MAX_STATE_HISTORY_BYTES)
+      continue;
     const candidate = { ...cursors, [key]: cursor };
     if (Buffer.byteLength(JSON.stringify(candidate)) > MAX_STATE_HISTORY_BYTES)
       break;
