@@ -381,6 +381,63 @@ describe("automatic task outcome selector", () => {
     ).toEqual([undefined, "2", "4"]);
   });
 
+  test("advances beyond dropped selected requests without starving an older obligation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-dropped-selection-"));
+    const seen: Record<string, unknown>[] = [];
+    const command = catalogCommand(
+      {
+        may: [
+          task("may", "goal/recent-1", 0, "done"),
+          task("may", "goal/recent-2", 0, "done"),
+          task("may", "goal/recent-3", 0, "done"),
+          task("may", "goal/recent-4", 0, "done"),
+          task("may", "goal/old-wait", 40, "waiting"),
+        ],
+      },
+      seen,
+    );
+
+    let state;
+    const selected = [];
+    // Model requests that are selected but dropped before publication. Selector
+    // state alone must still finish this bounded page window and retain its
+    // continuation rather than depending on a report appearing.
+    for (let index = 0; index < 5; index += 1) {
+      const result = await selectFairCandidate(
+        command,
+        config,
+        root,
+        state,
+        NOW,
+      );
+      selected.push(result.candidate?.taskId);
+      state = result.state;
+    }
+
+    expect(selected).toEqual([
+      "goal/recent-1",
+      "goal/recent-2",
+      "goal/recent-3",
+      "goal/recent-4",
+      "goal/old-wait",
+    ]);
+    expect(
+      seen
+        .filter((request) => request.type === "tasks.list")
+        .map((request) => request.cursor),
+    ).toEqual([
+      undefined,
+      "2",
+      undefined,
+      "2",
+      undefined,
+      "2",
+      undefined,
+      "2",
+      "4",
+    ]);
+  });
+
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({

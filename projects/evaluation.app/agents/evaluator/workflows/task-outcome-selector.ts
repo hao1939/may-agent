@@ -369,16 +369,27 @@ export async function selectFairCandidate(
       lastTaskByApp[key] = identityDigest(taskId(lastAttempted));
     const boundedHistory = boundedStateHistory(lastTaskByApp);
     const taskCursorByApp = { ...(nextState.taskCursorByApp ?? {}) };
-    // Finish rotating through candidates in the current bounded window before
-    // advancing its public page cursor. If none is selected, retain the next
-    // page so old open obligations cannot starve behind completed history.
-    const retainedCursor = selected
-      ? nextState.taskCursorByApp?.[key] ?? ""
-      : continuationCursor;
+    // A selected request is retained by its own Task, so selector progress must
+    // not depend on its report eventually being published. Advance after the
+    // selection reaches the end of this bounded window (or wraps past the
+    // remembered item); otherwise dropped, deferred, failed, or changing
+    // requests in the prefix can permanently starve older obligations.
+    const selectedRecentIndex = selected
+      ? recent.indexOf(selected.item)
+      : -1;
+    const completedBoundedPass =
+      !selected ||
+      (selectedRecentIndex >= 0 &&
+        (selectedRecentIndex === recent.length - 1 ||
+          (rememberedTaskIndex >= 0 &&
+            selectedRecentIndex <= rememberedTaskIndex)));
+    const retainedCursor = completedBoundedPass
+      ? continuationCursor
+      : nextState.taskCursorByApp?.[key] ?? "";
     if (retainedCursor) taskCursorByApp[key] = retainedCursor;
     else delete taskCursorByApp[key];
     const boundedCursors = boundedTaskCursors(taskCursorByApp);
-    if (!selected && continuationCursor)
+    if (completedBoundedPass && continuationCursor)
       appendNavigationFact(
         navigationFacts,
         boundedCursors[key] === continuationCursor
