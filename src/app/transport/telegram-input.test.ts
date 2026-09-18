@@ -1492,6 +1492,8 @@ describe("Telegram May input", () => {
                         anyOf: ["approve", "reject", "defer"],
                         approvalId: "approval-docs",
                         packetHash: "a".repeat(64),
+                        taskGeneration: 1,
+                        conditionId: "approval-docs",
                       },
                     },
                     status: { state: "false" },
