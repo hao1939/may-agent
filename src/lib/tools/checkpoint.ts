@@ -110,16 +110,6 @@ export function readLatestCheckpointForAgent(persistDir: string, agentName: stri
   }
 }
 
-// ── Step counter ───────────────────────────────────────────────────────
-
-/** Track step counters per session (in-memory, resets on process restart) */
-const stepCounters = new Map<string, number>();
-
-/** Clean up step counter when a session ends (prevents memory leak). */
-export function cleanupStepCounter(sessionId: string): void {
-  stepCounters.delete(sessionId);
-}
-
 // ── Tool factory ───────────────────────────────────────────────────────
 
 /**
@@ -164,23 +154,26 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
         };
       }
 
-      // Increment step counter
       const sid = resolveSessionId();
-      const currentStep = (stepCounters.get(sid) ?? 0) + 1;
-      stepCounters.set(sid, currentStep);
+      let entry: CheckpointEntry;
 
-      // Build checkpoint entry
-      const entry: CheckpointEntry = {
-        sessionId: sid,
-        agentName: resolveAgentName(),
-        step: currentStep,
-        summary: summary.trim(),
-        data: data ?? {},
-        timestamp: Date.now(),
-      };
-
-      // Write to file
       try {
+        // The session log owns numbering, including after a tool/process restart.
+        // Older processes could reset the counter, so use the highest saved step.
+        // Read and append stay synchronous under the session's single writer;
+        // this is not a cross-process multi-writer allocation protocol.
+        const previousStep = readCheckpoints(persistDir, sid).reduce(
+          (highest, saved) => Number.isSafeInteger(saved?.step) && saved.step > highest ? saved.step : highest,
+          0,
+        );
+        entry = {
+          sessionId: sid,
+          agentName: resolveAgentName(),
+          step: previousStep + 1,
+          summary: summary.trim(),
+          data: data ?? {},
+          timestamp: Date.now(),
+        };
         mkdirSync(checkpointDir, { recursive: true });
         appendFileSync(resolve(checkpointDir, `${sid}.jsonl`), JSON.stringify(entry) + "\n", "utf-8");
         // Write per-agent latest pointer for session injection
@@ -191,7 +184,7 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
           content: [
             {
               type: "text" as const,
-              text: `checkpoint() error: Failed to write checkpoint — ${err instanceof Error ? err.message : String(err)}`,
+              text: `checkpoint() error: Failed to read or write checkpoint — ${err instanceof Error ? err.message : String(err)}`,
             },
           ],
           details: undefined,
@@ -216,7 +209,7 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
         content: [
           {
             type: "text" as const,
-            text: `✅ Checkpoint #${currentStep} saved.${dataInfo}\nSummary: ${summary.trim()}`,
+            text: `✅ Checkpoint #${entry.step} saved.${dataInfo}\nSummary: ${summary.trim()}`,
           },
         ],
         details: undefined,
