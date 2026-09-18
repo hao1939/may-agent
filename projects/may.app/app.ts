@@ -63,6 +63,7 @@ const standingResearchAcceptance = [
 ];
 
 function requireStandingResearchContract(
+  data: Record<string, unknown>,
   outcome: string,
   acceptance: readonly string[],
 ): void {
@@ -71,9 +72,22 @@ function requireStandingResearchContract(
     acceptance.every(
       (item, index) => item.trim() === standingResearchAcceptance[index],
     );
-  if (outcome !== standingResearchOutcome || !matchesAcceptance) {
+  const allowedFields = new Set([
+    "outcome",
+    "acceptance",
+    "assignment",
+    "research",
+  ]);
+  const hasCallerSpecificRequirements = Object.keys(data).some(
+    (field) => !allowedFields.has(field),
+  );
+  if (
+    outcome !== standingResearchOutcome ||
+    !matchesAcceptance ||
+    hasCallerSpecificRequirements
+  ) {
     throw new Error(
-      "Standing research adoption requires the exact standing outcome and acceptance; use targeted mode for caller-specific requirements",
+      "Standing research adoption requires the exact fixed contract without caller-specific requirements; use targeted mode to preserve additional requirements",
     );
   }
 }
@@ -132,7 +146,7 @@ export function taskForMayInput(
     throw new Error("May goal requires outcome and acceptance");
   }
   if (mode === "standing") {
-    requireStandingResearchContract(outcome, acceptance);
+    requireStandingResearchContract(data, outcome, acceptance);
   }
   return {
     kind: "desired",

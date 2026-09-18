@@ -158,7 +158,28 @@ describe("canonical May conversation App", () => {
           },
         },
       }),
-    ).toThrow("requires the exact standing outcome and acceptance");
+    ).toThrow("requires the exact fixed contract");
+    expect(() =>
+      taskForMayInput({
+        id: "mistagged-constrained-question",
+        source: { kind: "human", id: "operator" },
+        input: {
+          ...(
+            app.schedules.find(
+              ({ id }) => id === "research-adoption-archive-review",
+            ) as any
+          ).input,
+          data: {
+            ...((
+              app.schedules.find(
+                ({ id }) => id === "research-adoption-archive-review",
+              ) as any
+            ).input.data as Record<string, unknown>),
+            constraints: ["Read-only: do not delegate an experiment"],
+          },
+        },
+      }),
+    ).toThrow("exact fixed contract without caller-specific requirements");
 
     const targeted = taskForMayInput({
       id: "dependency-input-7",
