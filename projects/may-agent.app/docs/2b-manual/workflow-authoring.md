@@ -431,3 +431,42 @@ that all installed workflows follow this guidance.
 Use the [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
 to distinguish required contracts from available support. This checklist does
 not turn the advisory choices above into new runtime gates.
+
+## Cross-App outcome review
+
+A reviewing App uses the same Task mechanism as any other App. Code may use
+bounded public catalog and Task reads to bind an external `(appId, taskId)` and
+collect mechanical evidence; an agent judges responsibility, recovery,
+verification, and delivery. Caller hints and session identity do not establish
+ownership. Missing or conflicting evidence is an inconclusive review result,
+not a target failure and not healthy coverage.
+
+Published review artifacts belong in a configured durable App output beneath
+`.state`, not a source checkout or disposable Task worktree. Immutable reports
+and facts sidecars are evidence. A bounded list/read workflow may expose them
+to May through ordinary App actions without launching a new review. Receipt or
+acknowledgment does not mean a finding was fixed; verified resolution requires
+later evidence from the responsible App's accepted Task result or output.
+
+## When to promote a learned practice
+
+Promote a learned practice to a workflow when evidence shows:
+
+- ordering or omission materially affects correctness;
+- inputs, outputs, and terminal conditions can be explicit;
+- deterministic checks and bounded repair improve reliability;
+- the process is stable enough for code and tests; and
+- it still fits one bounded execution attempt.
+
+Three successful runs may be useful evidence of stability, but they are not a
+hard threshold. A known safety-critical protocol may deserve a typed, tested
+workflow before its first production run. Frequent execution alone is not a
+reason to promote an unstable or judgment-dominated sequence.
+
+Workflows may call agents. Their workflow-owned schemas, branching, limits,
+gates, verification, and result admission must be testable with fake agent
+responses rather than requiring a live model in unit tests.
+
+Keep it as a skill when the right sequence is highly contextual, judgment
+dominates, or the process is still being learned. Split it across App/task
+reconciliation when it requires durable waits.
