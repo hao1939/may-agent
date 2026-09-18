@@ -141,7 +141,13 @@ export async function execute(ctx) {
         expect(sessionIds.has(output.id)).toBe(false);
         sessionIds.add(output.id);
         expect(readSessionMeta(persistDir, output.id)?.task).toBe(original);
-        const observations = readContextUsage(getDb(persistDir), contextUsageQuery(new URLSearchParams()));
+        // Include rows created at this millisecond while preserving the report's exclusive upper bound.
+        const reportNow = Date.now() + 1;
+        const observations = readContextUsage(
+          getDb(persistDir),
+          contextUsageQuery(new URLSearchParams(), reportNow),
+          reportNow,
+        );
         const observation = observations.runs.find((row) => row.sessionId === output.id)!;
         expect(observation).toMatchObject({
           outcome: "done",
@@ -213,7 +219,9 @@ test("new invocations keep their own usage across reused sessions and preparatio
       },
     });
     expect(() => manager.run("worker", "New work")).toThrow("bad preparation");
-    const result = readContextUsage(getDb(root), contextUsageQuery(new URLSearchParams()));
+    // Include rows created at this millisecond while preserving the report's exclusive upper bound.
+    const reportNow = Date.now() + 1;
+    const result = readContextUsage(getDb(root), contextUsageQuery(new URLSearchParams(), reportNow), reportNow);
     expect(result.invocations).toBe(3);
     expect(result.groups.find((group) => group.outcome === "done")).toMatchObject({
       invocations: 2,
