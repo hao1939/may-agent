@@ -83,7 +83,14 @@ A recommendation presents current state first: opportunity, source identity and
 limits, local evidence/design fit, baseline/candidate/diff and checks, failed
 trials, risks and applicability limits, implementation and ongoing cost,
 simpler/do-nothing alternatives, accountable owner, recommendation, and exact
-next action. History remains behind links.
+next action. History remains behind links. Reports needed after convergence go
+to the caller's explicit durable evidence root. If none is supplied, use the
+concrete Optional shared Task notes path named in the attempt's `TASK.md` under
+the persistent task-context root, not its separate disposable “Working source
+and output root” worktree. Verify readback and hash. A dead accepted link is
+repaired by recovering the exact verified bytes and
+returning the corrected reference through ordinary Task feedback, not by
+rerunning research or adding an archive subsystem.
 
 After concluding that a concrete candidate merits May's value judgment, the
 standalone Bob owner returns `waiting` with one typed same-App dependency. Its

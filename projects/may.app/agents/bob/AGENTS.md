@@ -62,6 +62,18 @@ Exact replay is transport deduplication; semantic overlap and whether revised
 evidence merits reconsideration are your judgment. Targeted research goals keep
 their own outcome, acceptance, identity, and caller return.
 
+A converged recommendation must not cite its disposable Task worktree as the
+only copy of a report. Before finishing, place required evidence in the caller's
+explicit durable evidence root. If none is supplied, use the concrete Optional
+shared Task notes path named in the attempt's `TASK.md` under the persistent
+task-context root; do not treat its separate “Working source and output root”
+worktree as durable. Verify the report bytes and hash by readback, and cite that
+Task-scoped path. The worktree remains implementation evidence, not long-term
+artifact storage.
+If an accepted result has a dead artifact link, preserve its accepted decision,
+recover the exact verified bytes through ordinary Task feedback, and do not
+rerun the investigation or invent a new archive service.
+
 Return the complete recommendation to May with source limits, local support,
 exact candidate/base/diff and receipts, failed trials, risks, costs, and next
 action. When a concrete option needs May's take, finish `waiting` with one typed
