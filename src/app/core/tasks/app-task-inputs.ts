@@ -41,7 +41,7 @@ export function retainTaskInputWait(
   }
 }
 
-/** Only facts from an input's own saved wait can continue it in another attempt. */
+/** Continue exact waits, or return obsolete waits to the agent for reconsideration. */
 export function continuedTaskInputKeys(
   tree: TaskTree,
   taskId: string,
@@ -50,6 +50,7 @@ export function continuedTaskInputKeys(
 ): string[] {
   const task = tree.resources?.[taskId];
   if (!task?.status.inputWaits) return [];
+  const linkedConditionIds = new Set(task.status.conditionIds ?? []);
   const matchingConditionIds = (task.status.conditionIds ?? []).filter((id) =>
     events.some(({ event }) => matchesAppTaskConditionFacts(tree.conditions?.[id], event)),
   );
@@ -62,6 +63,8 @@ export function continuedTaskInputKeys(
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
     (wait.taskGeneration < task.metadata.generation ||
       (wait.conditions.length === 0 && events.length > 0) ||
+      wait.conditions.some(({ id, generation }) =>
+        !linkedConditionIds.has(id) || tree.conditions?.[id]?.metadata.generation !== generation) ||
       wait.conditions.some(({ id, generation }) => conditions.get(id) === generation))
       ? [key]
       : [],

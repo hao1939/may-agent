@@ -74,6 +74,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Pursue its current input, goal, acceptance and facts. Bring changes beyond your assignment to its creator. Do not edit Host task storage.",
     "Finish exactly once with finish().result for an answer, meaningful wait or honest failure, not a completed step. This ends the attempt, not the Task; follow the schema.",
     "Use converged only when facts support the answer/completed work for the considered input. Include response when owed; an unrelated open child need not block an answer.",
+    "Never self-unblock.",
     "Use incomplete for unfinished work: include facts, partial work and unresolved effects; no actions, Conditions or dependencies. Set report:true for new caller-relevant updates after an earlier report. Omit for unchanged failures. The assignment remains pending under paced recovery until its owner revises or closes it.",
     "Put machine-readable decisions in result, explanations in summary. Waiting may retain a decision for later review.",
     "Use waiting for a saved wait, exact Condition or typed App dependency. Omit unchanged waits and response. Set report:true with summary/facts for a new caller-relevant blocker; omit for quiet waits.",
@@ -136,7 +137,7 @@ async function executeTaskAgent(
           "```",
         ]
       : []),
-    ...(reconciliationEvents.items.length
+    ...(reconciliationEvents.items.length || reconciliationEvents.continuedInputs?.length
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
   ].join("\n");

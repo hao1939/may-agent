@@ -6289,18 +6289,25 @@ describe("canonical App task runtime", () => {
     expect(readFileSync(join(f.appDir, "retained.txt"), "utf8")).toBe("unfinished source\n");
   });
 
-  it("paces invalid output and accepts a corrected result on the same Task", async () => {
+  it.each(["invalid-state", "self-unblock"])("paces %s and accepts a corrected result on the same Task", async (invalid) => {
     const f = fixture();
     const bus = eventBus();
     let calls = 0;
+    const rejection = invalid === "invalid-state"
+      ? "Handler result was rejected: state must be converged, waiting, incomplete, or needs-agent"
+      : "Handler actions were rejected: Handler action cannot unblock its own running task work/invalid-result; return the attempt result without a self-unblock action";
     await installAppTaskRuntimes({
       ...options(f, bus),
       executors: {
-        invalid: async () => {
+        invalid: async (attempt) => {
           calls += 1;
-          return calls === 1
+          if (calls === 1) return invalid === "invalid-state"
             ? ({ state: "error", summary: "Invalid authored state", facts: [] } as never)
-            : { state: "converged", summary: "Corrected result", facts: ["fixture:corrected"] };
+            : { state: "converged", summary: "Invalid self action", facts: ["fixture:prepared"], actions: [{
+              kind: "unblock-task", taskId: attempt.task.id, expectedGeneration: attempt.task.generation, reason: "Done",
+            }] };
+          expect(attempt.previousAttempt?.summary).toBe(rejection);
+          return { state: "converged", summary: "Corrected result", facts: ["fixture:corrected"] };
         },
       },
       appRegistrySnapshot: {
@@ -6345,7 +6352,7 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.readTask("work/invalid-result")?.status).toMatchObject({
       phase: "pending",
       observedGeneration: 1,
-      summary: "Handler result was rejected: state must be converged, waiting, incomplete, or needs-agent",
+      summary: rejection,
     });
     for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
     expect(calls).toBe(1);
@@ -6356,7 +6363,7 @@ describe("canonical App task runtime", () => {
       expect.objectContaining({
         taskId: "work/invalid-result",
         state: "failed",
-        failureReason: "HandlerResultInvalid",
+        failureReason: invalid === "invalid-state" ? "HandlerResultInvalid" : "HandlerResultSettlementFailed",
       }),
     );
     expect(config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt).toBeGreaterThan(Date.now());

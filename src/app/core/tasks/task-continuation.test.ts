@@ -6,6 +6,7 @@ import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
+import { readAppTaskReconciliationEvents } from "./app-task-context.js";
 import {
   appTaskContext,
   claimObservedAppTask,
@@ -136,6 +137,68 @@ test.each(["finish", "close"])("continuation survives reopen and retains the ori
       facts: ["review:complete"],
     });
     expect(readAppTaskAdmissionOutcome(config, "parent", "original")?.response).toBe("Review and notes complete");
+  } finally {
+    config.resourceStore.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits after reopen, without answering unrelated input", (change) => {
+  const root = mkdtempSync(join(tmpdir(), "task-wait-replacement-"));
+  const databasePath = join(root, "state.db");
+  let config = appTaskTestContext({
+    appDir: root, databasePath, agent: "owner", maxConcurrent: 1,
+    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+  });
+  const claim = () => {
+    const result = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+    if (result.kind !== "claimed") throw new Error(result.kind);
+    return result;
+  };
+  const admit = (key: string) => admitTaskInput(config, {
+    appId: "sample", attachment: { kind: "existing", taskId: "work" }, idempotencyKey: key,
+    inputContext: { id: key, source: { kind: "human", id: "operator" }, input: { kind: "message", data: { text: key } } },
+  });
+  const wait = (id: string, expected = "complete") => ({
+    id, type: "review.completed", subject: `id:${id}`, expected, owner: "human", reviewAfterMs: 60_000,
+  });
+  try {
+    observeAppTaskIntent(config, { appAgent: "owner", intent: {
+      id: "work", parentId: "root", outcome: "Review requested artifacts", acceptance: ["Reviews returned"], agent: "owner",
+    } });
+    const independent = wait("independent");
+    admit("independent-request");
+    deferAppTask(config, claim(), { disposition: "waiting", summary: "Independent review pending", conditions: [independent] });
+    const original = wait("review");
+    admit("original");
+    deferAppTask(config, claim(), { disposition: "waiting", summary: "Review requested", conditions: [independent, original] });
+    admit("correction");
+    const correction = claim();
+    expect(correction.continuedInputKeys ?? []).not.toContain("original");
+    const replacement = change === "changed-spec" ? wait("review", "accepted") : wait("replacement", "accepted");
+    deferAppTask(config, correction, { disposition: "waiting", summary: "Use corrected review contract", conditions: [independent, replacement] });
+    expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    config.resourceStore.close();
+    config = appTaskContext({ appDir: root, projectDir: root, agent: "owner", maxConcurrent: 1,
+      resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample") });
+    expect(claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+    trackAppTaskConditionEventForTasks(config, { type: "review.completed", data: { id: replacement.id, state: "accepted" } }, ["work"]);
+    const final = claim();
+    expect(final.continuedInputKeys?.sort()).toEqual(["correction", "original"]);
+    const context = readAppTaskReconciliationEvents(config.resourceStore, final);
+    expect(context.continuedInputs?.map(({ event }) => event.data.idempotencyKey).sort()).toEqual(["correction", "original"]);
+    // A later independent ask was not in this execution's context.
+    admit("late-question");
+    expect(completeAppTask(config, final, { summary: "Reviews accepted", response: "Corrected review complete" }).taskContinues).toBe(true);
+    expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    const next = claim();
+    expect(next.continuedInputKeys).toContain("original");
+    completeAppTask(config, next, { summary: "Reviewed new question too", response: "Corrected review complete; independent review pending" });
+    for (const key of ["original", "correction", "late-question"]) {
+      expect(readAppTaskAdmissionOutcome(config, "work", key)?.attemptId).toBe(next.attemptId);
+    }
+    expect(readAppTaskAdmissionOutcome(config, "work", "independent-request")).toBeNull();
+    expect(config.resourceStore.readTask("work")?.status.conditionIds).toEqual(["independent"]);
   } finally {
     config.resourceStore.close();
     rmSync(root, { recursive: true, force: true });
