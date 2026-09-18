@@ -1,5 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
@@ -324,6 +333,79 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('cp -R "$build_dir/packages/sdk/." "$sdk_stage/"');
     expect(deploy).toContain('ui_release_name="ui-$source_commit"');
     expect(deploy).toContain('cp -R "$build_dir/bundle/platform-ui/." "$ui_stage/"');
+  });
+
+  it("removes Task-child context only from the portable archive test gate", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-agent-deploy-gate-"));
+    try {
+      const repo = join(root, "repo");
+      const bin = join(root, "bin");
+      const log = join(root, "commands.log");
+      const receiptDir = join(root, "receipts");
+      mkdirSync(join(repo, "scripts"), { recursive: true });
+      mkdirSync(bin);
+      mkdirSync(receiptDir);
+      writeFileSync(join(repo, "scripts", "deploy.sh"), readFileSync(new URL("./deploy.sh", import.meta.url)));
+      chmodSync(join(repo, "scripts", "deploy.sh"), 0o755);
+
+      const run = async (cmd: string[], env = process.env) => {
+        const child = Bun.spawn({ cmd, cwd: repo, env, stdout: "pipe", stderr: "pipe", timeout: 5000 });
+        const [code, stdout, stderr] = await Promise.all([
+          child.exited,
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+        ]);
+        return { code, stdout, stderr };
+      };
+      for (const cmd of [
+        ["git", "init", "-q"],
+        ["git", "add", "scripts/deploy.sh"],
+        ["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "-qm", "fixture"],
+      ]) {
+        expect((await run(cmd)).code).toBe(0);
+      }
+
+      const bun = join(bin, "bun");
+      writeFileSync(
+        bun,
+        `#!/bin/sh\nprintf '%s|%s|%s\\n' "\${MAY_TASK_ATTEMPT_CHILD-unset}" "\${KEEP_ME-unset}" "$*" >> "\$COMMAND_LOG"\nif [ "\${1-}" = test ]; then exit 42; fi\nexit 0\n`,
+      );
+      chmodSync(bun, 0o755);
+      for (const command of ["supervisorctl", "docker"]) {
+        const path = join(bin, command);
+        writeFileSync(path, `#!/bin/sh\necho "RESTART|$*" >> "$COMMAND_LOG"\nexit 99\n`);
+        chmodSync(path, 0o755);
+      }
+
+      const correlation = "fixture-test-gate-failure";
+      const result = await run(["/bin/sh", "scripts/deploy.sh"], {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        COMMAND_LOG: log,
+        KEEP_ME: "kept",
+        MAY_TASK_ATTEMPT_CHILD: "1",
+        MAY_AGENT_DEPLOY_TASK_ID: "runtime/fixture",
+        MAY_AGENT_DEPLOY_CORRELATION: correlation,
+        MAY_AGENT_DEPLOY_ROOT: repo,
+        MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
+        MAY_AGENT_DEPLOY_TASK_DB: join(root, "not-opened.db"),
+      });
+
+      expect(result.code).toBe(42);
+      const calls = readFileSync(log, "utf8").trim().split("\n");
+      expect(calls[0]).toContain("1|kept|scripts/deploy-receipt.ts validate-target");
+      expect(calls[1]).toBe(
+        "unset|kept|test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
+      );
+      expect(calls.some((call) => call.includes("run bundle"))).toBe(false);
+      expect(calls.some((call) => call.includes("deploy-receipt.ts request"))).toBe(false);
+      expect(calls.some((call) => call.startsWith("RESTART|"))).toBe(false);
+      expect(existsSync(join(receiptDir, `${correlation}.json`))).toBe(false);
+      expect(existsSync(join(repo, "bundle"))).toBe(false);
+      expect(existsSync(join(repo, `.state/deploy-build-${correlation}`))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("can stage an immutable source-worktree build into the canonical deploy root", () => {
