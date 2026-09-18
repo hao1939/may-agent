@@ -7,6 +7,7 @@ import {
   readSubjectTask,
   type SubjectEvidence,
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
+import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context.js";
 import { planReportIntake } from "../../../evaluation-report-intake.js";
 
 export const name = "evaluation-report-intake";
@@ -114,6 +115,39 @@ export async function intakeEvaluationReport(
       },
       handoffKey: null,
     });
+  const currentAssessment =
+    publication.assessmentPurpose === "ongoing"
+      ? assessmentContext(subject, "ongoing")
+      : null;
+  const currentSubjectMatches =
+    subject.evidenceHash === publication.evidenceHash &&
+    (!currentAssessment ||
+      (currentAssessment.rubricVersion === publication.rubricVersion &&
+        currentAssessment.validityIdentity === publication.validityIdentity));
+  if (!currentSubjectMatches)
+    return finish(
+      ctx,
+      "stale",
+      "The canonical subject evidence or ongoing due-phase identity changed after publication.",
+      {
+        handoffKey: null,
+        currentEvidence: {
+          appId: subject.appId,
+          taskId: subject.taskId,
+          disposition: subject.disposition,
+          evidenceHash: subject.evidenceHash,
+          reason: subject.reason,
+          ...(currentAssessment
+            ? {
+                rubricVersion: currentAssessment.rubricVersion,
+                validityIdentity: currentAssessment.validityIdentity,
+                validity: currentAssessment.validity,
+              }
+            : {}),
+        },
+      },
+    );
+
   // Reuse this owner's accepted intake before preparing another handoff. No
   // registry or list scan: the ordinary Task result is the recovery boundary.
   let prior:
@@ -196,10 +230,7 @@ export async function intakeEvaluationReport(
       jsonHash: read.jsonHash,
       markdownHash: read.markdownHash,
     },
-    currentSubject:
-      subject.evidenceHash === publication.evidenceHash
-        ? "matches-report"
-        : "changed",
+    currentSubject: currentSubjectMatches ? "matches-report" : "changed",
     recovered,
     prior,
   });
@@ -224,6 +255,13 @@ export async function intakeEvaluationReport(
         disposition: subject.disposition,
         evidenceHash: subject.evidenceHash,
         reason: subject.reason,
+        ...(currentAssessment
+          ? {
+              rubricVersion: currentAssessment.rubricVersion,
+              validityIdentity: currentAssessment.validityIdentity,
+              validity: currentAssessment.validity,
+            }
+          : {}),
       },
       recovered,
     },

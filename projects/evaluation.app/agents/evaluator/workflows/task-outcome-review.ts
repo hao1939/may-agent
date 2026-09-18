@@ -15,13 +15,17 @@ import {
   hashReport,
   markTaskReportPublished,
   renderTaskReportMarkdown,
-  ONGOING_TASK_RUBRIC_VERSION,
-  TASK_OUTCOME_RUBRIC_VERSION,
   type AssessmentPurpose,
   resolveTaskReportPath,
   taskReportPaths,
   writeImmutable,
 } from "./lib/task-report-store.js";
+import {
+  assessmentContext,
+  type AssessmentContext,
+} from "./lib/task-assessment-context.js";
+
+export { assessmentContext } from "./lib/task-assessment-context.js";
 
 export const name = "task-outcome-review";
 export const description =
@@ -49,20 +53,6 @@ type Input = {
   evidenceHash?: string;
   assessmentPurpose?: AssessmentPurpose;
 };
-type AssessmentContext = {
-  purpose: AssessmentPurpose;
-  rubricVersion: string;
-  validityIdentity: string;
-  validity: {
-    phase: "before-due" | "due" | "unknown";
-    dueAt: number | null;
-    boundaries: Array<{
-      conditionId: string;
-      dueAt: number;
-      phase: "before-due" | "due";
-    }>;
-  };
-};
 type Judgment = {
   disposition: "assessed" | "insufficient-evidence";
   summary: string;
@@ -82,81 +72,6 @@ function object(value: unknown): Record<string, unknown> {
 }
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(text).filter(Boolean) : [];
-}
-const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
-
-function conditionDueBoundaries(
-  detail: Record<string, unknown>,
-  nowMs: number,
-): AssessmentContext["validity"]["boundaries"] {
-  const conditions = object(detail.diagnostics).conditions;
-  if (!Array.isArray(conditions)) return [];
-  return conditions
-    .flatMap((value) => {
-      const entry = object(value);
-      const conditionId = text(entry.id);
-      const condition = object(entry.condition);
-      const spec = object(condition.spec);
-      const status = object(condition.status);
-      if (!conditionId || text(status.state) === "true") return [];
-      const reviewAfterMs = Number(spec.reviewAfterMs);
-      const observedAt = Date.parse(String(status.observedAt ?? ""));
-      if (
-        !Number.isInteger(reviewAfterMs) ||
-        reviewAfterMs < MIN_CONDITION_REVIEW_AFTER_MS ||
-        !Number.isFinite(observedAt)
-      )
-        return [];
-      const dueAt = observedAt + reviewAfterMs;
-      return [
-        {
-          conditionId,
-          dueAt,
-          phase: nowMs < dueAt ? ("before-due" as const) : ("due" as const),
-        },
-      ];
-    })
-    .sort(
-      (left, right) =>
-        left.dueAt - right.dueAt ||
-        left.conditionId.localeCompare(right.conditionId),
-    );
-}
-export function assessmentContext(
-  subject: SubjectEvidence,
-  requested: unknown,
-  nowMs = Date.now(),
-): AssessmentContext {
-  const purpose: AssessmentPurpose =
-    requested === "ongoing" ? "ongoing" : "outcome";
-  if (purpose === "outcome")
-    return {
-      purpose,
-      rubricVersion: TASK_OUTCOME_RUBRIC_VERSION,
-      validityIdentity: "",
-      validity: { phase: "unknown", dueAt: null, boundaries: [] },
-    };
-  const boundaries = conditionDueBoundaries(
-    object(object(subject.task).detail),
-    nowMs,
-  );
-  const dueAt = boundaries[0]?.dueAt ?? null;
-  const phase = !boundaries.length
-    ? "unknown"
-    : boundaries.some((boundary) => boundary.phase === "due")
-      ? "due"
-      : "before-due";
-  const validityIdentity = boundaries.length
-    ? `condition-boundaries:${createHash("sha256")
-        .update(JSON.stringify(boundaries))
-        .digest("hex")}`
-    : "condition-boundaries:none";
-  return {
-    purpose,
-    rubricVersion: ONGOING_TASK_RUBRIC_VERSION,
-    validityIdentity,
-    validity: { phase, dueAt, boundaries },
-  };
 }
 export function claimSemanticAllowance(
   reportRoot: string,

@@ -15,8 +15,9 @@ import {
   taskReportPaths,
   writeImmutable,
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-report-store";
+import { assessmentContext } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-assessment-context";
 
-function fixture(appId = "may", validityIdentity = "") {
+function fixture(appId = "may", ongoing = false, assessmentNow?: number) {
   const root = mkdtempSync(join(tmpdir(), "may-report-intake-"));
   const detail = {
     appId,
@@ -24,9 +25,36 @@ function fixture(appId = "may", validityIdentity = "") {
     generation: 3,
     status: "running",
     result: null,
+    diagnostics: {
+      conditions: ongoing
+        ? [
+            {
+              id: "review",
+              condition: {
+                spec: { reviewAfterMs: 60_000 },
+                status: {
+                  state: "false",
+                  observedAt: "2026-09-18T12:00:00.000Z",
+                },
+              },
+            },
+          ]
+        : [],
+    },
   };
   const subjectTask = { appTask: { id: detail.taskId, generation: 3 }, detail };
-  const ongoing = Boolean(validityIdentity);
+  const subject = {
+    disposition: "eligible" as const,
+    reason: "verified",
+    appId,
+    taskId: detail.taskId,
+    evidenceHash: "evidence-1",
+    task: subjectTask,
+  };
+  const ongoingAssessment = ongoing
+    ? assessmentContext(subject, "ongoing", assessmentNow)
+    : null;
+  const validityIdentity = ongoingAssessment?.validityIdentity ?? "";
   const rubricVersion = ongoing ? "task-obligation-v1" : "task-outcome-v2";
   const paths = taskReportPaths(
     appId,
@@ -49,7 +77,7 @@ function fixture(appId = "may", validityIdentity = "") {
           assessment: {
             purpose: "ongoing",
             validityIdentity,
-            validity: { phase: "due", dueAt: 1, boundaries: [] },
+            validity: ongoingAssessment!.validity,
           },
         }
       : {}),
@@ -112,8 +140,8 @@ function reader(data: ReturnType<typeof fixture>, evidenceHash = "evidence-1") {
 
 describe("May Evaluation report intake procedure", () => {
   test("preserves ongoing assessment identity through integrity read and handoff", async () => {
-    const validityIdentity = `condition-boundaries:${"a".repeat(64)}`;
-    const data = fixture("may", validityIdentity);
+    const data = fixture("may", true);
+    const validityIdentity = data.publication.validityIdentity!;
     const execution = await intakeEvaluationReport(
       context(data),
       data.root,
@@ -141,6 +169,29 @@ describe("May Evaluation report intake procedure", () => {
     );
     expect(output.handoffKey).not.toBe(
       (legacyResult.output as any).result.handoffKey,
+    );
+  });
+
+  test("marks a crossed ongoing boundary stale without creating another investigation", async () => {
+    const beforeDue = Date.parse("2026-09-18T12:00:30.000Z");
+    const data = fixture("may", true, beforeDue);
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    const output = (execution.output as any).result;
+    expect(output).toMatchObject({
+      disposition: "stale",
+      handoffKey: null,
+      currentEvidence: {
+        evidenceHash: data.publication.evidenceHash,
+        rubricVersion: "task-obligation-v1",
+        validity: { phase: "due" },
+      },
+    });
+    expect(output.currentEvidence.validityIdentity).not.toBe(
+      data.publication.validityIdentity,
     );
   });
 
