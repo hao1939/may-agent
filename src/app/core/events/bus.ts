@@ -83,7 +83,12 @@ export type AgentCommand =
 
 /** Management commands (to core / supervisord) */
 export type ManagementCommand =
-  | { type: "runtime.reload.requested"; source: string; owner: string; data: { reason?: string } }
+  | {
+      type: "runtime.reload.requested";
+      source: string;
+      owner: string;
+      data: { reason?: string; expectedSourceCommit?: string };
+    }
   | {
       type: "runtime.reload.finished";
       source: "runtime";
@@ -92,6 +97,7 @@ export type ManagementCommand =
         requestId?: string;
         ok: boolean;
         summary: string;
+        sourceCommit?: string;
       };
     }
   | { type: "runtime.restart.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }

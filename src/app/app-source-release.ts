@@ -307,9 +307,14 @@ export class DefinitionSourceReleaseStore {
     return candidate;
   }
 
-  stage(): DefinitionSourceRelease {
-    mkdirSync(this.releasesRoot, { recursive: true });
+  stage(expectedSourceCommit?: string): DefinitionSourceRelease {
     const commit = gitCommit(this.projectRoot);
+    if (expectedSourceCommit && commit !== expectedSourceCommit) {
+      throw new Error(
+        `App source commit changed before reload: expected ${expectedSourceCommit}, found ${commit ?? "no Git HEAD"}`,
+      );
+    }
+    mkdirSync(this.releasesRoot, { recursive: true });
     if (commit) assertCommittedDefinitionSource(this.projectRoot, commit);
     // v4 includes shared tools; never reuse a cached v3 snapshot that omitted them.
     const id = commit ? `${commit}-definitions-v4` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v4`;

@@ -184,7 +184,20 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       options.validateSessionControl?.(input.type);
     },
   },
-  "runtime.reload.requested": { delivery: "required", validate: validateOptionalReason },
+  "runtime.reload.requested": {
+    delivery: "required",
+    validate: (input) => {
+      validateOptionalReason(input);
+      if (
+        input.data.expectedSourceCommit !== undefined &&
+        (typeof input.data.expectedSourceCommit !== "string" || !/^[0-9a-f]{40}$/.test(input.data.expectedSourceCommit))
+      ) {
+        throw new Error(
+          "runtime.reload.requested data.expectedSourceCommit must be a 40-character lowercase Git commit",
+        );
+      }
+    },
+  },
   "runtime.restart.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.shutdown.requested": { delivery: "required", validate: validateOptionalReason },
   "evaluation.session.requested": {

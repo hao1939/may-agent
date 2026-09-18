@@ -530,6 +530,29 @@ describe("simple event interface", () => {
     ).toThrow("metadata.followTask.taskId");
   });
 
+  it("validates and preserves an optional pinned reload source commit", () => {
+    const { events } = fixture();
+    const expectedSourceCommit = "a".repeat(40);
+    const receipt = events.publish(
+      {
+        type: "runtime.reload.requested",
+        data: { reason: "activate approved source", expectedSourceCommit },
+      },
+      { source: "control-socket" },
+    );
+
+    expect(events.get(receipt.eventId)?.event.data).toEqual({
+      reason: "activate approved source",
+      expectedSourceCommit,
+    });
+    expect(() =>
+      events.publish(
+        { type: "runtime.reload.requested", data: { expectedSourceCommit: "not-a-commit" } },
+        { source: "control-socket" },
+      ),
+    ).toThrow("expectedSourceCommit must be a 40-character lowercase Git commit");
+  });
+
   it("deduplicates one semantic input across trusted adapters", () => {
     const { db, events } = fixture();
     const input = {

@@ -89,13 +89,18 @@ describe("runtime generation reload", () => {
     expect({ published, rolledBack, finalized }).toEqual({ published: 1, rolledBack: 1, finalized: 0 });
   });
 
-  it("finalizes one agent publication only after the App generation commits", async () => {
+  it("finalizes one agent publication only after the App generation commits and returns its source", async () => {
     let published = 0;
     let rolledBack = 0;
     let finalized = 0;
+    const expectedSourceCommit = "1".repeat(40);
+    const preparedWith: unknown[] = [];
     const lifecycle = createDaemonLifecycle(
       lifecycleOptions({
-        prepareAgents: async () => generation,
+        prepareAgents: async (_loaderOpts: unknown, reloadOptions: unknown) => {
+          preparedWith.push(reloadOptions);
+          return generation;
+        },
         publishAgents: () => {
           published++;
           return {
@@ -105,13 +110,14 @@ describe("runtime generation reload", () => {
         },
         reloadApps: async ({ publishAgents }: { publishAgents: () => void }) => {
           publishAgents();
-          return { appIds: ["may"], taskApps: 1 };
+          return { appIds: ["may"], taskApps: 1, sourceCommit: expectedSourceCommit };
         },
       }),
     );
 
-    const result = await lifecycle.handleReload();
-    expect(result.ok).toBe(true);
+    const result = await lifecycle.handleReload({ expectedSourceCommit });
+    expect(result).toMatchObject({ ok: true, sourceCommit: expectedSourceCommit });
+    expect(preparedWith).toEqual([{ expectedSourceCommit }]);
     expect({ published, rolledBack, finalized }).toEqual({ published: 1, rolledBack: 0, finalized: 1 });
   });
 

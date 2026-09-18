@@ -103,6 +103,29 @@ describe("App source releases", () => {
     expect(store.current()?.id).toBe(second.id);
   });
 
+  it("matches an expected Git HEAD and denies drift before creating a staged release", async () => {
+    const matching = await fixture();
+    const matchingHead = String((await git(matching.root, "rev-parse", "HEAD")).stdout).trim();
+    const matched = new DefinitionSourceReleaseStore(matching.root, matching.stateDir).stage(matchingHead);
+    expect(matched.sourceCommit).toBe(matchingHead);
+
+    const drifted = await fixture();
+    const approvedHead = String((await git(drifted.root, "rev-parse", "HEAD")).stdout).trim();
+    writeFileSync(
+      drifted.appPath,
+      `export default { id: "sample-v2", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+    );
+    await git(drifted.root, "add", "projects/sample.app/app.js");
+    await git(drifted.root, "commit", "-qm", "drift after approval");
+    const actualHead = String((await git(drifted.root, "rev-parse", "HEAD")).stdout).trim();
+    const store = new DefinitionSourceReleaseStore(drifted.root, drifted.stateDir);
+
+    expect(() => store.stage(approvedHead)).toThrow(
+      `App source commit changed before reload: expected ${approvedHead}, found ${actualHead}`,
+    );
+    expect(existsSync(join(drifted.stateDir, "releases"))).toBeFalse();
+  });
+
   it("snapshots small non-git fixture Apps without copying runtime state", async () => {
     const { root, stateDir } = await fixture(false);
     for (const directory of [".state", "evidence", "facts"]) {
