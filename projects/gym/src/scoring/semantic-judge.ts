@@ -24,6 +24,10 @@ export interface SemanticJudgeRun {
   model: string | null;
   report?: unknown;
   error?: string;
+  status?: string;
+  session_path?: string;
+  execution_manifest?: unknown;
+  provider_error?: string;
 }
 
 export interface SemanticJudgeAssessment {
@@ -125,6 +129,10 @@ function assessJudgeRun(
 ): SemanticJudgeAssessment {
   const errors: string[] = [];
   if (run.error) errors.push(run.error);
+  if (run.provider_error) errors.push(run.provider_error);
+  if (run.status && run.status !== "done" && run.status !== "success") {
+    errors.push(`judge execution status ${run.status}`);
+  }
   if (!isRecord(run.report) || !Array.isArray(run.report.cases)) {
     errors.push("judge report must contain a cases array");
     return {
@@ -265,6 +273,20 @@ export function evaluateSemanticJudgeRuns(
     };
   }
   const judges = runs.map((run) => assessJudgeRun(run, controls));
+  const agentIds = runs.map((run) => run.agent?.trim()).filter(Boolean);
+  const modelIds = runs.map((run) => run.model?.trim()).filter(Boolean);
+  if (
+    agentIds.length !== runs.length || modelIds.length !== runs.length ||
+    new Set(agentIds).size !== runs.length || new Set(modelIds).size !== runs.length
+  ) {
+    return {
+      status: "invalid",
+      passed: false,
+      valid: false,
+      summary: "semantic evaluation requires distinct nonempty judge and model identities",
+      judges,
+    };
+  }
   if (judges.some((judge) => !judge.valid)) {
     return {
       status: "invalid",

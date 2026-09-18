@@ -14,8 +14,10 @@ import { compareRuns, renderReport } from "../src/loop/report";
 import { rescoreRun } from "../src/loop/rescore";
 import {
   appendAdjudication,
+  fingerprintValue,
   machineVerdict,
   readManifest,
+  writeManifest,
 } from "../src/loop/store";
 import { assertFrozenInputs, runLoop, verifyLoop } from "../src/loop/run";
 import type {
@@ -69,7 +71,11 @@ function manifest(
     proof: {
       input_fingerprint: "input",
       label_set_fingerprint: "labels",
+      label_catalog_fingerprint: fingerprintValue(approvedLabels),
       candidate_fingerprint: id === "baseline" ? null : "candidate",
+      semantic_judging: true,
+      semantic_judge_fingerprint: "judges",
+      harness_fingerprint: "harness",
       agent_prompt_fingerprints: ["prompt"],
       framework_revisions: ["framework"],
       models: ["model"],
@@ -80,6 +86,8 @@ function manifest(
       suite_snapshot: "inputs/suite.json",
       labels_snapshot: "inputs/labels.json",
       evaluator_snapshot: "inputs/score-decision.cjs",
+      semantic_judges_snapshot: "inputs/semantic-judges/agents",
+      harness_snapshot: "inputs/harness",
       scenarios_snapshot: "inputs/scenarios",
       candidate_snapshot: id === "baseline" ? null : "candidate",
     },
@@ -110,9 +118,21 @@ describe("loop evaluation", () => {
       agent: "may",
       passed: false,
       checks: [{ name: "x", passed: false }],
+      agent_status: "success",
     };
     expect(machineVerdict(failed).verdict).toBe("fail");
     expect(machineVerdict({ ...failed, checks: [] }).verdict).toBe("invalid");
+    const interrupted = machineVerdict({
+      ...failed,
+      passed: true,
+      checks: [{ name: "artifact", passed: true }],
+      agent_status: "interrupted",
+      execution_error: "provider disconnected after session /tmp/session-1",
+      summary: "scorer summary must not hide execution failure",
+    });
+    expect(interrupted.verdict).toBe("invalid");
+    expect(interrupted.reason).toContain("provider disconnected");
+    expect(interrupted.reason).not.toContain("scorer summary");
     expect(machineVerdict({ ...failed, agent_status: "error" }).verdict).toBe(
       "invalid",
     );
@@ -122,6 +142,29 @@ describe("loop evaluation", () => {
         checks: [{ name: "ground-truth", passed: false, category: "harness" }],
       }).verdict,
     ).toBe("invalid");
+    expect(machineVerdict({
+      ...failed,
+      passed: true,
+      checks: [{ name: "required", passed: false }],
+    }).verdict).toBe("invalid");
+    expect(machineVerdict({
+      ...failed,
+      passed: true,
+      checks: [{ name: "required", passed: "false" as unknown as boolean }],
+    }).verdict).toBe("invalid");
+    expect(machineVerdict({
+      ...failed,
+      passed: "yes" as unknown as boolean,
+      checks: [{ name: "required", passed: true }],
+    }).verdict).toBe("invalid");
+    expect(machineVerdict({
+      ...failed,
+      passed: true,
+      checks: [
+        { name: "required", passed: true },
+        { name: "advisory", passed: false, gate: false },
+      ],
+    }).verdict).toBe("pass");
   });
 
   it("passes comparison only for approved, valid, improving candidates", () => {
@@ -134,6 +177,26 @@ describe("loop evaluation", () => {
     expect(comparison.improved).toBe(true);
     expect(comparison.no_regressions).toBe(true);
     expect(comparison.same_framework_revision).toBe(true);
+
+    const changedPrompt = manifest("candidate", ["pass", "pass"]);
+    changedPrompt.proof.agent_prompt_fingerprints = ["candidate-prompt-a", "candidate-prompt-b"];
+    changedPrompt.trials.forEach((item, index) => {
+      item.provenance.prompt_fingerprint = changedPrompt.proof.agent_prompt_fingerprints[index]!;
+    });
+    expect(compareRuns(manifest("baseline", ["fail", "pass"]), changedPrompt, approvedLabels).gate).toBe("pass");
+
+    const deterministicBaseline = manifest("baseline", ["fail", "pass"]);
+    const deterministicCandidate = manifest("candidate", ["pass", "pass"]);
+    for (const run of [deterministicBaseline, deterministicCandidate]) {
+      run.proof.semantic_judging = false;
+      run.proof.semantic_judge_fingerprint = null;
+      run.source.semantic_judges_snapshot = null;
+    }
+    expect(compareRuns(deterministicBaseline, deterministicCandidate, approvedLabels).gate).toBe("pass");
+    delete deterministicBaseline.proof.semantic_judge_fingerprint;
+    expect(() => compareRuns(deterministicBaseline, deterministicCandidate, approvedLabels)).toThrow(
+      "explicit semantic judge evidence",
+    );
 
     const draft = structuredClone(approvedLabels);
     draft.labels["case-a"]!.status = "draft";
@@ -151,6 +214,33 @@ describe("loop evaluation", () => {
         draft,
       ).gate,
     ).toBe("needs-human-review");
+
+    const alteredApprovedTruth = structuredClone(approvedLabels);
+    alteredApprovedTruth.labels["case-a"]!.rationale = "Different same-benchmark truth";
+    expect(() => compareRuns(
+      manifest("baseline", ["fail"]),
+      manifest("candidate", ["pass"]),
+      alteredApprovedTruth,
+    )).toThrow("exact frozen truth catalog");
+
+    const missingLabelSnapshot = manifest("baseline", ["fail"]);
+    missingLabelSnapshot.source.labels_snapshot = null;
+    missingLabelSnapshot.proof.label_set_fingerprint = null;
+    expect(() => compareRuns(
+      missingLabelSnapshot,
+      manifest("candidate", ["pass"]),
+      approvedLabels,
+    )).toThrow("frozen label snapshot evidence");
+
+    const invalidTimeline = manifest("candidate", ["pass"]);
+    invalidTimeline.started_at = "not-a-time";
+    expect(() => compareRuns(manifest("baseline", ["fail"]), invalidTimeline, approvedLabels)).toThrow(
+      "incomplete or invalid candidate run",
+    );
+    invalidTimeline.started_at = "2026-01-01T00:02:00Z";
+    expect(() => compareRuns(manifest("baseline", ["fail"]), invalidTimeline, approvedLabels)).toThrow(
+      "incomplete or invalid candidate run",
+    );
   });
 
   it("rejects comparisons with mixed or different framework revisions", () => {
@@ -159,15 +249,16 @@ describe("loop evaluation", () => {
     baseline.proof.framework_revisions = ["framework-a", "framework-b"];
     candidate.proof.framework_revisions = ["framework-b"];
 
-    const mixed = compareRuns(baseline, candidate, approvedLabels);
-
-    expect(mixed.same_framework_revision).toBe(false);
-    expect(mixed.gate).toBe("fail");
+    expect(() => compareRuns(baseline, candidate, approvedLabels)).toThrow(
+      "observed model, framework",
+    );
 
     baseline.proof.framework_revisions = ["framework-a"];
-    const different = compareRuns(baseline, candidate, approvedLabels);
-    expect(different.same_framework_revision).toBe(false);
-    expect(different.gate).toBe("fail");
+    baseline.trials[0]!.provenance.framework_revision = "framework-a";
+    candidate.trials[0]!.provenance.framework_revision = "framework-b";
+    expect(() => compareRuns(baseline, candidate, approvedLabels)).toThrow(
+      "different frozen inputs",
+    );
   });
 
   it("persists frozen inputs, agent artifacts, and append-only reviews", async () =>
@@ -307,11 +398,20 @@ describe("loop evaluation", () => {
 
         const rescored = rescoreRun(created.runDir);
         expect(rescored.trials[0]?.original_verdict).toBe("pass");
-        expect(rescored.trials[0]?.rescored_verdict).toBe("fail");
+        expect(rescored.trials[0]?.rescored_verdict).toBe("invalid");
+        expect(rescored.trials[0]?.summary).toContain("Deterministic result was fail");
         expect(existsSync(rescored.artifact_path)).toBe(true);
         expect(readManifest(created.runDir).trials[0]?.machine_verdict).toBe(
           "pass",
         );
+        const invalidManifest = readManifest(created.runDir);
+        invalidManifest.trials[0]!.machine_verdict = "invalid";
+        invalidManifest.trials[0]!.invalid_reason = "semantic judge provider unavailable";
+        writeManifest(created.runDir, invalidManifest);
+        const invalidRescore = rescoreRun(created.runDir);
+        expect(invalidRescore.trials[0]?.rescored_verdict).toBe("invalid");
+        expect(invalidRescore.trials[0]?.invalid_reason).toContain("semantic rubric was not evaluated");
+        writeManifest(created.runDir, stored);
 
         appendAdjudication(created.runDir, {
           run_id: stored.run_id,

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "id": "diagnosis.input-before-model",
-  "version": 1,
+  "version": 2,
   "objective": "Diagnose unexpected agent behavior from the exact prompt, context, and tool output before changing the model or adding broad instructions.",
   "criticality": "high",
   "sources": [
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Debug from evidence"},
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Fix the layer that failed"},
     {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Context is discovered, not dumped"}
   ],
   "prerequisites": ["evidence.propose-after-proof"],

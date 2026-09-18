@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "initiative-and-approval",
-  "version": 2,
+  "version": 3,
   "status": "pilot",
   "title": "Act on bounded evidence; wait only at consequential mutation",
   "lesson": "lesson.md",
@@ -14,8 +14,8 @@
   ],
   "sources": [
     {
-      "path": "../may-agent.app/docs/1-principles/core-principles.md",
-      "section": "Evidence before complexity"
+      "path": "../may.app/agents/may/AGENTS.md",
+      "section": "Authority and evidence"
     },
     {
       "path": "../may-agent.app/docs/1-principles/work-model.md",
@@ -26,7 +26,7 @@
       "section": "App"
     },
     {
-      "path": "../../agents/may/skills/may-agent-system/SKILL.md",
+      "path": "../may.app/agents/may/skills/may-agent-system/SKILL.md",
       "section": "Discovery Boundary"
     }
   ],

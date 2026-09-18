@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "system-deputy-operations",
-  "version": 1,
+  "version": 2,
   "status": "pilot",
   "title": "Operate May-agent and project apps as Hao's deputy",
   "lesson": "lesson.md",
@@ -17,7 +17,7 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/system-model.md",
-      "section": "Whole flow"
+      "section": "One example, from ask to outcome"
     },
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",
@@ -32,7 +32,7 @@
       "section": "Skill And Workflow Boundary"
     },
     {
-      "path": "../../agents/may/skills/may-agent-system/SKILL.md",
+      "path": "../may.app/agents/may/skills/may-agent-system/SKILL.md",
       "section": "Operating Loop"
     }
   ],

@@ -29,6 +29,21 @@ export function configureGymRoot(path: string): void {
   gymRoot = resolve(path);
 }
 
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => `${JSON.stringify(key)}:${canonicalJson(child)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+export function fingerprintValue(value: unknown): string {
+  return createHash("sha256").update(canonicalJson(value)).digest("hex");
+}
+
 export function fingerprintTree(path: string): string {
   const hash = createHash("sha256");
   const visit = (current: string, relativePath: string): void => {
@@ -71,6 +86,27 @@ const SEMANTIC_SCENARIO_FILES = [
   "semantic_criteria.md",
   "semantic_controls.json",
 ] as const;
+
+const CONTROLLED_HARNESS_PATHS = [
+  "src/cli.ts",
+  "src/model-registry.ts",
+  "src/loop",
+  "src/scoring",
+  "src/scenarios",
+  "dist/@may-agent/gym/scoring.js",
+] as const;
+
+/** Copies the Gym-owned runner/scoring implementation used by a bounded run. */
+export function snapshotHarness(destination: string): void {
+  mkdirSync(destination, { recursive: true });
+  for (const relativePath of CONTROLLED_HARNESS_PATHS) {
+    const source = join(gymRoot, relativePath);
+    if (!existsSync(source)) continue;
+    const target = join(destination, relativePath);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(source, target, { recursive: true });
+  }
+}
 
 export function applyEvaluatorScenarioOverlay(input: {
   sourceBenchmarkDir: string;
@@ -190,6 +226,13 @@ export function createRunManifest(input: {
     mkdirSync(dirname(evaluatorSnapshot), { recursive: true });
     copyFileSync(evaluatorSource, evaluatorSnapshot);
   }
+  const semanticJudgesSource = join(
+    gymRoot,
+    "benchmarks",
+    "semantic-judges",
+    "agents",
+  );
+  let semanticJudgesSnapshot: string | null = null;
   const scenariosSnapshot = join(inputsDir, "scenarios");
   const evaluatorOwner = evaluatorSource ? dirname(evaluatorSource) : null;
   for (const scenario of input.scenarios) {
@@ -206,6 +249,18 @@ export function createRunManifest(input: {
       destination: snapshot,
     });
   }
+  const usesSemanticJudges = input.scenarios.some((scenario) =>
+    existsSync(join(scenariosSnapshot, safeName(scenario), "semantic_criteria.md")),
+  );
+  if (usesSemanticJudges) {
+    if (!existsSync(semanticJudgesSource)) {
+      throw new Error("Semantic benchmark has no semantic judge agent definitions");
+    }
+    semanticJudgesSnapshot = join(inputsDir, "semantic-judges", "agents");
+    cpSync(semanticJudgesSource, semanticJudgesSnapshot, { recursive: true });
+  }
+  const harnessSnapshot = join(inputsDir, "harness");
+  snapshotHarness(harnessSnapshot);
   const candidateSnapshot = input.candidatePath
     ? join(runDir, "candidate")
     : null;
@@ -236,7 +291,15 @@ export function createRunManifest(input: {
       label_set_fingerprint: labelsSnapshot
         ? fingerprintTree(labelsSnapshot)
         : null,
+      label_catalog_fingerprint: labelsSnapshot
+        ? fingerprintValue(JSON.parse(readFileSync(labelsSnapshot, "utf8")))
+        : null,
       candidate_fingerprint: input.candidateFingerprint,
+      semantic_judging: usesSemanticJudges,
+      semantic_judge_fingerprint: semanticJudgesSnapshot
+        ? fingerprintTree(semanticJudgesSnapshot)
+        : null,
+      harness_fingerprint: fingerprintTree(harnessSnapshot),
       agent_prompt_fingerprints: [],
       framework_revisions: [],
       models: [],
@@ -251,6 +314,10 @@ export function createRunManifest(input: {
       evaluator_snapshot: evaluatorSnapshot
         ? relative(runDir, evaluatorSnapshot)
         : null,
+      semantic_judges_snapshot: semanticJudgesSnapshot
+        ? relative(runDir, semanticJudgesSnapshot)
+        : null,
+      harness_snapshot: relative(runDir, harnessSnapshot),
       scenarios_snapshot: relative(runDir, scenariosSnapshot),
       candidate_snapshot: candidateSnapshot
         ? relative(runDir, candidateSnapshot)
@@ -279,10 +346,29 @@ export function machineVerdict(result: ScenarioRunResult): {
   verdict: MachineVerdict;
   reason: string | null;
 } {
-  if (result.agent_status === "error")
-    return { verdict: "invalid", reason: "agent runtime returned error" };
+  if (result.agent_status !== "success") {
+    const status = result.agent_status ?? "missing";
+    const diagnostic = result.execution_error?.trim() || result.summary?.trim();
+    return {
+      verdict: "invalid",
+      reason: `agent execution status ${status}${diagnostic ? `: ${diagnostic}` : ""}`,
+    };
+  }
+  if (typeof result.passed !== "boolean") {
+    return { verdict: "invalid", reason: "scorer returned a nonboolean overall verdict" };
+  }
   if (!Array.isArray(result.checks) || result.checks.length === 0) {
     return { verdict: "invalid", reason: "scorer returned no checks" };
+  }
+  if (result.checks.some((check) => !check || typeof check.name !== "string" || typeof check.passed !== "boolean")) {
+    return { verdict: "invalid", reason: "scorer returned a malformed check verdict" };
+  }
+  const failedRequiredCheck = result.checks.find((check) => check.gate !== false && !check.passed);
+  if (result.passed && failedRequiredCheck) {
+    return { verdict: "invalid", reason: `scorer overall pass contradicts required check ${failedRequiredCheck.name}` };
+  }
+  if (!result.passed && !failedRequiredCheck) {
+    return { verdict: "invalid", reason: "scorer overall failure has no failed required check" };
   }
   const harnessFailure = result.checks.find(
     (check) => !check.passed && check.category === "harness",

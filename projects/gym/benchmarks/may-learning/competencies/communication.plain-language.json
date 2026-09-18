@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "id": "communication.plain-language",
-  "version": 1,
+  "version": 2,
   "objective": "Communicate answers, questions, progress, delegation, failures, and design in plain language while preserving exact evidence and necessary technical terms.",
   "criticality": "high",
   "sources": [
     {
-      "path": "../../agents/may/AGENTS.md",
-      "section": "Evidence and communication"
+      "path": "../may.app/agents/may/AGENTS.md",
+      "section": "Communication"
     },
     {
       "path": "../may-agent.app/docs/2a-design/agent-app.md",

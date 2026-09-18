@@ -69,6 +69,24 @@ describe("semantic judge gate", () => {
     expect(result.summary).toContain("disagree");
   });
 
+  test("retains provider failure diagnostics and fails closed", () => {
+    const result = evaluateSemanticJudgeRuns(
+      [
+        {
+          agent: "semantic-judge-gemini",
+          model: "unavailable-model",
+          status: "error",
+          session_path: "/tmp/judge-session",
+          provider_error: "HTTP 400 model unavailable",
+        },
+        { agent: "semantic-judge-openai", model: "gpt-5.6-sol", report: report("pass") },
+      ],
+      controls,
+    );
+    expect(result.status).toBe("invalid");
+    expect(result.judges[0]?.errors.join(" ")).toContain("HTTP 400 model unavailable");
+  });
+
   test("fails closed when a judge misses a calibration control", () => {
     const result = evaluateSemanticJudgeRuns(
       runs(report("pass", "pass"), report("pass")),

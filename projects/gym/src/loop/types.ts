@@ -64,6 +64,8 @@ export interface ScenarioRunResult {
   semantic_evaluation?: unknown;
   summary?: string;
   agent_status?: string;
+  /** Exact subject execution error, distinct from scorer summary. */
+  execution_error?: string;
   duration_ms?: number;
   session_id?: string;
   session_path?: string;
@@ -108,7 +110,14 @@ export interface LoopRunManifest {
   proof: {
     input_fingerprint: string;
     label_set_fingerprint: string | null;
+    /** Canonical content identity used to bind the supplied truth catalog. */
+    label_catalog_fingerprint?: string | null;
     candidate_fingerprint: string | null;
+    /** Absent on historical manifests, which remain readable but are not comparable. */
+    semantic_judging?: boolean;
+    semantic_judge_fingerprint?: string | null;
+    /** Gym-owned runner/scoring implementation; absent on historical manifests. */
+    harness_fingerprint?: string;
     agent_prompt_fingerprints: string[];
     framework_revisions: string[];
     models: string[];
@@ -119,6 +128,10 @@ export interface LoopRunManifest {
     suite_snapshot: string;
     labels_snapshot: string | null;
     evaluator_snapshot: string | null;
+    /** Frozen semantic judge agent definitions; absent on historical manifests. */
+    semantic_judges_snapshot?: string | null;
+    /** Frozen Gym runner/scoring sources; absent on historical manifests. */
+    harness_snapshot?: string;
     scenarios_snapshot: string;
     candidate_snapshot: string | null;
   };

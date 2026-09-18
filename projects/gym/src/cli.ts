@@ -42,7 +42,7 @@ import {
   type AgentExecutionManifest,
   type ToolDenial,
 } from "../../may-agent/src/app/direct-agent.js";
-import { createModelRegistry } from "../../may-agent/src/app/model-registry.js";
+import { createControlledModelRegistry } from "./model-registry";
 
 import {
   listScenarios,
@@ -98,6 +98,7 @@ interface RunResult {
   semantic_evaluation?: SemanticEvaluation;
   summary: string;
   agent_status: string;
+  execution_error?: string;
   duration_ms: number;
   session_id: string;
   session_path: string;
@@ -117,6 +118,7 @@ interface AdapterResult {
   sessionId: string;
   status: string;
   sessionPath: string;
+  error?: string;
   systemPrompt?: string;
   executionManifest?: AgentExecutionManifest;
 }
@@ -129,6 +131,11 @@ interface Adapter {
     workDir: string,
     timeoutMin: number,
   ): AdapterResult | Promise<AdapterResult>;
+}
+
+function terminalExecution(results: AdapterResult[]): AdapterResult {
+  const last = results.at(-1) ?? { sessionId: "", status: "unknown", sessionPath: "" };
+  return results.find((result) => result.status !== "success") ?? last;
 }
 
 interface AdapterOpts {
@@ -303,7 +310,7 @@ function createMayAgentAdapter(): Adapter {
           sharedRoot: join(REPO_ROOT, "shared"),
           projectsRoot: join(REPO_ROOT, "projects"),
           outputRoot: gymState,
-          models: createModelRegistry(),
+          models: createControlledModelRegistry(),
           toolDenials: gymToolDenials(agentDir),
           timeoutMs: timeoutMin * 60 * 1000,
           outputSchema:
@@ -333,8 +340,9 @@ function createMayAgentAdapter(): Adapter {
         }
         return {
           sessionId: result.sessionId,
-          status: result.status === "done" ? "success" : "error",
+          status: result.status === "done" ? "success" : result.status,
           sessionPath: result.sessionPath,
+          error: result.error,
           systemPrompt: result.systemPrompt,
           executionManifest: result.executionManifest,
         };
@@ -342,7 +350,12 @@ function createMayAgentAdapter(): Adapter {
         console.error(
           `  [may-direct] ${error instanceof Error ? error.message : String(error)}`,
         );
-        return { sessionId: "", status: "error", sessionPath: "" };
+        return {
+          sessionId: "",
+          status: "error",
+          sessionPath: "",
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   };
@@ -698,7 +711,7 @@ async function judgeScenario(
       sharedRoot: join(REPO_ROOT, "shared"),
       projectsRoot: join(REPO_ROOT, "projects"),
       outputRoot: judgeState,
-      models: createModelRegistry(),
+      models: createControlledModelRegistry(),
       toolDenials: gymToolDenials(join(agentsRoot, "judge")),
       timeoutMs: 3 * 60 * 1000,
       onNotice: (message) => console.error(`  [judge-direct] ${message}`),
@@ -734,7 +747,7 @@ async function judgeScenario(
 }
 
 const SEMANTIC_JUDGE_AGENTS = [
-  "semantic-judge-gemini",
+  "semantic-judge-astra",
   "semantic-judge-openai",
 ] as const;
 const semanticJudgeReportSchema = Type.Object(
@@ -767,11 +780,9 @@ const semanticJudgeReportSchema = Type.Object(
   },
   { additionalProperties: false },
 );
-const SEMANTIC_JUDGES_ROOT = join(
-  GYM_PROJECT_ROOT,
-  "benchmarks",
-  "semantic-judges",
-  "agents",
+const SEMANTIC_JUDGES_ROOT = resolve(
+  process.env["GYM_SEMANTIC_JUDGES_ROOT"] ||
+    join(GYM_PROJECT_ROOT, "benchmarks", "semantic-judges", "agents"),
 );
 
 function invalidSemanticEvaluation(summary: string): SemanticEvaluation {
@@ -864,29 +875,38 @@ async function judgeScenarioMeaning(
           sharedRoot: join(REPO_ROOT, "shared"),
           projectsRoot: join(REPO_ROOT, "projects"),
           outputRoot: stateRoot,
-          models: createModelRegistry(),
+          models: createControlledModelRegistry(),
           outputSchema: semanticJudgeReportSchema,
           toolDenials: gymToolDenials(join(SEMANTIC_JUDGES_ROOT, agentName)),
           timeoutMs: 3 * 60 * 1000,
           onNotice: (message) => console.error(`  [${agentName}] ${message}`),
         });
+        const execution = {
+          agent: agentName,
+          model: result.model,
+          status: result.status,
+          session_id: result.sessionId,
+          session_path: result.sessionPath,
+          execution_manifest: result.executionManifest,
+          provider_error: result.status === "done"
+            ? null
+            : result.error || `judge execution ended with ${result.status}`,
+        };
         writeFileSync(
           join(judgeRoot, "execution.json"),
-          `${JSON.stringify(
-            {
-              agent: agentName,
-              model: result.model,
-              execution_manifest: result.executionManifest,
-            },
-            null,
-            2,
-          )}\n`,
+          `${JSON.stringify(execution, null, 2)}\n`,
         );
-        if (result.structuredResult === undefined) {
+        if (result.status !== "done" || result.structuredResult === undefined) {
           return {
             agent: agentName,
             model: result.model,
-            error: "judge produced no structured report",
+            status: result.status,
+            session_path: result.sessionPath,
+            execution_manifest: result.executionManifest,
+            provider_error: execution.provider_error ?? undefined,
+            error: result.structuredResult === undefined
+              ? "judge produced no structured report"
+              : `judge execution ended with ${result.status}`,
           };
         }
         writeFileSync(
@@ -896,13 +916,31 @@ async function judgeScenarioMeaning(
         return {
           agent: agentName,
           model: result.model,
+          status: result.status,
+          session_path: result.sessionPath,
+          execution_manifest: result.executionManifest,
           report: result.structuredResult,
         };
       } catch (error) {
+        const providerError = error instanceof Error ? error.message : String(error);
+        const execution = {
+          agent: agentName,
+          model: null,
+          status: "error",
+          session_path: null,
+          execution_manifest: null,
+          provider_error: providerError,
+        };
+        writeFileSync(
+          join(judgeRoot, "execution.json"),
+          `${JSON.stringify(execution, null, 2)}\n`,
+        );
         return {
           agent: agentName,
           model: null,
-          error: `judge run failed: ${error instanceof Error ? error.message : String(error)}`,
+          status: "error",
+          provider_error: providerError,
+          error: `judge run failed: ${providerError}`,
         };
       }
     }),
@@ -1153,6 +1191,7 @@ async function runMultiSessionScenario(
         judgments: [],
         summary: `FAIL: agent failed to launch in ${sessionId}`,
         agent_status: "error",
+        execution_error: lastResult.error,
         duration_ms: durationMs,
         session_id: allSessionResults.map((r) => r.sessionId).join(","),
         session_path: "",
@@ -1307,6 +1346,7 @@ async function runMultiSessionScenario(
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
+  const execution = terminalExecution(allSessionResults);
 
   return {
     scenario: scenarioName,
@@ -1319,7 +1359,8 @@ async function runMultiSessionScenario(
     judgments,
     semantic_evaluation: semanticEvaluation ?? undefined,
     summary: `[multi-session: ${sessions.length}] ${gatedScore.summary}${judgeSummary}`,
-    agent_status: lastResult.status,
+    agent_status: execution.status,
+    execution_error: execution.error,
     duration_ms: durationMs,
     session_id: allSessionResults.map((r) => r.sessionId).join(","),
     session_path: lastResult.sessionPath,
@@ -1455,6 +1496,7 @@ async function runScenario(
           judgments: [],
           summary: `FAIL: agent failed to launch in phase ${i + 1}`,
           agent_status: "error",
+          execution_error: lastResult.error,
           duration_ms: durationMs,
           session_id: "",
           session_path: "",
@@ -1562,6 +1604,7 @@ async function runScenario(
       judgments: [],
       summary: "FAIL: agent failed to launch",
       agent_status: "error",
+      execution_error: lastResult.error,
       duration_ms: durationMs,
       session_id: "",
       session_path: "",
@@ -1633,6 +1676,7 @@ async function runScenario(
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
+  const execution = terminalExecution(isWorkflow ? allPhaseResults : [lastResult]);
 
   return {
     scenario: scenarioName,
@@ -1645,7 +1689,8 @@ async function runScenario(
     judgments,
     semantic_evaluation: semanticEvaluation ?? undefined,
     summary: gatedScore.summary + judgeSummary,
-    agent_status: lastResult.status,
+    agent_status: execution.status,
+    execution_error: execution.error,
     duration_ms: durationMs,
     session_id: lastResult.sessionId,
     session_path: lastResult.sessionPath,

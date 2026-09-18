@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "id": "evidence.reconcile-worker-opinions",
-  "version": 1,
+  "version": 2,
   "objective": "Resolve worker disagreement with primary evidence and keep the final decision with May.",
   "criticality": "critical",
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
-      "section": "Review Boundary"
+      "section": "Evidence and continuity"
     }
   ],
   "prerequisites": [

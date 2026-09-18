@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "practical-judgment",
-  "version": 1,
+  "version": 2,
   "status": "active",
   "title": "Use shared principles to make practical decisions and keep work moving",
   "lesson": "lesson.md",
@@ -26,8 +26,8 @@
       "section": "Evidence Over Narrative"
     },
     {
-      "path": "../may-agent.app/docs/1-principles/core-principles.md",
-      "section": "Evidence before complexity"
+      "path": "../may-agent.app/docs/1-principles/evidence-first.md",
+      "section": "The Pattern"
     },
     {
       "path": "benchmarks/may-learning/units/conversation-follow-through/lesson.md",

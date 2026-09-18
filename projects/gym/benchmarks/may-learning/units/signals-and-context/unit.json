@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "signals-and-context",
-  "version": 1,
+  "version": 2,
   "status": "pilot",
   "title": "Use metrics and agent inputs as evidence without chasing scores or prompt size",
   "lesson": "lesson.md",
@@ -14,7 +14,7 @@
   ],
   "sources": [
     {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Metrics are observations, not decisions"},
-    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Debug from evidence"},
+    {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Fix the layer that failed"},
     {"path": "../may-agent.app/docs/1-principles/core-principles.md", "section": "Context is discovered, not dumped"},
     {"path": "../../shared/common-sense.md", "section": "Never game metrics"}
   ],
