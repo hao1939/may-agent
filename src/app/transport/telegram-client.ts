@@ -5,6 +5,20 @@ const REQUEST_TIMEOUT_MS = 15_000;
 // getUpdates asks Telegram to wait up to 30 seconds before replying.
 const POLL_TIMEOUT_MS = 45_000;
 
+function withoutApprovalAuthority(data: string | undefined): string | undefined {
+  if (!data) return data;
+  try {
+    const parsed = JSON.parse(data);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return data;
+    const { approvalAnchor: _approvalAnchor, ...ordinary } = parsed as Record<string, unknown>;
+    return JSON.stringify(ordinary);
+  } catch {
+    // Generic notification metadata remains useful even when it is opaque. It
+    // cannot grant approval because the adapter requires approvalAnchor.
+    return data;
+  }
+}
+
 class TelegramApiError extends Error {
   constructor(
     method: string,
@@ -21,6 +35,8 @@ export interface TelegramSendContext {
   sessionId?: string;
   projectId?: string;
   data?: string;
+  /** Persist reply authority only after every chunk was delivered, on the final chunk. */
+  bindToCompleteDelivery?: boolean;
   replyToMessageId?: number;
   messageThreadId?: number;
   replyMarkup?: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
@@ -142,7 +158,14 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     }
 
     if (context) {
+      const fullyDelivered = complete && sentMsgIds.length === chunks.length;
+      // Every confirmed chunk keeps ordinary reply/task/topic correlation. Only
+      // the final chunk of a complete delivery carries approval authority,
+      // because only that receipt proves all proposal bytes were displayed.
       for (const telegramMsgId of sentMsgIds) {
+        const approvalCapable =
+          Boolean(context.bindToCompleteDelivery) && fullyDelivered && telegramMsgId === sentMsgIds.at(-1);
+        const storedData = approvalCapable ? context.data : withoutApprovalAuthority(context.data);
         try {
           storeNotificationMessage(opts.persistDir, {
             chat_id: chatId,
@@ -151,7 +174,7 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
             agent: context.agent || null,
             session_id: context.sessionId || null,
             project_id: context.projectId || null,
-            data: notificationDataForChat(context.data, chatId, context.messageThreadId),
+            data: notificationDataForChat(storedData, chatId, context.messageThreadId),
           });
         } catch {
           /* best-effort */

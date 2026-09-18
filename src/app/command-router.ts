@@ -10,7 +10,7 @@ export interface CommandRouterOptions {
   bus: EventBus;
   manager: SubagentManager;
   projectRoot: string;
-  reload: () => RuntimeReloadResult | Promise<RuntimeReloadResult>;
+  reload: (options?: { expectedSourceCommit?: string }) => RuntimeReloadResult | Promise<RuntimeReloadResult>;
   restart: () => void;
   shutdown: () => void;
 }
@@ -75,12 +75,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           ...(nonEmptyString(request.requestId) ? { requestId: nonEmptyString(request.requestId) } : {}),
           ok: result.ok,
           summary: result.summary,
+          ...(nonEmptyString(result.sourceCommit) ? { sourceCommit: nonEmptyString(result.sourceCommit) } : {}),
         },
         trace: childEventTrace(event),
       } as any);
     };
+    const expectedSourceCommit = nonEmptyString(request.expectedSourceCommit);
     void Promise.resolve()
-      .then(() => options.reload())
+      .then(() => options.reload(expectedSourceCommit ? { expectedSourceCommit } : undefined))
       .catch((error) => ({
         ok: false,
         summary: `[reload] Failed: ${error instanceof Error ? error.message : String(error)}`,

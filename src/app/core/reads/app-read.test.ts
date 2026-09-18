@@ -213,7 +213,15 @@ describe("App read projections", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     expect(completeAppTask(config, claim, { summary: "Previous cycle checked" }).status).toBe("applied");
     const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
-    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "done" });
+    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({
+      status: "done",
+      acceptedAttempt: {
+        id: claim.attemptId,
+        generation: 1,
+        startedAt: expect.any(String),
+        finishedAt: expect.any(String),
+      },
+    });
 
     observeAppTaskIntent(config, {
       appAgent: "evaluation",

@@ -16,7 +16,7 @@
  *   - Authentication: only accepts messages from allowed chat IDs
  */
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
@@ -43,10 +43,33 @@ const TODO_PAGE_SIZE = 50;
 // Also acknowledge explicit user shares/Web App data; passive service notices stay quiet.
 // Keep this provider list current when adding Telegram content support, not another work route.
 const TELEGRAM_CONTENT_FIELDS = [
-  "animation", "audio", "document", "live_photo", "paid_media", "photo", "sticker", "story",
-  "video", "video_note", "voice", "caption", "checklist", "contact", "dice", "game", "poll",
-  "venue", "location", "rich_message", "invoice", "giveaway", "giveaway_winners", "passport_data",
-  "users_shared", "chat_shared", "web_app_data",
+  "animation",
+  "audio",
+  "document",
+  "live_photo",
+  "paid_media",
+  "photo",
+  "sticker",
+  "story",
+  "video",
+  "video_note",
+  "voice",
+  "caption",
+  "checklist",
+  "contact",
+  "dice",
+  "game",
+  "poll",
+  "venue",
+  "location",
+  "rich_message",
+  "invoice",
+  "giveaway",
+  "giveaway_winners",
+  "passport_data",
+  "users_shared",
+  "chat_shared",
+  "web_app_data",
 ] as const;
 
 function hasTelegramContent(message: Record<string, unknown>): boolean {
@@ -221,7 +244,8 @@ function humanActionText(task: HumanTaskView): string {
 
 function humanActionLine(task: HumanTaskView): string {
   const owner = task.humanAction?.task;
-  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${humanActionText(task)}` : humanActionText(task);
+  const text = fullHumanApprovalAction(task) ?? humanActionText(task);
+  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${text}` : text;
 }
 
 function elapsedText(value: number): string {
@@ -336,7 +360,9 @@ function renderTelegramTaskUpdate(task: HumanTaskView): string {
     taskStatusLabel(task),
     "",
     currentTaskText(task),
-    ...(task.humanAction ? ["", `Needs you: ${humanActionText(task)}`, "Reply here with your decision."] : []),
+    ...(task.humanAction
+      ? ["", `Needs you: ${fullHumanApprovalAction(task) ?? humanActionText(task)}`, "Reply here with your decision."]
+      : []),
   ].join("\n");
 }
 
@@ -378,6 +404,123 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
           ? "View"
           : "Tool";
   return `${surface} · ${speaker}\n${text}`;
+}
+
+export type TelegramApprovalAnchor = {
+  approvalId: string;
+  /** Fingerprint of the exact Condition proposal bytes shown to the human. */
+  displayedActionHash: string;
+  packetHash?: string;
+  proposalHash?: string;
+  proposalRevision?: number;
+  taskGeneration: number;
+  conditionId: string;
+};
+
+export type TelegramApprovalReply = TelegramApprovalAnchor & {
+  decision: "approve" | "reject" | "defer";
+  task: { appId: string; taskId: string };
+};
+
+function pendingHumanApprovalCondition(task: HumanTaskView | null) {
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    const expected =
+      condition?.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+        ? (condition.spec.expected as Record<string, unknown>)
+        : {};
+    return (
+      condition?.spec.type === "project.approval.submitted" &&
+      condition.status?.state !== "true" &&
+      (condition.spec.owner === "human" || condition.spec.owner?.startsWith("human:") === true) &&
+      expected.taskGeneration === task.generation &&
+      expected.conditionId === item.id
+    );
+  });
+  return matches.length === 1 ? matches[0]!.condition : null;
+}
+
+function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
+  if (!task || task.terminal) return null;
+  const actions = (task.diagnostics?.conditions ?? [])
+    .map((item) => item.condition)
+    .filter(
+      (condition) =>
+        condition?.status?.state !== "true" &&
+        (condition?.spec.owner === "human" || condition?.spec.owner?.startsWith("human:") === true),
+    )
+    .map((condition) => condition!.spec.requestedAction?.trim())
+    .filter((action): action is string => Boolean(action));
+  return actions.length > 0 ? actions.join("\n\n---\n\n") : null;
+}
+
+function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
+  const condition = pendingHumanApprovalCondition(task);
+  if (!condition) return null;
+  const displayedAction = condition.spec.requestedAction?.trim();
+  if (!displayedAction) return null;
+  const expected =
+    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+      ? (condition.spec.expected as Record<string, unknown>)
+      : {};
+  const approvalId =
+    typeof expected.approvalId === "string" && expected.approvalId.trim()
+      ? expected.approvalId.trim()
+      : condition.spec.subject.replace(/^[^:]+:/, "");
+  if (!approvalId) return null;
+  return {
+    approvalId,
+    displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
+    taskGeneration: task!.generation,
+    conditionId: String(expected.conditionId),
+    ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
+    ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
+    ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
+  };
+}
+
+/** Mechanical parser only: edits, conditions and unbound affirmations remain conversation. */
+export function telegramApprovalReply(
+  text: string,
+  task: HumanTaskView | null,
+  displayed: TelegramApprovalAnchor | null,
+): TelegramApprovalReply | null {
+  const normalized = text.trim().toLowerCase();
+  const decision =
+    normalized === "approve" || normalized === "approved"
+      ? "approve"
+      : normalized === "reject" || normalized === "rejected"
+        ? "reject"
+        : normalized === "defer" || normalized === "deferred"
+          ? "defer"
+          : null;
+  const current = approvalAnchor(task);
+  if (
+    !decision ||
+    !task ||
+    !displayed ||
+    !current ||
+    Object.keys(current).some(
+      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
+    ) ||
+    Object.keys(displayed).some(
+      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
+    )
+  )
+    return null;
+  const condition = pendingHumanApprovalCondition(task)!;
+  const expected =
+    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+      ? (condition.spec.expected as Record<string, unknown>)
+      : {};
+  const allowed = Array.isArray(expected.anyOf)
+    ? expected.anyOf
+    : Array.isArray(expected.allowedDecisions)
+      ? expected.allowedDecisions
+      : [];
+  if (!allowed.includes(decision)) return null;
+  return { decision, task: { appId: task.appId, taskId: task.taskId }, ...current };
 }
 
 export function telegramMayInputEvent(input: {
@@ -422,6 +565,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const allowedChatIds = (process.env.TELEGRAM_CHAT_ID || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  // Approval is narrower than conversation access. When unset, Telegram remains
+  // conversational and cannot authorize a mutation.
+  const allowedApproverIds = (process.env.TELEGRAM_APPROVER_ID || "")
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
@@ -595,9 +744,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const token = `stop:${randomUUID()}`;
       const messageId = await sendMessage(
         coordinates.chatId,
-        sourceChatId
-          ? "May is working on this message."
-          : "May is working in the shared conversation.",
+        sourceChatId ? "May is working on this message." : "May is working in the shared conversation.",
         undefined,
         {
           messageThreadId: coordinates.topicId,
@@ -732,9 +879,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       rememberRenderedConversationMessage(message.id);
       const watched = watchedTasks.get(surface);
       if (
-        watched && message.author.kind === "agent" && message.metadata?.taskRefs?.some(
-          (task) => task.appId === watched.appId && task.taskId === watched.taskId,
-        )
+        watched &&
+        message.author.kind === "agent" &&
+        message.metadata?.taskRefs?.some((task) => task.appId === watched.appId && task.taskId === watched.taskId)
       ) {
         const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
         if (task?.terminal && (task.response?.trim() || task.summary?.trim()) === message.text.trim()) {
@@ -752,9 +899,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const topic = readConversationTopic(getDb(persistDir), opts.interfaceAgent, sharedConversationId, selected.id);
     if (topic) selectedTopics.set(surface, topic);
     else selectedTopics.delete(surface);
-    return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId)
-      ? topic.id
-      : undefined;
+    return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId) ? topic.id : undefined;
   }
 
   async function refreshWatch(surface: string): Promise<void> {
@@ -794,6 +939,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
     }
     const rendered = renderTelegramTaskUpdate(task);
+    const displayedApproval = approvalAnchor(task);
     // Keep the card's context consistent even if selection changes during I/O.
     const conversationTopicId = selectedTaskTopicId(surface, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
@@ -801,7 +947,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       agent: opts.interfaceAgent,
       messageThreadId: watched.topicId,
       replyMarkup: taskButtons([{ appId: task.appId, taskId: task.taskId }]),
-      data: JSON.stringify({ taskRefs: [{ appId: task.appId, taskId: task.taskId }], topicId: conversationTopicId }),
+      data: JSON.stringify({
+        taskRefs: [{ appId: task.appId, taskId: task.taskId }],
+        topicId: conversationTopicId,
+        ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+      }),
+      bindToCompleteDelivery: Boolean(displayedApproval),
     });
     if (delivered && running)
       recordConversationMessage({
@@ -822,19 +973,51 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoActionSignature = (task: HumanTaskView): string => humanActionText(task);
+  const todoActionSignature = (task: HumanTaskView): string => {
+    const conditions = (task.diagnostics?.conditions ?? [])
+      .flatMap((item) => {
+        const condition = item.condition;
+        if (
+          !condition ||
+          condition.status?.state === "true" ||
+          !(condition.spec.owner === "human" || condition.spec.owner?.startsWith("human:") === true)
+        )
+          return [];
+        return [
+          {
+            id: item.id,
+            type: condition.spec.type,
+            subject: condition.spec.subject,
+            owner: condition.spec.owner,
+            requestedAction: condition.spec.requestedAction,
+            expected: condition.spec.expected,
+          },
+        ];
+      })
+      .sort((left, right) => left.id.localeCompare(right.id));
+    return JSON.stringify({
+      generation: task.generation,
+      conditions,
+      fallback: conditions.length === 0 ? humanActionText(task) : undefined,
+    });
+  };
 
   async function refreshTodos(surface: string): Promise<void> {
     const coordinates = surfaces.get(surface);
     if (!coordinates) return;
     const appId = selectedApps.get(surface) ?? opts.interfaceAgent;
     const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
+    const actions = page.items.map((task) => {
+      const owner = task.humanAction?.task ?? { appId: task.appId, taskId: task.taskId };
+      const detail = opts.humanTasks.getTask?.(owner) ?? task;
+      return { task, detail, signature: todoActionSignature(detail) };
+    });
     const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
-    const next = new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)]));
+    const next = new Map(actions.map(({ task, signature }) => [todoTaskKey(task), signature]));
     const watched = watchedTasks.get(surface);
-    const changed = page.items.filter(
-      (task) =>
-        prior.get(todoTaskKey(task)) !== todoActionSignature(task) &&
+    const changed = actions.filter(
+      ({ task, signature }) =>
+        prior.get(todoTaskKey(task)) !== signature &&
         !(watched?.appId === task.appId && watched.taskId === task.taskId),
     );
     if (changed.length === 0) {
@@ -843,17 +1026,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     const first = changed[0]!;
     const single = page.total === 1 && changed.length === 1;
-    const taskRefs = (single ? [first] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
-    const text =
-      page.total === 1 && changed.length === 1
-        ? `Needs your decision: ${first.outcome}\n${humanActionText(first)}\n\nReply here with your decision.`
-        : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
+    // The detail was read once above, so displayed text and immutable approval
+    // anchor share the same snapshot without a list/detail race.
+    const proposal = single ? first.detail : first.task;
+    const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
+    const displayedApproval = single ? approvalAnchor(proposal) : null;
+    const text = single
+      ? `Needs your decision: ${proposal.outcome}\n${fullHumanApprovalAction(proposal) ?? humanActionText(proposal)}\n\nReply here with your decision.`
+      : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
     const messageId = await sendMessage(coordinates.chatId, text, undefined, {
       eventType: "task.human-action",
       agent: opts.interfaceAgent,
       messageThreadId: coordinates.topicId,
       replyMarkup: taskButtons(taskRefs),
-      data: JSON.stringify({ taskRefs }),
+      data: JSON.stringify({
+        taskRefs,
+        ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
+      }),
+      bindToCompleteDelivery: Boolean(displayedApproval),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -867,7 +1057,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       chatId: coordinates.chatId,
       topicId: coordinates.topicId,
       taskRefs,
-      idempotencyKey: `todo-notification:telegram:${surface}:${first.appId}:${first.taskId}:${first.resourceVersion}`,
+      idempotencyKey: `todo-notification:telegram:${surface}:${first.task.appId}:${first.task.taskId}:${first.task.resourceVersion}`,
     });
   }
 
@@ -1030,19 +1220,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return allowedChatIds.includes(String(chatId));
   }
 
-  function resumeRecordedInput(type: string, key: string): number | undefined {
+  function resumeRecordedInput(type: string, key: string, requireAccepted = true): number | undefined {
     // Provider redelivery may follow restart or a lost publication receipt.
     // Do not rebuild an accepted input using today's focus and cause a hash
     // conflict. The existing event journal/recovery owns its original payload.
     const db = getDb(persistDir);
-    const row = db.prepare(
-      "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
-    ).get(type, key);
+    const row = db
+      .prepare(
+        "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
+      )
+      .get(type, key);
     if (!row) return undefined;
     // Reload acceptance only starts an asynchronous operation. Its caller has
     // already checked for completion; reenter the route after a crash, while
     // the router shares any execution still in flight in this process.
-    if (row.delivery_status !== "accepted" || type === "runtime.reload.requested") {
+    if (requireAccepted && (row.delivery_status !== "accepted" || type === "runtime.reload.requested")) {
       const event = loadPersistedEvent(db, Number(row.id), persistDir);
       if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
       const retried = bus.redeliverPersisted(event, Number(row.id));
@@ -1088,11 +1280,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const surface = surfaceKey(chatIdStr, topicId);
     surfaces.set(surface, { chatId: chatIdStr, ...(topicId === undefined ? {} : { topicId }) });
     const conversationId = primaryConversationId(opts.interfaceAgent);
-    if (
-      !text.startsWith("/") &&
-      resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
-    )
-      return;
+    const recordedConversationId = !text.startsWith("/")
+      ? resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
+      : undefined;
     conversationRefresh.queue(sharedConversationId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
@@ -1105,12 +1295,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let replyToSourceId: string | undefined;
     let replyTopicId: string | undefined;
     let replyTask: { appId: string; taskId: string } | undefined;
+    let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
     if (replyToMsgId) {
       try {
         const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
         const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
         replyTask = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
         replyTopicId = typeof data?.topicId === "string" ? data.topicId : undefined;
+        replyApprovalAnchor =
+          data?.approvalAnchor && typeof data.approvalAnchor === "object" && !Array.isArray(data.approvalAnchor)
+            ? (data.approvalAnchor as TelegramApprovalAnchor)
+            : null;
         replyToSourceId =
           typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
             ? data.conversationMessageId.trim()
@@ -1127,6 +1322,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         },
       };
     }
+
+    const approverId = String(msg.from?.id ?? "");
+    const approval =
+      replyToMsgId && replyTask && replyApprovalAnchor && allowedApproverIds.includes(approverId)
+        ? telegramApprovalReply(text, opts.humanTasks.getTask(replyTask), replyApprovalAnchor)
+        : null;
 
     try {
       if (handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId)) return;
@@ -1147,24 +1348,72 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ? (replyTask?.appId ?? opts.interfaceAgent)
       : (selectedApps.get(surface) ?? opts.interfaceAgent);
     const conversationTopic = replyToMsgId ? undefined : selectedTopics.get(surface);
-    inputContext = { ...(inputContext ?? {}), focusedApp };
+    inputContext = {
+      ...(inputContext ?? {}),
+      focusedApp,
+      ingress: {
+        provider: "telegram",
+        authenticatedSenderId: approverId,
+        chatId: chatIdStr,
+        sourceMessageId: msg.message_id,
+        ...(replyToMsgId ? { replyToMessageId: replyToMsgId } : {}),
+      },
+    };
     if (focusedTask) {
       inputContext = {
         ...(inputContext ?? {}),
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
       };
     }
-    emitChatStart(
-      text,
-      msg.message_id,
-      inputContext,
-      chatIdStr,
-      topicId,
-      conversationId,
-      replyToMsgId,
-      replyToSourceId,
-      replyTopicId ?? conversationTopic?.id,
-    );
+    if (!recordedConversationId) {
+      emitChatStart(
+        text,
+        msg.message_id,
+        inputContext,
+        chatIdStr,
+        topicId,
+        conversationId,
+        replyToMsgId,
+        replyToSourceId,
+        replyTopicId ?? conversationTopic?.id,
+      );
+    }
+    if (approval) {
+      // This generic control is journaled, not admitted as App work. Consumers
+      // must reread this trusted Telegram source and the exact proposal anchor.
+      // If Conversation admission succeeded before this second publication
+      // failed, provider replay resumes here and records only the missing event.
+      const approvalKey = `telegram-approval:${chatIdStr}:${msg.message_id}`;
+      if (!resumeRecordedInput("project.approval.submitted", approvalKey, false)) {
+        opts.publishEvent({
+          type: "project.approval.submitted",
+          target: { appId: approval.task.appId, taskId: approval.task.taskId },
+          data: {
+            approvalId: approval.approvalId,
+            decision: approval.decision,
+            ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
+            ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
+            ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
+            taskGeneration: approval.taskGeneration,
+            conditionId: approval.conditionId,
+            provenance: {
+              provider: "telegram",
+              authenticatedSenderId: approverId,
+              chatId: chatIdStr,
+              sourceMessageId: msg.message_id,
+              replyToMessageId: replyToMsgId,
+            },
+          },
+          idempotencyKey: approvalKey,
+        });
+      }
+      queueCommandDelivery(surface, () =>
+        sendMessage(chatIdStr, `${approval.decision} recorded for the exact proposal.`, undefined, {
+          replyToMessageId: msg.message_id,
+          messageThreadId: topicId,
+        }),
+      );
+    }
     // Presentation after durable recording cannot turn a saved input into a retry.
     try {
       const active = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
@@ -1215,11 +1464,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       taskRefs: Array<{ appId: string; taskId: string }> = [],
       onDelivered?: () => void,
       followTask?: { appId: string; taskId: string },
+      approvalTask?: HumanTaskView,
     ): void => {
       const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
+      const displayedApproval = approvalAnchor(approvalTask ?? null);
       queueCommandDelivery(surface, async () => {
         const deliveredMessageId = await sendMessage(chatIdStr, rendered, undefined, {
-          eventType: "telegram.reply",
+          eventType: displayedApproval ? "task.human-action" : "telegram.reply",
           agent: opts.interfaceAgent,
           data: JSON.stringify({
             direction: "outbound",
@@ -1228,7 +1479,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             taskRefs,
             followTask,
             topicId: conversationTopicId,
+            ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
           }),
+          bindToCompleteDelivery: Boolean(displayedApproval),
           replyToMessageId: msg.message_id,
           messageThreadId: topicId,
           replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
@@ -1374,7 +1627,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           if (!more && appId === (selectedApps.get(surface) ?? opts.interfaceAgent)) {
             shownTodoActions.set(
               surface,
-              new Map(page.items.map((task) => [todoTaskKey(task), todoActionSignature(task)])),
+              new Map(
+                page.items.map((task) => {
+                  const owner = task.humanAction?.task ?? {
+                    appId: task.appId,
+                    taskId: task.taskId,
+                  };
+                  const detail = opts.humanTasks.getTask?.(owner) ?? task;
+                  return [todoTaskKey(task), todoActionSignature(detail)];
+                }),
+              ),
             );
           }
         },
@@ -1429,6 +1691,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         task ? representedTaskIdentities(task) : [],
         undefined,
         task ? { appId: task.appId, taskId: task.taskId } : undefined,
+        task ?? undefined,
       );
       return true;
     }
@@ -1451,6 +1714,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                 shownWatchRevisions.set(surface, taskPresentationRevision(task));
             },
             task ? { appId: task.appId, taskId: task.taskId } : undefined,
+            task ?? undefined,
           );
           if (!task || task.terminal) {
             stopWatching(surface);
@@ -1467,6 +1731,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           representedTaskIdentities(task),
           undefined,
           { appId: task.appId, taskId: task.taskId },
+          task,
         );
       } else {
         const topicRef = taskTopicId(task);
@@ -1491,6 +1756,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             if (watchedTasks.get(surface) === watched) shownWatchRevisions.set(surface, taskPresentationRevision(task));
           },
           { appId: task.appId, taskId: task.taskId },
+          task,
         );
       }
       return true;
@@ -1540,7 +1806,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (!task) throw new Error("Task disappeared after cancellation");
         stopWatching(surface);
         deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task), undefined, {
-          appId: task.appId, taskId: task.taskId,
+          appId: task.appId,
+          taskId: task.taskId,
         });
       } catch (error) {
         deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
@@ -1588,7 +1855,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       // Completion can be durable even if recording acceptance failed. Check
       // the exact request's result before redelivery can repeat the reload.
       const db = getDb(persistDir);
-      const completion = db.prepare(`
+      const completion = db
+        .prepare(
+          `
         SELECT e.id FROM events request
         JOIN event_traces t ON t.parent_event_id = request.id
         JOIN events e ON e.id = t.event_id
@@ -1596,7 +1865,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           AND request.source = 'telegram' AND request.idempotency_key = ?
           AND e.event_type = 'runtime.reload.finished'
         ORDER BY e.id DESC LIMIT 1
-      `).get(requestId);
+      `,
+        )
+        .get(requestId);
       if (completion) {
         const event = loadPersistedEvent(db, Number(completion.id), persistDir);
         if (!event) throw new Error("Saved reload result is unavailable");

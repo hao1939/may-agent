@@ -35,6 +35,13 @@ export type TaskView = {
 export type TaskDetail = TaskView & {
   /** Immutable change authority; absent for historical records with no saved provenance. */
   creator?: ResourceCreator;
+  /** Exact accepted attempt retained for bounded execution-order checks. */
+  acceptedAttempt?: {
+    id: string;
+    generation: number;
+    startedAt: string;
+    finishedAt?: string;
+  };
   parentId: string;
 
   acceptance: string[];

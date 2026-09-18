@@ -1254,6 +1254,24 @@ describe("Telegram May input", () => {
           taskListReads.push(options);
           return { items: [todo()], total: 1 };
         },
+        getTask: () => ({
+          ...todo(),
+          diagnostics: {
+            conditions: [{
+              id: "human-decision",
+              condition: {
+                spec: {
+                  type: "human.answer.received",
+                  subject: "task:deploy/current",
+                  owner: "human",
+                  requestedAction: todo().humanAction.requestedAction,
+                  expected: { answer: true },
+                },
+                status: { state: "false" },
+              },
+            }],
+          },
+        }),
       } as any,
     });
     try {
@@ -1281,6 +1299,16 @@ describe("Telegram May input", () => {
       } as any);
       await Bun.sleep(30);
       expect(taskListReads).toHaveLength(readsBeforeProgress);
+
+      const sendsBeforeUnchangedWake = sent.length;
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "app-task:evaluation",
+        owner: "app:evaluation",
+        data: { project: "evaluation", taskId: "deploy/current" },
+      } as any);
+      await Bun.sleep(30);
+      expect(sent).toHaveLength(sendsBeforeUnchangedWake);
 
       resourceVersion = 2;
       bus.emit({
@@ -1474,6 +1502,35 @@ describe("Telegram May input", () => {
       updatedAt: Date.UTC(2026, 7, 22, 1, taskTerminal ? 5 : 2, 3),
       terminal: taskTerminal,
       cancellable: !taskTerminal,
+      ...(!taskTerminal
+        ? {
+            humanAction: { requestedAction: "Review the shortened proposal." },
+            diagnostics: {
+              conditions: [
+                {
+                  id: "approval-docs",
+                  condition: {
+                    spec: {
+                      type: "project.approval.submitted",
+                      subject: "id:approval-docs",
+                      owner: "human",
+                      requestedAction:
+                        "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.",
+                      expected: {
+                        anyOf: ["approve", "reject", "defer"],
+                        approvalId: "approval-docs",
+                        packetHash: "a".repeat(64),
+                        taskGeneration: 1,
+                        conditionId: "approval-docs",
+                      },
+                    },
+                    status: { state: "false" },
+                  },
+                },
+              ],
+            },
+          }
+        : {}),
       ...(!taskTerminal && taskProgress ? { progress: taskProgress } : {}),
     });
     const bus = new EventBus();
@@ -1528,6 +1585,15 @@ describe("Telegram May input", () => {
       expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 active"));
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
       expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply here"));
+      const exactProposal =
+        "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.";
+      expect(sent.filter((text) => text.includes(exactProposal))).toHaveLength(2);
+      const boundCards = getDb(root)
+        .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
+        .all() as Array<{ data: string }>;
+      expect(
+        boundCards.filter((row) => JSON.parse(row.data).approvalAnchor?.approvalId === "approval-docs"),
+      ).toHaveLength(2);
 
       const unchangedCards = sent.filter((text) => text.startsWith("Task 8f12ac90")).length;
       bus.emit({

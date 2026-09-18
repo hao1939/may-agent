@@ -374,8 +374,8 @@ export async function runAppRuntime(opts: {
       void appTasks.close();
       appInboxRuntime?.close();
     },
-    prepareAgents: async () => {
-      const source = appSources.stage();
+    prepareAgents: async (_loaderOpts, reloadOptions) => {
+      const source = appSources.stage(reloadOptions.expectedSourceCommit);
       const candidate = {
         ...source,
         appDirectories: listAppDefinitionFiles(source.projectsRoot, opts.projectsRoot).map((file) =>
@@ -446,7 +446,11 @@ export async function runAppRuntime(opts: {
         discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot, {}, candidate.appDirectories),
       );
       refreshReporting();
-      return { appIds, taskApps };
+      return {
+        appIds,
+        taskApps,
+        ...(candidate.sourceCommit ? { sourceCommit: candidate.sourceCommit } : {}),
+      };
     },
   });
   installProcessHandlers();
