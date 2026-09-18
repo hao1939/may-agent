@@ -10,6 +10,13 @@ import {
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 export const TASK_OUTCOME_RUBRIC_VERSION = "task-outcome-v2";
+export const ONGOING_TASK_RUBRIC_VERSION = "task-obligation-v1";
+export const SUPPORTED_TASK_RUBRIC_VERSIONS = new Set([
+  TASK_OUTCOME_RUBRIC_VERSION,
+  ONGOING_TASK_RUBRIC_VERSION,
+]);
+
+export type AssessmentPurpose = "outcome" | "ongoing";
 
 export type TaskReportEntry = {
   appId: string;
@@ -18,6 +25,11 @@ export type TaskReportEntry = {
   executionId: string;
   disposition: string;
   createdAt: number;
+  purpose: AssessmentPurpose;
+  rubricVersion: string;
+  sourceRevision: string;
+  validityIdentity: string;
+  validity: Record<string, unknown> | null;
   coverage: "bounded-single-task-snapshot";
   jsonPath: string;
   markdownPath: string;
@@ -36,6 +48,8 @@ type PublicationMarker = {
   taskId: string;
   evidenceHash: string;
   executionId: string;
+  rubricVersion?: string;
+  validityIdentity?: string;
   jsonPath: string;
   markdownPath: string;
   jsonSha256: string;
@@ -57,6 +71,16 @@ function safe(value: string): string {
   return value.replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 120);
 }
 
+function purposeMatchesRubric(
+  purpose: string,
+  rubricVersion: string,
+): purpose is AssessmentPurpose {
+  return (
+    (purpose === "outcome" && rubricVersion === TASK_OUTCOME_RUBRIC_VERSION) ||
+    (purpose === "ongoing" && rubricVersion === ONGOING_TASK_RUBRIC_VERSION)
+  );
+}
+
 export function configuredTaskReportRoot(
   env: NodeJS.ProcessEnv = process.env,
 ): string {
@@ -73,12 +97,19 @@ export function taskReportPaths(
   appId: string,
   taskId: string,
   evidenceHash: string,
+  rubricVersion = TASK_OUTCOME_RUBRIC_VERSION,
+  validityIdentity = "",
 ): { jsonPath: string; markdownPath: string; publicationPath: string } {
+  if (!SUPPORTED_TASK_RUBRIC_VERSIONS.has(rubricVersion))
+    throw new Error(`Unsupported Task assessment rubric: ${rubricVersion}`);
+  const validitySuffix = validityIdentity
+    ? `-${createHash("sha256").update(validityIdentity).digest("hex").slice(0, 12)}`
+    : "";
   const base = join(
     "task-outcomes",
     safe(appId),
-    TASK_OUTCOME_RUBRIC_VERSION,
-    `${safe(taskId)}-${evidenceHash.slice(0, 16)}`,
+    rubricVersion,
+    `${safe(taskId)}-${evidenceHash.slice(0, 16)}${validitySuffix}`,
   );
   return {
     jsonPath: `${base}.json`,
@@ -124,6 +155,11 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   const evidenceHash = text(subject.evidenceHash);
   const rubricVersion = text(report.rubricVersion);
   const sourceRevision = text(report.sourceRevision);
+  const assessment = object(report.assessment);
+  const purpose =
+    text(assessment.purpose) ||
+    (rubricVersion === TASK_OUTCOME_RUBRIC_VERSION ? "outcome" : "");
+  const validity = object(assessment.validity);
   const disposition = text(judgment.disposition);
   const summary = text(judgment.summary);
   const responsibility = text(judgment.responsibility);
@@ -134,7 +170,8 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     !appId ||
     !taskId ||
     !evidenceHash ||
-    rubricVersion !== TASK_OUTCOME_RUBRIC_VERSION ||
+    !SUPPORTED_TASK_RUBRIC_VERSIONS.has(rubricVersion) ||
+    !purposeMatchesRubric(purpose, rubricVersion) ||
     !sourceRevision ||
     !["assessed", "insufficient-evidence"].includes(disposition) ||
     !summary ||
@@ -146,7 +183,16 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     return null;
   const findings = strings(judgment.findings).slice(0, 12);
   const verification = strings(judgment.verification).slice(0, 12);
-  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  if (
+    rubricVersion === TASK_OUTCOME_RUBRIC_VERSION &&
+    !Object.keys(assessment).length
+  )
+    return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  const validityLines =
+    purpose === "ongoing"
+      ? `- Validity phase: \`${text(validity.phase) || "unknown"}\`\n- Due boundary: \`${typeof validity.dueAt === "number" && Number.isFinite(validity.dueAt) ? new Date(validity.dueAt).toISOString() : "unavailable"}\`\n`
+      : "";
+  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
 }
 
 export function markTaskReportPublished(
@@ -157,6 +203,8 @@ export function markTaskReportPublished(
     marker.appId,
     marker.taskId,
     marker.evidenceHash,
+    marker.rubricVersion,
+    marker.validityIdentity,
   );
   if (
     marker.jsonPath !== expected.jsonPath ||
@@ -180,7 +228,16 @@ function publishedEntry(
     const taskId = text(marker.taskId);
     const evidenceHash = text(marker.evidenceHash);
     const executionId = text(marker.executionId);
-    const expected = taskReportPaths(appId, taskId, evidenceHash);
+    const markerRubric =
+      text(marker.rubricVersion) || TASK_OUTCOME_RUBRIC_VERSION;
+    const markerValidityIdentity = text(marker.validityIdentity);
+    const expected = taskReportPaths(
+      appId,
+      taskId,
+      evidenceHash,
+      markerRubric,
+      markerValidityIdentity,
+    );
     if (
       text(marker.jsonPath) !== expected.jsonPath ||
       text(marker.markdownPath) !== expected.markdownPath ||
@@ -205,10 +262,18 @@ function publishedEntry(
     const evaluator = object(payload.evaluator);
     const expectedMarkdown = renderTaskReportMarkdown(payload);
     const disposition = text(payload.disposition);
+    const rubricVersion = text(payload.rubricVersion);
+    const assessment = object(payload.assessment);
+    const purpose =
+      text(assessment.purpose) ||
+      (rubricVersion === TASK_OUTCOME_RUBRIC_VERSION ? "outcome" : "");
     if (
       text(subject.appId) !== appId ||
       text(subject.taskId) !== taskId ||
       text(subject.evidenceHash) !== evidenceHash ||
+      rubricVersion !== markerRubric ||
+      text(assessment.validityIdentity) !== markerValidityIdentity ||
+      !purposeMatchesRubric(purpose, rubricVersion) ||
       text(evaluator.executionId) !== executionId ||
       disposition !== text(object(payload.judgment).disposition) ||
       !["assessed", "insufficient-evidence"].includes(disposition) ||
@@ -223,6 +288,13 @@ function publishedEntry(
       executionId,
       disposition,
       createdAt: Number(payload.createdAt),
+      purpose: purpose as AssessmentPurpose,
+      rubricVersion,
+      sourceRevision: text(payload.sourceRevision),
+      validityIdentity: markerValidityIdentity,
+      validity: Object.keys(object(assessment.validity)).length
+        ? object(assessment.validity)
+        : null,
       coverage: "bounded-single-task-snapshot",
       jsonPath: expected.jsonPath,
       markdownPath: expected.markdownPath,

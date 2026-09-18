@@ -932,12 +932,50 @@ describe("evaluation task policy", () => {
         evidenceHash: "b".repeat(64),
       },
     });
+    const ongoing = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        assessmentPurpose: "ongoing",
+      },
+    });
     expect(first?.id).toBe(duplicate?.id);
     expect(first?.id).not.toBe(generic?.id);
     expect(first?.id).not.toBe(changed?.id);
+    expect(ongoing?.id).not.toBe(generic?.id);
+    expect(ongoing).toMatchObject({
+      id: expect.stringMatching(
+        /^runtime\/task-outcome\/may\/goal-example-[a-f0-9]{12}\/ongoing$/,
+      ),
+      workflow: "task-outcome-review",
+      input: { assessmentPurpose: "ongoing" },
+    });
     expect(first?.input).toMatchObject({
       subjectGeneration: 3,
       evidenceHash: "a".repeat(64),
+    });
+  });
+
+  test("preserves assessment purpose from a review request into workflow input", () => {
+    const input = taskInputForEvent(
+      event("evaluation.task.review.requested", {
+        appId: "may",
+        taskId: "goal/example",
+        assessmentPurpose: "ongoing",
+      }),
+    );
+    expect(input).toEqual({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        assessmentPurpose: "ongoing",
+      },
+    });
+    expect(taskIntentForInput(input!)).toMatchObject({
+      workflow: "task-outcome-review",
+      input: { assessmentPurpose: "ongoing" },
     });
   });
 

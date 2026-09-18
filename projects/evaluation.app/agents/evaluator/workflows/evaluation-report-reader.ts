@@ -5,9 +5,12 @@ import {
   configuredTaskReportRoot,
   isPublishedTaskReportPath,
   listTaskReports,
+  ONGOING_TASK_RUBRIC_VERSION,
   readPublishedTaskReport,
   resolveTaskReportPath,
+  TASK_OUTCOME_RUBRIC_VERSION,
   taskReportPaths,
+  type AssessmentPurpose,
 } from "./lib/task-report-store.js";
 
 export const name = "evaluation-report-reader";
@@ -33,6 +36,9 @@ export type PublishedReportRequest = {
   facts: string;
   jsonHash: string;
   markdownHash: string;
+  assessmentPurpose?: AssessmentPurpose;
+  rubricVersion?: string;
+  validityIdentity?: string;
 };
 export type PublishedReportRead =
   | { status: "publication-pending" }
@@ -49,10 +55,25 @@ export function readPublishedEvaluationReport(
   request: PublishedReportRequest,
   reportRoot = configuredTaskReportRoot(),
 ): PublishedReportRead {
+  const assessmentPurpose = request.assessmentPurpose ?? "outcome";
+  const rubricVersion = request.rubricVersion ?? TASK_OUTCOME_RUBRIC_VERSION;
+  const validityIdentity = request.validityIdentity ?? "";
+  if (
+    (assessmentPurpose === "outcome" &&
+      (rubricVersion !== TASK_OUTCOME_RUBRIC_VERSION || validityIdentity)) ||
+    (assessmentPurpose === "ongoing" &&
+      (rubricVersion !== ONGOING_TASK_RUBRIC_VERSION || !validityIdentity))
+  )
+    return {
+      status: "invalid",
+      reason: "publication purpose, rubric, and validity identity do not match",
+    };
   const expected = taskReportPaths(
     request.appId,
     request.taskId,
     request.evidenceHash,
+    rubricVersion,
+    validityIdentity,
   );
   if (
     request.facts !== expected.jsonPath ||
@@ -70,7 +91,10 @@ export function readPublishedEvaluationReport(
     entry.appId !== request.appId ||
     entry.taskId !== request.taskId ||
     entry.evidenceHash !== request.evidenceHash ||
-    entry.executionId !== request.executionId
+    entry.executionId !== request.executionId ||
+    entry.purpose !== assessmentPurpose ||
+    entry.rubricVersion !== rubricVersion ||
+    entry.validityIdentity !== validityIdentity
   )
     return {
       status: "invalid",

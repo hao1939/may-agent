@@ -47,6 +47,15 @@ function finish(
         report: ctx.input.report,
         jsonHash: ctx.input.jsonHash,
         markdownHash: ctx.input.markdownHash,
+        ...(ctx.input.assessmentPurpose
+          ? { assessmentPurpose: ctx.input.assessmentPurpose }
+          : {}),
+        ...(ctx.input.rubricVersion
+          ? { rubricVersion: ctx.input.rubricVersion }
+          : {}),
+        ...(ctx.input.validityIdentity
+          ? { validityIdentity: ctx.input.validityIdentity }
+          : {}),
       },
       ...result,
     },
@@ -137,6 +146,9 @@ export async function intakeEvaluationReport(
           "markdownHash",
           "facts",
           "report",
+          "assessmentPurpose",
+          "rubricVersion",
+          "validityIdentity",
         ].every((key) => previous[key] === publication[key as keyof Input])
       ) {
         const linkedTaskId =
@@ -174,6 +186,11 @@ export async function intakeEvaluationReport(
     evidenceHash: publication.evidenceHash,
     jsonHash: publication.jsonHash,
     markdownHash: publication.markdownHash,
+    ...(publication.assessmentPurpose === "ongoing"
+      ? {
+          assessmentIdentity: `${publication.rubricVersion ?? ""}\0${publication.validityIdentity ?? ""}`,
+        }
+      : {}),
     read: {
       status: "valid",
       jsonHash: read.jsonHash,

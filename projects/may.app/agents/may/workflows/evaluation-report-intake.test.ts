@@ -16,7 +16,7 @@ import {
   writeImmutable,
 } from "../../../../evaluation.app/agents/evaluator/workflows/lib/task-report-store";
 
-function fixture(appId = "may") {
+function fixture(appId = "may", validityIdentity = "") {
   const root = mkdtempSync(join(tmpdir(), "may-report-intake-"));
   const detail = {
     appId,
@@ -26,16 +26,33 @@ function fixture(appId = "may") {
     result: null,
   };
   const subjectTask = { appTask: { id: detail.taskId, generation: 3 }, detail };
-  const paths = taskReportPaths(appId, detail.taskId, "evidence-1");
+  const ongoing = Boolean(validityIdentity);
+  const rubricVersion = ongoing ? "task-obligation-v1" : "task-outcome-v2";
+  const paths = taskReportPaths(
+    appId,
+    detail.taskId,
+    "evidence-1",
+    rubricVersion,
+    validityIdentity,
+  );
   const payload = {
     version: 1,
-    rubricVersion: "task-outcome-v2",
+    rubricVersion,
     sourceRevision: "fixture",
     disposition: "assessed",
     createdAt: 1,
     subject: { appId, taskId: detail.taskId, evidenceHash: "evidence-1" },
     evidence: subjectTask,
     evaluator: { executionId: "s_eval", cost: "unknown" },
+    ...(ongoing
+      ? {
+          assessment: {
+            purpose: "ongoing",
+            validityIdentity,
+            validity: { phase: "due", dueAt: 1, boundaries: [] },
+          },
+        }
+      : {}),
     judgment: {
       disposition: "assessed",
       summary: "finding",
@@ -58,12 +75,20 @@ function fixture(appId = "may") {
     facts: paths.jsonPath,
     jsonHash: hashReport(facts),
     markdownHash: hashReport(report),
+    ...(ongoing
+      ? {
+          assessmentPurpose: "ongoing" as const,
+          rubricVersion,
+          validityIdentity,
+        }
+      : {}),
   };
   markTaskReportPublished(root, {
     appId,
     taskId: detail.taskId,
     evidenceHash: publication.evidenceHash,
     executionId: publication.executionId,
+    ...(ongoing ? { rubricVersion, validityIdentity } : {}),
     jsonPath: publication.facts,
     markdownPath: publication.report,
     jsonSha256: publication.jsonHash,
@@ -86,6 +111,39 @@ function reader(data: ReturnType<typeof fixture>, evidenceHash = "evidence-1") {
 }
 
 describe("May Evaluation report intake procedure", () => {
+  test("preserves ongoing assessment identity through integrity read and handoff", async () => {
+    const validityIdentity = `condition-boundaries:${"a".repeat(64)}`;
+    const data = fixture("may", validityIdentity);
+    const execution = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    const output = (execution.output as any).result;
+    expect(output).toMatchObject({
+      disposition: "investigate",
+      publication: {
+        assessmentPurpose: "ongoing",
+        rubricVersion: "task-obligation-v1",
+        validityIdentity,
+      },
+      report: {
+        assessmentPurpose: "ongoing",
+        rubricVersion: "task-obligation-v1",
+        validityIdentity,
+      },
+    });
+    const legacy = fixture();
+    const legacyResult = await intakeEvaluationReport(
+      context(legacy),
+      legacy.root,
+      reader(legacy),
+    );
+    expect(output.handoffKey).not.toBe(
+      (legacyResult.output as any).result.handoffKey,
+    );
+  });
+
   test("uses the integrity reader and canonical current subject before producing a stable investigation", async () => {
     const data = fixture();
     const execution = await intakeEvaluationReport(
