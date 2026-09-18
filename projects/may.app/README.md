@@ -69,6 +69,15 @@ The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unif
 owns the lifecycle and its evidence. Host deployment and runtime operations
 remain with the Host Operations App (`app:may-agent`).
 
+Qualified Scout research and targeted research questions can explicitly select
+Bob through the ordinary May goal assignment. Standing discovery keeps one fixed
+Task specification and reads changing leads from retained reconciliation facts;
+targeted asks keep their own requirements and Host caller/dependency return.
+Scout's digest remains presentation-only. Bob may prepare one bounded option,
+but May's take judgment is not application authority: an exact worthwhile
+candidate still requires final human approval. See the
+[research-adoption design](design/research-adoption.md).
+
 Observed execution failures use the same owner judgment and later improvement
 stages as Evaluation findings without pretending they have the same evidence
 source. Normal recovery remains in the original Task; a new error does not

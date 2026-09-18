@@ -541,6 +541,26 @@ or content-edit instructions. Deployment-practice loading is runtime health.
 Preamble coverage watches only canonical Scout knowledge. Current Task evidence
 records accepted source outputs; evidence-backed no-ops are not failures.
 The JSON-based output count and textual downstream reference count are retired.
+
+## Qualified research-adoption handoff
+
+The daily digest remains a presentation handoff and never creates work. A
+separate qualified handoff is optional after Scout publishes and verifies one
+source record that is plausibly relevant to the local May installation. The
+planner accepts at most one structured `result.researchRecommendation` per
+pass, verifies its HTTPS source identity, reviewed revision and canonical
+artifact, computes the published bytes' SHA-256, retains the claim,
+evidence/reading limits, possible application, and related work, then
+emits `scout.research.qualified` with content-addressed transport identity.
+
+The event asks May's standing Bob-owned research Task to judge applicability. It
+is not an Evaluation report, candidate, approval, or instruction to implement.
+Unchanged source revision and bytes deduplicate; Bob judges semantic overlap and
+whether changed evidence warrants reconsideration. A weekly latest-slot May
+input reviews at most three older archive records with a retained rotating
+cursor, so a missed handoff and old material remain recoverable without a new
+Scout queue or changes to digest presentation.
+
 The app does not subscribe directly to Scout
 metric breaches during the observation window.
 

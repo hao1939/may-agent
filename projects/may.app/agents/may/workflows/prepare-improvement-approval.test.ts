@@ -13,7 +13,10 @@ import { join } from "node:path";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { packetHash } from "../../../improvement-approval";
-import { execute, prepareImprovementApproval } from "./prepare-improvement-approval";
+import {
+  execute,
+  prepareImprovementApproval,
+} from "./prepare-improvement-approval";
 
 const sha256 = (value: string | Buffer) =>
   createHash("sha256").update(value).digest("hex");

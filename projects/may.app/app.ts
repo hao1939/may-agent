@@ -8,6 +8,16 @@ import {
 } from "@may-agent/sdk";
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
+const teamAssignmentSchema = Type.Object(
+  {
+    agent: Type.Union([
+      Type.Literal("may"),
+      Type.Literal("may-bob"),
+      Type.Literal("may-tech-lead"),
+    ]),
+  },
+  { additionalProperties: false },
+);
 
 const mayInputSchema = Type.Union([
   Type.Object(
@@ -23,6 +33,7 @@ const mayInputSchema = Type.Union([
             minItems: 1,
             maxItems: 32,
           }),
+          assignment: Type.Optional(teamAssignmentSchema),
         },
         { additionalProperties: true },
       ),
@@ -44,6 +55,61 @@ const mayInputSchema = Type.Union([
   ),
 ]);
 
+const STANDING_RESEARCH_TASK_ID = "research-adoption";
+const standingResearchOutcome =
+  "Continuously assess qualified Scout findings and older archived research for small, evidence-backed improvements to this installation.";
+const standingResearchAcceptance = [
+  "Return a current-first Bob recommendation or a supported no-change, negative, or visible deferral outcome; retain source limits, linked evidence, owner and next action without applying a candidate.",
+];
+
+function requireStandingResearchContract(
+  outcome: string,
+  acceptance: readonly string[],
+): void {
+  const matchesAcceptance =
+    acceptance.length === standingResearchAcceptance.length &&
+    acceptance.every(
+      (item, index) => item.trim() === standingResearchAcceptance[index],
+    );
+  if (outcome !== standingResearchOutcome || !matchesAcceptance) {
+    throw new Error(
+      "Standing research adoption requires the exact standing outcome and acceptance; use targeted mode for caller-specific requirements",
+    );
+  }
+}
+
+function selectedAgent(data: Record<string, unknown>): string {
+  const assignment = record(data.assignment);
+  if (Object.keys(assignment).length === 0) return "may";
+  if (
+    assignment.agent !== "may" &&
+    assignment.agent !== "may-bob" &&
+    assignment.agent !== "may-tech-lead"
+  ) {
+    throw new Error(
+      "May goal assignment must select an installed May team role",
+    );
+  }
+  return assignment.agent;
+}
+
+function researchMode(
+  data: Record<string, unknown>,
+  agent: string,
+): "standing" | "targeted" | null {
+  const research = record(data.research);
+  if (research.adoption !== "research-adoption") return null;
+  if (
+    agent !== "may-bob" ||
+    (research.mode !== "standing" && research.mode !== "targeted")
+  ) {
+    throw new Error(
+      "Research adoption requires Bob and a standing or targeted mode",
+    );
+  }
+  return research.mode;
+}
+
 export function taskForMayInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
@@ -53,6 +119,8 @@ export function taskForMayInput(
     );
   }
   const data = record(admitted.input.data);
+  const agent = selectedAgent(data);
+  const mode = researchMode(data, agent);
   const outcome = String(data.outcome ?? "").trim();
   const acceptance = Array.isArray(data.acceptance)
     ? data.acceptance.filter(
@@ -63,15 +131,35 @@ export function taskForMayInput(
   if (!outcome || acceptance.length === 0) {
     throw new Error("May goal requires outcome and acceptance");
   }
+  if (mode === "standing") {
+    requireStandingResearchContract(outcome, acceptance);
+  }
   return {
     kind: "desired",
     intent: {
-      id: `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
+      id:
+        mode === "standing"
+          ? STANDING_RESEARCH_TASK_ID
+          : `goal/${admitted.id.replace(/[^a-zA-Z0-9._-]+/g, "-")}`,
       parentId: "may",
-      outcome,
-      acceptance,
-      agent: "may",
-      input: { kind: admitted.input.kind, data },
+      outcome: mode === "standing" ? standingResearchOutcome : outcome,
+      acceptance: mode === "standing" ? standingResearchAcceptance : acceptance,
+      agent,
+      input:
+        mode === "standing"
+          ? {
+              kind: "goal",
+              data: {
+                outcome: standingResearchOutcome,
+                acceptance: standingResearchAcceptance,
+                assignment: { agent: "may-bob" },
+                research: {
+                  adoption: "research-adoption",
+                  mode: "standing",
+                },
+              },
+            }
+          : { kind: admitted.input.kind, data },
       priority: "P1",
     },
   };
@@ -93,6 +181,51 @@ function requiredText(
     throw new Error(`${eventType} requires non-empty ${field}`);
   }
   return value;
+}
+
+export function scoutResearchHandoffInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = record(event.data);
+  if (
+    event.source !== "app-task:scout-knowledge-lib" ||
+    data.producerAppId !== "scout-knowledge-lib"
+  ) {
+    return null;
+  }
+  for (const field of [
+    "sourceUrl",
+    "sourceRevision",
+    "artifact",
+    "artifactHash",
+    "claim",
+    "limits",
+    "possibleApplication",
+  ]) {
+    requiredText(data, field, event.type);
+  }
+  if (!/^[a-f0-9]{64}$/.test(String(data.artifactHash))) {
+    throw new Error(`${event.type} requires SHA-256 artifactHash`);
+  }
+  return {
+    kind: "goal",
+    data: {
+      outcome: standingResearchOutcome,
+      acceptance: standingResearchAcceptance,
+      assignment: { agent: "may-bob" },
+      research: {
+        adoption: "research-adoption",
+        mode: "standing",
+        opportunity: "scout-qualified-handoff",
+        handoff: structuredClone(data),
+        transport: {
+          source: event.source,
+          localKey: event.localKey,
+          target: structuredClone(event.target),
+        },
+      },
+    },
+  };
 }
 
 export function evaluationHumanDecisionInput(
@@ -179,6 +312,29 @@ export default defineApp({
   },
   schedules: [
     {
+      id: "research-adoption-archive-review",
+      enabled: true,
+      intervalMs: 7 * 24 * 60 * 60 * 1000,
+      catchUp: "latest",
+      input: {
+        kind: "goal",
+        data: {
+          outcome: standingResearchOutcome,
+          acceptance: standingResearchAcceptance,
+          assignment: { agent: "may-bob" },
+          research: {
+            adoption: "research-adoption",
+            mode: "standing",
+            opportunity: "weekly-archive-review",
+            recordLimit: 3,
+            candidateLimit: 1,
+            navigation:
+              "Continue after the last accepted archive cursor and wrap after the final record; retain the next cursor in the current-first result.",
+          },
+        },
+      },
+    },
+    {
       id: "conversation-supervision-recovery",
       intervalMs: 900_000,
       event: {
@@ -195,6 +351,11 @@ export default defineApp({
     maxConcurrent: 4,
   },
   subscriptions: [
+    {
+      id: "scout-research-qualified",
+      event: { type: "scout.research.qualified", project: "may" },
+      toInput: scoutResearchHandoffInput,
+    },
     {
       id: "evaluation-human-decision",
       event: {

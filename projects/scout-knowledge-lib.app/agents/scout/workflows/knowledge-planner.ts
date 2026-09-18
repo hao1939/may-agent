@@ -7,6 +7,10 @@ import {
 } from "@may-agent/sdk";
 import { taskEmissionKey } from "./lib/task-emission.js";
 import {
+  qualifiedResearchHandoff,
+  researchHandoffKey,
+} from "./lib/research-adoption-handoff.js";
+import {
   changedKnowledgePaths,
   publicationFacts,
   publishKnowledgeChanges,
@@ -208,6 +212,13 @@ Operating rules:
   domain change happened.
 - If no useful library or organization change is warranted, return an empty
   actions array with the exact reason.
+- When one newly published source record is plausibly applicable to this local
+  May installation, optionally return result.researchRecommendation with
+  sourceUrl, sourceRevision, artifact, claim, limits, possibleApplication, and
+  optional relatedWork. Use the exact canonical output path; code verifies the
+  published path and computes its SHA-256. Qualification asks Bob to investigate;
+  it does not request implementation, represent Evaluation, or approve a change.
+  Do not qualify every finding or repeat an unchanged source revision.
 - Finish with the fields allowed for your state: summary and facts, actions
   only where the result schema permits them. Use \`converged\` after the bounded work, and
   \`waiting\` only for delegated work or an identified fact with a known return route.
@@ -320,6 +331,34 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       );
     }
     throw error;
+  }
+
+  try {
+    const researchHandoff = qualifiedResearchHandoff(
+      agentResult.result,
+      publication.outputs,
+    );
+    if (researchHandoff) {
+      await ctx.events.emit({
+        type: "scout.research.qualified",
+        localKey: `research-${researchHandoffKey(researchHandoff)}`,
+        target: { appId: "may", project: "may" },
+        data: {
+          producerAppId: "scout-knowledge-lib",
+          ...researchHandoff,
+        },
+      });
+      agentResult = {
+        ...agentResult,
+        facts: [...agentResult.facts, "research-handoff:may"],
+      } as unknown as AgentResult;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    agentResult = {
+      ...agentResult,
+      facts: [...agentResult.facts, `research-handoff:deferred:${message}`],
+    } as unknown as AgentResult;
   }
   return ctx.done(agentResult.summary, agentResult);
 }
