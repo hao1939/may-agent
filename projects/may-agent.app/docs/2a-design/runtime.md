@@ -205,6 +205,23 @@ expensive event per event-loop turn. The parent polls interface I/O before
 relaying the next event; a numeric batch bound alone is not sufficient because
 one App route may legitimately take a noticeable bounded read.
 
+A process becomes a Host Task worker only at the private attempt, recovery, or
+admission entry after the required parent IPC transport is present. The Host
+sets that process-local role before storage or App definitions load. IPC by
+itself, an inherited environment value, or the identity of the requester does
+not select worker mode. The role controls the existing-schema database default
+and worker SQLite retry schedule; explicit database options still take
+precedence.
+
+The Host removes its obsolete worker marker when spawning these workers.
+Ordinary programs launched by a workflow, Bash tool, build, test, or native
+helper therefore start as ordinary processes while retaining normal
+configuration and Task correlation. They need no command classifier, tool
+filter, reset hook, or App-specific exception. Parent loss, cancellation,
+admission authority, and Task identity remain separate contracts. If a future
+Host mixes interface and worker roles inside one process, it must pass the
+policy at that new boundary rather than toggling this process-global role.
+
 ## Workflows
 
 A workflow is one bounded App-owned procedure. It receives typed input, task
