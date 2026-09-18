@@ -399,6 +399,27 @@ describe("Task outcome review", () => {
     expect(existsSync(join(root, "reports", "task-outcomes"))).toBeFalse();
   });
 
+  test("rejects a drifted pinned subject before model judgment or publication", async () => {
+    let calls = 0;
+    const ctx = createTestAppWorkflowContext({
+      input: {
+        appId,
+        taskId,
+        subjectGeneration: 2,
+        evidenceHash: "f".repeat(64),
+      },
+      callAgent: async () => {
+        calls += 1;
+        throw new Error("must not call");
+      },
+    });
+    const result = await reviewTaskOutcome(ctx, reader());
+    expect(result.summary).toContain("pinned post-adoption identity");
+    expect(factsOf(result)).toContain("expected-generation:2");
+    expect(factsOf(result)).toContain("actual-generation:1");
+    expect(calls).toBe(0);
+  });
+
   test("routes an admitted self-review through deterministic exclusion with zero evaluator calls", async () => {
     const attachment = taskForEvaluationInput({
       id: "self-review",

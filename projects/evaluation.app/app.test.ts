@@ -900,6 +900,47 @@ describe("evaluation task policy", () => {
     );
   });
 
+  test("gives pinned outcome evidence a deterministic identity separate from generic review", () => {
+    const generic = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: { appId: "may", taskId: "goal/example" },
+    });
+    const first = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        subjectGeneration: 3,
+        evidenceHash: "a".repeat(64),
+      },
+    });
+    const duplicate = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        subjectGeneration: 3,
+        evidenceHash: "a".repeat(64),
+      },
+    });
+    const changed = taskIntentForInput({
+      kind: "review-task-outcome",
+      data: {
+        appId: "may",
+        taskId: "goal/example",
+        subjectGeneration: 3,
+        evidenceHash: "b".repeat(64),
+      },
+    });
+    expect(first?.id).toBe(duplicate?.id);
+    expect(first?.id).not.toBe(generic?.id);
+    expect(first?.id).not.toBe(changed?.id);
+    expect(first?.input).toMatchObject({
+      subjectGeneration: 3,
+      evidenceHash: "a".repeat(64),
+    });
+  });
+
   test("keeps every supported input independent of retired legacy grouping parents", () => {
     const inputs: AppInput[] = [
       {

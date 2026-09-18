@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
 
+export interface ActivationAuthorization {
+  appId: string;
+  operation: string;
+  target: string;
+}
+
 export interface ApprovalPacket {
   packetHash: string;
   baselineCommit: string;
@@ -8,7 +14,10 @@ export interface ApprovalPacket {
   diffSha256: string;
   verificationSha256: string;
   comparisonSha256: string;
+  /** Source-application scope. This field alone never authorizes activation. */
   activationScope: string;
+  /** Optional exact live activation included in the human-reviewed packet. */
+  activation?: ActivationAuthorization;
   rollbackCommit: string;
 }
 
@@ -20,6 +29,7 @@ export interface HumanDecision {
   candidateCommit: string;
   candidateTreeHash: string;
   activationScope: string;
+  activation?: ActivationAuthorization;
 }
 
 export interface CurrentApplicationIdentity {
@@ -92,8 +102,13 @@ export interface TrustedApprovalEvent {
 
 export interface VerifiedActivation {
   activationTask: { appId: string; taskId: string };
-  /** A concrete Task executed after adoption whose behavior can show whether the change helped. */
-  newSubjectTask: { appId: string; taskId: string };
+  /** A concrete accepted Task outcome executed after adoption, pinned before Evaluation admission. */
+  newSubjectTask: {
+    appId: string;
+    taskId: string;
+    generation: number;
+    evidenceHash: string;
+  };
   candidateCommit: string;
   activeRevision: string;
   adoptionCheck: "passed" | "failed" | "inconclusive";
@@ -155,7 +170,10 @@ export function buildApprovalProposal(input: {
     `Scope and limitations: ${requiredJudgmentText(input.candidate.scopeAndLimitations, "scope and limitations")}`,
     `Simpler solution reconsidered: ${requiredJudgmentText(input.candidate.simplerAlternative, "simpler alternative")}`,
     `Is it worth applying? ${requiredJudgmentText(input.candidate.worthApplying, "worth-applying judgment")}`,
-    `Application/activation scope: ${input.packet.activationScope}`,
+    `Source application scope: ${input.packet.activationScope}`,
+    input.packet.activation
+      ? `Live activation: ${input.packet.activation.appId}/${input.packet.activation.operation} target ${input.packet.activation.target}`
+      : "Live activation: not authorized (source application only)",
     `Rollback: ${input.packet.rollbackCommit}`,
     "Reply exactly approve, reject, or defer to this message. Corrections and conditional replies remain conversation.",
   ];
@@ -263,6 +281,7 @@ export async function trustedDecisionFromEvent(
     candidateCommit: packet.candidateCommit,
     candidateTreeHash: packet.candidateTreeHash,
     activationScope: packet.activationScope,
+    ...(packet.activation ? { activation: packet.activation } : {}),
   };
 }
 
@@ -286,6 +305,8 @@ export function applicationDenial(
   ] as const) {
     if (decision[key] !== packet[key]) return `approval ${key} mismatch`;
   }
+  if (JSON.stringify(decision.activation) !== JSON.stringify(packet.activation))
+    return "approval activation mismatch";
   for (const key of [
     "baselineCommit",
     "candidateCommit",
@@ -323,11 +344,19 @@ export function followUpAfterVerifiedActivation(
         appId: "evaluation";
         input: {
           kind: "review-task-outcome";
-          data: { appId: string; taskId: string };
+          data: {
+            appId: string;
+            taskId: string;
+            subjectGeneration: number;
+            evidenceHash: string;
+          };
         };
       };
     } {
-  if (activation.candidateCommit !== packet.candidateCommit)
+  if (
+    !packet.activation ||
+    activation.candidateCommit !== packet.candidateCommit
+  )
     return { state: "activation-inconclusive", receipt: activation.receipt };
   if (activation.adoptionCheck !== "passed")
     return {
@@ -339,16 +368,23 @@ export function followUpAfterVerifiedActivation(
     };
   if (activation.activeRevision !== packet.candidateCommit)
     return { state: "activation-inconclusive", receipt: activation.receipt };
+  if (
+    activation.newSubjectTask.appId === activation.activationTask.appId &&
+    activation.newSubjectTask.taskId === activation.activationTask.taskId
+  )
+    return { state: "activation-inconclusive", receipt: activation.receipt };
   return {
     state: "ready-for-independent-follow-up",
     dependency: {
-      id: `post-adoption-review:${packet.packetHash}`,
+      id: `post-adoption-review:${packet.packetHash}:${activation.newSubjectTask.evidenceHash}`,
       appId: "evaluation",
       input: {
         kind: "review-task-outcome",
         data: {
           appId: activation.newSubjectTask.appId,
           taskId: activation.newSubjectTask.taskId,
+          subjectGeneration: activation.newSubjectTask.generation,
+          evidenceHash: activation.newSubjectTask.evidenceHash,
         },
       },
     },

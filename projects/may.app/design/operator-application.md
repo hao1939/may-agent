@@ -1,14 +1,15 @@
 # Applying an approved source candidate
 
-The first release keeps the mutation command operator-owned. May prepares the
-candidate and packet, returns them for human review, and waits on the ordinary
-human-owned Condition. A score, worker claim, or JSON containing
+May prepares the candidate and packet, returns them for human review, and waits
+on the ordinary human-owned Condition. A score, worker claim, or JSON containing
 `trustedHumanControl: true` is not approval. Gym cannot apply production changes.
 
 The primary plain-text path uses the exact proposal shown by Telegram and the
-Host journal event id. The command rereads that event through public `event.get`,
-checks Host-stamped Telegram provenance and the exact Task/packet/proposal, then
-runs the same Git/evidence guard:
+Host journal event id. After approval, May may invoke this bounded path; before
+approval it has no mutation authority. The command rereads that event through
+public `event.get`, checks Host-stamped Telegram provenance, the current owning
+Task generation/Condition and the exact packet/proposal, then runs the same
+Git/evidence guard:
 
 ```sh
 bun projects/may.app/scripts/apply-improvement.ts \
@@ -52,15 +53,22 @@ summary, commands, failed trials and limitations with the hashed evidence. The
 human judges whether that evidence establishes the intended improvement; hashes
 prove identity, not quality.
 
-This command applies source only. Activating App definitions or a Host binary
-uses the installation's existing operator deployment procedure, with a separately
-explicit approved activation scope and post-activation checks. Do not claim a
-source merge proves live adoption. A failure retains its receipt and current
-source for operator inspection; restoring a live release follows the reviewed
-rollback scope. Future automated application must first have a trusted human
-decision ingress and the same checks at the actual mutation boundary.
+This command applies source only. If the displayed packet separately authorizes
+the exact App-definition activation, `improvement-activation-follow-up` rereads
+the trusted decision and source receipt, continues only the same current owner
+generation, and emits the existing reload operation with the candidate source
+commit pinned. Its correlated result must report that exact loaded commit;
+failed or inconclusive adoption remains open. After the approval Condition is
+satisfied and the exact activation operation is durably issued, later reconciliation
+continues only from that retained request identity; it must not rediscover or widen
+authority from mutable Task presentation. Host-binary deployment and any unshown
+scope still use a separate
+explicit operator procedure. Independent Evaluation follows verified adoption
+only when a concrete current-generation Task outcome was executed afterward.
 
-The command is not registered as an agent workflow or tool. The operator CLI is
-an operational authority boundary, not an OS security boundary against an agent
-that has arbitrary shell access. Never infer consent merely because that agent
-could physically invoke it.
+The command is not a public App input kind or standing controller. The manual
+packet-hash CLI remains an operator fallback and an operational authority
+boundary, not an OS security boundary against an agent that has arbitrary shell
+access. Never infer consent merely because an agent could physically invoke it.
+A failure retains its receipt and current source for inspection; restoring a live
+release follows the reviewed rollback scope.

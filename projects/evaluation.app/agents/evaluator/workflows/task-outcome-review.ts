@@ -39,7 +39,12 @@ const resultSchema = Type.Object(
   { additionalProperties: false },
 );
 
-type Input = { appId?: string; taskId?: string };
+type Input = {
+  appId?: string;
+  taskId?: string;
+  subjectGeneration?: number;
+  evidenceHash?: string;
+};
 type Judgment = {
   disposition: "assessed" | "insufficient-evidence";
   summary: string;
@@ -64,6 +69,7 @@ function resultFacts(
   appId: string,
   taskId: string,
   evidenceHash: string,
+  generation: number,
   jsonPath: string,
   markdownPath: string,
   executionId: string,
@@ -72,6 +78,7 @@ function resultFacts(
   return [
     `review-disposition:${disposition}`,
     `subject:${appId}/${taskId}`,
+    `subject-generation:${generation}`,
     `evidence-hash:${evidenceHash}`,
     `report:${markdownPath}`,
     `report-facts:${jsonPath}`,
@@ -254,11 +261,21 @@ function done(
   summary: string,
   facts: string[],
 ): ExecutionResult {
+  const requestedGeneration = Number(ctx.input?.subjectGeneration);
+  const requestedEvidenceHash = text(ctx.input?.evidenceHash);
+  const requestFacts = [
+    ...(Number.isSafeInteger(requestedGeneration) && requestedGeneration > 0
+      ? [`requested-subject-generation:${requestedGeneration}`]
+      : []),
+    ...(requestedEvidenceHash
+      ? [`requested-evidence-hash:${requestedEvidenceHash}`]
+      : []),
+  ];
   return ctx.done(summary, {
     state: "converged",
     summary,
     response: summary,
-    facts,
+    facts: [...facts, ...requestFacts],
     actions: [],
   });
 }
@@ -278,6 +295,34 @@ export async function reviewTaskOutcome(
       `subject:${appId}/${taskId}`,
     ]);
   }
+  const expectedGeneration = Number(ctx.input?.subjectGeneration);
+  const expectedEvidenceHash = text(ctx.input?.evidenceHash);
+  const detail = object(object(subject.task).detail);
+  const actualGeneration = Number(detail.generation);
+  if (
+    (Number.isSafeInteger(expectedGeneration) &&
+      expectedGeneration > 0 &&
+      actualGeneration !== expectedGeneration) ||
+    (expectedEvidenceHash && subject.evidenceHash !== expectedEvidenceHash)
+  ) {
+    const summary = `insufficient-evidence: pinned post-adoption identity for ${appId}/${taskId} is no longer current.`;
+    return done(ctx, summary, [
+      "review-disposition:insufficient-evidence",
+      `subject:${appId}/${taskId}`,
+      ...(Number.isSafeInteger(expectedGeneration) && expectedGeneration > 0
+        ? [
+            `expected-generation:${expectedGeneration}`,
+            `actual-generation:${actualGeneration}`,
+          ]
+        : []),
+      ...(expectedEvidenceHash
+        ? [
+            `expected-evidence-hash:${expectedEvidenceHash}`,
+            `actual-evidence-hash:${subject.evidenceHash}`,
+          ]
+        : []),
+    ]);
+  }
   const paths = taskReportPaths(appId, taskId, subject.evidenceHash!);
   const prior = acceptedReport(await acceptedFacts(ctx), subject, reportRoot);
   if (prior) {
@@ -288,6 +333,7 @@ export async function reviewTaskOutcome(
         appId,
         taskId,
         subject.evidenceHash!,
+        actualGeneration,
         prior.jsonPath,
         prior.markdownPath,
         prior.executionId,
@@ -308,6 +354,7 @@ export async function reviewTaskOutcome(
         appId,
         taskId,
         subject.evidenceHash!,
+        actualGeneration,
         staged.jsonPath,
         staged.markdownPath,
         staged.executionId,
@@ -401,6 +448,7 @@ export async function reviewTaskOutcome(
       appId,
       taskId,
       subject.evidenceHash!,
+      actualGeneration,
       paths.jsonPath,
       paths.markdownPath,
       execution.id,

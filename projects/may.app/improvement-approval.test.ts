@@ -20,6 +20,11 @@ function fixture() {
     verificationSha256: "verify",
     comparisonSha256: "compare",
     activationScope: "may.app",
+    activation: {
+      appId: "may-agent",
+      operation: "runtime.reload.requested",
+      target: "app:may",
+    },
     rollbackCommit: "base",
   };
   const packet: ApprovalPacket = { packetHash: packetHash(body), ...body };
@@ -34,6 +39,7 @@ function fixture() {
     trustedHumanControl: true,
     packetHash: packet.packetHash,
     ...current,
+    activation: packet.activation,
   };
   return { packet, current, approved };
 }
@@ -135,9 +141,7 @@ describe("two judgment gates and human Condition", () => {
     expect(condition.requestedAction).toContain(
       "Simpler solution reconsidered:",
     );
-    expect(condition.requestedAction).toContain(
-      "Application/activation scope:",
-    );
+    expect(condition.requestedAction).toContain("Source application scope:");
     expect(condition).toMatchObject({
       type: "project.approval.submitted",
       subject: `approvalId:${proposal.approvalId}`,
@@ -257,7 +261,12 @@ describe("trusted decision, source application and follow-up composition", () =>
     const { packet } = fixture();
     const activation = {
       activationTask: { appId: "may-agent", taskId: "activate/candidate" },
-      newSubjectTask: { appId: "may", taskId: "goal/new-work-after-adoption" },
+      newSubjectTask: {
+        appId: "may",
+        taskId: "goal/new-work-after-adoption",
+        generation: 3,
+        evidenceHash: "e".repeat(64),
+      },
       candidateCommit: packet.candidateCommit,
       activeRevision: packet.candidateCommit,
       adoptionCheck: "passed" as const,
@@ -278,7 +287,12 @@ describe("trusted decision, source application and follow-up composition", () =>
         appId: "evaluation",
         input: {
           kind: "review-task-outcome",
-          data: { appId: "may", taskId: "goal/new-work-after-adoption" },
+          data: {
+            appId: "may",
+            taskId: "goal/new-work-after-adoption",
+            subjectGeneration: 3,
+            evidenceHash: "e".repeat(64),
+          },
         },
       },
     });

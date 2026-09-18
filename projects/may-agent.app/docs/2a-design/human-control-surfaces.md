@@ -315,12 +315,18 @@ cards, and stale anchors remain only Conversation input. The adapter does not
 interpret them as consent.
 
 The control fact is journaled evidence, not App-work admission and not mutation
-authority by event name alone. An applying App must reread the trusted journal
-source and exact decision association at its mutation boundary, immediately
-recheck the reviewed candidate/evidence/scope/current target, and enforce replay
-idempotency. Source application, activation, observed adoption, and independent
-follow-up are separate receipts on the ordinary accountable Task; failure of a
-later stage cannot rewrite an earlier receipt into completed rollout.
+authority by event name alone. Current state comes first: ingress rereads the exact
+Task/Condition before journaling a decision, and applying code rereads it again
+before mutation. Its anchor includes the Task generation and exact Condition
+identity, but not mutable resource version; a cancelled, terminal or
+new-generation Task cannot reuse the old card. An applying App must reread the
+trusted journal source and exact decision association at its mutation boundary,
+immediately recheck the reviewed candidate/evidence/scope/current target, and
+enforce replay idempotency. A separately approved activation operation must also
+pin the source identity it will activate and report the identity actually loaded.
+Source application, activation, observed adoption, and independent follow-up are
+separate receipts on the ordinary accountable Task; failure of a later stage
+cannot rewrite an earlier receipt into completed rollout.
 
 When May assigns asynchronous work, the Conversation Topic links to the real
 Tasks owned by destination Apps. When a destination App durably attaches the

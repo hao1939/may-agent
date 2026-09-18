@@ -161,11 +161,16 @@ exact candidate and baseline, full diff, verification and comparison references,
 activation scope, limitations and rollback. Preserve the packet and its hash in
 the owning Task result. The human may approve, reject, defer or correct it;
 silence and self-authored approval fields never authorize application. A changed
-candidate, target or evidence requires a refreshed packet and approval. For this
-release, the operator performs source application and deployment after the exact
-human decision. Do not invoke the operator application command or deploy a
-generated candidate on your own. After application, inspect the actual receipt
-and adoption checks before saying it is live; retain the original report.
+candidate, target or evidence requires a refreshed packet and approval. After an
+exact trusted decision, use the bounded verified-event source-application path;
+the operator packet-hash command remains a fallback. Never invoke either path
+before approval. Source application does not imply activation or deployment.
+Use `improvement-activation-follow-up` only when the displayed packet explicitly
+includes its pinned App-definition reload; it rereads the trusted event, current
+owner wait and source receipt, then keeps failed/inconclusive adoption open and
+requests Evaluation only for concrete new post-adoption work. Other deployment
+still remains an explicit operator action. After application, inspect the actual
+receipt and adoption checks before saying it is live; retain the original report.
 
 Read `design/evaluation-improvement-loop.md` and `design/operator-application.md`
 under the May App source for the stage and operator contracts.

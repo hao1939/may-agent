@@ -45,7 +45,7 @@ Evaluation-owned subjects are excluded. Matching public App/Task identities esta
 
 Code owns catalog and Task identity checks, evidence binding, exclusion, stable hashing, pre-model reuse, stale-after-model recheck, immutable file naming, read-back, and event identity. The evaluator judges requested value, delegation, follow-up, recovery, verification, and delivery. Missing evidence is stated rather than scored as failure.
 
-An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. If the source changes while judgment runs, no report is published as current.
+An unchanged accepted evidence hash reuses the existing report only after canonical report paths and on-disk subject identity are verified. A staged report may be republished after a publication failure without another model call. If the source changes while judgment runs, no report is published as current. Explicit post-adoption review carries the subject generation and evidence hash in both its input and deterministic Task identity. This keeps the exact-evidence outcome separate from an older generic review owned by another caller, reuses an identical pinned request, and makes generation or evidence drift insufficient evidence before model judgment or publication.
 
 ## Reports and use
 

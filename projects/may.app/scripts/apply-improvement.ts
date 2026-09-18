@@ -10,7 +10,6 @@ import {
   type ApprovalProposal,
   type TrustedApprovalEvent,
 } from "../improvement-approval";
-import { createPublicTaskEvidenceProvider } from "../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence";
 
 export type ApplicationFiles = {
   packet: string;
@@ -126,6 +125,7 @@ export function applyImprovement(
         candidateCommit: packet.candidateCommit,
         candidateTreeHash: packet.candidateTreeHash,
         activationScope: packet.activationScope,
+        ...(packet.activation ? { activation: packet.activation } : {}),
       }
     : null;
   // A replay of the exact approved operation is a successful no-op. This is
@@ -180,7 +180,7 @@ export function applyImprovement(
  * a caller-provided approval flag is not accepted. Activation remains a
  * separate, explicitly scoped Task after this source-only receipt.
  */
-function currentProposalMatches(
+export function currentProposalMatches(
   task: Record<string, unknown>,
   proposal: ApprovalProposal,
 ): boolean {
@@ -229,6 +229,8 @@ export async function applyImprovementFromTrustedEvent(
   readEvent: (
     eventId: number,
   ) => Promise<TrustedApprovalEvent | undefined> = async (id) => {
+    const { createPublicTaskEvidenceProvider } =
+      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
     const provider = createPublicTaskEvidenceProvider();
     return (await provider.getEvent(id)) as unknown as TrustedApprovalEvent;
   },
@@ -236,6 +238,8 @@ export async function applyImprovementFromTrustedEvent(
     appId: string,
     taskId: string,
   ) => Promise<Record<string, unknown>> = async (appId, taskId) => {
+    const { createPublicTaskEvidenceProvider } =
+      await import("../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
     const provider = createPublicTaskEvidenceProvider();
     return provider.getTask(appId, taskId);
   },
