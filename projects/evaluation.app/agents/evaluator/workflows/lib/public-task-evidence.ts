@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { Socket } from "node:net";
 import { resolve } from "node:path";
+import { readPinnedTaskEvidence } from "./pinned-task-evidence.js";
 
 const ALLOWED_COMMANDS = new Set([
   "apps.list",
@@ -99,6 +100,24 @@ function meaningfulTaskDetail(detail: Record<string, unknown>): unknown {
       ([key]) => !PRESENTATION_ONLY_EVIDENCE_KEYS.has(key),
     ),
   );
+}
+
+export function taskEvidenceHash(
+  appId: string,
+  taskId: string,
+  task: Record<string, unknown>,
+): string {
+  return createHash("sha256")
+    .update(
+      stable({
+        appId,
+        taskId,
+        appTask: task.appTask,
+        detail: meaningfulTaskDetail(object(task.detail)),
+        readBack: task.readBack,
+      }),
+    )
+    .digest("hex");
 }
 
 export function configuredControlSocket(
@@ -414,16 +433,9 @@ export async function readSubjectTask(
       throw new Error("public Task generation mismatch");
     }
     const task = { appTask, detail };
+    // The public App/detail identities establish the owning App. Creator is
+    // optional provenance (including delegation), not the ownership authority.
     const creators = creatorAppIds(appTask);
-    if (creators.length === 0)
-      return {
-        disposition: "insufficient-evidence",
-        reason:
-          "The authoritative App Task view has no creator provenance; ownership cannot be inferred from the detail view.",
-        appId,
-        taskId,
-        task,
-      };
     if (creators.some(isEvaluation))
       return {
         disposition: "insufficient-evidence",
@@ -433,16 +445,17 @@ export async function readSubjectTask(
         taskId,
         task,
       };
-    const evidenceHash = createHash("sha256")
-      .update(
-        stable({
-          appId,
-          taskId,
-          appTask,
-          detail: meaningfulTaskDetail(detail),
-        }),
-      )
-      .digest("hex");
+    const readBack = await readPinnedTaskEvidence(
+      appId,
+      taskId,
+      task,
+      provider,
+    );
+    if (creators.length === 0)
+      readBack.gaps.push(
+        "Optional creator/delegation provenance is unavailable; the owning App is verified, but who initiated this work is unknown.",
+      );
+    const evidenceHash = taskEvidenceHash(appId, taskId, { ...task, readBack });
     return {
       disposition: "eligible",
       reason:
@@ -450,7 +463,7 @@ export async function readSubjectTask(
       appId,
       taskId,
       evidenceHash,
-      task,
+      task: { ...task, readBack },
     };
   } catch (error) {
     return {

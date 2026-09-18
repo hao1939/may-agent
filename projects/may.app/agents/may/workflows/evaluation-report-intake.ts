@@ -105,6 +105,65 @@ export async function intakeEvaluationReport(
       },
       handoffKey: null,
     });
+  // Reuse this owner's accepted intake before preparing another handoff. No
+  // registry or list scan: the ordinary Task result is the recovery boundary.
+  let prior:
+    | { evidenceHash: string; disposition: string; linkedTaskId?: string }
+    | undefined;
+  let priorResult: Record<string, unknown> = {};
+  if (ctx.reconciliation?.taskId) {
+    try {
+      const current = object(
+        await ctx.read.tasks.get(ctx.reconciliation.taskId),
+      );
+      if (current.id !== ctx.reconciliation.taskId)
+        throw new Error("Current owner Task unavailable");
+      const accepted = object(current.result);
+      const candidate =
+        accepted.stage === "evaluation-report-intake"
+          ? accepted
+          : object(accepted.result);
+      const previous = object(candidate.publication);
+      if (
+        candidate.stage === "evaluation-report-intake" &&
+        ["investigate", "reuse", "recovered", "no-change"].includes(
+          String(candidate.disposition),
+        ) &&
+        [
+          "appId",
+          "taskId",
+          "evidenceHash",
+          "jsonHash",
+          "markdownHash",
+          "facts",
+          "report",
+        ].every((key) => previous[key] === publication[key as keyof Input])
+      ) {
+        const linkedTaskId =
+          typeof candidate.linkedTaskId === "string"
+            ? candidate.linkedTaskId
+            : undefined;
+        if (linkedTaskId) {
+          const linked = await ctx.read.tasks.get(linkedTaskId);
+          if (!linked || linked.id !== linkedTaskId)
+            throw new Error("Linked owner Task unavailable");
+        }
+        priorResult = candidate;
+        prior = {
+          evidenceHash: publication.evidenceHash,
+          disposition: String(candidate.disposition),
+          ...(linkedTaskId ? { linkedTaskId } : {}),
+        };
+      }
+    } catch {
+      return finish(
+        ctx,
+        "current-evidence-unavailable",
+        "Accepted prior intake or its linked owner could not be read; do not create replacement work.",
+        { handoffKey: null, priorRead: "unavailable" },
+      );
+    }
+  }
   // A terminal status is a lifecycle receipt, not proof that the evaluated
   // finding was recovered. Recovery remains an evidence-backed May judgment.
   // This intake only verifies report bytes and current subject identity.
@@ -125,6 +184,7 @@ export async function intakeEvaluationReport(
         ? "matches-report"
         : "changed",
     recovered,
+    prior,
   });
   return finish(
     ctx,
@@ -133,7 +193,14 @@ export async function intakeEvaluationReport(
       ? `Stable investigation handoff ${plan.handoffKey}; this is preparation authority, not approval or application authority.`
       : "No candidate preparation or production application was authorized by this report.",
     {
-      handoffKey: plan.handoffKey ?? null,
+      handoffKey:
+        plan.handoffKey ??
+        (plan.disposition === "reuse"
+          ? (priorResult.handoffKey ?? null)
+          : null),
+      linkedTaskId: plan.linkedTaskId ?? null,
+      priorRead: prior ? "read" : "absent",
+      priorDisposition: prior?.disposition ?? null,
       currentEvidence: {
         appId: subject.appId,
         taskId: subject.taskId,

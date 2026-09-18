@@ -3,7 +3,8 @@ import {
   createTestAppRead,
   createTestAppWorkflowContext,
 } from "@may-agent/sdk/testing";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { taskForEvaluationInput } from "../../../app.ts";
@@ -156,10 +157,15 @@ describe("Task outcome review", () => {
     expect(readFileSync(join(root, report), "utf8")).toContain(
       "Delivered with verification.",
     );
-    expect(JSON.parse(readFileSync(join(root, reportFacts), "utf8"))).toMatchObject({
+    expect(
+      JSON.parse(readFileSync(join(root, reportFacts), "utf8")),
+    ).toMatchObject({
       rubricVersion: "task-outcome-v2",
       disposition: "assessed",
-      evidence: { appTask: { creator: { appId: "sample" } }, detail: { resourceVersion: 2 } },
+      evidence: {
+        appTask: { creator: { appId: "sample" } },
+        detail: { resourceVersion: 2 },
+      },
     });
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
@@ -204,6 +210,109 @@ describe("Task outcome review", () => {
       "Reused accepted evaluation for unchanged sample/goal/one.",
     );
     expect(factsOf(second)).toEqual(factsOf(first));
+  });
+
+  test("presentation churn reuses immutable staged report instead of colliding or paying for another judgment", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-presentation-"));
+    let calls = 0;
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      callAgent: async () => {
+        calls++;
+        return {
+          id: "s_judge",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: judgment,
+        };
+      },
+    });
+    const first = await reviewTaskOutcome(ctx, reader(), root);
+    const report = factsOf(first)
+      .find((fact) => fact.startsWith("report-facts:"))!
+      .slice(13);
+    const original = readFileSync(join(root, report), "utf8");
+    await reviewTaskOutcome(
+      ctx,
+      reader(() => ({ ...detail, ref: "new-ref", resourceVersion: 9 })),
+      root,
+    );
+    expect(calls).toBe(1);
+    expect(readFileSync(join(root, report), "utf8")).toBe(original);
+  });
+
+  test("passes consumed artifact bytes and gaps to the evaluator and preserves them in the immutable report", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-artifact-"));
+    const store = new EvidenceStore(join(root, "evidence"));
+    const ref = await store.put(
+      "Tests: seven passed; activation not checked",
+      "md",
+    );
+    const missing = { path: join(root, "missing.md"), sha256: "a".repeat(64) };
+    let prompt = "";
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      callAgent: async (_agent, value) => {
+        prompt = String(value);
+        return {
+          id: "s_judge",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: { ...judgment, disposition: "insufficient-evidence" },
+        };
+      },
+    });
+    const command = reader(
+      () =>
+        ({
+          ...detail,
+          result: { verification: ref, required: missing },
+        }) as typeof detail,
+    );
+    const result = await reviewTaskOutcome(ctx, command, root);
+    expect(prompt).toContain("Tests: seven passed; activation not checked");
+    expect(prompt).toContain('"status":"missing"');
+    expect(prompt).toContain("Artifact existence is not read-back");
+    const path = factsOf(result)
+      .find((fact) => fact.startsWith("report-facts:"))!
+      .slice(13);
+    const payload = JSON.parse(readFileSync(join(root, path), "utf8"));
+    expect(
+      payload.evidence.readBack.artifacts.map((item: any) => item.status),
+    ).toEqual(["read", "missing"]);
+    expect(payload.disposition).toBe("insufficient-evidence");
+  });
+
+  test("artifact change during judgment fences publication even when Task metadata is unchanged", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-artifact-stale-"));
+    const ref = await new EvidenceStore(root).put("original", "md");
+    let emits = 0;
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      callAgent: async () => {
+        writeFileSync(ref.path, "replaced");
+        return {
+          id: "s_judge",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: judgment,
+        };
+      },
+      emit: async () => {
+        emits++;
+      },
+    });
+    const result = await reviewTaskOutcome(
+      ctx,
+      reader(() => ({ ...detail, result: { evidence: ref } }) as typeof detail),
+      root,
+    );
+    expect(result.summary).toContain("changed while it was being evaluated");
+    expect(emits).toBe(0);
+    expect(listTaskReports(root)).toEqual([]);
   });
 
   test("keeps a failed publication undiscoverable and publishes the staged retry without another model call", async () => {

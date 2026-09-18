@@ -124,6 +124,22 @@ tools or `develop-change` for isolated preparation, involving Bob or tech-lead
 where useful. Check the actual current target baseline before building; a
 retained worktree or old remote ref may not contain the latest accepted fixes.
 
+Use two explicit human-judgment gates, without a generic score or invented ROI.
+First decide whether the finding merits improvement: distinguish useful successful
+work, recovered/duplicate findings, noise and missing evidence from a real
+user-impacting issue or worthwhile opportunity. Missing evidence calls for a
+bounded investigation, not a target failure. Record impact, recurrence/risk,
+evidence/confidence and the do-nothing or simpler alternative. A justified no-op
+ends in the existing owner Task and normally stays quiet.
+
+Second, after an exact candidate is verified, decide whether it is worth presenting.
+Record demonstrated benefit, regression risk, implementation and ongoing
+maintenance/operating cost, scope, limitations, and whether a simpler
+straightforward solution exists. Ask explicitly whether this fix is worth applying;
+passing tests alone is insufficient. Put that plain-language judgment, the full
+review references and exact application/activation scope in the same human-owned
+Condition that presents the proposal.
+
 Keep the stages separately reviewable: investigation returns a disposition;
 development returns a committed candidate and checks; Gym returns comparison
 evidence. Assign Gym an ordinary goal with exact frozen baseline/candidate

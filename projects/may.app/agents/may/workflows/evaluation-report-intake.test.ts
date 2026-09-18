@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import {
+  createTestAppRead,
+  createTestAppWorkflowContext,
+} from "@may-agent/sdk/testing";
 import { intakeEvaluationReport } from "./evaluation-report-intake";
 import {
   hashReport,
@@ -111,6 +114,119 @@ describe("May Evaluation report intake procedure", () => {
     expect(output.facts).toContain(
       `evaluation-report:${data.publication.facts}`,
     );
+  });
+
+  test("reuses the accepted intake and exact linked owner through ordinary Task reads", async () => {
+    const data = fixture();
+    const first = await intakeEvaluationReport(
+      context(data),
+      data.root,
+      reader(data),
+    );
+    const saved = (first.output as any).result;
+    saved.linkedTaskId = "goal/repair";
+    const reads: string[] = [];
+    const ctx = createTestAppWorkflowContext({
+      input: data.publication,
+      reconciliation: {
+        appId: "may",
+        taskId: "intake/one",
+        generation: 1,
+        resourceVersion: 1,
+        attemptId: "retry",
+        outcome: "Read report",
+        acceptance: [],
+        input: data.publication,
+        children: { live: [], completed: [] },
+        events: { items: [] },
+      } as any,
+      read: createTestAppRead({
+        tasks: {
+          get: async (id) => {
+            reads.push(id);
+            return {
+              id,
+              result:
+                id === "intake/one" ? saved : { summary: "repair evidence" },
+            } as any;
+          },
+        },
+      }),
+    });
+    const reused = await intakeEvaluationReport(ctx, data.root, reader(data));
+    expect((reused.output as any).result).toMatchObject({
+      disposition: "reuse",
+      linkedTaskId: "goal/repair",
+      handoffKey: saved.handoffKey,
+      recovered: false,
+      priorRead: "read",
+    });
+    expect(reads).toEqual(["intake/one", "goal/repair"]);
+    saved.publication = { ...data.publication, jsonHash: "different" };
+    const changed = await intakeEvaluationReport(ctx, data.root, reader(data));
+    expect((changed.output as any).result.disposition).toBe("investigate");
+  });
+
+  test("missing prior owner stays unresolved rather than creating replacement work", async () => {
+    const data = fixture();
+    const ctx = createTestAppWorkflowContext({
+      input: data.publication,
+      reconciliation: { taskId: "intake/one" } as any,
+      read: createTestAppRead({
+        tasks: {
+          get: async (id) =>
+            id === "intake/one"
+              ? ({
+                  id,
+                  result: {
+                    stage: "evaluation-report-intake",
+                    disposition: "investigate",
+                    publication: data.publication,
+                    linkedTaskId: "missing",
+                  },
+                } as any)
+              : null,
+        },
+      }),
+    });
+    const result = await intakeEvaluationReport(ctx, data.root, reader(data));
+    expect(result.output as any).toMatchObject({
+      state: "incomplete",
+      result: {
+        disposition: "current-evidence-unavailable",
+        handoffKey: null,
+        priorRead: "unavailable",
+      },
+    });
+  });
+
+  test("accepted no-change reuses this Task without creating a tracking Task", async () => {
+    const data = fixture();
+    const ctx = createTestAppWorkflowContext({
+      input: data.publication,
+      reconciliation: { taskId: "intake/one" } as any,
+      read: createTestAppRead({
+        tasks: {
+          get: async (id) =>
+            ({
+              id,
+              result: {
+                stage: "evaluation-report-intake",
+                disposition: "no-change",
+                publication: data.publication,
+              },
+            }) as any,
+        },
+      }),
+    });
+    const result = await intakeEvaluationReport(ctx, data.root, reader(data));
+    expect((result.output as any).result).toMatchObject({
+      disposition: "reuse",
+      handoffKey: null,
+      linkedTaskId: null,
+      priorDisposition: "no-change",
+    });
+    expect((result.output as any).actions).toEqual([]);
   });
 
   test("keeps a publication race retryable without reading staged bytes", async () => {
