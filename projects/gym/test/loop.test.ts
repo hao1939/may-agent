@@ -223,6 +223,15 @@ describe("loop evaluation", () => {
       alteredApprovedTruth,
     )).toThrow("exact frozen truth catalog");
 
+    const missingLabelSnapshot = manifest("baseline", ["fail"]);
+    missingLabelSnapshot.source.labels_snapshot = null;
+    missingLabelSnapshot.proof.label_set_fingerprint = null;
+    expect(() => compareRuns(
+      missingLabelSnapshot,
+      manifest("candidate", ["pass"]),
+      approvedLabels,
+    )).toThrow("frozen label snapshot evidence");
+
     const invalidTimeline = manifest("candidate", ["pass"]);
     invalidTimeline.started_at = "not-a-time";
     expect(() => compareRuns(manifest("baseline", ["fail"]), invalidTimeline, approvedLabels)).toThrow(

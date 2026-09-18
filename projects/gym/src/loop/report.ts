@@ -37,6 +37,9 @@ function assertComparableRun(run: LoopRunManifest, role: "baseline" | "candidate
   if (!run.proof.harness_fingerprint || !run.source.harness_snapshot) {
     throw new Error(`Cannot compare ${role} without frozen Gym harness evidence`);
   }
+  if (!run.proof.label_set_fingerprint || !run.source.labels_snapshot) {
+    throw new Error(`Cannot compare ${role} without frozen label snapshot evidence`);
+  }
   const hasJudgeFingerprint = Object.prototype.hasOwnProperty.call(run.proof, "semantic_judge_fingerprint");
   const hasJudgeSnapshot = Object.prototype.hasOwnProperty.call(run.source, "semantic_judges_snapshot");
   if (!hasJudgeFingerprint || !hasJudgeSnapshot) {
