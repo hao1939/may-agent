@@ -1,11 +1,14 @@
 # Ordinary commands from Task workers
 
-**Status:** Production candidate prepared for independent review; not merged or
-deployed. The earlier isolated prototype established the direction but is not
-the candidate or live proof. This is a common Host execution concern, owned
-here rather than in May, Scout, Gym or an individual workflow.
+**Status:** Production candidate `1cb37cdd877c9f6882f46a97b0b68c3c701d57ab`
+is committed and pushed to [PR #199](https://github.com/hao1939/may-agent/pull/199)
+for independent GitHub review; it is not merged or deployed. The earlier
+isolated prototype established the direction but is not the candidate or live
+proof. This is a common Host execution concern, owned here rather than in May,
+Scout, Gym or an individual workflow.
 
-**Reviewed source:** Host `0d25ab157ad7de6693be46781ca65a8341017804`.
+**Candidate base:** Host `00a380b54be022017f0d455d2212f011fe124a90`.
+**Exploratory source:** Host `0d25ab157ad7de6693be46781ca65a8341017804`.
 
 ## Outcome
 
@@ -203,41 +206,51 @@ The comparison establishes the process boundary under controlled conditions.
 It does not certify live Codex/Claude provider behavior, all possible environment
 variables, full deployment or autonomous recovery by May.
 
-## Implementation and acceptance plan
+## Production candidate evidence
 
-Have May own the production candidate and integration, with independent review
-of the source and evidence. Use one small Host PR for both spawn paths and both
-database consumers. The current design record remains in `may-agent.app`.
+May implemented the common boundary in one Host commit,
+`1cb37cdd877c9f6882f46a97b0b68c3c701d57ab`, based on
+`00a380b54be022017f0d455d2212f011fe124a90`. It initializes worker role at the
+attempt/recovery and admission entries, retires the obsolete marker at both
+worker spawns, and changes both schema ownership and retry selection to the
+process-local role. Explicit database options, retry schedules, parent-loss,
+cancellation and Task identity behavior remain unchanged.
 
-1. Promote the reproduced worker-to-command behavior into an existing portable
-   worker fixture. Assert actual database initialization and normal command
-   output, not merely absence of an environment variable. Include a direct
-   workflow subprocess so a Bash-only correction cannot satisfy the test.
-2. Preserve coverage for worker refusal on an empty database, initialized
-   database reuse, retry selection, private entry without a parent, parent
-   loss, admission and recovery. Check bootstrap ordering in source and the
-   compiled binary. Unchanged schema contents alone do not prove no DDL was
-   attempted; retain a test that detects schema-initialization behavior.
-3. Add the missing environment-preserving native-helper boundary check with a
-   local fixture executable. Keep native process/session identity, ordinary
-   configuration and cancellation intact. No real provider credentials belong
-   in portable tests.
-4. Run normal full CI and compiled-container checks. After reviewed integration
-   and an authorized Host update, ask the existing May instance to run an
-   ordinary `bun run ci` from an isolated checkout, without supplying an
-   environment workaround. Verify a fresh worker uses the updated Host.
-5. Verify the normal deployment test invocation through its temporary failure
-   fixture, including that failed checks prevent artifact staging/restart.
-   Deployment to the live installation remains its own operation.
+The production fixture exercises a real worker spawn through Bash, a direct
+workflow subprocess and a native-helper descendant. Each ordinary descendant
+initializes its own temporary database while the worker refuses missing Host
+schema and reuses initialized schema without running schema application.
+Separate role probes cover stale labels, IPC without explicit role, entry
+without a parent, and complete retry exhaustion without real multi-second
+sleeps. The deployment failure fixture executes the unchanged deployment
+script in a temporary Git repository and proves a failed portable check stops
+before bundle, receipt or restart.
 
-While PR #199 is unmerged, prefer refining or superseding it with this one
-common Host correction and the regressions above. Preserve useful deployment
-failure-gate coverage, but move the worker-identity regression to its owning
-boundary. If #199 lands first for the immediate deployment problem, remove
-the now-redundant `env -u` when the common fix is verified. Do not bypass its
-review gate or claim a pending candidate is already deployed.
+Verification against the exact committed source:
 
-Older workers keep their old code and behavior until they exit. Ordinary
-source checkout changes do not update a running worker. Apply the Host update
-using the existing procedure and verify a fresh attempt. Broader Host/SDK/App
-release conventions remain a separate, deferred proposal.
+- final `bun run ci`: **3145 passed, 3 skipped, 0 failed** across 312 files;
+- independent focused review: **94 passed, 0 failed**, plus clean diff checks;
+- independent immutable-archive comparison: candidate and older-source ordinary
+  Bash/direct/helper descendants all initialized temporary databases under a
+  polluted parent environment, while the real worker retained schema ownership.
+
+The positive compiled fixture bundles the production worker and spawn boundary,
+then launches ordinary Bun database work. It does not exercise the released
+`may.ts` positive route, every native provider path, a shipped Container, or
+live adoption. Release and standalone binaries separately cover private-entry
+rejection without IPC. Hosted checks, independent GitHub approval, merge,
+deployment and fresh-worker adoption remain separate evidence gates.
+
+## Integration and adoption plan
+
+Keep [PR #199](https://github.com/hao1939/may-agent/pull/199) as the one common
+Host correction. Its independent GitHub review and current-head checks must pass
+before normal merge. Do not bypass that gate or claim a pending candidate is
+live.
+
+After reviewed integration and an authorized Host update, ask a fresh worker to
+run an ordinary `bun run ci` from an isolated checkout without an environment
+workaround. Verify the deployment receipt, loaded Host revision and fresh-worker
+behavior separately. Older workers keep their old code and behavior until they
+exit; changing a source checkout does not update a running worker. Broader
+Host/SDK/App release conventions remain a separate, deferred proposal.
