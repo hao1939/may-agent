@@ -34,19 +34,31 @@ the aliases readable avoids breaking retained consumers; their contents now
 state the truthful July observation date rather than presenting November as a
 real scan date.
 
-## Remaining observable batch
+## 2026-09-18 HN follow-up
 
-Seven future-dated HN aliases remain for a separately reviewed batch:
+The remaining seven HN aliases and their retained July counterparts were
+reviewed as one provenance batch:
 
-- `knowledge/findings/2026-11-13-hn-scan-278.md`
-- `knowledge/findings/2026-11-14-hn-scan-279.md`
-- `knowledge/findings/2026-11-15-hn-scan-280.md`
-- `knowledge/findings/2026-11-15-hn-scan-282.md`
-- `knowledge/findings/2026-11-16-hn-scan-284.md`
-- `knowledge/findings/2026-11-17-hn-scan-285.md`
-- `knowledge/findings/2026-11-18-hn-scan-286.md`
+| Published historical path | Retained July finding | Scan |
+|---|---|---|
+| `knowledge/findings/2026-11-13-hn-scan-278.md` | `knowledge/findings/2026-07-12-hn-scan-278.md` | 278 |
+| `knowledge/findings/2026-11-14-hn-scan-279.md` | `knowledge/findings/2026-07-12-hn-scan-279.md` | 279 |
+| `knowledge/findings/2026-11-15-hn-scan-280.md` | `knowledge/findings/2026-07-12-hn-scan-280.md` | 280 |
+| `knowledge/findings/2026-11-15-hn-scan-282.md` | `knowledge/findings/2026-07-12-hn-scan-282.md` | 282 |
+| `knowledge/findings/2026-11-16-hn-scan-284.md` | `knowledge/findings/2026-07-12-hn-scan-284.md` | 284 |
+| `knowledge/findings/2026-11-17-hn-scan-285.md` | `knowledge/findings/2026-07-12-hn-scan-285.md` | 285 |
+| `knowledge/findings/2026-11-18-hn-scan-286.md` | `knowledge/findings/2026-07-12-hn-scan-286.md` | 286 |
 
-Each has a 2026-07-12 counterpart with date-normalized identical content. The
-next smallest batch should correct those seven internal dates while preserving
-both the published path and source-grounded prose; deletion or renaming requires
-separate interface review.
+Commit `a2d3df9f847459d464360835ef2831e95f470e8c` introduced all seven
+November aliases on 2026-07-13. Before repair, six pairs were byte-identical;
+scan 282 differed only because its July counterpart already stated the correct
+2026-07-12 observation date. Every finding now states 2026-07-12 internally.
+Each historical path also records why its filename is false and links directly
+to its retained July finding. Six July files whose bodies still repeated the
+false November date were corrected as part of the same batch; scan 282 needed no
+canonical-file date correction.
+
+No file was deleted or renamed. Source URLs, HN scan IDs, claims, and prose were
+preserved. The false November filenames remain observable because the paths are
+published interfaces, but they no longer assert a future observation inside the
+finding.
