@@ -43,10 +43,33 @@ const TODO_PAGE_SIZE = 50;
 // Also acknowledge explicit user shares/Web App data; passive service notices stay quiet.
 // Keep this provider list current when adding Telegram content support, not another work route.
 const TELEGRAM_CONTENT_FIELDS = [
-  "animation", "audio", "document", "live_photo", "paid_media", "photo", "sticker", "story",
-  "video", "video_note", "voice", "caption", "checklist", "contact", "dice", "game", "poll",
-  "venue", "location", "rich_message", "invoice", "giveaway", "giveaway_winners", "passport_data",
-  "users_shared", "chat_shared", "web_app_data",
+  "animation",
+  "audio",
+  "document",
+  "live_photo",
+  "paid_media",
+  "photo",
+  "sticker",
+  "story",
+  "video",
+  "video_note",
+  "voice",
+  "caption",
+  "checklist",
+  "contact",
+  "dice",
+  "game",
+  "poll",
+  "venue",
+  "location",
+  "rich_message",
+  "invoice",
+  "giveaway",
+  "giveaway_winners",
+  "passport_data",
+  "users_shared",
+  "chat_shared",
+  "web_app_data",
 ] as const;
 
 function hasTelegramContent(message: Record<string, unknown>): boolean {
@@ -380,6 +403,80 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
   return `${surface} · ${speaker}\n${text}`;
 }
 
+export type TelegramApprovalAnchor = {
+  approvalId: string;
+  packetHash?: string;
+  proposalHash?: string;
+  proposalRevision?: number;
+};
+
+export type TelegramApprovalReply = TelegramApprovalAnchor & {
+  decision: "approve" | "reject" | "defer";
+  task: { appId: string; taskId: string };
+};
+
+function pendingHumanApprovalCondition(task: HumanTaskView | null) {
+  if (!task) return null;
+  const matches = (task.diagnostics?.conditions ?? [])
+    .map((item) => item.condition)
+    .filter(
+      (item) =>
+        item?.spec.type === "project.approval.submitted" &&
+        item.status?.state !== "true" &&
+        (item.spec.owner === "human" || item.spec.owner?.startsWith("human:") === true),
+    );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
+function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | null {
+  const condition = pendingHumanApprovalCondition(task);
+  if (!condition) return null;
+  const expected =
+    condition.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+      ? (condition.spec.expected as Record<string, unknown>)
+      : {};
+  const approvalId =
+    typeof expected.approvalId === "string" && expected.approvalId.trim()
+      ? expected.approvalId.trim()
+      : condition.spec.subject.replace(/^[^:]+:/, "");
+  if (!approvalId) return null;
+  return {
+    approvalId,
+    ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
+    ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
+    ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
+  };
+}
+
+/** Mechanical parser only: edits, conditions and unbound affirmations remain conversation. */
+export function telegramApprovalReply(
+  text: string,
+  task: HumanTaskView | null,
+  displayed: TelegramApprovalAnchor | null,
+): TelegramApprovalReply | null {
+  const normalized = text.trim().toLowerCase();
+  const decision =
+    normalized === "approve" || normalized === "approved"
+      ? "approve"
+      : normalized === "reject" || normalized === "rejected"
+        ? "reject"
+        : normalized === "defer" || normalized === "deferred"
+          ? "defer"
+          : null;
+  const current = approvalAnchor(task);
+  if (!decision || !task || !displayed || !current || JSON.stringify(displayed) !== JSON.stringify(current))
+    return null;
+  const condition = pendingHumanApprovalCondition(task)!;
+  const expected = condition.spec.expected as Record<string, unknown>;
+  const allowed = Array.isArray(expected.anyOf)
+    ? expected.anyOf
+    : Array.isArray(expected.allowedDecisions)
+      ? expected.allowedDecisions
+      : [];
+  if (!allowed.includes(decision)) return null;
+  return { decision, task: { appId: task.appId, taskId: task.taskId }, ...current };
+}
+
 export function telegramMayInputEvent(input: {
   message: string;
   chatId: string;
@@ -422,6 +519,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   const allowedChatIds = (process.env.TELEGRAM_CHAT_ID || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  // Approval is narrower than conversation access. When unset, Telegram remains
+  // conversational and cannot authorize a mutation.
+  const allowedApproverIds = (process.env.TELEGRAM_APPROVER_ID || "")
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
@@ -595,9 +698,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const token = `stop:${randomUUID()}`;
       const messageId = await sendMessage(
         coordinates.chatId,
-        sourceChatId
-          ? "May is working on this message."
-          : "May is working in the shared conversation.",
+        sourceChatId ? "May is working on this message." : "May is working in the shared conversation.",
         undefined,
         {
           messageThreadId: coordinates.topicId,
@@ -732,9 +833,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       rememberRenderedConversationMessage(message.id);
       const watched = watchedTasks.get(surface);
       if (
-        watched && message.author.kind === "agent" && message.metadata?.taskRefs?.some(
-          (task) => task.appId === watched.appId && task.taskId === watched.taskId,
-        )
+        watched &&
+        message.author.kind === "agent" &&
+        message.metadata?.taskRefs?.some((task) => task.appId === watched.appId && task.taskId === watched.taskId)
       ) {
         const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
         if (task?.terminal && (task.response?.trim() || task.summary?.trim()) === message.text.trim()) {
@@ -752,9 +853,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const topic = readConversationTopic(getDb(persistDir), opts.interfaceAgent, sharedConversationId, selected.id);
     if (topic) selectedTopics.set(surface, topic);
     else selectedTopics.delete(surface);
-    return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId)
-      ? topic.id
-      : undefined;
+    return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId) ? topic.id : undefined;
   }
 
   async function refreshWatch(surface: string): Promise<void> {
@@ -843,17 +942,23 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     const first = changed[0]!;
     const single = page.total === 1 && changed.length === 1;
-    const taskRefs = (single ? [first] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
-    const text =
-      page.total === 1 && changed.length === 1
-        ? `Needs your decision: ${first.outcome}\n${humanActionText(first)}\n\nReply here with your decision.`
-        : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
+    const actionTask = first.humanAction?.task ?? { appId: first.appId, taskId: first.taskId };
+    // Compact lists intentionally omit Conditions. Read the exact action owner
+    // once so displayed text and immutable approval anchor share one snapshot.
+    const proposal = single ? (opts.humanTasks.getTask?.(actionTask) ?? first) : first;
+    const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
+    const text = single
+      ? `Needs your decision: ${proposal.outcome}\n${humanActionText(proposal)}\n\nReply here with your decision.`
+      : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
     const messageId = await sendMessage(coordinates.chatId, text, undefined, {
       eventType: "task.human-action",
       agent: opts.interfaceAgent,
       messageThreadId: coordinates.topicId,
       replyMarkup: taskButtons(taskRefs),
-      data: JSON.stringify({ taskRefs }),
+      data: JSON.stringify({
+        taskRefs,
+        ...(single ? { approvalAnchor: approvalAnchor(proposal) } : {}),
+      }),
     });
     if (!messageId || !running) return;
     if ((selectedApps.get(surface) ?? opts.interfaceAgent) === appId) shownTodoActions.set(surface, next);
@@ -1030,19 +1135,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return allowedChatIds.includes(String(chatId));
   }
 
-  function resumeRecordedInput(type: string, key: string): number | undefined {
+  function resumeRecordedInput(type: string, key: string, requireAccepted = true): number | undefined {
     // Provider redelivery may follow restart or a lost publication receipt.
     // Do not rebuild an accepted input using today's focus and cause a hash
     // conflict. The existing event journal/recovery owns its original payload.
     const db = getDb(persistDir);
-    const row = db.prepare(
-      "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
-    ).get(type, key);
+    const row = db
+      .prepare(
+        "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
+      )
+      .get(type, key);
     if (!row) return undefined;
     // Reload acceptance only starts an asynchronous operation. Its caller has
     // already checked for completion; reenter the route after a crash, while
     // the router shares any execution still in flight in this process.
-    if (row.delivery_status !== "accepted" || type === "runtime.reload.requested") {
+    if (requireAccepted && (row.delivery_status !== "accepted" || type === "runtime.reload.requested")) {
       const event = loadPersistedEvent(db, Number(row.id), persistDir);
       if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
       const retried = bus.redeliverPersisted(event, Number(row.id));
@@ -1088,11 +1195,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const surface = surfaceKey(chatIdStr, topicId);
     surfaces.set(surface, { chatId: chatIdStr, ...(topicId === undefined ? {} : { topicId }) });
     const conversationId = primaryConversationId(opts.interfaceAgent);
-    if (
-      !text.startsWith("/") &&
-      resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
-    )
-      return;
+    const recordedConversationId = !text.startsWith("/")
+      ? resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
+      : undefined;
     conversationRefresh.queue(sharedConversationId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
@@ -1105,12 +1210,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let replyToSourceId: string | undefined;
     let replyTopicId: string | undefined;
     let replyTask: { appId: string; taskId: string } | undefined;
+    let replyNotification: ReturnType<typeof getNotificationMessage> | undefined;
+    let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
     if (replyToMsgId) {
       try {
         const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
+        replyNotification = notification ?? undefined;
         const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
         replyTask = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
         replyTopicId = typeof data?.topicId === "string" ? data.topicId : undefined;
+        replyApprovalAnchor =
+          data?.approvalAnchor && typeof data.approvalAnchor === "object" && !Array.isArray(data.approvalAnchor)
+            ? (data.approvalAnchor as TelegramApprovalAnchor)
+            : null;
         replyToSourceId =
           typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
             ? data.conversationMessageId.trim()
@@ -1127,6 +1239,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         },
       };
     }
+
+    const approverId = String(msg.from?.id ?? "");
+    const approval =
+      replyToMsgId &&
+      replyTask &&
+      replyNotification?.event_type === "task.human-action" &&
+      allowedApproverIds.includes(approverId)
+        ? telegramApprovalReply(text, opts.humanTasks.getTask(replyTask), replyApprovalAnchor)
+        : null;
 
     try {
       if (handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId)) return;
@@ -1147,24 +1268,70 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ? (replyTask?.appId ?? opts.interfaceAgent)
       : (selectedApps.get(surface) ?? opts.interfaceAgent);
     const conversationTopic = replyToMsgId ? undefined : selectedTopics.get(surface);
-    inputContext = { ...(inputContext ?? {}), focusedApp };
+    inputContext = {
+      ...(inputContext ?? {}),
+      focusedApp,
+      ingress: {
+        provider: "telegram",
+        authenticatedSenderId: approverId,
+        chatId: chatIdStr,
+        sourceMessageId: msg.message_id,
+        ...(replyToMsgId ? { replyToMessageId: replyToMsgId } : {}),
+      },
+    };
     if (focusedTask) {
       inputContext = {
         ...(inputContext ?? {}),
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
       };
     }
-    emitChatStart(
-      text,
-      msg.message_id,
-      inputContext,
-      chatIdStr,
-      topicId,
-      conversationId,
-      replyToMsgId,
-      replyToSourceId,
-      replyTopicId ?? conversationTopic?.id,
-    );
+    if (!recordedConversationId) {
+      emitChatStart(
+        text,
+        msg.message_id,
+        inputContext,
+        chatIdStr,
+        topicId,
+        conversationId,
+        replyToMsgId,
+        replyToSourceId,
+        replyTopicId ?? conversationTopic?.id,
+      );
+    }
+    if (approval) {
+      // This generic control is journaled, not admitted as App work. Consumers
+      // must reread this trusted Telegram source and the exact proposal anchor.
+      // If Conversation admission succeeded before this second publication
+      // failed, provider replay resumes here and records only the missing event.
+      const approvalKey = `telegram-approval:${chatIdStr}:${msg.message_id}`;
+      if (!resumeRecordedInput("project.approval.submitted", approvalKey, false)) {
+        opts.publishEvent({
+          type: "project.approval.submitted",
+          target: { appId: approval.task.appId, taskId: approval.task.taskId },
+          data: {
+            approvalId: approval.approvalId,
+            decision: approval.decision,
+            ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
+            ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
+            ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
+            provenance: {
+              provider: "telegram",
+              authenticatedSenderId: approverId,
+              chatId: chatIdStr,
+              sourceMessageId: msg.message_id,
+              replyToMessageId: replyToMsgId,
+            },
+          },
+          idempotencyKey: approvalKey,
+        });
+      }
+      queueCommandDelivery(surface, () =>
+        sendMessage(chatIdStr, `${approval.decision} recorded for the exact proposal.`, undefined, {
+          replyToMessageId: msg.message_id,
+          messageThreadId: topicId,
+        }),
+      );
+    }
     // Presentation after durable recording cannot turn a saved input into a retry.
     try {
       const active = readAppConversationResource(getDb(persistDir), opts.interfaceAgent, conversationId, {
@@ -1540,7 +1707,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (!task) throw new Error("Task disappeared after cancellation");
         stopWatching(surface);
         deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task), undefined, {
-          appId: task.appId, taskId: task.taskId,
+          appId: task.appId,
+          taskId: task.taskId,
         });
       } catch (error) {
         deliverCommandView(`[cancel] ${error instanceof Error ? error.message : String(error)}`);
@@ -1588,7 +1756,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       // Completion can be durable even if recording acceptance failed. Check
       // the exact request's result before redelivery can repeat the reload.
       const db = getDb(persistDir);
-      const completion = db.prepare(`
+      const completion = db
+        .prepare(
+          `
         SELECT e.id FROM events request
         JOIN event_traces t ON t.parent_event_id = request.id
         JOIN events e ON e.id = t.event_id
@@ -1596,7 +1766,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           AND request.source = 'telegram' AND request.idempotency_key = ?
           AND e.event_type = 'runtime.reload.finished'
         ORDER BY e.id DESC LIMIT 1
-      `).get(requestId);
+      `,
+        )
+        .get(requestId);
       if (completion) {
         const event = loadPersistedEvent(db, Number(completion.id), persistDir);
         if (!event) throw new Error("Saved reload result is unavailable");
