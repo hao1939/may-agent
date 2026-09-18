@@ -131,6 +131,9 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
+- [Ordinary commands from Task workers](proposals/task-worker-command-context-20260919.md)
+  — reproduced environment inheritance failure and an isolated comparison of
+  explicit worker entry with process-local database behavior;
 - [Wait corrections and unanswered input recovery](proposals/task-wait-recovery-20260918.md)
 
 Active reviews are:
