@@ -31,6 +31,9 @@ export function readRuntimeTaskView(
         id: condition.metadata.id,
         ...structuredClone(condition.spec),
       })),
+      current.resource.status.observedAttemptId
+        ? store.readAttempt(current.resource.status.observedAttemptId)
+        : null,
       current.closed,
     );
   }
@@ -89,11 +92,24 @@ function resourceTaskDetail(
   resource: NonNullable<TaskTree["resources"]>[string],
   phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
   conditions: TaskDetail["conditions"],
+  acceptedAttempt: ReturnType<AppTaskContext["resourceStore"]["readAttempt"]>,
   closed = false,
 ): TaskDetail {
   return {
     ...resourceTaskView(resource, phase, closed),
     ...(resource.metadata.creator ? { creator: structuredClone(resource.metadata.creator) } : {}),
+    ...(acceptedAttempt && acceptedAttempt.acceptedResult
+      ? {
+          acceptedAttempt: {
+            id: acceptedAttempt.metadata.id,
+            generation: acceptedAttempt.taskGeneration,
+            startedAt: acceptedAttempt.startedAt,
+            ...(acceptedAttempt.finishedAt
+              ? { finishedAt: acceptedAttempt.finishedAt }
+              : {}),
+          },
+        }
+      : {}),
     parentId: resource.spec.parentId,
 
     acceptance: [...resource.spec.acceptance],
