@@ -38,8 +38,13 @@ reconsideration; current stored state determines the response.
 
 The product model is: **discuss in Conversation, track accepted asks as
 Requests, and delegate Tasks for independent execution.** Topics organize context.
-The Conversation's stable Task is its execution mechanism, not a background
-handoff or an extra object the human must manage. The vocabulary is:
+The Conversation's logical execution identity is stable from the human's
+perspective. Normally one Task serves it. If that execution Task was explicitly
+cancelled, fresh human input may continue through a deterministic linked
+successor while the cancelled predecessor and its receipts remain immutable.
+This is recovery of the same Conversation, not a new Conversation, controller,
+or hidden work queue. The execution Task is not a background handoff or an
+extra object the human must manage. The vocabulary is:
 
 | Term | Meaning |
 | --- | --- |
@@ -578,6 +583,52 @@ this split and absence behavior. It does not create a fifth core component.
   a missing explanation never reexecutes the completed Task.
 - Reads and scans are bounded. An output limit alone does not prove cheap SQL;
   measure query plans and candidate paging before claiming scale or latency.
+
+### Cancelled Conversation execution and successors
+
+Task cancellation remains a real fence: it stops that execution identity and
+retains its history. It does not prove that the human withdrew the whole
+Conversation, nor may routine hygiene infer withdrawal from quietness, a done
+Turn, or a fulfilled Request. Conversation and maintenance Tasks are standing
+by convention and must be preserved unless current canonical evidence contains
+an explicit owner decision to end the responsibility.
+
+When a Conversation execution Task is already cancelled, the recovery rule is:
+
+1. An exact replay of an old input/idempotency key returns its original receipt
+   and remains bound to its historical execution Task.
+2. Fresh **human** input may create the next deterministic Task in the same
+   Conversation lineage, linked to the cancelled predecessor. It does not
+   resurrect or mutate that predecessor.
+3. Background feedback, timer input, or a late child result cannot create a
+   successor by itself. It may be routed only after fresh human input has
+   established a live successor.
+4. Turn preparation and completion, Request updates, Stop, linked-result
+   routing, pending-change discovery, and restart recovery resolve the retained
+   execution binding rather than recomputing only the first Task ID.
+5. Request creator checks accept an execution Task proven by the Conversation's
+   stored inbox binding, while retaining existing claim, revision, App, and
+   foreign-actor guards.
+
+This is a narrow compatibility mechanism for terminal Conversation execution,
+not permission to replace arbitrary cancelled Tasks. Explicit Task Stop and
+cancellation controls retain their current scope. App policy must prevent the
+avoidable case: cleanup and hygiene reviews preserve Conversation execution
+Tasks and linked successors unless the human or owning App explicitly withdraws
+the whole Conversation.
+
+**Reviewed candidate, not deployment evidence.** Host candidate `fe605220`
+implements this rule on the deployed `4bdd5384` line. Its final portable suite
+recorded 3,110 passes, three intentional installation-fixture skips, zero
+failures, and 14,132 assertions; `check:ci` also passed. Independent variants
+covered base and successor execution for Stop with newer input/restart,
+same-App delegation and steering/restart, and cross-App waiting-result delivery,
+repair, and restart. The retained review is
+`/app/.state/review-pilots/evaluation-setup-20260918/recovery-review.md`; exact
+source hashes are in `recovery-import-snapshot.json`, and final logs are
+`recovery-final-check.log` and `recovery-final-test.log`. These receipts establish
+the reviewed source candidate only. The running Host and natural May message
+path must be read after coordinated activation before rollout is claimed.
 
 ## Invariants
 
