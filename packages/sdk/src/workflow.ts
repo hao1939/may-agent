@@ -48,6 +48,7 @@ export type TaskDetail = TaskView & {
   priority?: TaskPriority;
   category?: string;
   dependsOn?: string[];
+  outputs?: string[];
   conditions: Condition[];
 };
 
@@ -446,6 +447,8 @@ export type WorkflowContext<TInput = unknown> = {
   signal: AbortSignal;
   /** Present only when a durable App task owns this workflow attempt. */
   reconciliation?: TaskReconciliationContext<TInput>;
+  /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
+  reviseTask?: TaskAttempt["reviseTask"];
   read: AppRead;
   agents: {
     call<S extends TSchema>(

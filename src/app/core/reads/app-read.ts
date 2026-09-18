@@ -104,6 +104,7 @@ function resourceTaskDetail(
     ...(resource.spec.priority ? { priority: resource.spec.priority } : {}),
     ...(resource.spec.category ? { category: resource.spec.category } : {}),
     ...(resource.spec.dependsOn?.length ? { dependsOn: [...resource.spec.dependsOn] } : {}),
+    ...(resource.spec.outputs ? { outputs: [...resource.spec.outputs] } : {}),
     conditions,
   };
 }

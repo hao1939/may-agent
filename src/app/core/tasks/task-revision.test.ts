@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
@@ -26,6 +26,7 @@ import {
   recordAppTaskTrigger,
 } from "./app-task-reconciler.js";
 import { reviseAppTask } from "./task-revision.js";
+import { createTaskWorkflowRunner } from "../../adapters/executors/workflow.js";
 
 const roots: string[] = [];
 afterEach(() =>
@@ -150,6 +151,52 @@ test("one revision changes actual input and App-selected execution, survives cal
     appId: "creator",
     taskId: "parent",
   });
+});
+
+test("a Task workflow saves a creator revision while the worker runs, even if the workflow then fails", async () => {
+  const f = fixture();
+  const old = f.claim("worker", "child");
+  const directory = join(f.root, "creator", "workflows");
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, "correct.ts"), `
+export const name = "correct";
+export const description = "Revision boundary regression";
+export async function execute(ctx) {
+  await ctx.reviseTask(${JSON.stringify(f.change)});
+  throw new Error("failed after saving requirements");
+}`);
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus: { emit() {} } as never });
+  let received: unknown;
+  const result = await runner.execute({
+    descriptor: { id: "creator", appDir: join(f.root, "creator.app"), projectDir: f.root, app: worker },
+    source: { projectsRoot: f.root, projectRoot: f.root, persistDir: f.root, agentsRoot: f.root, sharedRoot: f.root },
+    capability: { agent: "creator", workflow: "correct", task: "Correct child requirements" },
+    handler: "workflow:correct",
+    attempt: {
+      task: { id: "parent", generation: 1, outcome: "Review evidence", acceptance: ["Verified"], input: {} },
+      attemptId: f.parent.attemptId,
+      resourceVersion: 1,
+      role: { agent: "creator" },
+      events: { items: [], truncated: false },
+      waits: { open: [], settled: [] },
+      signal: new AbortController().signal,
+      declaredOutputPaths: [],
+      reviseTask: async (change: typeof f.change) => {
+        received = change;
+        return reviseAppTask({ source: f.context("creator"), target: f.context("worker"), app: worker, actor: f.actor, change });
+      },
+    },
+    executionPaths: { projectDir: f.root, appDir: f.root, workspaceDir: f.root, outputDir: f.root },
+    childContext: { live: [], completed: [], truncated: false },
+    taskSnapshot: { live: [], truncated: false },
+    taskEvents: { read: () => null, publish: () => 1, onEvent: () => () => {} },
+    taskRead: { list: async () => ({ items: [] }), get: async () => null },
+    executionTimeoutMs: 30_000,
+  } as never);
+  expect(received).toEqual(f.change);
+  expect(result.handlerResult.summary).toContain("failed after saving requirements");
+  expect(f.context("worker").resourceStore.readTask("child")?.spec.input).toEqual({ source: "beta" });
+  expect(completeAppTask(f.context("worker"), old, { summary: "Old alpha result" }).status).toBe("stale");
 });
 
 function awaitingInput(f: ReturnType<typeof fixture>, id: string, taskId = "parent") {

@@ -181,6 +181,7 @@ async function executeTaskCapability(
       },
       recoveryOwner: APP_TASK_RECOVERY_OWNER,
       taskEmitter: input.taskEvents,
+      reviseTask: (change) => attempt.reviseTask(change),
       trace,
       executionPaths: input.executionPaths,
       workflowInput: taskDetail.input ?? {},
