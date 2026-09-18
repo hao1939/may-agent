@@ -595,8 +595,10 @@ an explicit owner decision to end the responsibility.
 
 When a Conversation execution Task is already cancelled, the recovery rule is:
 
-1. An exact replay of an old input/idempotency key returns its original receipt
-   and remains bound to its historical execution Task.
+1. An exact replay of a **completed** old input/idempotency key returns its
+   original receipt and remains bound to its historical execution Task. An
+   unfinished old input remains fenced to its predecessor and is never silently
+   rebound to a successor.
 2. Fresh **human** input may create the next deterministic Task in the same
    Conversation lineage, linked to the cancelled predecessor. It does not
    resurrect or mutate that predecessor.
@@ -617,18 +619,21 @@ avoidable case: cleanup and hygiene reviews preserve Conversation execution
 Tasks and linked successors unless the human or owning App explicitly withdraws
 the whole Conversation.
 
-**Reviewed candidate, not deployment evidence.** Host candidate `fe605220`
-implements this rule on the deployed `4bdd5384` line. Its final portable suite
-recorded 3,110 passes, three intentional installation-fixture skips, zero
-failures, and 14,132 assertions; `check:ci` also passed. Independent variants
-covered base and successor execution for Stop with newer input/restart,
-same-App delegation and steering/restart, and cross-App waiting-result delivery,
-repair, and restart. The retained review is
-`/app/.state/review-pilots/evaluation-setup-20260918/recovery-review.md`; exact
-source hashes are in `recovery-import-snapshot.json`, and final logs are
-`recovery-final-check.log` and `recovery-final-test.log`. These receipts establish
-the reviewed source candidate only. The running Host and natural May message
-path must be read after coordinated activation before rollout is claimed.
+**Deployed and live-checked.** Host revision `fe605220` implements this rule and
+was activated on 2026-09-18 without a database migration or history rewrite. Its
+final portable suite recorded 3,110 passes, three intentional
+installation-fixture skips, zero failures, and 14,132 assertions; `check:ci` also
+passed. Independent variants covered base and successor execution for Stop with
+newer input/restart, same-App delegation and steering/restart, and cross-App
+waiting-result delivery, repair, and restart. After coordinated activation, a
+fresh human input established deterministic successor
+`conversation_ec854e2f09f1c38566a25857_successor_2` in the unchanged
+`may:primary` lineage while the old primary remained cancelled. The retained
+source review is `/app/.state/review-pilots/evaluation-setup-20260918/recovery-review.md`;
+exact source hashes are in `recovery-import-snapshot.json`, final checks are in
+`recovery-final-check.log` and `recovery-final-test.log`, and the live activation
+receipt is `deployment/conversation-host-activation.json` under that same review
+root.
 
 ## Invariants
 

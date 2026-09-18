@@ -1,6 +1,6 @@
 # Task-outcome evaluation and report use
 
-**Status:** The explicit single-Task review, durable report store, deterministic list/read path, and legacy Task retirement are deployed. Three bounded real-model reviews and deterministic self-exclusion/reuse controls passed live calibration; their measured evaluator-session usage estimate was $0.329966, not a billing receipt or report-recorded cost. The recent-window/fair-rotation selector and report-discovery polish described below are implemented in source but not yet activated. Automatic selection remains off pending review, deployment, a natural-query follow-up, and one bounded selector canary.
+**Status:** The explicit single-Task review, durable report store, deterministic list/read path, legacy Task retirement, recent-window/fair-rotation selector, and report-discovery polish are deployed from App revision `79dd65e91f`. Four published reports—three assessed and one inconclusive—have an evaluator-session usage estimate of $0.479074; this is not a billing receipt, excludes May/reviewer costs, and is not report-recorded cost. A natural May query read the retained reports without a new evaluator run. Two bounded selector canaries rotated from May to Scout, emitted exactly one review each, never selected Evaluation, and caused no storm. The Scout provenance skip made no model call, published no semantic report, and adds no assessed coverage. Automatic selection is now enabled at a serialized daily cadence; this proves a bounded rollout, not comprehensive App health.
 
 ## Boundary
 
