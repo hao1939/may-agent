@@ -703,7 +703,7 @@ describe("direct structured judgment execution", () => {
         domain: "tests",
         systemPrompt: "Judge the supplied facts.",
         model: streamTestModel,
-        tools: [createFinishTool({ agentName: "judge", projectRoot: root })],
+        tools: [tool("read"), createFinishTool({ agentName: "judge", projectRoot: root })],
       },
       projectRoot: root,
       sessionId: "judgment-fixture",
@@ -713,7 +713,9 @@ describe("direct structured judgment execution", () => {
     });
   }
 
-  function finishStream(args: Record<string, unknown>) {
+  function toolCallStream(
+    calls: Array<{ id: string; name: string; arguments: Record<string, unknown> }>,
+  ) {
     const stream = createAssistantMessageEventStream();
     stream.push({
       type: "done",
@@ -721,11 +723,88 @@ describe("direct structured judgment execution", () => {
       message: {
         ...assistantMessage("stop"),
         stopReason: "toolUse",
-        content: [{ type: "toolCall", id: "judgment-finish", name: "finish", arguments: args }],
+        content: calls.map((call) => ({ type: "toolCall" as const, ...call })),
       },
     });
     return stream;
   }
+
+  function readStream(index: number) {
+    return toolCallStream([{ id: `judgment-read-${index}`, name: "read", arguments: {} }]);
+  }
+
+  function finishStream(args: Record<string, unknown>, id = "judgment-finish") {
+    return toolCallStream([{ id, name: "finish", arguments: args }]);
+  }
+
+  const successfulFinishArgs = {
+    status: "success",
+    summary: "Verified exact bounded result.",
+    verification_facts: ["Production execution fixture reached finish."],
+    result: { state: "incomplete", summary: "Further recovery exceeds the authorized budget." },
+  };
+
+  test("does not steer over a successful finish exactly crossing the tool threshold", async () => {
+    const prepared = prepare();
+    const contexts: string[] = [];
+    let calls = 0;
+    prepared.runner.streamFn = (_model, context) => {
+      contexts.push(JSON.stringify(context.messages));
+      if (++calls <= 23) return readStream(calls);
+      return finishStream(successfulFinishArgs);
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("done");
+    expect(result.finishResult?.summary).toBe(successfulFinishArgs.summary);
+    expect(calls).toBe(24);
+    expect(contexts.join("\n")).not.toContain("Bounded completion guardrail");
+  });
+
+  test(
+    "allows a rejected threshold finish to be corrected without injecting a bounded reminder",
+    async () => {
+      const prepared = prepare();
+      const contexts: string[] = [];
+      let calls = 0;
+      prepared.runner.streamFn = (_model, context) => {
+        contexts.push(JSON.stringify(context.messages));
+        if (++calls <= 23) return readStream(calls);
+        if (calls === 24) {
+          return finishStream({ ...successfulFinishArgs, result: undefined }, "rejected-finish");
+        }
+        return finishStream(successfulFinishArgs, "corrected-finish");
+      };
+
+      const result = await executePreparedAgent(prepared);
+
+      expect(result.status).toBe("done");
+      expect(result.finishResult?.summary).toBe(successfulFinishArgs.summary);
+      expect(calls).toBe(25);
+      expect(contexts.join("\n")).not.toContain("Bounded completion guardrail");
+      expect(result.messages).toContainEqual(
+        expect.objectContaining({ role: "toolResult", toolName: "finish", isError: true }),
+      );
+    },
+  );
+
+  test("still reminds genuinely unfinished work at the tool threshold", async () => {
+    const prepared = prepare();
+    const contexts: string[] = [];
+    let calls = 0;
+    prepared.runner.streamFn = (_model, context) => {
+      contexts.push(JSON.stringify(context.messages));
+      if (++calls <= 24) return readStream(calls);
+      return finishStream(successfulFinishArgs);
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("done");
+    expect(calls).toBe(25);
+    expect(contexts[24]).toContain("Bounded completion guardrail");
+  });
 
   test.each([true, false])("preserves non-success output with structured=%s", async (structured) => {
     const prepared = prepare(structured);

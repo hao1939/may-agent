@@ -175,6 +175,11 @@ describe("workflow finish recovery", () => {
       false,
     );
     expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD, false)).toBe(true);
+    expect(
+      shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD, false, {
+        activeToolName: "finish",
+      }),
+    ).toBe(false);
     expect(shouldRequestBoundedWorkflowFinish(true, WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD + 10, true)).toBe(
       false,
     );
