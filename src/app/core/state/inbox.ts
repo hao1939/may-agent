@@ -170,11 +170,20 @@ export function recoverTaskInputAdmissionKey(db: SqliteDb, item: AppInboxItem): 
   ];
   const rows = db
     .prepare(
-      `SELECT task_id FROM app_task_admissions WHERE app_id = ?
-    AND task_id IN (?, ?, ?) AND json_extract(admission_json, '$.taskId') = ?`,
+      `SELECT task_id, admission_json FROM app_task_admissions WHERE app_id = ?
+    AND task_id IN (?, ?, ?) AND json_extract(admission_json, '$.taskId') = ? ORDER BY task_id`,
     )
     .all(item.appId, ...keys, item.waitingOn.id);
-  if (rows.length !== 1) return undefined;
+  if (!rows.length) return undefined;
+  // Older Hosts could retain desired/existing aliases for the same input.
+  // Different timestamps do not create different authority, but every bound
+  // Task, generation, spec, accepted answer and feedback field must agree.
+  const authorities = rows.map((row) => {
+    const authority = JSON.parse(String(row.admission_json)) as Record<string, unknown>;
+    delete authority.admittedAt;
+    return authority;
+  });
+  if (authorities.some((authority) => !isDeepStrictEqual(authority, authorities[0]))) return undefined;
   const key = String(rows[0]!.task_id);
   db.prepare(
     `UPDATE app_inbox_items SET task_admission_key = ?
