@@ -7,7 +7,8 @@ import {
 } from "./lib/public-task-evidence.js";
 import {
   configuredTaskReportRoot,
-  listTaskReports,
+  readPublishedTaskReport,
+  taskReportPaths,
 } from "./lib/task-report-store.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
@@ -208,13 +209,6 @@ export async function selectFairCandidate(
     };
   const state = cleanState(priorState);
   const provider = createPublicTaskEvidenceProvider(command);
-  const reviewed = new Map<string, Set<string>>();
-  for (const report of listTaskReports(reportRoot, 100)) {
-    const key = `${canonical(report.appId)}\u0000${report.taskId}`;
-    const hashes = reviewed.get(key) ?? new Set<string>();
-    hashes.add(report.evidenceHash);
-    reviewed.set(key, hashes);
-  }
   const apps = (await provider.listApps(config.maxApps))
     .map((app) => text(app.id ?? app.appId))
     .filter((id) => id && canonical(id) !== "evaluation")
@@ -300,16 +294,9 @@ export async function selectFairCandidate(
     let selected: Record<string, unknown> | undefined;
     for (const item of candidates) {
       if (!isReviewable(item)) continue;
-      const identity = `${reportKey}\u0000${taskId(item)}`;
-      const priorHashes = reviewed.get(identity);
-      if (!priorHashes?.size) {
-        selected = item;
-        break;
-      }
-      // A subject is deduplicated by the same decision-relevant evidence hash
-      // used by the reviewer, not merely App/Task identity. This bounded exact
-      // read preserves immutable old reports while allowing changed evidence to
-      // receive a new review.
+      // Resolve the same decision-relevant evidence identity the reviewer will
+      // publish. An exact immutable marker lookup avoids treating the recent-100
+      // report listing as a registry while preserving changed-evidence review.
       const subject = await readSubjectTask(
         { appId, taskId: taskId(item) },
         command,
@@ -321,7 +308,20 @@ export async function selectFairCandidate(
         );
         continue;
       }
-      if (!priorHashes.has(subject.evidenceHash)) {
+      const reportPath = taskReportPaths(
+        reportKey,
+        taskId(item),
+        subject.evidenceHash,
+      ).jsonPath;
+      const published = readPublishedTaskReport(reportRoot, reportPath);
+      // Paths use shortened/sanitized identity components; compare the verified
+      // full identity as well so a path collision cannot suppress changed work.
+      if (
+        !published ||
+        canonical(published.appId) !== reportKey ||
+        published.taskId !== taskId(item) ||
+        published.evidenceHash !== subject.evidenceHash
+      ) {
         selected = item;
         break;
       }

@@ -233,6 +233,46 @@ describe("public Task evidence", () => {
     });
   });
 
+  test("ignores only public detail presentation metadata without altering evidence read-back", async () => {
+    const subject = { appId: "sample", taskId: "goal/one" };
+    const first = await readSubjectTask(subject, fixture());
+    const refreshed = {
+      ...taskDetail,
+      ref: "abc12345-expanded",
+      resourceVersion: 99,
+      updatedAt: 200,
+      progress: { stage: "presentation refresh", updatedAt: 200 },
+    };
+    const second = await readSubjectTask(subject, fixture(appTask, refreshed));
+    expect(first.disposition).toBe("eligible");
+    expect(second.evidenceHash).toBe(first.evidenceHash);
+    expect(second.task?.detail).toEqual(refreshed);
+  });
+
+  for (const key of ["ref", "progress", "updatedAt", "resourceVersion"]) {
+    for (const view of ["appTask", "detail"]) {
+      for (const field of ["input", "result"]) {
+        test(`preserves ${view}.${field} nested ${key} as meaningful evidence`, async () => {
+          const read = (value: string) => {
+            const domain = { [field]: { outputs: [{ [key]: value }] } };
+            return readSubjectTask(
+              { appId: "sample", taskId: "goal/one" },
+              fixture(
+                view === "appTask" ? { ...appTask, ...domain } : appTask,
+                view === "detail" ? { ...taskDetail, ...domain } : taskDetail,
+              ),
+            );
+          };
+          const before = await read("original");
+          const after = await read("replacement");
+          expect(before.disposition).toBe("eligible");
+          expect(after.disposition).toBe("eligible");
+          expect(after.evidenceHash).not.toBe(before.evidenceHash);
+        });
+      }
+    }
+  }
+
   test("excludes Evaluation and Evaluation-created external work before judgment", async () => {
     let calls = 0;
     const excluded = await readSubjectTask(
