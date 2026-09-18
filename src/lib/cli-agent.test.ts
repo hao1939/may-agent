@@ -262,6 +262,14 @@ describe("bounded native CLI call", () => {
   }
 
   it("rejects implicit cross-task session reuse, missing identity, and invalid deadlines before spawning", async () => {
+    const tool = createRunCliAgentTool({ ...options(), getCallerSessionId: () => "caller" });
+    expect(tool.parameters.properties).not.toHaveProperty("reuseSession");
+    expect(tool.parameters.properties).toHaveProperty("resumeSessionId");
+    const rejected = await tool.execute("legacy-input", { tool: "codex", prompt: "Review", reuseSession: true });
+    expect(JSON.parse((rejected.content[0] as { text: string }).text)).toMatchObject({
+      status: "failed",
+      error: "Automatic shared session reuse is retired; pass resumeSessionId to continue an exact native session",
+    });
     for (const input of [{ reuseSession: true }, { timeoutMs: 0 }, { timeoutMs: Infinity }, { timeoutMs: 2 ** 31 }]) {
       await expect(runCliAgent({ tool: "codex", prompt: "Review", ...input }, options())).rejects.toThrow();
     }

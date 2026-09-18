@@ -60,11 +60,6 @@ const paramsSchema = Type.Object({
       description: "Optional native Claude/Codex session id to resume.",
     }),
   ),
-  reuseSession: Type.Optional(
-    Type.Boolean({
-      description: "Deprecated: implicit shared session reuse is rejected. Pass resumeSessionId explicitly.",
-    }),
-  ),
 });
 
 type RunCliAgentParams = Static<typeof paramsSchema>;
