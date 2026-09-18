@@ -112,6 +112,58 @@ export function evaluationHumanDecisionInput(
   };
 }
 
+function reportHash(data: Record<string, unknown>, field: string): string {
+  const value = requiredText(data, field, "evaluation.task_report_published");
+  if (!/^[a-f0-9]{64}$/.test(value)) {
+    throw new Error(
+      `evaluation.task_report_published requires SHA-256 ${field}`,
+    );
+  }
+  return value;
+}
+
+/** Normalize immutable Evaluation publication facts into May's ordinary message path. */
+export function evaluationTaskReportInput(
+  event: AppEvent<Record<string, unknown>>,
+): AppInput | null {
+  const data = record(event.data);
+  const appId = requiredText(data, "appId", event.type);
+  if (appId === "evaluation" || appId === "evaluation.app") return null;
+  const taskId = requiredText(data, "taskId", event.type);
+  const evidenceHash = reportHash(data, "evidenceHash");
+  const executionId = requiredText(data, "executionId", event.type);
+  const report = requiredText(data, "report", event.type);
+  const facts = requiredText(data, "facts", event.type);
+  const jsonHash = reportHash(data, "jsonHash");
+  const markdownHash = reportHash(data, "markdownHash");
+  const publication = {
+    appId,
+    taskId,
+    evidenceHash,
+    executionId,
+    report,
+    facts,
+    jsonHash,
+    markdownHash,
+  };
+  return {
+    kind: "message",
+    data: {
+      message: `Review the published Evaluation report for ${appId}/${taskId}. Verify publication integrity and current subject evidence, then record an ordinary Task disposition. Reuse linked work; do not prepare a candidate for a duplicate, no-op, or recovered finding.`,
+      context: {
+        publication,
+        caller: {
+          source: event.source,
+          owner: event.owner,
+          target: structuredClone(event.target),
+          localKey: event.localKey,
+        },
+        event: structuredClone(event),
+      },
+    },
+  };
+}
+
 export default defineApp({
   id: "may",
   version: 1,
@@ -150,6 +202,14 @@ export default defineApp({
         project: "may",
       },
       toInput: evaluationHumanDecisionInput,
+    },
+    {
+      id: "evaluation-task-report",
+      // Publications target Evaluation; consumer admission must not add a May
+      // target/project filter. Host routing of this cross-target subscription
+      // is independently exercised during isolated installation review.
+      event: { type: "evaluation.task_report_published" },
+      toInput: evaluationTaskReportInput,
     },
   ],
 });

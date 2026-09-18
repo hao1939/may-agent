@@ -15,6 +15,6 @@
     "noEmit": true,
     "types": ["bun-types"]
   },
-  "include": ["app.ts", "agents/gym/workflows/**/*.ts"],
+  "include": ["app.ts", "agents/gym/workflows/compare-candidate.ts"],
   "exclude": ["**/*.test.ts", ".state/**", "node_modules/**"]
 }

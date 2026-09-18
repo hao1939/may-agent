@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import app, { evaluationHumanDecisionInput, taskForMayInput } from "./app.ts";
+import app, {
+  evaluationHumanDecisionInput,
+  evaluationTaskReportInput,
+  taskForMayInput,
+} from "./app.ts";
 
 function decisionEvent(
   overrides: Partial<AppEvent<Record<string, unknown>>> = {},
@@ -39,6 +43,7 @@ describe("canonical May conversation App", () => {
     expect(app.tasks).toMatchObject({ maxConcurrent: 4 });
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "evaluation-human-decision",
+      "evaluation-task-report",
     ]);
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
@@ -176,6 +181,71 @@ describe("canonical May conversation App", () => {
     expect((input.data as any).context.event.data.dedupeKey).toBe(
       "evaluation:session-1:rollout",
     );
+  });
+
+  test("normalizes exact task report identity across the Evaluation target boundary", () => {
+    const hash = "a".repeat(64);
+    const event: AppEvent<Record<string, unknown>> = {
+      type: "evaluation.task_report_published",
+      source: "workflow:task-outcome-review",
+      owner: "app:evaluation",
+      localKey: "report-1",
+      target: {
+        appId: "evaluation",
+        project: "evaluation",
+        taskId: "review/1",
+      },
+      data: {
+        appId: "may",
+        taskId: "goal/subject",
+        evidenceHash: hash,
+        executionId: "s_eval_1",
+        report: "reports/task-outcomes/may/subject/report.md",
+        facts: "reports/task-outcomes/may/subject/report.json",
+        jsonHash: "b".repeat(64),
+        markdownHash: "c".repeat(64),
+      },
+    };
+    const subscription = app.subscriptions?.find(
+      ({ id }) => id === "evaluation-task-report",
+    );
+    expect(subscription).toBeDefined();
+    expect(matchesEventSelector(subscription!.event, event)).toBeTrue();
+    const input = evaluationTaskReportInput(event)!;
+    expect(input.kind).toBe("message");
+    expect((input.data as any).context.publication).toEqual(event.data);
+    expect((input.data as any).context.caller).toEqual({
+      source: event.source,
+      owner: event.owner,
+      target: event.target,
+      localKey: event.localKey,
+    });
+    event.data.taskId = "mutated";
+    expect((input.data as any).context.event.data.taskId).toBe("goal/subject");
+    expect(Check(app.inputSchema, input)).toBeTrue();
+  });
+
+  test("rejects malformed publication and excludes Evaluation self-review", () => {
+    const base = {
+      type: "evaluation.task_report_published",
+      data: {
+        appId: "evaluation",
+        taskId: "goal/self",
+        evidenceHash: "a".repeat(64),
+        executionId: "s1",
+        report: "report.md",
+        facts: "facts.json",
+        jsonHash: "b".repeat(64),
+        markdownHash: "c".repeat(64),
+      },
+    } as AppEvent<Record<string, unknown>>;
+    expect(evaluationTaskReportInput(base)).toBeNull();
+    expect(() =>
+      evaluationTaskReportInput({
+        ...base,
+        data: { ...base.data, appId: "may", jsonHash: "spoof" },
+      }),
+    ).toThrow("requires SHA-256 jsonHash");
   });
 
   test("does not claim a decision addressed to another project", () => {
