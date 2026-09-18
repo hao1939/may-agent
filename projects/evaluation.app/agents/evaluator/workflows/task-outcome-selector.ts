@@ -10,26 +10,23 @@ import {
   readPublishedTaskReport,
   taskReportPaths,
 } from "./lib/task-report-store.js";
+import { assessmentContext } from "./lib/task-assessment-context.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "task-outcome-selector";
 export const description =
   "Select at most one recent external Task candidate through bounded public App reads.";
 
-const STATE_VERSION = 3;
+const STATE_VERSION = 5;
 const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
 const MAX_NAVIGATION_FACTS = 20;
 // HumanTaskStatus is the public tasks.list contract. `done` is a retained
 // completion receipt, while `attention` is the current unresolved status.
-const REVIEWABLE_STATUSES = new Set([
-  "up-to-date",
-  "attention",
-  "closed",
-  "cancelled",
-  "done",
-]);
+const OPEN_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
+const OUTCOME_STATUSES = new Set(["up-to-date", "closed", "cancelled", "done"]);
+const PILOT_APPS = new Set(["may", "scout", "scout-knowledge-lib"]);
 
 type Input = { reason?: string };
 type SelectorConfig = {
@@ -41,12 +38,17 @@ type SelectorConfig = {
   recentWindowMs: number;
 };
 
-type Candidate = { appId: string; taskId: string };
+type Candidate = {
+  appId: string;
+  taskId: string;
+  assessmentPurpose?: "ongoing";
+};
+type AssessmentPurpose = "outcome" | "ongoing";
 type SelectorState = {
   version: number;
   appId: string;
   appIndex: number;
-  lastTaskByApp: Record<string, string>;
+  taskCursorByApp: Record<string, string>;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -130,28 +132,44 @@ function appendNavigationFact(facts: string[], fact: string): void {
   if (Buffer.byteLength(JSON.stringify(candidate)) <= MAX_NAVIGATION_FACT_BYTES)
     facts.push(fact);
 }
-function isReviewable(task: Record<string, unknown>): boolean {
-  return (
-    Boolean(taskId(task)) && REVIEWABLE_STATUSES.has(canonical(task.status))
-  );
+function assessmentPurposeFor(
+  task: Record<string, unknown>,
+  cutoff: number,
+): AssessmentPurpose | null {
+  if (!taskId(task)) return null;
+  const status = canonical(task.status);
+  if (OPEN_STATUSES.has(status)) return "ongoing";
+  if (OUTCOME_STATUSES.has(status) && Number(task.updatedAt) >= cutoff)
+    return "outcome";
+  return null;
 }
 function emptyState(): SelectorState {
-  return { version: STATE_VERSION, appId: "", appIndex: 0, lastTaskByApp: {} };
+  return {
+    version: STATE_VERSION,
+    appId: "",
+    appIndex: 0,
+    taskCursorByApp: {},
+  };
 }
-function boundedStateHistory(value: unknown): Record<string, string> {
-  const history: Record<string, string> = {};
+function boundedTaskCursors(value: unknown): Record<string, string> {
+  const cursors: Record<string, string> = {};
   for (const [appId, storedValue] of Object.entries(object(value)).slice(
     -MAX_STATE_APPS,
   )) {
     const key = canonical(appId).slice(0, 80);
-    const id = text(storedValue);
-    if (!key || !/^[a-f0-9]{64}$/.test(id)) continue;
-    const candidate = { ...history, [key]: id };
+    const cursor = text(storedValue);
+    // Cursors are opaque: never truncate one into a different token. The public
+    // keyset token includes the full Task identity, so a supported long Task id
+    // can legitimately exceed 512 bytes. The aggregate state budget remains
+    // the bound.
+    if (!key || !cursor || Buffer.byteLength(cursor) > MAX_STATE_HISTORY_BYTES)
+      continue;
+    const candidate = { ...cursors, [key]: cursor };
     if (Buffer.byteLength(JSON.stringify(candidate)) > MAX_STATE_HISTORY_BYTES)
       break;
-    history[key] = id;
+    cursors[key] = cursor;
   }
-  return history;
+  return cursors;
 }
 function cleanState(value: unknown): SelectorState {
   const item = object(value);
@@ -160,7 +178,7 @@ function cleanState(value: unknown): SelectorState {
     version: STATE_VERSION,
     appId: /^[a-f0-9]{64}$/.test(text(item.appId)) ? text(item.appId) : "",
     appIndex: Math.max(0, Math.trunc(Number(item.appIndex) || 0)),
-    lastTaskByApp: boundedStateHistory(item.lastTaskByApp),
+    taskCursorByApp: boundedTaskCursors(item.taskCursorByApp),
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -211,7 +229,7 @@ export async function selectFairCandidate(
   const provider = createPublicTaskEvidenceProvider(command);
   const apps = (await provider.listApps(config.maxApps))
     .map((app) => text(app.id ?? app.appId))
-    .filter((id) => id && canonical(id) !== "evaluation")
+    .filter((id) => id && PILOT_APPS.has(canonical(id)))
     .sort((a, b) => a.localeCompare(b))
     .slice(0, config.maxApps);
   if (!apps.length)
@@ -231,116 +249,113 @@ export async function selectFairCandidate(
     const appId = apps[appIndex]!;
     const key = appKey(appId);
     const reportKey = canonical(appId);
-    const recent: Record<string, unknown>[] = [];
-    let cursor = "";
+    let cursor = state.taskCursorByApp[key] ?? "";
+    let continuationCursor = cursor;
     let pagesRead = 0;
-    const seenCursors = new Set<string>();
+    const seenCursors = new Set<string>(cursor ? [cursor] : []);
+    let selected:
+      | { item: Record<string, unknown>; purpose: AssessmentPurpose }
+      | undefined;
     try {
-      for (
-        let pageIndex = 0;
-        pageIndex < config.maxPagesPerApp;
-        pageIndex += 1
-      ) {
-        const page = await provider.listRecentTaskPage(
-          appId,
-          config.maxTasksPerApp,
-          cursor,
-        );
+      // Ask for one keyset record at a time and persist its opaque continuation.
+      // Advancing before return makes a dropped request harmless, while a Task
+      // reordered to the front cannot move behind the retained keyset boundary.
+      const readLimit = Math.min(
+        config.maxTasksPerApp,
+        config.maxPagesPerApp,
+      );
+      for (let pageIndex = 0; pageIndex < readLimit; pageIndex += 1) {
+        const page = await provider.listRecentTaskPage(appId, 1, cursor);
         pagesRead += 1;
         for (const issue of page.issues)
           appendNavigationFact(
             navigationFacts,
             navigationFailureFact(appId, pagesRead, issue),
           );
-        let reachedWindowBoundary = false;
-        for (const item of page.items) {
-          if (Number(item.updatedAt) < cutoff) {
-            reachedWindowBoundary = true;
-            break;
+        continuationCursor = page.nextCursor;
+        const item = page.items[0];
+        if (item) {
+          const purpose = assessmentPurposeFor(item, cutoff);
+          if (purpose) {
+            // Resolve the same decision-relevant evidence identity the reviewer
+            // will publish before emitting the wake's single review allowance.
+            const subject = await readSubjectTask(
+              { appId, taskId: taskId(item) },
+              command,
+            );
+            if (subject.disposition !== "eligible" || !subject.evidenceHash) {
+              appendNavigationFact(
+                navigationFacts,
+                `selector-evidence-unavailable:${canonical(appId).slice(0, 80)}:${identityDigest(taskId(item))}:${subject.reason.replace(/\s+/g, " ").slice(0, 180)}`,
+              );
+            } else {
+              const assessment = assessmentContext(subject, purpose, nowMs);
+              const reportPath = taskReportPaths(
+                reportKey,
+                taskId(item),
+                subject.evidenceHash,
+                assessment.rubricVersion,
+                assessment.validityIdentity,
+              ).jsonPath;
+              const published = readPublishedTaskReport(reportRoot, reportPath);
+              if (
+                !published ||
+                canonical(published.appId) !== reportKey ||
+                published.taskId !== taskId(item) ||
+                published.evidenceHash !== subject.evidenceHash ||
+                published.purpose !== purpose ||
+                published.validityIdentity !== assessment.validityIdentity
+              ) {
+                selected = { item, purpose };
+                break;
+              }
+            }
           }
-          recent.push(item);
         }
-        if (
-          reachedWindowBoundary ||
-          !page.nextCursor ||
-          seenCursors.has(page.nextCursor)
-        )
+        if (!page.nextCursor || seenCursors.has(page.nextCursor)) {
+          continuationCursor = "";
           break;
+        }
         seenCursors.add(page.nextCursor);
         cursor = page.nextCursor;
       }
     } catch (error) {
-      // A malformed or unavailable App page is neutral coverage failure. Rotate,
-      // but retain bounded diagnostics rather than reporting healthy emptiness.
+      // Retry the current opaque boundary after a read failure; do not pretend
+      // that an unavailable page was traversed.
+      continuationCursor = cursor;
       appendNavigationFact(
         navigationFacts,
         navigationFailureFact(appId, pagesRead, error),
       );
     }
 
-    const rememberedTask = nextState.lastTaskByApp[key];
-    const rememberedTaskIndex = rememberedTask
-      ? recent.findIndex(
-          (item) => identityDigest(taskId(item)) === rememberedTask,
-        )
-      : -1;
-    const candidates =
-      rememberedTaskIndex >= 0
-        ? [
-            ...recent.slice(rememberedTaskIndex + 1),
-            ...recent.slice(0, rememberedTaskIndex + 1),
-          ]
-        : recent;
-    let selected: Record<string, unknown> | undefined;
-    for (const item of candidates) {
-      if (!isReviewable(item)) continue;
-      // Resolve the same decision-relevant evidence identity the reviewer will
-      // publish. An exact immutable marker lookup avoids treating the recent-100
-      // report listing as a registry while preserving changed-evidence review.
-      const subject = await readSubjectTask(
-        { appId, taskId: taskId(item) },
-        command,
-      );
-      if (subject.disposition !== "eligible" || !subject.evidenceHash) {
-        appendNavigationFact(
-          navigationFacts,
-          `selector-evidence-unavailable:${canonical(appId).slice(0, 80)}:${identityDigest(taskId(item))}:${subject.reason.replace(/\s+/g, " ").slice(0, 180)}`,
-        );
-        continue;
-      }
-      const reportPath = taskReportPaths(
-        reportKey,
-        taskId(item),
-        subject.evidenceHash,
-      ).jsonPath;
-      const published = readPublishedTaskReport(reportRoot, reportPath);
-      // Paths use shortened/sanitized identity components; compare the verified
-      // full identity as well so a path collision cannot suppress changed work.
-      if (
-        !published ||
-        canonical(published.appId) !== reportKey ||
-        published.taskId !== taskId(item) ||
-        published.evidenceHash !== subject.evidenceHash
-      ) {
-        selected = item;
-        break;
-      }
-    }
     const nextIndex = (appIndex + 1) % apps.length;
-    const lastTaskByApp = { ...nextState.lastTaskByApp };
-    const lastAttempted = selected ?? candidates.at(-1);
-    if (lastAttempted)
-      lastTaskByApp[key] = identityDigest(taskId(lastAttempted));
-    const boundedHistory = boundedStateHistory(lastTaskByApp);
+    const taskCursorByApp = { ...nextState.taskCursorByApp };
+    if (continuationCursor) taskCursorByApp[key] = continuationCursor;
+    else delete taskCursorByApp[key];
+    const boundedCursors = boundedTaskCursors(taskCursorByApp);
+    if (continuationCursor)
+      appendNavigationFact(
+        navigationFacts,
+        boundedCursors[key] === continuationCursor
+          ? `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-retained`
+          : `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-unretained`,
+      );
     nextState = {
       version: STATE_VERSION,
       appId: appKey(apps[nextIndex]!),
       appIndex: nextIndex,
-      lastTaskByApp: boundedHistory,
+      taskCursorByApp: boundedCursors,
     };
     if (selected) {
       return {
-        candidate: { appId, taskId: taskId(selected) },
+        candidate: {
+          appId,
+          taskId: taskId(selected.item),
+          ...(selected.purpose === "ongoing"
+            ? { assessmentPurpose: "ongoing" as const }
+            : {}),
+        },
         state: nextState,
         navigationFacts,
       };

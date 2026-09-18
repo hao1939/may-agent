@@ -205,7 +205,7 @@ describe("automatic task outcome selector", () => {
       type: "tasks.list",
       appId: "may",
       includeDone: true,
-      limit: 2,
+      limit: 1,
     });
   });
 
@@ -239,10 +239,10 @@ describe("automatic task outcome selector", () => {
       ]),
     );
     const fact = selectorStateFact({
-      version: 3,
+      version: 5,
       appId: "应用-next",
       appIndex: 99,
-      lastTaskByApp: manyEntries,
+      taskCursorByApp: manyEntries,
     });
     const simulatedResult = {
       facts: [`selected:may/${long}`, fact],
@@ -253,6 +253,54 @@ describe("automatic task outcome selector", () => {
     expect(Buffer.byteLength(JSON.stringify(simulatedResult))).toBeLessThan(
       16_000,
     );
+  });
+
+  test("retains the public keyset continuation for a long Task identity", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-long-keyset-"));
+    const long = `goal/${"x".repeat(400)}`;
+    const items = [
+      task("may", long, 0, "waiting"),
+      task("may", "goal/older", 0, "waiting"),
+    ];
+    const token = Buffer.from(
+      JSON.stringify({
+        updatedAt: items[0]!.updatedAt,
+        appId: "may",
+        taskId: long,
+        terminal: 0,
+      }),
+    ).toString("base64url");
+    expect(Buffer.byteLength(token)).toBeGreaterThan(512);
+    const exact = catalogCommand({ may: items });
+    const command: PublicCommand = async (request) => {
+      if (request.type !== "tasks.list") return exact(request);
+      return {
+        type: "ok",
+        command: "tasks.list",
+        tasks: request.cursor
+          ? { items: [items[1]], nextCursor: null }
+          : { items: [items[0]], nextCursor: token },
+      };
+    };
+
+    const first = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    const second = await selectFairCandidate(
+      command,
+      config,
+      root,
+      first.state,
+      NOW,
+    );
+    expect(first.candidate?.taskId).toBe(long);
+    expect(second.candidate?.taskId).toBe("goal/older");
+    expect(Object.values(first.state.taskCursorByApp)).toEqual([token]);
+    expect(selectorStateFact(first.state).length).toBeLessThan(8_000);
   });
 
   test("keeps the actual selected result bounded while emitting the full identity", async () => {
@@ -303,17 +351,17 @@ describe("automatic task outcome selector", () => {
     expect(selected).toEqual([
       { appId: "may", taskId: "goal/may-1" },
       { appId: "scout", taskId: "goal/scout-1" },
-      { appId: "zeta", taskId: "goal/zeta-1" },
       { appId: "may", taskId: "goal/may-2" },
+      { appId: "scout", taskId: "goal/scout-2" },
     ]);
   });
 
-  test("skips unknown statuses and stops at the recent window boundary", async () => {
+  test("selects an open obligation even when historical outcomes age out", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-window-"));
     const command = catalogCommand({
       may: [
-        task("may", "goal/running", 0, "running"),
-        task("may", "goal/recent", 1, "attention"),
+        task("may", "goal/running", 40, "running"),
+        task("may", "goal/recent", 1, "up-to-date"),
         task("may", "goal/old", 8),
         task("may", "goal/older", 9),
       ],
@@ -325,7 +373,235 @@ describe("automatic task outcome selector", () => {
       undefined,
       NOW,
     );
-    expect(result.candidate).toEqual({ appId: "may", taskId: "goal/recent" });
+    expect(result.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/running",
+      assessmentPurpose: "ongoing",
+    });
+  });
+
+  test("retains bounded page continuation across wakes to reach an old open obligation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-old-open-continuation-"));
+    const seen: Record<string, unknown>[] = [];
+    const command = catalogCommand(
+      {
+        may: [
+          task("may", "goal/old-done-1", 30, "done"),
+          task("may", "goal/old-done-2", 29, "done"),
+          task("may", "goal/old-done-3", 28, "done"),
+          task("may", "goal/old-done-4", 27, "done"),
+          task("may", "goal/old-wait", 40, "waiting"),
+        ],
+      },
+      seen,
+    );
+
+    const boundedScan = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(boundedScan.candidate).toBeNull();
+    expect(boundedScan.navigationFacts).toEqual([
+      "selector-navigation-truncated:may:pages-read=2:continuation-retained",
+    ]);
+
+    // Passing only retained state models restarts: no in-memory iterator is
+    // required, and the per-record cursor advances within each bounded wake.
+    const afterFirstRestart = await selectFairCandidate(
+      command,
+      config,
+      root,
+      boundedScan.state,
+      NOW,
+    );
+    expect(afterFirstRestart.candidate).toBeNull();
+    const afterSecondRestart = await selectFairCandidate(
+      command,
+      config,
+      root,
+      afterFirstRestart.state,
+      NOW,
+    );
+    expect(afterSecondRestart.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/old-wait",
+      assessmentPurpose: "ongoing",
+    });
+    expect(
+      seen
+        .filter((request) => request.type === "tasks.list")
+        .map((request) => request.cursor),
+    ).toEqual([undefined, "1", "2", "3", "4"]);
+  });
+
+  test("advances beyond dropped selected requests without starving an older obligation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-dropped-selection-"));
+    const seen: Record<string, unknown>[] = [];
+    const command = catalogCommand(
+      {
+        may: [
+          task("may", "goal/recent-1", 0, "done"),
+          task("may", "goal/recent-2", 0, "done"),
+          task("may", "goal/recent-3", 0, "done"),
+          task("may", "goal/recent-4", 0, "done"),
+          task("may", "goal/old-wait", 40, "waiting"),
+        ],
+      },
+      seen,
+    );
+
+    let state;
+    const selected = [];
+    // Model requests that are selected but dropped before publication. Selector
+    // state alone must still finish this bounded page window and retain its
+    // continuation rather than depending on a report appearing.
+    for (let index = 0; index < 5; index += 1) {
+      const result = await selectFairCandidate(
+        command,
+        config,
+        root,
+        state,
+        NOW,
+      );
+      selected.push(result.candidate?.taskId);
+      state = result.state;
+    }
+
+    expect(selected).toEqual([
+      "goal/recent-1",
+      "goal/recent-2",
+      "goal/recent-3",
+      "goal/recent-4",
+      "goal/old-wait",
+    ]);
+    expect(
+      seen
+        .filter((request) => request.type === "tasks.list")
+        .map((request) => request.cursor),
+    ).toEqual([undefined, "1", "2", "3", "4"]);
+  });
+
+  test("remains fair when each selected Task moves back to the front", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-moving-order-"));
+    const tasks = {
+      may: [
+        task("may", "goal/one", 0, "waiting"),
+        task("may", "goal/two", 0, "waiting"),
+        task("may", "goal/three", 0, "waiting"),
+        task("may", "goal/four", 0, "waiting"),
+        task("may", "goal/old-five", 40, "waiting"),
+      ],
+    };
+    const command = catalogCommand(tasks);
+    let state;
+    const selected = [];
+    for (let index = 0; index < 5; index += 1) {
+      const result = await selectFairCandidate(
+        command,
+        config,
+        root,
+        state,
+        NOW + index,
+      );
+      selected.push(result.candidate?.taskId);
+      state = result.state;
+      const chosen = tasks.may.find(
+        (item) => item.taskId === result.candidate?.taskId,
+      );
+      if (chosen) chosen.updatedAt = NOW + index + 1;
+      tasks.may.sort((left, right) => right.updatedAt - left.updatedAt);
+    }
+    expect(selected).toEqual([
+      "goal/one",
+      "goal/two",
+      "goal/three",
+      "goal/four",
+      "goal/old-five",
+    ]);
+  });
+
+  test("eventually selects 100 reordered Tasks through bounded keyset state", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-keyset-100-"));
+    const tasks = Array.from({ length: 100 }, (_, index) =>
+      task("may", `goal/task-${index}`, 0, "waiting"),
+    );
+    let listReads = 0;
+    let exactReads = 0;
+    const base = catalogCommand({ may: tasks });
+    const command: PublicCommand = async (request) => {
+      if (request.type === "apps.list") return base(request);
+      if (request.type !== "tasks.list") {
+        exactReads += 1;
+        return base(request);
+      }
+      listReads += 1;
+      const ordered = [...tasks].sort(
+        (left, right) =>
+          Number(right.updatedAt) - Number(left.updatedAt) ||
+          String(left.taskId).localeCompare(String(right.taskId)),
+      );
+      const decoded = request.cursor
+        ? JSON.parse(
+            Buffer.from(String(request.cursor), "base64url").toString("utf8"),
+          )
+        : null;
+      const remaining = decoded
+        ? ordered.filter(
+            (item) =>
+              Number(item.updatedAt) < Number(decoded.updatedAt) ||
+              (Number(item.updatedAt) === Number(decoded.updatedAt) &&
+                String(item.taskId) > String(decoded.taskId)),
+          )
+        : ordered;
+      const item = remaining[0];
+      const nextCursor =
+        item && remaining.length > 1
+          ? Buffer.from(
+              JSON.stringify({
+                updatedAt: item.updatedAt,
+                taskId: item.taskId,
+              }),
+            ).toString("base64url")
+          : null;
+      return {
+        type: "ok",
+        command: "tasks.list",
+        tasks: { items: item ? [item] : [], nextCursor },
+      };
+    };
+
+    let state;
+    const selected = new Set<string>();
+    for (let wake = 0; wake < 205 && selected.size < 100; wake += 1) {
+      const beforeLists = listReads;
+      const beforeExact = exactReads;
+      const result = await selectFairCandidate(
+        command,
+        { ...config, maxTasksPerApp: 20, maxPagesPerApp: 5 },
+        root,
+        state,
+        NOW + wake,
+      );
+      expect(listReads - beforeLists).toBeLessThanOrEqual(5);
+      expect(exactReads - beforeExact).toBeLessThanOrEqual(2);
+      state = result.state;
+      if (!result.candidate) continue;
+      selected.add(result.candidate.taskId);
+      const chosen = tasks.find(
+        (item) => item.taskId === result.candidate?.taskId,
+      )!;
+      chosen.updatedAt = NOW + wake + 1;
+      expect(Buffer.byteLength(selectorStateFact(state))).toBeLessThan(1_000);
+    }
+
+    expect(selected.size).toBe(100);
+    expect(listReads).toBe(100);
+    expect(exactReads).toBe(200);
+    expect(state).not.toHaveProperty("attemptedTaskByApp");
+    expect(state).not.toHaveProperty("lastTaskByApp");
   });
 
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
@@ -397,7 +673,7 @@ describe("automatic task outcome selector", () => {
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
     expect(result.state).not.toHaveProperty("taskCursor");
-    expect(result.state.version).toBe(3);
+    expect(result.state.version).toBe(5);
   });
 
   test("advances past malformed and non-reviewable items within a page", async () => {
@@ -424,7 +700,11 @@ describe("automatic task outcome selector", () => {
       undefined,
       NOW,
     );
-    expect(result.candidate).toEqual({ appId: "may", taskId: "goal/valid" });
+    expect(result.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/running",
+      assessmentPurpose: "ongoing",
+    });
     expect(result.navigationFacts).toEqual([
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
@@ -433,8 +713,8 @@ describe("automatic task outcome selector", () => {
   test("preserves two-App exhaustion state so a newly inserted May Task is selected", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-exhaustion-"));
     const tasks = {
-      may: [task("may", "goal/may-old", 0, "running")],
-      scout: [task("scout", "goal/scout-old", 0, "running")],
+      may: [task("may", "goal/may-old", 8, "done")],
+      scout: [task("scout", "goal/scout-old", 8, "done")],
     };
     const command = catalogCommand(tasks);
     const exhausted = await selectFairCandidate(
@@ -445,14 +725,7 @@ describe("automatic task outcome selector", () => {
       NOW,
     );
     expect(exhausted.candidate).toBeNull();
-    expect(exhausted.state.lastTaskByApp).toEqual({
-      [createHash("sha256").update("may").digest("hex")]: createHash("sha256")
-        .update("goal/may-old")
-        .digest("hex"),
-      [createHash("sha256").update("scout").digest("hex")]: createHash("sha256")
-        .update("goal/scout-old")
-        .digest("hex"),
-    });
+    expect(exhausted.state.taskCursorByApp).toEqual({});
 
     tasks.may.unshift(task("may", "goal/may-new"));
     const selected = await selectFairCandidate(
@@ -502,9 +775,14 @@ describe("automatic task outcome selector", () => {
   });
 
   test("bounds diagnostics and the full result at configured maximums", async () => {
-    const apps = Array.from({ length: 100 }, (_, index) => ({
-      id: `${String(index).padStart(3, "0")}-${"应用🚀".repeat(50)}`,
-    }));
+    const apps = [
+      { id: "may" },
+      { id: "scout" },
+      { id: "scout-knowledge-lib" },
+      ...Array.from({ length: 97 }, (_, index) => ({
+        id: `${String(index).padStart(3, "0")}-${"应用🚀".repeat(50)}`,
+      })),
+    ];
     const command: PublicCommand = async (request) => {
       if (request.type === "apps.list")
         return { type: "ok", command: "apps.list", apps };
@@ -554,9 +832,14 @@ describe("automatic task outcome selector", () => {
         return {
           type: "ok",
           command: "apps.list",
-          apps: Array.from({ length: 30 }, (_, index) => ({
-            id: `app-${String(index).padStart(2, "0")}`,
-          })),
+          apps: [
+            { id: "may" },
+            { id: "scout" },
+            { id: "scout-knowledge-lib" },
+            ...Array.from({ length: 27 }, (_, index) => ({
+              id: `app-${String(index).padStart(2, "0")}`,
+            })),
+          ],
         };
       taskReads += 1;
       return { type: "ok", command: "tasks.list", tasks: { items: [] } };

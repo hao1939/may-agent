@@ -396,6 +396,9 @@ const evaluationInputSchema = Type.Union([
           evidenceHash: Type.Optional(
             Type.String({ minLength: 64, maxLength: 64 }),
           ),
+          assessmentPurpose: Type.Optional(
+            Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
+          ),
         },
         { additionalProperties: false },
       ),
@@ -603,16 +606,21 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
       if (!appId || !taskId) return null;
       const subjectGeneration = Number(data.subjectGeneration);
       const evidenceHash = stringValue(data.evidenceHash);
+      const assessmentPurpose = stringValue(data.assessmentPurpose);
       const pinnedIdentity =
         Number.isSafeInteger(subjectGeneration) &&
         subjectGeneration > 0 &&
         evidenceHash
           ? `/generation-${subjectGeneration}/${safeTaskIdPart(evidenceHash)}`
           : "";
+      const purposeIdentity = assessmentPurpose === "ongoing" ? "/ongoing" : "";
       return {
-        id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}${pinnedIdentity}`,
+        id: `runtime/task-outcome/${safeTaskIdPart(appId)}/${safeTaskIdPart(taskId)}${purposeIdentity}${pinnedIdentity}`,
         parentId: "evaluation-system",
-        outcome: `Evaluate the accepted outcome of ${appId}/${taskId}.`,
+        outcome:
+          assessmentPurpose === "ongoing"
+            ? `Assess the current obligations of ${appId}/${taskId}.`
+            : `Evaluate the accepted outcome of ${appId}/${taskId}.`,
         acceptance: [
           "Canonical public Task identity and evidence are read before judgment.",
           "An immutable report and machine-readable facts are read back before publication.",
@@ -625,6 +633,9 @@ export function taskIntentForInput(input: AppInput): TaskIntent | null {
             ? { subjectGeneration }
             : {}),
           ...(evidenceHash ? { evidenceHash } : {}),
+          ...(assessmentPurpose === "ongoing" || assessmentPurpose === "outcome"
+            ? { assessmentPurpose }
+            : {}),
         },
         priority: "P1",
       };
@@ -890,8 +901,19 @@ export function taskInputForEvent(
       const data = eventData(event);
       const appId = stringValue(data.appId);
       const taskId = stringValue(data.taskId);
+      const assessmentPurpose = stringValue(data.assessmentPurpose);
       return appId && taskId && !isEvaluationOwnedReference(appId)
-        ? { kind: "review-task-outcome", data: { appId, taskId } }
+        ? {
+            kind: "review-task-outcome",
+            data: {
+              appId,
+              taskId,
+              ...(assessmentPurpose === "ongoing" ||
+              assessmentPurpose === "outcome"
+                ? { assessmentPurpose }
+                : {}),
+            },
+          }
         : null;
     }
     case "evaluation.task.select":
@@ -1212,11 +1234,8 @@ const baseApp = defineApp({
           {
             id: "task-outcome-selector",
             intervalMs: automaticReview.intervalMs,
-            event: {
-              type: "evaluation.task.select",
-              data: { reason: "scheduled" },
-              target: { appId: projectId, project: projectId },
-            },
+            input: { kind: "automatic-review", data: { reason: "scheduled" } },
+            catchUp: "latest" as const,
           },
         ]
       : []),
@@ -1232,6 +1251,9 @@ const baseApp = defineApp({
           subjectGeneration: Type.Optional(Type.Number({ minimum: 1 })),
           evidenceHash: Type.Optional(
             Type.String({ minLength: 64, maxLength: 64 }),
+          ),
+          assessmentPurpose: Type.Optional(
+            Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")]),
           ),
         },
         { additionalProperties: false },

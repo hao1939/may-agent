@@ -31,6 +31,19 @@ When two sources conflict, the higher source wins. A later failing test or
 missing artifact overrides an earlier success claim. Publication, owner
 acknowledgment, a fix claim, and an independent recheck remain distinct states.
 
+## Ongoing-obligation contract
+
+An ongoing review judges the exact current Task snapshot at its retained due phase; it does not grade unfinished work as though the final outcome were already due. Inspect whether:
+
+- active work is useful, bounded, and still owned by the current Task;
+- a wait names a real fact, return route, owner, and reasonable review boundary;
+- failed attempts preserve useful evidence and recovery continues on the same identity;
+- dependencies and linked repairs are reused rather than duplicated;
+- exact approval remains pending where application or activation requires it; and
+- overdue review, missing observations, stale evidence, or drift is reported explicitly without mutating, cancelling, or reassigning the subject.
+
+A valid wait, useful active execution, pending approval, or recovered transient failure is not a failure by status or age alone. If the public snapshot does not expose enough evidence to distinguish those states, return `insufficient-evidence`; do not call absent coverage healthy.
+
 ## Historical responsibility contract
 
 Use the Task's original input, outcome, acceptance, creator, generation, and

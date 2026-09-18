@@ -204,6 +204,9 @@ describe("canonical May conversation App", () => {
         facts: "reports/task-outcomes/may/subject/report.json",
         jsonHash: "b".repeat(64),
         markdownHash: "c".repeat(64),
+        assessmentPurpose: "ongoing",
+        rubricVersion: "task-obligation-v1",
+        validityIdentity: `condition-boundaries:${"d".repeat(64)}`,
       },
     };
     const subscription = app.subscriptions?.find(

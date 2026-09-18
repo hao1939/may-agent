@@ -11,6 +11,7 @@ export interface IntakeEvidence {
   evidenceHash: string;
   jsonHash: string;
   markdownHash: string;
+  assessmentIdentity?: string;
   read: ReportRead;
   currentSubject: "matches-report" | "changed" | "unavailable";
   recovered: boolean;
@@ -52,7 +53,9 @@ export function planReportIntake(input: IntakeEvidence): IntakePlan {
         : {}),
     };
   const handoffKey = createHash("sha256")
-    .update(`${input.appId}\0${input.taskId}\0${input.evidenceHash}`)
+    .update(
+      `${input.appId}\0${input.taskId}\0${input.evidenceHash}${input.assessmentIdentity ? `\0${input.assessmentIdentity}` : ""}`,
+    )
     .digest("hex");
   return { disposition: "investigate", handoffKey };
 }
