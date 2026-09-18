@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "id": "execution.packetize-cli-worker",
-  "version": 1,
+  "version": 2,
   "objective": "Give a CLI worker one neutral question, trusted context, an expected result, and a stop condition.",
   "criticality": "high",
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
-      "section": "Runtime Flow"
+      "section": "Bounded tool contract"
     }
   ],
   "prerequisites": ["judgment.seek-independent-opinion"],

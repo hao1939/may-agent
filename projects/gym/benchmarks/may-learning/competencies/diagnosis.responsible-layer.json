@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "id": "diagnosis.responsible-layer",
-  "version": 1,
+  "version": 2,
   "objective": "Trace a failure across ingress, delivery, consumer, workflow, canonical state, and terminal evidence before proposing the smallest repair.",
   "criticality": "high",
   "sources": [
     {
-      "path": "../../agents/may/skills/may-agent-system/SKILL.md",
+      "path": "../may.app/agents/may/skills/may-agent-system/SKILL.md",
       "section": "Operating Loop"
     },
     {

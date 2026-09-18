@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "id": "evidence.propose-after-proof",
-  "version": 1,
+  "version": 2,
   "objective": "Diagnose and prove a proposal before requesting approval for consequential change.",
   "criticality": "high",
   "sources": [
     {
-      "path": "../may-agent.app/docs/1-principles/core-principles.md",
-      "section": "Evidence before complexity"
+      "path": "../may-agent.app/docs/1-principles/evidence-first.md",
+      "section": "The Pattern"
     }
   ],
   "prerequisites": ["authority.act-vs-approve"],

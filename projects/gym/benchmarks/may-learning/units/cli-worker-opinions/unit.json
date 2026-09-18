@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "cli-worker-opinions",
-  "version": 1,
+  "version": 2,
   "status": "pilot",
   "title": "Use Codex and Claude as independent advisers while May owns the decision",
   "lesson": "lesson.md",
@@ -17,11 +17,11 @@
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
-      "section": "Mental Model"
+      "section": "The simple model"
     },
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
-      "section": "Event Contract"
+      "section": "Evidence and continuity"
     }
   ],
   "benchmark": "may-cli-worker-learning",

@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "id": "reliability.cli-worker-lifecycle",
-  "version": 1,
+  "version": 2,
   "objective": "Operate the asynchronous CLI-worker lifecycle, inspect durable results, and recover from classified failures.",
   "criticality": "critical",
   "sources": [
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
-      "section": "Event Contract"
+      "section": "Evidence and continuity"
     },
     {
       "path": "../may-agent.app/docs/2a-design/native-coding-workers.md",
-      "section": "Result Contract"
+      "section": "Bounded tool contract"
     }
   ],
   "prerequisites": ["reliability.delivery-vs-completion"],

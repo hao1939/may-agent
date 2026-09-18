@@ -20,7 +20,7 @@ describe("May learning registry", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: "initiative-and-approval",
-          version: 2,
+          version: 3,
           status: "pilot",
           ready_for_development: true,
           ready_for_release: true,
@@ -28,7 +28,7 @@ describe("May learning registry", () => {
         }),
         expect.objectContaining({
           id: "system-deputy-operations",
-          version: 1,
+          version: 2,
           status: "pilot",
           ready_for_development: true,
           ready_for_release: true,
@@ -36,7 +36,7 @@ describe("May learning registry", () => {
         }),
         expect.objectContaining({
           id: "cli-worker-opinions",
-          version: 1,
+          version: 2,
           status: "pilot",
           ready_for_development: true,
           ready_for_release: true,
@@ -153,7 +153,7 @@ describe("May learning registry", () => {
     expect(contexts).toHaveLength(1);
     expect(contexts[0]).toMatchObject({
       id: "initiative-and-approval",
-      version: 2,
+      version: 3,
       competencies: expect.arrayContaining([
         "authority.act-vs-approve",
         "judgment.infer-bounded-intent",
