@@ -4,7 +4,9 @@ A bounded frozen-comparison App for May and Scout candidates. Read the
 [comparison contract](design/frozen-comparison-service.md), the
 [report-driven improvement design](design/report-driven-improvement.md), and the
 [evidence reliability and maintenance guide](design/evidence-reliability.md).
-Source readiness and deployed activation are reported separately.
+Source readiness and deployed activation are reported separately. The
+[September 18 repair trial](design/evidence-reliability-trial-20260918.md) records
+checks, real model outcomes and assisted versus autonomous correction.
 
 The App admits only ordinary `goal` and `message` inputs. The Gym owner may
 select the focused `compare-candidate` workflow from the shared workflow catalog.
