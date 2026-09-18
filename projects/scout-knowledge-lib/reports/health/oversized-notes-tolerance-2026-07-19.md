@@ -1,6 +1,6 @@
 <ai_context>
 summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted."
-last_updated: "2026-09-11"
+last_updated: "2026-09-18"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -29,11 +29,42 @@ repeating without review.
 | `agent-evaluation.md` | 862 | Reviewed 2026-08-07. The parent already delegates research-frontier material to `agent-evaluation-research.md` and `agent-evaluation-research-beyond-outputs.md`; its remaining bulk is the durable practice/tooling reference plus 237 lines of recent, source-grounded benchmark and harness updates. A further split at only 62 lines above threshold would fragment that core, and both the parent and first companion currently contain active uncommitted updates. Re-review at 1,000 lines or when a stable thematic block exceeds roughly 150 lines. |
 | `agent-evaluation-research-beyond-outputs.md` | 849 | Reviewed 2026-09-11. A split is warranted rather than permanent tolerance: §37–§40 form a cohesive 231-line diagnostic-layers block (candidate selection, trace integrity, specification-gap localization, and human convention recovery). Extracting that block would leave the §23–§36 substrate foundations at about 600 lines and create a reusable August–September companion of about 230 lines. The canonical note currently has active uncommitted source additions for §39–§40, so this review does not rewrite or move those sections in place; the split should be performed as one isolated change after preserving that work. |
 
-## Summary
+## Recurrence review — 2026-09-18
 
-Nine notes remain tolerated at their reviewed sizes. The newly flagged tenth
-note has a safe, independently useful split boundary at §37: move §37–§40 into
-an August–September diagnostic-layers companion, then update both notes'
-`<ai_context>` metadata, coverage prose, exact section links, and library
-navigation. This review intentionally leaves the actively modified canonical
-note untouched.
+The health observer reported ten oversized notes. Direct `wc -l` counts were one
+line lower than the observer values (newline-counting convention) and confirmed
+that every named path still exists. This pass used the following dispositions:
+
+| Note | Direct lines | Disposition |
+|------|-------------:|-------------|
+| `agent-runtime-effect-integrity.md` | 970 | No second split. The 2026-09-14 verdict-integrity extraction remains intact, and the newer tail still belongs to effect settlement and authorization rather than a distinct reusable topic. |
+| `agent-security-defense-architectures.md` | 1127 | No split in this pass. Existing forwarding sections already distribute later material to companion notes; another move needs an inbound-link and duplication review rather than a line-count-only cut. |
+| `agent-security-event-log.md` | 1319 | Tolerated as a chronological event log; splitting would weaken timeline lookup. |
+| `agent-security-governance.md` | 1225 | No split in this pass. Sections 6–12 form a possible composition-and-authority block, but overlap with existing delegation notes must be checked before extraction. |
+| `hn-agent-operational-memory.md` | 1113 | Tolerated as an operational-memory chronology with a current summary and next-steps tail. |
+| `the-oversight-inversion.md` | 2005 | Next split-review target. The nested `Verification Harness` block runs from about line 730 to 1844 and contains layers 24–47; its links and source coverage should be mapped before any extraction. |
+| `xhs-prediction-tracker.md` | 965 | Tolerated because the status table and prediction history are one cross-referenced tracker. |
+| `xhs-scan-log-june2026.md` | 1988 | Tolerated as a closed chronological June archive. |
+| `xhs-seed-ledger.md` | 2872 | Tolerated as a reconciliation ledger whose cycle order and access-boundary evidence are the useful structure. |
+| `xhs-topic-map.md` | 18181 | No line-count-only edit. This is the living ranked question/evidence map and should be opened only for source-lane selection or a separately scoped structural review. |
+
+No child assignment is justified from these repeated size facts alone. The
+standing maintenance task can review `the-oversight-inversion.md` as the next
+bounded split candidate without creating duplicate project work.
+
+## Unsourced INDEX batch — 2026-09-18
+
+The observer reported 200 entries still marked `Not yet sourced` after 34
+unchanged windows. A five-entry batch was checked against the linked findings:
+scans 155, 157, 160, 185, and 198 each contain stable HN and/or arXiv URLs or
+IDs alongside their claims. Their stale markers were removed from `INDEX.md`,
+reducing the exact marker count from 200 to 195. This is a metadata correction,
+not a claim that every source was freshly retrieved during this review.
+
+## Current summary
+
+The previously recommended diagnostic-layers split is complete. The present
+oversized signals are either format-appropriate logs/ledgers, recently reviewed
+notes without a clean new boundary, or one explicit next review candidate. The
+unsourced backlog received a small evidence-checked batch rather than a bulk
+metric edit.
