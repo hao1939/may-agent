@@ -2,6 +2,11 @@
 
 **Status:** Accepted design (2026-08-04)
 
+This records the earlier implementation. The September 18
+[report-driven improvement proposal](report-driven-improvement.md) identifies
+what to retain and replace for the current Task contract. It does not activate
+the old schedules or authorize production promotion.
+
 ## Goal
 
 Gym App keeps May on the best behavior supported by approved evidence. It

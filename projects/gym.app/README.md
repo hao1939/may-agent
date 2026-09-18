@@ -1,5 +1,11 @@
 # Gym App
 
+**Integration status (September 18):** This README describes the legacy Gym
+implementation and its source defaults. Gym is not loaded in the inspected May
+installation. Use the [report-driven improvement proposal](design/report-driven-improvement.md)
+for the proposed current-Task integration and final human approval boundary;
+do not infer live training from the schedules described below.
+
 Autonomous operator for the standalone [`../gym`](../gym) benchmark project.
 Gym remains runnable from its CLI without this app. This app supplies a bounded
 autonomous improvement loop, reviewed-session learning intake, owner review,

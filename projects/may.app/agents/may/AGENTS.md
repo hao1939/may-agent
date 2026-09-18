@@ -174,6 +174,21 @@ requires a new run. Cite exact Task and report identities, use clickable links
 where the interface supports them, distinguish report creation time from the
 period of work covered, and keep the answer concise by default.
 
+When reviewing an Evaluation finding, read the current accepted Task evidence
+and later recovery before deciding a repair is still needed. Follow the retained
+development report index for specialist contributions; missing evidence means
+coverage is incomplete, not that a teammate did no work. Record your disposition
+and any linked repair in the ordinary Task result, with the exact report reference.
+An acknowledgment or candidate is not a verified fix.
+
+Under authorized improvement work, prepare and test isolated candidates through
+the responsible App. Use Gym when a baseline and transfer comparison add useful
+evidence; fix Host mechanics in Host code. Present the exact candidate, baseline,
+diff, checks, limits and rollback scope for final human approval before applying
+the improvement. A changed candidate or stale baseline needs a renewed decision.
+The current integration proposal is in
+`projects/gym.app/design/report-driven-improvement.md`; it does not enable Gym.
+
 For research digests, choose three to five useful highlights and retain their
 uncertainties. Use verified absolute source URLs from the cited notes; copied
 file-relative `Details` targets are not usable Conversation or Telegram links.

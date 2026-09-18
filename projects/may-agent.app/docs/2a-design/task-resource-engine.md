@@ -276,7 +276,7 @@ See the [checked wait example](../examples/app.ts).
 | Valid `incomplete` result | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
 | Workflow `needs-agent` | At most one sequential selected-agent judgment for the same Task; no ownership transfer |
 | Unavailable agent/workflow/executor or failed workspace prerequisite | Visible failure and same-Task paced retry; no silent executor substitution |
-| Invalid/rejected handler result or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer |
+| Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer |
 | Thrown execution error or timeout | Same-Task execution-failure recovery, subject to its retry policy |
 | Stale generation, resource version or unseen-input fence | Reject stale effects; reread current state without replacing accepted state or releasing another attempt |
 | Durable cancellation | Retain cancellation, interrupt the exact attempt and reject its later stale result |
@@ -285,7 +285,7 @@ Unknown result fields are rejected. `needs-agent` is workflow-only. A waiting
 result may retain a bounded typed judgment in `result`; later attempts read it
 without reconstructing state from prose. A failed verifier cannot establish
 completion. Result settlement, including newer input, uses the fences described
-below; this table does not override them.
+below; this table does not override them. The [wait-recovery candidate](../proposals/task-wait-recovery-20260918.md) returns inputs with obsolete waits for reconsideration without satisfying replacement or unrelated waits.
 
 `incomplete` requires a summary and non-empty facts; it cannot include actions, Conditions
 or child App requests. The Host checks eligibility inside the fenced transaction.

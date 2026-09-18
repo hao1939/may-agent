@@ -27,6 +27,23 @@ Each successful review stages an immutable Markdown report and JSON facts sideca
 
 Reports are evidence, not commands or issue state. May should discover Evaluation through the normal App catalog and bounded Task list, inspect accepted review Task facts, and read the referenced report and sidecar. A human answer should state the covered subjects/time, a few material findings, missing evidence, exact report/evidence paths, and whether remediation is only delivered/acknowledged, claimed complete, or independently rechecked. Repeating a query reuses published reports; it does not automatically launch another evaluation. Responsible Apps receive exact findings through ordinary App inputs/Tasks and retain remediation results there.
 
+Before suggesting a repair, compare the historical finding with current accepted
+Task evidence and any later recovery. A stale summary is not stronger evidence
+than a later accepted, verified result; missing specialist evidence is a coverage
+gap, not proof that the specialist did no work. Follow retained development report
+indexes and exact artifact/commit references when public evidence exposes them.
+If bounded reads still omit necessary evidence, state the limit rather than
+quietly treating the report as complete.
+
+Automatic preparation is a consumer responsibility described in
+[Gym's improvement proposal](../../gym.app/design/report-driven-improvement.md).
+The publication event carries the subject, evidence hash and report hashes;
+it is not an owner acknowledgment, a repair assignment or promotion approval.
+Read the published report through the supported interface, record the owner
+decision and linked repair in ordinary Task results, and retain an independent
+post-change recheck separately. Final human approval is required before applying
+an automatically prepared improvement.
+
 ## Cost and rollout
 
 Initial rollout is serialized (`maxConcurrent: 1`) and automatic semantic sampling is off unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. The selector chooses at most one outcome per wake: bounded `apps.list` discovers subjects, and public `tasks.list(appId, includeDone: true)` supplies recently updated navigation projections. Defaults cover seven days, at most 20 Tasks on each of two pages per visited App, and at most 20 external Apps. App rotation occurs after every selection. Versioned ordinary Task facts retain only the next App and a byte-bounded map of last-attempted Task identity digests; emitted requests retain the full identity, and legacy `app.tasks.list` cursors reset rather than crossing contracts. Malformed pages rotate neutrally. `up-to-date`, `closed`, `cancelled`, and `needs-attention` outcomes remain candidates while active `running`, `pending`, and `waiting` work does not; the evaluator, not selector code, interprets cancellation or failure meaning. Exact subject reads still validate external ownership and generation before any model call. Old outcomes remain explicitly reviewable. Selection/scoring thresholds remain guidance/configuration until trials justify enforcement.

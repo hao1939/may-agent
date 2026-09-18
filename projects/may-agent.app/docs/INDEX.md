@@ -131,6 +131,8 @@ current-design list.
 
 ## Tier 3 — Active proposals and trackers
 
+- [Wait corrections and unanswered input recovery](proposals/task-wait-recovery-20260918.md)
+
 Active reviews are:
 
 - [Reduce context cost through App knowledge and agent methods](proposals/focused-session-continuation.md)

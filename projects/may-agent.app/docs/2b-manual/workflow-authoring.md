@@ -153,6 +153,19 @@ The Task boundary admits and persists the returned dependency before waiting.
 A later result or fact wakes that exact authority. Do not reconstruct the
 wait from an event pair, owner label, message, session, or prompt.
 
+Use a namespaced Condition event type and identify its real producer and ingress.
+The wait-recovery candidate rejects unnamespaced types in the shared finish
+schema and runtime admission. A namespaced name alone does not install a producer:
+the ordinary public publish interface accepts registered events, while an
+explicit operator-fact route may admit custom namespaced facts. A Condition's
+`requestedAction` never sends a request to its owner. Prefer the returned wait
+from an existing capability when it supplies one.
+
+Omit unchanged Conditions to retain their identities. Changing or replacing a
+wait returns the affected unanswered inputs for reconsideration on the next
+eligible attempt; it does not prove their outcomes. Finish with the normal
+result, without an action to unblock the executing Task itself.
+
 ## Agent And Nested Workflow Calls
 
 Use `ctx.agents.call(...)` when another agent can return a bounded result during
