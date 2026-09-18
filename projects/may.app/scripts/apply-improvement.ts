@@ -1,4 +1,4 @@
-/** Human-operated source application. Never installed as an agent workflow/tool. */
+/** Trusted-event source application used by May; the packet-hash operator route remains a fallback. */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";

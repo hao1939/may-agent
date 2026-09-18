@@ -254,6 +254,15 @@ secondary details. This is one bounded read projection of Task truth: it adds
 no presentation record, lifecycle, polling, delivery acknowledgement, or model
 turn.
 
+Use the same current-first order in human views and bounded agent context: show
+the current objective, status, result or blocker, next action, and accountable
+owner before history. Outstanding handoff references and already selected
+review evidence are current state; do not silently replace them with a newer
+subject snapshot. Link older attempts, logs, full reports, and history instead
+of leading with them, but expand the exact detail immediately when the present
+decision needs it—for example, the full approval proposal and evidence links.
+This is presentation and discovery guidance, not a new stored projection or UI.
+
 ## Human actions
 
 Human attention is a derived Task view, not another inbox. A live Task appears
