@@ -314,7 +314,7 @@ describe("restart-aware deploy receipts", () => {
     expect(deploy).toContain('git merge-base --is-ancestor "$canonical_commit" "$source_commit"');
     expect(deploy).toContain('git archive "$source_commit" | tar -x -C "$build_dir"');
     expect(deploy).toContain(
-      "bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
+      "env -u MAY_TASK_ATTEMPT_CHILD bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts",
     );
     expect(deploy).toContain('MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle');
     expect(deploy).toContain('MAY_AGENT_UI_OUTPUT_DIR="$build_dir/bundle/platform-ui"');

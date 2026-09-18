@@ -51,7 +51,9 @@ git archive "$source_commit" | tar -x -C "$build_dir"
 ln -s "$PWD/node_modules" "$build_dir/node_modules"
 (
   cd "$build_dir"
-  bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts
+  # A deploy may be launched from inside a Task attempt. Its immutable-archive
+  # checks must still use portable test fixtures rather than the live Task DB.
+  env -u MAY_TASK_ATTEMPT_CHILD bun test packages/control/src/client.test.ts packages/control/src/control-socket.test.ts src/app/modes/emit-mode.test.ts
   MAY_AGENT_UI_OUTPUT_DIR="$build_dir/bundle/platform-ui" MAY_AGENT_BUILD_COMMIT="$source_commit" bun run bundle
 )
 mkdir -p "$bundle_dir"
