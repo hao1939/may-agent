@@ -8,7 +8,7 @@ import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { taskForEvaluationInput } from "../../../app.ts";
-import { reviewTaskOutcome } from "./task-outcome-review.ts";
+import { assessmentContext, reviewTaskOutcome } from "./task-outcome-review.ts";
 import type { PublicCommand } from "./lib/public-task-evidence.ts";
 import { listTaskReports } from "./lib/task-report-store.ts";
 
@@ -42,10 +42,39 @@ const detail = {
   status: "up-to-date",
   history: [],
   historyTruncated: false,
-  diagnostics: { owner: appId, attemptCount: 1 },
+  diagnostics: { owner: appId, attemptCount: 1, conditions: [] },
 };
 
-function reader(currentDetail = () => detail): PublicCommand {
+function condition(
+  id: string,
+  observedAt: string,
+  reviewAfterMs: number,
+  state: "unknown" | "false" | "true" = "unknown",
+) {
+  return {
+    id,
+    condition: {
+      metadata: { id, generation: 1, resourceVersion: 1 },
+      spec: {
+        type: "time.reached",
+        subject: `condition:${id}`,
+        expected: true,
+        owner: "app:sample",
+        reviewAfterMs,
+      },
+      status: {
+        observedGeneration: 1,
+        state,
+        observed: state === "true",
+        observedAt,
+      },
+    },
+  };
+}
+
+function reader(
+  currentDetail: () => Record<string, unknown> = () => detail,
+): PublicCommand {
   return async (command) => {
     if (command.type === "apps.list")
       return {
@@ -108,6 +137,133 @@ function factsOf(
 }
 
 describe("Task outcome review", () => {
+  test("derives every unresolved review boundary from the production task.get envelope", () => {
+    const observedAt = "2026-09-18T12:00:00.000Z";
+    const subject = {
+      disposition: "eligible" as const,
+      reason: "verified",
+      appId,
+      taskId,
+      evidenceHash: "a".repeat(64),
+      task: {
+        appTask,
+        detail: {
+          ...detail,
+          // Guessed lookalikes outside diagnostics must never become deadlines.
+          conditions: [{ dueAt: 1 }],
+          diagnostics: {
+            ...detail.diagnostics,
+            conditions: [
+              condition("later", observedAt, 120_000),
+              condition("first", observedAt, 60_000, "false"),
+              condition("resolved", observedAt, 60_000, "true"),
+            ],
+          },
+        },
+      },
+    };
+    const before = assessmentContext(
+      subject,
+      "ongoing",
+      Date.parse(observedAt) + 30_000,
+    );
+    const afterFirst = assessmentContext(
+      subject,
+      "ongoing",
+      Date.parse(observedAt) + 90_000,
+    );
+    const afterBoth = assessmentContext(
+      subject,
+      "ongoing",
+      Date.parse(observedAt) + 150_000,
+    );
+
+    expect(before.validity).toEqual({
+      phase: "before-due",
+      dueAt: Date.parse(observedAt) + 60_000,
+      boundaries: [
+        {
+          conditionId: "first",
+          dueAt: Date.parse(observedAt) + 60_000,
+          phase: "before-due",
+        },
+        {
+          conditionId: "later",
+          dueAt: Date.parse(observedAt) + 120_000,
+          phase: "before-due",
+        },
+      ],
+    });
+    expect(afterFirst.validity.boundaries.map(({ phase }) => phase)).toEqual([
+      "due",
+      "before-due",
+    ]);
+    expect(afterBoth.validity.boundaries.map(({ phase }) => phase)).toEqual([
+      "due",
+      "due",
+    ]);
+    expect(
+      new Set([
+        before.validityIdentity,
+        afterFirst.validityIdentity,
+        afterBoth.validityIdentity,
+      ]).size,
+    ).toBe(3);
+  });
+
+  test("publishes an ongoing assessment with its rubric and due-phase identity", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-ongoing-"));
+    const observedAt = new Date(Date.now() - 120_000).toISOString();
+    const ongoingDetail = {
+      ...detail,
+      status: "attention",
+      diagnostics: {
+        ...detail.diagnostics,
+        conditions: [condition("review", observedAt, 60_000, "false")],
+      },
+    };
+    const events: Array<Record<string, any>> = [];
+    const result = await reviewTaskOutcome(
+      createTestAppWorkflowContext({
+        input: { appId, taskId, assessmentPurpose: "ongoing" },
+        reconciliation: reconciliation(),
+        callAgent: async () => ({
+          id: "s_ongoing",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: judgment,
+        }),
+        emit: async (event) => events.push(event as Record<string, any>),
+      }),
+      reader(() => ongoingDetail),
+      root,
+    );
+    const facts = factsOf(result);
+    const reportPath = facts
+      .find((fact) => fact.startsWith("report-facts:"))!
+      .slice(13);
+    const report = JSON.parse(readFileSync(join(root, reportPath), "utf8"));
+    expect(report).toMatchObject({
+      rubricVersion: "task-obligation-v1",
+      assessment: {
+        purpose: "ongoing",
+        validity: {
+          phase: "due",
+          boundaries: [{ conditionId: "review", phase: "due" }],
+        },
+      },
+    });
+    expect(events[0]?.data).toMatchObject({
+      assessmentPurpose: "ongoing",
+      rubricVersion: "task-obligation-v1",
+      validityIdentity: report.assessment.validityIdentity,
+    });
+    expect(events[0]?.localKey).toMatch(
+      /^task-report-[a-f0-9]{16}-[a-f0-9]{12}$/,
+    );
+  });
+
   test("passes the combined real public Task views to the model and publishes immutable artifacts", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-"));
     const events: Array<Record<string, unknown>> = [];
@@ -161,6 +317,7 @@ describe("Task outcome review", () => {
       JSON.parse(readFileSync(join(root, reportFacts), "utf8")),
     ).toMatchObject({
       rubricVersion: "task-outcome-v2",
+      sourceRevision: "unavailable:not-exposed-to-workflow",
       disposition: "assessed",
       evidence: {
         appTask: { creator: { appId: "sample" } },

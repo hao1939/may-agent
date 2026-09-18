@@ -185,6 +185,10 @@ function record(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function optionalText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function requiredText(
   data: Record<string, unknown>,
   field: string,
@@ -283,6 +287,9 @@ export function evaluationTaskReportInput(
   const facts = requiredText(data, "facts", event.type);
   const jsonHash = reportHash(data, "jsonHash");
   const markdownHash = reportHash(data, "markdownHash");
+  const assessmentPurpose = optionalText(data.assessmentPurpose);
+  const rubricVersion = optionalText(data.rubricVersion);
+  const validityIdentity = optionalText(data.validityIdentity);
   const publication = {
     appId,
     taskId,
@@ -292,6 +299,9 @@ export function evaluationTaskReportInput(
     facts,
     jsonHash,
     markdownHash,
+    ...(assessmentPurpose ? { assessmentPurpose } : {}),
+    ...(rubricVersion ? { rubricVersion } : {}),
+    ...(validityIdentity ? { validityIdentity } : {}),
   };
   return {
     kind: "message",
