@@ -1,3 +1,5 @@
+// Shared by the standalone SDK target and the Host's packages/ inclusion.
+// Minimal compatibility declarations; replacing their any types is separate work.
 declare module "bun:test" {
   export const afterAll: any;
   export const afterEach: any;
