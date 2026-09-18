@@ -40,8 +40,32 @@ import {
   type ConversationRequestChange,
 } from "./conversation-requests.js";
 
-import { conversationTaskId } from "./conversation-identity.js";
+import { conversationTaskId, conversationTaskSuccessorId } from "./conversation-identity.js";
 export { conversationTaskId } from "./conversation-identity.js";
+
+function conversationTaskLineage(
+  config: AppTaskContext,
+  appId: string,
+  conversationId: string,
+): { taskId: string; predecessorTaskId?: string } {
+  const first = conversationTaskId(appId, conversationId);
+  let taskId = first;
+  let predecessorTaskId: string | undefined;
+  let ordinal = 1;
+  while (config.resourceStore.isCancelled(taskId)) {
+    predecessorTaskId = taskId;
+    taskId = conversationTaskSuccessorId(appId, conversationId, ++ordinal);
+  }
+  return { taskId, ...(predecessorTaskId ? { predecessorTaskId } : {}) };
+}
+
+export function conversationTaskExecutionId(
+  config: AppTaskContext,
+  appId: string,
+  conversationId: string,
+): string {
+  return conversationTaskLineage(config, appId, conversationId).taskId;
+}
 
 /** Conventional execution intent, shared by admission and offline cutover. */
 export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent, "id"> {
@@ -83,7 +107,7 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
     target.expectedRevision < 1
   )
     throw new Error("Conversation Turn stop is stale or mismatched");
-  const taskId = conversationTaskId(target.appId, target.conversationId);
+  const taskId = conversationTaskLineage(config, target.appId, target.conversationId).taskId;
   const reason = "Human stopped this turn";
   return stateTransaction(config.resourceStore.db, () => {
     const result = stopAppTaskAttempt(config, {
@@ -146,7 +170,11 @@ export function admitConversationTaskInput(
   return stateTransaction(db, () => {
     if (input.appId !== config.resourceStore.appId) throw new Error("Conversation belongs to another App");
     if (!input.conversationId.trim()) throw new Error("Conversation identity is required");
-    const taskId = conversationTaskId(input.appId, input.conversationId);
+    const prior = input.idempotencyKey
+      ? listAppInboxItems(db, { appId: input.appId, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
+      : input.id
+        ? getAppInboxItem(db, input.id)
+        : null;
     // An expired legacy lease is not proof that its executor stopped. Cut over
     // only a drained Conversation; do not layer a Task over old execution.
     if (
@@ -161,11 +189,6 @@ export function admitConversationTaskInput(
     ) {
       throw new Error("Conversation still has unhandled legacy input; drain before cutover");
     }
-    const prior = input.idempotencyKey
-      ? listAppInboxItems(db, { appId: input.appId, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
-      : input.id
-        ? getAppInboxItem(db, input.id)
-        : null;
     if (input.source.kind === "human" && input.conversationSequence === undefined) {
       const latest = db
         .prepare(
@@ -178,14 +201,22 @@ export function admitConversationTaskInput(
       prior &&
       (prior.appId !== input.appId ||
         prior.conversationId !== input.conversationId ||
-        prior.executionTaskId !== taskId ||
         !isDeepStrictEqual(prior.input, input.input) ||
         !isDeepStrictEqual(prior.source, input.source) ||
         prior.conversationSequence !== input.conversationSequence ||
         (input.topicId !== undefined && input.topicId !== prior.topicId))
     )
       throw new Error("Conversation input identity was reused for different input");
-    if (prior?.status === "done") return { item: prior, taskId, created: false };
+    if (prior?.status === "done") {
+      return { item: prior, taskId: prior.executionTaskId ?? conversationTaskId(input.appId, input.conversationId), created: false };
+    }
+    const lineage = prior?.executionTaskId
+      ? { taskId: prior.executionTaskId, predecessorTaskId: undefined }
+      : conversationTaskLineage(config, input.appId, input.conversationId);
+    const { taskId, predecessorTaskId } = lineage;
+    if (predecessorTaskId && !config.resourceStore.readTask(taskId) && input.source.kind !== "human") {
+      throw new Error("A terminal Conversation requires fresh human input before system feedback can continue it");
+    }
     const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
@@ -193,7 +224,21 @@ export function admitConversationTaskInput(
       appId: input.appId,
       attachment: config.resourceStore.readTask(taskId)
         ? { kind: "existing", taskId }
-        : { kind: "desired", intent: { ...input.intent, id: taskId } },
+        : {
+            kind: "desired",
+            intent: {
+              ...input.intent,
+              id: taskId,
+              ...(predecessorTaskId
+                ? {
+                    input: {
+                      ...input.intent.input,
+                      conversationLineage: { appId: input.appId, conversationId: input.conversationId, predecessorTaskId },
+                    },
+                  }
+                : {}),
+            },
+          },
       idempotencyKey: admissionKey,
       inputContext: { id: item.id, source: item.source, input: item.input },
     });
@@ -233,7 +278,6 @@ export function readConversationTaskInputs(config: AppTaskContext, claim: AppTas
       item.appId !== config.resourceStore.appId ||
       item.executionTaskId !== claim.taskId ||
       item.taskAdmissionKey !== key ||
-      claim.taskId !== conversationTaskId(item.appId, item.conversationId) ||
       item.status === "done" ||
       item.lease
     )
@@ -490,9 +534,15 @@ export function listPendingConversationTaskChanges(
         SELECT 1 FROM app_inbox_items input
         JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
         WHERE input.app_id = changes.appId AND input.conversation_id = changes.conversationId
-          AND NOT (changes.taskAppId = owner.app_id AND changes.taskId = owner.task_id)
           AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
             WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM app_inbox_items conversation_execution
+        WHERE conversation_execution.app_id = changes.appId
+          AND conversation_execution.conversation_id = changes.conversationId
+          AND changes.taskAppId = conversation_execution.app_id
+          AND changes.taskId = conversation_execution.execution_task_id
       )
       AND NOT EXISTS (
         SELECT 1 FROM app_inbox_items handled
@@ -534,7 +584,7 @@ export function admitConversationTaskChange(
       )
     )
       throw new Error("Task result has no link to this Conversation Topic");
-    const task = target.resourceStore.readTask(conversationTaskId(appId, input.conversationId));
+    const task = target.resourceStore.readTask(conversationTaskExecutionId(target, appId, input.conversationId));
     if (!task) throw new Error("Conversation has no execution Task");
     if (source.resourceStore.appId === appId && input.taskId === task.metadata.id)
       throw new Error("A Conversation cannot consume its own outcome as new input");

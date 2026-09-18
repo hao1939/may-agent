@@ -254,8 +254,98 @@ test("late output after owner closure cannot publish a reply or close a Request"
   expect(() => completeConversationTaskTurn(f.context(), claim, decision)).toThrow("stale");
   expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
   expect(getAppInboxItem(f.db, input.item.id)?.result).toBeUndefined();
-  expect(() => f.admit("late", 2)).toThrow();
-  expect(getAppInboxItem(f.db, "late")).toBeNull();
+  expect(f.store.isCancelled(input.taskId)).toBe(true);
+});
+
+test("fresh human input creates a linked successor without rebinding replay or system feedback", async () => {
+  const f = fixture();
+  const input = f.admit();
+  completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
+  const task = f.store.readTask(input.taskId)!;
+  closeAppTask(f.context(), {
+    appId: app.id,
+    taskId: input.taskId,
+    expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion,
+    reason: "Historical terminal Conversation",
+  });
+
+  expect(f.admit().taskId).toBe(input.taskId);
+  expect(() =>
+    admitConversationTaskInput(f.context(), {
+      ...f.input("background", 2, "A background Task returned"),
+      source: { kind: "system", id: "background" },
+    }),
+  ).toThrow("requires fresh human input");
+  expect(getAppInboxItem(f.db, "background")).toBeNull();
+
+  const successor = f.admit("fresh", 2, "Continue the discussion");
+  expect(successor.taskId).toBe(`${input.taskId}_successor_2`);
+  expect(f.store.readTask(successor.taskId)?.spec.input).toMatchObject({
+    conversationLineage: { appId: app.id, conversationId: "chat", predecessorTaskId: input.taskId },
+  });
+  expect(f.store.readCancellation(input.taskId)?.reason).toBe("Historical terminal Conversation");
+
+  const successorClaim = f.claim(successor.taskId);
+  let preparedBinding: { appId: string; taskId: string; generation: number; attemptId: string } | undefined;
+  await executeConversationTaskTurn({
+    config: f.context(),
+    claim: successorClaim,
+    app,
+    signal: new AbortController().signal,
+    resolveConversationInput: async ({ execution }) => {
+      preparedBinding = execution?.taskBinding;
+      return {
+        ...decision,
+        response: "The linked successor handled this turn.",
+        requestUpdates: [
+          { id: "successor", expectedRevision: 0, scope: "Continue the discussion", disposition: "open" },
+        ],
+      };
+    },
+  });
+  expect(preparedBinding).toEqual({
+    appId: app.id,
+    taskId: successor.taskId,
+    generation: successorClaim.generation,
+    attemptId: successorClaim.attemptId,
+  });
+  expect(getAppInboxItem(f.db, "fresh")?.result?.response).toBe("The linked successor handled this turn.");
+  expect(readConversationRequest(f.db, app.id, "chat", "successor")).toMatchObject({ status: "open", revision: 1 });
+
+  const stopped = f.admit("stop-successor", 3, "Pause this turn");
+  const stoppedClaim = f.claim(stopped.taskId);
+  expect(
+    stopConversationTaskTurn(f.context(), {
+      appId: app.id,
+      conversationId: "chat",
+      turnId: stoppedClaim.attemptId,
+      expectedRevision: stoppedClaim.generation,
+    }).taskId,
+  ).toBe(successor.taskId);
+  expect(getAppInboxItem(f.db, "stop-successor")?.handling).toMatchObject({ phase: "stopped" });
+
+  const currentSuccessor = f.store.readTask(successor.taskId)!;
+  closeAppTask(f.context(), {
+    appId: app.id,
+    taskId: successor.taskId,
+    expectedGeneration: currentSuccessor.metadata.generation,
+    expectedResourceVersion: currentSuccessor.metadata.resourceVersion,
+    reason: "Conversation ended again",
+  });
+  expect(() =>
+    admitConversationTaskInput(f.context(), {
+      ...f.input("late-background", 4, "Late child feedback"),
+      source: { kind: "system", id: "late-background" },
+    }),
+  ).toThrow("requires fresh human input");
+  expect(getAppInboxItem(f.db, "late-background")).toBeNull();
+  expect(f.admit("fresh", 2, "Continue the discussion")).toMatchObject({
+    created: false,
+    taskId: successor.taskId,
+    item: { id: "fresh", executionTaskId: successor.taskId, status: "done" },
+  });
+  expect(f.store.readTask(`${input.taskId}_successor_3`)).toBeNull();
 });
 
 test("unreviewed input prevents proposed Conversation effects from escaping as an accepted answer", () => {
@@ -1162,6 +1252,14 @@ test("bounded change discovery advances across Conversations, retains Stop and f
     reason: "Owner ended the Conversation",
   });
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+
+  const successor = f.admit("continue-after-close", 2, "Continue with the returned measurement");
+  expect(successor.taskId).toBe(`${first.taskId}_successor_2`);
+  const pendingForSuccessor = listPendingConversationTaskChanges(f.db, app.id);
+  expect(pendingForSuccessor.map((item) => item.taskId)).toEqual(["sample-2"]);
+  const admittedToSuccessor = admitConversationTaskChange(f.context(), f.context(), pendingForSuccessor[0]!);
+  expect(admittedToSuccessor.taskId).toBe(successor.taskId);
+  expect(admittedToSuccessor.item.executionTaskId).toBe(successor.taskId);
 });
 
 test("closure input validates the exact source and rolls admission back without losing owner closure", () => {

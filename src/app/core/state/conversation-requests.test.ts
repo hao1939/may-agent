@@ -238,7 +238,7 @@ test("Request spec and fulfillment share a stable creator, with stale and foreig
   const update = { appId: app.id, conversationId: "chat", now: Date.now(), updateKey: "foreign",
     updates: [{ ...ask, expectedRevision: 1, scope: "Discard part of the ask" }] };
   expect(() => applyConversationRequestUpdates(f.db, { ...update, actor: { appId: app.id, taskId: "sibling" } }))
-    .toThrow("recorded creator");
+    .toThrow("Conversation Request actor does not own this Conversation");
   expect(readConversationRequest(f.db, app.id, "chat", ask.id)).toEqual(before);
   await f.turn({ ...answer, requestUpdates: [{ ...ask, expectedRevision: 1, scope: "Compare three options" }] });
   f.reopen();

@@ -14,7 +14,7 @@ import { createAppTaskCapability } from "./app-task-capability.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { admitConversationTaskInput, listPendingConversationTaskChanges } from "../state/conversation-task-turns.js";
+import { admitConversationTaskInput, conversationTaskId, listPendingConversationTaskChanges } from "../state/conversation-task-turns.js";
 import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../state/conversations.js";
@@ -169,6 +169,14 @@ async function fixture(
       return install();
     },
   };
+}
+
+function seedRetiredConversation(f: Awaited<ReturnType<typeof fixture>>) {
+  const id = conversationTaskId(app.id, "primary");
+  observeAppTaskIntent(f.context(), {appAgent: app.agent!, intent: {id, parentId: "root", executor: "conversation", outcome: "Prior conversation execution", acceptance: ["Handle input"]}});
+  const task = f.store.readTask(id)!;
+  cancelAppTask(f.context(), {appId: app.id, taskId: id, expectedGeneration: task.metadata.generation, expectedResourceVersion: task.metadata.resourceVersion, reason: "Owner closed prior execution"});
+  expect(f.store.isCancelled(id)).toBe(true);
 }
 
 test.each(["throws", "invalid", "missing-topic"] as const)(
@@ -522,7 +530,7 @@ test.each(["during failure", "during cooldown and reopen"])(
   },
 );
 
-test("owner closure aborts the common attempt and rejects a late Conversation reply", async () => {
+test("cancelled Conversation execution is fenced and fresh human input creates its successor", async () => {
   const started = Promise.withResolvers<CallOptions>();
   const release = Promise.withResolvers<void>();
   const f = await fixture(async (_definition, _prompt, options) => {
@@ -534,39 +542,35 @@ test("owner closure aborts the common attempt and rejects a late Conversation re
   const finished = settled(f.bus, admitted.taskId);
   wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
   const options = await started.promise;
-  try {
-    const aborted = new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("Task closure did not abort its executor")), 1_000);
-      options.signal!.addEventListener(
-        "abort",
-        () => {
-          clearTimeout(timer);
-          resolve();
-        },
-        { once: true },
-      );
-    });
-    const current = f.store.readTask(admitted.taskId)!;
+  const current = f.store.readTask(admitted.taskId)!;
+  const aborted = new Promise<void>((resolve) =>
+    options.signal?.addEventListener("abort", () => resolve(), { once: true }),
+  );
+  expect(
     cancelLoadedAppTask({
       bus: f.bus,
       appId: app.id,
       taskId: admitted.taskId,
       expectedGeneration: current.metadata.generation,
       expectedResourceVersion: current.metadata.resourceVersion,
-      reason: "Owner withdrew the assignment",
-    });
-    await aborted;
-    expect(options.signal?.aborted).toBe(true);
-  } finally {
-    release.resolve();
-  }
+      reason: "Routine hygiene",
+    }),
+  ).toMatchObject({ applied: true, cancelledAttemptId: options.taskBinding?.attemptId });
+  await aborted;
+  expect(options.signal?.aborted).toBe(true);
+  release.resolve();
   await finished;
   expect(f.store.isCancelled(admitted.taskId)).toBe(true);
   expect(readConversationRequest(f.db, app.id, "primary", "compare")).toBeNull();
   expect(
-    readAppConversationResource(f.db, app.id, "primary").messages.some((message) => message.author.kind === "agent"),
-  ).toBe(false);
-  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+    readAppConversationResource(f.db, app.id, "primary").messages.filter((message) => message.author.kind === "agent"),
+  ).toEqual([]);
+
+  const successor = f.admit("continue", "Continue after cancellation", 2);
+  expect(successor.taskId).toBe(`${admitted.taskId}_successor_2`);
+  expect(f.store.readTask(successor.taskId)?.spec.input).toMatchObject({
+    conversationLineage: { appId: app.id, conversationId: "primary", predecessorTaskId: admitted.taskId },
+  });
 });
 
 test("worker execution entry settles Conversation decisions without an inbox controller", async () => {
@@ -1220,7 +1224,7 @@ test.each(["live", "restart", "admission-write-failure"])(
   },
 );
 
-test("a waiting report reaches Conversation, survives reopen and finishes the same assignment after repair", async () => {
+test.each([false, true])("a waiting report reaches Conversation, survives reopen and finishes the same assignment after repair (after closure: %s)", async (afterClosure) => {
   let ready = false;
   const attempts: TaskAttempt[] = [];
   const seen: AppInputContext[] = [];
@@ -1271,6 +1275,7 @@ test("a waiting report reaches Conversation, survives reopen and finishes the sa
       },
     }),
   );
+  if (afterClosure) seedRetiredConversation(f);
   let ingress = await startConversationIngress(f);
   try {
     const reported = eventAfter(f.bus, (event) => event.type === "conversation.updated" && seen.length === 2);
@@ -1654,7 +1659,7 @@ test("missing Conversation capability cannot return retained work to the old rou
   expect(f.store.isCancelled(retained.taskId)).toBe(false);
 });
 
-test("normal Stop fences only the observed Turn, preserves newer input and survives reopen", async () => {
+test.each([false, true])("normal Stop fences only the observed Turn, preserves newer input and survives reopen (after closure: %s)", async (afterClosure) => {
   const firstStarted = Promise.withResolvers<CallOptions>();
   const releaseFirst = Promise.withResolvers<void>();
   const secondStarted = Promise.withResolvers<CallOptions>();
@@ -1679,6 +1684,7 @@ test("normal Stop fences only the observed Turn, preserves newer input and survi
       },
     };
   });
+  if (afterClosure) seedRetiredConversation(f);
   applyConversationRequestUpdates(f.db, {
     appId: app.id,
     conversationId: "primary",
@@ -2130,7 +2136,7 @@ test("a paused App answers human input through its Task across restart while bac
   }
 });
 
-test("the Conversation delegates and steers same-App work through the Task runtime across reopen", async () => {
+test.each([false, true])("the Conversation delegates and steers same-App work through the Task runtime across reopen (after closure: %s)", async (afterClosure) => {
   let humanTurns = 0;
   let backgroundRuns = 0;
   let linkedTopic = "";
@@ -2207,6 +2213,7 @@ test("the Conversation delegates and steers same-App work through the Task runti
       },
     }),
   );
+  if (afterClosure) seedRetiredConversation(f);
   let ingress = await startConversationIngress(f);
   try {
     const waiting = eventAfter(
@@ -2234,7 +2241,7 @@ test("the Conversation delegates and steers same-App work through the Task runti
     expect(backgroundRuns).toBe(2);
     expect(humanTurns).toBe(2);
     expect(Object.keys(readTaskSnapshot(f.context()).resources!).sort()).toEqual(
-      [executionTaskId, "goal/review"].sort(),
+      [executionTaskId, "goal/review", ...(afterClosure ? [conversationTaskId(app.id, "primary")] : [])].sort(),
     );
     expect(new Set(listAppInboxItems(f.db, { appId: app.id }).map((item) => item.executionTaskId))).toEqual(
       new Set([executionTaskId]),
