@@ -1,3 +1,4 @@
+import { isTaskWorkerProcess } from "../task-worker-context.js";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../db.js";
@@ -23,7 +24,7 @@ export function getDb(persistDir: string, options: DatabaseConnectionOptions = {
 
   const dbPath = join(persistDir, "may.db");
   let db = openDatabase(dbPath);
-  const existingSchemaOnly = options.existingSchemaOnly ?? process.env.MAY_TASK_ATTEMPT_CHILD === "1";
+  const existingSchemaOnly = options.existingSchemaOnly ?? isTaskWorkerProcess();
 
   // A Task worker is a short-lived user of the live Host database. Reapplying
   // every CREATE TABLE/INDEX statement for every attempt takes SQLite's one

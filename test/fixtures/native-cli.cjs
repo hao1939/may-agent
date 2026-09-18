@@ -3,6 +3,21 @@ const { spawn } = require("node:child_process");
 const { writeFileSync } = require("node:fs");
 const config = JSON.parse(process.argv[2]);
 const emit = (event) => process.stdout.write(JSON.stringify(event) + "\n");
+const commandDone = config.commandProbe
+  ? new Promise((resolve, reject) => {
+      const command = spawn(
+        process.execPath,
+        [
+          "-e",
+          'require("node:fs").writeFileSync(process.argv[1], JSON.stringify({ identity: process.env.MAY_NATIVE_CALLER_IDENTITY, path: process.env.PATH }))',
+          config.commandProbe,
+        ],
+        { stdio: "ignore" },
+      );
+      command.once("error", reject);
+      command.once("close", (code) => (code === 0 ? resolve() : reject(new Error(`command probe exited ${code}`))));
+    })
+  : Promise.resolve();
 const complete = () => {
   const text = config.oversized
     ? "x".repeat(1024 * 1024 + 1)
@@ -58,7 +73,8 @@ if (config.hang) {
   emit({ type: "fixture.ready" });
   setInterval(() => {}, 1000);
 } else {
-  setTimeout(() => {
+  setTimeout(async () => {
+    await commandDone;
     clearInterval(progressTimer);
     complete();
     process.exitCode = config.exitCode ?? 0;

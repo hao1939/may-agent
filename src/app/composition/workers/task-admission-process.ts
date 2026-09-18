@@ -1,3 +1,4 @@
+import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import type { AppEventAdmissionCommand } from "../../core/state/app-event-admission-store.js";
@@ -48,7 +49,8 @@ export function createTaskAdmissionProcess(
     ],
     {
       cwd: process.cwd(),
-      env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+      // Retire the inherited marker before this worker can launch ordinary commands.
+      env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: undefined },
       stdio: ["ignore", "inherit", "inherit", "ipc"],
       serialization: "json",
     },
@@ -155,7 +157,7 @@ export async function runTaskAdmissionWorker(input: {
   persistDir: string;
   definitionSource?: TaskWorkerDefinitionSource;
 }): Promise<void> {
-  if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") throw new Error("Task admission worker mode is private");
+  enterTaskWorkerProcess();
   const parentEnded = !process.connected
     ? Promise.resolve()
     : new Promise<void>((resolveDone) => process.once("disconnect", resolveDone));

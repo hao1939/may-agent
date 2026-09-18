@@ -58,10 +58,7 @@ function nativeSpawn(config: Record<string, unknown> = {}): typeof spawn {
     const child = spawn(
       process.execPath,
       [fixture, JSON.stringify({ tool: command, resultPath: args[args.indexOf("-o") + 1], ...config })],
-      {
-        ...options,
-        env: { PATH: process.env.PATH },
-      },
+      options,
     );
     if (child.pid) pids.push(child.pid);
     return child;
@@ -182,6 +179,31 @@ describe("bounded native CLI call", () => {
       expect(observed[0]!.options.detached).toBe(true);
     });
   }
+
+  it("preserves the native helper environment through a command and cleans up the exact caller", async () => {
+    const commandProbe = join(root, "native-command-environment.json");
+    const previousIdentity = process.env.MAY_NATIVE_CALLER_IDENTITY;
+    process.env.MAY_NATIVE_CALLER_IDENTITY = "caller";
+    try {
+      const pending = runCliAgent(
+        { tool: "codex", prompt: "Run the portable fixture" },
+        options({ spawnCommand: nativeSpawn({ commandProbe, delay: 50 }) }),
+      );
+      expect(readSessionBashProcessGroups(persistDir, "caller")).toEqual(pids);
+      expect(readSessionBashProcessGroups(persistDir, "other-caller")).toEqual([]);
+      const result = await pending;
+      expect(result.status).toBe("completed");
+      expect(JSON.parse(readFileSync(commandProbe, "utf8"))).toEqual({
+        identity: "caller",
+        path: process.env.PATH,
+      });
+      expect(readSessionBashProcessGroups(persistDir, "caller")).toEqual([]);
+      expect(readSessionBashProcessGroups(persistDir, "other-caller")).toEqual([]);
+    } finally {
+      if (previousIdentity === undefined) delete process.env.MAY_NATIVE_CALLER_IDENTITY;
+      else process.env.MAY_NATIVE_CALLER_IDENTITY = previousIdentity;
+    }
+  });
 
   it("keeps model/config overrides and the shared endpoint without a new native home", async () => {
     const keys = [

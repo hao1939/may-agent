@@ -1,3 +1,4 @@
+import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
 import { readEventTaskTarget } from "../../core/events/task-target.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { basename, resolve } from "node:path";
@@ -141,7 +142,8 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
   const invocation = workerInvocation();
   return spawn(invocation.command, [...invocation.prefix, ...args], {
     cwd: process.cwd(),
-    env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: "1" },
+    // Retire the inherited marker before this worker can launch ordinary commands.
+    env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: undefined },
     // Runtime-owned IPC has one descriptor owner. Wrapping an extra raw pipe
     // lets Bun's collected ChildProcess close a descriptor reused by a later
     // worker. IPC also carries parent lifetime without a second input pipe.
@@ -442,9 +444,7 @@ async function runTaskWorker(input: {
   definitionSource?: TaskAttemptProcessRequest["definitionSource"];
   run(bus: EventBus, isDefinitionCurrent: () => boolean): Promise<string[]>;
 }): Promise<void> {
-  if (process.env.MAY_TASK_ATTEMPT_CHILD !== "1") {
-    throw new Error("Task worker mode is private to the parent runtime");
-  }
+  enterTaskWorkerProcess();
   const stopWithParent = () => process.exit(143);
   process.once("disconnect", stopWithParent);
   const bus = new EventBus();
