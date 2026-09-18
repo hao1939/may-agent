@@ -1,4 +1,4 @@
-import { readTaskEventTarget } from "../events/task-target.js";
+import { readEventTaskTarget } from "../events/task-target.js";
 import {
   childEventTrace,
   EVENT_ROW_ID,
@@ -74,7 +74,7 @@ function normalizedAppId(value: unknown): string {
 }
 
 function taskTargetKey(event: AgentEvent): string | null {
-  const target = readTaskEventTarget((event as AgentEvent & { target?: unknown }).target);
+  const target = readEventTaskTarget(event);
   return target?.appId ? `${target.appId}\0${target.taskId}` : null;
 }
 

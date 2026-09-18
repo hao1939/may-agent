@@ -41,6 +41,15 @@ describe("App stop contract", () => {
 });
 
 describe("project task handler contract", () => {
+  it.each([["external-review", false], ["review.completed", true], ["custom.fact", true]] as const)(
+    "requires publishable namespaced Condition types: %s", (type, valid) => {
+      const output = { state: "waiting", summary: "Await exact review", facts: [], conditions: [{
+        id: "review", type, subject: "review:candidate", expected: true, owner: "human", reviewAfterMs: 60_000,
+      }] };
+      expect(Check(taskAgentResultSchema, output)).toBe(valid);
+      expect(admitTaskReconcileResult(output, workflowOptions).ok).toBe(valid);
+    },
+  );
   it("agrees with the finish schema on quiet waits and explicit facts-backed reports", () => {
     for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const facts of [[], ["source:access-denied"]]) {

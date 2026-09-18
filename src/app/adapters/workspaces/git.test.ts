@@ -316,7 +316,7 @@ describe("project task workspace", () => {
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
   });
 
-  it("retains a clean committed branch but refuses task completion before integration", async () => {
+  it("accepts a clean local deliverable and retains its checkout before integration", async () => {
     const f = await fixture();
     const prepared = await prepareAppTaskWorkspace({
       repoDir: f.repo,
@@ -333,11 +333,17 @@ describe("project task workspace", () => {
     const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
 
     expect(finalized).toMatchObject({
-      ok: false,
-      metadata: { disposition: "branch-retained" },
-      reason: expect.stringContaining("must wait for integration"),
+      ok: true,
+      metadata: { disposition: "active" },
     });
+    expect(readFileSync(join(prepared.metadata.path, "change.txt"), "utf8")).toBe("done\n");
+    expect(existsSync(join(f.repo, "change.txt"))).toBe(false);
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);
+    // An operator may remove a checkout while retaining the reviewed branch.
+    await git(f.repo, "worktree", "remove", prepared.metadata.path);
+    expect(await finalizeAppTaskWorkspace(prepared, "accepted")).toMatchObject({
+      ok: true, metadata: { disposition: "branch-retained" },
+    });
   });
 
   it("retains the checkout and ignored dependencies across repeated waits on the same generation", async () => {
@@ -519,11 +525,12 @@ describe("project task workspace", () => {
     rmSync(dirtyFile);
     for (const outcome of ["waiting", "failed", "accepted"] as const) {
       const finalized = await finalizeAppTaskWorkspace(prepared, outcome);
-      expect(finalized.ok).toBe(outcome !== "accepted");
+      expect(finalized.ok).toBe(true);
       expect(await git(f.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/may/workspaces/")).toBe(refs);
     }
-    // The rejected branch is intentionally removed by its owner, not inferred
+    // The retained branch is intentionally removed by its owner, not inferred
     // to be disposable merely because a newer generation or a failure exists.
+    await git(f.repo, "worktree", "remove", prepared.metadata.path);
     await git(f.repo, "branch", "-D", prepared.metadata.branch);
     expect((await finalizeAppTaskWorkspace(prepared, "accepted")).ok).toBe(true);
     expect(await git(f.repo, "for-each-ref", "--format=%(refname)", "refs/may/workspaces/")).toBe("");
@@ -617,7 +624,7 @@ describe("project task workspace", () => {
     }
     const target = await git(f.repo, "rev-parse", "HEAD");
     const finalized = await finalizeAppTaskWorkspace(prepared, "accepted");
-    expect(finalized).toMatchObject({ ok: false, metadata: { disposition: "branch-retained" } });
+    expect(finalized).toMatchObject({ ok: true, metadata: { disposition: "active" } });
     expect(await git(f.repo, "rev-parse", "HEAD")).toBe(target);
     expect(await git(f.repo, "status", "--porcelain")).toBe("");
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toContain(prepared.metadata.branch);

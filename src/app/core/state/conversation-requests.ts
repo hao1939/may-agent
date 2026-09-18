@@ -7,8 +7,6 @@ import {
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { assertResourceCreator } from "./resource-creator.js";
-import { conversationTaskId } from "./conversation-identity.js";
 
 export class ConversationRequestConflict extends Error {}
 export type ConversationRequestChange = { id: string; expectedRevision: number; scope: string };
@@ -100,8 +98,18 @@ export function applyConversationRequestUpdates(
   if (!Check(conversationRequestUpdatesSchema, input.updates)) throw new Error("Invalid accepted Request updates");
   const ids = new Set<string>();
   stateTransaction(db, () => {
-    const creator = { appId: input.appId, taskId: conversationTaskId(input.appId, input.conversationId) };
-    assertResourceCreator(creator, input.actor ?? creator);
+    if (input.actor) {
+      const ownsConversation =
+        input.actor.appId === input.appId &&
+        typeof input.actor.taskId === "string" &&
+        db
+          .prepare(
+            `SELECT 1 FROM app_inbox_items
+             WHERE app_id = ? AND conversation_id = ? AND execution_task_id = ? LIMIT 1`,
+          )
+          .get(input.appId, input.conversationId, input.actor.taskId);
+      if (!ownsConversation) throw new Error("Conversation Request actor does not own this Conversation");
+    }
     for (const update of input.updates) {
       if (ids.has(update.id)) throw new Error("Repeated accepted Request update");
       ids.add(update.id);

@@ -1,3 +1,6 @@
+import { createRuntimeAppRead } from "../core/reads/app-read.js";
+import { readMetricView } from "../adapters/reporting/metric-read.js";
+import type { WorkflowEvent } from "../../lib/workflow.js";
 import { resolve } from "node:path";
 import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
@@ -115,44 +118,72 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "workflow": {
         const workflowDir = resolve(agentDir, "workflows");
-        tools.push(
-          createWorkflowTool({
-            manager,
-            workflowDir,
+        const workflowOptions = {
+          manager,
+          workflowDir,
+          persistDir,
+          agentName: config.name,
+          runtimeCtx: buildRuntimeCtx({
+            bus,
             persistDir,
+            projectRoot,
+            agentsRoot: opts.agentsRoot,
+            sharedRoot: opts.sharedRoot,
+            projectsRoot: opts.projectsRoot,
             agentName: config.name,
-            runtimeCtx: buildRuntimeCtx({
-              bus,
-              persistDir,
-              projectRoot,
-              agentsRoot: opts.agentsRoot,
-              sharedRoot: opts.sharedRoot,
-              projectsRoot: opts.projectsRoot,
-              agentName: config.name,
-            }),
-            callerSessionId: () => {
-              const sid = opts.getAgentSessionId(config.name);
-              if (!sid) throw new Error(`No active ${config.name} session`);
-              return sid;
-            },
-            callerTrace: () => {
-              const sid = opts.getAgentSessionId(config.name);
-              return sid ? manager.activeSessions.get(sid)?.trace : undefined;
-            },
-            onEvent: (event) => {
-              const label = `workflow:${config.name}`;
-              if (event.type === "workflow.started") {
-                bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
-              } else if (event.type === "workflow.completed") {
-                bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
-              } else if (event.type === "workflow.blocked") {
-                bus.emit({ type: "info", message: `[${label}] Blocked: ${event.reason}` });
-              } else if (event.type === "workflow.step_started") {
-                bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
-              }
-            },
           }),
-        );
+          callerSessionId: () => {
+            const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
+            if (!sid) throw new Error(`No active ${config.name} session`);
+            return sid;
+          },
+          callerTrace: () => {
+            const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
+            return sid ? manager.activeSessions.get(sid)?.trace : undefined;
+          },
+          onEvent: (event: WorkflowEvent) => {
+            const label = `workflow:${config.name}`;
+            if (event.type === "workflow.started") {
+              bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
+            } else if (event.type === "workflow.completed") {
+              bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
+            } else if (event.type === "workflow.blocked") {
+              bus.emit({ type: "info", message: `[${label}] Blocked: ${event.reason}` });
+            } else if (event.type === "workflow.step_started") {
+              bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
+            }
+          },
+        };
+        const workflowTool = createWorkflowTool(workflowOptions);
+        tools.push({
+          ...workflowTool,
+          execute: async (id, params, signal, onUpdate) => {
+            const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
+            const session = sid ? manager.activeSessions.get(sid) : undefined;
+            if (session?.taskBinding && !session.taskContext)
+              throw new Error("Current Task execution context is unavailable");
+            const context = session?.taskContext;
+            // A registered tool is shared by same-name sessions. Each invocation
+            // gets its own runner and the exact caller's capabilities and limits.
+            return createWorkflowTool({
+              ...workflowOptions,
+              ...context,
+              taskContext: context,
+              read: createRuntimeAppRead({
+                getDb: workflowOptions.runtimeCtx.getDb,
+                taskRead: context?.taskRead,
+                readMetric: async (id) => readMetricView(workflowOptions.runtimeCtx.metrics, id),
+              }),
+              callerSessionId: sid,
+              trace: session?.trace,
+              signal:
+                signal && session?.executionScope
+                  ? AbortSignal.any([signal, session.executionScope.signal])
+                  : (signal ?? session?.executionScope?.signal),
+              executionTimeoutMs: session?.executionScope ? session.executionScope.deadlineAt - Date.now() : undefined,
+            }).execute(id, params, signal, onUpdate);
+          },
+        });
         break;
       }
 

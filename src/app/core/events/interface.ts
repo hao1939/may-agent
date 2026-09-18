@@ -8,6 +8,7 @@ import type {
   PublicEvent,
 } from "@may-agent/control/events";
 import { findPersistedEventId } from "../../../lib/db-writer.js";
+import { readEventTaskTarget } from "./task-target.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -119,6 +120,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
       optionalTextField(input.data, "targetTaskId", "app.input.requested data.targetTaskId");
+      readEventTaskTarget(input);
       const appInput = record(input.data.input, "app.input.requested data.input") as unknown as AppInput;
       if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
       if (!options.acceptsAppInput(appId, appInput)) throw new Error(`App ${appId} does not accept this input`);

@@ -218,6 +218,112 @@ async function retryWhenDue(f: ReturnType<typeof fixture>) {
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  async appLocalHelper() {
+    const f = fixture("owner");
+    const helperDir = join(f.appDir, "agents", "reviewer-folder");
+    mkdirSync(helperDir);
+    writeFileSync(
+      join(helperDir, "agent.json"),
+      JSON.stringify({
+        name: "local-reviewer",
+        description: "Fixture reviewer",
+        domain: "test",
+        model: "test",
+        tools: [],
+      }),
+    );
+    writeFileSync(join(helperDir, "AGENTS.md"), "PINNED_REVIEWER_INSTRUCTIONS\n");
+    const unrelated = join(f.root, "projects", "unrelated.app");
+    mkdirSync(join(unrelated, "agents", "other"), { recursive: true });
+    writeFileSync(
+      join(unrelated, "app.ts"),
+      'export default { id: "unrelated", version: 1, agent: "other", inputSchema: { type: "object" } };',
+    );
+    writeFileSync(
+      join(unrelated, "agents", "other", "agent.json"),
+      JSON.stringify({
+        name: "other",
+        description: "Not needed by this Task",
+        domain: "test",
+        model: "unavailable",
+        tools: [],
+      }),
+    );
+    writeFileSync(join(unrelated, "agents", "other", "AGENTS.md"), "Unrelated agent\n");
+    writeFileSync(
+      join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
+      `
+      export const name = "probe";
+      export const description = "Call a helper through the real worker";
+      export async function execute(ctx) {
+        const result = await ctx.agents.call("local-reviewer", "Review the fixture");
+        if (result.status !== "done") throw new Error(result.summary);
+        return ctx.done("done", { state: "converged", summary: result.summary, facts: [] });
+      }
+    `,
+    );
+    const releases = new DefinitionSourceReleaseStore(f.root, f.persistDir);
+    f.request.definitionSource = releases.ensureCurrent();
+    rmSync(helperDir, { recursive: true });
+    releases.activate(releases.stage());
+    const prompts: string[] = [];
+    const server = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      async fetch(request) {
+        prompts.push(await request.text());
+        const chunk = (delta: unknown, finish: string | null) =>
+          `data: ${JSON.stringify({
+            id: "fixture-review",
+            object: "chat.completion.chunk",
+            created: 0,
+            model: "test",
+            choices: [{ index: 0, delta, finish_reason: finish }],
+          })}\n\n`;
+        return new Response(
+          chunk(
+            {
+              role: "assistant",
+              tool_calls: [
+                {
+                  index: 0,
+                  id: "finish-review",
+                  type: "function",
+                  function: {
+                    name: "finish",
+                    arguments: JSON.stringify({
+                      status: "success",
+                      summary: "Reviewed by the pinned helper",
+                      verification_facts: ["Fixture reviewed"],
+                    }),
+                  },
+                },
+              ],
+            },
+            null,
+          ) +
+            chunk({}, "tool_calls") +
+            "data: [DONE]\n\n",
+          { headers: { "Content-Type": "text/event-stream" } },
+        );
+      },
+    });
+    f.modelBaseUrl = server.url.origin;
+    try {
+      await run(f);
+      assert.equal(
+        f.store.readTask("work/one")?.status.phase,
+        "converged",
+        JSON.stringify(f.store.readTaskContext({ taskIds: ["work/one"] })),
+      );
+      assert.equal(acceptedAttempt(f).acceptedResult?.summary, "Reviewed by the pinned helper");
+      assert.equal(prompts.length, 1);
+      assert(prompts[0].includes("PINNED_REVIEWER_INSTRUCTIONS"));
+    } finally {
+      await server.stop(true);
+    }
+  },
+
   async restoredAgent() {
     const f = fixture("specialist");
     const agentDir = join(f.appDir, "agents", "specialist");

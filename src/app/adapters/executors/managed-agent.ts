@@ -1,3 +1,4 @@
+import { taskExecutionContext } from "./task-context.js";
 import { assignmentGuidance } from "../../assignment-guidance.js";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
@@ -7,8 +8,7 @@ import type { SubagentManager } from "../../../lib/index.js";
 import type { SubagentDefinition } from "../../../lib/types.js";
 import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
 import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
-import { canonicalAppEvent } from "../../canonical-app-event.js";
-import { childEventTrace, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
+import { childEventTrace } from "../../core/events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 import type { TaskAgentRunner, TaskAgentInput } from "../../core/tasks/execution.js";
 import { localAgentDir } from "../discovery/local-agents.js";
@@ -74,6 +74,7 @@ export function appTaskAgentProtocol(appId: string): string {
     "Pursue its current input, goal, acceptance and facts. Bring changes beyond your assignment to its creator. Do not edit Host task storage.",
     "Finish exactly once with finish().result for an answer, meaningful wait or honest failure, not a completed step. This ends the attempt, not the Task; follow the schema.",
     "Use converged only when facts support the answer/completed work for the considered input. Include response when owed; an unrelated open child need not block an answer.",
+    "Never self-unblock.",
     "Use incomplete for unfinished work: include facts, partial work and unresolved effects; no actions, Conditions or dependencies. Set report:true for new caller-relevant updates after an earlier report. Omit for unchanged failures. The assignment remains pending under paced recovery until its owner revises or closes it.",
     "Put machine-readable decisions in result, explanations in summary. Waiting may retain a decision for later review.",
     "Use waiting for a saved wait, exact Condition or typed App dependency. Omit unchanged waits and response. Set report:true with summary/facts for a new caller-relevant blocker; omit for quiet waits.",
@@ -87,24 +88,6 @@ export function appTaskAgentProtocol(appId: string): string {
     "Include inspectable artifact/session paths in concise facts. Code persists, schedules and returns results; do not poll for follow-through.",
     "A Condition waits for a known fact; requestedAction does not contact its owner or act. reviewAfterMs schedules reconsideration, not notification/repair.",
     "Feedback is input: verify corrections, preferences and claims against this goal, facts and Open Waits. Preserve existing obligations; different work needs a changed goal. Retain exact App/Task identity.",
-  ].join("\n");
-}
-
-const MAX_LIVE_TASK_EVENT_TEXT = 8 * 1024;
-
-/** Compact live hint; the same event remains in the next durable Task batch. */
-export function liveTaskEventMessage(event: AgentEvent): string {
-  const projected = canonicalAppEvent(event);
-  const eventId = Number((event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID]);
-  const text = JSON.stringify({
-    ...(Number.isSafeInteger(eventId) && eventId > 0 ? { eventId } : {}),
-    event: projected,
-  });
-  const bounded = text.length <= MAX_LIVE_TASK_EVENT_TEXT ? text : `${text.slice(0, MAX_LIVE_TASK_EVENT_TEXT - 3)}...`;
-  return [
-    "A new durable event was addressed to this Task while you were working.",
-    "Use it now when relevant; Runtime will also retain it for the next fenced reconciliation pass.",
-    bounded,
   ].join("\n");
 }
 
@@ -154,12 +137,17 @@ async function executeTaskAgent(
           "```",
         ]
       : []),
-    ...(reconciliationEvents.items.length
+    ...(reconciliationEvents.items.length || reconciliationEvents.continuedInputs?.length
       ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
   ].join("\n");
 
+  const taskContext = taskExecutionContext(input, definitions);
   const agentOptions = {
+    taskContext,
+    taskBinding: taskContext.taskBinding,
+    signal: attempt.signal,
+    sessionStarted: input.sessionStarted,
     source: "app-task-agent",
     projectId: descriptor.id,
     recoveryOwner: APP_TASK_RECOVERY_OWNER,
@@ -170,63 +158,10 @@ async function executeTaskAgent(
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,
   };
-  const dispatchAgent = async () =>
-    typeof manager.run === "function" && typeof manager.waitFor === "function" && typeof manager.progress === "function"
-      ? await (async () => {
-          attempt.signal.throwIfAborted();
-          const definition = definitions?.get(attempt.role.agent);
-          const runOptions = {
-            source: agentOptions.source,
-            kind: "call" as const,
-            projectId: agentOptions.projectId,
-            taskBinding: {
-              appId: descriptor.id,
-              taskId: task.id,
-              generation: task.generation,
-              attemptId: attempt.attemptId,
-            },
-            recoveryOwner: agentOptions.recoveryOwner,
-            trace: agentOptions.trace,
-            requireFinish: agentOptions.requireFinish,
-            outputSchema: agentOptions.outputSchema,
-            toolPolicy: agentOptions.toolPolicy,
-            timeoutMs: agentOptions.timeout,
-            executionRoot: agentOptions.executionRoot,
-          };
-          const sessionId = definition
-            ? manager.runDefinition(definition, prompt, runOptions)
-            : manager.run(attempt.role.agent, prompt, runOptions);
-          input.sessionStarted(sessionId);
-          const cancelSession = () => {
-            try {
-              manager.cancel(sessionId);
-            } catch {
-              // The session may finish between Task cancellation and abort.
-            }
-          };
-          attempt.signal.addEventListener("abort", cancelSession, { once: true });
-          if (attempt.signal.aborted) cancelSession();
-          const unsubscribe = attempt.onEvent((incoming) => {
-            try {
-              const event = incoming as AgentEvent;
-              manager.send(sessionId, liveTaskEventMessage(event), { trace: childEventTrace(event) });
-            } catch {
-              // The session may finish between event admission and this
-              // optional live hint. Durable Task input remains authoritative.
-            }
-          });
-          try {
-            const waited = await manager.waitFor(sessionId);
-            return {
-              ...waited,
-              messages: manager.progress(sessionId, 1000),
-            };
-          } finally {
-            unsubscribe();
-            attempt.signal.removeEventListener("abort", cancelSession);
-          }
-        })()
-      : await manager.callAgent(attempt.role.agent, prompt, agentOptions);
+  const definition = definitions?.get(attempt.role.agent);
+  const dispatchAgent = () => definition
+    ? manager.callAgentDefinition(definition, prompt, agentOptions)
+    : manager.callAgent(attempt.role.agent, prompt, agentOptions);
   const residueGuard = await beginCanonicalAgentResidueGuard(input.executionPaths);
   let restoredAgentResidue: string[] = [];
   let result: Awaited<ReturnType<typeof dispatchAgent>>;

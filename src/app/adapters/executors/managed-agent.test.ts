@@ -6,7 +6,7 @@ import { createTaskAgentRunner } from "./managed-agent.js";
 import type { SubagentManager } from "../../../lib/manager.js";
 import type { TaskAgentInput } from "../../core/tasks/execution.js";
 
-test("generic agent execution carries operation facts without reading private deployment files", async () => {
+test.each(["event", "continued-input"])("generic agent execution carries %s facts without reading private deployment files", async (source) => {
   const root = mkdtempSync(join(tmpdir(), "may-generic-agent-evidence-"));
   try {
     const receipts = join(root, ".state", "deploy-receipts");
@@ -66,13 +66,21 @@ test("generic agent execution carries operation facts without reading private de
       childContext: { live: [], completed: [] },
       dependencies: [],
     } as unknown as TaskAgentInput;
+    if (source === "continued-input") {
+      input.attempt.events = {
+        items: [], truncated: false,
+        continuedInputs: [{ observedAt: new Date().toISOString(), event: {
+          type: "app.task.requested", data: { idempotencyKey: "original-review", input: { kind: "message", data: { text: "Review the original artifact" } } },
+        } }],
+      };
+    }
     const result = await runner.execute(input);
     expect(result.handlerResult).toMatchObject({
       state: "converged",
       summary: "Observed operation",
       facts: ["event:1"],
     });
-    expect(prompt).toContain("event-correlation");
+    expect(prompt).toContain(source === "event" ? "event-correlation" : "Review the original artifact");
     expect(prompt).not.toContain("private-correlation");
     expect(prompt).not.toContain("Restart-aware deploy receipt");
     expect(prompt).not.toContain("Do not deploy again");

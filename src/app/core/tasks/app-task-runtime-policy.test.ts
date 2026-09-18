@@ -30,7 +30,7 @@ describe("App Task agent prompt context", () => {
         conditions: [
           {
             id: "approval",
-            type: "human-decision",
+            type: "human.decision",
             subject: "id:approval",
             expected: true,
             owner: "human:operator",

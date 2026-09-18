@@ -1,3 +1,5 @@
+import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
+import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
 /**
  * Durable agent session runtime.
  *
@@ -16,15 +18,7 @@ import { prepareAgentExecution } from "./agent-execution.js";
 import { observeExecutionUsage } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
 import type { TSchema } from "@earendil-works/pi-ai";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  statSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import {
   generateId,
@@ -119,6 +113,7 @@ export interface RunOptions {
   projectId?: string;
   /** Current fenced App Task attempt exposed only to scoped Task tools. */
   taskBinding?: TaskBinding;
+  taskContext?: TaskExecutionContext;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
   orderId?: string;
@@ -149,6 +144,7 @@ export type CallAgentOptions = Pick<
   | "workflowRunId"
   | "projectId"
   | "taskBinding"
+  | "taskContext"
   | "recoveryOwner"
   | "stepLabel"
   | "trace"
@@ -196,6 +192,7 @@ interface ActiveSession {
   channelMessageId?: number;
   projectId?: string;
   taskBinding?: TaskBinding;
+  taskContext?: TaskExecutionContext;
   recoveryOwner?: string;
   resumeMessages?: AgentMessage[];
   trace?: EventTrace;
@@ -403,6 +400,7 @@ export class SubagentManager {
       toolPolicy?: ToolPolicy;
       executionRoot?: string;
       taskBinding?: TaskBinding;
+      taskContext?: TaskExecutionContext;
     },
   ): void {
     // A name can now select another App/global folder. Check durable ownership
@@ -503,6 +501,7 @@ export class SubagentManager {
         executionRoot: opts.executionRoot ?? meta.executionRoot,
         // Transcript metadata is facts, not authority for a new attempt.
         taskBinding: opts.taskBinding,
+        taskContext: opts.taskContext,
       });
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
@@ -565,6 +564,7 @@ export class SubagentManager {
       opts = {
         ...opts,
         taskBinding: parent.taskBinding ?? opts?.taskBinding,
+        taskContext: parent.taskContext ?? opts?.taskContext,
         recoveryOwner: parent.recoveryOwner ?? opts?.recoveryOwner,
         executionRoot: parent.executionRoot ?? opts?.executionRoot,
         toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
@@ -575,9 +575,24 @@ export class SubagentManager {
       };
     }
     opts?.signal?.throwIfAborted();
+    if (opts?.taskContext) {
+      const brief = prepareTaskWorkspaceContext(
+        opts.taskContext,
+        this._persistDir,
+        opts.taskContext.agentDefinitions?.values() ?? [...this.agents.values()].map((agent) => agent.definition),
+      );
+      task = `${task}\n\n${taskWorkspacePrompt(brief)}`;
+    }
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
+    const executionContext = opts?.parentSessionId || opts?.workflowRunId ? [
+      "## Assigned contribution",
+      "The call request defines your contribution. Shared Task context provides background and discovery; it does not assign you the entire Task or expand your authority.",
+      "Choose useful methods within this assignment, inspect relevant updates, and return evidence, partial work and any specific blocker to your caller. Your caller judges whether the contribution is sufficient.",
+      `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts.workflowRunId ?? null)}.`,
+      `Assignment and caller links are retained in ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. Use exact linked execution IDs to discover earlier evidence.`,
+    ].join("\n") : undefined;
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
     const autoClose = opts?.autoClose ?? "immediate";
@@ -591,17 +606,22 @@ export class SubagentManager {
 
     const usage = persistentChat
       ? undefined
-      : observeExecutionUsage(this._persistDir, {
-          sessionId,
-          agent: def.name,
-          appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
-          workflowRunId: opts?.workflowRunId,
-          taskId: opts?.taskBinding?.taskId,
-          attemptId: opts?.taskBinding?.attemptId,
-          configuredModel: `${def.model.provider}/${def.model.id}`,
-        }, (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`));
+      : observeExecutionUsage(
+          this._persistDir,
+          {
+            sessionId,
+            agent: def.name,
+            appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
+            workflowRunId: opts?.workflowRunId,
+            taskId: opts?.taskBinding?.taskId,
+            attemptId: opts?.taskBinding?.attemptId,
+            configuredModel: `${def.model.provider}/${def.model.id}`,
+          },
+          (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`),
+        );
     const prepared = prepareAgentExecution({
       onPreparation: usage?.preparation,
+      executionContext,
       definition: def,
       projectRoot: this._projectRoot,
       sessionId,
@@ -714,6 +734,7 @@ export class SubagentManager {
       channelMessageId: opts?.channelMessageId,
       projectId: opts?.projectId,
       taskBinding: opts?.taskBinding,
+      taskContext: opts?.taskContext,
       recoveryOwner: opts?.recoveryOwner,
       resumeMessages: opts?.resumeMessages,
       trace: opts?.trace,
@@ -989,7 +1010,10 @@ export class SubagentManager {
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const depthError = this.callDepthLimitError(opts?.parentSessionId);
     if (depthError) return depthError;
-    const definition = this.getAgentDefinition(agentName);
+    const definition =
+      (opts?.parentSessionId
+        ? this._sessions.get(opts.parentSessionId)?.taskContext?.agentDefinitions?.get(agentName)
+        : undefined) ?? this.getAgentDefinition(agentName);
     if (!definition) throw new Error(`Agent "${agentName}" not registered`);
     return this.callAgentDefinition(definition, task, opts);
   }
@@ -1011,6 +1035,7 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
       taskBinding: opts?.taskBinding,
+      taskContext: opts?.taskContext,
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       timeoutMs: opts?.timeout,
@@ -1265,6 +1290,7 @@ export class SubagentManager {
       deadlineAt?: number;
       suppressBenignRaceEvent?: boolean;
       taskBinding?: TaskBinding;
+      taskContext?: TaskExecutionContext;
       trace?: EventTrace;
       requireFinish?: boolean;
       operationAllowance?: number;
@@ -1317,6 +1343,7 @@ export class SubagentManager {
       source: opts?.source ?? "resume",
       injectUserMessage: message,
       taskBinding: opts?.taskBinding,
+      taskContext: opts?.taskContext,
       resetDbRow: true,
       timeoutMs: opts?.timeoutMs,
       signal: opts?.signal,
@@ -1868,9 +1895,14 @@ export class SubagentManager {
       },
     );
     session.executionScope = scope;
+    let unsubscribe = () => {};
     try {
+      unsubscribe = observeTaskFeedback(session.taskContext, (message, trace) =>
+        this.send(session.sessionId, message, { trace }),
+      );
       return await work();
     } finally {
+      unsubscribe();
       await this.closeExecutionScope(session, scope);
     }
   }

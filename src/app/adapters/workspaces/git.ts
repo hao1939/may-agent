@@ -132,14 +132,6 @@ async function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): Promis
   return merged.stdout.split("\n")[0] === (await git(repoDir, ["rev-parse", `${target}^{tree}`])).stdout;
 }
 
-function unintegratedResult(metadata: AppTaskWorkspace): FinalizedTaskWorkspace {
-  return {
-    ok: false,
-    metadata,
-    reason: `Task branch ${metadata.branch} is not integrated into ${metadata.baseRef}; the task must wait for integration or explicitly remove the rejected branch`,
-  };
-}
-
 export async function prepareAppTaskWorkspace(
   input: Parameters<TaskWorkspaces["prepare"]>[0],
 ): Promise<PreparedTaskWorkspace> {
@@ -337,7 +329,6 @@ export async function finalizeAppTaskWorkspace(
         return { ok: true, metadata };
       }
       metadata.disposition = "branch-retained";
-      if (outcome === "accepted") return unintegratedResult(metadata);
       return { ok: true, metadata };
     }
 
@@ -364,15 +355,18 @@ export async function finalizeAppTaskWorkspace(
     }
 
     const integrated = await isIntegrated(repoDir, metadata);
-    await git(repoDir, ["worktree", "remove", metadata.path]);
-    if (integrated && (await refExists(repoDir, `refs/heads/${metadata.branch}`))) {
-      await git(repoDir, ["branch", "-D", metadata.branch]);
-      await removeWorkspaceRefs(repoDir, metadata);
-      metadata.disposition = "removed";
-    } else {
-      metadata.disposition = "branch-retained";
+    if (!integrated) {
+      // A reviewed branch or report can be the accepted deliverable. The App
+      // decides whether integration is required; cleanup must preserve it.
+      metadata.disposition = "active";
+      return { ok: true, metadata };
     }
-    if (outcome === "accepted" && !integrated) return unintegratedResult(metadata);
+    await git(repoDir, ["worktree", "remove", metadata.path]);
+    if (await refExists(repoDir, `refs/heads/${metadata.branch}`)) {
+      await git(repoDir, ["branch", "-D", metadata.branch]);
+    }
+    await removeWorkspaceRefs(repoDir, metadata);
+    metadata.disposition = "removed";
     return { ok: true, metadata };
   });
 }

@@ -3144,7 +3144,7 @@ function mutableActionResource(tree: TaskTree, action: AppTaskAction): AppTaskRe
   return resource;
 }
 
-function validateTaskActions(tree: TaskTree, actions: AppTaskAction[]): void {
+function validateTaskActions(tree: TaskTree, actions: AppTaskAction[], runningTaskId: string): void {
   if (actions.length > 16) throw new Error("Handler result exceeds the 16-action reconciliation budget");
   const identities = new Set<string>();
   for (const rawAction of actions as unknown[]) {
@@ -3157,6 +3157,12 @@ function validateTaskActions(tree: TaskTree, actions: AppTaskAction[]): void {
       throw new Error(`Handler result contains an unsupported action kind: ${String(rawAction.kind)}`);
     const action = rawAction as unknown as AppTaskAction;
     const identity = requireNonEmptyString(action.taskId, "Handler unblock-task action identity");
+    // A self-action is invalid on every attempt, not a concurrent state change.
+    // Check it before the phase fence so recovery returns the concrete error.
+    if (identity === runningTaskId)
+      throw new Error(
+        `Handler action cannot unblock its own running task ${runningTaskId}; return the attempt result without a self-unblock action`,
+      );
     if (identities.has(identity)) throw new Error(`Handler result contains multiple actions for ${identity}`);
     identities.add(identity);
     requireExpectedGeneration(action.expectedGeneration, `Handler unblock-task action ${identity}`);
@@ -3192,7 +3198,10 @@ function validateConditions(
       throw new Error(`Handler result for ${input.taskId} contains a non-object Condition`);
     }
     const identity = requireNonEmptyString(condition.id, `Handler result Condition for ${input.taskId} identity`);
-    requireNonEmptyString(condition.type, `Handler result Condition ${identity} type`);
+    const type = requireNonEmptyString(condition.type, `Handler result Condition ${identity} type`);
+    if (!type.includes(".")) {
+      throw new Error(`Handler result Condition ${identity} type must be a namespaced event type`);
+    }
     const subject = requireNonEmptyString(condition.subject, `Handler result Condition ${identity} subject`);
     if (!isTypedAppTaskConditionSubject(subject)) {
       throw new Error(`Handler result Condition ${identity} has an invalid subject`);
@@ -3237,13 +3246,9 @@ function applyTaskActions(
   actions: AppTaskAction[],
   config: AppTaskContext,
 ): string[] {
-  validateTaskActions(tree, actions);
+  validateTaskActions(tree, actions, claim.taskId);
   const applied: string[] = [];
   for (const action of actions) {
-    if (action.taskId === claim.taskId)
-      throw new Error(
-        `Handler action cannot mutate its own running task ${claim.taskId}; assignment changes belong to its assigning owner`,
-      );
     const resource = mutableActionResource(tree, action);
     assertResourceCreator(resource.metadata.creator, {
       appId: config.resourceStore.appId,

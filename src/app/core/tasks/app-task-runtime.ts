@@ -19,7 +19,7 @@ import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   admitConversationTaskChange,
   admitConversationTaskInput,
-  conversationTaskId,
+  conversationTaskExecutionId,
   conversationTaskIntent,
   stopConversationTaskTurn,
   type ConversationTaskChangeRef,
@@ -459,8 +459,9 @@ export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTu
 /** Notification text is a hint. Only the exact stored outcome or closure can become input. */
 export function admitLoadedConversationChange(input: ConversationTaskChangeRef & { bus: EventBus }) {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
-  const taskId = conversationTaskId(input.appId, input.conversationId);
-  if (!descriptor || !descriptor.resourceStore.readTask(taskId)) return null;
+  if (!descriptor) return null;
+  const taskId = conversationTaskExecutionId(appTaskConfig(descriptor), input.appId, input.conversationId);
+  if (!descriptor.resourceStore.readTask(taskId)) return null;
   if (!descriptor.app.conversation) return { taskId, created: false };
   const source = AppTaskResourceStore.activeFromDb(descriptor.resourceStore.db, input.taskAppId);
   if (

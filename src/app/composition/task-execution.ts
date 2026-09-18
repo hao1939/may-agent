@@ -1,3 +1,4 @@
+import { taskExecutionContext } from "../adapters/executors/task-context.js";
 import type { SubagentManager } from "../../lib/index.js";
 import type { SubagentDefinition } from "../../lib/types.js";
 import type { EventBus } from "../core/events/bus.js";
@@ -27,6 +28,7 @@ export function createTaskExecutionBackends(input: {
         ...turn,
         resolveConversationInput: createConversationAgentResolver({
           manager: input.manager,
+          taskContext: taskExecutionContext(turn.execution, definitions),
           db: turn.config.resourceStore.db,
           definitions,
           registry: { snapshot: () => turn.registry },

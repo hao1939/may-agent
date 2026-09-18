@@ -231,16 +231,17 @@ describe("shared execution scope", () => {
   it("reports a chat helper cleanup failure instead of leaving the chat running", async () => {
     const bus = new EventBus();
     const release = Promise.withResolvers<void>();
+    let child: string;
     bus.setPersistenceSubscriber((event) => {
-      if (event.type === "session.end" && event.data.task === "child") throw new Error("Child receipt write failed");
+      if (event.type === "session.end" && event.data.sessionId === child) throw new Error("Child receipt write failed");
     });
     const manager = fixture(async (text, stopped) => {
-      if (text === "child") await stopped;
+      if (text.split("\n")[0] === "child") await stopped;
       else await release.promise;
       return "answer";
     }, bus);
     const parent = manager.run("worker", "parent", { kind: "chat", autoClose: "never", timeoutMs: 5_000 });
-    const child = manager.runAgent("worker", "child", { parentSessionId: parent });
+    child = manager.runAgent("worker", "child", { parentSessionId: parent });
     const failedChild = manager.waitFor(child).catch((error) => error);
     release.resolve();
     await expect(manager.waitForIdle(parent)).rejects.toThrow("Child receipt write failed");

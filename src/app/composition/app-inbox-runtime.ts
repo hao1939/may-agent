@@ -1,4 +1,4 @@
-import { readTaskEventTarget } from "../core/events/task-target.js";
+import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
@@ -851,7 +851,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           input: requestedInput(data),
           originEventId: eventRowId(event),
           parentId: typeof data.parentId === "string" ? data.parentId : undefined,
-          targetTaskId: typeof data.targetTaskId === "string" ? data.targetTaskId : undefined,
+          targetTaskId: readEventTaskTarget(event)?.taskId,
           conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
           conversationSequence:
             typeof data.conversationId === "string"

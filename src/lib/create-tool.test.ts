@@ -177,7 +177,9 @@ describe("createAgentsTool()", () => {
       const parsed = parseResult(result);
       expect(parsed.sessionId).toBeDefined();
       expect(parsed.status).toBe("done");
-      expect(parsed.lastAssistantText).toBe("Fixture result");
+      expect(parsed.summary).toBe("Fixture result");
+      expect(parsed.id).toBe(parsed.sessionId);
+      expect(parsed.kind).toBe("agent");
       expect(parsed.duration).toBeDefined();
       // Should not include full messages array
       expect(parsed.messages).toBeUndefined();

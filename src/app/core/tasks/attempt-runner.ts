@@ -37,6 +37,7 @@ import {
   interruptSupersededAgentSession,
   runRegisteredTaskExecutor,
   runTaskAgent,
+  taskReads,
   runTaskCapability,
   runTaskExecutorAttempt,
 } from "./attempt-execution.js";
@@ -98,7 +99,7 @@ export async function runTaskAttempt(input: {
       if (providerStartedAt !== undefined) timing.providerMs = Math.max(0, Date.now() - providerStartedAt);
     },
   };
-  const persistResult = <T,>(operation: () => T): T => {
+  const persistResult = <T>(operation: () => T): T => {
     const startedAt = performance.now();
     try {
       try {
@@ -267,7 +268,7 @@ export async function runTaskAttempt(input: {
       workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
     // Both execution paths share workspace lineage, admission fencing, and
     // failure handling. Only the workflow may override the App's base branch.
-    if (!conversation && (workflowNeedsWorktree || (executorKey && descriptor.app.workspace?.kind === "git"))) {
+    if (!conversation && (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))) {
       try {
         if (descriptor.app.workspace?.kind !== "git") {
           throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
@@ -320,7 +321,7 @@ export async function runTaskAttempt(input: {
         declaredOutputPaths,
         childContext,
         event,
-        execute: async (attempt) => {
+        execute: async (attempt, taskEvents) => {
           if (!descriptor.app.conversation || !opts.conversations)
             throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
           const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
@@ -333,6 +334,7 @@ export async function runTaskAttempt(input: {
               app: descriptor.app,
               registry,
               signal: attempt.signal,
+              execution: { descriptor, attempt, taskEvents, taskRead: taskReads(opts, descriptor), taskSnapshot, executionPaths },
               getTaskApp(appId) {
                 const entry = registry.entries.find(({ definition }) => definition.id === appId);
                 if (!entry?.definition.tasks || !opts.persistDir)
@@ -447,6 +449,7 @@ export async function runTaskAttempt(input: {
           executionPaths,
           declaredOutputPaths,
           childContext,
+          taskSnapshot,
           event,
           ...(primary.handoff
             ? {
@@ -582,7 +585,7 @@ export async function runTaskAttempt(input: {
           hasPendingAppTaskFacts(config, primary, primaryResult.acceptedLiveEventIds) ? "waiting" : "accepted",
         );
         if (!finalized.ok) {
-          // A retained dirty/unintegrated workspace needs inspection, not an
+          // A dirty workspace or failed cleanup needs inspection, not an
           // identical replay of the handler's already rejected completion.
           primaryResult.handlerBlocked = true;
           primaryHandlerResult.state = "error";

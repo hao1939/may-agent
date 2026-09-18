@@ -566,3 +566,50 @@ it("recovers only an exact, unambiguous historical admission key", () => {
   db.prepare("UPDATE app_inbox_items SET task_admission_key = NULL WHERE id = ?").run(item.id);
   expect(recoverTaskInputAdmissionKey(db, item)).toBeUndefined();
 });
+
+it("recovers equivalent historical aliases without reopening cancelled work", async () => {
+  const { db, config, input } = fixture();
+  admitTaskInput(config, input);
+  const current = config.resourceStore.readTask("work/one")!;
+  cancelAppTask(config, {
+    appId: "example", taskId: "work/one", reason: "Superseded work",
+    expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+  });
+  const original = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [input.idempotencyKey] })
+    .appTaskAdmissions![input.idempotencyKey]!;
+  const alias = `task:${input.inputContext.id}:existing:work/one`;
+  expect(config.resourceStore.commit({ fences: [{ taskId: "work/one", resourceVersion: config.resourceStore.readTask("work/one")!.metadata.resourceVersion }], admissions: [{ taskId: alias, value: { ...original, admittedAt: "2000-01-01T00:00:00.000Z" } }] })).toBe(true);
+  db.prepare("UPDATE app_inbox_items SET task_admission_key = NULL WHERE id = ?").run(input.inputContext.id);
+  const before = config.resourceStore.readSnapshot();
+  const host = new AppInboxHost({
+    db,
+    apps: [defineApp({ id: "example", version: 1, agent: "example-owner", inputSchema: Type.Unknown(), tasks: {}, task: () => testAttachment() })],
+    attachTask: (request) => admitTaskInput(config, request),
+    readDependency: async ({ dependency }) => {
+      const closure = config.resourceStore.readCancellation(dependency.id)!;
+      return { ...dependency, status: "attention", summary: closure.summary!, response: closure.response, facts: closure.facts ?? [] };
+    },
+  });
+  await host.recoverTaskResults();
+  expect(host.get(input.inputContext.id)).toMatchObject({ status: "done", taskAdmissionKey: input.idempotencyKey, result: { summary: "Cancelled by human: Superseded work" } });
+  expect(config.resourceStore.readSnapshot()).toEqual(before);
+  await host.recoverTaskResults();
+  expect(config.resourceStore.readSnapshot()).toEqual(before);
+  host.close();
+});
+
+it("keeps conflicting alias generations, specifications, accepted results and feedback unlinked", () => {
+  for (const patch of [
+    { taskGeneration: 2 }, { specHash: "different" }, { resultAttemptId: "different-answer" },
+    { reportAttemptId: "different-feedback" }, { inputEvent: { type: "different-input" } },
+  ]) {
+    const { db, config, input } = fixture();
+    admitTaskInput(config, input);
+    const original = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [input.idempotencyKey] })
+      .appTaskAdmissions![input.idempotencyKey]!;
+    expect(config.resourceStore.commit({ fences: [{ taskId: "work/one", resourceVersion: config.resourceStore.readTask("work/one")!.metadata.resourceVersion }], admissions: [{ taskId: `task:${input.inputContext.id}:existing:work/one`, value: { ...original, ...patch } }] })).toBe(true);
+    db.prepare("UPDATE app_inbox_items SET task_admission_key = NULL WHERE id = ?").run(input.inputContext.id);
+    expect(recoverTaskInputAdmissionKey(db, getAppInboxItem(db, input.inputContext.id)!)).toBeUndefined();
+    expect(getAppInboxItem(db, input.inputContext.id)?.taskAdmissionKey).toBeUndefined();
+  }
+});

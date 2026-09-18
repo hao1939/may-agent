@@ -348,9 +348,13 @@ describe("workflow nesting depth cap", () => {
       export const name = "recursive";
       export const description = "Calls itself";
       export async function execute(ctx) {
-        const sub = await ctx.workflows.run("recursive", "recurse");
-        if (sub.status === "blocked") return ctx.blocked("hit depth: " + sub.summary);
-        return ctx.done("should not get here");
+        try {
+          const sub = await ctx.workflows.run("recursive", "recurse");
+          if (sub.status === "blocked") return ctx.blocked("hit depth: " + sub.summary);
+          return ctx.done("should not get here");
+        } catch (error) {
+          return ctx.blocked("hit depth: " + error.message);
+        }
       }
     `,
     );

@@ -130,13 +130,12 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string): v
     ...trackedNames.map((name) => `projects/${name}`),
   ];
   try {
-    execFileSync("git", ["-C", projectRoot, "cat-file", "-e", `${commit}:agents`], { stdio: "ignore" });
     execFileSync("git", ["-C", projectRoot, "cat-file", "-e", `${commit}:shared/common-sense.md`], {
       stdio: "ignore",
     });
     execFileSync("git", ["-C", projectRoot, "cat-file", "-e", `${commit}:shared/skills`], { stdio: "ignore" });
   } catch {
-    throw new Error(`Commit ${commit} is missing global agents or shared definition source`);
+    throw new Error(`Commit ${commit} is missing shared definition source`);
   }
 
   const status = execFileSync(
@@ -187,6 +186,7 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
     .map((name) => name.trim())
     .filter((name) => name.endsWith(".app"))
     .sort();
+  const globalAgents = execFileSync("git", ["-C", projectRoot, "ls-tree", "--name-only", commit, "--", "agents"], { encoding: "utf8" }).trim();
   const archivePath = join(stageRoot, ".apps.tar");
   const archiveFd = openSync(archivePath, "w");
   let archived;
@@ -200,7 +200,7 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
         "--format=tar",
         commit,
         "--",
-        "agents",
+        ...(globalAgents ? [globalAgents] : []),
         "shared/common-sense.md",
         "shared/skills",
         ...(sharedTools ? [sharedTools] : []),
@@ -220,6 +220,7 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
   }
   execFileSync("tar", ["-xf", archivePath, "-C", stageRoot], { stdio: ["ignore", "ignore", "pipe"] });
   mkdirSync(join(stageRoot, "projects"), { recursive: true });
+  mkdirSync(join(stageRoot, "agents"), { recursive: true });
   rmSync(archivePath, { force: true });
 }
 
@@ -239,8 +240,8 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
     });
   }
   const sourceAgentsRoot = join(projectRoot, "agents");
-  if (!existsSync(sourceAgentsRoot)) throw new Error(`No global agents directory found under ${projectRoot}`);
-  cpSync(sourceAgentsRoot, join(stageRoot, "agents"), {
+  mkdirSync(join(stageRoot, "agents"), { recursive: true });
+  if (existsSync(sourceAgentsRoot)) cpSync(sourceAgentsRoot, join(stageRoot, "agents"), {
     recursive: true,
     filter: (path) => {
       const rel = relative(sourceAgentsRoot, path);

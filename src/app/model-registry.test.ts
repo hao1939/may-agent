@@ -11,6 +11,13 @@ describe("model registry", () => {
     });
 
     expect(registry["gpt-5.6-sol"]?.baseUrl).toBe("http://model-endpoint:4000");
+    expect(registry["gpt-6-astra"]).toMatchObject({
+      id: "gpt-6-astra",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 400_000,
+    });
+    expect(registry["gpt-6-astra"]?.fallbackModel).toBeUndefined();
     expect(registry["gpt-5.6-sol"]?.apiKey).toBe("endpoint-key");
     expect(registry["claude-opus-5"]?.id).toBe("claude-opus-5");
     expect(registry["claude-opus-5"]?.contextWindow).toBe(200_000);

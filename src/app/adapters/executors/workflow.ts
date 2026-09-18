@@ -1,3 +1,4 @@
+import { taskExecutionContext } from "./task-context.js";
 import { basename, join } from "node:path";
 import type { TaskVerifier as AppTaskVerifier } from "@may-agent/sdk";
 import type { SubagentManager } from "../../../lib/index.js";
@@ -8,6 +9,7 @@ import {
   inspectWorkflowDefinition,
   runWorkflowDirect,
   WorkflowHandlerUnavailable,
+  WorkflowExecutionFailure,
 } from "../../../lib/workflow-tool.js";
 import { createRuntimeAppRead } from "../../core/reads/app-read.js";
 import { readMetricView } from "../reporting/metric-read.js";
@@ -156,6 +158,7 @@ async function executeTaskCapability(
     });
     input.observer?.providerStarted(Buffer.byteLength(task));
     providerStarted = true;
+    const taskContext = taskExecutionContext(input, definitions);
     const { result, runId, verifier } = await runWorkflowDirect({
       workflowName: capability.workflow,
       task,
@@ -173,51 +176,10 @@ async function executeTaskCapability(
       guardsDir: paths.guardsDir,
       sharedGuardsDir: paths.sharedGuardsDir,
       projectId: descriptor.id,
-      taskBinding: {
-        appId: descriptor.id,
-        taskId: taskDetail.id,
-        generation: taskDetail.generation,
-        attemptId: attempt.attemptId,
-      },
-      recoveryOwner: APP_TASK_RECOVERY_OWNER,
-      taskEmitter: input.taskEvents,
-      reviseTask: (change) => attempt.reviseTask(change),
+      ...taskContext,
+      taskContext,
       trace,
-      executionPaths: input.executionPaths,
       workflowInput: taskDetail.input ?? {},
-      reconciliation: {
-        appId: descriptor.id,
-        taskId: taskDetail.id,
-        generation: taskDetail.generation,
-        resourceVersion: attempt.resourceVersion,
-        agent: attempt.role.agent,
-        owner: attempt.role.agent,
-
-        outcome: taskDetail.outcome,
-        acceptance: taskDetail.acceptance,
-        input: taskDetail.input ?? {},
-        waits: structuredClone(attempt.waits),
-        children: {
-          ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
-          live: input.childContext.live.map(({ phase, ...child }) => ({
-            ...child,
-            status: phase === "converged" ? "done" : phase,
-          })),
-          completed: input.childContext.completed.map((child) => ({
-            ...child,
-            status: "done" as const,
-          })),
-        },
-        taskSnapshot: {
-          live: input.taskSnapshot.live.map(({ phase, ...task }) => ({
-            ...task,
-            status: phase === "converged" ? "done" : phase,
-          })),
-          truncated: input.taskSnapshot.truncated,
-        },
-        events: reconciliationEvents,
-        ...(attempt.previousAttempt ? { previousAttempt: attempt.previousAttempt } : {}),
-      },
       executionTimeoutMs: input.executionTimeoutMs,
       signal: attempt.signal,
     });
@@ -282,6 +244,7 @@ async function executeTaskCapability(
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);
     const unavailable = error instanceof WorkflowHandlerUnavailable;
+    const runId = error instanceof WorkflowExecutionFailure ? error.execution.id : null;
     bus.emit({
       type: "handler.workflow_dispatched",
       source: `agent:${agentName}`,
@@ -294,7 +257,7 @@ async function executeTaskCapability(
         projectId: descriptor.id,
         taskId: taskDetail.id,
         taskGeneration: taskDetail.generation,
-        workflowRunId: null,
+        workflowRunId: runId,
         status: "blocked",
         reason: summary,
       },
@@ -304,10 +267,10 @@ async function executeTaskCapability(
       handlerResult: {
         state: "error",
         summary,
-        facts: [],
+        facts: runId ? [`workflow-run:${runId}`] : [],
         actions: [],
       },
-      runId: null,
+      runId,
       ...(unavailable ? { unavailable: true } : {}),
       ...(!unavailable ? { executionFailed: true } : {}),
     };

@@ -68,8 +68,9 @@ export type GuardModule = SdkGuardModule<TaskResult>;
 // ── Workflow Result ────────────────────────────────────────────────────
 
 /** The outcome of a workflow execution. */
-export type WorkflowResult =
-  { type: "done"; summary: string; output?: unknown } | { type: "blocked"; reason: string; context?: unknown };
+export type WorkflowResult = ({ type: "done"; summary: string }
+  | { type: "blocked" | "error" | "interrupted"; reason: string; context?: unknown })
+  & { output?: unknown; facts?: unknown };
 
 // ── Workflow Module ────────────────────────────────────────────────────
 
@@ -149,7 +150,7 @@ export interface SessionTrace {
 
 // ── Workflow Tool Result Types ─────────────────────────────────────────
 
-export type WorkflowToolResult =
+export type WorkflowToolResult = (
   | {
       type: "done";
       workflow: string;
@@ -179,7 +180,7 @@ export type WorkflowToolResult =
       type: "list";
       workflows: Array<{ name: string; description: string; sourceScope?: "agent" | "project" }>;
       diagnostics?: string[];
-    };
+    }) & { output?: unknown; facts?: unknown };
 
 /** Compact summary of a workflow step — included in the tool result so the supervisor
  *  can see what happened without calling trace(). */

@@ -1,3 +1,4 @@
+import type { TaskExecutionContext } from "../../lib/task-execution-context.js";
 import { assignmentGuidance } from "../assignment-guidance.js";
 import {
   Type,
@@ -178,6 +179,7 @@ export function createConversationAgentResolver(options: {
   registry: Pick<AppRegistry, "snapshot">;
   db: SqliteDb;
   definitions?: ReadonlyMap<string, SubagentDefinition>;
+  taskContext?: TaskExecutionContext;
 }): AppInputResolver {
   return async ({ app, inputContext, execution: binding }) => {
     const agent = (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "");
@@ -196,6 +198,7 @@ export function createConversationAgentResolver(options: {
         projectId: app.id,
         recoveryOwner: APP_TASK_RECOVERY_OWNER,
         taskBinding: binding.taskBinding,
+        taskContext: options.taskContext,
         requireFinish: true,
         outputSchema: conversationTurnResultSchema,
         // Reuse bounded App execution, without detached lifecycle tools.

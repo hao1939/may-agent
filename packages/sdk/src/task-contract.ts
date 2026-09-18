@@ -43,7 +43,11 @@ export const taskActionSchema = Type.Object(
 export const conditionSchema = Type.Object(
   {
     id: nonEmptyStringSchema,
-    type: nonEmptyStringSchema,
+    type: Type.String({
+      minLength: 1,
+      pattern: "\\.",
+      description: "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
+    }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
     requestedAction: Type.Optional(nonEmptyStringSchema),
@@ -209,6 +213,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   if (INTERNAL_TASK_SCHEDULING_CONDITION_TYPES.has(type)) {
     return `conditions[${index}].type ${type} is internal task scheduling; use a direct child, dependsOn, or an external observable Condition`;
   }
+  if (!type.includes(".")) return `conditions[${index}].type must be a namespaced event type`;
   const subject = normalizedString(value.subject);
   if (!subject || !isTypedConditionSubject(subject)) {
     return `conditions[${index}].subject must be a typed subject`;
