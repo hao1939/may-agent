@@ -132,8 +132,11 @@ Task workflow. See [Task authoring](handler-authoring.md) for the owning contrac
 No live children is not sufficient evidence that acceptance is met. Retain exact
 `facts`, and describe a real wait or the supported outcome.
 
-Return Task changes as typed output. Do not edit Task-state files, write
-projections, acquire Task locks, or emit assignment/completion events.
+Return execution status, waits and dependencies as typed output. When supplied
+by the Task caller, `ctx.reviseTask` updates creator-owned requirements through
+the Host's authority checks. It does not update execution status. Do not edit
+Task-state files, write projections, acquire Task locks, or emit
+assignment/completion events.
 
 For a resource-backed task, publish facts only with
 `ctx.events.emit({ type, localKey, data })`. The older `ctx.emit` and
@@ -144,6 +147,22 @@ Return cross-App result work as a typed dependency; do not emit
 Use `needs-agent` only when the same App needs exceptional judgment from its
 selected agent. Do not clear an explicit workflow merely to let an agent perform
 workflow-owned effects.
+
+### Cross-App outcome reviews
+
+A reviewing App uses the same Task mechanism as any other App. Code may use
+bounded public catalog and Task reads to bind an external `(appId, taskId)` and
+collect mechanical evidence; an agent judges responsibility, recovery,
+verification, and delivery. Caller hints and session identity do not establish
+ownership. Missing or conflicting evidence is an inconclusive review result,
+not a target failure and not healthy coverage.
+
+Published review artifacts belong in a configured durable App output beneath
+`.state`, not a source checkout or disposable Task worktree. Immutable reports
+and facts sidecars are evidence. A bounded list/read workflow may expose them
+to May through ordinary App actions without launching a new review. Receipt or
+acknowledgment does not mean a finding was fixed; verified resolution requires
+later evidence from the responsible App's accepted Task result or output.
 
 ## Durable Wait Boundary
 
@@ -424,29 +443,13 @@ that all installed workflows follow this guidance.
 - Every call is bounded to the current run.
 - Normal branches return a truthful terminal contribution; failures retain available evidence.
 - Durable waits use task dependencies or Conditions.
-- Task mutation is returned as typed output, never performed directly.
+- Execution results use typed output; requirement edits use creator-scoped `ctx.reviseTask` when available.
 - Cross-App outcomes use typed task dependencies; events remain facts.
 - Tests use scoped fake capabilities and require no global runtime.
 
 Use the [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
 to distinguish required contracts from available support. This checklist does
 not turn the advisory choices above into new runtime gates.
-
-## Cross-App outcome review
-
-A reviewing App uses the same Task mechanism as any other App. Code may use
-bounded public catalog and Task reads to bind an external `(appId, taskId)` and
-collect mechanical evidence; an agent judges responsibility, recovery,
-verification, and delivery. Caller hints and session identity do not establish
-ownership. Missing or conflicting evidence is an inconclusive review result,
-not a target failure and not healthy coverage.
-
-Published review artifacts belong in a configured durable App output beneath
-`.state`, not a source checkout or disposable Task worktree. Immutable reports
-and facts sidecars are evidence. A bounded list/read workflow may expose them
-to May through ordinary App actions without launching a new review. Receipt or
-acknowledgment does not mean a finding was fixed; verified resolution requires
-later evidence from the responsible App's accepted Task result or output.
 
 ## When to promote a learned practice
 

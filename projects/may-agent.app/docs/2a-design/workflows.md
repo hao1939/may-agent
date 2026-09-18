@@ -877,7 +877,8 @@ explains when to promote a practice to a workflow or retain agent judgment.
 
 ## Cross-App outcome review and report consumption
 
-Review uses ordinary Tasks and bounded public reads; agents judge the evidence.
-Missing coverage is inconclusive. Publication is not proof of a fix. The
-[authoring guide](../2b-manual/workflow-authoring.md#cross-app-outcome-review)
-describes evidence collection, durable report storage and independent consumption.
+Cross-App reviews use ordinary Tasks, scoped reads and durable report outputs.
+Agents judge the evidence; missing coverage is inconclusive and publication or
+acknowledgment does not establish resolution. See the
+[authoring guide](../2b-manual/workflow-authoring.md#cross-app-outcome-reviews)
+for identity checks, report handling and independent consumption.
