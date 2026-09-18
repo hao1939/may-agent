@@ -1,8 +1,8 @@
 <ai_context>
 summary: "An HN-front-page field report shows a coding agent carrying terse, token-efficient tool-call style into durable source and tests. Agent systems should treat ephemeral execution and committed artifacts as separate policy domains, and gate both reviewability and runaway continuation."
 triggers: ["tool-call code", "code reviewability", "coding agent", "artifact boundary", "long-horizon agent", "runaway continuation", "Astra", "code golf"]
-last_updated: "2026-09-11"
-source_basis: "Armin Ronacher's Astra coding-agent field report and HN item 49654229, observed on the official HN top-stories feed."
+last_updated: "2026-09-18"
+source_basis: "Armin Ronacher's Astra coding-agent field report and HN item 49654229, plus a current XHS practitioner discussion of the model–harness boundary."
 </ai_context>
 
 # Disposable Tool Code Can Leak Into Durable Artifacts
@@ -51,6 +51,27 @@ The thread is practitioner discussion, not a controlled comparison. Model names,
 prices, and behavior can change; the reusable signal is the artifact boundary and
 continuation policy, not a permanent ranking of models.
 
+## XHS update: stronger models move, rather than erase, the boundary
+
+**Source:** https://www.xiaohongshu.com/explore/6aa514d1000000002603a55d
+
+A current XHS post argues that newer models are internalizing work previously
+implemented as orchestration glue: task decomposition, tool use, multi-agent
+coordination, persistent reasoning state, and mid-run steering. Its more durable
+claim appears in the author's comment-thread qualification: even if the model
+absorbs orchestration, it cannot grant itself production permissions or define
+its own external acceptance boundary. The harness therefore retreats toward an
+environment or operating-system layer—permissions, tools, filesystems, safety,
+and verification—rather than disappearing.
+
+The post had 182 likes, 217 saves, and 43 comments when inspected. That engagement
+shows practitioner interest, not technical validation. The post cites GPT-5.6 and
+Astra documentation but does not link the exact documents, and those feature
+claims were not independently checked in this XHS run. Its useful contribution is
+thus an architecture hypothesis consistent with the field report above: as model
+capability grows, policy should become thinner where it merely duplicates
+reasoning, but firmer at irreversible environment and artifact boundaries.
+
 ## Design implication: use two policy domains and two gates
 
 A coding harness should explicitly label output by destination:
@@ -79,7 +100,9 @@ as completion proxies.
 ## Limits
 
 This is one expert's field report on one deliberately open-ended experiment, plus
-an HN discussion. The exact token total and cost are author-reported and were not
-independently reproduced here. The examples support the existence of the observed
-style leak and runaway continuation; they do not establish its frequency across
-models, harnesses, or well-scoped production tasks.
+practitioner discussions on HN and XHS. The exact token total and cost are
+author-reported and were not independently reproduced here. The examples support
+the existence of the observed style leak and runaway continuation; they do not
+establish its frequency across models, harnesses, or well-scoped production tasks.
+The XHS architecture claim is interpretation, not a controlled comparison of how
+orchestration responsibility changes across model generations.
