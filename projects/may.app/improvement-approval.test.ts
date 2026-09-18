@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
   approvalCondition,
   applyWithExactApproval,
-  applyWithTrustedApproval,
   buildApprovalProposal,
   followUpAfterVerifiedActivation,
   packetHash,
@@ -250,78 +249,6 @@ describe("trusted decision, source application and follow-up composition", () =>
         async () => event,
       ),
     ).rejects.toThrow("proposal text changed");
-  });
-
-  test("rereads trusted event and target before applying, then stops at source receipt", async () => {
-    const { packet, current, proposal, event } = proposalFixture();
-    let reads = 0;
-    let inspections = 0;
-    let applications = 0;
-    const result = await applyWithTrustedApproval({
-      packet,
-      proposal,
-      eventId: 42,
-      readEvent: async () => {
-        reads++;
-        return event;
-      },
-      inspectCurrent: async () => {
-        inspections++;
-        return current;
-      },
-      applySource: async () => {
-        applications++;
-        return { receipt: "artifact:source-application.json" };
-      },
-    });
-    expect({ reads, inspections, applications }).toEqual({
-      reads: 2,
-      inspections: 2,
-      applications: 1,
-    });
-    expect(result).toEqual({
-      stage: "source-applied",
-      sourceReceipt: "artifact:source-application.json",
-      next: "activation-task-required",
-    });
-  });
-
-  test("target drift and non-approval make zero mutation", async () => {
-    const { packet, current, proposal, event } = proposalFixture();
-    let applications = 0;
-    await expect(
-      applyWithTrustedApproval({
-        packet,
-        proposal,
-        eventId: 42,
-        readEvent: async () => event,
-        inspectCurrent: async () => ({ ...current, baselineCommit: "drift" }),
-        applySource: async () => {
-          applications++;
-          return { receipt: "never" };
-        },
-      }),
-    ).rejects.toThrow("baselineCommit");
-    expect(applications).toBe(0);
-
-    const rejected = {
-      ...event,
-      data: { ...event.data, decision: "reject" },
-    };
-    expect(
-      await applyWithTrustedApproval({
-        packet,
-        proposal,
-        eventId: 42,
-        readEvent: async () => rejected,
-        inspectCurrent: async () => current,
-        applySource: async () => {
-          applications++;
-          return { receipt: "never" };
-        },
-      }),
-    ).toEqual({ stage: "not-applied", decision: "rejected" });
-    expect(applications).toBe(0);
   });
 
   test("independent follow-up requires a separate verified adoption receipt", () => {

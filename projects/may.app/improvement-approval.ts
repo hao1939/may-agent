@@ -296,58 +296,6 @@ export async function applyWithExactApproval(
   return { applied: true };
 }
 
-/**
- * Connected source-only boundary. The event and target are reread immediately
- * before the mutation. The caller supplies the existing journal and application
- * adapters; this function adds no queue or lifecycle.
- */
-export async function applyWithTrustedApproval(input: {
-  packet: ApprovalPacket;
-  proposal: ApprovalProposal;
-  eventId: number;
-  readEvent: (eventId: number) => Promise<TrustedApprovalEvent | undefined>;
-  inspectCurrent: () => Promise<CurrentApplicationIdentity>;
-  applySource: (packet: ApprovalPacket) => Promise<{ receipt: string }>;
-}): Promise<
-  | { stage: "not-applied"; decision: "rejected" | "deferred" }
-  | {
-      stage: "source-applied";
-      sourceReceipt: string;
-      next: "activation-task-required";
-    }
-> {
-  const first = await trustedDecisionFromEvent(
-    input.packet,
-    input.proposal,
-    input.eventId,
-    input.readEvent,
-  );
-  if (first.decision !== "approved")
-    return { stage: "not-applied", decision: first.decision };
-  const current = await input.inspectCurrent();
-  const denial = applicationDenial(input.packet, first, current);
-  if (denial) throw new Error(denial);
-  // Re-read both authority and mutable target at the last possible boundary.
-  const decision = await trustedDecisionFromEvent(
-    input.packet,
-    input.proposal,
-    input.eventId,
-    input.readEvent,
-  );
-  const rechecked = await input.inspectCurrent();
-  const changed = applicationDenial(input.packet, decision, rechecked);
-  if (changed) throw new Error(changed);
-  const applied = await input.applySource(input.packet);
-  return {
-    stage: "source-applied",
-    sourceReceipt: requiredJudgmentText(
-      applied.receipt,
-      "source application receipt",
-    ),
-    next: "activation-task-required",
-  };
-}
-
 /** Independent Evaluation follows only separate, verified live adoption. */
 export function followUpAfterVerifiedActivation(
   packet: ApprovalPacket,

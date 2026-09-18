@@ -1,11 +1,30 @@
 # Applying an approved source candidate
 
-The first release deliberately keeps application operator-owned. May prepares
-the candidate and packet, returns them for human review, and waits. A score, a
-worker claim or JSON containing `trustedHumanControl: true` is not approval.
-There is no background approval consumer and Gym cannot apply production changes.
+The first release keeps the mutation command operator-owned. May prepares the
+candidate and packet, returns them for human review, and waits on the ordinary
+human-owned Condition. A score, worker claim, or JSON containing
+`trustedHumanControl: true` is not approval. Gym cannot apply production changes.
 
-The operator checks the actual human decision and invokes the source command:
+The primary plain-text path uses the exact proposal shown by Telegram and the
+Host journal event id. The command rereads that event through public `event.get`,
+checks Host-stamped Telegram provenance and the exact Task/packet/proposal, then
+runs the same Git/evidence guard:
+
+```sh
+bun projects/may.app/scripts/apply-improvement.ts \
+  --packet /review/packet.json --proposal /review/proposal.json \
+  --event-id 12345 --repo /target/clean-checkout \
+  --diff /review/change.patch --verification /review/verification.json \
+  --comparison /review/comparison.json --receipt /review/application.json
+```
+
+Reject and defer write a denial receipt and make no source mutation. Replaying
+the same approved event after the candidate is already the clean target is an
+idempotent success. The receipt remains source-only: it does not authorize or
+prove App/Host activation.
+
+The manual fallback lets an operator check the actual human decision and invoke
+the same source command with an exact packet hash:
 
 ```sh
 bun projects/may.app/scripts/apply-improvement.ts \

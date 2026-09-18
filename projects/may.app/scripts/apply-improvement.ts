@@ -5,8 +5,12 @@ import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   applicationDenial,
+  trustedDecisionFromEvent,
   type ApprovalPacket,
+  type ApprovalProposal,
+  type TrustedApprovalEvent,
 } from "../improvement-approval";
+import { createPublicTaskEvidenceProvider } from "../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence";
 
 export type ApplicationFiles = {
   packet: string;
@@ -124,6 +128,27 @@ export function applyImprovement(
         activationScope: packet.activationScope,
       }
     : null;
+  // A replay of the exact approved operation is a successful no-op. This is
+  // checked only after the packet/evidence and approval identity were reread.
+  if (current.baselineCommit === packet.candidateCommit) {
+    // applicationDenial normally requires HEAD at the approved baseline. For
+    // replay only, substitute that one invariant after proving actual HEAD is
+    // already the candidate; every packet, decision, tree and scope invariant
+    // must still pass against this exact checkout.
+    const replayDenial = applicationDenial(packet, decision, {
+      ...current,
+      baselineCommit: packet.baselineCommit,
+    });
+    if (!replayDenial) {
+      return {
+        applied: true,
+        alreadyApplied: true,
+        appliedCommit: packet.candidateCommit,
+        ...inspected,
+      };
+    }
+    return { applied: false, denial: replayDenial, ...inspected };
+  }
   const denial = applicationDenial(packet, decision, current);
   if (denial) return { applied: false, denial, ...inspected };
   // Operator owns exclusive use of this clean checkout during this bounded command.
@@ -147,6 +172,42 @@ export function applyImprovement(
       "source application verification failed; inspect current checkout before further action",
     );
   return { applied: true, appliedCommit, ...inspected };
+}
+
+/**
+ * Production source-application entrypoint for the plain-text approval path.
+ * It rereads the Host-stamped journal event through the public control plane;
+ * a caller-provided approval flag is not accepted. Activation remains a
+ * separate, explicitly scoped Task after this source-only receipt.
+ */
+export async function applyImprovementFromTrustedEvent(
+  files: ApplicationFiles,
+  proposal: ApprovalProposal,
+  eventId: number,
+  readEvent: (
+    eventId: number,
+  ) => Promise<TrustedApprovalEvent | undefined> = async (id) => {
+    const provider = createPublicTaskEvidenceProvider();
+    return (await provider.getEvent(id)) as unknown as TrustedApprovalEvent;
+  },
+) {
+  const packet = JSON.parse(
+    readFileSync(files.packet, "utf8"),
+  ) as ApprovalPacket;
+  const decision = await trustedDecisionFromEvent(
+    packet,
+    proposal,
+    eventId,
+    readEvent,
+  );
+  if (decision.decision !== "approved") {
+    return {
+      applied: false,
+      denial: `human decision is ${decision.decision}`,
+      decision: decision.decision,
+    };
+  }
+  return applyImprovement(files, decision.packetHash);
 }
 
 if (import.meta.main) {
@@ -175,12 +236,36 @@ if (import.meta.main) {
       stage: "source-application",
       phase: "requested",
       files,
-      approvedPacketHash: option("--approve") ?? null,
+      authority: option("--event-id")
+        ? {
+            kind: "trusted-journal-event",
+            eventId: option("--event-id"),
+            proposal: option("--proposal"),
+          }
+        : {
+            kind: "operator-packet-hash",
+            supplied: Boolean(option("--approve")),
+          },
     }) + "\n",
     { flag: "wx" },
   );
   try {
-    const result = applyImprovement(files, option("--approve"));
+    const eventIdText = option("--event-id");
+    const proposalPath = option("--proposal");
+    if (Boolean(eventIdText) !== Boolean(proposalPath))
+      throw new Error("--event-id and --proposal must be supplied together");
+    const eventId = eventIdText ? Number(eventIdText) : 0;
+    if (eventIdText && (!Number.isSafeInteger(eventId) || eventId < 1))
+      throw new Error("--event-id must be a positive integer");
+    const result = eventIdText
+      ? await applyImprovementFromTrustedEvent(
+          files,
+          JSON.parse(
+            readFileSync(resolve(proposalPath!), "utf8"),
+          ) as ApprovalProposal,
+          eventId,
+        )
+      : applyImprovement(files, option("--approve"));
     writeFileSync(
       receiptPath,
       JSON.stringify(
