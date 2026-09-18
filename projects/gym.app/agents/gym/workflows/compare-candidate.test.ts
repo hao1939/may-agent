@@ -23,7 +23,7 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture(mode: "valid" | "fail" | "abort" | "control") {
+function fixture(mode: "valid" | "fail" | "abort" | "control" | "wrong-scope") {
   const root = mkdtempSync(join(tmpdir(), "gym-adapter-"));
   roots.push(root);
   const gym = join(root, "projects", "gym");
@@ -46,6 +46,13 @@ function fixture(mode: "valid" | "fail" | "abort" | "control") {
     benchmark: "tiny",
     candidate: "baseline",
     scenarios,
+    trials_per_scenario: 1,
+    completed_at: "2026-01-01T00:00:00.000Z",
+    trials: scenarios.map((scenario) => ({
+      scenario,
+      trial: 1,
+      machine_verdict: "fail",
+    })),
     proof: {
       candidate_fingerprint: null,
       models: ["fixture-model"],
@@ -83,6 +90,7 @@ const run = join(process.env.GYM_STATE_DIR, "benchmarks", runId);
 mkdirSync(join(run, "inputs"), { recursive: true });
 cpSync(join(baselineDir, "inputs", "score.js"), join(run, "inputs", "score.js"));
 const manifest = { ...base, run_id: runId, baseline_run_id: base.run_id, candidate,
+  trials_per_scenario: mode === "wrong-scope" ? 2 : 1,
   proof: { ...base.proof, candidate_fingerprint: ${JSON.stringify(fingerprintTree(candidate))} } };
 writeFileSync(join(run, "manifest.json"), JSON.stringify(manifest));
 writeFileSync(join(run, "comparison.json"), JSON.stringify({ baseline_run_id: base.run_id, candidate_run_id: runId, gate: mode === "control" ? "fail" : "pass" }));
@@ -132,6 +140,34 @@ function result(output: Awaited<ReturnType<typeof compareCandidate>>) {
 }
 
 describe("standalone Gym comparison adapter", () => {
+  test("refuses partial or invalid baseline trials before spending a candidate run", async () => {
+    for (const change of ["partial", "invalid", "duplicate"]) {
+      const setup = fixture("valid");
+      const file = join(setup.request.baselinePath, "manifest.json");
+      const manifest = JSON.parse(readFileSync(file, "utf8"));
+      if (change === "partial") manifest.completed_at = null;
+      if (change === "invalid") manifest.trials[0].machine_verdict = "invalid";
+      if (change === "duplicate") manifest.trials[1] = manifest.trials[0];
+      writeFileSync(file, JSON.stringify(manifest));
+      setup.request.baselineFingerprint = fingerprintTree(
+        setup.request.baselinePath,
+      );
+      expect((await compareCandidate(context(setup))).status).toBe("blocked");
+      expect(
+        existsSync(join(setup.output, "gym-state", "spawned")),
+      ).toBeFalse();
+    }
+  });
+
+  test("does not trust a passing comparison when the actual trial scope differs", async () => {
+    const setup = fixture("wrong-scope");
+    const saved = result(await compareCandidate(context(setup)));
+    expect(saved.verdict).toBe("hold");
+    expect(
+      JSON.parse(readFileSync(saved.receiptPath, "utf8")).outputMatches,
+    ).toBeFalse();
+  });
+
   test("rejects an identity mismatch before spawning the standalone runner", async () => {
     const setup = fixture("valid");
     setup.request.model = "wrong";

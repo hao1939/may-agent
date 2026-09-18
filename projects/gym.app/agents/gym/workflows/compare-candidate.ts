@@ -42,6 +42,9 @@ type Manifest = {
   benchmark: string;
   candidate: string;
   scenarios: string[];
+  trials_per_scenario: number;
+  completed_at: string | null;
+  trials: Array<{ scenario: string; trial: number; machine_verdict: string }>;
   proof: {
     candidate_fingerprint: string | null;
     models: string[];
@@ -51,6 +54,32 @@ type Manifest = {
 };
 
 const OUTPUT_LIMIT = 65_536;
+function completeTrialScope(manifest: Manifest, request: Comparison): boolean {
+  if (
+    !manifest.completed_at ||
+    !Number.isFinite(Date.parse(manifest.completed_at)) ||
+    manifest.trials_per_scenario !== request.trials ||
+    !Array.isArray(manifest.trials)
+  )
+    return false;
+  const expected = new Set(
+    request.scenarios.flatMap((scenario) =>
+      Array.from(
+        { length: request.trials },
+        (_, index) => `${scenario}\0${index + 1}`,
+      ),
+    ),
+  );
+  if (manifest.trials.length !== expected.size) return false;
+  for (const trial of manifest.trials) {
+    if (
+      !["pass", "fail"].includes(trial.machine_verdict) ||
+      !expected.delete(`${trial.scenario}\0${trial.trial}`)
+    )
+      return false;
+  }
+  return expected.size === 0;
+}
 function text(value: unknown, field: string): string {
   const result = typeof value === "string" ? value.trim() : "";
   if (!result) throw new Error(`comparison requires ${field}`);
@@ -232,6 +261,7 @@ export async function compareCandidate(
     : "";
   const preflight =
     baseline.run_id === request.baselineRunId &&
+    completeTrialScope(baseline, request) &&
     fingerprintTree(baselineDir) === request.baselineFingerprint &&
     baseline.agent === request.agent &&
     baseline.benchmark === request.benchmark &&
@@ -351,6 +381,7 @@ export async function compareCandidate(
     manifest!.candidate === request.candidate &&
     manifest!.agent === request.agent &&
     manifest!.benchmark === request.benchmark &&
+    completeTrialScope(manifest!, request) &&
     same(manifest!.scenarios, request.scenarios) &&
     manifest!.proof.candidate_fingerprint === request.candidateFingerprint &&
     manifest!.proof.models.length === 1 &&
