@@ -59,6 +59,13 @@ export type HumanTaskView = {
   terminal: boolean;
   cancellable: boolean;
   execution?: { attemptId: string; sessionId?: string };
+  /** Exact attempt that produced the currently accepted result. Detail reads only. */
+  acceptedAttempt?: {
+    id: string;
+    generation: number;
+    startedAt: string;
+    finishedAt?: string;
+  };
   progress?: HumanTaskProgress;
   waitingOn?: HumanTaskWait[];
   requestedBy?: HumanTaskLink;
@@ -139,6 +146,7 @@ type TaskRow = {
   terminal?: number;
   ready?: number | null;
   attempt_json?: string | null;
+  observed_attempt_json?: string | null;
   human_conditions_json?: string | null;
 };
 
@@ -496,6 +504,7 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
   if (!resource) return null;
   storedResultFacts(resource.status);
   const attempt = parseJson<AppTaskAttempt>(row.attempt_json);
+  const acceptedAttempt = parseJson<AppTaskAttempt>(row.observed_attempt_json);
   const status = taskStatus(row.phase, false);
   const observationIsCurrent =
     status !== "running" ||
@@ -527,6 +536,18 @@ function projectTask(row: TaskRow, ref: string, detail = true): HumanTaskView | 
           },
         }
       : {}),
+    ...(detail && acceptedAttempt?.acceptedResult
+      ? {
+          acceptedAttempt: {
+            id: acceptedAttempt.metadata.id,
+            generation: acceptedAttempt.taskGeneration,
+            startedAt: acceptedAttempt.startedAt,
+            ...(acceptedAttempt.finishedAt
+              ? { finishedAt: acceptedAttempt.finishedAt }
+              : {}),
+          },
+        }
+      : {}),
   };
   return detail ? view : listCard(view);
 }
@@ -542,21 +563,27 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
     .prepare(
       `SELECT * FROM (
        SELECT t.app_id, t.task_id, ${LIVE_TASK_PHASE_SQL} AS phase, t.updated_at, t.resource_json AS payload, 0 AS terminal,
-         t.ready, a.attempt_json, ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
+         t.ready, a.attempt_json, oa.attempt_json AS observed_attempt_json,
+         ${HUMAN_CONDITIONS_SQL} AS human_conditions_json,
          t.generation AS current_generation
        FROM app_tasks t
        LEFT JOIN app_task_attempts a
          ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
+       LEFT JOIN app_task_attempts oa
+         ON oa.app_id = t.app_id
+        AND oa.attempt_id = json_extract(t.resource_json, '$.status.observedAttemptId')
        WHERE t.app_id = ? AND t.task_id = ?
        UNION ALL
        SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-         r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
+         r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json,
+         NULL AS observed_attempt_json, NULL AS human_conditions_json,
          json_extract(r.receipt_json, '$.metadata.generation') AS current_generation
        FROM app_task_receipts r
        WHERE r.app_id = ? AND r.receipt_id = ?
        UNION ALL
        SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
-         c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
+         c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json,
+         NULL AS observed_attempt_json, NULL AS human_conditions_json,
          json_extract(c.cancellation_json, '$.generation') AS current_generation
        FROM app_task_cancellations c
        WHERE c.app_id = ? AND c.task_id = ?
