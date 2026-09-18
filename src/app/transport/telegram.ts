@@ -413,6 +413,8 @@ export type TelegramApprovalAnchor = {
   packetHash?: string;
   proposalHash?: string;
   proposalRevision?: number;
+  taskGeneration: number;
+  conditionId: string;
 };
 
 export type TelegramApprovalReply = TelegramApprovalAnchor & {
@@ -421,20 +423,35 @@ export type TelegramApprovalReply = TelegramApprovalAnchor & {
 };
 
 function pendingHumanApprovalCondition(task: HumanTaskView | null) {
-  if (!task) return null;
-  const matches = (task.diagnostics?.conditions ?? [])
-    .map((item) => item.condition)
-    .filter(
-      (item) =>
-        item?.spec.type === "project.approval.submitted" &&
-        item.status?.state !== "true" &&
-        (item.spec.owner === "human" || item.spec.owner?.startsWith("human:") === true),
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    const expected =
+      condition?.spec.expected && typeof condition.spec.expected === "object" && !Array.isArray(condition.spec.expected)
+        ? (condition.spec.expected as Record<string, unknown>)
+        : {};
+    return (
+      condition?.spec.type === "project.approval.submitted" &&
+      condition.status?.state !== "true" &&
+      (condition.spec.owner === "human" || condition.spec.owner?.startsWith("human:") === true) &&
+      expected.taskGeneration === task.generation &&
+      expected.conditionId === item.id
     );
-  return matches.length === 1 ? matches[0]! : null;
+  });
+  return matches.length === 1 ? matches[0]!.condition : null;
 }
 
 function fullHumanApprovalAction(task: HumanTaskView | null): string | null {
-  const action = pendingHumanApprovalCondition(task)?.spec.requestedAction?.trim();
+  if (!task || task.terminal) return null;
+  const humanConditions = (task.diagnostics?.conditions ?? [])
+    .map((item) => item.condition)
+    .filter(
+      (condition) =>
+        condition?.status?.state !== "true" &&
+        (condition?.spec.owner === "human" || condition?.spec.owner?.startsWith("human:") === true) &&
+        condition.spec.requestedAction?.trim(),
+    );
+  const action = humanConditions.length === 1 ? humanConditions[0]!.spec.requestedAction?.trim() : null;
   return action || null;
 }
 
@@ -455,6 +472,8 @@ function approvalAnchor(task: HumanTaskView | null): TelegramApprovalAnchor | nu
   return {
     approvalId,
     displayedActionHash: createHash("sha256").update(displayedAction).digest("hex"),
+    taskGeneration: task!.generation,
+    conditionId: String(expected.conditionId),
     ...(typeof expected.packetHash === "string" ? { packetHash: expected.packetHash } : {}),
     ...(typeof expected.proposalHash === "string" ? { proposalHash: expected.proposalHash } : {}),
     ...(Number.isSafeInteger(expected.proposalRevision) ? { proposalRevision: Number(expected.proposalRevision) } : {}),
@@ -477,7 +496,18 @@ export function telegramApprovalReply(
           ? "defer"
           : null;
   const current = approvalAnchor(task);
-  if (!decision || !task || !displayed || !current || JSON.stringify(displayed) !== JSON.stringify(current))
+  if (
+    !decision ||
+    !task ||
+    !displayed ||
+    !current ||
+    Object.keys(current).some(
+      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
+    ) ||
+    Object.keys(displayed).some(
+      (key) => displayed[key as keyof TelegramApprovalAnchor] !== current[key as keyof TelegramApprovalAnchor],
+    )
+  )
     return null;
   const condition = pendingHumanApprovalCondition(task)!;
   const expected =
@@ -1333,6 +1363,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             ...(approval.packetHash ? { packetHash: approval.packetHash } : {}),
             ...(approval.proposalHash ? { proposalHash: approval.proposalHash } : {}),
             ...(approval.proposalRevision ? { proposalRevision: approval.proposalRevision } : {}),
+            taskGeneration: approval.taskGeneration,
+            conditionId: approval.conditionId,
             provenance: {
               provider: "telegram",
               authenticatedSenderId: approverId,

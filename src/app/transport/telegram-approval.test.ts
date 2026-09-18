@@ -36,6 +36,8 @@ function proposal(letter: string, revision: number): HumanTaskView {
                 approvalId: `proposal-${letter}`,
                 packetHash: letter.repeat(64),
                 proposalRevision: revision,
+                taskGeneration: 1,
+                conditionId: `approval-${letter}`,
               },
               requestedAction:
                 `Problem: stale approval ${letter}.\nVerified benefit: exact packet binding.\n` +
@@ -61,6 +63,8 @@ const anchorA: TelegramApprovalAnchor = {
   displayedActionHash: createHash("sha256").update(action(proposalA)).digest("hex"),
   packetHash: "a".repeat(64),
   proposalRevision: 1,
+  taskGeneration: 1,
+  conditionId: "approval-a",
 };
 
 describe("Telegram exact approval reply", () => {
@@ -78,6 +82,17 @@ describe("Telegram exact approval reply", () => {
     expect(telegramApprovalReply("approve", proposal("b", 2), anchorA)).toBeNull();
     expect(telegramApprovalReply("reject", proposal("b", 2), anchorA)).toBeNull();
     expect(telegramApprovalReply("defer", proposal("b", 2), anchorA)).toBeNull();
+  });
+
+  it("rejects terminal tasks and retained conditions from a newer generation", () => {
+    const terminal = proposal("a", 1);
+    terminal.status = "cancelled";
+    terminal.terminal = true;
+    expect(telegramApprovalReply("approve", terminal, anchorA)).toBeNull();
+
+    const regenerated = proposal("a", 1);
+    regenerated.generation = 2;
+    expect(telegramApprovalReply("approve", regenerated, anchorA)).toBeNull();
   });
 
   it("binds the exact displayed bytes even when producer hashes and revision stay stale", () => {
