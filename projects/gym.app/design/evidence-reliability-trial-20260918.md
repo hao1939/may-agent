@@ -2,6 +2,8 @@
 
 This record distinguishes a repaired evaluation instrument from an improved agent. It records candidate preparation; application requires the user's final approval of the exact reviewed source and activation scope.
 
+The user subsequently approved application. Candidate `2009d105e2` was merged and activated locally in `4c1462905989af1118ff7f6ca26c549012cdafe5`; the deployment evidence and limits are recorded below.
+
 The source baseline was Apps commit `c107992e6d0f516b61b8d33e9f1c57c943a5ec0b`, with Host `e0e0b846731aed04ca7fe75e105c19f6cc99e8d2` and live App definitions `425c6c77917857187953944f50a1f74a853359a4`. The repair uses existing Tasks, agent helpers, feedback and ordinary recovery. It adds no controller or public App input kind.
 
 ## What the repair establishes
@@ -63,3 +65,15 @@ The reviewer returned a bounded correction to that existing Task in admission ev
 The reusable lesson is to separate **artifact existence**, **successful delivery/read-back**, and **verified outcome**. Candidate preparation, runtime recovery, team review and report delivery were observed. Complete autonomous discovery and sound closure of every finding were not. A future independent assessment needs consumable, pinned source/trial/test references and a new review that actually reads them; another claim that the files exist is insufficient. This remains guidance from the trial, not a new Host-enforced lifecycle.
 
 The detailed intervention ledger, before/after controls and raw model evidence are retained under the evidence root. The final reviewer packet records the integrated commit, quality checks, independent Evaluation result, exact activation scope and rollback before requesting application approval.
+
+## Approved local application
+
+On September 18, the user requested merging the repair and bringing it into service for incremental evaluation. Merge `4c1462905989af1118ff7f6ca26c549012cdafe5` integrates the exact reviewed candidate and preserves concurrent Scout archive commit `b2c0eea857`. The Gym scoring helper was rebuilt, and a Gym-local SDK link resolves to the existing Host release `e0e0b846731aed04ca7fe75e105c19f6cc99e8d2`. The installed comparison workflow loads `/app/projects/gym/src/loop/cli.ts` from its granted project root, so future jobs use the merged runner. Executable App/agent definitions are unchanged; no Host restart or App-definition reload was needed.
+
+The canonical checkout's complete Gym check passed all 180 Bun and 6 Node tests, typechecking, scenario validation and benchmark/learning review commands. Its first attempt exposed two historical generated review-log folders at the project top level. Those logs were relocated intact into `.state/retained-legacy-reviews-20260918`, with per-file checksums and old/new path mappings retained. The layout check then passed without changing its rule. The earlier 11 Gym App tests remain the executable App's source verification; they were not rerun for this documentation update.
+
+Installed Gym Task `goal/app_891a8a81-cbcb-490f-a375-0e2387bda0e4-2600dce0634c` selected `compare-candidate` once, workflow run `wr_1789731273487_3rjh`. A clearly marked synthetic negative fixture supplied outer comparison identities while deliberately omitting the frozen harness. The real canonical runner exited with `Historical baseline has no frozen Gym harness; create a new baseline`. The workflow retained a `hold` receipt; no candidate run directory or model trial was created. This proves the installed path reaches the new check, not agent performance or a successful behavior comparison.
+
+Application receipts are under `/app/.state/review-pilots/gym-repair-20260918/application`: `authorization-and-preflight.json`, `integration.json`, `runtime-provenance.json`, `gym-check-after-layout.log`, `legacy-log-relocation.json`, `live-smoke-command-receipt.json`, and `live-smoke-task-final.json`. The command receipt's SHA-256 is `b1bdbc3a51ac712c4bf62d660b54c6bdcbd57d704ba9b38efe71287289d49a3b`; its original granted-workspace path is `/app/projects/gym.app/comparisons/b1bdbc3a51ac712c4bf62d660b54c6bdcbd57d704ba9b38efe71287289d49a3b.json`.
+
+Application does not resolve the independent Evaluation coverage gap or the held semantic case. Future behavior comparisons need a fresh baseline carrying the final harness provenance; historical records and approval labels remain unchanged. Further generated improvements still require final human approval before application.
