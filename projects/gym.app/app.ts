@@ -61,6 +61,7 @@ export function taskForGymInput(
       intent: {
         id: `input/${safeId(admitted.id)}`,
         parentId: "gym",
+        mode: "achieve",
         agent: "gym",
         outcome:
           "Review and answer one addressed Gym message without changing benchmark truth or production.",
@@ -77,6 +78,7 @@ export function taskForGymInput(
     intent: {
       id: `goal/${safeId(admitted.id)}`,
       parentId: "gym",
+      mode: "achieve",
       outcome: String(data.outcome),
       acceptance: Array.isArray(data.acceptance)
         ? (data.acceptance as string[])
@@ -85,6 +87,7 @@ export function taskForGymInput(
       // The owner chooses the focused comparison workflow from the ordinary
       // workflow catalog when useful; admission does not encode procedure.
       input: admitted.input,
+      outputs: [".state/comparison-runs"],
       priority: "P1",
     },
   };

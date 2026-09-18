@@ -12,7 +12,7 @@ export interface IntakeEvidence {
   jsonHash: string;
   markdownHash: string;
   read: ReportRead;
-  currentEvidenceHash: string;
+  currentSubject: "matches-report" | "changed" | "unavailable";
   recovered: boolean;
   prior?: { evidenceHash: string; disposition: string; linkedTaskId?: string };
 }
@@ -41,7 +41,7 @@ export function planReportIntake(input: IntakeEvidence): IntakePlan {
     input.read.markdownHash !== input.markdownHash
   )
     return { disposition: "invalid" };
-  if (input.currentEvidenceHash !== input.evidenceHash)
+  if (input.currentSubject !== "matches-report")
     return { disposition: "stale" };
   if (input.recovered) return { disposition: "recovered" };
   if (input.prior?.evidenceHash === input.evidenceHash)

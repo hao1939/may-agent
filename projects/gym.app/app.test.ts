@@ -14,7 +14,7 @@ const comparison = {
   frameworkRevision: "framework-v1",
   model: "gpt-5",
   trials: 2,
-  timeoutMs: 30_000,
+  timeoutMs: 60_000,
   totalAllowanceMs: 300_000,
   scenarios: [
     "incident",

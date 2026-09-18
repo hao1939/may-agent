@@ -8,7 +8,7 @@
     "check": "bun run syntax && bun run typecheck && bun run format:check && bun run test",
     "syntax": "bun build ./app.ts ./agents/gym/workflows/compare-candidate.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk",
     "typecheck": "bun x tsc -p tsconfig.json --noEmit",
-    "test": "bun test ./app.test.ts --timeout 30000",
+    "test": "bun test ./app.test.ts ./agents/gym/workflows/compare-candidate.test.ts --timeout 30000",
     "format": "bun x prettier --write app.ts app.test.ts agents/gym/workflows/compare-candidate*.ts agents/*/agent.json agents/*/AGENTS.md package.json project.json tsconfig.json README.md design/*.md",
     "format:check": "bun x prettier --check app.ts app.test.ts agents/gym/workflows/compare-candidate*.ts agents/*/agent.json agents/*/AGENTS.md package.json project.json tsconfig.json README.md design/*.md"
   },

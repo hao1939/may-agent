@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
 import {
   configuredTaskReportRoot,
   isPublishedTaskReportPath,
   listTaskReports,
   resolveTaskReportPath,
+  taskReportPaths,
 } from "./lib/task-report-store.js";
 
 export const name = "evaluation-report-reader";
@@ -20,6 +21,84 @@ const MAX_RESULT_BYTES = 9_000;
 
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+export type PublishedReportRequest = {
+  appId: string;
+  taskId: string;
+  evidenceHash: string;
+  executionId: string;
+  report: string;
+  facts: string;
+  jsonHash: string;
+  markdownHash: string;
+};
+export type PublishedReportRead =
+  | { status: "publication-pending" }
+  | { status: "invalid"; reason: string }
+  | {
+      status: "valid";
+      jsonHash: string;
+      markdownHash: string;
+      facts: Record<string, unknown>;
+    };
+
+/** Public integrity boundary for consumers; staged bytes are never returned. */
+export function readPublishedEvaluationReport(
+  request: PublishedReportRequest,
+  reportRoot = configuredTaskReportRoot(),
+): PublishedReportRead {
+  const expected = taskReportPaths(
+    request.appId,
+    request.taskId,
+    request.evidenceHash,
+  );
+  if (
+    request.facts !== expected.jsonPath ||
+    request.report !== expected.markdownPath
+  )
+    return {
+      status: "invalid",
+      reason: "publication paths do not match report identity",
+    };
+  const marker = resolveTaskReportPath(reportRoot, expected.publicationPath);
+  if (!existsSync(marker)) return { status: "publication-pending" };
+  const entry = listTaskReports(reportRoot, 100).find(
+    (item) =>
+      item.appId === request.appId &&
+      item.taskId === request.taskId &&
+      item.evidenceHash === request.evidenceHash &&
+      item.executionId === request.executionId,
+  );
+  if (!entry)
+    return {
+      status: "invalid",
+      reason: "published report integrity check failed",
+    };
+  if (
+    entry.jsonSha256 !== request.jsonHash ||
+    entry.markdownSha256 !== request.markdownHash
+  )
+    return {
+      status: "invalid",
+      reason: "publication hashes do not match accepted bytes",
+    };
+  try {
+    return {
+      status: "valid",
+      jsonHash: entry.jsonSha256,
+      markdownHash: entry.markdownSha256,
+      facts: JSON.parse(readFileSync(entry.absoluteJsonPath, "utf8")) as Record<
+        string,
+        unknown
+      >,
+    };
+  } catch {
+    return {
+      status: "invalid",
+      reason: "accepted report facts are unreadable",
+    };
+  }
 }
 
 function boundedPreview(bytes: Buffer): string {

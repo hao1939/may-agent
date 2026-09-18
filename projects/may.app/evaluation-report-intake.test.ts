@@ -11,7 +11,7 @@ const valid: IntakeEvidence = {
   jsonHash: "j1",
   markdownHash: "m1",
   read: { status: "valid", jsonHash: "j1", markdownHash: "m1" },
-  currentEvidenceHash: "e1",
+  currentSubject: "matches-report",
   recovered: false,
 };
 
@@ -48,7 +48,7 @@ describe("published report intake mechanics", () => {
       planReportIntake(valid).handoffKey,
     );
     expect(
-      planReportIntake({ ...valid, currentEvidenceHash: "e2" }).disposition,
+      planReportIntake({ ...valid, currentSubject: "changed" }).disposition,
     ).toBe("stale");
     expect(
       planReportIntake({ ...valid, appId: "evaluation" }).disposition,
