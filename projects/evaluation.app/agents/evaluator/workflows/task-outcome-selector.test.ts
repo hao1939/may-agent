@@ -303,17 +303,17 @@ describe("automatic task outcome selector", () => {
     expect(selected).toEqual([
       { appId: "may", taskId: "goal/may-1" },
       { appId: "scout", taskId: "goal/scout-1" },
-      { appId: "zeta", taskId: "goal/zeta-1" },
       { appId: "may", taskId: "goal/may-2" },
+      { appId: "scout", taskId: "goal/scout-2" },
     ]);
   });
 
-  test("skips unknown statuses and stops at the recent window boundary", async () => {
+  test("selects an open obligation even when historical outcomes age out", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-window-"));
     const command = catalogCommand({
       may: [
-        task("may", "goal/running", 0, "running"),
-        task("may", "goal/recent", 1, "attention"),
+        task("may", "goal/running", 40, "running"),
+        task("may", "goal/recent", 1, "up-to-date"),
         task("may", "goal/old", 8),
         task("may", "goal/older", 9),
       ],
@@ -325,7 +325,11 @@ describe("automatic task outcome selector", () => {
       undefined,
       NOW,
     );
-    expect(result.candidate).toEqual({ appId: "may", taskId: "goal/recent" });
+    expect(result.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/running",
+      assessmentPurpose: "ongoing",
+    });
   });
 
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
@@ -424,7 +428,11 @@ describe("automatic task outcome selector", () => {
       undefined,
       NOW,
     );
-    expect(result.candidate).toEqual({ appId: "may", taskId: "goal/valid" });
+    expect(result.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/running",
+      assessmentPurpose: "ongoing",
+    });
     expect(result.navigationFacts).toEqual([
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
@@ -433,8 +441,8 @@ describe("automatic task outcome selector", () => {
   test("preserves two-App exhaustion state so a newly inserted May Task is selected", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-exhaustion-"));
     const tasks = {
-      may: [task("may", "goal/may-old", 0, "running")],
-      scout: [task("scout", "goal/scout-old", 0, "running")],
+      may: [task("may", "goal/may-old", 8, "done")],
+      scout: [task("scout", "goal/scout-old", 8, "done")],
     };
     const command = catalogCommand(tasks);
     const exhausted = await selectFairCandidate(
@@ -502,9 +510,14 @@ describe("automatic task outcome selector", () => {
   });
 
   test("bounds diagnostics and the full result at configured maximums", async () => {
-    const apps = Array.from({ length: 100 }, (_, index) => ({
-      id: `${String(index).padStart(3, "0")}-${"应用🚀".repeat(50)}`,
-    }));
+    const apps = [
+      { id: "may" },
+      { id: "scout" },
+      { id: "scout-knowledge-lib" },
+      ...Array.from({ length: 97 }, (_, index) => ({
+        id: `${String(index).padStart(3, "0")}-${"应用🚀".repeat(50)}`,
+      })),
+    ];
     const command: PublicCommand = async (request) => {
       if (request.type === "apps.list")
         return { type: "ok", command: "apps.list", apps };
@@ -554,9 +567,14 @@ describe("automatic task outcome selector", () => {
         return {
           type: "ok",
           command: "apps.list",
-          apps: Array.from({ length: 30 }, (_, index) => ({
-            id: `app-${String(index).padStart(2, "0")}`,
-          })),
+          apps: [
+            { id: "may" },
+            { id: "scout" },
+            { id: "scout-knowledge-lib" },
+            ...Array.from({ length: 27 }, (_, index) => ({
+              id: `app-${String(index).padStart(2, "0")}`,
+            })),
+          ],
         };
       taskReads += 1;
       return { type: "ok", command: "tasks.list", tasks: { items: [] } };

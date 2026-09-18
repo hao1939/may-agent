@@ -1234,11 +1234,8 @@ const baseApp = defineApp({
           {
             id: "task-outcome-selector",
             intervalMs: automaticReview.intervalMs,
-            event: {
-              type: "evaluation.task.select",
-              data: { reason: "scheduled" },
-              target: { appId: projectId, project: projectId },
-            },
+            input: { kind: "automatic-review", data: { reason: "scheduled" } },
+            catchUp: "latest" as const,
           },
         ]
       : []),

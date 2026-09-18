@@ -10,6 +10,7 @@ import {
   readPublishedTaskReport,
   taskReportPaths,
 } from "./lib/task-report-store.js";
+import { assessmentContext } from "./lib/task-assessment-context.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 
 export const name = "task-outcome-selector";
@@ -23,13 +24,9 @@ const MAX_NAVIGATION_FACT_BYTES = 3_000;
 const MAX_NAVIGATION_FACTS = 20;
 // HumanTaskStatus is the public tasks.list contract. `done` is a retained
 // completion receipt, while `attention` is the current unresolved status.
-const REVIEWABLE_STATUSES = new Set([
-  "up-to-date",
-  "attention",
-  "closed",
-  "cancelled",
-  "done",
-]);
+const OPEN_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
+const OUTCOME_STATUSES = new Set(["up-to-date", "closed", "cancelled", "done"]);
+const PILOT_APPS = new Set(["may", "scout", "scout-knowledge-lib"]);
 
 type Input = { reason?: string };
 type SelectorConfig = {
@@ -41,7 +38,12 @@ type SelectorConfig = {
   recentWindowMs: number;
 };
 
-type Candidate = { appId: string; taskId: string };
+type Candidate = {
+  appId: string;
+  taskId: string;
+  assessmentPurpose?: "ongoing";
+};
+type AssessmentPurpose = "outcome" | "ongoing";
 type SelectorState = {
   version: number;
   appId: string;
@@ -130,10 +132,16 @@ function appendNavigationFact(facts: string[], fact: string): void {
   if (Buffer.byteLength(JSON.stringify(candidate)) <= MAX_NAVIGATION_FACT_BYTES)
     facts.push(fact);
 }
-function isReviewable(task: Record<string, unknown>): boolean {
-  return (
-    Boolean(taskId(task)) && REVIEWABLE_STATUSES.has(canonical(task.status))
-  );
+function assessmentPurposeFor(
+  task: Record<string, unknown>,
+  cutoff: number,
+): AssessmentPurpose | null {
+  if (!taskId(task)) return null;
+  const status = canonical(task.status);
+  if (OPEN_STATUSES.has(status)) return "ongoing";
+  if (OUTCOME_STATUSES.has(status) && Number(task.updatedAt) >= cutoff)
+    return "outcome";
+  return null;
 }
 function emptyState(): SelectorState {
   return { version: STATE_VERSION, appId: "", appIndex: 0, lastTaskByApp: {} };
@@ -211,7 +219,7 @@ export async function selectFairCandidate(
   const provider = createPublicTaskEvidenceProvider(command);
   const apps = (await provider.listApps(config.maxApps))
     .map((app) => text(app.id ?? app.appId))
-    .filter((id) => id && canonical(id) !== "evaluation")
+    .filter((id) => id && PILOT_APPS.has(canonical(id)))
     .sort((a, b) => a.localeCompare(b))
     .slice(0, config.maxApps);
   if (!apps.length)
@@ -252,20 +260,11 @@ export async function selectFairCandidate(
             navigationFacts,
             navigationFailureFact(appId, pagesRead, issue),
           );
-        let reachedWindowBoundary = false;
-        for (const item of page.items) {
-          if (Number(item.updatedAt) < cutoff) {
-            reachedWindowBoundary = true;
-            break;
-          }
-          recent.push(item);
-        }
-        if (
-          reachedWindowBoundary ||
-          !page.nextCursor ||
-          seenCursors.has(page.nextCursor)
-        )
-          break;
+        // Keep bounded traversal past the historical window: an old open
+        // obligation can still be due even though an old completed outcome is
+        // no longer useful sampling material.
+        recent.push(...page.items);
+        if (!page.nextCursor || seenCursors.has(page.nextCursor)) break;
         seenCursors.add(page.nextCursor);
         cursor = page.nextCursor;
       }
@@ -291,9 +290,12 @@ export async function selectFairCandidate(
             ...recent.slice(0, rememberedTaskIndex + 1),
           ]
         : recent;
-    let selected: Record<string, unknown> | undefined;
+    let selected:
+      | { item: Record<string, unknown>; purpose: AssessmentPurpose }
+      | undefined;
     for (const item of candidates) {
-      if (!isReviewable(item)) continue;
+      const purpose = assessmentPurposeFor(item, cutoff);
+      if (!purpose) continue;
       // Resolve the same decision-relevant evidence identity the reviewer will
       // publish. An exact immutable marker lookup avoids treating the recent-100
       // report listing as a registry while preserving changed-evidence review.
@@ -308,10 +310,13 @@ export async function selectFairCandidate(
         );
         continue;
       }
+      const assessment = assessmentContext(subject, purpose, nowMs);
       const reportPath = taskReportPaths(
         reportKey,
         taskId(item),
         subject.evidenceHash,
+        assessment.rubricVersion,
+        assessment.validityIdentity,
       ).jsonPath;
       const published = readPublishedTaskReport(reportRoot, reportPath);
       // Paths use shortened/sanitized identity components; compare the verified
@@ -320,15 +325,17 @@ export async function selectFairCandidate(
         !published ||
         canonical(published.appId) !== reportKey ||
         published.taskId !== taskId(item) ||
-        published.evidenceHash !== subject.evidenceHash
+        published.evidenceHash !== subject.evidenceHash ||
+        published.purpose !== purpose ||
+        published.validityIdentity !== assessment.validityIdentity
       ) {
-        selected = item;
+        selected = { item, purpose };
         break;
       }
     }
     const nextIndex = (appIndex + 1) % apps.length;
     const lastTaskByApp = { ...nextState.lastTaskByApp };
-    const lastAttempted = selected ?? candidates.at(-1);
+    const lastAttempted = selected?.item ?? candidates.at(-1);
     if (lastAttempted)
       lastTaskByApp[key] = identityDigest(taskId(lastAttempted));
     const boundedHistory = boundedStateHistory(lastTaskByApp);
@@ -340,7 +347,13 @@ export async function selectFairCandidate(
     };
     if (selected) {
       return {
-        candidate: { appId, taskId: taskId(selected) },
+        candidate: {
+          appId,
+          taskId: taskId(selected.item),
+          ...(selected.purpose === "ongoing"
+            ? { assessmentPurpose: "ongoing" as const }
+            : {}),
+        },
         state: nextState,
         navigationFacts,
       };

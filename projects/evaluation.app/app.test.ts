@@ -94,8 +94,11 @@ describe("canonical evaluation App", () => {
       automaticEnabled ? ["task-outcome-selector"] : [],
     );
     for (const schedule of app.schedules ?? []) {
-      expect(schedule).toHaveProperty("event");
-      expect(schedule).not.toHaveProperty("input");
+      expect(schedule).toMatchObject({
+        input: { kind: "automatic-review", data: { reason: "scheduled" } },
+        catchUp: "latest",
+      });
+      expect(schedule).not.toHaveProperty("event");
     }
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
