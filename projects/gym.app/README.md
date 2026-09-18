@@ -1,8 +1,9 @@
 # Gym App
 
 A bounded frozen-comparison App for May and Scout candidates. Read the
-[comparison contract](design/frozen-comparison-service.md) and the
-[report-driven improvement design](design/report-driven-improvement.md).
+[comparison contract](design/frozen-comparison-service.md), the
+[report-driven improvement design](design/report-driven-improvement.md), and the
+[evidence reliability and maintenance guide](design/evidence-reliability.md).
 Source readiness and deployed activation are reported separately.
 
 The App admits only ordinary `goal` and `message` inputs. The Gym owner may

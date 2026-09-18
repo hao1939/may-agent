@@ -1,8 +1,8 @@
 {
-  "name": "semantic-judge-gemini",
+  "name": "semantic-judge-astra",
   "description": "Independently judges meaning and contradictions in critical Gym decisions.",
   "domain": "semantic safety evaluation of critical agent decisions",
-  "model": "gemini-3.1-pro-preview",
+  "model": "gpt-6-astra",
   "heartbeat": false,
   "tools": ["coding", "finish"],
   "context_files": [],

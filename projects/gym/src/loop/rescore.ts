@@ -4,20 +4,22 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 
-import { gymRoot, loadSuite, readManifest, resolveRunDir, safeName } from "./store";
+import { gymRoot, loadSuite, machineVerdict, readManifest, resolveRunDir, safeName } from "./store";
 import type { MachineVerdict, ScenarioCheck, ScenarioRunResult } from "./types";
 
 interface RescoredTrial {
   scenario: string;
   trial: number;
   original_verdict: MachineVerdict;
-  rescored_verdict: Exclude<MachineVerdict, "invalid">;
+  rescored_verdict: MachineVerdict;
+  invalid_reason: string | null;
   checks: ScenarioCheck[];
   summary: string;
 }
@@ -28,7 +30,7 @@ export interface RescoreResult {
   evaluator_path: string;
   created_at: string;
   disclaimer: string;
-  counts: { pass: number; fail: number };
+  counts: { pass: number; fail: number; invalid: number };
   changed: number;
   trials: RescoredTrial[];
   artifact_path: string;
@@ -61,14 +63,39 @@ export function rescoreRun(run: string): RescoreResult {
       copyFileSync(join(runDir, trial.artifact_path), join(workDir, basename(trial.artifact_path)));
       const statePath = join(caseDir, "environment", "system-state.md");
       if (existsSync(statePath)) copyFileSync(statePath, join(workDir, "system-state.md"));
-      const score = evaluate(workDir, join(gymRoot, "scenarios", trial.scenario));
+      const currentScenarioDir = join(gymRoot, "scenarios", trial.scenario);
+      const score = evaluate(workDir, currentScenarioDir);
+      const originalResult = JSON.parse(
+        readFileSync(join(runDir, trial.result_path), "utf8"),
+      ) as ScenarioRunResult;
+      const deterministic = machineVerdict({
+        scenario: trial.scenario,
+        agent: manifest.agent,
+        agent_status: originalResult.agent_status,
+        passed: score.passed,
+        checks: score.checks,
+        summary: score.summary,
+      });
+      const requiresSemanticEvaluation =
+        (originalResult.semantic_evaluation !== undefined && originalResult.semantic_evaluation !== null) ||
+        existsSync(join(caseDir, "semantic-evaluation.json")) ||
+        existsSync(join(caseDir, "semantic_criteria.md")) ||
+        existsSync(join(currentScenarioDir, "semantic_criteria.md")) ||
+        existsSync(join(gymRoot, "benchmarks", manifest.benchmark, "scenarios", trial.scenario, "semantic_criteria.md"));
+      const rescoredVerdict = requiresSemanticEvaluation ? "invalid" : deterministic.verdict;
+      const invalidReason = requiresSemanticEvaluation
+        ? "current semantic rubric was not evaluated; deterministic rescore is diagnostic only"
+        : deterministic.reason;
       trials.push({
         scenario: trial.scenario,
         trial: trial.trial,
         original_verdict: trial.machine_verdict,
-        rescored_verdict: score.passed ? "pass" : "fail",
+        rescored_verdict: rescoredVerdict,
+        invalid_reason: invalidReason,
         checks: score.checks,
-        summary: score.summary ?? "",
+        summary: rescoredVerdict === "invalid"
+          ? `No full verdict: ${invalidReason}. Deterministic result was ${deterministic.verdict}. ${score.summary ?? ""}`.trim()
+          : score.summary ?? "",
       });
     } finally {
       rmSync(workDir, { recursive: true, force: true });
@@ -88,6 +115,7 @@ export function rescoreRun(run: string): RescoreResult {
     counts: {
       pass: trials.filter((trial) => trial.rescored_verdict === "pass").length,
       fail: trials.filter((trial) => trial.rescored_verdict === "fail").length,
+      invalid: trials.filter((trial) => trial.rescored_verdict === "invalid").length,
     },
     changed: trials.filter((trial) => trial.original_verdict !== trial.rescored_verdict).length,
     trials,
@@ -102,7 +130,7 @@ export function renderRescore(result: RescoreResult): string {
     `# Gym Rescore — ${result.run_id}`,
     "",
     `Current evaluator: \`${result.evaluator_path}\``,
-    `Result: ${result.counts.pass} pass, ${result.counts.fail} fail · ${result.changed} verdicts changed`,
+    `Result: ${result.counts.pass} pass, ${result.counts.fail} fail, ${result.counts.invalid} invalid · ${result.changed} verdicts changed`,
     `Evidence: \`${result.artifact_path}\``,
     "",
     `> ${result.disclaimer}`,

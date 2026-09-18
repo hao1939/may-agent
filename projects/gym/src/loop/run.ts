@@ -20,6 +20,7 @@ import {
   readManifest,
   resolveRunDir,
   safeName,
+  snapshotHarness,
   storeTrial,
   writeManifest,
 } from "./store";
@@ -104,6 +105,12 @@ export const executeScenario: ScenarioExecutor = async (input) => {
     env: {
       ...process.env,
       GYM_SCENARIOS_DIR: input.scenariosDir,
+      GYM_SEMANTIC_JUDGES_ROOT: join(
+        input.scenariosDir,
+        "..",
+        "semantic-judges",
+        "agents",
+      ),
       ...(input.agentsRoot ? { GYM_AGENTS_ROOT: input.agentsRoot } : {}),
     },
     stdout: "pipe",
@@ -163,11 +170,32 @@ function refreshObservedProvenance(manifest: LoopRunManifest): void {
   );
 }
 
+function currentHarnessFingerprint(): string {
+  const temporaryHarnessRoot = mkdtempSync(join(tmpdir(), "gym-harness-check-"));
+  try {
+    snapshotHarness(temporaryHarnessRoot);
+    return fingerprintTree(temporaryHarnessRoot);
+  } finally {
+    rmSync(temporaryHarnessRoot, { recursive: true, force: true });
+  }
+}
+
 export function assertFrozenInputs(
   baselineDir: string,
   baseline: LoopRunManifest,
 ): void {
   const { suite, path: suitePath } = loadSuite(baseline.benchmark);
+  if (!baseline.source.harness_snapshot || !baseline.proof.harness_fingerprint) {
+    throw new Error("Historical baseline has no frozen Gym harness; create a new baseline");
+  }
+  const frozenHarness = join(baselineDir, baseline.source.harness_snapshot);
+  if (
+    !existsSync(frozenHarness) ||
+    fingerprintTree(frozenHarness) !== baseline.proof.harness_fingerprint ||
+    currentHarnessFingerprint() !== baseline.proof.harness_fingerprint
+  ) {
+    throw new Error("Frozen Gym harness changed; create a new baseline");
+  }
   const sourceBenchmarkDir = join(gymRoot, "benchmarks", baseline.benchmark);
   assertSameFile(
     suitePath,
@@ -192,6 +220,35 @@ export function assertFrozenInputs(
       join(baselineDir, baseline.source.evaluator_snapshot),
       suite.evaluator,
     );
+  }
+  const frozenUsesSemanticJudges = baseline.scenarios.some((scenario) =>
+    existsSync(join(
+      baselineDir,
+      baseline.source.scenarios_snapshot,
+      safeName(scenario),
+      "semantic_criteria.md",
+    )),
+  );
+  if (frozenUsesSemanticJudges) {
+    if (!baseline.source.semantic_judges_snapshot || !baseline.proof.semantic_judge_fingerprint) {
+      throw new Error(
+        "Historical semantic baseline has no frozen judge definitions; create a new baseline",
+      );
+    }
+    const currentSemanticJudges = join(
+      gymRoot,
+      "benchmarks",
+      "semantic-judges",
+      "agents",
+    );
+    const frozenSemanticJudges = join(
+      baselineDir,
+      baseline.source.semantic_judges_snapshot,
+    );
+    assertSameFile(currentSemanticJudges, frozenSemanticJudges, "semantic judge definitions");
+    if (fingerprintTree(frozenSemanticJudges) !== baseline.proof.semantic_judge_fingerprint) {
+      throw new Error("Frozen semantic judge proof is inconsistent; create a new baseline");
+    }
   }
   const evaluatorSource = suite.evaluator
     ? resolve(sourceBenchmarkDir, suite.evaluator)
@@ -302,6 +359,10 @@ export async function runLoop(
       writeManifest(created.runDir, created.manifest);
       process.stderr.write(`${stored.machine_verdict}\n`);
     }
+  }
+  if (currentHarnessFingerprint() !== created.manifest.proof.harness_fingerprint) {
+    writeManifest(created.runDir, created.manifest);
+    throw new Error("Gym harness changed during execution; run remains incomplete");
   }
   created.manifest.completed_at = new Date().toISOString();
   writeManifest(created.runDir, created.manifest);
