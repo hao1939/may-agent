@@ -13,6 +13,28 @@ const PACKAGE_IDENTITY = JSON.parse(readFileSync(resolve(import.meta.dir, "../..
   version: string;
 };
 
+function isolatedRuntimeEnv(root: string): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  for (const key of ["APP_ROOT", "PROJECT_ROOT", "AGENTS_ROOT", "SHARED_ROOT", "PROJECTS_ROOT"]) {
+    delete env[key];
+  }
+
+  const projectRoot = join(root, "runtime-root");
+  const agentsRoot = join(projectRoot, "agents");
+  const sharedRoot = join(projectRoot, "shared");
+  const projectsRoot = join(projectRoot, "projects");
+  mkdirSync(agentsRoot, { recursive: true });
+  mkdirSync(sharedRoot, { recursive: true });
+  mkdirSync(projectsRoot, { recursive: true });
+  return {
+    ...env,
+    PROJECT_ROOT: projectRoot,
+    AGENTS_ROOT: agentsRoot,
+    SHARED_ROOT: sharedRoot,
+    PROJECTS_ROOT: projectsRoot,
+  };
+}
+
 describe("may CLI help", () => {
   it("exits successfully without starting recovery or mutating state", async () => {
     const stateDir = mkdtempSync(join(tmpdir(), "may-help-state-"));
@@ -60,6 +82,9 @@ describe("may CLI help", () => {
     const root = mkdtempSync(join(tmpdir(), "may-version-bundle-"));
     const binary = join(root, "may-agent");
     const buildCommit = "a".repeat(40);
+    const runtimeEnv = isolatedRuntimeEnv(root);
+    const stateDir = join(root, "state");
+    const rejectedWorkerStateDir = join(root, "rejected-worker-state");
     try {
       await execFileAsync(
         process.execPath,
@@ -85,7 +110,7 @@ describe("may CLI help", () => {
       writeFileSync(join(root, "package.json"), JSON.stringify({ name: "unrelated-app", version: "99.0.0" }));
       const result = await execFileAsync(binary, ["--version"], {
         cwd: root,
-        env: { ...process.env, STATE_DIR: join(root, "state") },
+        env: { ...runtimeEnv, STATE_DIR: stateDir },
         encoding: "utf8",
         timeout: 10_000,
       });
@@ -93,12 +118,12 @@ describe("may CLI help", () => {
 
       const help = await execFileAsync(binary, ["--help"], {
         cwd: root,
-        env: { ...process.env, STATE_DIR: join(root, "state") },
+        env: { ...runtimeEnv, STATE_DIR: stateDir },
         encoding: "utf8",
         timeout: 10_000,
       });
       expect(help.stdout).toContain("Usage: may-agent [options]");
-      expect(existsSync(join(root, "state"))).toBe(false);
+      expect(existsSync(stateDir)).toBe(false);
 
       try {
         await execFileAsync(
@@ -113,7 +138,7 @@ describe("may CLI help", () => {
           ],
           {
             cwd: root,
-            env: { ...process.env, STATE_DIR: join(root, "state"), MAY_TASK_ATTEMPT_CHILD: "1" },
+            env: { ...runtimeEnv, STATE_DIR: rejectedWorkerStateDir, MAY_TASK_ATTEMPT_CHILD: "1" },
             encoding: "utf8",
             timeout: 10_000,
           },
@@ -124,6 +149,7 @@ describe("may CLI help", () => {
           "Task worker mode requires its parent IPC connection",
         );
       }
+      expect(existsSync(rejectedWorkerStateDir)).toBe(false);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
