@@ -332,6 +332,55 @@ describe("automatic task outcome selector", () => {
     });
   });
 
+  test("retains bounded page continuation across wakes to reach an old open obligation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-old-open-continuation-"));
+    const seen: Record<string, unknown>[] = [];
+    const command = catalogCommand(
+      {
+        may: [
+          task("may", "goal/old-done-1", 30, "done"),
+          task("may", "goal/old-done-2", 29, "done"),
+          task("may", "goal/old-done-3", 28, "done"),
+          task("may", "goal/old-done-4", 27, "done"),
+          task("may", "goal/old-wait", 40, "waiting"),
+        ],
+      },
+      seen,
+    );
+
+    const boundedScan = await selectFairCandidate(
+      command,
+      config,
+      root,
+      undefined,
+      NOW,
+    );
+    expect(boundedScan.candidate).toBeNull();
+    expect(boundedScan.navigationFacts).toEqual([
+      "selector-navigation-truncated:may:pages-read=2:continuation-retained",
+    ]);
+
+    // Passing only the retained state models a process restart: no in-memory
+    // iterator is required to continue beyond the previous wake's page bound.
+    const afterRestart = await selectFairCandidate(
+      command,
+      config,
+      root,
+      boundedScan.state,
+      NOW,
+    );
+    expect(afterRestart.candidate).toEqual({
+      appId: "may",
+      taskId: "goal/old-wait",
+      assessmentPurpose: "ongoing",
+    });
+    expect(
+      seen
+        .filter((request) => request.type === "tasks.list")
+        .map((request) => request.cursor),
+    ).toEqual([undefined, "2", "4"]);
+  });
+
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({

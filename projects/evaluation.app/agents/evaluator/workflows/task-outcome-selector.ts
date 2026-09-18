@@ -49,6 +49,7 @@ type SelectorState = {
   appId: string;
   appIndex: number;
   lastTaskByApp: Record<string, string>;
+  taskCursorByApp?: Record<string, string>;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -144,7 +145,13 @@ function assessmentPurposeFor(
   return null;
 }
 function emptyState(): SelectorState {
-  return { version: STATE_VERSION, appId: "", appIndex: 0, lastTaskByApp: {} };
+  return {
+    version: STATE_VERSION,
+    appId: "",
+    appIndex: 0,
+    lastTaskByApp: {},
+    taskCursorByApp: {},
+  };
 }
 function boundedStateHistory(value: unknown): Record<string, string> {
   const history: Record<string, string> = {};
@@ -161,6 +168,22 @@ function boundedStateHistory(value: unknown): Record<string, string> {
   }
   return history;
 }
+function boundedTaskCursors(value: unknown): Record<string, string> {
+  const cursors: Record<string, string> = {};
+  for (const [appId, storedValue] of Object.entries(object(value)).slice(
+    -MAX_STATE_APPS,
+  )) {
+    const key = canonical(appId).slice(0, 80);
+    const cursor = text(storedValue);
+    // Cursors are opaque: never truncate one into a different token.
+    if (!key || !cursor || Buffer.byteLength(cursor) > 512) continue;
+    const candidate = { ...cursors, [key]: cursor };
+    if (Buffer.byteLength(JSON.stringify(candidate)) > MAX_STATE_HISTORY_BYTES)
+      break;
+    cursors[key] = cursor;
+  }
+  return cursors;
+}
 function cleanState(value: unknown): SelectorState {
   const item = object(value);
   if (Number(item.version) !== STATE_VERSION) return emptyState();
@@ -169,6 +192,7 @@ function cleanState(value: unknown): SelectorState {
     appId: /^[a-f0-9]{64}$/.test(text(item.appId)) ? text(item.appId) : "",
     appIndex: Math.max(0, Math.trunc(Number(item.appIndex) || 0)),
     lastTaskByApp: boundedStateHistory(item.lastTaskByApp),
+    taskCursorByApp: boundedTaskCursors(item.taskCursorByApp),
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -240,9 +264,10 @@ export async function selectFairCandidate(
     const key = appKey(appId);
     const reportKey = canonical(appId);
     const recent: Record<string, unknown>[] = [];
-    let cursor = "";
+    let cursor = state.taskCursorByApp?.[key] ?? "";
+    let continuationCursor = "";
     let pagesRead = 0;
-    const seenCursors = new Set<string>();
+    const seenCursors = new Set<string>(cursor ? [cursor] : []);
     try {
       for (
         let pageIndex = 0;
@@ -264,7 +289,11 @@ export async function selectFairCandidate(
         // obligation can still be due even though an old completed outcome is
         // no longer useful sampling material.
         recent.push(...page.items);
-        if (!page.nextCursor || seenCursors.has(page.nextCursor)) break;
+        if (!page.nextCursor || seenCursors.has(page.nextCursor)) {
+          continuationCursor = "";
+          break;
+        }
+        continuationCursor = page.nextCursor;
         seenCursors.add(page.nextCursor);
         cursor = page.nextCursor;
       }
@@ -339,11 +368,29 @@ export async function selectFairCandidate(
     if (lastAttempted)
       lastTaskByApp[key] = identityDigest(taskId(lastAttempted));
     const boundedHistory = boundedStateHistory(lastTaskByApp);
+    const taskCursorByApp = { ...(nextState.taskCursorByApp ?? {}) };
+    // Finish rotating through candidates in the current bounded window before
+    // advancing its public page cursor. If none is selected, retain the next
+    // page so old open obligations cannot starve behind completed history.
+    const retainedCursor = selected
+      ? nextState.taskCursorByApp?.[key] ?? ""
+      : continuationCursor;
+    if (retainedCursor) taskCursorByApp[key] = retainedCursor;
+    else delete taskCursorByApp[key];
+    const boundedCursors = boundedTaskCursors(taskCursorByApp);
+    if (!selected && continuationCursor)
+      appendNavigationFact(
+        navigationFacts,
+        boundedCursors[key] === continuationCursor
+          ? `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-retained`
+          : `selector-navigation-truncated:${reportKey}:pages-read=${pagesRead}:continuation-unretained`,
+      );
     nextState = {
       version: STATE_VERSION,
       appId: appKey(apps[nextIndex]!),
       appIndex: nextIndex,
       lastTaskByApp: boundedHistory,
+      taskCursorByApp: boundedCursors,
     };
     if (selected) {
       return {
