@@ -1,6 +1,6 @@
 # Evaluation outcome-review rollout and legacy retirement
 
-**Status:** migration and activation completed on 2026-09-17. Source revision `da3927de33` is deployed with automatic selection off. All 2,037 legacy Tasks and 73 linked legacy inbox inputs were retired neutrally, all 11 old metrics remain retired, and three bounded real-model Task reviews plus self-exclusion, unchanged reuse, deterministic reading, and an owner-decision trial passed. The recent-window/fair-rotation selector and report-discovery polish are source-only pending reviewer activation and one bounded canary.
+**Status:** migration completed on 2026-09-17, and the focused rollout completed on 2026-09-18. App revision `79dd65e91f` and Host revision `fe605220` are active. All 2,037 legacy Tasks and 73 linked legacy inbox inputs were retired neutrally, all 11 old metrics remain retired, and no retirement procedure was repeated. Automatic selection is enabled at a serialized daily cadence (`86400000` ms, at most 20 Apps and 20 Tasks per page, with the default two-page bound). A natural report query and two bounded selector canaries passed; the canaries rotated from May to Scout, emitted one review each, excluded Evaluation, and caused no storm. These trials establish safe bounded activation, not comprehensive App health.
 
 ## Frozen legacy inventory
 
@@ -14,13 +14,13 @@ The host reviewer first proved the deployed Host's existing receipt migrator on 
 
 ## Measured live calibration
 
-Three real evaluator runs produced three accepted reports: one May implementation/recovery outcome, one Scout same-Task publication recovery, and one Scout verified no-change reuse outcome. Repeating the unchanged Scout recovery reused the accepted report and evaluator execution. Evaluation self-review was excluded with zero evaluator calls. Session usage metadata estimates **$0.329966** total for the three runs; this is not a billing receipt, and the immutable reports correctly retain cost as unknown rather than inventing a value.
+Four real evaluator runs produced four accepted reports: one May implementation/recovery outcome, one Scout same-Task publication recovery, one Scout verified no-change reuse outcome, and one automatic May canary whose fair disposition was `insufficient-evidence`. Repeating unchanged Scout evidence reused the accepted report and evaluator execution. Evaluation self-review was excluded with zero evaluator calls. A second automatic canary selected Scout's `explore-github` Task but stopped neutrally before a model call or semantic report because authoritative creator provenance was absent. Session usage metadata estimates **$0.479074** total for the four runs; this is not a billing receipt, excludes May/reviewer costs, and the immutable reports correctly retain cost as unknown rather than inventing a value.
 
-The natural May query ultimately found and accurately explained all three reports, but searched broad historical paths before reaching the canonical report store. The source-only discovery update therefore advertises `read-reports` list/read in the installed App description, documents the durable report root, and tells May to consult current contracts and supported read/list paths before broad searches. The owner-decision trial accepted one finding without claiming remediation or verified resolution. Receipts and read-backs are retained under `/app/.state/review-pilots/evaluation-setup-20260918/live-trials/`.
+The deployed discovery contract advertises `read-reports` list/read in the installed App description and documents the durable report root. The post-deployment natural May query used that contract and canonical report root, accurately distinguished accepted findings from proven fixes and source integration from runtime deployment, and caused zero new evaluator runs. Its first answer was verbose and used plain filesystem paths rather than clickable links; that is presentation calibration, not a new infrastructure requirement. The owner-decision trial accepted one finding without claiming remediation or verified resolution. Receipts and read-backs are retained under `/app/.state/review-pilots/evaluation-setup-20260918/live-trials/`.
 
-## Staged activation and remaining canary
+## Staged activation and canary
 
-Steps 1–6 are retained as the executed procedure and rollback evidence; step 7 remains pending for the source-only selector change.
+Steps 1–7 are retained as the executed procedure and rollback evidence. Step 8 remains rollout guidance rather than a claim of comprehensive coverage.
 
 1. Confirm Evaluation is disabled, the reviewed source commit and release artifact hashes match, May and Scout definitions are unchanged, and all 2,037 frozen identities still match preflight.
 2. The host operator briefly stops Host/web/maintenance, takes a consistent backup, runs the same existing receipt import offline scoped only to Evaluation, then restarts the existing release with Evaluation still disabled. This source candidate does not perform those runtime operations.
