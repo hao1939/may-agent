@@ -202,6 +202,12 @@ describe("standalone Gym comparison adapter", () => {
     expect(receipt.env.GYM_AGENTS_ROOT).toBe(
       join(setup.root, "separate-may-worktree", "agents"),
     );
+    expect(receipt.argv.slice(1, 4)).toEqual([
+      process.env.BUN_EXEC_PATH || "bun",
+      join(setup.gym, "src", "loop", "cli.ts"),
+      "verify",
+    ]);
+    expect(receipt.argv.slice(-2)).toEqual(["--timeout", "1"]);
     expect(
       receipt.runDir.startsWith(join(setup.output, "gym-state", "benchmarks")),
     ).toBeTrue();
