@@ -3,6 +3,13 @@
 Use this only for an authorized, exact Task closure. Reviewing Tasks is not
 permission to close them. Preserve standing, running, waiting, or uncertain
 work; an accepted `done` result alone does not prove a Task should end.
+Conversation execution Tasks and their deterministic successors are standing
+work: exclude them from routine hygiene unless current canonical evidence records
+an explicit human or owning-App withdrawal of the whole Conversation. Quietness,
+a completed Turn, a fulfilled Request, and an accepted child result are not that
+evidence. Likewise, do not close recurring schedules merely because their latest
+cycle is up to date, and do not replace a cancelled Conversation with an
+operator-invented identity; supported recovery begins with fresh human input.
 
 1. Discover open work with `tasks({ action: "list", limit: 100 })`;
    follow `nextCursor` and select records whose `closed` is not true. Inspect each candidate with `get` and its

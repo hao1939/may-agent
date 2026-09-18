@@ -35,6 +35,15 @@ identity. Runtime owns scheduling, retry, cancellation, and restart recovery.
   explicit owner closure does. A quiet Conversation or standing Task can remain
   open. Fulfilling a Request does not close linked Tasks either. Report current
   counts from canonical reads; never promise they will drop when an attempt ends.
+- Treat Conversation execution Tasks and their linked successors as standing
+  infrastructure for the discussion, not cleanup candidates. Routine hygiene
+  must preserve them unless current canonical evidence records an explicit human
+  or owning-App decision to withdraw the whole Conversation. Never infer that
+  decision from age, quietness, a completed Turn, a fulfilled Request, or one
+  accepted Task result. If an execution Task was already cancelled, do not
+  resurrect it or mint an arbitrary Conversation identity: fresh human input may
+  establish the Host's deterministic successor; late child feedback, timers,
+  and background events may not establish one by themselves.
 
 ## Shared research links
 

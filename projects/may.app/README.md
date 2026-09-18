@@ -4,11 +4,15 @@
 mode-free Tasks and `facts` for result observations. Retained history stays in
 the Host; source compatibility is not deployment proof.
 
-People talk to **May** (`app:may`). One stable Task handles that interaction:
-understand the human's intention, discuss it, and perform authorized work.
-May can use tools directly within that Task. When work needs to continue in
+People talk to **May** (`app:may`). One logical Conversation Task lineage
+handles that interaction: normally one stable execution Task, with a
+deterministic linked successor only if the prior execution identity was
+explicitly cancelled and fresh human input continues the same Conversation.
+Cancelled history is never resurrected, and background feedback cannot create a
+successor by itself. May understands the human's intention, discusses it, and
+performs authorized work through that lineage. When work needs to continue in
 the background, May can assign another Task and keep the discussion available.
-Both Tasks use the same controller, attempts, outcomes and recovery.
+Both use the same controller, attempts, outcomes and recovery.
 
 ```text
 human input -> Task A -> answer or delegate Task B

@@ -20,9 +20,11 @@ runs bounded execution, and preserves truthful state through waits and failures.
 An agent, workflow or native executor performs the work within that boundary.
 
 **Discuss in Conversation. Track accepted asks as Requests. Delegate Tasks when
-work needs independent execution.** Underneath, the Conversation itself uses
-one stable Task to handle its inputs; the human need not manage that execution
-identity to chat.
+work needs independent execution.** Underneath, the Conversation uses one
+logical Task lineage to handle its inputs; normally that is one stable Task. If
+its execution identity was explicitly cancelled, fresh human input may establish
+a deterministic linked successor without mutating the cancelled history. The
+human need not manage these execution identities to chat.
 
 ## The records
 
