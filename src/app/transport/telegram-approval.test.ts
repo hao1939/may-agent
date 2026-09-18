@@ -160,10 +160,34 @@ describe("Telegram exact approval reply", () => {
     }
   });
 
-  it("does not guess when a Task has multiple unresolved human approvals", () => {
+  it("shows every human action but does not guess among multiple approvals", () => {
+    const withClarification = proposal("a", 1);
+    withClarification.humanAction = { requestedAction: "Two human actions remain." };
+    withClarification.diagnostics!.conditions.push({
+      id: "clarification-1",
+      condition: {
+        metadata: { id: "clarification-1", generation: 1, resourceVersion: 1 },
+        spec: {
+          type: "human.answer.received",
+          subject: "question:rollback-window",
+          expected: { answer: true },
+          owner: "human",
+          requestedAction: "Clarify the preferred rollback observation window.",
+          reviewAfterMs: 60_000,
+        },
+        status: { state: "false" },
+      },
+    } as any);
+    const rendered = renderTelegramTask(withClarification);
+    expect(rendered).toContain("Verified benefit: exact packet binding.");
+    expect(rendered).toContain("Clarify the preferred rollback observation window.");
+    expect(telegramApprovalReply("approve", withClarification, anchorA)).not.toBeNull();
+
     const ambiguous = proposal("a", 1);
+    ambiguous.humanAction = { requestedAction: "Choose one proposal." };
     ambiguous.diagnostics!.conditions.push(proposal("b", 2).diagnostics!.conditions[0]!);
     expect(telegramApprovalReply("approve", ambiguous, anchorA)).toBeNull();
-    expect(renderTelegramTask(ambiguous)).not.toContain("Verified benefit: exact packet binding.");
+    expect(renderTelegramTask(ambiguous)).toContain("artifact:full-diff-a.patch");
+    expect(renderTelegramTask(ambiguous)).toContain("artifact:full-diff-b.patch");
   });
 });

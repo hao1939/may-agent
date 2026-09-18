@@ -1254,6 +1254,24 @@ describe("Telegram May input", () => {
           taskListReads.push(options);
           return { items: [todo()], total: 1 };
         },
+        getTask: () => ({
+          ...todo(),
+          diagnostics: {
+            conditions: [{
+              id: "human-decision",
+              condition: {
+                spec: {
+                  type: "human.answer.received",
+                  subject: "task:deploy/current",
+                  owner: "human",
+                  requestedAction: todo().humanAction.requestedAction,
+                  expected: { answer: true },
+                },
+                status: { state: "false" },
+              },
+            }],
+          },
+        }),
       } as any,
     });
     try {
@@ -1281,6 +1299,16 @@ describe("Telegram May input", () => {
       } as any);
       await Bun.sleep(30);
       expect(taskListReads).toHaveLength(readsBeforeProgress);
+
+      const sendsBeforeUnchangedWake = sent.length;
+      bus.emit({
+        type: "project.task.reconciled",
+        source: "app-task:evaluation",
+        owner: "app:evaluation",
+        data: { project: "evaluation", taskId: "deploy/current" },
+      } as any);
+      await Bun.sleep(30);
+      expect(sent).toHaveLength(sendsBeforeUnchangedWake);
 
       resourceVersion = 2;
       bus.emit({
