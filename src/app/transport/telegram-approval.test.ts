@@ -1,6 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import type { HumanTaskView } from "../human-task-service.js";
-import { telegramApprovalReply, type TelegramApprovalAnchor } from "./telegram.js";
+import { createHash } from "node:crypto";
+import { openDatabase } from "../../lib/db.js";
+import { applyDbSchema } from "../../lib/db/schema.js";
+import { HumanTaskService, type HumanTaskView } from "../human-task-service.js";
+import {
+  renderTelegramTask,
+  renderTelegramTodos,
+  telegramApprovalReply,
+  type TelegramApprovalAnchor,
+} from "./telegram.js";
 
 function proposal(letter: string, revision: number): HumanTaskView {
   return {
@@ -24,11 +32,16 @@ function proposal(letter: string, revision: number): HumanTaskView {
               subject: `id:proposal-${letter}`,
               owner: "human",
               expected: {
-                anyOf: ["approve", "reject", "defer"],
+                allowedDecisions: ["approve", "reject", "defer"],
                 approvalId: `proposal-${letter}`,
                 packetHash: letter.repeat(64),
                 proposalRevision: revision,
               },
+              requestedAction:
+                `Problem: stale approval ${letter}.\nVerified benefit: exact packet binding.\n` +
+                `Total cost: one journal reread and no new service.\nSimpler option: reuse the existing Condition.\n` +
+                `Application/activation scope: git-fast-forward:/an/intentionally/long/fixture/path/${letter}.\n` +
+                `Evidence: artifact:verification-${letter}.json and artifact:full-diff-${letter}.patch.`,
             },
             status: { state: "false" },
           },
@@ -38,8 +51,14 @@ function proposal(letter: string, revision: number): HumanTaskView {
   };
 }
 
+function action(task: HumanTaskView): string {
+  return task.diagnostics!.conditions[0]!.condition!.spec.requestedAction!;
+}
+
+const proposalA = proposal("a", 1);
 const anchorA: TelegramApprovalAnchor = {
   approvalId: "proposal-a",
+  displayedActionHash: createHash("sha256").update(action(proposalA)).digest("hex"),
   packetHash: "a".repeat(64),
   proposalRevision: 1,
 };
@@ -61,9 +80,75 @@ describe("Telegram exact approval reply", () => {
     expect(telegramApprovalReply("defer", proposal("b", 2), anchorA)).toBeNull();
   });
 
+  it("binds the exact displayed bytes even when producer hashes and revision stay stale", () => {
+    const changed = proposal("a", 1);
+    changed.diagnostics!.conditions[0]!.condition!.spec.requestedAction =
+      "The candidate now adds a recurring paid service and has a newly discovered data-loss risk.";
+    expect(telegramApprovalReply("approve", changed, anchorA)).toBeNull();
+  });
+
+  it("renders the full Condition proposal in an exact Task card", () => {
+    const exact = proposal("a", 1);
+    exact.humanAction = { requestedAction: "Problem: stale approval…" };
+    const card = renderTelegramTask(exact);
+    expect(card).toContain("Verified benefit: exact packet binding.");
+    expect(card).toContain("one journal reread and no new service");
+    expect(card).toContain("Simpler option: reuse the existing Condition.");
+    expect(card).toContain("git-fast-forward:/an/intentionally/long/fixture/path/a");
+    expect(card).toContain("artifact:full-diff-a.patch");
+  });
+
+  it("reads the full proposal from real HumanTaskService detail while its aggregate todo stays compact", () => {
+    const db = openDatabase(":memory:");
+    applyDbSchema(db);
+    const stored = {
+      metadata: { id: "goal/proposal", generation: 1, resourceVersion: 1 },
+      spec: { parentId: "root", outcome: "Review proposal a", acceptance: ["Record the exact decision"], owner: "may" },
+      status: {
+        observedGeneration: 1,
+        phase: "waiting",
+        summary: "Problem: stale approval…",
+        updatedAt: "2026-09-18T00:00:00.000Z",
+        conditionIds: ["approval-a"],
+      },
+    };
+    const condition = proposalA.diagnostics!.conditions[0]!.condition!;
+    db.prepare(
+      `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
+      VALUES ('may', 'goal/proposal', 1, 1, 1, 'waiting', 'normal', 0, 0, 1, ?)`,
+    ).run(JSON.stringify(stored));
+    db.prepare(
+      "INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES ('may', 'approval-a', 'false', ?)",
+    ).run(JSON.stringify(condition));
+    db.prepare(
+      "INSERT INTO app_task_condition_routes(app_id, task_id, condition_id) VALUES ('may', 'goal/proposal', 'approval-a')",
+    ).run();
+    const service = new HumanTaskService(db, {
+      snapshot: () => ({
+        id: "test",
+        generation: 1,
+        entries: [
+          {
+            appDir: "/tmp/may.app",
+            definition: { id: "may", version: 1, owner: "may", description: "test", inputSchema: {} },
+          },
+        ],
+      }),
+    } as any);
+    try {
+      const detail = service.getTask({ appId: "may", taskId: "goal/proposal" })!;
+      const list = service.listTasks({ appId: "may", humanActionOnly: true }).items;
+      expect(renderTelegramTask(detail)).toContain(action(proposalA));
+      expect(renderTelegramTodos(list)).not.toContain("artifact:full-diff-a.patch");
+    } finally {
+      db.close();
+    }
+  });
+
   it("does not guess when a Task has multiple unresolved human approvals", () => {
     const ambiguous = proposal("a", 1);
     ambiguous.diagnostics!.conditions.push(proposal("b", 2).diagnostics!.conditions[0]!);
     expect(telegramApprovalReply("approve", ambiguous, anchorA)).toBeNull();
+    expect(renderTelegramTask(ambiguous)).not.toContain("Verified benefit: exact packet binding.");
   });
 });
