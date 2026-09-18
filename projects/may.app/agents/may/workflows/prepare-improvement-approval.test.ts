@@ -1,7 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { packetHash } from "../../../improvement-approval";
@@ -10,8 +16,15 @@ import { prepareImprovementApproval } from "./prepare-improvement-approval";
 const sha256 = (value: string | Buffer) =>
   createHash("sha256").update(value).digest("hex");
 
+const roots: string[] = [];
+afterEach(() => {
+  for (const root of roots.splice(0))
+    rmSync(root, { recursive: true, force: true });
+});
+
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-execution-approval-"));
+  roots.push(root);
   const repository = join(root, "repository");
   mkdirSync(repository);
   const git = (...args: string[]) =>
