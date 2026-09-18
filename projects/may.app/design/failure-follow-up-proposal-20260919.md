@@ -234,3 +234,58 @@ whole loop or require a model call for each mechanical case.
 Measure accepted ownership, time to a useful decision, duplicate/unnecessary
 repair work, cost of repeated attempts, and verified recovery. Log volume,
 candidate count and test-pass totals alone do not measure successful follow-up.
+
+## Candidate decision and retained evidence
+
+The bounded pilot selected the guidance-first alternative. The implementation is
+commit `28d9751cbd8b9485c5e2d3136168fe58eadc301a` against base
+`9eab4e18cb56cd3fabdb0a803579f4bc38d7e35c`. Both agent trials read the
+candidate May definition from commit
+`f875c95e670d8bab6890e1fefcdf7e049eebd1e6`; that definition is unchanged in the
+final commit and has SHA-256
+`1ab67c0d485a114ee2d128f0df7f31716c14bc4fe09076cd5b7edb19318a25f9`.
+The final commit adds only reliable teardown to the approval fixture after that
+trial definition. No Host primitive was justified: existing exact caller
+feedback, Task recovery, linked work, source-specific evidence readers and the
+approval path were sufficient when May had explicit decision guidance.
+
+The full May check passed typecheck and formatting with 87 tests passed, one
+existing Host-path test skipped and no failures. Its retained execution is
+`/app/.state/sessions/s_1789762332675_efb38037-be35-4256-aa65-ec02a2a86b69`.
+Focused production-module checks cover changed evidence and repair-link reuse,
+truthful non-Gym evidence, missing approval causing no source application, and
+execution-origin identity in the approval proposal. Existing Host tests supply
+the interrupted-execution recovery and feedback-delivery-limit evidence; this
+candidate does not claim universal delivery or discovery.
+
+The admitted behavioral evidence consists of two strongly prompted synthetic
+feasibility trials, not an unprompted discovery, a baseline improvement
+comparison or proof of semantic deduplication:
+
+- `goal/appdep_55cc2eb21d7385388e0488af`, accepted attempt
+  `r_1_5edc9f42-726e-4aa1-85ed-d061df93aef4`, observed controlled exit 23 and
+  chose `reuse-link-and-stop` for existing Task
+  `goal/app_86bea4d7-27bf-4c89-8f51-913c1de62dac`; it created no repair Task.
+  The original trial workspace disappeared, so the retained command and report
+  readbacks are in
+  `/app/.state/sessions/s_1789762264828_90bd216d-17de-461b-81b4-5d0a3ba79326/session.jsonl`.
+- `goal/appdep_1faa627cc9d1033b7a37bf13`, accepted attempt
+  `r_1_10050441-0ede-47c1-8edd-ac6a3eb5f9a6`, kept a transient in the same Task
+  and ran its safe continuation from exit 24 to exit 0 with `recovered=true`;
+  it created no repair or improvement work. The retained command and receipt
+  readbacks are in
+  `/app/.state/sessions/s_1789762265092_55d564fe-d6b2-4137-81dc-269dd7babe67/session.jsonl`.
+
+Bob independently reviewed the exact final commit, canonical accepted Task
+results and retained trial readbacks, then approved this bounded candidate for
+reviewed source integration. The review is retained at
+`/app/.state/sessions/s_1789762434220_8da846a5-8c11-484a-b0b9-7c064951bfa1/result.json`.
+The content-addressed evidence index is
+`/app/.state/review-pilots/failure-follow-up-20260919/final-evidence.json`
+(SHA-256
+`6f9d4dc17dd5b441b12e96690a38fd49c1165985bd121087c7ed19b6a7ed762a`).
+
+This evidence supports reviewed source integration, not live activation,
+automatic supervision, universal semantic deduplication or recovery of the
+original symptom. Source integration, live adoption and a fresh symptom check
+remain distinct facts.
