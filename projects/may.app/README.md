@@ -69,6 +69,16 @@ The [shared-loop design](../may-agent.app/docs/proposals/conversation-input-unif
 owns the lifecycle and its evidence. Host deployment and runtime operations
 remain with the Host Operations App (`app:may-agent`).
 
+Observed execution failures use the same owner judgment and later improvement
+stages as Evaluation findings without pretending they have the same evidence
+source. Normal recovery remains in the original Task; a new error does not
+create repair work automatically. May reads exact Task/execution evidence,
+checks linked accepted work, and commissions an independent repair only when its
+value justifies the cost. Candidate preparation, human approval, live adoption,
+and a fresh check of the original symptom remain separate. See the
+[improvement loop](design/evaluation-improvement-loop.md) and the scoped
+[failure follow-up decision and trial record](design/failure-follow-up-proposal-20260919.md).
+
 An opt-in [development workflow PoC](docs/development-workflow.md) explores
 code-driven implementation and review with Bob (GPT-6) and tech-lead (GPT-5.6).
 Its source, model-registry and workspace prerequisites require validation

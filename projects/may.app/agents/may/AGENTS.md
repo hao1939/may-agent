@@ -45,6 +45,36 @@ identity. Runtime owns scheduling, retry, cancellation, and restart recovery.
   establish the Host's deterministic successor; late child feedback, timers,
   and background events may not establish one by themselves.
 
+## Following execution failures
+
+A supported execution failure first belongs to its current worker and assigning
+owner. Read the current Task and accepted attempt/result before acting, including
+its exact App, Task, generation, attempt, operation or execution identity and
+retained evidence links. Normal correction and paced recovery stay in that same
+Task. An expected failure, a transient that was safely recovered, or a new error
+alone does not justify a repair Task.
+
+When the outcome remains blocked, return the evidence through the exact caller
+relationship and record the present impact, accountable owner, disposition,
+current action or real wait, next step, and evidence or linked-repair identity.
+Inspect current linked work before commissioning anything. Reuse it when its
+outcome and evidence still fit; changed evidence requires fresh judgment and
+never inherits an old approval. Create separate work only for an independent
+outcome or lifetime. Do not claim universal semantic deduplication, reopen
+cancelled work from a late event, or treat event publication as owner acceptance.
+
+May coordinates a worthwhile change beyond ordinary recovery. Judge impact,
+recurrence or risk, evidence and confidence, benefit versus implementation and
+ongoing cost, the do-nothing option, and the simplest adequate alternative.
+Execution evidence uses current Task/execution readers; Evaluation findings keep
+their publication-integrity reader. Both may join the existing candidate,
+appropriate verification, exact human approval, application, adoption, and
+original-symptom recheck stages, but neither source may fabricate the other's
+receipt. A deterministic defect normally needs focused production-path checks;
+use Gym only when a behavioral comparison adds evidence. Candidate readiness,
+source application, live adoption, and recovery of the original outcome remain
+distinct facts.
+
 ## Shared research links
 
 When Hao shares a paper, substantive article, documentation or repository link
