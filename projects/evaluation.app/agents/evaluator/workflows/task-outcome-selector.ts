@@ -17,7 +17,7 @@ export const name = "task-outcome-selector";
 export const description =
   "Select at most one recent external Task candidate through bounded public App reads.";
 
-const STATE_VERSION = 3;
+const STATE_VERSION = 4;
 const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
@@ -50,6 +50,7 @@ type SelectorState = {
   appIndex: number;
   lastTaskByApp: Record<string, string>;
   taskCursorByApp?: Record<string, string>;
+  attemptedTaskByApp?: Record<string, string[]>;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -151,6 +152,7 @@ function emptyState(): SelectorState {
     appIndex: 0,
     lastTaskByApp: {},
     taskCursorByApp: {},
+    attemptedTaskByApp: {},
   };
 }
 function boundedStateHistory(value: unknown): Record<string, string> {
@@ -184,6 +186,27 @@ function boundedTaskCursors(value: unknown): Record<string, string> {
   }
   return cursors;
 }
+function boundedAttemptedTasks(value: unknown): Record<string, string[]> {
+  const attempted: Record<string, string[]> = {};
+  for (const [appId, storedValue] of Object.entries(object(value)).slice(
+    -MAX_STATE_APPS,
+  )) {
+    const key = canonical(appId).slice(0, 80);
+    const ids = Array.isArray(storedValue)
+      ? [
+          ...new Set(
+            storedValue.map(text).filter((id) => /^[a-f0-9]{64}$/.test(id)),
+          ),
+        ].slice(-100)
+      : [];
+    if (!key || !ids.length) continue;
+    const candidate = { ...attempted, [key]: ids };
+    if (Buffer.byteLength(JSON.stringify(candidate)) > MAX_STATE_HISTORY_BYTES)
+      break;
+    attempted[key] = ids;
+  }
+  return attempted;
+}
 function cleanState(value: unknown): SelectorState {
   const item = object(value);
   if (Number(item.version) !== STATE_VERSION) return emptyState();
@@ -193,6 +216,7 @@ function cleanState(value: unknown): SelectorState {
     appIndex: Math.max(0, Math.trunc(Number(item.appIndex) || 0)),
     lastTaskByApp: boundedStateHistory(item.lastTaskByApp),
     taskCursorByApp: boundedTaskCursors(item.taskCursorByApp),
+    attemptedTaskByApp: boundedAttemptedTasks(item.attemptedTaskByApp),
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -306,19 +330,13 @@ export async function selectFairCandidate(
       );
     }
 
-    const rememberedTask = nextState.lastTaskByApp[key];
-    const rememberedTaskIndex = rememberedTask
-      ? recent.findIndex(
-          (item) => identityDigest(taskId(item)) === rememberedTask,
-        )
-      : -1;
-    const candidates =
-      rememberedTaskIndex >= 0
-        ? [
-            ...recent.slice(rememberedTaskIndex + 1),
-            ...recent.slice(0, rememberedTaskIndex + 1),
-          ]
-        : recent;
+    const attempted = new Set(nextState.attemptedTaskByApp?.[key] ?? []);
+    // Track every selected identity in this bounded page window. A set, rather
+    // than only the last item, remains fair when selecting a Task updates its
+    // ordering and moves it back to the front before the next wake.
+    const candidates = recent.filter(
+      (item) => !attempted.has(identityDigest(taskId(item))),
+    );
     let selected:
       | { item: Record<string, unknown>; purpose: AssessmentPurpose }
       | undefined;
@@ -369,23 +387,17 @@ export async function selectFairCandidate(
       lastTaskByApp[key] = identityDigest(taskId(lastAttempted));
     const boundedHistory = boundedStateHistory(lastTaskByApp);
     const taskCursorByApp = { ...(nextState.taskCursorByApp ?? {}) };
-    // A selected request is retained by its own Task, so selector progress must
-    // not depend on its report eventually being published. Advance after the
-    // selection reaches the end of this bounded window (or wraps past the
-    // remembered item); otherwise dropped, deferred, failed, or changing
-    // requests in the prefix can permanently starve older obligations.
-    const selectedRecentIndex = selected
-      ? recent.indexOf(selected.item)
-      : -1;
+    const attemptedTaskByApp = { ...(nextState.attemptedTaskByApp ?? {}) };
+    if (selected) attempted.add(identityDigest(taskId(selected.item)));
     const completedBoundedPass =
-      !selected ||
-      (selectedRecentIndex >= 0 &&
-        (selectedRecentIndex === recent.length - 1 ||
-          (rememberedTaskIndex >= 0 &&
-            selectedRecentIndex <= rememberedTaskIndex)));
+      !selected || candidates.indexOf(selected.item) === candidates.length - 1;
+    if (completedBoundedPass) delete attemptedTaskByApp[key];
+    else attemptedTaskByApp[key] = [...attempted];
+    // Advance only after every candidate in this bounded window has had a turn.
+    // The attempted set is stable even when selected Tasks reorder themselves.
     const retainedCursor = completedBoundedPass
       ? continuationCursor
-      : nextState.taskCursorByApp?.[key] ?? "";
+      : (nextState.taskCursorByApp?.[key] ?? "");
     if (retainedCursor) taskCursorByApp[key] = retainedCursor;
     else delete taskCursorByApp[key];
     const boundedCursors = boundedTaskCursors(taskCursorByApp);
@@ -402,6 +414,7 @@ export async function selectFairCandidate(
       appIndex: nextIndex,
       lastTaskByApp: boundedHistory,
       taskCursorByApp: boundedCursors,
+      attemptedTaskByApp: boundedAttemptedTasks(attemptedTaskByApp),
     };
     if (selected) {
       return {

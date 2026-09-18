@@ -438,6 +438,45 @@ describe("automatic task outcome selector", () => {
     ]);
   });
 
+  test("remains fair when each selected Task moves back to the front", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-moving-order-"));
+    const tasks = {
+      may: [
+        task("may", "goal/one", 0, "waiting"),
+        task("may", "goal/two", 0, "waiting"),
+        task("may", "goal/three", 0, "waiting"),
+        task("may", "goal/four", 0, "waiting"),
+        task("may", "goal/old-five", 40, "waiting"),
+      ],
+    };
+    const command = catalogCommand(tasks);
+    let state;
+    const selected = [];
+    for (let index = 0; index < 5; index += 1) {
+      const result = await selectFairCandidate(
+        command,
+        config,
+        root,
+        state,
+        NOW + index,
+      );
+      selected.push(result.candidate?.taskId);
+      state = result.state;
+      const chosen = tasks.may.find(
+        (item) => item.taskId === result.candidate?.taskId,
+      );
+      if (chosen) chosen.updatedAt = NOW + index + 1;
+      tasks.may.sort((left, right) => right.updatedAt - left.updatedAt);
+    }
+    expect(selected).toEqual([
+      "goal/one",
+      "goal/two",
+      "goal/three",
+      "goal/four",
+      "goal/old-five",
+    ]);
+  });
+
   test("keeps resolved and unresolved historical outcomes reviewable", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-status-"));
     const command = catalogCommand({
@@ -507,7 +546,7 @@ describe("automatic task outcome selector", () => {
       "selector-navigation-failed:may:pages-read=1:tasks.list item has no usable updatedAt",
     ]);
     expect(result.state).not.toHaveProperty("taskCursor");
-    expect(result.state.version).toBe(3);
+    expect(result.state.version).toBe(4);
   });
 
   test("advances past malformed and non-reviewable items within a page", async () => {

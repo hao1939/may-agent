@@ -1,6 +1,6 @@
 # Evaluation App
 
-Evaluation independently reviews historical outcomes owned by other Agent Apps. It publishes evidence-backed reports; the responsible App retains remediation authority. Evaluation does not become a second planner, fixer, issue queue, or controller for the target.
+Evaluation independently reviews exact Task evidence owned by other Agent Apps: both historical outcomes and bounded current obligations at meaningful review boundaries. It publishes evidence-backed reports; the responsible App retains remediation authority. Evaluation does not become a second planner, fixer, issue queue, or controller for the target.
 
 ## Current behavior
 
@@ -15,9 +15,9 @@ explicit review request
   -> deterministic list/read actions
 ```
 
-A Task outcome—not one worker session—is the accountability unit. The review reconstructs the historical assignment, delegation, corrections, recovery, verification, and delivery. Evaluation-owned work is excluded. Missing identity or evidence yields neutral `insufficient-evidence`, never a target failure or healthy coverage.
+A Task—not one worker session—is the accountability unit. Historical review reconstructs assignment, delegation, corrections, recovery, verification, and delivery. Ongoing review uses a separately versioned rubric and due-phase identity to inspect active work, waits, recovery, dependencies, approvals, and overdue boundaries without treating status or age alone as failure. Evaluation-owned work is excluded. Missing identity or evidence yields neutral `insufficient-evidence`, never a target failure or healthy coverage.
 
-Automatic semantic sampling is **off by default**. No selector schedule exists unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. After manual calibration and bounded canaries, the observed rollout enables serialized daily sampling; see [the rollout record](design/rollout-and-migration-2026-09.md). There is no active two-hour schedule. App discovery is capped at 20 so every visited App retains bounded navigation history.
+Automatic semantic sampling is **off by default**. No selector schedule exists unless `EVALUATION_AUTO_REVIEW_ENABLED=true`. After manual calibration and bounded canaries, the observed rollout enables serialized daily sampling through the existing latest-slot input schedule, whose slot identity supplies restart catch-up and duplicate suppression; see [the rollout record](design/rollout-and-migration-2026-09.md). There is no active two-hour schedule. App discovery is capped at 20, semantic calls use a small shared slot allowance, and each wake emits at most one exact review request.
 
 Legacy session-aftermath, deep-evaluation, project-health, and executable Tasks remain historical evidence. The Host requires every Task intent to name a structural parent, so all supported inputs use the surviving non-executable `evaluation-system` root group; they do not depend on any cancelled legacy subgroup. Compatibility entrypoints use a distinct `runtime/compat/*` namespace and do not perform new session-only semantic scoring, so they cannot revive or reuse retired Task identities. The App manifest declares all 11 legacy Evaluation metrics as `retired` so normal activation retires persisted definitions without deleting measurements; metric breach/recovery events do not wake an Evaluation owner lane.
 
@@ -49,7 +49,7 @@ The equivalent named actions are `list-evaluation-reports` and `read-evaluation-
 
 ## Selection and cost
 
-When explicitly enabled, the selector discovers at most 20 external Apps with bounded `apps.list`, then reads recently updated Task projections with public `tasks.list(appId, includeDone: true)`. It considers an initially configurable seven-day window, reads at most two small pages per visited App by default, rotates Apps after every selection, excludes Evaluation, and emits at most one ordinary review request per wake. Bounded versioned navigation facts in the selector Task remember the next App and a short SHA-256 digest of the last attempted Task identity per App; exhausted scans preserve those markers, circularly reconsider newly inserted recent Tasks, and skip malformed pages/items while retaining bounded diagnostics. Full Task identities remain in the emitted request, and legacy `app.tasks.list` cursor facts reset neutrally. Exact `app.task.get` and `task.get` identity/provenance checks still occur before semantic review. Old outcomes remain explicitly reviewable. `maxConcurrent: 1` keeps initial rollout serialized.
+When explicitly enabled, the selector discovers at most 20 external Apps with bounded `apps.list`, then reads Task projections with public `tasks.list(appId, includeDone: true)`. Recent completed outcomes use an initially configurable seven-day window; open obligations remain eligible beyond it. The selector reads at most two small pages per visited App by default, rotates Apps after every selection, excludes Evaluation, and emits at most one ordinary review request per wake. Bounded versioned navigation facts retain the next App, public page continuation, and hashed identities already attempted in the current bounded window. This reaches old open work after dropped requests and remains fair when a selected Task's `updatedAt` moves it to the front. Full Task identities remain only in emitted requests. Malformed or truncated reads remain explicit coverage facts. Exact `app.task.get` and `task.get` identity/provenance checks still occur before semantic review. `maxConcurrent: 1` keeps initial rollout serialized.
 
 ## Public actions
 
