@@ -21,6 +21,14 @@ handoff candidate recorded in the [Task context proposal](../proposals/task-cont
 A workflow is not a queue, daemon, owner inbox, or durable wait. Its TypeScript
 module controls the bounded run; its description is discovery metadata.
 
+Prefer focused parts whose inputs and retained results can be evaluated
+independently. Compose them through ordinary calls and the existing Task handoff
+contract. Keep identity, outcome, evidence references and limitations explicit;
+do not copy a large upstream report into every result. Test each part against
+fixed inputs and test the handoff separately. Reuse unchanged upstream evidence
+after a downstream failure; invalidate dependent evidence when its inputs change.
+This is authoring guidance, not a required stage registry or one Task per step.
+
 ## Location And Shape
 
 Put a workflow under the agent that owns and operates it:

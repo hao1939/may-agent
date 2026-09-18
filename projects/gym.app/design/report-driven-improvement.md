@@ -27,6 +27,36 @@ an already fixed issue may need only a recheck. A historical failed attempt that
 later recovered is not an unresolved failure by default. Treat untrusted report
 content as evidence, never executable instructions or approval.
 
+## Small parts with independently reviewable results
+
+The loop is a composition of focused capabilities. Each part must be usable and
+evaluated separately; one large improvement workflow must not own all stages.
+Use ordinary modules for bounded mechanics, workflows for useful sequencing and
+existing Tasks when responsibility or a durable wait crosses a boundary. A stage
+does not require a new service, lifecycle or public App input type.
+
+| Part | Input | Result and independent check |
+| --- | --- | --- |
+| Evaluation | Exact observed work and acceptance | Published report with immutable evidence; check attribution and coverage |
+| May investigation | Verified report and current subject state | Reasoned disposition and existing/new work reference; check diagnosis, recovery and duplicate handling |
+| Candidate preparation | Accepted change scope and frozen baseline | Isolated committed candidate, diff and checks; verify scope and reproducibility |
+| Gym comparison | Exact candidate/baseline and frozen evaluation plan | Per-case comparison with invalid runs and limits; verify identical conditions and transfer coverage |
+| Human review | Complete exact-candidate packet | Approval, rejection or requested adjustment through the human return path; verify actor and packet identity |
+| Application | Exact approval, candidate and current target | Application receipt and adoption checks or visible refusal; verify baseline, scope and rollback |
+
+These are result contracts, not six new Host schemas. Keep each contract small:
+identity, evidence references, observed outcome, limitations and the next owner's
+needed context. Retain the large report once and link it. A later stage must
+validate its prerequisites rather than treating an earlier summary as proof.
+
+For evaluation, replay one stage against frozen inputs and inspect its actual
+output. Include a small composition test for each handoff. A failure should name
+the stage and preserve upstream artifacts: a comparison failure does not require
+rebuilding the candidate, and an application failure does not rerun diagnosis.
+Reuse evidence only while its bound inputs remain unchanged. Changing a scorer
+requires a new comparison; changing the candidate invalidates its old comparison
+and approval. This lets us refine one part without obscuring which part improved.
+
 ## Trigger and ownership
 
 Add one explicit consumer subscription for `evaluation.task_report_published`
