@@ -1,19 +1,20 @@
 <ai_context>
-summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, and release-aware expected-outcome reconciliation."
-triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
+summary: "Reusable verification and verdict-integrity patterns: evidence bound to the verified subject, explicit receipt coverage and valid anomalies, negative controls for the verdict path, freshness binding for replayed traces, evaluator immutability across repair, proof of the inspected universe behind a clean sweep, separation of checker eligibility from acceptance authority, and release-aware expected-outcome reconciliation."
+triggers: ["verification subject binding", "Brigade", "receipt coverage", "not_checked", "invocation_ref", "ASQAV", "meta-verification", "false-green verifier", "negative control", "ProjectGuard", "trace freshness", "recorded trace", "skilldiff", "agent skill regression", "frozen tests", "test identity", "failure fingerprint", "RepoPilot", "independent runner", "inspected universe", "compared-nothing-reported-clean", "event-backed write", "Dream Studio", "checker eligibility", "acceptance authority", "FinalAcceptance", "ContributionRecord", "Workstream", "XFAIL", "XPASS", "release-aware conformance", "Monet E2E"]
 last_updated: "2026-09-18"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation and replay-freshness analysis. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-14 oversized-note review, then extended with release-aware expected-outcome reconciliation, replay-freshness analysis, and evaluator-immutability analysis. Sources are Brigade revision 0e8b83ae6ef779bb6be8701dd4cd534c064608f9; jagmarques/asqav-sdk revision 4cbf71b774fe18e67c2433c6ebee7b3940fe62ec, especially its standalone verifier contract, executable requirement map, frozen conformance corpus, invocation-reference duplicate vector, and unsigned-gap vector; Dilikjon/projectguard revision 55df81492aa4890d512efd4152e2cdca514471e8, including its CLI entry point, test runner, active gate configuration, and CI workflow, with npm test, npm run verify, and a known-bad test-runner negative control reproduced locally from the pinned archive; scs0209/skilldiff revision 285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64, especially its recorded/live runner split, trace assertions, report formatter, baseline fetch, CLI, and GitHub Actions workflow; indada/repopilot revision d184928c7bfef6bc0d7228f9d282f0ae2e56fda1, especially its pipeline, repair constraints, structured test-evidence comparison, architecture, verification-coverage statement, and security boundary; SeayInsights/dream-studio revision 1014fc185cbade7cb5b11bdf67b7150ce1e47d13, especially its event-backed-write gate, focused gate tests, projection declarations, and blocking pre-push wiring; Flow-Research/workstream revision d5dd94d3f1f4e52fa9f191e88d3c210758bb4b3b, especially its lifecycle contract, roadmap capability ledger, review queue persistence, and canonical-review decision record; and team-monet/monet-e2e revision ba8acbc55a4574b3a453dcbf49842f7fb363f70c, especially its suite runner, metrics ledger, source-baseline guardrail, and release-to-main flip test."
 </ai_context>
 
 # Agent Runtime Verdict Integrity
 
 **Companion note** to [Agent Runtime Effect Integrity](./agent-runtime-effect-integrity.md).
 
-These patterns separate six questions that a green verification result can
+These patterns separate seven questions that a green verification result can
 otherwise collapse: which subject was checked, which axes were covered, whether
 the verdict path can reject a known-bad case, whether replay evidence is fresh for
-the candidate, whether the verifier inspected the intended universe, and what
-authority may turn that verdict into acceptance.
+the candidate, whether the evaluator stayed fixed while the candidate changed,
+whether the verifier inspected the intended universe, and what authority may turn
+that verdict into acceptance.
 
 ## Verification-Evidence Binding — Brigade (GitHub, August 2026)
 
@@ -190,6 +191,51 @@ binding is absent, stale, or produced only by a non-gating/manual path.
 - **Inspected revision:** [`285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64`](https://github.com/scs0209/skilldiff/commit/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64)
 - **Primary sources:** [recorded/live runner](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/runner.ts), [trace assertions](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/assertions.ts), [report semantics](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/report.ts), [baseline fetch](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/baseline.ts), [CLI exit path](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/src/cli.ts), [GitHub Actions workflow](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/.github/workflows/skilldiff.yml), and [repository-authored assertion tests](https://github.com/scs0209/skilldiff/blob/285489f8c18f7cf48b0b2d6b2ec35a6da45fcd64/tests/assertions.test.ts)
 - **Discovery query:** GitHub Repository Search API `agentic created:>2026-09-17`, sorted by stars; 3,721 results, `incomplete_results: false`
+
+## Freeze the Evaluator Before Asking an Agent to Repair — RepoPilot (GitHub, September 2026)
+
+RepoPilot demonstrates a stronger repair boundary than merely rerunning a test
+command after an agent edits code. Its controller first adds planned tests to
+pinned base and head snapshots, requires those generated tests to be discovered
+and fully executed on both, and classifies outcomes from the same case identities:
+base-pass/head-fail is regression evidence, while base-fail/head-pass counts as new
+behavior only when the scenario carries an exact requirement quote. Both-fail,
+missing, skipped, or identity-changing cases stay unresolved rather than being
+converted into repair opportunities.
+
+The important control is that the evaluator is frozen before repair. The repair
+answer is rejected if it changes any test path; package, lock, configuration,
+instruction, and hidden paths are also protected. A candidate must then pass the
+frozen generated cases and preserve the original base/head case identities. For a
+reproduced regression, the pre-repair head run is repeated and its failing case
+IDs and normalized failure fingerprints must match before source repair begins.
+Test execution occurs in a runner separate from the Codex proposal container, and
+publication can target only a separate draft branch after source freshness checks;
+maintainers retain merge authority.
+
+This yields a reusable **oracle-integrity receipt** for agent repair:
+
+1. bind generated checks to pinned before/after subjects and cited requirements;
+2. freeze evaluator bytes, discovery, case identities, and failure fingerprints
+   before exposing failures to the repair agent;
+3. prohibit the candidate from editing the oracle, runner configuration, or
+   governing instructions;
+4. rerun through an execution path separate from the proposing agent and reject
+   missing or changed evidence; and
+5. keep a verified patch distinct from merge or deployment authority.
+
+The boundary is not tamper-proof attestation. RepoPilot's security model says the
+target test code and reporter share a container, and its repository validation uses
+mock APIs, agents, runners, and synthetic fixtures rather than real Codex, Docker,
+or GitHub publication. Scout inspected the pinned source and repository-authored
+validation statement statically; it did not install dependencies or run the suite.
+The repository reported 95 stars at retrieval, which is an interest signal, not
+reliability or adoption evidence.
+
+- **Repo:** https://github.com/indada/repopilot
+- **Inspected revision:** [`d184928c7bfef6bc0d7228f9d282f0ae2e56fda1`](https://github.com/indada/repopilot/commit/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1)
+- **Primary sources:** [repair pipeline](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/src/application/pipeline.ts), [repair and protected-path constraints](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/src/domain/repair.ts), [test assessment](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/src/domain/test-assessment.ts), [test identity and fingerprint comparison](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/src/domain/test-evidence.ts), [architecture](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/docs/ARCHITECTURE.md), [verification coverage](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/docs/VERIFICATION.md), and [security model](https://github.com/indada/repopilot/blob/d184928c7bfef6bc0d7228f9d282f0ae2e56fda1/SECURITY.md)
+- **Discovery query:** GitHub Repository Search API `(ai-agent OR agentic) created:>2026-09-17`, sorted by stars; 3,652 results, `incomplete_results: false`
 
 ## A Clean Sweep Must Prove What It Swept — Dream Studio (GitHub, September 2026)
 
