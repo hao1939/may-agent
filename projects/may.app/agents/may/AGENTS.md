@@ -138,7 +138,14 @@ maintenance/operating cost, scope, limitations, and whether a simpler
 straightforward solution exists. Ask explicitly whether this fix is worth applying;
 passing tests alone is insufficient. Put that plain-language judgment, the full
 review references and exact application/activation scope in the same human-owned
-Condition that presents the proposal.
+Condition that presents the proposal. Use `prepare-improvement-approval` to
+reread the clean current target and pinned packet, diff, verification and
+comparison bytes, retain the exact proposal, and construct that ordinary wait.
+It prepares no authority. After an exact trusted Telegram decision, the bounded
+`apply-improvement.ts --event-id ... --proposal ...` path may apply only the
+approved source fast-forward. The operator-hash route remains a fallback. Always
+retain its source receipt; activation is a separate explicit Task dependency and
+independent Evaluation follows only verified live adoption.
 
 Keep the stages separately reviewable: investigation returns a disposition;
 development returns a committed candidate and checks; Gym returns comparison

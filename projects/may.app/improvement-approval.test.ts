@@ -62,7 +62,7 @@ function proposalFixture() {
   const { packet, current } = fixture();
   const proposal = buildApprovalProposal({
     packet,
-    task: { appId: "may", taskId: "goal/improve" },
+    task: { appId: "may", taskId: "goal/improve", generation: 1 },
     revision: 2,
     finding,
     candidate,
@@ -78,6 +78,8 @@ function proposalFixture() {
       packetHash: proposal.packetHash,
       proposalHash: proposal.proposalHash,
       proposalRevision: proposal.proposalRevision,
+      taskGeneration: proposal.task.generation,
+      conditionId: proposal.conditionId,
       decision: "approve",
       provenance: {
         provider: "telegram",
@@ -103,7 +105,7 @@ describe("two judgment gates and human Condition", () => {
       expect(() =>
         buildApprovalProposal({
           packet,
-          task: { appId: "may", taskId: "goal/improve" },
+          task: { appId: "may", taskId: "goal/improve", generation: 1 },
           revision: 1,
           finding: { ...finding, disposition },
           candidate,
@@ -113,7 +115,7 @@ describe("two judgment gates and human Condition", () => {
     expect(() =>
       buildApprovalProposal({
         packet,
-        task: { appId: "may", taskId: "goal/improve" },
+        task: { appId: "may", taskId: "goal/improve", generation: 1 },
         revision: 1,
         finding,
         candidate: { ...candidate, disposition: "do-not-present" },
@@ -255,6 +257,7 @@ describe("trusted decision, source application and follow-up composition", () =>
     const { packet } = fixture();
     const activation = {
       activationTask: { appId: "may-agent", taskId: "activate/candidate" },
+      newSubjectTask: { appId: "may", taskId: "goal/new-work-after-adoption" },
       candidateCommit: packet.candidateCommit,
       activeRevision: packet.candidateCommit,
       adoptionCheck: "passed" as const,
@@ -275,7 +278,7 @@ describe("trusted decision, source application and follow-up composition", () =>
         appId: "evaluation",
         input: {
           kind: "review-task-outcome",
-          data: { appId: "may-agent", taskId: "activate/candidate" },
+          data: { appId: "may", taskId: "goal/new-work-after-adoption" },
         },
       },
     });

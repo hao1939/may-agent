@@ -180,6 +180,48 @@ export function applyImprovement(
  * a caller-provided approval flag is not accepted. Activation remains a
  * separate, explicitly scoped Task after this source-only receipt.
  */
+function currentProposalMatches(
+  task: Record<string, unknown>,
+  proposal: ApprovalProposal,
+): boolean {
+  const diagnostics = task.diagnostics as Record<string, unknown> | undefined;
+  const conditions = Array.isArray(diagnostics?.conditions)
+    ? diagnostics.conditions
+    : [];
+  const matches = conditions.filter((entry) => {
+    const wrapper = entry as Record<string, unknown>;
+    const condition = (wrapper.condition ?? wrapper) as Record<string, unknown>;
+    const spec = condition.spec as Record<string, unknown> | undefined;
+    const status = condition.status as Record<string, unknown> | undefined;
+    const expected = spec?.expected as Record<string, unknown> | undefined;
+    return (
+      wrapper.id === proposal.conditionId &&
+      spec?.type === "project.approval.submitted" &&
+      (status?.state === "false" || status?.state === "true") &&
+      (spec?.owner === "human" ||
+        String(spec?.owner ?? "").startsWith("human:")) &&
+      spec?.requestedAction === proposal.text &&
+      expected?.approvalId === proposal.approvalId &&
+      expected?.packetHash === proposal.packetHash &&
+      expected?.proposalHash === proposal.proposalHash &&
+      expected?.proposalRevision === proposal.proposalRevision &&
+      expected?.taskGeneration === proposal.task.generation &&
+      expected?.conditionId === proposal.conditionId
+    );
+  });
+  return (
+    task.appId === proposal.task.appId &&
+    (task.taskId === proposal.task.taskId ||
+      task.id === proposal.task.taskId) &&
+    task.generation === proposal.task.generation &&
+    ["pending", "waiting", "running", "attention"].includes(
+      String(task.status),
+    ) &&
+    task.terminal !== true &&
+    matches.length === 1
+  );
+}
+
 export async function applyImprovementFromTrustedEvent(
   files: ApplicationFiles,
   proposal: ApprovalProposal,
@@ -190,10 +232,20 @@ export async function applyImprovementFromTrustedEvent(
     const provider = createPublicTaskEvidenceProvider();
     return (await provider.getEvent(id)) as unknown as TrustedApprovalEvent;
   },
+  readTask: (
+    appId: string,
+    taskId: string,
+  ) => Promise<Record<string, unknown>> = async (appId, taskId) => {
+    const provider = createPublicTaskEvidenceProvider();
+    return provider.getTask(appId, taskId);
+  },
 ) {
   const packet = JSON.parse(
     readFileSync(files.packet, "utf8"),
   ) as ApprovalPacket;
+  const before = await readTask(proposal.task.appId, proposal.task.taskId);
+  if (!currentProposalMatches(before, proposal))
+    throw new Error("approval proposal is no longer the current human wait");
   const decision = await trustedDecisionFromEvent(
     packet,
     proposal,
@@ -207,6 +259,9 @@ export async function applyImprovementFromTrustedEvent(
       decision: decision.decision,
     };
   }
+  const current = await readTask(proposal.task.appId, proposal.task.taskId);
+  if (!currentProposalMatches(current, proposal))
+    throw new Error("approval proposal changed before source application");
   return applyImprovement(files, decision.packetHash);
 }
 
@@ -229,6 +284,26 @@ if (import.meta.main) {
     comparison: required("--comparison"),
   };
   const receiptPath = required("--receipt");
+  const proposalPathOption = option("--proposal");
+  const retainedProposal = proposalPathOption
+    ? (JSON.parse(
+        readFileSync(resolve(proposalPathOption), "utf8"),
+      ) as ApprovalProposal)
+    : undefined;
+  const authority = option("--event-id")
+    ? {
+        kind: "trusted-journal-event",
+        eventId: option("--event-id"),
+        proposal: proposalPathOption ? resolve(proposalPathOption) : undefined,
+        task: retainedProposal?.task,
+        conditionId: retainedProposal?.conditionId,
+        proposalHash: retainedProposal?.proposalHash,
+        packetHash: retainedProposal?.packetHash,
+      }
+    : {
+        kind: "operator-packet-hash",
+        supplied: Boolean(option("--approve")),
+      };
   // Evidence and receipts must be outside the target checkout so inspection is clean.
   writeFileSync(
     receiptPath,
@@ -236,16 +311,7 @@ if (import.meta.main) {
       stage: "source-application",
       phase: "requested",
       files,
-      authority: option("--event-id")
-        ? {
-            kind: "trusted-journal-event",
-            eventId: option("--event-id"),
-            proposal: option("--proposal"),
-          }
-        : {
-            kind: "operator-packet-hash",
-            supplied: Boolean(option("--approve")),
-          },
+      authority,
     }) + "\n",
     { flag: "wx" },
   );
@@ -272,6 +338,8 @@ if (import.meta.main) {
         {
           stage: "source-application",
           time: new Date().toISOString(),
+          files,
+          authority,
           ...result,
         },
         null,
@@ -294,6 +362,7 @@ if (import.meta.main) {
           stage: "source-application",
           phase: "failed",
           files,
+          authority,
           error: String(error),
           time: new Date().toISOString(),
         },

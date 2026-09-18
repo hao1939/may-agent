@@ -58,7 +58,8 @@ export interface ApprovalProposal {
   packetHash: string;
   proposalHash: string;
   proposalRevision: number;
-  task: { appId: string; taskId: string };
+  conditionId: string;
+  task: { appId: string; taskId: string; generation: number };
   text: string;
 }
 
@@ -71,6 +72,8 @@ export interface ApprovalCondition {
     packetHash: string;
     proposalHash: string;
     proposalRevision: number;
+    taskGeneration: number;
+    conditionId: string;
     allowedDecisions: readonly ["approve", "reject", "defer"];
   };
   owner: "human" | `human:${string}`;
@@ -89,6 +92,8 @@ export interface TrustedApprovalEvent {
 
 export interface VerifiedActivation {
   activationTask: { appId: string; taskId: string };
+  /** A concrete Task executed after adoption whose behavior can show whether the change helped. */
+  newSubjectTask: { appId: string; taskId: string };
   candidateCommit: string;
   activeRevision: string;
   adoptionCheck: "passed" | "failed" | "inconclusive";
@@ -111,7 +116,7 @@ function requiredJudgmentText(value: string, field: string): string {
  */
 export function buildApprovalProposal(input: {
   packet: ApprovalPacket;
-  task: { appId: string; taskId: string };
+  task: { appId: string; taskId: string; generation: number };
   revision: number;
   finding: FindingJudgment;
   candidate: CandidateJudgment;
@@ -126,10 +131,14 @@ export function buildApprovalProposal(input: {
     );
   if (!Number.isSafeInteger(input.revision) || input.revision < 1)
     throw new Error("proposal revision must be a positive integer");
+  if (!Number.isSafeInteger(input.task.generation) || input.task.generation < 1)
+    throw new Error("task generation must be a positive integer");
   const task = {
     appId: requiredJudgmentText(input.task.appId, "task appId"),
     taskId: requiredJudgmentText(input.task.taskId, "task taskId"),
+    generation: input.task.generation,
   };
+  const conditionId = `approval-${input.packet.packetHash.slice(0, 24)}-r${input.revision}`;
   const lines = [
     "Improvement approval proposal",
     `Task: ${task.appId}/${task.taskId}`,
@@ -157,6 +166,7 @@ export function buildApprovalProposal(input: {
     packetHash: input.packet.packetHash,
     proposalHash,
     proposalRevision: input.revision,
+    conditionId,
     task,
     text,
   };
@@ -167,7 +177,7 @@ export function approvalCondition(
   owner: ApprovalCondition["owner"] = "human",
 ): ApprovalCondition {
   return {
-    id: `approval-${proposal.packetHash.slice(0, 24)}-r${proposal.proposalRevision}`,
+    id: proposal.conditionId,
     type: "project.approval.submitted",
     subject: `approvalId:${proposal.approvalId}`,
     expected: {
@@ -175,6 +185,8 @@ export function approvalCondition(
       packetHash: proposal.packetHash,
       proposalHash: proposal.proposalHash,
       proposalRevision: proposal.proposalRevision,
+      taskGeneration: proposal.task.generation,
+      conditionId: proposal.conditionId,
       allowedDecisions: ["approve", "reject", "defer"],
     },
     owner,
@@ -223,6 +235,8 @@ export async function trustedDecisionFromEvent(
     data.packetHash !== proposal.packetHash ||
     data.proposalHash !== proposal.proposalHash ||
     data.proposalRevision !== proposal.proposalRevision ||
+    data.taskGeneration !== proposal.task.generation ||
+    data.conditionId !== proposal.conditionId ||
     provenance.provider !== "telegram" ||
     typeof provenance.authenticatedSenderId !== "string" ||
     !provenance.authenticatedSenderId.trim() ||
@@ -333,8 +347,8 @@ export function followUpAfterVerifiedActivation(
       input: {
         kind: "review-task-outcome",
         data: {
-          appId: activation.activationTask.appId,
-          taskId: activation.activationTask.taskId,
+          appId: activation.newSubjectTask.appId,
+          taskId: activation.newSubjectTask.taskId,
         },
       },
     },

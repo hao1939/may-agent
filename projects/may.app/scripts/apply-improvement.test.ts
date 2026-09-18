@@ -110,6 +110,47 @@ test("real Git application requires an exact operator decision and preserves sou
   });
 });
 
+function waitingTask(proposal: {
+  task: { appId: string; taskId: string; generation: number };
+  conditionId: string;
+  approvalId: string;
+  packetHash: string;
+  proposalHash: string;
+  proposalRevision: number;
+  text: string;
+}) {
+  return {
+    appId: proposal.task.appId,
+    taskId: proposal.task.taskId,
+    status: "waiting",
+    generation: proposal.task.generation,
+    terminal: false,
+    diagnostics: {
+      conditions: [
+        {
+          id: proposal.conditionId,
+          condition: {
+            spec: {
+              type: "project.approval.submitted",
+              owner: "human:Hao",
+              requestedAction: proposal.text,
+              expected: {
+                approvalId: proposal.approvalId,
+                packetHash: proposal.packetHash,
+                proposalHash: proposal.proposalHash,
+                proposalRevision: proposal.proposalRevision,
+                taskGeneration: proposal.task.generation,
+                conditionId: proposal.conditionId,
+              },
+            },
+            status: { state: "false" },
+          },
+        },
+      ],
+    },
+  };
+}
+
 test("trusted journal decision drives the real Git guard once and remains source-only", async () => {
   const f = fixture();
   const finding: FindingJudgment = {
@@ -136,7 +177,7 @@ test("trusted journal decision drives the real Git guard once and remains source
   };
   const proposal = buildApprovalProposal({
     packet: f.packet,
-    task: { appId: "may", taskId: "goal/improvement" },
+    task: { appId: "may", taskId: "goal/improvement", generation: 1 },
     revision: 1,
     finding,
     candidate,
@@ -151,6 +192,8 @@ test("trusted journal decision drives the real Git guard once and remains source
       packetHash: proposal.packetHash,
       proposalHash: proposal.proposalHash,
       proposalRevision: 1,
+      taskGeneration: proposal.task.generation,
+      conditionId: proposal.conditionId,
       decision: "approve",
       provenance: {
         provider: "telegram",
@@ -169,6 +212,7 @@ test("trusted journal decision drives the real Git guard once and remains source
       reads++;
       return event;
     },
+    async () => waitingTask(proposal),
   );
   expect(first).toMatchObject({
     applied: true,
@@ -181,6 +225,21 @@ test("trusted journal decision drives the real Git guard once and remains source
     proposal,
     77,
     async () => event,
+    async () => ({
+      ...waitingTask(proposal),
+      status: "running",
+      diagnostics: {
+        conditions: [
+          {
+            id: proposal.conditionId,
+            condition: {
+              ...waitingTask(proposal).diagnostics.conditions[0].condition,
+              status: { state: "true" },
+            },
+          },
+        ],
+      },
+    }),
   );
   expect(replay).toMatchObject({ applied: true, alreadyApplied: true });
   expect(replay).not.toHaveProperty("activationReceipt");
@@ -193,7 +252,8 @@ test("trusted event rejection and stale proposal make zero Git mutation", async 
     packetHash: f.packet.packetHash,
     proposalHash: sha("review exactly this"),
     proposalRevision: 1,
-    task: { appId: "may", taskId: "goal/improvement" },
+    conditionId: `approval-${f.packet.packetHash.slice(0, 24)}-r1`,
+    task: { appId: "may", taskId: "goal/improvement", generation: 1 },
     text: "review exactly this",
   };
   const baseEvent = {
@@ -206,6 +266,8 @@ test("trusted event rejection and stale proposal make zero Git mutation", async 
       packetHash: proposal.packetHash,
       proposalHash: proposal.proposalHash,
       proposalRevision: 1,
+      taskGeneration: proposal.task.generation,
+      conditionId: proposal.conditionId,
       decision: "reject",
       provenance: {
         provider: "telegram",
@@ -221,17 +283,24 @@ test("trusted event rejection and stale proposal make zero Git mutation", async 
       proposal,
       78,
       async () => baseEvent,
+      async () => waitingTask(proposal),
     ),
   ).toMatchObject({ applied: false, decision: "rejected" });
   await expect(
-    applyImprovementFromTrustedEvent(f.files, proposal, 78, async () => ({
-      ...baseEvent,
-      data: {
-        ...baseEvent.data,
-        proposalHash: "0".repeat(64),
-        decision: "approve",
-      },
-    })),
+    applyImprovementFromTrustedEvent(
+      f.files,
+      proposal,
+      78,
+      async () => ({
+        ...baseEvent,
+        data: {
+          ...baseEvent.data,
+          proposalHash: "0".repeat(64),
+          decision: "approve",
+        },
+      }),
+      async () => waitingTask(proposal),
+    ),
   ).rejects.toThrow("not the exact trusted");
   expect(f.git("rev-parse", "HEAD")).toBe(f.packet.baselineCommit);
 });
