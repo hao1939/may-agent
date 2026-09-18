@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import seed from "./tasks/seed.json";
 import {
   Type,
   defineApp,
@@ -60,7 +61,7 @@ export function taskForGymInput(
       kind: "desired",
       intent: {
         id: `input/${safeId(admitted.id)}`,
-        parentId: "gym",
+        parentId: seed.root_task_id,
         agent: "gym",
         outcome:
           "Review and answer one addressed Gym message without changing benchmark truth or production.",
@@ -76,7 +77,7 @@ export function taskForGymInput(
     kind: "desired",
     intent: {
       id: `goal/${safeId(admitted.id)}`,
-      parentId: "gym",
+      parentId: seed.root_task_id,
       outcome: String(data.outcome),
       acceptance: Array.isArray(data.acceptance)
         ? (data.acceptance as string[])

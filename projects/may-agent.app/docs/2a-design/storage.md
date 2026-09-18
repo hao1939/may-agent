@@ -132,6 +132,13 @@ returns its exact outcome without authorizing new work. The
 [ownership evidence](../proposals/controller-poc-recovery-review.md#public-stop-and-admission-ownership)
 records the fix and its limits.
 
+Recovery may restore a missing input link from historical admission aliases
+only when every bound authority and result field agrees. An admission timestamp
+alone does not distinguish authority. Different Task generations, specifications,
+input evidence, accepted answers or feedback remain ambiguous and unlinked.
+Selecting an equivalent alias preserves the historical rows and never reopens
+the work or manufactures an accepted answer.
+
 The following retry-exhaustion rule describes the merged source baseline;
 the continuing-Task proposal replaces that gate with backoff and explicit owner
 closure, preserving unfinished input until it receives its exact answer.

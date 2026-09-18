@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Check } from "typebox/value";
+import { appTaskTestContext } from "../may-agent/src/app/core/tasks/app-task-test-support";
+import { admitTaskInput } from "../may-agent/src/app/core/state/inbox";
 import app, { taskForGymInput } from "./app";
 import { parseComparison } from "./agents/gym/workflows/compare-candidate";
 
@@ -74,10 +78,55 @@ describe("bounded Gym App", () => {
       });
       expect(attached).toMatchObject({
         kind: "desired",
-        intent: { parentId: "gym", agent: "gym", input },
+        intent: { parentId: "gym-system", agent: "gym", input },
       });
       if (attached.kind === "desired")
         expect(attached.intent.workflow).toBeUndefined();
+    }
+  });
+
+  test("both ordinary inputs admit against the App's actual seeded Task graph", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-app-admission-"));
+    const config = appTaskTestContext({
+      appDir: import.meta.dirname,
+      appId: "gym",
+      databasePath: join(root, "tasks.db"),
+      agent: "gym",
+      maxConcurrent: 2,
+    });
+    try {
+      for (const input of [
+        {
+          kind: "goal",
+          data: {
+            outcome: "Compare frozen artifacts",
+            acceptance: ["Return exact evidence"],
+          },
+        },
+        {
+          kind: "message",
+          data: { message: "Explain retained comparison evidence" },
+        },
+      ]) {
+        const inputContext = {
+          id: `seed-${input.kind}`,
+          source: { kind: "human" as const, id: "fixture" },
+          input,
+        };
+        const attachment = taskForGymInput(inputContext);
+        const result = admitTaskInput(config, {
+          appId: "gym",
+          attachment,
+          inputContext,
+          idempotencyKey: inputContext.id,
+        });
+        expect(
+          config.resourceStore.readTask(result.taskId)?.spec.parentId,
+        ).toBe("gym-system");
+      }
+    } finally {
+      config.resourceStore.close();
+      rmSync(root, { recursive: true, force: true });
     }
   });
 
